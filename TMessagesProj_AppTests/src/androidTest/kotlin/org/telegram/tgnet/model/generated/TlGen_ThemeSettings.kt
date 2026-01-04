@@ -61,8 +61,8 @@ public sealed class TlGen_ThemeSettings : TlGen_Object {
       stream.writeInt32(flags.toInt())
       base_theme.serializeToStream(stream)
       stream.writeInt32(accent_color)
-      multiflags_0?.message_top_color?.let { stream.writeInt32(it) }
-      multiflags_0?.message_bottom_color?.let { stream.writeInt32(it) }
+      multiflags_0?.let { stream.writeInt32(it.message_top_color) }
+      multiflags_0?.let { stream.writeInt32(it.message_bottom_color) }
       wallpaper?.serializeToStream(stream)
     }
 

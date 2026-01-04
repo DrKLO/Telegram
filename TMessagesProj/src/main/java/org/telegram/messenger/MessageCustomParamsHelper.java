@@ -11,6 +11,7 @@ public class MessageCustomParamsHelper {
     public static boolean isEmpty(TLRPC.Message message) {
         return (
             message.voiceTranscription == null &&
+            message.translatedVoiceTranscription == null &&
             !message.voiceTranscriptionOpen &&
             !message.voiceTranscriptionFinal &&
             !message.voiceTranscriptionRated &&
@@ -40,6 +41,7 @@ public class MessageCustomParamsHelper {
         toMessage.translatedText = fromMessage.translatedText;
         toMessage.errorAllowedPriceStars = fromMessage.errorAllowedPriceStars;
         toMessage.errorNewPriceStars = fromMessage.errorNewPriceStars;
+        toMessage.translatedVoiceTranscription = fromMessage.translatedVoiceTranscription;
     }
 
 
@@ -93,6 +95,8 @@ public class MessageCustomParamsHelper {
 
             flags |= message.errorAllowedPriceStars != 0 ? 64 : 0;
             flags |= message.errorNewPriceStars != 0 ? 128 : 0;
+
+            flags |= message.translatedVoiceTranscription != null ? 256 : 0;
         }
 
         @Override
@@ -129,6 +133,9 @@ public class MessageCustomParamsHelper {
             if ((flags & 128) != 0) {
                 stream.writeInt64(message.errorNewPriceStars);
             }
+            if ((flags & 256) != 0) {
+                message.translatedVoiceTranscription.serializeToStream(stream);
+            }
         }
 
         @Override
@@ -162,6 +169,9 @@ public class MessageCustomParamsHelper {
             }
             if ((flags & 128) != 0) {
                 message.errorNewPriceStars = stream.readInt64(exception);
+            }
+            if ((flags & 256) != 0) {
+                message.translatedVoiceTranscription = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
 

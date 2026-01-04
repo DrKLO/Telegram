@@ -716,6 +716,17 @@ public class NotificationsController extends BaseController {
                     getMessagesStorage().putStoryPushMessage(notification);
                 }
             }
+            for (int i = 0; i < pushMessages.size(); ++i) {
+                MessageObject msg = pushMessages.get(i);
+                if (msg != null && msg.isLiveStoryPush && msg.getId() == storyId) {
+                    pushMessages.remove(i);
+                    i--;
+                    SparseArray<MessageObject> arr = pushMessagesDict.get(msg.getDialogId());
+                    if (arr != null) arr.remove(msg.getId());
+                    if (arr != null && arr.size() <= 0) pushMessagesDict.remove(msg.getDialogId());
+                    changed = true;
+                }
+            }
             if (changed) {
                 showOrUpdateNotification(false);
             }
@@ -740,6 +751,17 @@ public class NotificationsController extends BaseController {
 //                    changed = true;
 //                    getMessagesStorage().putStoryPushMessage(newNotification);
 //                }
+            }
+            for (int i = 0; i < pushMessages.size(); ++i) {
+                MessageObject msg = pushMessages.get(i);
+                if (msg != null && msg.isLiveStoryPush && msg.getId() <= maxId) {
+                    pushMessages.remove(i);
+                    i--;
+                    SparseArray<MessageObject> arr = pushMessagesDict.get(msg.getDialogId());
+                    if (arr != null) arr.remove(msg.getId());
+                    if (arr != null && arr.size() <= 0) pushMessagesDict.remove(msg.getDialogId());
+                    changed = true;
+                }
             }
             if (changed) {
                 showOrUpdateNotification(false);
@@ -2018,6 +2040,8 @@ public class NotificationsController extends BaseController {
                         return messageObject.messageText.toString();
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiveawayResults) {
                         return messageObject.messageText.toString();
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSuggestBirthday) {
+                        return messageObject.messageText.toString();
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
                         if (chat != null && (!ChatObject.isChannel(chat) || chat.megagroup)) {
                             if (messageObject.replyMessageObject == null) {
@@ -2246,11 +2270,11 @@ public class NotificationsController extends BaseController {
                             }
                         }
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
-                        String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).emoticon;
+                        String emoticon = TlUtils.getThemeEmoticonOrGiftTitle(((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).theme);
                         if (TextUtils.isEmpty(emoticon)) {
                             msg = dialogId == selfUsedId
                                     ? LocaleController.formatString(R.string.ChatThemeDisabledYou)
-                                    : LocaleController.formatString("ChatThemeDisabled", R.string.ChatThemeDisabled, name, emoticon);
+                                    : LocaleController.formatString(R.string.ChatThemeDisabled, name, emoticon);
                         } else {
                             msg = dialogId == selfUsedId
                                     ? LocaleController.formatString(R.string.ChatThemeChangedYou, emoticon)
@@ -2538,6 +2562,8 @@ public class NotificationsController extends BaseController {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
                             msg = messageObject.messageText.toString();
+                        } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSuggestBirthday) {
+                            msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesPrice) {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
@@ -2553,7 +2579,7 @@ public class NotificationsController extends BaseController {
                                 msg = LocaleController.getString(R.string.CallMessageIncomingConferenceMissed);
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
-                            String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).emoticon;
+                            String emoticon = TlUtils.getThemeEmoticonOrGiftTitle(((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).theme);
                             if (TextUtils.isEmpty(emoticon)) {
                                 msg = dialogId == selfUsedId
                                         ? LocaleController.formatString(R.string.ChatThemeDisabledYou)
@@ -2957,7 +2983,7 @@ public class NotificationsController extends BaseController {
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                             msg = messageObject.messageText.toString();
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
-                            String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).emoticon;
+                            String emoticon = TlUtils.getThemeEmoticonOrGiftTitle(((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).theme);
                             if (TextUtils.isEmpty(emoticon)) {
                                 msg = dialogId == selfUsedId
                                         ? LocaleController.formatString(R.string.ChatThemeDisabledYou)
@@ -3659,7 +3685,7 @@ public class NotificationsController extends BaseController {
             }
 
             if (channelsId != null || groupsId != null || reactionsId != null || storiesId != null || privateId != null || otherId != null) {
-                TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
+                final TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
                 if (user == null) {
                     getUserConfig().getCurrentUser();
                 }
@@ -3670,7 +3696,7 @@ public class NotificationsController extends BaseController {
                     userName = "";
                 }
 
-                ArrayList<NotificationChannelGroup> channelGroups = new ArrayList<>();
+                final ArrayList<NotificationChannelGroup> channelGroups = new ArrayList<>();
                 if (channelsId != null) {
                     channelGroups.add(new NotificationChannelGroup(channelsId, LocaleController.getString(R.string.NotificationsChannels) + userName));
                 }
@@ -4437,6 +4463,13 @@ public class NotificationsController extends BaseController {
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
             if (lastMessageObject.isStoryReactionPush) {
+                intent.putExtra("storyId", Math.abs(lastMessageObject.getId()));
+            } else if (lastMessageObject.isLiveStoryPush) {
+                if (chatId != 0) {
+                    intent.putExtra("chatId", chatId);
+                } else if (userId != 0) {
+                    intent.putExtra("userId", userId);
+                }
                 intent.putExtra("storyId", Math.abs(lastMessageObject.getId()));
             } else if (lastMessageObject.isStoryPush) {
                 long[] peerIds = new long[storyPushMessages.size()];
@@ -5371,6 +5404,13 @@ public class NotificationsController extends BaseController {
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
             if (lastMessageObject != null && lastMessageObject.isStoryReactionPush) {
+                intent.putExtra("storyId", Math.abs(lastMessageObject.getId()));
+            } else if (lastMessageObject != null && lastMessageObject.isLiveStoryPush) {
+                if (dialogId < 0) {
+                    intent.putExtra("chatId", -dialogId);
+                } else if (dialogId > 0) {
+                    intent.putExtra("userId", dialogId);
+                }
                 intent.putExtra("storyId", Math.abs(lastMessageObject.getId()));
             } else if (dialogKey.story) {
                 long[] peerIds = new long[storyPushMessages.size()];

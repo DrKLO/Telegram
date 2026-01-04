@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.bots.AffiliateProgramFragment.percents;
@@ -22,6 +23,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
@@ -42,14 +44,21 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkActionView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Stars.StarsIntroActivity;
+
+import java.util.ArrayList;
 
 public class PostSuggestionsEditActivity extends BaseFragment {
     private final long currentChatId;
 
-    private ListAdapter listAdapter;
-    private RecyclerListView listView;
+    private SlideIntChooseView slideView;
+    private LinkActionView linkView;
+    private UniversalRecyclerView listView;
 
     private static final int done_button = 1;
     private CrossfadeDrawable doneButtonDrawable;
@@ -99,49 +108,90 @@ public class PostSuggestionsEditActivity extends BaseFragment {
         Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
         checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
         doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
-        doneButton = actionBar.createMenu().addItemWithWidth(done_button, doneButtonDrawable, AndroidUtilities.dp(56), LocaleController.getString(R.string.Done));
+        doneButton = actionBar.createMenu().addItemWithWidth(done_button, doneButtonDrawable, dp(56), LocaleController.getString(R.string.Done));
         checkDone(false);
-
 
         fragmentView = new FrameLayout(context);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-        listAdapter = new ListAdapter(context);
-        listView = new RecyclerListView(context);
-        listView.setVerticalScrollBarEnabled(false);
-        ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        slideView = new SlideIntChooseView(context, resourceProvider);
+        slideView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+
+        linkView = new LinkActionView(context, this, null, currentChatId, true, true);
+        linkView.setPadding(dp(16), dp(12), dp(16), 0);
+        linkView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        linkView.hideRevokeOption(true);
+        linkView.setUsers(0, null);
+
+        listView = new UniversalRecyclerView(context, currentAccount, classGuid, this::fillItems, this::onItemClick, null, resourceProvider);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener((view, position, x, y) -> {
-            if (position == rowSuggestionsEnabled) {
-                TextCheckCell cell = (TextCheckCell) view;
-                boolean checked = cell.isChecked();
-
-                isSuggestionsEnabled = !checked;
-
-                view.setTag(isSuggestionsEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
-                cell.setBackgroundColorAnimated(!checked, Theme.getColor(isSuggestionsEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-                updateRows();
-
-                if (isSuggestionsEnabled) {
-                    listAdapter.notifyItemRangeInserted(rowSuggestionsEnabledInfo + 1, 3);
-                } else {
-                    listAdapter.notifyItemRangeRemoved(rowSuggestionsEnabledInfo + 1, 3);
-                }
-                cell.setChecked(!checked);
-                checkDone(true);
-            }
-        });
 
         return fragmentView;
+    }
+
+    private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        items.add(UItem.asTopView(getString(R.string.AllowPostSuggestionsHint2), R.raw.bubble));
+        items.add(UItem.asCheck(1, getString(R.string.AllowPostSuggestions)).setChecked(isSuggestionsEnabled));
+        items.add(UItem.asShadow(2, null));
+
+        if (isSuggestionsEnabled) {
+            items.add(UItem.asHeader(getString(R.string.PriceForEachSuggestion)));
+            final int[] steps = SlideIntChooseView.cut(new int[]{ 0, 10, 50, 100, 200, 250, 400, 500, 1000, 2500, 5000, 7500, 9000, 10_000 }, (int) getMessagesController().starsPaidMessageAmountMax);
+            final SlideIntChooseView.Options options = SlideIntChooseView.Options.make(1, steps, 20, (type, val) -> {
+                if (type == 0) {
+                    return StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatPluralStringComma("Stars", val), 0.66f);
+                }
+                return LocaleController.formatNumber(val, ',');
+            });
+            slideView.set((int) Utilities.clamp(suggestionsStarsCount, 10000, 0), options, newValue -> {
+                suggestionsStarsCount = newValue;
+                final View view = listView.findViewByItemId(4);
+                if (view instanceof TextInfoPrivacyCell && ((TextInfoPrivacyCell) view).getFixedSize() <= 0 && suggestionsStarsCount > 0) {
+                    ((TextInfoPrivacyCell) view).setText(getIncomeInfo());
+                } else {
+                    listView.adapter.update(true);
+                }
+                checkDone(true);
+            });
+            items.add(UItem.asCustom(3, slideView));
+            items.add(UItem.asShadow(4, suggestionsStarsCount > 0 ? getIncomeInfo() : null));
+
+            final TLRPC.Chat chat = getMessagesController().getChat(currentChatId);
+            if (chat != null && !TextUtils.isEmpty(ChatObject.getPublicUsername(chat))) {
+                linkView.setLink(
+                    getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(chat) + "?direct"
+                );
+                items.add(UItem.asHeader(getString(R.string.ChannelLinkDirectMessages)));
+                items.add(UItem.asCustom(5, linkView));
+//                items.add(UItem.asShadow(6, null));
+            }
+        }
+    }
+
+    private CharSequence getIncomeInfo() {
+        final int percent = getMessagesController().starsPaidMessageCommissionPermille;
+        final float revenuePercent = percent / 1000.0f;
+        final String income = String.valueOf((int) ((suggestionsStarsCount * revenuePercent / 1000.0 * getMessagesController().starsUsdWithdrawRate1000)) / 100.0);
+        return formatString(R.string.PostSuggestionsPriceInfo2, percents(percent), income);
+    }
+
+    private void onItemClick(UItem item, View view, int position, float x, float y) {
+        if (item.id == 1) {
+            TextCheckCell cell = (TextCheckCell) view;
+            cell.setChecked(isSuggestionsEnabled = !cell.isChecked());
+
+            listView.adapter.update(true);
+            checkDone(true);
+        }
     }
 
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        updateRows();
+        if (listView != null && listView.adapter != null) {
+            listView.adapter.update(false);
+        }
         return true;
     }
 
@@ -257,157 +307,5 @@ public class PostSuggestionsEditActivity extends BaseFragment {
     @Override
     public boolean isSwipeBackEnabled(MotionEvent event) {
         return !hasChanges();
-    }
-
-
-
-    /* Adapter */
-
-    private int rowCount;
-    private int rowSuggestionsEnabled;
-    private int rowSuggestionsEnabledInfo;
-    private int rowSuggestionPriceHeader;
-    private int rowSuggestionPriceSlider;
-    private int rowSuggestionPriceInfo;
-
-    private void updateRows() {
-        rowCount = 0;
-        rowSuggestionsEnabled = rowCount++;
-        rowSuggestionsEnabledInfo = rowCount++;
-
-        if (isSuggestionsEnabled) {
-            rowSuggestionPriceHeader = rowCount++;
-            rowSuggestionPriceSlider = rowCount++;
-            rowSuggestionPriceInfo = rowCount++;
-        } else {
-            rowSuggestionPriceHeader = -1;
-            rowSuggestionPriceSlider = -1;
-            rowSuggestionPriceInfo = -1;
-        }
-    }
-
-    private class ListAdapter extends RecyclerListView.SelectionAdapter {
-        private final Context mContext;
-
-        public ListAdapter(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public int getItemCount() {
-            return rowCount;
-        }
-
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            switch (holder.getItemViewType()) {
-                case 0: {
-                    TextCheckCell view = (TextCheckCell) holder.itemView;
-                    if (position == rowSuggestionsEnabled) {
-                        view.setDrawCheckRipple(true);
-                        view.setTextAndCheck(LocaleController.getString(R.string.AllowPostSuggestions), isSuggestionsEnabled, false);
-                        view.setTag(isSuggestionsEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
-                        view.setBackgroundColor(Theme.getColor(isSuggestionsEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
-                    }
-                    break;
-                }
-                case 2: {
-                    HeaderCell view = (HeaderCell) holder.itemView;
-                    if (position == rowSuggestionPriceHeader) {
-                        view.setText(LocaleController.getString(R.string.PriceForEachSuggestion));
-                    }
-                    break;
-                }
-                case 3: {
-                    SlideIntChooseView cell = (SlideIntChooseView) holder.itemView;
-                    if (position == rowSuggestionPriceSlider) {
-                        final int[] steps = SlideIntChooseView.cut(new int[]{0, 10, 50, 100, 200, 250, 400, 500, 1000, 2500, 5000, 7500, 9000, 10_000}, (int) getMessagesController().starsPaidMessageAmountMax);
-                        final SlideIntChooseView.Options options = SlideIntChooseView.Options.make(1, steps, 20, (type, val) -> {
-                            if (type == 0) {
-                                return StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatPluralStringComma("Stars", val), 0.66f);
-                            }
-                            return LocaleController.formatNumber(val, ',');
-                        });
-                        cell.set((int) Utilities.clamp(suggestionsStarsCount, 10000, 0), options, newValue -> {
-                            suggestionsStarsCount = newValue;
-                            AndroidUtilities.updateVisibleRow(listView, rowSuggestionPriceInfo);
-                            checkDone(true);
-                        });
-                    }
-                    break;
-                }
-                case 5: {
-                    TextInfoPrivacyCell view = (TextInfoPrivacyCell) holder.itemView;
-                    if (position == rowSuggestionsEnabledInfo) {
-                        view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-                        view.setTopPadding(12);
-                        view.setBottomPadding(16);
-                        view.setText(LocaleController.getString(R.string.AllowPostSuggestionsHint));
-                    } else if (position == rowSuggestionPriceInfo) {
-                        view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-                        view.setTopPadding(12);
-                        view.setBottomPadding(16);
-
-                        final int percent = getMessagesController().starsPaidMessageCommissionPermille;
-                        final float revenuePercent = percent / 1000.0f;
-                        final String income = String.valueOf((int) ((suggestionsStarsCount * revenuePercent / 1000.0 * getMessagesController().starsUsdWithdrawRate1000)) / 100.0);
-
-                        view.setText(formatString(R.string.PostSuggestionsPriceInfo, percents(percent), income));
-                    }
-                }
-            }
-        }
-
-        @NonNull
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0: {
-                    TextCheckCell cell = new TextCheckCell(mContext);
-                    cell.setColors(Theme.key_windowBackgroundCheckText, Theme.key_switchTrackBlue, Theme.key_switchTrackBlueChecked, Theme.key_switchTrackBlueThumb, Theme.key_switchTrackBlueThumbChecked);
-                    cell.setTypeface(AndroidUtilities.bold());
-                    cell.setHeight(56);
-                    view = cell;
-                    break;
-                }
-                case 2: {
-                    view = new HeaderCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    break;
-                }
-                case 3: {
-                    SlideIntChooseView slideView = new SlideIntChooseView(mContext, resourceProvider);
-                    slideView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    view = slideView;
-                    break;
-                }
-                case 5:
-                default: {
-                    view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                }
-            }
-            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-            return new RecyclerListView.Holder(view);
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == rowSuggestionsEnabled) {
-                return 0;
-            } else if (position == rowSuggestionPriceHeader) {
-                return 2;
-            } else if (position == rowSuggestionPriceSlider) {
-                return 3;
-            } else {
-                return 5;
-            }
-        }
-
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
-        }
     }
 }

@@ -44,6 +44,7 @@ import org.json.JSONObject;
 import org.telegram.DispatchQueuePriority;
 import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.messenger.utils.BitmapsCache;
+import org.telegram.messenger.wallpaper.WallpaperGiftBitmapDrawable;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -55,7 +56,6 @@ import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.SlotsDrawable;
 import org.telegram.ui.Components.ThemePreviewDrawable;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.web.WebInstantView;
 
 import java.io.BufferedReader;
@@ -74,8 +74,6 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -825,7 +823,8 @@ public class ImageLoader {
                         imgView.setImageBitmapByKey(bitmapDrawable, kf, ImageReceiver.TYPE_IMAGE, false, finalImageReceiverGuidsArray.get(a));
                     }
 
-                    memCache.put(kf, bitmapDrawable);
+                    if (!kf.contains("nocache"))
+                        memCache.put(kf, bitmapDrawable);
                 });
             } catch (Throwable e) {
                 FileLog.e(e);
@@ -895,16 +894,19 @@ public class ImageLoader {
                         h = (int) (h_filter * AndroidUtilities.density);
                     }
                 }
+
+                SvgHelper.SvgResult svgResult = null;
                 Bitmap bitmap = null;
                 try {
-                    bitmap = SvgHelper.getBitmap(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE);
+                    svgResult = SvgHelper.getSvgBitmap(cacheImage.finalFilePath, w, h, cacheImage.imageType == FileLoader.IMAGE_TYPE_SVG_WHITE);
+                    bitmap = svgResult.getBitmap();
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
                 if (bitmap != null && !TextUtils.isEmpty(cacheImage.filter) && cacheImage.filter.contains("wallpaper") && cacheImage.parentObject instanceof TLRPC.WallPaper) {
                     bitmap = applyWallpaperSetting(bitmap, (TLRPC.WallPaper) cacheImage.parentObject);
                 }
-                onPostExecute(bitmap != null ? new BitmapDrawable(bitmap) : null);
+                onPostExecute(WallpaperGiftBitmapDrawable.create(bitmap, svgResult != null ? svgResult.getGiftPatternPositions(): null));
             } else if (cacheImage.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 int w = Math.min(512, AndroidUtilities.dp(170.6f));
                 int h = Math.min(512, AndroidUtilities.dp(170.6f));
@@ -1730,9 +1732,9 @@ public class ImageLoader {
                         if (cacheImage.key.endsWith("_f")) {
                             wallpaperMemCache.put(cacheImage.key, bitmapDrawable);
                             incrementUseCount = false;
-                        } else if (!cacheImage.key.endsWith("_isc") && bitmapDrawable.getBitmap().getWidth() <= 80 * AndroidUtilities.density && bitmapDrawable.getBitmap().getHeight() <= 80 * AndroidUtilities.density) {
+                        } else if (!cacheImage.key.endsWith("_isc") && !cacheImage.key.endsWith("_nocache") && bitmapDrawable.getBitmap().getWidth() <= 80 * AndroidUtilities.density && bitmapDrawable.getBitmap().getHeight() <= 80 * AndroidUtilities.density) {
                             smallImagesMemCache.put(cacheImage.key, bitmapDrawable);
-                        } else {
+                        } else if (!cacheImage.key.endsWith("_nocache")) {
                             memCache.put(cacheImage.key, bitmapDrawable);
                         }
                         toSet = bitmapDrawable;
@@ -2925,6 +2927,7 @@ public class ImageLoader {
     }
 
     public void putImageToCache(BitmapDrawable bitmap, String key, boolean smallImage) {
+        if (key.endsWith("_nocache")) return;
         if (smallImage) {
             smallImagesMemCache.put(key, bitmap);
         } else {
@@ -3681,11 +3684,11 @@ public class ImageLoader {
 
     private void httpFileLoadError(final String location) {
         imageLoadQueue.postRunnable(() -> {
-            CacheImage img = imageLoadingByUrl.get(location);
+            final CacheImage img = imageLoadingByUrl.get(location);
             if (img == null) {
                 return;
             }
-            HttpImageTask oldTask = img.httpTask;
+            final HttpImageTask oldTask = img.httpTask;
             if (oldTask != null) {
                 img.httpTask = new HttpImageTask(oldTask.cacheImage, oldTask.imageSize);
                 httpTasks.add(img.httpTask);

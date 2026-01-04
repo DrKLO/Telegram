@@ -209,10 +209,10 @@ public sealed class TlGen_auth_SentCodeType : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
       nonce?.let { stream.writeByteArray(it.toByteArray()) }
-      multiflags_2?.play_integrity_project_id?.let { stream.writeInt64(it) }
-      multiflags_2?.play_integrity_nonce?.let { stream.writeByteArray(it.toByteArray()) }
-      multiflags_1?.receipt?.let { stream.writeString(it) }
-      multiflags_1?.push_timeout?.let { stream.writeInt32(it) }
+      multiflags_2?.let { stream.writeInt64(it.play_integrity_project_id) }
+      multiflags_2?.let { stream.writeByteArray(it.play_integrity_nonce.toByteArray()) }
+      multiflags_1?.let { stream.writeString(it.receipt) }
+      multiflags_1?.let { stream.writeInt32(it.push_timeout) }
       stream.writeInt32(length)
     }
 

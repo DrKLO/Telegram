@@ -329,6 +329,7 @@ public class Browser {
                         if (response instanceof TL_account.webPagePreview) {
                             final TL_account.webPagePreview preview = (TL_account.webPagePreview) response;
                             MessagesController.getInstance(currentAccount).putUsers(preview.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(preview.chats, false);
                             if (preview.media instanceof TLRPC.TL_messageMediaWebPage) {
                                 TLRPC.TL_messageMediaWebPage webPage = (TLRPC.TL_messageMediaWebPage) preview.media;
                                 if (webPage.webpage instanceof TLRPC.TL_webPage && webPage.webpage.cached_page != null) {
@@ -362,6 +363,8 @@ public class Browser {
         }
         try {
             String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
+            if (scheme != null && scheme.contains("."))
+                return;
             if ("http".equals(scheme) || "https".equals(scheme)) {
                 try {
                     uri = uri.normalizeScheme();
@@ -371,21 +374,10 @@ public class Browser {
             }
             String host = AndroidUtilities.getHostAuthority(uri.toString().toLowerCase());
             if (AccountInstance.getInstance(currentAccount).getMessagesController().autologinDomains.contains(host)) {
-                String token = "autologin_token=" + URLEncoder.encode(AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().autologinToken, "UTF-8");
-                String url = uri.toString();
-                int idx = url.indexOf("://");
-                String path = idx >= 0 && idx <= 5 && !url.substring(0, idx).contains(".") ? url.substring(idx + 3) : url;
-                String fragment = uri.getEncodedFragment();
-                String finalPath = fragment == null ? path : path.substring(0, path.indexOf("#" + fragment));
-                if (finalPath.indexOf('?') >= 0) {
-                    finalPath += "&" + token;
-                } else {
-                    finalPath += "?" + token;
-                }
-                if (fragment != null) {
-                    finalPath += "#" + fragment;
-                }
-                uri = Uri.parse("https://" + finalPath);
+                final String autologin_token = URLEncoder.encode(AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().autologinToken, "UTF-8");
+                uri = uri.buildUpon()
+                    .appendQueryParameter("autologin_token", autologin_token)
+                    .build();
             }
             if (allowCustom && !SharedConfig.inappBrowser && SharedConfig.customTabs && !internalUri && !scheme.equals("tel") && !isTonsite(uri.toString())) {
                 if (forceBrowser[0] || !openInExternalApp(context, uri.toString(), false) || !hasAppToOpen(context, uri.toString())) {

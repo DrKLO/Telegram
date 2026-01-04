@@ -336,7 +336,6 @@ public class ProfileStoriesCollectionTabs extends FrameLayout implements Notific
             final int albumId = getItemId(tabsView.getCurrentPosition());
 
             collections.reorderStep(collectionIds);
-            Log.i("WTF_DEBUG", "" + tabsView.getCurrentPosition() + " " + albumId);
             if (albumId >= 0) {
                 final int position = getItemPosition(albumId);
                 tabsView.selectTab(position, position, 0.0f);

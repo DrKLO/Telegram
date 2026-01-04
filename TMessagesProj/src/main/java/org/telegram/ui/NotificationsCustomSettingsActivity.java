@@ -686,7 +686,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     }
                 }, getResourceProvider());
                 chatNotificationsPopupWrapper.update(did, topicId, null);
-                chatNotificationsPopupWrapper.showAsOptions(NotificationsCustomSettingsActivity.this, view, x, y);
+                chatNotificationsPopupWrapper.showAsOptions(NotificationsCustomSettingsActivity.this, view, x, y, false);
                 return;
             }
             if (item == null) {

@@ -32,16 +32,18 @@ public sealed class TlGen_auth_Authorization : TlGen_Object {
   }
 
   public data class TL_auth_authorization(
+    public val otherwise_relogin_days: Int?,
     public val tmp_sessions: Int?,
     public val future_auth_token: List<Byte>?,
     public val user: TlGen_User,
-    public val multiflags_1: Multiflags_1?,
   ) : TlGen_auth_Authorization() {
+    public val setup_password_required: Boolean = otherwise_relogin_days != null
+
     internal val flags: UInt
       get() {
         var result = 0U
         if (tmp_sessions != null) result = result or 1U
-        if (multiflags_1 != null) result = result or 2U
+        if (setup_password_required) result = result or 2U
         if (future_auth_token != null) result = result or 4U
         return result
       }
@@ -49,16 +51,11 @@ public sealed class TlGen_auth_Authorization : TlGen_Object {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
-      multiflags_1?.otherwise_relogin_days?.let { stream.writeInt32(it) }
+      otherwise_relogin_days?.let { stream.writeInt32(it) }
       tmp_sessions?.let { stream.writeInt32(it) }
       future_auth_token?.let { stream.writeByteArray(it.toByteArray()) }
       user.serializeToStream(stream)
     }
-
-    public data class Multiflags_1(
-      public val setup_password_required: Boolean,
-      public val otherwise_relogin_days: Int,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x2EA2C0D4U

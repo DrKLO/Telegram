@@ -109,6 +109,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     private int lastScrollX = 0;
     private final Theme.ResourcesProvider resourcesProvider;
+    private final boolean isGlassDesign;
 
     SparseArray<StickerTabView> currentPlayingImages = new SparseArray<>();
     SparseArray<StickerTabView> currentPlayingImagesTmp = new SparseArray<>();
@@ -151,9 +152,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         }
     };
 
-    public ScrollSlidingTabStrip(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public ScrollSlidingTabStrip(Context context, Theme.ResourcesProvider resourcesProvider, boolean isGlassDesign) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.isGlassDesign = isGlassDesign;
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
         setFillViewport(true);
@@ -801,9 +803,13 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             h *= AndroidUtilities.lerp(1f, 0.55f, expandProgressInterpolated);
             tabBounds.set(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
 
-            selectorPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_emojiPanelIcon), 0x2e));
-            selectorPaint.setAlpha((int) (selectorPaint.getAlpha() * selectedAlpha));
-            canvas.drawRoundRect(tabBounds, AndroidUtilities.dp(8), AndroidUtilities.dp(8), selectorPaint);
+            if (isGlassDesign) {
+                selectorPaint.setColor(getGlassIconColor(0.05f));
+            } else {
+                selectorPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_emojiPanelIcon), 0x2e));
+                selectorPaint.setAlpha((int) (selectorPaint.getAlpha() * selectedAlpha));
+            }
+            canvas.drawRoundRect(tabBounds, tabBounds.height() / 2, tabBounds.height() / 2, selectorPaint);
         }
 
         super.dispatchDraw(canvas);
@@ -812,6 +818,12 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             rectPaint.setColor(underlineColor);
             canvas.drawRect(0, height - underlineHeight, tabsContainer.getWidth(), height, rectPaint);
         }
+    }
+
+    private int getGlassIconColor(float alpha) {
+        return ColorUtils.setAlphaComponent(
+                Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider),
+                (int) (255 * alpha));
     }
 
     public void drawOverlays(Canvas canvas) {

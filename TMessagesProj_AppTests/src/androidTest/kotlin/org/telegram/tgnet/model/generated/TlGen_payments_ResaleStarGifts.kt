@@ -34,8 +34,8 @@ public sealed class TlGen_payments_ResaleStarGifts : TlGen_Object {
       stream.writeInt32(count)
       TlGen_Vector.serialize(stream, gifts)
       next_offset?.let { stream.writeString(it) }
-      multiflags_1?.attributes?.let { TlGen_Vector.serialize(stream, it) }
-      multiflags_1?.attributes_hash?.let { stream.writeInt64(it) }
+      multiflags_1?.let { TlGen_Vector.serialize(stream, it.attributes) }
+      multiflags_1?.let { stream.writeInt64(it.attributes_hash) }
       TlGen_Vector.serialize(stream, chats)
       counters?.let { TlGen_Vector.serialize(stream, it) }
       TlGen_Vector.serialize(stream, users)

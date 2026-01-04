@@ -42,7 +42,7 @@ open class BaseSchemeTest {
     protected fun test_TLdeserialize(
         clazz: KClass<out TlGen_Object>,
         deserializer: ((stream: InputSerializedData, constructor: Int, exception: Boolean) -> TLObject),
-        isLegacyLayer: Boolean = false
+        isLegacyLayer: Int? = null
     ) {
         createConfigs(clazz).forEach {
             @Suppress("DEPRECATION_ERROR")
@@ -60,7 +60,7 @@ open class BaseSchemeTest {
                 buffer2.rewind()
                 result.serializeToStream(buffer2)
 
-                if (isLegacyLayer /* && expectedPosition != buffer2.position() */) {
+                if (isLegacyLayer != null/* && expectedPosition != buffer2.position() */) {
                     buffer2.rewind()
                     val result2 = deserializer.invoke(buffer2, buffer2.readInt32(true), true)
                 } else {

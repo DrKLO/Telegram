@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -185,6 +186,13 @@ public class LayoutHelper {
         return layoutParams;
     }
 
+    public static LinearLayout.LayoutParams createLinear(int width, int height, int gravity, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSize(width), getSize(height));
+        layoutParams.setMargins(AndroidUtilities.dp(leftMargin), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(rightMargin), AndroidUtilities.dp(bottomMargin));
+        layoutParams.gravity = gravity;
+        return layoutParams;
+    }
+
     public static LinearLayout.LayoutParams createLinear(int width, float height, int gravity, int leftMargin, int topMargin, int rightMargin, int bottomMargin) {
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSize(width), getSize(height));
         layoutParams.setMargins(AndroidUtilities.dp(leftMargin), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(rightMargin), AndroidUtilities.dp(bottomMargin));
@@ -240,6 +248,17 @@ public class LayoutHelper {
     public static LinearLayout.LayoutParams createLinearRelatively(float width, float height, int gravity) {
         return new LinearLayout.LayoutParams(getSize(width), getSize(height), getAbsoluteGravity(gravity));
     }
+
+
+    public static int measureSpecExactly(int px) {
+        return View.MeasureSpec.makeMeasureSpec(px, View.MeasureSpec.EXACTLY);
+    }
+
+    public static int measureSpecExactlyDp(int dp) {
+        return View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(dp), View.MeasureSpec.EXACTLY);
+    }
+
+
 
     //endregion
 }

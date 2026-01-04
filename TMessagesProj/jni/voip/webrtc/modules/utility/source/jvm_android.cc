@@ -97,14 +97,12 @@ JvmThreadConnector::~JvmThreadConnector() {
 GlobalRef::GlobalRef(JNIEnv* jni, jobject object)
     : jni_(jni), j_object_(NewGlobalRef(jni, object)) {
   DEBUG_REF("webrtc jvm globalref");
-    DEBUG_D("GLOBAL REF IN WEBRTC CREATED");
   RTC_LOG(LS_INFO) << "GlobalRef::ctor";
 }
 
 GlobalRef::~GlobalRef() {
   RTC_LOG(LS_INFO) << "GlobalRef::dtor";
   DEBUG_DELREF("webrtc jvm globalref");
-  DEBUG_D("GLOBAL REF IN WEBRTC DELETED");
   DeleteGlobalRef(jni_, j_object_);
 }
 

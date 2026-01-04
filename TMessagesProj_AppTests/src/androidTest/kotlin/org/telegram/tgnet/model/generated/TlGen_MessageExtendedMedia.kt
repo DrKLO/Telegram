@@ -24,8 +24,8 @@ public sealed class TlGen_MessageExtendedMedia : TlGen_Object {
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
       stream.writeInt32(flags.toInt())
-      multiflags_0?.w?.let { stream.writeInt32(it) }
-      multiflags_0?.h?.let { stream.writeInt32(it) }
+      multiflags_0?.let { stream.writeInt32(it.w) }
+      multiflags_0?.let { stream.writeInt32(it.h) }
       thumb?.serializeToStream(stream)
       video_duration?.let { stream.writeInt32(it) }
     }

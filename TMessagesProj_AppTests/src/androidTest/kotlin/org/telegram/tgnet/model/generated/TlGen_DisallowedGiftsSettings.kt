@@ -12,6 +12,7 @@ public sealed class TlGen_DisallowedGiftsSettings : TlGen_Object {
     public val disallow_limited_stargifts: Boolean,
     public val disallow_unique_stargifts: Boolean,
     public val disallow_premium_gifts: Boolean,
+    public val disallow_stargifts_from_channels: Boolean,
   ) : TlGen_DisallowedGiftsSettings() {
     internal val flags: UInt
       get() {
@@ -20,6 +21,7 @@ public sealed class TlGen_DisallowedGiftsSettings : TlGen_Object {
         if (disallow_limited_stargifts) result = result or 2U
         if (disallow_unique_stargifts) result = result or 4U
         if (disallow_premium_gifts) result = result or 8U
+        if (disallow_stargifts_from_channels) result = result or 16U
         return result
       }
 

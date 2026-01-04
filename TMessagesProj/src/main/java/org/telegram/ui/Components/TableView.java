@@ -133,12 +133,11 @@ public class TableView extends TableLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        textView.setMaxLines(4);
-//        textView.setMaxLines(1);
-//        textView.setSingleLine();
-//        textView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+//        textView.setMaxLines(4);
+        textView.setMaxLines(1);
+        textView.setSingleLine();
+        textView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
         SpannableStringBuilder sb = new SpannableStringBuilder(text);
-        sb.insert(sb.length() / 2, "\n");
         if (onCopy != null) {
             sb.setSpan(new ClickableSpan() {
                 @Override
@@ -363,6 +362,14 @@ public class TableView extends TableLayout {
     }
 
     public TableRow addRow(CharSequence title, CharSequence text) {
+        return addRow(title, text, null);
+    }
+
+    public TableRow addRow(CharSequence title, CharSequence text, ButtonSpan.TextViewButtons[] textViewRef) {
+        return addRow(title, text, null, textViewRef);
+    }
+
+    public TableRow addRow(CharSequence title, CharSequence text, TableRowTitle[] titleRef, ButtonSpan.TextViewButtons[] textViewRef) {
         ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -372,10 +379,19 @@ public class TableView extends TableLayout {
         TableRow row = new TableRow(getContext());
         TableRow.LayoutParams lp;
         lp = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        row.addView(new TableRowTitle(this, title), lp);
+        TableRowTitle tableRowTitle = new TableRowTitle(this, title);
+        if (titleRef != null) {
+            titleRef[0] = tableRowTitle;
+        }
+
+        row.addView(tableRowTitle, lp);
         lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
         row.addView(new TableRowContent(this, textView), lp);
         addView(row);
+
+        if (textViewRef != null) {
+            textViewRef[0] = textView;
+        }
 
         return row;
     }

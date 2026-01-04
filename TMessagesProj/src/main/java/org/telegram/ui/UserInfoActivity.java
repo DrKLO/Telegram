@@ -230,7 +230,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
                     checkDone(true);
                 },
                 null,
-                getResourceProvider()
+                false, getResourceProvider()
             ).create());
         } else if (item.id == BUTTON_REMOVE_BIRTHDAY) {
             birthday = null;

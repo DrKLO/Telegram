@@ -40,7 +40,6 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -881,7 +880,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (rightDrawable != null && !rightDrawableHidden && rightDrawableScale > 0 && !rightDrawableOutside && !rightDrawableInside) {
             int x = textOffsetX + textWidth + drawablePadding + (int) -scrollingOffset;
             if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.CENTER_HORIZONTAL ||
-                (gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.RIGHT) {
+                    (gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.RIGHT) {
                 x += offsetX;
             }
             int dw = (int) (rightDrawable.getIntrinsicWidth() * rightDrawableScale);
@@ -992,7 +991,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 canvas.save();
                 float partOffset = 0;
                 if (partLayout.getText().length() == 1) {
-                     partOffset = fullTextMaxLines == 1 ? dp(0.5f) : dp(4);
+                    partOffset = fullTextMaxLines == 1 ? dp(0.5f) : dp(4);
                 }
                 if (layout.getLineLeft(0) != 0) {
                     canvas.translate(-layout.getLineWidth(0) + partOffset, 0);
@@ -1123,8 +1122,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
         if (rightDrawable2 != null && rightDrawableOutside) {
             int x = Math.min(
-                textOffsetX + textWidth + drawablePadding + (scrollingOffset == 0 ? -nextScrollX : (int) -scrollingOffset) + nextScrollX,
-                getMaxTextWidth() - paddingRight + drawablePadding
+                    textOffsetX + textWidth + drawablePadding + (scrollingOffset == 0 ? -nextScrollX : (int) -scrollingOffset) + nextScrollX,
+                    getMaxTextWidth() - paddingRight + drawablePadding
             );
             if (rightDrawable != null) {
                 x += (int) (rightDrawable.getIntrinsicWidth() * rightDrawableScale) + drawablePadding;
@@ -1152,6 +1151,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     public int getMaxTextWidth() {
         return getMeasuredWidth() - (rightDrawableOutside && rightDrawable != null ? rightDrawable.getIntrinsicWidth() + drawablePadding : 0) - (rightDrawableOutside && rightDrawable2 != null ? rightDrawable2.getIntrinsicWidth() + drawablePadding : 0);
+    }
+
+    public float getExactWidth() {
+        return getPaint().measureText(getText().toString())
+                + getSideDrawablesSize()
+                - (leftDrawable != null || rightDrawable != null || rightDrawable2 != null ? drawablePadding : 0);
     }
 
     private void drawLayout(Canvas canvas) {
@@ -1335,6 +1340,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     public static interface PressableDrawable {
         public void setPressed(boolean value);
+
         public boolean isPressed();
     }
 }

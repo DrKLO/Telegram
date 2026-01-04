@@ -9,23 +9,6 @@ import org.telegram.tgnet.model.TlGen_Object
 import org.telegram.tgnet.model.TlGen_Vector
 
 public sealed class TlGen_messages_Messages : TlGen_Object {
-  public data class TL_messages_messages(
-    public val messages: List<TlGen_Message>,
-    public val chats: List<TlGen_Chat>,
-    public val users: List<TlGen_User>,
-  ) : TlGen_messages_Messages() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      TlGen_Vector.serialize(stream, messages)
-      TlGen_Vector.serialize(stream, chats)
-      TlGen_Vector.serialize(stream, users)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x8C718E87U
-    }
-  }
-
   public data class TL_messages_messagesNotModified(
     public val count: Int,
   ) : TlGen_messages_Messages() {
@@ -74,6 +57,25 @@ public sealed class TlGen_messages_Messages : TlGen_Object {
     }
   }
 
+  public data class TL_messages_messages(
+    public val messages: List<TlGen_Message>,
+    public val topics: List<TlGen_ForumTopic>,
+    public val chats: List<TlGen_Chat>,
+    public val users: List<TlGen_User>,
+  ) : TlGen_messages_Messages() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      TlGen_Vector.serialize(stream, messages)
+      TlGen_Vector.serialize(stream, topics)
+      TlGen_Vector.serialize(stream, chats)
+      TlGen_Vector.serialize(stream, users)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1D73E7EAU
+    }
+  }
+
   public data class TL_messages_messagesSlice(
     public val inexact: Boolean,
     public val count: Int,
@@ -81,6 +83,7 @@ public sealed class TlGen_messages_Messages : TlGen_Object {
     public val offset_id_offset: Int?,
     public val search_flood: TlGen_SearchPostsFlood?,
     public val messages: List<TlGen_Message>,
+    public val topics: List<TlGen_ForumTopic>,
     public val chats: List<TlGen_Chat>,
     public val users: List<TlGen_User>,
   ) : TlGen_messages_Messages() {
@@ -102,12 +105,13 @@ public sealed class TlGen_messages_Messages : TlGen_Object {
       offset_id_offset?.let { stream.writeInt32(it) }
       search_flood?.serializeToStream(stream)
       TlGen_Vector.serialize(stream, messages)
+      TlGen_Vector.serialize(stream, topics)
       TlGen_Vector.serialize(stream, chats)
       TlGen_Vector.serialize(stream, users)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x762B263DU
+      public const val MAGIC: UInt = 0x5F206716U
     }
   }
 }

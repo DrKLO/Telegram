@@ -576,6 +576,11 @@ public class ScrimOptions extends Dialog {
             }
         }
         final StaticLayout finalLayout = MessageObject.makeStaticLayout(text, paint, layoutOriginalWidth, 1f, messageObject.totalAnimatedEmojiCount >= 4 ? -1 : 0, false);
+        final RectF offset = new RectF();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            offset.set(finalLayout.computeDrawingBoundingBox());
+        }
+
         final int[] pos = new int[2];
         cell.getLocationOnScreen(pos);
         final int[] pos2 = new int[2];
@@ -618,6 +623,7 @@ public class ScrimOptions extends Dialog {
                 }
                 canvas.clipPath(path);
 
+                canvas.translate(-offset.left, -offset.top / 2f);
                 finalLayout.draw(canvas);
 
                 canvas.restore();

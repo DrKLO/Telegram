@@ -977,7 +977,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 autoTranslationCell.setBackground(Theme.getSelectorDrawable(true));
                 autoTranslationCell.setTextAndCheckAndIcon(getString(R.string.ChannelAutotranslation), currentChat.autotranslation, R.drawable.msg_translate, false);
                 getMessagesController().getBoostsController().getBoostsStats(dialogId, boostsStatus -> {
-                    autoTranslationCell.getCheckBox().setIcon(boostsStatus.level < getMessagesController().channelAutotranslationLevelMin ? R.drawable.permission_locked : 0);
+                    if (boostsStatus != null) {
+                        autoTranslationCell.getCheckBox().setIcon(boostsStatus.level < getMessagesController().channelAutotranslationLevelMin ? R.drawable.permission_locked : 0);
+                    }
                 });
                 typeEditContainer.addView(autoTranslationCell, LayoutHelper.createLinear(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 final boolean[] loading = new boolean[] { false };

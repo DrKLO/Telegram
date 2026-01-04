@@ -435,12 +435,14 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
             mediaSession.setPlaybackState(playbackState.build());
             MediaMetadata.Builder meta = new MediaMetadata.Builder()
-                    .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, contentText)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, contentText)
                     .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, contentTitle)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, audioInfo != null && messageObject.isMusic() ? audioInfo.getAlbum() : null);
+            if (fullAlbumArt != null && !fullAlbumArt.isRecycled()) {
+                meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt);
+            }
 
             mediaSession.setMetadata(meta.build());
 

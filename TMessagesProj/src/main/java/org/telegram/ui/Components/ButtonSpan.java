@@ -46,11 +46,18 @@ public class ButtonSpan extends ReplacementSpan {
     }
 
     public static CharSequence make(CharSequence buttonText, Runnable onClick, Theme.ResourcesProvider resourcesProvider) {
+        return make(buttonText, onClick, resourcesProvider, null);
+    }
+
+    public static CharSequence make(CharSequence buttonText, Runnable onClick, Theme.ResourcesProvider resourcesProvider, Integer forcedColor) {
         SpannableString ss = new SpannableString("btn");
         ButtonSpan span1 = new ButtonSpan(buttonText, onClick, resourcesProvider);
         ss.setSpan(span1, 0, ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        span1.forcedColor = forcedColor;
         return ss;
     }
+
+    public Integer forcedColor;
 
     public int getSize() {
         return (int) (this.text.getCurrentWidth() + dp(14));
@@ -68,7 +75,7 @@ public class ButtonSpan extends ReplacementSpan {
         final float s = bounce == null ? 1f : bounce.getScale(.025f);
         canvas.save();
         canvas.scale(s, s, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
-        final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+        final int color = forcedColor != null ? forcedColor : Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
         backgroundPaint.setColor(Theme.multAlpha(color, .15f));
         canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2, h / 2, backgroundPaint);
         this.text.draw(canvas, x + dp(7), (top + bottom) / 2f, color, 1f);

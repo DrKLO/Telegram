@@ -29,8 +29,8 @@ public sealed class TlGen_messages_TranscribedAudio : TlGen_Object {
       stream.writeInt32(flags.toInt())
       stream.writeInt64(transcription_id)
       stream.writeString(text)
-      multiflags_1?.trial_remains_num?.let { stream.writeInt32(it) }
-      multiflags_1?.trial_remains_until_date?.let { stream.writeInt32(it) }
+      multiflags_1?.let { stream.writeInt32(it.trial_remains_num) }
+      multiflags_1?.let { stream.writeInt32(it.trial_remains_until_date) }
     }
 
     public data class Multiflags_1(

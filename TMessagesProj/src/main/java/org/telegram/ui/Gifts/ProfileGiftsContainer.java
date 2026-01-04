@@ -21,14 +21,11 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.InputType;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.SpannedString;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.transition.TransitionManager;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -53,7 +50,6 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.aspectj.lang.annotation.AdviceName;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.ChatObject;
@@ -101,7 +97,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TextHelper;
-import org.telegram.ui.Components.TransitionExt;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -901,7 +896,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return viewPager.getCurrentPosition() <= 0;
     }
 
-    public ProfileGiftsContainer(BaseFragment fragment, Context context, int currentAccount, long did, Theme.ResourcesProvider resourcesProvider) {
+    public ProfileGiftsContainer(
+        BaseFragment fragment,
+        Context context,
+        int currentAccount,
+        long did,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
         super(context);
         this.fragment = fragment;
 
@@ -921,7 +922,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         this.collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, true);
         this.collections.all = list;
         this.list.shown = true;
-        this.list.resetFilters();
+        if (fragment instanceof ProfileActivity && ((ProfileActivity) fragment).openGiftsUpgradable) {
+            this.list.setFilters(StarsController.GiftsList.INCLUDE_TYPE_UPGRADABLE_FLAG);
+        } else {
+            this.list.resetFilters();
+        }
         this.list.load();
         this.resourcesProvider = resourcesProvider;
 
@@ -1074,9 +1079,6 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             if (page == -1 || page == -2 || page == 0 || reorderingCollections)
                 return false;
 
-            if (!collections.isMine())
-                return false;
-
             int _index = -1;
             TL_stars.TL_starGiftCollection _collection = null;
             for (int i = 0; i < collections.getCollections().size(); ++i) {
@@ -1090,6 +1092,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             final TL_stars.TL_starGiftCollection collection = _collection;
 
             final String username = DialogObject.getPublicUsername(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
+            final boolean isMine = collections.isMine();
+            if (TextUtils.isEmpty(username) && !isMine) {
+                return false;
+            }
 
             currentMenu = ItemOptions.makeOptions(fragment, view)
                 .setScrimViewBackground(new Drawable() {
@@ -1113,7 +1119,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         return PixelFormat.TRANSPARENT;
                     }
                 })
-                .add(R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .addIf(isMine, R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
                 .addIf(!TextUtils.isEmpty(username), R.drawable.msg_share, getString(R.string.Gift2CollectionsShare), () -> {
                     final String link = MessagesController.getInstance(currentAccount).linkPrefix + "/" + username + "/c/" + collection.collection_id;
                     new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
@@ -1144,17 +1150,17 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     }
                         .show();
                 })
-                .add(R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
+                .addIf(isMine, R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
                     openEnterNameAlert(collection.title, newName -> {
                         collections.rename(collection.collection_id, newName);
                         collection.title = newName;
                         fillTabs(true);
                     });
                 })
-                .add(R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
+                .addIf(isMine, R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
                     setReorderingCollections(true);
                 })
-                .add(R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
+                .addIf(isMine, R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
                     if (index != -1) {
                         collections.removeCollection(collection.collection_id);
                         fillTabs(true);
@@ -1964,7 +1970,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         private final long dialogId;
         private final int collectionId;
         private final StarsController.GiftsList list;
-        private final HashSet<Integer> selectedGiftIds = new HashSet<>();
+        private final HashSet<Long> selectedGiftIds = new HashSet<>();
 
         private final ExtendedGridLayoutManager layoutManager;
 
@@ -2019,6 +2025,8 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         unlimited.setText(getString(R.string.Gift2FilterUnlimited));
                         final ActionBarMenuSubItem limited = o.addChecked();
                         limited.setText(getString(R.string.Gift2FilterLimited));
+                        final ActionBarMenuSubItem upgradable = o.addChecked();
+                        upgradable.setText(getString(R.string.Gift2FilterUpgradable));
                         final ActionBarMenuSubItem unique = o.addChecked();
                         unique.setText(getString(R.string.Gift2FilterUnique));
                         final ActionBarMenuSubItem displayed, hidden;
@@ -2038,13 +2046,14 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                                 sorting.setTextAndIcon(getString(list.sort_by_date ? R.string.Gift2FilterSortByValue : R.string.Gift2FilterSortByDate), list.sort_by_date ? R.drawable.menu_sort_value : R.drawable.menu_sort_date);
                             }
 
-                            unlimited.setChecked(list.include_unlimited);
-                            limited.setChecked(list.include_limited);
-                            unique.setChecked(list.include_unique);
+                            unlimited.setChecked(list.isInclude_unlimited());
+                            limited.setChecked(list.isInclude_limited());
+                            upgradable.setChecked(list.isInclude_upgradable());
+                            unique.setChecked(list.isInclude_unique());
 
                             if (hiddenFilters) {
-                                displayed.setChecked(list.include_displayed);
-                                hidden.setChecked(list.include_hidden);
+                                displayed.setChecked(list.isInclude_displayed());
+                                hidden.setChecked(list.isInclude_hidden());
                             }
                         };
                         update.run();
@@ -2056,98 +2065,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                                 list.invalidate(true);
                             });
                         }
-                        unlimited.setOnClickListener(v -> {
-                            if (list.include_unlimited && !list.include_limited && !list.include_unique) {
-                                list.include_unlimited = false;
-                                list.include_limited = true;
-                                list.include_unique = true;
-                            } else {
-                                list.include_unlimited = !list.include_unlimited;
-                            }
-                            update.run();
-                            list.invalidate(true);
-                        });
-                        unlimited.setOnLongClickListener(v -> {
-                            list.include_unlimited = true;
-                            list.include_limited = false;
-                            list.include_unique = false;
-                            update.run();
-                            list.invalidate(true);
-                            return true;
-                        });
-                        limited.setOnClickListener(v -> {
-                            if (list.include_limited && !list.include_unlimited && !list.include_unique) {
-                                list.include_limited = false;
-                                list.include_unlimited = true;
-                                list.include_unique = true;
-                            } else {
-                                list.include_limited = !list.include_limited;
-                            }
-                            update.run();
-                            list.invalidate(true);
-                        });
-                        limited.setOnLongClickListener(v -> {
-                            list.include_unlimited = false;
-                            list.include_limited = true;
-                            list.include_unique = false;
-                            update.run();
-                            list.invalidate(true);
-                            return true;
-                        });
-                        unique.setOnClickListener(v -> {
-                            if (list.include_unique && !list.include_limited && !list.include_unlimited) {
-                                list.include_limited = true;
-                                list.include_unlimited = true;
-                                list.include_unique = false;
-                            } else {
-                                list.include_unique = !list.include_unique;
-                            }
-                            update.run();
-                            list.invalidate(true);
-                        });
-                        unique.setOnLongClickListener(v -> {
-                            list.include_unlimited = false;
-                            list.include_limited = false;
-                            list.include_unique = true;
-                            update.run();
-                            list.invalidate(true);
-                            return true;
-                        });
+                        ProfileGiftsContainer.setGiftFilterOptionsClickListeners(unlimited, list, update, StarsController.GiftsList.INCLUDE_TYPE_UNLIMITED_FLAG);
+                        ProfileGiftsContainer.setGiftFilterOptionsClickListeners(limited, list, update, StarsController.GiftsList.INCLUDE_TYPE_LIMITED_FLAG);
+                        ProfileGiftsContainer.setGiftFilterOptionsClickListeners(upgradable, list, update, StarsController.GiftsList.INCLUDE_TYPE_UPGRADABLE_FLAG);
+                        ProfileGiftsContainer.setGiftFilterOptionsClickListeners(unique, list, update, StarsController.GiftsList.INCLUDE_TYPE_UNIQUE_FLAG);
                         if (hiddenFilters) {
-                            displayed.setOnClickListener(v -> {
-                                if (list.include_displayed && !list.include_hidden) {
-                                    list.include_displayed = false;
-                                    list.include_hidden = true;
-                                } else {
-                                    list.include_displayed = !list.include_displayed;
-                                }
-                                update.run();
-                                list.invalidate(true);
-                            });
-                            displayed.setOnLongClickListener(v -> {
-                                list.include_displayed = true;
-                                list.include_hidden = false;
-                                update.run();
-                                list.invalidate(true);
-                                return true;
-                            });
-                            hidden.setOnClickListener(v -> {
-                                if (list.include_hidden && !list.include_displayed) {
-                                    list.include_hidden = false;
-                                    list.include_displayed = true;
-                                } else {
-                                    list.include_hidden = !list.include_hidden;
-                                }
-                                update.run();
-                                list.invalidate(true);
-                            });
-                            hidden.setOnLongClickListener(v -> {
-                                list.include_displayed = false;
-                                list.include_hidden = true;
-                                update.run();
-                                list.invalidate(true);
-                                return true;
-                            });
+                            ProfileGiftsContainer.setGiftFilterOptionsClickListeners(displayed, list, update, StarsController.GiftsList.INCLUDE_VISIBILITY_DISPLAYED_FLAG);
+                            ProfileGiftsContainer.setGiftFilterOptionsClickListeners(hidden, list, update, StarsController.GiftsList.INCLUDE_VISIBILITY_HIDDEN_FLAG);
                         }
                         o
                             .setOnTopOfScrim()
@@ -2176,10 +2100,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 if (selectedGiftIds.isEmpty()) return;
 
                 final ArrayList<TL_stars.SavedStarGift> selectedGifts = new ArrayList<>();
-                for (int msg_id : selectedGiftIds) {
+                for (long msg_id : selectedGiftIds) {
                     TL_stars.SavedStarGift gift = null;
                     for (TL_stars.SavedStarGift g : list.gifts) {
-                        if (g.msg_id == msg_id) {
+                        if (g.msg_id != 0 && g.msg_id == msg_id || g.saved_id == msg_id) {
                             gift = g;
                             break;
                         }
@@ -2217,7 +2141,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 final UItem item = adapter.getItem(position - 1);
                 if (item != null && item.object instanceof TL_stars.SavedStarGift) {
                     TL_stars.SavedStarGift g = (TL_stars.SavedStarGift) item.object;
-                    final int id = g.msg_id;
+                    final long id = g.msg_id == 0 ? g.saved_id : g.msg_id;
                     if (selectedGiftIds.contains(id)) {
                         selectedGiftIds.remove(id);
                         ((GiftSheet.GiftCell) view).setChecked(false, true);
@@ -2315,7 +2239,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         continue;
                     items.add(
                         GiftSheet.GiftCell.Factory.asStarGift(0, g, true, true, false)
-                            .setChecked(selectedGiftIds.contains(g.msg_id))
+                            .setChecked(selectedGiftIds.contains(g.msg_id == 0 ? g.saved_id : g.msg_id))
                             .setSpanCount(1)
                     );
                     spanCountLeft--;
@@ -2334,4 +2258,15 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
     }
 
+    public static void setGiftFilterOptionsClickListeners(View view, StarsController.GiftsList list, Runnable update, int flag) {
+        view.setOnClickListener(v -> {
+            list.toggleTypeIncludeFlag(flag);
+            update.run();
+        });
+        view.setOnLongClickListener(v -> {
+            list.forceTypeIncludeFlag(flag, true);
+            update.run();
+            return true;
+        });
+    }
 }

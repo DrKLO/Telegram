@@ -48,6 +48,7 @@ public sealed class TlGen_User : TlGen_Object {
     public val contact_require_premium: Boolean,
     public val bot_business: Boolean,
     public val bot_has_main_app: Boolean,
+    public val bot_forum_view: Boolean,
     public val id: Long,
     public val access_hash: Long?,
     public val first_name: String?,
@@ -56,19 +57,23 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
     public val usernames: List<TlGen_Username>?,
-    public val stories_max_id: Int?,
+    public val stories_max_id: TlGen_RecentStory?,
     public val color: TlGen_PeerColor?,
     public val profile_color: TlGen_PeerColor?,
     public val bot_active_users: Int?,
     public val bot_verification_icon: Long?,
     public val send_paid_messages_stars: Long?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_User() {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -83,11 +88,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -120,6 +125,7 @@ public sealed class TlGen_User : TlGen_Object {
         if (bot_has_main_app) result = result or 8192U
         if (bot_verification_icon != null) result = result or 16384U
         if (send_paid_messages_stars != null) result = result or 32768U
+        if (bot_forum_view) result = result or 65536U
         return result
       }
 
@@ -135,13 +141,13 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
       usernames?.let { TlGen_Vector.serialize(stream, it) }
-      stories_max_id?.let { stream.writeInt32(it) }
+      stories_max_id?.serializeToStream(stream)
       color?.serializeToStream(stream)
       profile_color?.serializeToStream(stream)
       bot_active_users?.let { stream.writeInt32(it) }
@@ -149,18 +155,8 @@ public sealed class TlGen_User : TlGen_Object {
       send_paid_messages_stars?.let { stream.writeInt64(it) }
     }
 
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
-
     public companion object {
-      public const val MAGIC: UInt = 0x020B1422U
+      public const val MAGIC: UInt = 0x31774388U
     }
   }
 
@@ -459,8 +455,10 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
-    public val multiflags_14: Multiflags_14?,
+    public val bot_info_version: Int?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -475,7 +473,7 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
@@ -494,13 +492,8 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
+      bot_info_version?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x22E49072U
@@ -523,9 +516,13 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: String?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -540,11 +537,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         return result
       }
 
@@ -559,19 +556,9 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { stream.writeString(it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x603539B4U
@@ -596,10 +583,14 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: String?,
     public val bot_inline_placeholder: String?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -614,11 +605,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -636,20 +627,10 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { stream.writeString(it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { stream.writeString(it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xD10D979AU
@@ -676,11 +657,15 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: String?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -695,11 +680,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -720,21 +705,11 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { stream.writeString(it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { stream.writeString(it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: String,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x2E13F4C3U
@@ -763,11 +738,15 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -782,11 +761,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -809,21 +788,11 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x938458C1U
@@ -855,11 +824,15 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -874,11 +847,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -904,21 +877,11 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x3FF6ECB0U
@@ -950,12 +913,16 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -970,11 +937,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1001,22 +968,12 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x5D99ADEEU
@@ -1049,13 +1006,17 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
     public val usernames: List<TlGen_Username>?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1070,11 +1031,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1110,26 +1071,129 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
       usernames?.let { TlGen_Vector.serialize(stream, it) }
     }
 
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
-
     public companion object {
       public const val MAGIC: UInt = 0x8F97C628U
+    }
+  }
+
+  public data class TL_user_layer165(
+    public val self: Boolean,
+    public val contact: Boolean,
+    public val mutual_contact: Boolean,
+    public val deleted: Boolean,
+    public val bot_chat_history: Boolean,
+    public val bot_nochats: Boolean,
+    public val verified: Boolean,
+    public val min: Boolean,
+    public val bot_inline_geo: Boolean,
+    public val support: Boolean,
+    public val scam: Boolean,
+    public val apply_min_photo: Boolean,
+    public val fake: Boolean,
+    public val bot_attach_menu: Boolean,
+    public val premium: Boolean,
+    public val attach_menu_enabled: Boolean,
+    public val bot_can_edit: Boolean,
+    public val close_friend: Boolean,
+    public val stories_hidden: Boolean,
+    public val stories_unavailable: Boolean,
+    public val id: Long,
+    public val access_hash: Long?,
+    public val first_name: String?,
+    public val last_name: String?,
+    public val username: String?,
+    public val phone: String?,
+    public val photo: TlGen_UserProfilePhoto?,
+    public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
+    public val bot_inline_placeholder: String?,
+    public val lang_code: String?,
+    public val emoji_status: TlGen_EmojiStatus?,
+    public val usernames: List<TlGen_Username>?,
+    public val stories_max_id: Int?,
+  ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (access_hash != null) result = result or 1U
+        if (first_name != null) result = result or 2U
+        if (last_name != null) result = result or 4U
+        if (username != null) result = result or 8U
+        if (phone != null) result = result or 16U
+        if (photo != null) result = result or 32U
+        if (status != null) result = result or 64U
+        if (self) result = result or 1024U
+        if (contact) result = result or 2048U
+        if (mutual_contact) result = result or 4096U
+        if (deleted) result = result or 8192U
+        if (bot) result = result or 16384U
+        if (bot_chat_history) result = result or 32768U
+        if (bot_nochats) result = result or 65536U
+        if (verified) result = result or 131072U
+        if (restricted) result = result or 262144U
+        if (bot_inline_placeholder != null) result = result or 524288U
+        if (min) result = result or 1048576U
+        if (bot_inline_geo) result = result or 2097152U
+        if (lang_code != null) result = result or 4194304U
+        if (support) result = result or 8388608U
+        if (scam) result = result or 16777216U
+        if (apply_min_photo) result = result or 33554432U
+        if (fake) result = result or 67108864U
+        if (bot_attach_menu) result = result or 134217728U
+        if (premium) result = result or 268435456U
+        if (attach_menu_enabled) result = result or 536870912U
+        if (emoji_status != null) result = result or 1073741824U
+        return result
+      }
+
+    internal val flags2: UInt
+      get() {
+        var result = 0U
+        if (usernames != null) result = result or 1U
+        if (bot_can_edit) result = result or 2U
+        if (close_friend) result = result or 4U
+        if (stories_hidden) result = result or 8U
+        if (stories_unavailable) result = result or 16U
+        if (stories_max_id != null) result = result or 32U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(flags2.toInt())
+      stream.writeInt64(id)
+      access_hash?.let { stream.writeInt64(it) }
+      first_name?.let { stream.writeString(it) }
+      last_name?.let { stream.writeString(it) }
+      username?.let { stream.writeString(it) }
+      phone?.let { stream.writeString(it) }
+      photo?.serializeToStream(stream)
+      status?.serializeToStream(stream)
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_inline_placeholder?.let { stream.writeString(it) }
+      lang_code?.let { stream.writeString(it) }
+      emoji_status?.serializeToStream(stream)
+      usernames?.let { TlGen_Vector.serialize(stream, it) }
+      stories_max_id?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xABB5F120U
     }
   }
 
@@ -1164,6 +1228,8 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
@@ -1171,9 +1237,11 @@ public sealed class TlGen_User : TlGen_Object {
     public val stories_max_id: Int?,
     public val color: TlGen_PeerColor?,
     public val profile_color: TlGen_PeerColor?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1188,11 +1256,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1236,8 +1304,8 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
@@ -1247,137 +1315,8 @@ public sealed class TlGen_User : TlGen_Object {
       profile_color?.serializeToStream(stream)
     }
 
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
-
     public companion object {
       public const val MAGIC: UInt = 0x215C4438U
-    }
-  }
-
-  public data class TL_user_layer165(
-    public val self: Boolean,
-    public val contact: Boolean,
-    public val mutual_contact: Boolean,
-    public val deleted: Boolean,
-    public val bot_chat_history: Boolean,
-    public val bot_nochats: Boolean,
-    public val verified: Boolean,
-    public val min: Boolean,
-    public val bot_inline_geo: Boolean,
-    public val support: Boolean,
-    public val scam: Boolean,
-    public val apply_min_photo: Boolean,
-    public val fake: Boolean,
-    public val bot_attach_menu: Boolean,
-    public val premium: Boolean,
-    public val attach_menu_enabled: Boolean,
-    public val bot_can_edit: Boolean,
-    public val close_friend: Boolean,
-    public val stories_hidden: Boolean,
-    public val stories_unavailable: Boolean,
-    public val id: Long,
-    public val access_hash: Long?,
-    public val first_name: String?,
-    public val last_name: String?,
-    public val username: String?,
-    public val phone: String?,
-    public val photo: TlGen_UserProfilePhoto?,
-    public val status: TlGen_UserStatus?,
-    public val bot_inline_placeholder: String?,
-    public val lang_code: String?,
-    public val emoji_status: TlGen_EmojiStatus?,
-    public val usernames: List<TlGen_Username>?,
-    public val stories_max_id: Int?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
-  ) : TlGen_Object {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (access_hash != null) result = result or 1U
-        if (first_name != null) result = result or 2U
-        if (last_name != null) result = result or 4U
-        if (username != null) result = result or 8U
-        if (phone != null) result = result or 16U
-        if (photo != null) result = result or 32U
-        if (status != null) result = result or 64U
-        if (self) result = result or 1024U
-        if (contact) result = result or 2048U
-        if (mutual_contact) result = result or 4096U
-        if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
-        if (bot_chat_history) result = result or 32768U
-        if (bot_nochats) result = result or 65536U
-        if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
-        if (bot_inline_placeholder != null) result = result or 524288U
-        if (min) result = result or 1048576U
-        if (bot_inline_geo) result = result or 2097152U
-        if (lang_code != null) result = result or 4194304U
-        if (support) result = result or 8388608U
-        if (scam) result = result or 16777216U
-        if (apply_min_photo) result = result or 33554432U
-        if (fake) result = result or 67108864U
-        if (bot_attach_menu) result = result or 134217728U
-        if (premium) result = result or 268435456U
-        if (attach_menu_enabled) result = result or 536870912U
-        if (emoji_status != null) result = result or 1073741824U
-        return result
-      }
-
-    internal val flags2: UInt
-      get() {
-        var result = 0U
-        if (usernames != null) result = result or 1U
-        if (bot_can_edit) result = result or 2U
-        if (close_friend) result = result or 4U
-        if (stories_hidden) result = result or 8U
-        if (stories_unavailable) result = result or 16U
-        if (stories_max_id != null) result = result or 32U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt32(flags2.toInt())
-      stream.writeInt64(id)
-      access_hash?.let { stream.writeInt64(it) }
-      first_name?.let { stream.writeString(it) }
-      last_name?.let { stream.writeString(it) }
-      username?.let { stream.writeString(it) }
-      phone?.let { stream.writeString(it) }
-      photo?.serializeToStream(stream)
-      status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
-      bot_inline_placeholder?.let { stream.writeString(it) }
-      lang_code?.let { stream.writeString(it) }
-      emoji_status?.serializeToStream(stream)
-      usernames?.let { TlGen_Vector.serialize(stream, it) }
-      stories_max_id?.let { stream.writeInt32(it) }
-    }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
-
-    public companion object {
-      public const val MAGIC: UInt = 0xABB5F120U
     }
   }
 
@@ -1410,6 +1349,8 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
@@ -1417,9 +1358,11 @@ public sealed class TlGen_User : TlGen_Object {
     public val stories_max_id: Int?,
     public val color: Int?,
     public val background_emoji_id: Long?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1434,11 +1377,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1480,8 +1423,8 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
@@ -1490,16 +1433,6 @@ public sealed class TlGen_User : TlGen_Object {
       color?.let { stream.writeInt32(it) }
       background_emoji_id?.let { stream.writeInt64(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0xEB602F25U
@@ -1538,6 +1471,8 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
@@ -1546,9 +1481,11 @@ public sealed class TlGen_User : TlGen_Object {
     public val color: TlGen_PeerColor?,
     public val profile_color: TlGen_PeerColor?,
     public val bot_active_users: Int?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1563,11 +1500,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1613,8 +1550,8 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
@@ -1624,16 +1561,6 @@ public sealed class TlGen_User : TlGen_Object {
       profile_color?.serializeToStream(stream)
       bot_active_users?.let { stream.writeInt32(it) }
     }
-
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
 
     public companion object {
       public const val MAGIC: UInt = 0x83314FCAU
@@ -1672,6 +1599,8 @@ public sealed class TlGen_User : TlGen_Object {
     public val phone: String?,
     public val photo: TlGen_UserProfilePhoto?,
     public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
     public val bot_inline_placeholder: String?,
     public val lang_code: String?,
     public val emoji_status: TlGen_EmojiStatus?,
@@ -1681,9 +1610,11 @@ public sealed class TlGen_User : TlGen_Object {
     public val profile_color: TlGen_PeerColor?,
     public val bot_active_users: Int?,
     public val bot_verification_icon: Long?,
-    public val multiflags_14: Multiflags_14?,
-    public val multiflags_18: Multiflags_18?,
   ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
     internal val flags: UInt
       get() {
         var result = 0U
@@ -1698,11 +1629,11 @@ public sealed class TlGen_User : TlGen_Object {
         if (contact) result = result or 2048U
         if (mutual_contact) result = result or 4096U
         if (deleted) result = result or 8192U
-        if (multiflags_14 != null) result = result or 16384U
+        if (bot) result = result or 16384U
         if (bot_chat_history) result = result or 32768U
         if (bot_nochats) result = result or 65536U
         if (verified) result = result or 131072U
-        if (multiflags_18 != null) result = result or 262144U
+        if (restricted) result = result or 262144U
         if (bot_inline_placeholder != null) result = result or 524288U
         if (min) result = result or 1048576U
         if (bot_inline_geo) result = result or 2097152U
@@ -1749,8 +1680,8 @@ public sealed class TlGen_User : TlGen_Object {
       phone?.let { stream.writeString(it) }
       photo?.serializeToStream(stream)
       status?.serializeToStream(stream)
-      multiflags_14?.bot_info_version?.let { stream.writeInt32(it) }
-      multiflags_18?.restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
       bot_inline_placeholder?.let { stream.writeString(it) }
       lang_code?.let { stream.writeString(it) }
       emoji_status?.serializeToStream(stream)
@@ -1762,18 +1693,144 @@ public sealed class TlGen_User : TlGen_Object {
       bot_verification_icon?.let { stream.writeInt64(it) }
     }
 
-    public data class Multiflags_14(
-      public val bot: Boolean,
-      public val bot_info_version: Int,
-    )
-
-    public data class Multiflags_18(
-      public val restricted: Boolean,
-      public val restriction_reason: List<TlGen_RestrictionReason>,
-    )
-
     public companion object {
       public const val MAGIC: UInt = 0x4B46C37EU
+    }
+  }
+
+  public data class TL_user_layer216(
+    public val self: Boolean,
+    public val contact: Boolean,
+    public val mutual_contact: Boolean,
+    public val deleted: Boolean,
+    public val bot_chat_history: Boolean,
+    public val bot_nochats: Boolean,
+    public val verified: Boolean,
+    public val min: Boolean,
+    public val bot_inline_geo: Boolean,
+    public val support: Boolean,
+    public val scam: Boolean,
+    public val apply_min_photo: Boolean,
+    public val fake: Boolean,
+    public val bot_attach_menu: Boolean,
+    public val premium: Boolean,
+    public val attach_menu_enabled: Boolean,
+    public val bot_can_edit: Boolean,
+    public val close_friend: Boolean,
+    public val stories_hidden: Boolean,
+    public val stories_unavailable: Boolean,
+    public val contact_require_premium: Boolean,
+    public val bot_business: Boolean,
+    public val bot_has_main_app: Boolean,
+    public val bot_forum_view: Boolean,
+    public val id: Long,
+    public val access_hash: Long?,
+    public val first_name: String?,
+    public val last_name: String?,
+    public val username: String?,
+    public val phone: String?,
+    public val photo: TlGen_UserProfilePhoto?,
+    public val status: TlGen_UserStatus?,
+    public val bot_info_version: Int?,
+    public val restriction_reason: List<TlGen_RestrictionReason>?,
+    public val bot_inline_placeholder: String?,
+    public val lang_code: String?,
+    public val emoji_status: TlGen_EmojiStatus?,
+    public val usernames: List<TlGen_Username>?,
+    public val stories_max_id: Int?,
+    public val color: TlGen_PeerColor?,
+    public val profile_color: TlGen_PeerColor?,
+    public val bot_active_users: Int?,
+    public val bot_verification_icon: Long?,
+    public val send_paid_messages_stars: Long?,
+  ) : TlGen_Object {
+    public val bot: Boolean = bot_info_version != null
+
+    public val restricted: Boolean = restriction_reason != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (access_hash != null) result = result or 1U
+        if (first_name != null) result = result or 2U
+        if (last_name != null) result = result or 4U
+        if (username != null) result = result or 8U
+        if (phone != null) result = result or 16U
+        if (photo != null) result = result or 32U
+        if (status != null) result = result or 64U
+        if (self) result = result or 1024U
+        if (contact) result = result or 2048U
+        if (mutual_contact) result = result or 4096U
+        if (deleted) result = result or 8192U
+        if (bot) result = result or 16384U
+        if (bot_chat_history) result = result or 32768U
+        if (bot_nochats) result = result or 65536U
+        if (verified) result = result or 131072U
+        if (restricted) result = result or 262144U
+        if (bot_inline_placeholder != null) result = result or 524288U
+        if (min) result = result or 1048576U
+        if (bot_inline_geo) result = result or 2097152U
+        if (lang_code != null) result = result or 4194304U
+        if (support) result = result or 8388608U
+        if (scam) result = result or 16777216U
+        if (apply_min_photo) result = result or 33554432U
+        if (fake) result = result or 67108864U
+        if (bot_attach_menu) result = result or 134217728U
+        if (premium) result = result or 268435456U
+        if (attach_menu_enabled) result = result or 536870912U
+        if (emoji_status != null) result = result or 1073741824U
+        return result
+      }
+
+    internal val flags2: UInt
+      get() {
+        var result = 0U
+        if (usernames != null) result = result or 1U
+        if (bot_can_edit) result = result or 2U
+        if (close_friend) result = result or 4U
+        if (stories_hidden) result = result or 8U
+        if (stories_unavailable) result = result or 16U
+        if (stories_max_id != null) result = result or 32U
+        if (color != null) result = result or 256U
+        if (profile_color != null) result = result or 512U
+        if (contact_require_premium) result = result or 1024U
+        if (bot_business) result = result or 2048U
+        if (bot_active_users != null) result = result or 4096U
+        if (bot_has_main_app) result = result or 8192U
+        if (bot_verification_icon != null) result = result or 16384U
+        if (send_paid_messages_stars != null) result = result or 32768U
+        if (bot_forum_view) result = result or 65536U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(flags2.toInt())
+      stream.writeInt64(id)
+      access_hash?.let { stream.writeInt64(it) }
+      first_name?.let { stream.writeString(it) }
+      last_name?.let { stream.writeString(it) }
+      username?.let { stream.writeString(it) }
+      phone?.let { stream.writeString(it) }
+      photo?.serializeToStream(stream)
+      status?.serializeToStream(stream)
+      bot_info_version?.let { stream.writeInt32(it) }
+      restriction_reason?.let { TlGen_Vector.serialize(stream, it) }
+      bot_inline_placeholder?.let { stream.writeString(it) }
+      lang_code?.let { stream.writeString(it) }
+      emoji_status?.serializeToStream(stream)
+      usernames?.let { TlGen_Vector.serialize(stream, it) }
+      stories_max_id?.let { stream.writeInt32(it) }
+      color?.serializeToStream(stream)
+      profile_color?.serializeToStream(stream)
+      bot_active_users?.let { stream.writeInt32(it) }
+      bot_verification_icon?.let { stream.writeInt64(it) }
+      send_paid_messages_stars?.let { stream.writeInt64(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x020B1422U
     }
   }
 }

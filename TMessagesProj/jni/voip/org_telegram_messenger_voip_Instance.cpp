@@ -530,9 +530,10 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
         };
         descriptor.requestCurrentTime = [platformContext](std::function<void(int64_t)> callback) -> std::shared_ptr<BroadcastPartTask> {
             std::shared_ptr<RequestCurrentTimeTaskJava> task = std::make_shared<RequestCurrentTimeTaskJava>(callback);
-            tgvoip::jni::DoWithJNI([platformContext, task](JNIEnv *env) {
+            auto weakHolder = new std::weak_ptr<RequestCurrentTimeTaskJava>(task);
+            tgvoip::jni::DoWithJNI([platformContext, weakHolder](JNIEnv *env) {
                 jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaGroupInstance();
-                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "requestCurrentTime", "(J)V"), (jlong) task.get());
+                env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "requestCurrentTime", "(J)V"), (jlong) weakHolder);
             });
             return task;
         };
@@ -544,6 +545,63 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeGrou
     holder->_videoCapture = videoCapture;
     holder->conferenceCallId = std::move(conferenceCallIdPtr);
     return reinterpret_cast<jlong>(holder);
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL Java_org_telegram_messenger_voip_GroupCallMessagesController_groupCallMessageDecryptImpl(
+    JNIEnv *env, jclass clazz,
+    jlong callId,
+    jlong userId,
+    jbyteArray encrypted
+) {
+    jsize length = env->GetArrayLength(encrypted);
+    std::vector<uint8_t> data(length);
+    env->GetByteArrayRegion(encrypted, 0, length, reinterpret_cast<jbyte*>(data.data()));
+
+    auto result = tde2e_api::call_decrypt(
+        callId,
+        userId,
+        0,
+        std::string_view{ (const char*) data.data(), data.size() }
+    );
+
+    if (result.is_ok()) {
+        auto str = result.value();
+
+        jbyteArray byteArray = env->NewByteArray(str.size());
+        if (byteArray == nullptr) {
+            return nullptr;
+        }
+        env->SetByteArrayRegion(byteArray, 0, str.size(), reinterpret_cast<const jbyte*>(str.data()));
+        return byteArray;
+    } else {
+        DEBUG_D("[tde2e] e2eEncryptDecrypt failed: err %s", result.error().message.c_str());
+        return nullptr;
+    }
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL Java_org_telegram_messenger_voip_GroupCallMessagesController_groupCallMessageEncryptImpl(
+        JNIEnv *env, jclass clazz,
+        jlong callId,
+        jbyteArray decrypted
+) {
+    jsize length = env->GetArrayLength(decrypted);
+    std::vector<uint8_t> data(length);
+    env->GetByteArrayRegion(decrypted, 0, length, reinterpret_cast<jbyte*>(data.data()));
+
+    auto result = tde2e_api::call_encrypt(callId, 0, std::string_view{ (const char*) data.data(), data.size() }, 0);
+    if (result.is_ok()) {
+        auto str = result.value();
+
+        jbyteArray byteArray = env->NewByteArray(str.size());
+        if (byteArray == nullptr) {
+            return nullptr;
+        }
+        env->SetByteArrayRegion(byteArray, 0, str.size(), reinterpret_cast<const jbyte*>(str.data()));
+        return byteArray;
+    } else {
+        DEBUG_D("[tde2e] e2eEncryptDecrypt failed: err %s", result.error().message.c_str());
+        return nullptr;
+    }
 }
 
 extern "C"
@@ -1034,7 +1092,6 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onMediaDe
 
 extern "C"
 JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_createVideoCapturer(JNIEnv *env, jclass clazz, jobject localSink, jint type) {
-    DEBUG_D("createVideoCapturer!");
     initWebRTC(env);
     std::unique_ptr<VideoCaptureInterface> capture;
     if (type == 0 || type == 1) {
@@ -1195,7 +1252,10 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onRequest
     if (instance->groupNativeInstance == nullptr) {
         return;
     }
-    auto task = reinterpret_cast<RequestCurrentTimeTaskJava *>(taskPtr);
+    auto weakHolder = reinterpret_cast<std::weak_ptr<RequestCurrentTimeTaskJava> *>(taskPtr);
+    auto task = weakHolder->lock();
+    delete weakHolder;
+    if (!task) return;
     task->_callback(currentTime);
 }
 

@@ -3,11 +3,22 @@ package org.telegram.ui.Stars;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.view.View;
+
+import com.google.zxing.common.detector.MathUtils;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.BatchParticlesDrawHelper;
 
 public class StarGiftPatterns {
 
@@ -123,6 +134,41 @@ public class StarGiftPatterns {
         }
     }
 
+    private static final BatchParticlesDrawHelper.BatchParticlesBuffer batchBuffer;
+    static {
+        short max = 0;
+        for (float[] patternLocation : patternLocations) {
+            max = (short) Math.max(max, patternLocation.length / 4);
+        }
+        batchBuffer = new BatchParticlesDrawHelper.BatchParticlesBuffer(max);
+    }
+
+    public static void drawPatternBatch(Canvas canvas, int type, Paint paint, Bitmap bitmap, float w, float h, float alpha, float scale) {
+        if (alpha <= 0.0f) return;
+
+        batchBuffer.fillParticleTextureCords(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        for (int i = 0; i < patternLocations[type].length; i += 4) {
+            final float x = patternLocations[type][i];
+            final float y = patternLocations[type][i + 1];
+            final float size = patternLocations[type][i + 2];
+            final float thisAlpha = patternLocations[type][i + 3];
+
+            float cx = x, cy = y, sz = size;
+            if (w < h && type == TYPE_DEFAULT) {
+                cx = y;
+                cy = x;
+            }
+            cx *= scale;
+            cy *= scale;
+            sz *= scale;
+
+            batchBuffer.setParticleVertexCords(i / 4, (dp(cx) - dp(sz) / 2.0f), (dp(cy) - dp(sz) / 2.0f), (dp(cx) + dp(sz) / 2.0f), (dp(cy) + dp(sz) / 2.0f));
+            batchBuffer.setParticleColor(i / 4, ColorUtils.setAlphaComponent(Color.WHITE, (int) (0xFF * alpha * thisAlpha)));
+        }
+
+        BatchParticlesDrawHelper.draw(canvas, batchBuffer, patternLocations[type].length / 4, paint);
+    }
+
     private static final float[] profileRight = new float[] {
         -35.66f, -5, 24, .2388f,
         -14.33f, -29.33f, 20.66f, .32f,
@@ -209,4 +255,196 @@ public class StarGiftPatterns {
         }
     }
 
+    public static void drawProfileAnimatedPattern(
+        Canvas canvas,
+        Drawable pattern,
+        int w, float maxExpandY, float diff,
+        View avatarContainer,
+        float _alpha
+    ) {
+        AndroidUtilities.rectTmp.set(
+            avatarContainer.getX(), avatarContainer.getY(),
+            avatarContainer.getX() + avatarContainer.getWidth() * avatarContainer.getScaleX(),
+            avatarContainer.getY() + avatarContainer.getHeight() * avatarContainer.getScaleY()
+        );
+        drawProfileAnimatedPattern(
+            canvas,
+            pattern,
+            w,
+            maxExpandY,
+            diff,
+            AndroidUtilities.rectTmp,
+            _alpha
+        );
+    }
+
+    public static void drawProfileAnimatedPattern(
+        Canvas canvas,
+        Drawable pattern,
+        int w, float maxExpandY, float diff,
+        RectF avatarContainer,
+        float _alpha
+    ) {
+        if (diff <= 0.0f) return;
+        float collapseDiff = diff;
+        collapseDiff = collapseDiff >= 0.85f ? 1f : (collapseDiff / 0.85f);
+        collapseDiff = Utilities.clamp01((collapseDiff - 0.2f) / 0.8f);
+
+        final float realX = avatarContainer.left;
+        final float realY = avatarContainer.top;
+        final float realW = avatarContainer.width();
+        final float realH = avatarContainer.height();
+
+        final float realCX = realX + realW / 2.0f;
+        final float realCY = realY + realH / 2.0f;
+
+        final float sz = dpf2(96);
+        final float ax = Math.min(realX, (w - sz) / 2f);
+        final float ay = Math.max(realY, (maxExpandY - sz) / 2f);
+        final float aw = Math.max(realW, sz);
+        final float ah = Math.max(realH, sz);
+
+        final float acx = ax + aw / 2.0f;
+        final float acy = ay + ah / 2.0f;
+
+        final float padding24 = dpf2(24);
+        final float padding16 = dpf2(16);
+        final float padding12 = dpf2(12);
+        final float padding8 = dpf2(8);
+        final float padding4 = dpf2(4);
+        final float padding48 = padding24 * 2;
+        //final float padding72 = padding48 + padding24;
+        final float padding96 = padding48 * 2;
+        final float r48Cos120 = (padding48 + aw / 2f) * (float) Math.cos(Math.toRadians(120));
+        //final float r96Cos120 = (padding96 + aw / 2f) * (float) Math.cos(Math.toRadians(120));
+        final float r16Cos160 = (padding16 + ah / 2f) * (float) Math.cos(Math.toRadians(160));
+        //final float r56Cos150 = (padding48 + padding8 + ah / 2f) * (float) Math.cos(Math.toRadians(150));
+
+        final float[] items = new float[] {
+            // first row
+            acx, ay - padding24, 20, // top
+            acx, ay + ah + padding24, 20, // bottom
+            ax - padding16, acy - ah / 4f - padding8, 23, // top left
+            ax + aw + padding16, acy - ah / 4f - padding8, 18, // top right
+            ax - padding16, acy + ah / 4f + padding8, 24, // bottom left
+            ax + aw + padding16 - padding4, acy + ah / 4f + padding8, 24, // bottom right
+            // second row
+            ax - padding48, acy, 19, // left
+            ax + aw + padding48, acy, 19, // right
+            acx + r48Cos120, ay - padding48 + padding12, 17, // top left
+            acx - r48Cos120, ay - padding48 + padding12, 17, // top right
+            acx + r48Cos120, ay + ah + padding48 - padding12, 20, // bottom left
+            acx - r48Cos120, ay + ah + padding48 - padding12, 20, // bottom right
+            // third row
+            //acx, ay - padding72, 19, // top
+            //acx, ay + ah + padding72, 19, // bottom
+            ax - padding48 - padding8, acy + r16Cos160, 20, // top left
+            ax + aw + padding48 + padding8, acy + r16Cos160, 19, // top right
+            ax - padding48 - padding8, acy - r16Cos160, 21, // bottom left
+            ax + aw + padding48 + padding8, acy - r16Cos160, 18, // bottom right
+            // 4th row
+            ax - padding96, acy, 19, // left
+            ax + aw + padding96, acy, 19, // right
+            /*acx + r96Cos120, ay - padding96, 17, // top left
+            acx - r96Cos120, ay - padding96, 17, // top right
+            acx + r96Cos120, ay + ah + padding96, 18, // bottom left
+            acx - r96Cos120, ay + ah + padding96, 18, // bottom right
+            // 5th row
+            acx, ay - padding96, 19, // top
+            acx, ay + ah + padding96, 18, // bottom
+            ax - padding72 - padding8, acy + r56Cos150, 19, // top left
+            ax - padding72 - padding8, acy - r56Cos150, 20, // bottom left
+            ax + aw + padding72 + padding8, acy - r56Cos150, 17, // bottom right
+            ax + aw + padding72 + padding8, acy + r56Cos150, 18, // top right*/
+        };
+
+        //final float delayFraction = 0.15f;
+        //final float maxDelayFraction = 3.80f * delayFraction;
+        //final float intervalFraction = 1f - maxDelayFraction;
+
+        //int row = 0;
+        //int column = 0;
+        //float delayValue = 0f;
+
+        final float[] timings = new float[] {
+            // first row
+            0.02f, 0.42f,
+            0.00f, 0.32f,
+            0.00f, 0.40f,
+            0.00f, 0.40f,
+            0.00f, 0.40f,
+            0.00f, 0.40f,
+            // second row
+            0.14f, 0.60f,
+            0.16f, 0.64f,
+            0.14f, 0.70f,
+            0.14f, 0.90f,
+            0.20f, 0.75f,
+            0.20f, 0.85f,
+            // third row
+            //0.00f, 0.00f,
+            //0.00f, 0.00f,
+            0.09f, 0.45f,
+            0.09f, 0.45f,
+            0.09f, 0.45f,
+            0.11f, 0.45f,
+            // 4th row
+            0.14f, 0.75f,
+            0.20f, 0.80f,
+            //1.00f, 1.00f,
+            //1.00f, 1.00f,
+            //1.00f, 1.00f,
+            //1.00f, 1.00f,
+        };
+
+        for (int i = 0, t = 0; i < items.length; i += 3, t += 2) {
+            float x = items[i];
+            float y = items[i + 1];
+            float r = dpf2(items[i + 2]) * 0.5f;
+
+            final float start = timings[t];
+            final float end = timings[t + 1];
+
+            // final float delay = delayValue * delayFraction;
+            // final float collapse = diff >= 1f - delay ? 1f : Utilities.clamp01((diff - maxDelayFraction + delay) / intervalFraction);
+            float collapse = 1f - collapseDiff < start ? 1f : 1f - Utilities.clamp01((1f - collapseDiff - start) / (end - start));
+            if (i == 18 || i == 19 || i == 6 || i == 7) {
+                collapse = CubicBezierInterpolator.EASE_IN.getInterpolation(collapse);
+            }
+            y -= dp(12) * (1f - diff);
+            if (collapse < 1f) {
+                x = AndroidUtilities.lerp(realCX, x, CubicBezierInterpolator.EASE_IN.getInterpolation(collapse));
+                y = AndroidUtilities.lerp(realCY, y, collapse);
+                r = AndroidUtilities.lerp(dpf2(8), r, collapse);
+            }
+
+            final float bottomAlpha = y > ay + ah + dp(8) ? 1f - Utilities.clamp01((y - ay - ah - dp(8)) / dp(56)) : 1f;
+
+            final float dist = 1f - Utilities.clamp01((MathUtils.distance(acx, acy, x, y) / (aw * 2)));
+            float alpha = _alpha * dist * 0.5f * bottomAlpha;
+            if (collapse < 1f) {
+                alpha = AndroidUtilities.lerp(0f, alpha, collapse);
+            }
+
+            pattern.setBounds(
+                (int) (x - r),
+                (int) (y - r),
+                (int) (x + r),
+                (int) (y + r)
+            );
+            pattern.setAlpha((int) (0xFF * alpha));
+            pattern.draw(canvas);
+
+            /*column++;
+            if (column == 6) {
+                column = 0;
+                row++;
+                if (row <= 3) {
+                    delayValue = row + (row * 0.25f);
+                } else {
+                    delayValue += 0.05f;
+                }
+            }*/
+        }
+    }
 }
