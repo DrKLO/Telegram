@@ -136,6 +136,7 @@ import org.telegram.messenger.TopicsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.scenario.ScenarioManager;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.pip.PipActivityController;
 import org.telegram.messenger.pip.activity.IPipActivity;
@@ -964,6 +965,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         checkLayout();
         checkSystemBarColors();
+        ScenarioManager.startIfReady(this);
         handleIntent(getIntent(), false, savedInstanceState != null, false, null, true, true);
         try {
             String os1 = Build.DISPLAY;
