@@ -129,7 +129,7 @@ public class EncryptionManager {
                     respond(callback, null, response.optString("error", "Unknown error"));
                 }
             } catch (Exception e) {
-                respond(callback, null, e.getMessage());
+                respond(callback, null, "Register failed: " + safeError(e));
             }
         });
     }
@@ -173,7 +173,7 @@ public class EncryptionManager {
                     respond(callback, null, response.optString("error", "Unknown error"));
                 }
             } catch (Exception e) {
-                respond(callback, null, e.getMessage());
+                respond(callback, null, "Verify failed: " + safeError(e));
             }
         });
     }
@@ -272,7 +272,23 @@ public class EncryptionManager {
     }
 
     private static void respond(SimpleCallback<String> callback, String result, String error) {
-        AndroidUtilities.runOnUIThread(() -> callback.onResult(result, error));
+        AndroidUtilities.runOnUIThread(() -> {
+            if (!TextUtils.isEmpty(error)) {
+                showEncryptionWarning(error);
+            }
+            callback.onResult(result, error);
+        });
+    }
+
+    private static String safeError(Throwable e) {
+        if (e == null) {
+            return "Unknown error";
+        }
+        String message = e.getMessage();
+        if (TextUtils.isEmpty(message)) {
+            return e.getClass().getSimpleName();
+        }
+        return message;
     }
 
     private static KeyBundle ensureKeys(int account) throws GeneralSecurityException {
