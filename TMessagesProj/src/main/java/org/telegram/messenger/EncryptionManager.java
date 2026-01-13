@@ -312,12 +312,26 @@ public class EncryptionManager {
         String edPrivateKey = prefs.getString(keyForAccount("ed_private", account), null);
 
         if (rsaPublicKey == null || rsaPrivateKey == null || edPublicKey == null || edPrivateKey == null) {
-            KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-            rsaGen.initialize(2048);
-            KeyPair rsaPair = rsaGen.generateKeyPair();
+            KeyPair rsaPair;
+            try {
+                KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
+                rsaGen.initialize(2048);
+                rsaPair = rsaGen.generateKeyPair();
+            } catch (Exception e) {
+                throw new GeneralSecurityException("RSA key generation failed: " + safeError(e), e);
+            }
 
-            KeyPairGenerator edGen = KeyPairGenerator.getInstance("Ed25519");
-            KeyPair edPair = edGen.generateKeyPair();
+            KeyPair edPair;
+            try {
+                KeyPairGenerator edGen = KeyPairGenerator.getInstance("Ed25519");
+                try {
+                    edGen.initialize(255);
+                } catch (Exception ignored) {
+                }
+                edPair = edGen.generateKeyPair();
+            } catch (Exception e) {
+                throw new GeneralSecurityException("Ed25519 key generation failed: " + safeError(e), e);
+            }
 
             rsaPublicKey = Base64.encodeToString(rsaPair.getPublic().getEncoded(), Base64.NO_WRAP);
             rsaPrivateKey = Base64.encodeToString(rsaPair.getPrivate().getEncoded(), Base64.NO_WRAP);
