@@ -5710,8 +5710,17 @@ public class MessageObject {
         }
         EncryptionManager.DisplayResult result = EncryptionManager.getDisplayText(currentAccount, getFromChatId(), messageOwner.message);
         if (result != null) {
-            messageText = result.displayText;
-            encryptionStatusLine = result.statusLine;
+            if (!TextUtils.isEmpty(result.statusLine)) {
+                StringBuilder builder = new StringBuilder();
+                builder.append(result.statusLine);
+                builder.append('\n');
+                builder.append(result.displayText == null ? "" : result.displayText);
+                messageText = builder.toString();
+                encryptionStatusLine = null;
+            } else {
+                messageText = result.displayText;
+                encryptionStatusLine = result.statusLine;
+            }
         }
     }
 
