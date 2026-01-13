@@ -236,7 +236,13 @@ public class EncryptionManager {
         try {
             KeyBundle keys = ensureKeys(account);
             String payloadB64 = originalText.substring(ENCRYPTION_PREFIX.length());
-            JSONObject payload = new JSONObject(new String(Base64.decode(payloadB64, Base64.NO_WRAP), StandardCharsets.UTF_8));
+            JSONObject payload;
+            try {
+                String decoded = new String(Base64.decode(payloadB64, Base64.NO_WRAP), StandardCharsets.UTF_8);
+                payload = new JSONObject(decoded);
+            } catch (Exception e) {
+                return new DisplayResult(originalText, LocaleController.getString(R.string.EncryptionMessageInvalidPayload), true, true);
+            }
             String ivB64 = payload.getString("iv");
             String cipherB64 = payload.getString("ciphertext");
             String keyToB64 = payload.getString("key_to");
@@ -245,9 +251,14 @@ public class EncryptionManager {
 
             byte[] aesKey = tryDecryptAesKey(keys, keyToB64, keyFromB64);
             if (aesKey == null) {
+                return new DisplayResult(originalText, LocaleController.getString(R.string.EncryptionMessageKeyDecryptError), true, true);
+            }
+            String decrypted;
+            try {
+                decrypted = decryptAes(aesKey, ivB64, cipherB64);
+            } catch (GeneralSecurityException e) {
                 return new DisplayResult(originalText, LocaleController.getString(R.string.EncryptionMessageDecryptError), true, true);
             }
-            String decrypted = decryptAes(aesKey, ivB64, cipherB64);
             String status = LocaleController.getString(R.string.EncryptionMessageDecrypted);
             return new DisplayResult(decrypted, status, true, false);
         } catch (Exception e) {

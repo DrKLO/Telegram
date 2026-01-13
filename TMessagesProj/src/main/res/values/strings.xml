@@ -2483,6 +2483,8 @@
     <string name="EncryptionFailedGeneric">Encryption failed. Message was sent without encryption.</string>
     <string name="EncryptionMessageNotEncrypted">Not encrypted</string>
     <string name="EncryptionMessageDecrypted">Encrypted: decrypted</string>
+    <string name="EncryptionMessageInvalidPayload">Encrypted: invalid payload</string>
+    <string name="EncryptionMessageKeyDecryptError">Encrypted: key decrypt error</string>
     <string name="EncryptionMessageDecryptError">Encrypted: decrypt error</string>
     <string name="EncryptionMessageSignatureError">Encrypted: signature error</string>
     <string name="NotificationsPriorityLow">Low</string>

@@ -280,6 +280,8 @@
     <string name="EncryptionFailedGeneric">Не удалось зашифровать. Сообщение отправлено без шифрования.</string>
     <string name="EncryptionMessageNotEncrypted">Не зашифровано</string>
     <string name="EncryptionMessageDecrypted">Зашифровано: расшифровано</string>
+    <string name="EncryptionMessageInvalidPayload">Зашифровано: неверный формат</string>
+    <string name="EncryptionMessageKeyDecryptError">Зашифровано: ошибка ключа</string>
     <string name="EncryptionMessageDecryptError">Зашифровано: ошибка расшифровки</string>
     <string name="EncryptionMessageSignatureError">Зашифровано: ошибка подписи</string>
 </resources>
