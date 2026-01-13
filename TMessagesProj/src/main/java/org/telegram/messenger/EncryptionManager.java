@@ -125,11 +125,11 @@ public class EncryptionManager {
                     return;
                 }
                 String status = response.optString("status", null);
-                if (!TextUtils.isEmpty(status)) {
+                if (!TextUtils.isEmpty(status) || responseIndicatesSuccess(response, "registered")) {
                     getPrefs(PREF_CONFIG).edit()
                         .putBoolean(keyForAccount("registered", account), true)
                         .apply();
-                    respond(callback, status, null);
+                    respond(callback, !TextUtils.isEmpty(status) ? status : LocaleController.getString(R.string.EncryptionStatusRegistered), null);
                 } else {
                     respond(callback, null, response.optString("error", "Unknown error"));
                 }
@@ -174,11 +174,11 @@ public class EncryptionManager {
                     return;
                 }
                 String status = response.optString("status", null);
-                if (!TextUtils.isEmpty(status)) {
+                if (!TextUtils.isEmpty(status) || responseIndicatesSuccess(response, "verified")) {
                     getPrefs(PREF_CONFIG).edit()
                         .putBoolean(keyForAccount("verified", account), true)
                         .apply();
-                    respond(callback, status, null);
+                    respond(callback, !TextUtils.isEmpty(status) ? status : LocaleController.getString(R.string.EncryptionStatusVerified), null);
                 } else {
                     respond(callback, null, response.optString("error", "Unknown error"));
                 }
@@ -276,6 +276,16 @@ public class EncryptionManager {
             }
             callback.onResult(result, error);
         });
+    }
+
+    private static boolean responseIndicatesSuccess(JSONObject response, String keyword) {
+        if (response == null) {
+            return false;
+        }
+        String raw = response.optString("raw", "");
+        String error = response.optString("error", "");
+        String text = (raw + " " + error).toLowerCase();
+        return text.contains(keyword);
     }
 
     private static String safeError(Throwable e) {
@@ -522,10 +532,14 @@ public class EncryptionManager {
                 return error;
             }
             try {
-                return new JSONObject(body);
+                JSONObject json = new JSONObject(body);
+                json.put("status_code", code);
+                return json;
             } catch (JSONException e) {
                 JSONObject error = new JSONObject();
-                error.put("error", "Invalid JSON response: " + body);
+                error.put("status_code", code);
+                error.put("raw", body);
+                error.put("error", "Invalid JSON response");
                 return error;
             }
         } finally {
