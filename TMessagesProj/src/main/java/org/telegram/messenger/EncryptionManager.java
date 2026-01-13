@@ -9,6 +9,7 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -501,6 +502,7 @@ public class EncryptionManager {
     }
 
     private static JSONObject postJson(String url, JSONObject payload) throws IOException, JSONException {
+        FileLog.d("EncryptionManager POST " + url);
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
         connection.setReadTimeout(NETWORK_TIMEOUT_MS);
@@ -517,6 +519,7 @@ public class EncryptionManager {
     }
 
     private static JSONObject getJson(String url) throws IOException, JSONException {
+        FileLog.d("EncryptionManager GET " + url);
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
         connection.setReadTimeout(NETWORK_TIMEOUT_MS);
@@ -529,7 +532,9 @@ public class EncryptionManager {
         int code = connection.getResponseCode();
         InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
         if (stream == null) {
-            return null;
+            JSONObject error = new JSONObject();
+            error.put("error", "HTTP " + code);
+            return error;
         }
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             StringBuilder builder = new StringBuilder();
@@ -537,10 +542,20 @@ public class EncryptionManager {
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
             }
-            if (builder.length() == 0) {
-                return null;
+            String body = builder.toString();
+            FileLog.d("EncryptionManager response " + code + ": " + body);
+            if (TextUtils.isEmpty(body)) {
+                JSONObject error = new JSONObject();
+                error.put("error", "HTTP " + code);
+                return error;
             }
-            return new JSONObject(builder.toString());
+            try {
+                return new JSONObject(body);
+            } catch (JSONException e) {
+                JSONObject error = new JSONObject();
+                error.put("error", "Invalid JSON response: " + body);
+                return error;
+            }
         } finally {
             connection.disconnect();
         }
