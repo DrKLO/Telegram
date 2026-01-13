@@ -3866,6 +3866,40 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             caption = "";
         }
 
+        if (message != null && !TextUtils.isEmpty(message) && !sendMessageParams.encryptionAttempted &&
+                !DialogObject.isEncryptedDialog(peer) && DialogObject.isUserDialog(peer) &&
+                !message.startsWith(EncryptionManager.ENCRYPTION_PREFIX)) {
+            sendMessageParams.encryptionAttempted = true;
+            String originalMessage = message;
+            EncryptionManager.encryptOutgoingText(currentAccount, peer, message, (result, error) -> {
+                if (!TextUtils.isEmpty(error)) {
+                    String toastText;
+                    if (error.contains("Server address is empty")) {
+                        toastText = LocaleController.getString(R.string.EncryptionServerNotConfigured);
+                    } else if (error.contains("User is not verified")) {
+                        toastText = LocaleController.getString(R.string.EncryptionSelfNotVerified);
+                    } else if (error.contains("User not registered")) {
+                        toastText = LocaleController.getString(R.string.EncryptionRecipientUnavailable);
+                    } else {
+                        toastText = LocaleController.getString(R.string.EncryptionFailedGeneric);
+                    }
+                    EncryptionManager.showEncryptionWarning(toastText);
+                }
+                if (!TextUtils.isEmpty(result)) {
+                    sendMessageParams.message = result;
+                    if (result.startsWith(EncryptionManager.ENCRYPTION_PREFIX)) {
+                        sendMessageParams.entities = null;
+                        sendMessageParams.searchLinks = false;
+                        sendMessageParams.webPage = null;
+                    }
+                } else {
+                    sendMessageParams.message = originalMessage;
+                }
+                sendMessage(sendMessageParams);
+            });
+            return;
+        }
+
         long _payStars = getMessagesController().getSendPaidMessagesStars(peer);
         if (_payStars <= 0) {
             _payStars = DialogObject.getMessagesStarsPrice(getMessagesController().isUserContactBlocked(peer));
@@ -10501,6 +10535,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public long monoForumPeer;
         public boolean sendingHighQuality;
         public MessageSuggestionParams suggestionParams;
+        public boolean encryptionAttempted;
 
         public static SendMessageParams of(String string, long dialogId) {
             return of(string, null, null, null, null, null, null, null, null, null, dialogId, null, null, null, null, true, null, null, null, null, false, 0, 0, 0, null, null, false);
@@ -10592,6 +10627,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             params.sendAnimationData = sendAnimationData;
             params.updateStickersOrder = updateStickersOrder;
             params.hasMediaSpoilers = hasMediaSpoilers;
+            params.encryptionAttempted = false;
             return params;
         }
     }

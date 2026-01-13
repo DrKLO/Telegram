@@ -181,6 +181,7 @@ public class MessageObject {
     public CharSequence messageText;
     public CharSequence messageTextShort;
     public CharSequence messageTextForReply;
+    private String encryptionStatusLine;
     public CharSequence linkDescription;
     public CharSequence caption;
     public CharSequence youtubeDescription;
@@ -5692,9 +5693,26 @@ public class MessageObject {
             messageText = "";
         }
 
+        applyEncryptionDisplay();
+
         isEmbedVideoCached = null;
         cachedStartsTimestamp = null;
         cachedSavedTimestamp = null;
+    }
+
+    private void applyEncryptionDisplay() {
+        encryptionStatusLine = null;
+        if (messageOwner == null || messageOwner.message == null) {
+            return;
+        }
+        if (type != TYPE_TEXT && type != TYPE_EMOJIS) {
+            return;
+        }
+        EncryptionManager.DisplayResult result = EncryptionManager.getDisplayText(currentAccount, getFromChatId(), messageOwner.message);
+        if (result != null) {
+            messageText = result.displayText;
+            encryptionStatusLine = result.statusLine;
+        }
     }
 
     private CharSequence formatTaskTitle(TLRPC.TodoItem task) {
@@ -7758,7 +7776,15 @@ public class MessageObject {
         if (!(messageText instanceof Spannable)) {
             messageText = new SpannableStringBuilder(messageText);
         }
-        return addEntitiesToText(messageText, useManualParse);
+        boolean applied = addEntitiesToText(messageText, useManualParse);
+        if (!TextUtils.isEmpty(encryptionStatusLine)) {
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            builder.append(encryptionStatusLine);
+            builder.append('\n');
+            builder.append(messageText);
+            messageText = builder;
+        }
+        return applied;
     }
 
     public static StaticLayout makeStaticLayout(CharSequence text, TextPaint paint, int width, float lineSpacingMult, float lineSpacingAdd, boolean dontIncludePad) {

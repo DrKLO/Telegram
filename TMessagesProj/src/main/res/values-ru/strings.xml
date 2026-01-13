@@ -263,4 +263,23 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+    <string name="EncryptionSettings">Шифрование</string>
+    <string name="EncryptionServerIpHint">IP или хост сервера</string>
+    <string name="EncryptionServerIpEmpty">Введите IP адрес сервера</string>
+    <string name="EncryptionRegister">Зарегистрироваться для шифрования</string>
+    <string name="EncryptionVerify">Верифицировать шифрование</string>
+    <string name="EncryptionVerifyTitle">Верификация</string>
+    <string name="EncryptionVerifyHint">Вставьте ключ из бота</string>
+    <string name="EncryptionVerifyEmpty">Ключ верификации пустой</string>
+    <string name="EncryptionStatusNotRegistered">Статус: не зарегистрирован</string>
+    <string name="EncryptionStatusRegistered">Статус: зарегистрирован, ждет верификации</string>
+    <string name="EncryptionStatusVerified">Статус: верифицирован</string>
+    <string name="EncryptionRecipientUnavailable">Пользователь не зарегистрирован или не верифицирован. Сообщение отправлено без шифрования.</string>
+    <string name="EncryptionSelfNotVerified">Вы не прошли верификацию. Сообщение отправлено без шифрования.</string>
+    <string name="EncryptionServerNotConfigured">Сервер шифрования не настроен. Сообщение отправлено без шифрования.</string>
+    <string name="EncryptionFailedGeneric">Не удалось зашифровать. Сообщение отправлено без шифрования.</string>
+    <string name="EncryptionMessageNotEncrypted">Не зашифровано</string>
+    <string name="EncryptionMessageDecrypted">Зашифровано: расшифровано</string>
+    <string name="EncryptionMessageDecryptError">Зашифровано: ошибка расшифровки</string>
+    <string name="EncryptionMessageSignatureError">Зашифровано: ошибка подписи</string>
 </resources>
