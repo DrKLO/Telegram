@@ -25,7 +25,6 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
@@ -163,8 +162,6 @@ public class EncryptionManager {
                 JSONObject publicKey = new JSONObject();
                 publicKey.put("v", 1);
                 publicKey.put("rsa", keys.rsaPublicB64);
-                publicKey.put("ed25519", keys.edPublicB64);
-
                 JSONObject payload = new JSONObject();
                 payload.put("userid", userId);
                 payload.put("public_key", publicKey.toString());
@@ -244,7 +241,6 @@ public class EncryptionManager {
             String cipherB64 = payload.getString("ciphertext");
             String keyToB64 = payload.getString("key_to");
             String keyFromB64 = payload.getString("key_from");
-            String signatureB64 = payload.optString("sig", null);
             long sender = payload.optLong("sender", senderUserId);
 
             byte[] aesKey = tryDecryptAesKey(keys, keyToB64, keyFromB64);
@@ -252,19 +248,8 @@ public class EncryptionManager {
                 return new DisplayResult(originalText, LocaleController.getString(R.string.EncryptionMessageDecryptError), true, true);
             }
             String decrypted = decryptAes(aesKey, ivB64, cipherB64);
-            boolean signatureOk = true;
-            if (!TextUtils.isEmpty(signatureB64)) {
-                PublicKeyInfo senderInfo = sender == UserConfig.getInstance(account).getClientUserId()
-                    ? new PublicKeyInfo(keys.rsaPublic, keys.edPublic)
-                    : getCachedPublicKey(account, sender);
-                if (senderInfo != null && senderInfo.edPublic != null) {
-                    signatureOk = verifySignature(senderInfo.edPublic, payload, signatureB64);
-                }
-            }
-            String status = signatureOk
-                ? LocaleController.getString(R.string.EncryptionMessageDecrypted)
-                : LocaleController.getString(R.string.EncryptionMessageSignatureError);
-            return new DisplayResult(decrypted, status, true, !signatureOk);
+            String status = LocaleController.getString(R.string.EncryptionMessageDecrypted);
+            return new DisplayResult(decrypted, status, true, false);
         } catch (Exception e) {
             return new DisplayResult(originalText, LocaleController.getString(R.string.EncryptionMessageDecryptError), true, true);
         }
@@ -308,10 +293,7 @@ public class EncryptionManager {
         SharedPreferences prefs = getPrefs(PREF_KEYS);
         String rsaPublicKey = prefs.getString(keyForAccount("rsa_public", account), null);
         String rsaPrivateKey = prefs.getString(keyForAccount("rsa_private", account), null);
-        String edPublicKey = prefs.getString(keyForAccount("ed_public", account), null);
-        String edPrivateKey = prefs.getString(keyForAccount("ed_private", account), null);
-
-        if (rsaPublicKey == null || rsaPrivateKey == null || edPublicKey == null || edPrivateKey == null) {
+        if (rsaPublicKey == null || rsaPrivateKey == null) {
             KeyPair rsaPair;
             try {
                 KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
@@ -321,37 +303,18 @@ public class EncryptionManager {
                 throw new GeneralSecurityException("RSA key generation failed: " + safeError(e), e);
             }
 
-            KeyPair edPair;
-            try {
-                KeyPairGenerator edGen = KeyPairGenerator.getInstance("Ed25519");
-                try {
-                    edGen.initialize(255);
-                } catch (Exception ignored) {
-                }
-                edPair = edGen.generateKeyPair();
-            } catch (Exception e) {
-                throw new GeneralSecurityException("Ed25519 key generation failed: " + safeError(e), e);
-            }
-
             rsaPublicKey = Base64.encodeToString(rsaPair.getPublic().getEncoded(), Base64.NO_WRAP);
             rsaPrivateKey = Base64.encodeToString(rsaPair.getPrivate().getEncoded(), Base64.NO_WRAP);
-            edPublicKey = Base64.encodeToString(edPair.getPublic().getEncoded(), Base64.NO_WRAP);
-            edPrivateKey = Base64.encodeToString(edPair.getPrivate().getEncoded(), Base64.NO_WRAP);
 
             prefs.edit()
                 .putString(keyForAccount("rsa_public", account), rsaPublicKey)
                 .putString(keyForAccount("rsa_private", account), rsaPrivateKey)
-                .putString(keyForAccount("ed_public", account), edPublicKey)
-                .putString(keyForAccount("ed_private", account), edPrivateKey)
                 .apply();
         }
 
         PublicKey rsaPublic = decodePublicKey("RSA", rsaPublicKey);
         PrivateKey rsaPrivate = decodePrivateKey("RSA", rsaPrivateKey);
-        PublicKey edPublic = decodePublicKey("Ed25519", edPublicKey);
-        PrivateKey edPrivate = decodePrivateKey("Ed25519", edPrivateKey);
-
-        return new KeyBundle(rsaPublic, rsaPrivate, edPublic, edPrivate, rsaPublicKey, edPublicKey);
+        return new KeyBundle(rsaPublic, rsaPrivate, rsaPublicKey);
     }
 
     private static PublicKey decodePublicKey(String algorithm, String b64) throws GeneralSecurityException {
@@ -385,9 +348,6 @@ public class EncryptionManager {
         payload.put("ciphertext", Base64.encodeToString(cipherText, Base64.NO_WRAP));
         payload.put("key_to", keyToB64);
         payload.put("key_from", keyFromB64);
-
-        String signData = buildSignatureData(payload);
-        payload.put("sig", Base64.encodeToString(sign(keys.edPrivate, signData), Base64.NO_WRAP));
 
         String encoded = Base64.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
         return ENCRYPTION_PREFIX + encoded;
@@ -428,35 +388,6 @@ public class EncryptionManager {
         return new String(plain, StandardCharsets.UTF_8);
     }
 
-    private static byte[] sign(PrivateKey key, String data) throws GeneralSecurityException {
-        Signature signature = Signature.getInstance("Ed25519");
-        signature.initSign(key);
-        signature.update(data.getBytes(StandardCharsets.UTF_8));
-        return signature.sign();
-    }
-
-    private static boolean verifySignature(PublicKey key, JSONObject payload, String signatureB64) {
-        try {
-            Signature signature = Signature.getInstance("Ed25519");
-            signature.initVerify(key);
-            signature.update(buildSignatureData(payload).getBytes(StandardCharsets.UTF_8));
-            return signature.verify(Base64.decode(signatureB64, Base64.NO_WRAP));
-        } catch (GeneralSecurityException | JSONException e) {
-            return false;
-        }
-    }
-
-    private static String buildSignatureData(JSONObject payload) throws JSONException {
-        StringBuilder builder = new StringBuilder();
-        builder.append("v=").append(payload.optInt("v", 1)).append('\n');
-        builder.append("sender=").append(payload.optLong("sender", 0)).append('\n');
-        builder.append("iv=").append(payload.getString("iv")).append('\n');
-        builder.append("ciphertext=").append(payload.getString("ciphertext")).append('\n');
-        builder.append("key_to=").append(payload.getString("key_to")).append('\n');
-        builder.append("key_from=").append(payload.getString("key_from"));
-        return builder.toString();
-    }
-
     private static PublicKeyInfo getPublicKey(int account, long userId) throws IOException, JSONException, GeneralSecurityException {
         PublicKeyInfo cached = getCachedPublicKey(account, userId);
         if (cached != null) {
@@ -488,16 +419,14 @@ public class EncryptionManager {
         if (publicKeyValue.startsWith("{")) {
             JSONObject obj = new JSONObject(publicKeyValue);
             String rsaB64 = obj.optString("rsa", null);
-            String edB64 = obj.optString("ed25519", null);
             if (TextUtils.isEmpty(rsaB64)) {
                 return null;
             }
             PublicKey rsa = decodePublicKey("RSA", rsaB64);
-            PublicKey ed = TextUtils.isEmpty(edB64) ? null : decodePublicKey("Ed25519", edB64);
-            return new PublicKeyInfo(rsa, ed);
+            return new PublicKeyInfo(rsa);
         } else {
             PublicKey rsa = decodePublicKey("RSA", publicKeyValue);
-            return new PublicKeyInfo(rsa, null);
+            return new PublicKeyInfo(rsa);
         }
     }
 
@@ -613,28 +542,20 @@ public class EncryptionManager {
     private static class KeyBundle {
         final PublicKey rsaPublic;
         final PrivateKey rsaPrivate;
-        final PublicKey edPublic;
-        final PrivateKey edPrivate;
         final String rsaPublicB64;
-        final String edPublicB64;
 
-        KeyBundle(PublicKey rsaPublic, PrivateKey rsaPrivate, PublicKey edPublic, PrivateKey edPrivate, String rsaPublicB64, String edPublicB64) {
+        KeyBundle(PublicKey rsaPublic, PrivateKey rsaPrivate, String rsaPublicB64) {
             this.rsaPublic = rsaPublic;
             this.rsaPrivate = rsaPrivate;
-            this.edPublic = edPublic;
-            this.edPrivate = edPrivate;
             this.rsaPublicB64 = rsaPublicB64;
-            this.edPublicB64 = edPublicB64;
         }
     }
 
     private static class PublicKeyInfo {
         final PublicKey rsaPublic;
-        final PublicKey edPublic;
 
-        PublicKeyInfo(PublicKey rsaPublic, PublicKey edPublic) {
+        PublicKeyInfo(PublicKey rsaPublic) {
             this.rsaPublic = rsaPublic;
-            this.edPublic = edPublic;
         }
     }
 }
