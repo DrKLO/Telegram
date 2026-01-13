@@ -111,10 +111,16 @@ public class EncryptionManager {
             }
             long userId = UserConfig.getInstance(account).getClientUserId();
             try {
-                ensureKeys(account);
+                try {
+                    ensureKeys(account);
+                } catch (Exception e) {
+                    respond(callback, null, "Key generation failed: " + safeError(e));
+                    return;
+                }
                 JSONObject payload = new JSONObject();
                 payload.put("userid", userId);
-                JSONObject response = postJson(server + "/api/v1/register", payload);
+                String url = server + "/api/v1/register";
+                JSONObject response = postJson(url, payload);
                 if (response == null) {
                     respond(callback, null, "Empty response");
                     return;
@@ -147,7 +153,13 @@ public class EncryptionManager {
             }
             long userId = UserConfig.getInstance(account).getClientUserId();
             try {
-                KeyBundle keys = ensureKeys(account);
+                KeyBundle keys;
+                try {
+                    keys = ensureKeys(account);
+                } catch (Exception e) {
+                    respond(callback, null, "Key generation failed: " + safeError(e));
+                    return;
+                }
                 JSONObject publicKey = new JSONObject();
                 publicKey.put("v", 1);
                 publicKey.put("rsa", keys.rsaPublicB64);
@@ -158,7 +170,8 @@ public class EncryptionManager {
                 payload.put("public_key", publicKey.toString());
                 payload.put("verify_secret", verifySecret);
 
-                JSONObject response = postJson(server + "/api/v1/verify", payload);
+                String url = server + "/api/v1/verify";
+                JSONObject response = postJson(url, payload);
                 if (response == null) {
                     respond(callback, null, "Empty response");
                     return;
@@ -288,7 +301,7 @@ public class EncryptionManager {
         if (TextUtils.isEmpty(message)) {
             return e.getClass().getSimpleName();
         }
-        return message;
+        return e.getClass().getSimpleName() + ": " + message;
     }
 
     private static KeyBundle ensureKeys(int account) throws GeneralSecurityException {
