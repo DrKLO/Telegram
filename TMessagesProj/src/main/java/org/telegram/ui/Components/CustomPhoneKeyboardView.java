@@ -215,7 +215,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int btnWidth = (getWidth() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
-        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
+        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 3)) / 4;
 
         for (int i = 0; i < views.length; i++) {
             int rowX = i % 3, rowY = i / 3;
@@ -232,7 +232,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
 
         int btnWidth = (getWidth() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
-        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
+        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 3)) / 4;
 
         for (View v : views) {
             if (v != null) {
