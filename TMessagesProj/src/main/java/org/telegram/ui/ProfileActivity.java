@@ -495,6 +495,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float extraHeight;
     private float initialAnimationExtraHeight;
     private float avatarAnimationProgress;
+    private int musicViewFixedExtraHeight;
 
     private int searchTransitionOffset;
     private float searchTransitionProgress;
@@ -522,6 +523,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean isInLandscapeMode;
     private boolean allowPullingDown;
     private boolean isPulledDown;
+    private boolean musicViewEnterAnimation;
 
     private Paint whitePaint = new Paint();
 
@@ -6317,8 +6319,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         float onlineX = this.onlineX;
 
         if (diff < 1f) {
-            nameX = AndroidUtilities.lerp(-dpf2(42 + 21), nameX, diff);
-            onlineX = AndroidUtilities.lerp(-dpf2(42 + 21), onlineX, diff);
+            nameX = AndroidUtilities.lerp(-dpf2(42 + 4), nameX, diff);
+            onlineX = AndroidUtilities.lerp(-dpf2(42 + 4), onlineX, diff);
         }
         final float kx = dpf2(8);
         final float ky = isPulledDown ? dpf2(8) : dpf2(-24);
@@ -8073,6 +8075,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         setMediaHeaderVisible(mediaHeaderVisible);
 
+        if (musicView != null && musicRow != -1 && musicView.isAnimating()) {
+            newOffset = musicViewFixedExtraHeight;
+            avatarsBlurView.invalidate();
+        }
         if (extraHeight != newOffset && !transitionAnimationInProress) {
             extraHeight = newOffset;
             topView.invalidate();
@@ -8800,7 +8806,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     FrameLayout.LayoutParams params1 = (FrameLayout.LayoutParams) nameTextView[a].getLayoutParams();
                     float nameX = viewportWidth / 2f - (params1.leftMargin + Math.min(nameTextView[a].getExactWidth(), a == 1 ? params1.width : viewportWidth) * nameScale * 0.5f);
                     FrameLayout.LayoutParams params2 = (FrameLayout.LayoutParams) onlineTextView[a].getLayoutParams();
-                    float onlineX = viewportWidth / 2f - (params2.leftMargin + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
+                    float onlineX = viewportWidth / 2f - (params2.leftMargin + onlineTextView[a].getPaddingLeft() + Math.min(onlineTextView[hasFallbackPhoto ? 3 : a].getExactWidth(), a == 1 ? params2.width : viewportWidth) * 0.5f);
 
                     if (a == 1) {
                         this.nameX = nameX;
@@ -9498,22 +9504,57 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (newUserInfo != null) {
                     userInfo = newUserInfo;
                 }
-                updateRowsIds();
                 updateSelectedMediaTabText();
-                if (listView != null && listView.isComputingLayout()) {
-                    listView.post(() -> {
-                        if (listView.isComputingLayout()) {
-                            return;
-                        }
-                        if (listAdapter != null) {
-                            listAdapter.notifyDataSetChanged();
-                        }
-                    });
-                } else if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
-                }
+                updateMusicRow();
             }
         }
+    }
+
+    private void updateMusicRow() {
+        boolean wasMusicRowVisible = musicView != null &&
+                musicView.isVisible() &&
+                musicRow != -1;
+        boolean isMusicRowVisible = userInfo != null &&
+                userInfo.saved_music != null &&
+                (imageUpdater == null || myProfile);
+
+        boolean canAnimate = layoutManager != null && (expandAnimator == null || !expandAnimator.isRunning());
+        if (canAnimate && wasMusicRowVisible && !isMusicRowVisible) {
+            animateMusicRow(false);
+        } else if (canAnimate && musicView != null && !musicView.isVisible() && isMusicRowVisible && musicRow != -1) {
+            musicView.setMusicDocument(userInfo.saved_music);
+            animateMusicRow(true);
+        } else if (wasMusicRowVisible && isMusicRowVisible) {
+            musicView.setMusicDocument(userInfo.saved_music);
+        } else if (wasMusicRowVisible != isMusicRowVisible) {
+            updateRowsIds();
+            if (listView != null && listView.isComputingLayout()) {
+                listView.post(() -> {
+                    if (listView.isComputingLayout()) {
+                        return;
+                    }
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
+                });
+            } else if (listAdapter != null) {
+                musicViewEnterAnimation = canAnimate && !wasMusicRowVisible && isMusicRowVisible;
+                listAdapter.notifyDataSetChanged();
+            }
+        }
+    }
+
+    private void animateMusicRow(boolean isVisible) {
+        if (musicView == null) return;
+        musicViewFixedExtraHeight = (int) extraHeight;
+        musicView.setAnimatedVisibility(isVisible, () -> {
+            if (musicRow != -1) {
+                final View view = layoutManager.findViewByPosition(0);
+                if (view != null) {
+                    listView.scrollBy(0, view.getTop() - musicViewFixedExtraHeight);
+                }
+            }
+        });
     }
 
     private void updateAutoDeleteItem() {
@@ -14032,6 +14073,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     musicView = cell;
                     if (userInfo != null && userInfo.saved_music != null) {
                         cell.setMusicDocument(userInfo.saved_music);
+                    }
+                    if (musicViewEnterAnimation) {
+                        animateMusicRow(true);
+                        musicViewEnterAnimation = false;
                     }
                     break;
             }
