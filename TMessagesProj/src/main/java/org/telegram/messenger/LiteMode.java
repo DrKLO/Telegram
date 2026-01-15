@@ -56,7 +56,7 @@ public class LiteMode {
         FLAG_AUTOPLAY_GIFS |
         FLAG_CHAT_THANOS |
         FLAG_PARTICLES
-    ); // 67612
+    ); // 198684
     public static int PRESET_MEDIUM = (
         FLAGS_ANIMATED_STICKERS |
         FLAG_ANIMATED_EMOJI_KEYBOARD_PREMIUM |
@@ -68,7 +68,7 @@ public class LiteMode {
         FLAG_AUTOPLAY_GIFS |
         FLAG_CHAT_THANOS |
         FLAG_PARTICLES
-    ); // 73311
+    ); // 204383
     public static int PRESET_HIGH = (
         FLAGS_ANIMATED_STICKERS |
         FLAGS_ANIMATED_EMOJI |
@@ -81,9 +81,8 @@ public class LiteMode {
         FLAG_CALLS_ANIMATIONS |
         FLAG_AUTOPLAY_VIDEOS |
         FLAG_AUTOPLAY_GIFS |
-        FLAG_CHAT_THANOS |
         FLAG_PARTICLES
-    ); // 131071
+    ); // 262143
     public static int PRESET_POWER_SAVER = 0;
 
     private static int BATTERY_LOW = 10;

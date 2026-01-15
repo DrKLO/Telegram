@@ -103,7 +103,7 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                     CacheByChatsController.KeepMediaException newException = null;
                     for (int i = 0; i < dids.size(); i++) {
                         exceptions.add(newException = new CacheByChatsController.KeepMediaException(dids.get(i).dialogId, CacheByChatsController.KEEP_MEDIA_ONE_DAY));

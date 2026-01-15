@@ -38,6 +38,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1784,6 +1785,22 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                final OnBackInvokedDispatcher dispatcher = windowView.findOnBackInvokedDispatcher();
+                if (dispatcher != null) {
+                    dispatcher.registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                        () -> {
+                            if (LaunchActivity.instance != null) {
+                                LaunchActivity.instance.onBackPressed();
+                            } else {
+                                onAttachedBackPressed();
+                            }
+                        }
+                    );
+                }
+            }
         }
         windowView.requestLayout();
         runOpenAnimationAfterLayout = true;

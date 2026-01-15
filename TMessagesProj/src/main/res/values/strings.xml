@@ -8599,6 +8599,7 @@
     <string name="Gift2AuctionTableStarted">Started</string>
     <string name="Gift2AuctionTableEnded">Ended</string>
     <string name="Gift2AuctionEnded">Auction ended.</string>
+    <string name="Gift2AuctionEndedNoDot">Auction ended</string>
     <string name="Gift2AuctionTableCurrentRound">Current Round</string>
     <string name="Gift2AuctionTableCurrentRounds">Rounds</string>
     <string name="Gift2AuctionTableCurrentRoundsOne">Round %d</string>
@@ -8715,6 +8716,7 @@
     <string name="Gift2AuctionPlaceBid">Place a ⭐️%s Bid</string>
     <string name="Gift2AuctionPlaceBidAdd">Add ⭐️%s to Your Bid</string>
     <string name="Gift2PreviewRandomTraits">Random Traits</string>
+    <string name="Gift2PreviewSelectedTraits">Selected Traits</string>
     <string name="Gift2LimitedSlider">Limited</string>
     <string name="Gift2Limited1OfRibbon">1 of %s</string>
     <string name="StarsGiftCompleted">Gift sent!</string>
@@ -10096,6 +10098,8 @@
     <string name="PasskeyUnknown">Passkey</string>
     <string name="PasskeyPopupTitle">🔑  Protect your account</string>
     <string name="PasskeyPopupText">Log in with your face, fingerprint or screen lock</string>
+    <string name="PasskeyNoOptionsTitle">No Passkey App</string>
+    <string name="PasskeyNoOptionsText">Install app that supports saving passkeys on your phone or physical ledgers.</string>
 
     <string name="StoryMusicTitle">Add Audiotrack</string>
     <string name="StoryMusicSelectFromFiles">Select from Files</string>
@@ -10192,4 +10196,34 @@
     <string name="GiftAuctionWearInfo2Text">Your profile page will get the color and the symbol of this item.</string>
     <string name="GiftAuctionWearInfo3Header">Proof of Ownership</string>
     <string name="GiftAuctionWearInfo3Text">Tapping the icon of this item next to your name will show its info and owner.</string>
+
+    <string name="CocoonPoweredBy">Translations are powered by\n**🥚 Cocoon**.</string>
+    <string name="CocoonPoweredByLink">**How does it work?**</string>
+    <string name="CocoonSubtitle">Cocoon (**Co**nfidential **Co**mpute **O**pen **N**etwork)\nhandles AI tasks safely and efficiently.</string>
+    <string name="CocoonFeature1Title">Private</string>
+    <string name="CocoonFeature1Text">No third party can access any data, such as translations, inside **@cocoon**</string>
+    <string name="CocoonFeature1TextLink">https://t.me/cocoon</string>
+    <string name="CocoonFeature2Title">Efficient</string>
+    <string name="CocoonFeature2Text">Cocoon has allowed Telegram to reduce translation cost by 6x.</string>
+    <string name="CocoonFeature3Title">For Everyone</string>
+    <string name="CocoonFeature3Text">Any developer can use Cocoon for AI features. Learn more at **cocoon.org**</string>
+    <string name="CocoonFeature3TextLink">https://cocoon.org/</string>
+    <string name="CocoonFooter">Want to integrate Cocoon into your projects?\nReach out at **t.me/cocoon?direct**</string>
+    <string name="CocoonFooterLink">https://t.me/cocoon?direct</string>
+    <string name="SummaryTitle">AI Summary</string>
+    <string name="SummarySubtitle">Tap to see original text</string>
+
+    <string name="StakeDiceTitle">Emoji Stake</string>
+    <string name="StakeDiceTitleBeta">Beta</string>
+    <string name="StakeDiceText">A limited play-test of the upcoming emoji mini-game platform for a small group of users.</string>
+    <string name="StakeDiceReturns">Results and Returns</string>
+    <string name="StakeDiceReturnsInfo">A streak resets after 3 🎲 or a stake change.</string>
+    <string name="StakeDicePlaceholder">Your Stake</string>
+    <string name="StakeDiceButton">Save and Roll</string>
+    <string name="StakeDiceToast">Your Stake: 💎 </string>
+    <string name="StakeDiceToastButton">Send</string>
+    <string name="StakeDiceActionYouWon">You won 💎 %s</string>
+    <string name="StakeDiceActionYouLost">You lost 💎 %s</string>
+    <string name="StakeDiceActionWon">un1 won 💎 %s</string>
+    <string name="StakeDiceActionLost">un1 lost 💎 %s</string>
 </resources>

@@ -1103,7 +1103,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         return;
                     }
                     if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_PASSWORD) {
@@ -6685,18 +6685,20 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (currentActivityType == TYPE_PHONE_VERIFICATION) {
-            views[currentViewNum].onBackPressed(true);
-            for (int a = 0; a < views.length; a++) {
-                if (views[a] != null) {
-                    views[a].onDestroyActivity();
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] != null) {
+                        views[a].onDestroyActivity();
+                    }
                 }
             }
         } else if (currentActivityType == TYPE_REQUEST || currentActivityType == TYPE_PASSWORD) {
-            callCallback(false);
+            if (invoked) callCallback(false);
         } else if (currentActivityType == TYPE_IDENTITY || currentActivityType == TYPE_ADDRESS) {
-            return !checkDiscard();
+            return !checkDiscard(invoked);
         }
         return true;
     }
@@ -6982,16 +6984,18 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         return initialValues == null || initialValues.equals(getCurrentValues());
     }
 
-    private boolean checkDiscard() {
+    private boolean checkDiscard(boolean invoked) {
         if (isHasNotAnyChanges()) {
             return false;
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setPositiveButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-        builder.setTitle(LocaleController.getString(R.string.DiscardChanges));
-        builder.setMessage(LocaleController.getString(R.string.PassportDiscardChanges));
-        showDialog(builder.create());
+        if (invoked) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setPositiveButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            builder.setTitle(LocaleController.getString(R.string.DiscardChanges));
+            builder.setMessage(LocaleController.getString(R.string.PassportDiscardChanges));
+            showDialog(builder.create());
+        }
         return true;
     }
 

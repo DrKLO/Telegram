@@ -274,6 +274,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         view.setTranslationX(0);
                         view.setTranslationY(0);
+                        onRemoveAnimationUpdate(holder);
                         dispatchRemoveFinished(holder);
                         mRemoveAnimations.remove(holder);
                         dispatchFinishedWhenDone();
@@ -331,6 +332,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     animation.setListener(null);
+                    onAddAnimationUpdate(holder);
                     dispatchAddFinished(holder);
                     mAddAnimations.remove(holder);
                     dispatchFinishedWhenDone();
@@ -448,6 +450,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     animation.setListener(null);
+                    onMoveAnimationUpdate(holder);
                     dispatchMoveFinished(holder);
                     mMoveAnimations.remove(holder);
                     dispatchFinishedWhenDone();
@@ -536,6 +539,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         view.setTranslationX(0);
                         view.setTranslationY(0);
+                        onChangeAnimationUpdate(changeInfo.oldHolder);
                         dispatchChangeFinished(changeInfo.oldHolder, true);
                         mChangeAnimations.remove(changeInfo.oldHolder);
                         dispatchFinishedWhenDone();
@@ -573,6 +577,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         newView.setTranslationX(0);
                         newView.setTranslationY(0);
+                        onChangeAnimationUpdate(changeInfo.newHolder);
                         dispatchChangeFinished(changeInfo.newHolder, false);
                         mChangeAnimations.remove(changeInfo.newHolder);
                         dispatchFinishedWhenDone();

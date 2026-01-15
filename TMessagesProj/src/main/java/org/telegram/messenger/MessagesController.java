@@ -58,7 +58,6 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.support.LongSparseLongArray;
-import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.messenger.voip.GroupCallMessagesController;
 import org.telegram.messenger.voip.VoIPDebugToSend;
 import org.telegram.messenger.voip.VoIPPreNotificationService;
@@ -579,7 +578,6 @@ public class MessagesController extends BaseController implements NotificationCe
     public int channelAutotranslationLevelMin;
     public Set<String> webAppAllowedProtocols;
     public Set<String> ignoreRestrictionReasons;
-
     public int channelsLimitDefault;
     public int channelsLimitPremium;
     public int savedGifsLimitDefault;
@@ -679,6 +677,38 @@ public class MessagesController extends BaseController implements NotificationCe
     public String verifyAgeBotUsername;
     public String verifyAgeCountry;
     public int verifyAgeMin;
+    public int chatlistInvitesLimitDefault;
+    public int chatlistInvitesLimitPremium;
+    public int chatlistJoinedLimitDefault;
+    public int chatlistJoinedLimitPremium;
+    public String storiesPosting;
+    public String storiesEntities;
+    public int stargiftsMessageLengthMax;
+    public int stargiftsConvertPeriodMax;
+    public boolean videoIgnoreAltDocuments;
+    public boolean disableBotFullscreenBlur;
+    public String tonBlockchainExplorerUrl;
+    public long starsPaidMessageAmountMax;
+    public int starsPaidMessageCommissionPermille;
+    public int stargiftsPinnedToTopLimit;
+    public boolean starsPaidMessagesAvailable;
+    public long freezeSinceDate;
+    public long freezeUntilDate;
+    public String freezeAppealUrl;
+    public int conferenceCallSizeLimit;
+    public boolean callRequestsDisabled;
+    public int pollAnswersMax;
+    public int todoItemsMax;
+    public int todoTitleLengthMax;
+    public int todoItemLengthMax;
+    public String translationsManualEnabled; // "enabled", "alternative", "system", "disabled"
+    public String translationsAutoEnabled; // "enabled", "alternative", "system", "disabled"
+    public HashSet<Long> whitelistedBots;
+    public int[] starsGroupcallMessageLimits;
+    public int starsGroupcallMessageAmountMax;
+    public long tonStakeddiceStakeAmountMin;
+    public long tonStakeddiceStakeAmountMax;
+    public long[] tonStakediceStakeSuggestedAmounts;
 
     private final SharedPreferences notificationsPreferences;
     private final SharedPreferences mainPreferences;
@@ -712,36 +742,6 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean uploadMarkupVideo;
     public boolean giftAttachMenuIcon;
     public boolean giftTextFieldIcon;
-
-    public int chatlistInvitesLimitDefault;
-    public int chatlistInvitesLimitPremium;
-    public int chatlistJoinedLimitDefault;
-    public int chatlistJoinedLimitPremium;
-    public String storiesPosting;
-    public String storiesEntities;
-    public int stargiftsMessageLengthMax;
-    public int stargiftsConvertPeriodMax;
-    public boolean videoIgnoreAltDocuments;
-    public boolean disableBotFullscreenBlur;
-    public String tonBlockchainExplorerUrl;
-    public long starsPaidMessageAmountMax;
-    public int starsPaidMessageCommissionPermille;
-    public int stargiftsPinnedToTopLimit;
-    public boolean starsPaidMessagesAvailable;
-    public long freezeSinceDate;
-    public long freezeUntilDate;
-    public String freezeAppealUrl;
-    public int conferenceCallSizeLimit;
-    public boolean callRequestsDisabled;
-    public int pollAnswersMax;
-    public int todoItemsMax;
-    public int todoTitleLengthMax;
-    public int todoItemLengthMax;
-    public String translationsManualEnabled; // "enabled", "alternative", "system", "disabled"
-    public String translationsAutoEnabled; // "enabled", "alternative", "system", "disabled"
-    public HashSet<Long> whitelistedBots;
-    public int[] starsGroupcallMessageLimits;
-    public int starsGroupcallMessageAmountMax;
 
     public boolean isTranslationsManualEnabled() {
         return !"disabled".equals(translationsManualEnabled);
@@ -1724,6 +1724,9 @@ public class MessagesController extends BaseController implements NotificationCe
         starrefMaxCommissionPermille = mainPreferences.getInt("starrefMaxCommissionPermille", 400);
         botVerificationDescriptionLengthLimit = mainPreferences.getInt("botVerificationDescriptionLengthLimit", 70);
         paidReactionsPrivacyTime = mainPreferences.getLong("paidReactionsAnonymousTime", 0);
+        tonStakeddiceStakeAmountMin = mainPreferences.getLong("tonStakeddiceStakeAmountMin", 100000000L);
+        tonStakeddiceStakeAmountMax = mainPreferences.getLong("tonStakeddiceStakeAmountMax", 50000000000L);
+        tonStakediceStakeSuggestedAmounts = Arrays.stream(mainPreferences.getString("tonStakediceStakeSuggestedAmounts", "100000000,1000000000,2000000000,5000000000,10000000000,20000000000").split(",")).mapToLong(Long::parseLong).toArray();
         config.load(mainPreferences);
 
         final boolean paidReactionsActual = (System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2;
@@ -4879,6 +4882,42 @@ public class MessagesController extends BaseController implements NotificationCe
                         final int[] tiers = parseTiers((TLRPC.TL_jsonArray) value.value);
                         if (!tiersEqual(tiers, starsGroupcallMessageLimits)) {
                             editor.putString("starsGroupcallMessageLimits", tiersToString(starsGroupcallMessageLimits = tiers));
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "ton_stakedice_stake_amount_min": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        final TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (tonStakeddiceStakeAmountMin != (long) num.value) {
+                            editor.putLong("tonStakeddiceStakeAmountMin", tonStakeddiceStakeAmountMin = (long) num.value);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "ton_stakedice_stake_amount_max": {
+                    if (value.value instanceof TLRPC.TL_jsonNumber) {
+                        final TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
+                        if (tonStakeddiceStakeAmountMax != (long) num.value) {
+                            editor.putLong("tonStakeddiceStakeAmountMax", tonStakeddiceStakeAmountMax = (long) num.value);
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "ton_stakedice_stake_suggested_amounts": {
+                    if (value.value instanceof TLRPC.TL_jsonArray) {
+                        final TLRPC.TL_jsonArray arr = (TLRPC.TL_jsonArray) value.value;
+                        final long[] values = new long[arr.value.size()];
+                        for (int i = 0; i < arr.value.size(); ++i) {
+                            if (arr.value.get(i) instanceof TLRPC.TL_jsonNumber) {
+                                values[i] = (long) ((TLRPC.TL_jsonNumber) arr.value.get(i)).value;
+                            }
+                        }
+                        if (!Arrays.equals(values, tonStakediceStakeSuggestedAmounts)) {
+                            editor.putString("tonStakeddiceStakeSuggestedAmounts", Arrays.stream(tonStakediceStakeSuggestedAmounts = values).mapToObj(String::valueOf).collect(Collectors.joining(",")));
                             changed = true;
                         }
                     }
@@ -17611,6 +17650,8 @@ public class MessagesController extends BaseController implements NotificationCe
             } else if (baseUpdate instanceof TLRPC.TL_updateGroupCallEncryptedMessage) {
                 GroupCallMessagesController.getInstance(currentAccount)
                     .processUpdate((TLRPC.TL_updateGroupCallEncryptedMessage) baseUpdate);
+            } else if (baseUpdate instanceof TLRPC.TL_updateEmojiGameInfo) {
+                stakeDiceInfo = ((TLRPC.TL_updateEmojiGameInfo) baseUpdate).info;
             } else if (baseUpdate instanceof TLRPC.TL_updateReadMessagesContents) {
                 TLRPC.TL_updateReadMessagesContents update = (TLRPC.TL_updateReadMessagesContents) baseUpdate;
                 markContentAsReadMessagesDate = update.date;
@@ -23233,7 +23274,7 @@ public class MessagesController extends BaseController implements NotificationCe
         messageObjects.add(msg);
         getSendMessagesHelper().sendMessage(messageObjects, msg.getDialogId(),
             !msg.isForwarded(), false, true, 0,
-            msg.messageOwner.suggested_post != null ? msg : null,
+                0, msg.messageOwner.suggested_post != null ? msg : null,
             -1, 0,
             DialogObject.getPeerDialogId(msg.messageOwner.saved_peer_id),
             MessageSuggestionParams.of(suggestedPost)
@@ -23514,5 +23555,29 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void markEmailSuggestionAsShown() {
         emailSuggestionWasShown = true;
+    }
+
+    private ArrayList<Utilities.Callback<Boolean>> loadingStakeDiceInfo;
+    public TLRPC.EmojiGameInfo stakeDiceInfo;
+    public void loadStakeDiceInfo(Utilities.Callback<Boolean> isAvailable) {
+        if (stakeDiceInfo != null) {
+            isAvailable.run(stakeDiceInfo instanceof TLRPC.TL_emojiGameDiceInfo);
+            return;
+        }
+        if (loadingStakeDiceInfo != null) {
+            loadingStakeDiceInfo.add(isAvailable);
+            return;
+        }
+        loadingStakeDiceInfo = new ArrayList<>();
+        loadingStakeDiceInfo.add(isAvailable);
+        getConnectionsManager().sendRequestTyped(new TLRPC.TL_messages_getEmojiGameInfo(), AndroidUtilities::runOnUIThread, (res, err) -> {
+            if (res != null) {
+                stakeDiceInfo = res;
+            }
+            for (Utilities.Callback<Boolean> callback : loadingStakeDiceInfo) {
+                callback.run(stakeDiceInfo instanceof TLRPC.TL_emojiGameDiceInfo);
+            }
+            loadingStakeDiceInfo = null;
+        });
     }
 }

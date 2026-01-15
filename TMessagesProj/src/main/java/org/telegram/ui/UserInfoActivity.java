@@ -122,7 +122,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             @Override
             public void onItemClick(int id) {
             if (id == -1) {
-                if (onBackPressed()) {
+                if (onBackPressed(true)) {
                     finishFragment();
                 }
             } else if (id == done_button) {

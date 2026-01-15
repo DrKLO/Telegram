@@ -30,6 +30,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
@@ -83,6 +84,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
     private final static TableView.TableRowTitle[] ref2 = new TableView.TableRowTitle[1];
 
     private final FrameLayout headerContainer;
+    private @Nullable TextView headerStatus;
     private final ButtonSpan.TextViewButtons auctionRowStartTimeText;
     private final ButtonSpan.TextViewButtons auctionRowEndTimeText;
     private final ButtonSpan.TextViewButtons auctionRowAveragePriceText;
@@ -157,9 +159,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         subtitleTextView.setGravity(Gravity.CENTER);
         subtitleTextView.setText(TextUtils.concat(
             AndroidUtilities.replaceTags(formatPluralString("Gift2AuctionInfo2", starGift.gifts_per_round, title)), " ",
-            AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2AuctionInfoLearnMore), () -> {
-                showMoreInfo(context, resourcesProvider, starGift);
-            }), true, dp(8f / 3f), dp(1))
+            AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2AuctionInfoLearnMore), () -> showMoreInfo(context, resourcesProvider, starGift)), true, dp(8f / 3f), dp(1))
         ));
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -324,12 +324,12 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             StarGiftSheet.TopView topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
                 @Override
                 public float getRealHeight() {
-                    return dp(268);
+                    return dp(288);
                 }
 
                 @Override
                 public int getFinalHeight() {
-                    return dp(268);
+                    return dp(288);
                 }
 
                 Path path = new Path();
@@ -351,14 +351,39 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
                     super.dispatchDraw(canvas);
                     canvas.restore();
                 }
+
+                @Override
+                protected void updateButtonsBackgrounds(int color) {
+                    super.updateButtonsBackgrounds(color);
+                    if (headerStatus != null && Theme.setSelectorDrawableColor(headerStatus.getBackground(), color, false)) {
+                        headerStatus.invalidate();
+                    }
+                }
             };
 
             topView.onSwitchPage(new StarGiftSheet.PageTransition(StarGiftSheet.PAGE_UPGRADE, StarGiftSheet.PAGE_UPGRADE, 1.0f));
             topView.setPreviewingAttributes(auction.previewAttributes);
             topView.hideCloseButton();
 
+            headerContainer.addView(topView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 288, Gravity.TOP));
 
-            headerContainer.addView(topView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 268, Gravity.TOP));
+            headerStatus = new TextView(context);
+            headerStatus.setGravity(Gravity.CENTER);
+            headerStatus.setTypeface(AndroidUtilities.bold());
+            headerStatus.setTextColor(Color.WHITE);
+            headerStatus.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+
+            if (auction.auctionStateFinished != null) {
+                headerStatus.setText(getString(R.string.Gift2AuctionEndedNoDot));
+            } else if (auction.isUpcoming()) {
+                headerStatus.setText(getString(R.string.Gift2LinkUpcomingAuction));
+            } else {
+                headerStatus.setText(getString(R.string.Gift2LinkGiftAuction));
+            }
+
+            headerStatus.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 13, 13));
+            headerStatus.setPadding(dp(12), 0, dp(12), 0);
+            headerContainer.addView(headerStatus, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 77));
 
             TextView giftNameTextView = new TextView(context);
             giftNameTextView.setTypeface(AndroidUtilities.bold());

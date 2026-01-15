@@ -4025,16 +4025,16 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (!selectedTopics.isEmpty()) {
-            clearSelectedTopics();
+            if (invoked) clearSelectedTopics();
             return false;
         }
         if (searching) {
-            actionBar.onSearchFieldVisibilityChanged(searchItem.toggleSearch(false));
+            if (invoked) actionBar.onSearchFieldVisibilityChanged(searchItem.toggleSearch(false));
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

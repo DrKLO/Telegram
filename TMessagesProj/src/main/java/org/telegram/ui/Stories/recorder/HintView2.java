@@ -417,6 +417,52 @@ public class HintView2 extends View {
         return (int) Math.ceil(Math.max(leftWidth, rightWidth));
     }
 
+    public static CharSequence cutInFancyHalfText(CharSequence text, TextPaint paint) {
+        if (TextUtils.indexOf(text, '\n') >= 0) {
+            return text;
+        }
+        int mid = text.length() / 2;
+        int lastMid = mid;
+        float leftWidth = 0, rightWidth = 0;
+        float prevLeftWidth = 0;
+        float prevRightWidth = Float.MAX_VALUE;
+
+        int dir = -1;
+        for (int i = 0; i < 10; ++i) {
+            while (mid > 0 && mid < text.length() && text.charAt(mid) != ' ') {
+                mid += dir;
+            }
+
+            leftWidth = measureCorrectly(text.subSequence(0, mid), paint);
+            rightWidth = measureCorrectly(AndroidUtilities.getTrimmedString(text.subSequence(mid, text.length())), paint);
+            lastMid = mid;
+
+            if (leftWidth == prevLeftWidth && rightWidth == prevRightWidth) {
+                break;
+            }
+
+            prevLeftWidth = leftWidth;
+            prevRightWidth = rightWidth;
+
+            if (leftWidth < rightWidth) {
+                dir = +1;
+                mid += dir;
+            } else {
+                dir = -1;
+                mid += dir;
+            }
+
+            if (mid <= 0 || mid >= text.length()) {
+                return text;
+            }
+        }
+        return TextUtils.concat(
+            AndroidUtilities.getTrimmedString(text.subSequence(0, lastMid)),
+            "\n",
+            AndroidUtilities.getTrimmedString(text.subSequence(lastMid, text.length()))
+        );
+    }
+
     public HintView2 useScale(boolean enable) {
         this.useScale = enable;
         return this;

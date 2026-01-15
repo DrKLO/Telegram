@@ -1109,12 +1109,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (actionBar.isActionModeShowed()) {
-            hideActionMode();
+            if (invoked) hideActionMode();
             return false;
         } else {
-            return super.onBackPressed();
+            return super.onBackPressed(invoked);
         }
     }
 

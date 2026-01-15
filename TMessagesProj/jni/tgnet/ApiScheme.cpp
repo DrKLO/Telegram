@@ -388,13 +388,20 @@ TL_username *TL_username::TLdeserialize(NativeByteBuffer *stream, uint32_t const
     return result;
 }
 
-TL_peerColor *TL_peerColor::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
-    if (TL_peerColor::constructor != constructor) {
-        error = true;
-        if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in TL_peerColor", constructor);
-        return nullptr;
+PeerColor *PeerColor::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    PeerColor *result = nullptr;
+    switch (constructor) {
+        case TL_peerColor::constructor:
+            result = new TL_peerColor();
+            break;
+        case TL_peerColorCollectible::constructor:
+            result = new TL_peerColorCollectible();
+            break;
+        default:
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in PeerColor", constructor);
+            return nullptr;
     }
-    TL_peerColor *result = new TL_peerColor();
     result->readParams(stream, instanceNum, error);
     return result;
 }
@@ -465,6 +472,67 @@ void TL_peerColor::serializeToStream(NativeByteBuffer *stream) {
     }
 }
 
+void TL_peerColorCollectible::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    collectible_id = stream->readInt64(&error);
+    gift_emoji_id = stream->readInt64(&error);
+    background_emoji_id = stream->readInt64(&error);
+    accent_color = stream->readInt32(&error);
+    {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_peerColorCollectible, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        colors.clear();
+        for (int32_t a = 0; a < count; a++) {
+            colors.push_back(stream->readInt32(&error));
+        }
+    }
+    if ((flags & 1) != 0) {
+        dark_accent_color = stream->readInt32(&error);
+    }
+    if ((flags & 2) != 0) {
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_FATAL("wrong Vector magic in TL_peerColorCollectible, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        dark_colors.clear();
+        for (int32_t a = 0; a < count; a++) {
+            dark_colors.push_back(stream->readInt32(&error));
+        }
+    }
+}
+
+void TL_peerColorCollectible::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    stream->writeInt64(collectible_id);
+    stream->writeInt64(gift_emoji_id);
+    stream->writeInt64(background_emoji_id);
+    stream->writeInt32(accent_color);
+    stream->writeInt32(0x1cb5c415);
+    stream->writeInt32(colors.size());
+    for (int32_t x : colors) {
+        stream->writeInt32(x);
+    }
+    if ((flags & 1) != 0) {
+        stream->writeInt32(dark_accent_color);
+    }
+    if ((flags & 2) != 0) {
+        stream->writeInt32(0x1cb5c415);
+        stream->writeInt32(dark_colors.size());
+        for (int32_t x: dark_colors) {
+            stream->writeInt32(x);
+        }
+    }
+}
+
 EmojiStatus *EmojiStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     EmojiStatus *result = nullptr;
     switch (constructor) {
@@ -477,6 +545,9 @@ EmojiStatus *EmojiStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t const
         case TL_emojiStatusCollectible::constructor:
             result = new TL_emojiStatusCollectible();
             break;
+        case TL_inputEmojiStatusCollectible::constructor:
+            result = new TL_inputEmojiStatusCollectible();
+            break;
         case TL_emojiStatus_layer197::constructor:
             result = new TL_emojiStatus_layer197();
             break;
@@ -485,7 +556,7 @@ EmojiStatus *EmojiStatus::TLdeserialize(NativeByteBuffer *stream, uint32_t const
             break;
         default:
             error = true;
-            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in User", constructor);
+            if (LOGS_ENABLED) DEBUG_FATAL("can't parse magic %x in EmojiStatus", constructor);
             return nullptr;
     }
     result->readParams(stream, instanceNum, error);
@@ -565,6 +636,24 @@ void TL_emojiStatusCollectible::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(edge_color);
     stream->writeInt32(pattern_color);
     stream->writeInt32(text_color);
+    if ((flags & 1) != 0) {
+        stream->writeInt32(until);
+    }
+}
+
+
+void TL_inputEmojiStatusCollectible::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    collectible_id = stream->readInt64(&error);
+    if ((flags & 1) != 0) {
+        until = stream->readInt32(&error);
+    }
+}
+
+void TL_inputEmojiStatusCollectible::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeInt32(flags);
+    stream->writeInt64(collectible_id);
     if ((flags & 1) != 0) {
         stream->writeInt32(until);
     }
@@ -673,10 +762,10 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         stories_max_id = std::unique_ptr<TL_recentStory>(TL_recentStory::TLdeserialize(stream, stream->readInt32(&error), instanceNum, error));
     }
     if ((flags2 & 256) != 0) {
-        color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+        color = std::unique_ptr<PeerColor>(PeerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     }
     if ((flags2 & 512) != 0) {
-        profile_color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+        profile_color = std::unique_ptr<PeerColor>(PeerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     }
     if ((flags2 & 4096) != 0) {
         bot_active_users = stream->readInt32(&error);
@@ -838,10 +927,10 @@ void TL_user_layer216::readParams(NativeByteBuffer *stream, int32_t instanceNum,
         stories_max_id->max_id = stream->readInt32(&error);
     }
     if ((flags2 & 256) != 0) {
-        color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+        color = std::unique_ptr<PeerColor>(PeerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     }
     if ((flags2 & 512) != 0) {
-        profile_color = std::unique_ptr<TL_peerColor>(TL_peerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
+        profile_color = std::unique_ptr<PeerColor>(PeerColor::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     }
     if ((flags2 & 4096) != 0) {
         bot_active_users = stream->readInt32(&error);

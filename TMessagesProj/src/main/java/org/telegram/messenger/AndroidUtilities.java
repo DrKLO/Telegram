@@ -5635,10 +5635,10 @@ public class AndroidUtilities {
     }
 
     public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, boolean animated) {
-        updateViewVisibilityAnimated(view, show, scaleFactor, goneOnHide, 1f, animated);
+        updateViewVisibilityAnimated(view, show, scaleFactor, goneOnHide, 1f, animated, null);
     }
 
-    public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, float maxAlpha, boolean animated) {
+    public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, float maxAlpha, boolean animated, ValueAnimator.AnimatorUpdateListener onUpdate) {
         if (view == null) {
             return;
         }
@@ -5661,11 +5661,11 @@ public class AndroidUtilities {
                 view.setScaleX(scaleFactor);
                 view.setScaleY(scaleFactor);
             }
-            view.animate().alpha(maxAlpha).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.animate().alpha(maxAlpha).scaleY(1f).scaleX(1f).setDuration(150).setUpdateListener(onUpdate).start();
             view.setTag(1);
         } else if (!show && view.getTag() != null) {
             view.animate().setListener(null).cancel();
-            view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view, goneOnHide)).setDuration(150).start();
+            view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new HideViewAfterAnimation(view, goneOnHide)).setDuration(150).setUpdateListener(onUpdate).start();
             view.setTag(null);
         }
     }

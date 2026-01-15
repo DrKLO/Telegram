@@ -155,7 +155,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (!checkChangesBeforeExit()) {
+                    if (!checkChangesBeforeExit(true)) {
                         finishFragment();
                     }
                 }
@@ -621,7 +621,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
 
     @Override
     public boolean canBeginSlide() {
-        if (checkChangesBeforeExit()) {
+        if (checkChangesBeforeExit(true)) {
             return false;
         }
         return super.canBeginSlide();
@@ -748,17 +748,18 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     }
 
     @Override
-    public boolean onBackPressed() {
-        if (closeKeyboard()) {
+    public boolean onBackPressed(boolean invoked) {
+        if (emojiKeyboardVisible) {
+            if (invoked) closeKeyboard();
             return false;
         }
-        if (checkChangesBeforeExit()) {
+        if (checkChangesBeforeExit(invoked)) {
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
-    private boolean checkChangesBeforeExit() {
+    private boolean checkChangesBeforeExit(boolean invoked) {
         boolean hasChanges = !selectedEmojisMap.keySet().equals(initialSelectedEmojis.keySet());
         if (boostsStatus != null && boostsStatus.level < selectedCustomReactions) {
             hasChanges = false;
@@ -766,7 +767,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         if (initialPaid != paid) {
             hasChanges = true;
         }
-        if (hasChanges) {
+        if (invoked && hasChanges) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), getResourceProvider());
             builder.setTitle(getString("UnsavedChanges", R.string.UnsavedChanges));
             String text = getString("ReactionApplyChangesDialog", R.string.ReactionApplyChangesDialog);

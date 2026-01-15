@@ -263,9 +263,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (nameTextView != null && nameTextView.isPopupShowing()) {
-            nameTextView.hidePopup(true);
+            if (invoked) nameTextView.hidePopup(true);
             return false;
         }
         return true;

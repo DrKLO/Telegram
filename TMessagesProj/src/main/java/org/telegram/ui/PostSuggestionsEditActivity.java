@@ -96,7 +96,7 @@ public class PostSuggestionsEditActivity extends BaseFragment {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -291,17 +291,19 @@ public class PostSuggestionsEditActivity extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (hasChanges()) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.UnsavedChanges));
-            builder.setMessage(LocaleController.getString(R.string.MessageSuggestionsUnsavedChanges));
-            builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
-            builder.setNegativeButton(LocaleController.getString(R.string.Discard), (dialog, which) -> finishFragment());
-            showDialog(builder.create());
+            if (invoked) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString(R.string.UnsavedChanges));
+                builder.setMessage(LocaleController.getString(R.string.MessageSuggestionsUnsavedChanges));
+                builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
+                builder.setNegativeButton(LocaleController.getString(R.string.Discard), (dialog, which) -> finishFragment());
+                showDialog(builder.create());
+            }
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

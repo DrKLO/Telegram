@@ -705,7 +705,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                     long did = dids.get(0).dialogId;
                     if (currentType == TYPE_STORIES) {
                         if (autoExceptions != null) {

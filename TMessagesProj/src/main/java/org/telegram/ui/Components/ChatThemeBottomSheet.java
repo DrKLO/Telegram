@@ -435,7 +435,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
                 AndroidUtilities.updateViewVisibilityAnimated(cancelOrResetTextView, false, 0.9f, false, animated);
                 AndroidUtilities.updateViewVisibilityAnimated(applyButton, true, 1f, false, animated);
                 AndroidUtilities.updateViewVisibilityAnimated(applyTextView, true, 0.9f, false, animated);
-                AndroidUtilities.updateViewVisibilityAnimated(applySubTextView, showSubText, 0.9f, false, 0.7f, animated);
+                AndroidUtilities.updateViewVisibilityAnimated(applySubTextView, showSubText, 0.9f, false, 0.7f, animated, null);
                 AndroidUtilities.updateViewVisibilityAnimated(themeHintTextView, true, 0.9f, false, animated);
             } else {
                 backButtonDrawable.setRotation(1f, animated);

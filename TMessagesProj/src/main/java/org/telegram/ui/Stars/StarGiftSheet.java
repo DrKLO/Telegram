@@ -84,7 +84,6 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -870,7 +869,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
 
         DialogsActivity fragment = new DialogsActivity(args);
-        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             if (dids.isEmpty()) {
                 return false;
             }
@@ -2280,6 +2279,49 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 AndroidUtilities.runOnUIThread(this.checkToRotateRunnable, 150);
             }
         };
+
+        public void setPreviewAttributes(StarGiftPreviewSheet.Attributes attributes) {
+            if (currentPage == null || currentPage.to != PAGE_UPGRADE || !isAttachedToWindow()) {
+                return;
+            }
+            AndroidUtilities.cancelRunOnUIThread(checkToRotateRunnable);
+            if (rotationAnimator != null) {
+                rotationAnimator.cancel();
+                rotationAnimator = null;
+            }
+
+            toggled = 1 - toggled;
+
+            final RLottieDrawable fromAnimation = imageView[1 + (1 - toggled)].getImageReceiver().getLottieAnimation();
+            final RLottieDrawable toAnimation = imageView[1 + toggled].getImageReceiver().getLottieAnimation();
+            if (toAnimation != null && fromAnimation != null) {
+                toAnimation.setProgress(fromAnimation.getProgress(), false);
+            }
+
+            setBackdropPaint(1 + toggled, backdrop[1 + toggled] = attributes.backdrop);
+            setPattern(1, attributes.pattern, true);
+            imageViewAttributes[1 + toggled] = attributes.model;
+            setGiftImage(imageView[1 + toggled].getImageReceiver(), imageViewAttributes[1 + toggled].document, 160);
+
+            animateSwitch();
+
+            rotationAnimator = ValueAnimator.ofFloat(1.0f - toggled, toggled);
+            rotationAnimator.addUpdateListener(anm -> {
+                toggleBackdrop = (float) anm.getAnimatedValue();
+                onSwitchPage(currentPage);
+            });
+            rotationAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    toggleBackdrop = toggled;
+                    onSwitchPage(currentPage);
+                }
+            });
+            rotationAnimator.setDuration(320);
+            rotationAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            rotationAnimator.start();
+        }
+
         private void rotateAttributes() {
             if (currentPage == null || currentPage.to != PAGE_UPGRADE || !isAttachedToWindow()) {
                 return;
@@ -7619,10 +7661,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             ssb = (SpannableStringBuilder) cs;
         }
 
-        SpannableString ok = new SpannableString("👌");
+        final SpannableString ok = new SpannableString("👌");
         ok.setSpan(new ColoredImageSpan(R.drawable.filled_understood), 0, ok.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        SpannableString thumbs = new SpannableString("👍");
+        final SpannableString thumbs = new SpannableString("👍");
         thumbs.setSpan(new ColoredImageSpan(R.drawable.filled_reactions), 0, thumbs.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         AndroidUtilities.replaceMultipleCharSequence("👌", ssb, ok);

@@ -3204,15 +3204,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (cacheModel != null && !cacheModel.selectedFiles.isEmpty()) {
-            cacheModel.clearSelection();
-            if (cachedMediaLayout != null) {
-                cachedMediaLayout.showActionMode(false);
-                cachedMediaLayout.updateVisibleRows();
+            if (invoked) {
+                cacheModel.clearSelection();
+                if (cachedMediaLayout != null) {
+                    cachedMediaLayout.showActionMode(false);
+                    cachedMediaLayout.updateVisibleRows();
+                }
             }
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 }

@@ -549,7 +549,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (id == done_button) {
                     onDoneButtonPressed();
                 } else if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 }
@@ -751,7 +751,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         backButtonView = new ImageView(context);
         backButtonView.setImageResource(R.drawable.ic_ab_back);
         backButtonView.setOnClickListener(v -> {
-            if (onBackPressed()) {
+            if (onBackPressed(true)) {
                 finishFragment();
             }
         });
@@ -1109,41 +1109,55 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (emailChangeIsSuggestion && currentViewNum == VIEW_ADD_EMAIL) {
             return false;
         }
 
         if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
-            for (int a = 0; a < views.length; a++) {
-                if (views[a] != null) {
-                    views[a].onDestroyActivity();
+            if (invoked) {
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] != null) {
+                        views[a].onDestroyActivity();
+                    }
                 }
+                clearCurrentState();
             }
-            clearCurrentState();
             return true;
         } else if (currentViewNum == VIEW_PASSWORD) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_PHONE_INPUT, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_PHONE_INPUT, true, null, true);
+            }
         } else if (currentViewNum == VIEW_RECOVER || currentViewNum == VIEW_RESET_WAIT) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_PASSWORD, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_PASSWORD, true, null, true);
+            }
         } else if ((currentViewNum >= VIEW_CODE_MESSAGE && currentViewNum <= VIEW_CODE_CALL) || currentViewNum == AUTH_TYPE_MISSED_CALL || currentViewNum == AUTH_TYPE_FRAGMENT_SMS) {
-            if (views[currentViewNum].onBackPressed(false)) {
+            if (invoked && views[currentViewNum].onBackPressed(false)) {
                 setPage(VIEW_PHONE_INPUT, true, null, true);
             }
         } else if (currentViewNum == VIEW_REGISTER) {
-            ((LoginActivityRegisterView) views[currentViewNum]).wrongNumber.callOnClick();
+            if (invoked) {
+                ((LoginActivityRegisterView) views[currentViewNum]).wrongNumber.callOnClick();
+            }
         } else if (currentViewNum == VIEW_NEW_PASSWORD_STAGE_1) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_RECOVER, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_RECOVER, true, null, true);
+            }
         } else if (currentViewNum == VIEW_NEW_PASSWORD_STAGE_2) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_NEW_PASSWORD_STAGE_1, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_NEW_PASSWORD_STAGE_1, true, null, true);
+            }
         } else if (currentViewNum == VIEW_CODE_EMAIL_SETUP) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_ADD_EMAIL, true, null, true);
-        } else {
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_ADD_EMAIL, true, null, true);
+            }
+        } else if (invoked) {
             if (views[currentViewNum].onBackPressed(true)) {
                 setPage(VIEW_PHONE_INPUT, true, null, true);
             }

@@ -1569,8 +1569,8 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 AndroidUtilities.lerp(parentWidth, to.parentWidth, t),
                 AndroidUtilities.lerp(parentHeight, to.parentHeight, t),
                 AndroidUtilities.lerp(blurredViewTopOffset, to.blurredViewTopOffset, t),
-                AndroidUtilities.lerp(blurredViewBottomOffset, to.blurredViewBottomOffset, t)
-            );
+                AndroidUtilities.lerp(blurredViewBottomOffset, to.blurredViewBottomOffset, t),
+                    0);
         }
     }
 

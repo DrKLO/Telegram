@@ -1622,7 +1622,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
         backButton.setImageResource(R.drawable.ic_ab_back);
         backButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         backButton.setOnClickListener(v -> {
-            if (onBackPressed()) {
+            if (onBackPressed(true)) {
                 finishFragment();
             }
         });
@@ -1679,12 +1679,12 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (!isChannel && hasUnsavedChanged() && getUserConfig().isPremium()) {
-            showUnsavedAlert();
+            if (invoked) showUnsavedAlert();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

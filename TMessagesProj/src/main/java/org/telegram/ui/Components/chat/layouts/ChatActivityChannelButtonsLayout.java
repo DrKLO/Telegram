@@ -108,8 +108,14 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
             final BoolAnimator visibilityAnimator = new BoolAnimator(animatorId, this,
                 CubicBezierInterpolator.EASE_OUT_QUINT, 300);
 
-            final ChatActivityBlurredRoundButton button = ChatActivityBlurredRoundButton.create(getContext(),
-                blurredBackgroundDrawableViewFactory, colorProvider, resourcesProvider, buttonIcons[buttonId]);
+            final ChatActivityBlurredRoundButton button = ChatActivityBlurredRoundButton.create(
+                getContext(),
+                blurredBackgroundDrawableViewFactory,
+                colorProvider,
+                resourcesProvider,
+                buttonIcons[buttonId],
+                48
+            );
 
             ScaleStateListAnimator.apply(button, .13f, 2f);
             button.setVisibility(GONE);

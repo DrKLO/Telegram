@@ -618,12 +618,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (commentTextView != null && commentTextView.isPopupShowing()) {
-            commentTextView.hidePopup(true);
+            if (invoked) commentTextView.hidePopup(true);
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     public void setMaxSelectedPhotos(int value, boolean order) {

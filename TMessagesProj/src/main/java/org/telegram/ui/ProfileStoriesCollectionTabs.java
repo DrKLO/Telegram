@@ -21,16 +21,18 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.StoriesController;
 
 import java.util.ArrayList;
 
 @SuppressLint("ViewConstructor")
-public class ProfileStoriesCollectionTabs extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate {
     private final ViewPagerFixed viewPager;
     private final ViewPagerFixed.TabsView tabsView;
     private final StoriesController.StoriesCollections collections;
@@ -45,8 +47,9 @@ public class ProfileStoriesCollectionTabs extends FrameLayout implements Notific
         void onTabAlbumLongClick(View view, int albumId);
     }
 
-    public ProfileStoriesCollectionTabs(Context context, StoriesController.StoriesCollections collections, Delegate delegate) {
-        super(context);
+    public ProfileStoriesCollectionTabs(Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout, StoriesController.StoriesCollections collections, Delegate delegate) {
+        super(context, sizeNotifierFrameLayout);
+
         this.collections = collections;
         this.sendCollectionsOrder = collections::sendOrder;
 

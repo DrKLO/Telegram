@@ -113,7 +113,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
 
         setBackgroundDrawable(null);
 
-        Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert).mutate();
+        Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert3).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         scrimPopupContainerLayout.setBackground(shadowDrawable);
 

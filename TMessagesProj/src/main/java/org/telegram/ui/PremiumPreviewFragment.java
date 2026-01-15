@@ -2108,12 +2108,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (settingsView != null) {
-            closeSetting();
+            if (invoked) closeSetting();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     private void closeSetting() {

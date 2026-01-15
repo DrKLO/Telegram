@@ -2784,16 +2784,17 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (proximitySheet != null) {
-            proximitySheet.dismiss();
+            if (invoked) proximitySheet.dismiss();
             return false;
         }
-        if (onCheckGlScreenshot()) {
+        if (mapView != null && mapView.getGlSurfaceView() != null && !hasScreenshot) {
+            if (invoked) onCheckGlScreenshot();
             return false;
         }
 
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override
@@ -2806,7 +2807,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     private boolean onCheckGlScreenshot() {
         if (mapView != null && mapView.getGlSurfaceView() != null && !hasScreenshot) {
-            GLSurfaceView glSurfaceView = mapView.getGlSurfaceView();
+            final GLSurfaceView glSurfaceView = mapView.getGlSurfaceView();
             glSurfaceView.queueEvent(() -> {
                 if (glSurfaceView.getWidth() == 0 || glSurfaceView.getHeight() == 0) {
                     return;

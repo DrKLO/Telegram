@@ -18,7 +18,9 @@ import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.GetPublicKeyCredentialOption;
 import androidx.credentials.PrepareGetCredentialResponse;
 import androidx.credentials.exceptions.CreateCredentialCancellationException;
+import androidx.credentials.exceptions.CreateCredentialCustomException;
 import androidx.credentials.exceptions.CreateCredentialInterruptedException;
+import androidx.credentials.exceptions.CreateCredentialNoCreateOptionException;
 import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
 import androidx.credentials.exceptions.GetCredentialInterruptedException;
@@ -90,6 +92,11 @@ public class PasskeysController {
                         if (err2 instanceof CreateCredentialCancellationException || err2 instanceof CreateCredentialInterruptedException) {
                             AndroidUtilities.runOnUIThread(() -> {
                                 done.run(null, "CANCELLED");
+                            });
+                            return;
+                        } else if (err2 instanceof CreateCredentialNoCreateOptionException) {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                done.run(null, "EMPTY");
                             });
                             return;
                         } else if (err2 != null) {

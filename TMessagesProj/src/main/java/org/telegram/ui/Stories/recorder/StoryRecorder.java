@@ -77,6 +77,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -501,6 +502,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (windowManager != null && windowView != null && windowView.getParent() == null) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+            setupBackDispatcher();
         }
 
         outputEntry = entry;
@@ -567,6 +569,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (windowManager != null && windowView != null && windowView.getParent() == null) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+            setupBackDispatcher();
         }
 
         collageLayoutView.setCameraThumb(getCameraThumb());
@@ -629,6 +632,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (windowManager != null && windowView != null && windowView.getParent() == null) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+            setupBackDispatcher();
         }
 
         outputEntry = entry;
@@ -693,6 +697,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (windowManager != null && windowView != null && windowView.getParent() == null) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+            setupBackDispatcher();
         }
 
         outputEntry = entry;
@@ -758,6 +763,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         if (windowManager != null && windowView != null && windowView.getParent() == null) {
             AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
+            setupBackDispatcher();
         }
 
         outputEntry = entry;
@@ -810,6 +816,16 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         botId = 0;
         botLang = "";
         botEdit = null;
+    }
+
+    private void setupBackDispatcher() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return;
+        final OnBackInvokedDispatcher dispatcher = windowView.findOnBackInvokedDispatcher();
+        if (dispatcher == null) return;
+        dispatcher.registerOnBackInvokedCallback(
+            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+            this::onBackPressed
+        );
     }
 
     private boolean fastClose;

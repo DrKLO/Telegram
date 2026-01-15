@@ -6,12 +6,10 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapShader;
 import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -57,10 +55,8 @@ public class ProfileGooeyView extends FrameLayout {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
             impl = new GPUImpl(SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH ? 1f : 1.5f);
-        } else if (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
-            impl = new CPUImpl();
         } else {
-            impl = new NoopImpl();
+            impl = new CPUImpl();
         }
         setIntensity(15f);
         setBlurIntensity(0f);
@@ -143,22 +139,6 @@ public class ProfileGooeyView extends FrameLayout {
         }, canvas);
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        impl.release();
-    }
-
-    private final static class NoopImpl implements Impl {
-        @Override
-        public void draw(Drawer drawer, Canvas canvas) {
-            canvas.save();
-            canvas.translate(0, -dp(BLACK_KING_BAR));
-            drawer.draw(canvas);
-            canvas.restore();
-        }
-    }
-
     private final class CPUImpl implements Impl {
         private Bitmap bitmap;
         private Canvas bitmapCanvas;
@@ -169,7 +149,7 @@ public class ProfileGooeyView extends FrameLayout {
         private int optimizedW;
 
         private int bitmapOrigW, bitmapOrigH;
-        private final float scaleConst = 5f;
+        private final float scaleConst = 6f;
 
         {
             bitmapPaint.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -270,13 +250,6 @@ public class ProfileGooeyView extends FrameLayout {
             }
 
             canvas.restore();
-        }
-
-        @Override
-        public void release() {
-            if (bitmap != null) {
-                bitmap.recycle();
-            }
         }
     }
 
@@ -514,7 +487,6 @@ public class ProfileGooeyView extends FrameLayout {
         default void setBlurIntensity(float intensity) {}
         default void onSizeChanged(int w, int h) {}
         void draw(Drawer drawer, Canvas canvas);
-        default void release() {}
     }
 
     private interface Drawer {

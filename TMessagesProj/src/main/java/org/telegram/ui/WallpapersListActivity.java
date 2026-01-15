@@ -595,7 +595,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     DialogsActivity fragment = new DialogsActivity(args);
-                    fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                    fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                         StringBuilder fmessage = new StringBuilder();
                         for (int b = 0; b < selectedWallPapers.size(); b++) {
                             Object object = selectedWallPapers.valueAt(b);

@@ -582,7 +582,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                     DialogsActivity dialogsActivity = new DialogsActivity(args);
                     AndroidUtilities.hideKeyboard(windowView);
                     OverlayActionBarLayoutDialog overlayActionBarLayoutDialog = new OverlayActionBarLayoutDialog(getContext(), resourcesProvider);
-                    dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, topicsFragment) -> {
+                    dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                         long did = dids.get(0).dialogId;
 
                         Bundle args1 = new Bundle();

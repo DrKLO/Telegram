@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
@@ -26,17 +27,19 @@ import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
 public class ChatActivitySideControlsButtonsLayout extends FrameLayout implements FactorAnimator.Target {
-    public static final int BUTTON_PAGE_DOWN = 0;
-    public static final int BUTTON_MENTION = 1;
-    public static final int BUTTON_REACTIONS = 2;
-    public static final int BUTTON_SEARCH_DOWN = 3;
-    public static final int BUTTON_SEARCH_UP = 4;
+    public static final int BUTTON_ATTACH = 0;
+    public static final int BUTTON_PAGE_DOWN = 1;
+    public static final int BUTTON_MENTION = 2;
+    public static final int BUTTON_REACTIONS = 3;
+    public static final int BUTTON_SEARCH_DOWN = 4;
+    public static final int BUTTON_SEARCH_UP = 5;
 
-    private static final int BUTTONS_COUNT = 5;
+    private static final int BUTTONS_COUNT = 6;
 
     private static final int VISIBILITY_ANIMATOR_ID = 1;
 
     private static final @DrawableRes int[] buttonIcons = new int[] {
+        R.drawable.msg_input_attach2,
         R.drawable.pagedown,
         R.drawable.mentionbutton,
         R.drawable.reactionbutton,
@@ -45,6 +48,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
     };
 
     private final String[] buttonDescriptions = new String[] {
+        LocaleController.getString(R.string.AttachMenu),
         LocaleController.getString(R.string.AccDescrPageDown),
         LocaleController.getString(R.string.AccDescrMentionDown),
         LocaleController.getString(R.string.AccDescrReactionMentionDown),
@@ -68,6 +72,11 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
         this.blurredBackgroundDrawableViewFactory = blurredBackgroundDrawableViewFactory;
         this.colorProvider = colorProvider;
         this.resourcesProvider = resourcesProvider;
+    }
+
+    private int gravity = Gravity.LEFT | Gravity.BOTTOM;
+    public void setGravity(int gravity) {
+        this.gravity = gravity;
     }
 
     public void setOnClickListener(ButtonOnClickListener onClickListener) {
@@ -154,7 +163,9 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
             holder.button.setAlpha(visibility);
             holder.button.setScaleX(lerp(0.7f, 1f, visibility));
             holder.button.setScaleY(lerp(0.7f, 1f, visibility));
-            holder.button.setTranslationY(dp(100) * (1f - visibility) - totalHeight);
+            if (buttonId != BUTTON_ATTACH) {
+                holder.button.setTranslationY(dp(100) * (1f - visibility) - totalHeight);
+            }
 
             final int height = dp(44);
             final int gap = dp(buttonId == BUTTON_SEARCH_UP || buttonId == BUTTON_SEARCH_DOWN ? 10 : 16);
@@ -178,14 +189,29 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
         if (buttonHolders[buttonId] == null) {
 
             final int animatorId = (buttonId << 16) | VISIBILITY_ANIMATOR_ID;
-            final BoolAnimator visibilityAnimator = new BoolAnimator(animatorId, this,
-                    AnimatorUtils.DECELERATE_INTERPOLATOR, 280);
+            final BoolAnimator visibilityAnimator = new BoolAnimator(
+                animatorId,
+                this,
+                buttonId == BUTTON_ATTACH ? CubicBezierInterpolator.EASE_OUT_QUINT : AnimatorUtils.DECELERATE_INTERPOLATOR,
+                buttonId == BUTTON_ATTACH ? 300 : 280
+            );
 
-            final ChatActivityBlurredRoundPageDownButton button = ChatActivityBlurredRoundPageDownButton.create(getContext(),
-                    resourcesProvider, blurredBackgroundDrawableViewFactory, colorProvider, buttonIcons[buttonId]);
+            int size = 58, iconSize = 48;
+            if (buttonId == BUTTON_ATTACH) {
+                size = 50;
+                iconSize = 32;
+            }
+            final ChatActivityBlurredRoundPageDownButton button = ChatActivityBlurredRoundPageDownButton.create(
+                getContext(),
+                size, iconSize,
+                resourcesProvider,
+                blurredBackgroundDrawableViewFactory,
+                colorProvider,
+                buttonIcons[buttonId]
+            );
 
-            button.setPivotX(dp(56 / 2f));
-            button.setPivotY(dp(56 / 2f + 64 - 56));
+            button.setPivotX(dp(size / 2f));
+            button.setPivotY(dp(size / 2f + 8));
             button.setVisibility(GONE);
             button.setContentDescription(buttonDescriptions[buttonId]);
             button.setOnClickListener(v -> {
@@ -207,7 +233,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
                 button.reverseCounter();
             }
 
-            addView(button, LayoutHelper.createFrame(56, 64, Gravity.LEFT | Gravity.BOTTOM));
+            addView(button, LayoutHelper.createFrame(size, size + 8, gravity));
 
             buttonHolders[buttonId] = new ButtonHolder(button, visibilityAnimator);
             checkButtonsPositionsAndVisibility();

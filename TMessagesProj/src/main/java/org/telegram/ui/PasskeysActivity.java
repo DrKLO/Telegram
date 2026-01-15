@@ -157,8 +157,16 @@ public class PasskeysActivity extends BaseFragment {
         if (item.id == -1) {
             PasskeysController.create(getContext(), currentAccount, (passkey, error) -> {
                 if (error != null) {
-                    if ("CANCELLED".equalsIgnoreCase(error) || "EMPTY".equalsIgnoreCase(error))
+                    if ("CANCELLED".equalsIgnoreCase(error))
                         return;
+                    if ("EMPTY".equalsIgnoreCase(error)) {
+                        new AlertDialog.Builder(getContext())
+                            .setTitle(getString(R.string.PasskeyNoOptionsTitle))
+                            .setMessage(getString(R.string.PasskeyNoOptionsText))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
+                        return;
+                    }
                     BulletinFactory.of(this).showForError(error, true);
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
@@ -341,8 +349,19 @@ public class PasskeysActivity extends BaseFragment {
             button.setLoading(true);
             PasskeysController.create(context, currentAccount, (passkey, error) -> {
                 button.setLoading(false);
-                if ("CANCELLED".equalsIgnoreCase(error) || "EMPTY".equalsIgnoreCase(error))
+                if ("CANCELLED".equalsIgnoreCase(error))
                     return;
+                if ("EMPTY".equalsIgnoreCase(error)) {
+                    new AlertDialog.Builder(context)
+                        .setTitle(getString(R.string.PasskeyNoOptionsTitle))
+                        .setMessage(getString(R.string.PasskeyNoOptionsText))
+                        .setPositiveButton(getString(R.string.OK), null)
+                        .setOnDismissListener((di) -> {
+                            sheet.dismiss();
+                        })
+                        .show();
+                    return;
+                }
 
                 BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                 if (fragment == null) return;
