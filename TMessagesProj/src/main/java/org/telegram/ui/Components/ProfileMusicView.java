@@ -36,6 +36,8 @@ import org.telegram.ui.ProfileActivity;
 public class ProfileMusicView extends View {
 
     private final Theme.ResourcesProvider resourcesProvider;
+    private final PorterDuffColorFilter filterColorWhite = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
+    private final PorterDuffColorFilter filterColorBlack = new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
 
     private Text author, title;
     private final Paint iconPaint = new Paint();
@@ -48,11 +50,8 @@ public class ProfileMusicView extends View {
         this.resourcesProvider = resourcesProvider;
 
         icon = context.getResources().getDrawable(R.drawable.files_music).mutate();
-        icon.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
 
-        iconPaint.setColor(0xFFFFFFFF);
         arrowPaint.setStyle(Paint.Style.STROKE);
-        arrowPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.85f));
         arrowPaint.setStrokeCap(Paint.Cap.ROUND);
         arrowPaint.setStrokeJoin(Paint.Join.ROUND);
         arrowPath.moveTo(0, -dpf2(3.33f));
@@ -77,23 +76,42 @@ public class ProfileMusicView extends View {
         );
     }
 
+    private int textColor = Color.WHITE;
+    private float parentExpanded;
+    private int backgroundColor;
+
     public void setColor(MessagesController.PeerColor peerColor) {
         int color1, color2;
         if (peerColor == null) {
-            if (!Theme.isCurrentThemeDark()) {
-                setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
-                return;
-            }
-            color1 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
-            color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            color1 = color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
         } else {
             color1 = peerColor.getBgColor1(Theme.isCurrentThemeDark());
             color2 = peerColor.getBgColor2(Theme.isCurrentThemeDark());
         }
-        setBackgroundColor(
-            Theme.adaptHSV(ColorUtils.blendARGB(color1, color2, .25f), +.02f, -.08f)
-        );
+
+        backgroundColor = Theme.adaptHSV(ColorUtils.blendARGB(color1, color2, .25f), +.02f, -.08f);
+        setBackgroundColor(backgroundColor);
+        checkTextColor();
     }
+
+    private void checkTextColor() {
+        final boolean useBlackText = parentExpanded < 0.8f && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.85f;
+        textColor = useBlackText ? Color.BLACK : Color.WHITE;
+        icon.setColorFilter(useBlackText ? filterColorBlack : filterColorWhite);
+        iconPaint.setColor(textColor);
+        arrowPaint.setColor(Theme.multAlpha(textColor, 0.85f));
+        invalidate();
+    }
+
+    public void setParentExpanded(float expanded) {
+        if (parentExpanded != expanded) {
+            parentExpanded = expanded;
+            checkTextColor();
+            invalidate();
+        }
+    }
+
+
 
     public void setMusicDocument(TLRPC.Document document) {
         CharSequence author = getAuthor(document);
@@ -219,9 +237,9 @@ public class ProfileMusicView extends View {
 //        canvas.drawRoundRect(dp(8), cy - hh * h3, dp(8) + w, cy + hh * h3, w, w, iconPaint);
 
         canvas.translate(dp(16.6f), 0);
-        this.author.draw(canvas, 0, cy, 0xFFFFFFFF, 1.0f);
+        this.author.draw(canvas, 0, cy, textColor, 1.0f);
         canvas.translate(this.author.getWidth(), 0);
-        this.title.draw(canvas, 0, cy, 0xFFFFFFFF, 0.85f);
+        this.title.draw(canvas, 0, cy, textColor, 0.85f);
         canvas.translate(this.title.getWidth(), 0);
 
         arrowPaint.setStrokeWidth(dpf2(1.16f));

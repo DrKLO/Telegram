@@ -359,6 +359,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         buttonsLayout.addView(oneButtonsLayout);
 
         buyButton = new ButtonWithCounterView(getContext(), resourceProvider);
+        buyButton.setRound();
         buyButton.setText("", false);
         buyButton.setOnClickListener(v -> {
             if (MessagesController.getInstance(currentAccount).isFrozen()) {
@@ -379,6 +380,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         buttonsLayout.addView(twoButtonsLayout);
 
         topupButton = new ButtonWithCounterView(getContext(), resourceProvider);
+        topupButton.setRound();
         SpannableStringBuilder ssb = new SpannableStringBuilder("x  ");
         ssb.setSpan(new ColoredImageSpan(R.drawable.mini_topup, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ssb.append(getString(R.string.StarsTopUp));
@@ -389,6 +391,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         twoButtonsLayout.addView(topupButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 1, 0, 0, 8, 0));
 
         withdrawButton = new ButtonWithCounterView(getContext(), resourceProvider);
+        withdrawButton.setRound();
         ssb = new SpannableStringBuilder("x  ");
         ssb.setSpan(new ColoredImageSpan(R.drawable.mini_stats, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ssb.append(getString(R.string.StarsStats));
@@ -401,6 +404,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         balanceLayout.addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 17, 20, 0));
 
         giftButton = new ButtonWithCounterView(getContext(), false, resourceProvider);
+        giftButton.setRound();
         SpannableStringBuilder sb2 = new SpannableStringBuilder();
         sb2.append("G  ");
         sb2.setSpan(new ColoredImageSpan(R.drawable.menu_stars_gift), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -3284,6 +3288,45 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         return ssb;
     }
 
+    public static SpannableStringBuilder replaceDiamond(CharSequence cs) {
+        return replaceDiamond(cs, 0.9f, null, 0, 0, 1.0f);
+    }
+
+    public static SpannableStringBuilder replaceDiamond(CharSequence cs, final float scale) {
+        return replaceDiamond(cs, scale, null, 0, 0, 1.0f);
+    }
+
+    public static SpannableStringBuilder replaceDiamond(CharSequence cs, final float scale, ColoredImageSpan[] cache, final float tx, final float ty, float sx) {
+        if (cs == null) return null;
+        SpannableStringBuilder ssb;
+        if (!(cs instanceof SpannableStringBuilder)) {
+            ssb = new SpannableStringBuilder(cs);
+        } else {
+            ssb = (SpannableStringBuilder) cs;
+        }
+        SpannableString spacedStar = new SpannableString("💎 ");
+        ColoredImageSpan span;
+        if (cache != null && cache[0] != null) {
+            span = cache[0];
+        } else {
+            span = new ColoredImageSpan(R.drawable.diamond);
+            if (cache != null) {
+                cache[0] = span;
+            }
+        }
+        span.recolorDrawable = false;
+        span.translate(tx, ty);
+        span.spaceScaleX = sx;
+        span.setScale(scale, scale);
+        spacedStar.setSpan(span, 0, spacedStar.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        AndroidUtilities.replaceMultipleCharSequence("💎️", ssb, "💎");
+        AndroidUtilities.replaceMultipleCharSequence("💎 ", ssb, "💎");
+        AndroidUtilities.replaceMultipleCharSequence("💎", ssb, spacedStar);
+        AndroidUtilities.replaceMultipleCharSequence(StarsController.currency + " ", ssb, StarsController.currency);
+        AndroidUtilities.replaceMultipleCharSequence(StarsController.currency, ssb, spacedStar);
+        return ssb;
+    }
+
     public static SpannableStringBuilder replaceStars(CharSequence cs, ColoredImageSpan[] spanRef) {
         return replaceStars(false, cs, spanRef);
     }
@@ -5579,12 +5622,21 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         });
     }
 
-    private static DecimalFormat floatFormat;
+    private static DecimalFormat floatFormat2;
+    public static String formatTON(long ton) {
+        if (floatFormat2 == null)
+            floatFormat2 = new DecimalFormat("0.####", new DecimalFormatSymbols(Locale.US));
+        if (ton % 1_000_000_000 != 0) {
+            return floatFormat2.format(ton / 1_000_000_000.0);
+        } else {
+            return (ton < 0 ? "-" : "") + LocaleController.formatNumber(Math.abs(ton / 1_000_000_000L), ',');
+        }
+    }
 
     public static CharSequence formatStarsAmount(TL_stars.StarsAmount starsAmount) {
         return formatStarsAmount(starsAmount, 0.777f, ',');
     }
-
+    private static DecimalFormat floatFormat;
     public static CharSequence formatStarsAmount(TL_stars.StarsAmount starsAmount, float relativeSize, char symbol) {
         if (floatFormat == null)
             floatFormat = new DecimalFormat("0.################", new DecimalFormatSymbols(Locale.US));

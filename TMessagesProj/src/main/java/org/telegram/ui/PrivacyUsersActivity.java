@@ -311,13 +311,15 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
 
     private void updateRows() {
         rowCount = 0;
+        blockUserRow = -1;
         usersHeaderRow = -1;
         blockUserDetailRow = -1;
         deleteAllRow = -1;
         if (!blockedUsersActivity || getMessagesController().totalBlockedCount >= 0) {
-            blockUserRow = rowCount++;
             if (currentType == TYPE_BLOCKED) {
                 blockUserDetailRow = rowCount++;
+            } else {
+                blockUserRow = rowCount++;
             }
 
             int count;

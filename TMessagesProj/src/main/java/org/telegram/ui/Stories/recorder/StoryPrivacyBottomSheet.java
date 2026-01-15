@@ -625,10 +625,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             button = new ButtonWithCounterView(context, resourcesProvider);
             button.setOnClickListener(this::onButton1Click);
+            button.setRound();
             buttonContainer.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
 
             button2 = new ButtonWithCounterView(context, false, resourcesProvider);
             button2.setOnClickListener(this::onButton2Click);
+            button2.setRound();
             buttonContainer.addView(button2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 8, 0, 0));
 
             underKeyboardView = new View(context);

@@ -14,12 +14,14 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.text.Layout;
-import android.text.TextPaint;
+import android.graphics.drawable.RippleDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -41,10 +43,12 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -59,6 +63,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.ProfileActivity;
@@ -104,6 +109,7 @@ public class ItemOptions {
     private Context context;
     private View scrimView;
     private Drawable scrimViewBackground;
+    private int scrimViewBackgroundShadowColor;
     private int gravity = Gravity.RIGHT;
     private boolean ignoreX;
 
@@ -198,7 +204,7 @@ public class ItemOptions {
     }
 
     private void init() {
-        lastLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert2, resourcesProvider, (swipeback ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK : 0) | (shownFromBottom ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_SHOWN_FROM_BOTTOM : 0) | (!useScrollView ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW : 0)) {
+        lastLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert4, resourcesProvider, (swipeback ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK : 0) | (shownFromBottom ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_SHOWN_FROM_BOTTOM : 0) | (!useScrollView ? ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW : 0)) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 if (this == layout && maxHeight > 0) {
@@ -332,11 +338,17 @@ public class ItemOptions {
     }
 
     public ActionBarMenuSubItem add() {
-
         ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        add(subItem);
+        return subItem;
+    }
+
+    public void add(ActionBarMenuSubItem subItem) {
+        AndroidUtilities.removeFromParent(subItem);
         subItem.setPadding(dp(18), 0, dp(18), 0);
 
         subItem.setColors(textColor != null ? textColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+        subItem.setSelectorColor(Theme.getColor(Theme.key_groupcreate_sectionText, resourcesProvider));
         subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), .12f));
 
         if (minWidthDp > 0) {
@@ -345,8 +357,6 @@ public class ItemOptions {
         } else {
             addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
-
-        return subItem;
     }
 
     public ItemOptions addCheckedIf(boolean condition, boolean checked, CharSequence text, Runnable onClickListener) {
@@ -429,6 +439,65 @@ public class ItemOptions {
     public boolean dismissWithButtons = true;
     public ItemOptions setDismissWithButtons(boolean enable) {
         this.dismissWithButtons = enable;
+        return this;
+    }
+
+    public ItemOptions addBot(TLRPC.TL_attachMenuBot bot, Runnable onClickListener, Runnable onLongClickRunnable) {
+        if (context == null) {
+            return this;
+        }
+
+        final int iconColorKey = Theme.key_actionBarDefaultSubmenuItemIcon;
+        final int textColorKey = Theme.key_actionBarDefaultSubmenuItem;
+
+        ActionBarMenuSubItem subItem = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+        subItem.setPadding(dp(18), 0, dp(18), 0);
+
+        CharSequence text;
+        if (bot.side_menu_disclaimer_needed) {
+            text = TextCell.applyNewSpan(bot.short_name);
+        } else {
+            text = bot.short_name;
+        }
+
+        TLRPC.TL_attachMenuBotIcon botIcon = MediaDataController.getSideAttachMenuBotIcon(bot);
+        if (botIcon != null) {
+            Drawable svgThumb = DocumentObject.getSvgThumb(botIcon.icon.thumbs,  Theme.key_emptyListPlaceholder, 0.2f);
+            if (svgThumb == null) {
+                svgThumb = getContext().getResources().getDrawable(R.drawable.msg_bot).mutate();
+            }
+            svgThumb.setColorFilter(new PorterDuffColorFilter(iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            subItem.setTextAndIcon(text, ImageLocation.getForDocument(botIcon.icon), "24_24", svgThumb, bot);
+            subItem.setImageSize(24, 24);
+        } else {
+            subItem.setTextAndIcon(text, R.drawable.msg_bot);
+        }
+
+        subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setIconColorImage(iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));
+        subItem.setSelectorColor(selectorColor != null ? selectorColor : Theme.multAlpha(Theme.getColor(textColorKey, resourcesProvider), .12f));
+
+        subItem.setOnClickListener(view1 -> {
+            if (onClickListener != null) {
+                onClickListener.run();
+            }
+            if (dismissWithButtons) dismiss();
+        });
+        subItem.setOnLongClickListener(view1 -> {
+            if (onLongClickRunnable != null) {
+                onLongClickRunnable.run();
+            }
+            if (dismissWithButtons) dismiss();
+            return true;
+        });
+
+        if (minWidthDp > 0) {
+            subItem.setMinimumWidth(dp(minWidthDp));
+            addView(subItem, LayoutHelper.createLinear(minWidthDp, LayoutHelper.WRAP_CONTENT));
+        } else {
+            addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
         return this;
     }
 
@@ -666,7 +735,7 @@ public class ItemOptions {
 
     public ItemOptions addProfile(TLObject obj, CharSequence subtitle, Runnable onClickListener) {
         final FrameLayout userButton = new FrameLayout(context);
-        userButton.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 6));
+        userButton.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 12));
 
         final BackupImageView imageView = new BackupImageView(context);
         imageView.setRoundRadius(dp(17));
@@ -737,6 +806,10 @@ public class ItemOptions {
 
     public ItemOptions setScrimViewBackground(Drawable drawable) {
         this.scrimViewBackground = drawable;
+        this.scrimViewBackgroundShadowColor = 0;
+        if (drawable instanceof ShapeDrawable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            scrimViewBackgroundShadowColor = ((ShapeDrawable) drawable).getPaint().getShadowLayerColor();
+        }
         return this;
     }
 
@@ -864,7 +937,7 @@ public class ItemOptions {
         if (layout instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
             layout.setBackground(
                 new BlurringShader.StoryBlurDrawer(blurManager, layout, BlurringShader.StoryBlurDrawer.BLUR_TYPE_MENU_BACKGROUND)
-                    .makeDrawable(offsetX + ox + layout.getX(), offsetY + oy + layout.getY(), baseDrawable, dp(6))
+                    .makeDrawable(offsetX + ox + layout.getX(), offsetY + oy + layout.getY(), baseDrawable, dp(12))
             );
         } else {
             for (int i = 0; i < layout.getChildCount(); ++i) {
@@ -872,7 +945,7 @@ public class ItemOptions {
                 if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
                     child.setBackground(
                         new BlurringShader.StoryBlurDrawer(blurManager, child, BlurringShader.StoryBlurDrawer.BLUR_TYPE_MENU_BACKGROUND)
-                            .makeDrawable(offsetX + ox + layout.getX() + child.getX(), offsetY + oy + layout.getY() + child.getY(), baseDrawable, dp(6))
+                            .makeDrawable(offsetX + ox + layout.getX() + child.getX(), offsetY + oy + layout.getY() + child.getY(), baseDrawable, dp(12))
                     );
                 }
             }
@@ -926,19 +999,23 @@ public class ItemOptions {
             View child = j == layout.getChildCount() - 1 ? lastLayout : layout.getChildAt(j);
             if (child instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
                 ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = (ActionBarPopupWindow.ActionBarPopupWindowLayout) child;
-                if (popupLayout.getItemsCount() <= 0) {
+                if (popupLayout.getItemsCount() <= 0)
                     continue;
-                }
-                View first = popupLayout.getItemAt(0), last = popupLayout.getItemAt(popupLayout.getItemsCount() - 1);
+                final View first = popupLayout.getItemAt(0);
+                final View last = popupLayout.getItemAt(popupLayout.getItemsCount() - 1);
                 if (first instanceof ActionBarMenuSubItem) {
-                    ((ActionBarMenuSubItem) first).updateSelectorBackground(true, first == last);
+                    ((ActionBarMenuSubItem) first).updateSelectorBackground(true, first == last, 12);
                 } else if (first instanceof MessagePreviewView.ToggleButton || first instanceof FrameLayout) {
-                    first.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 6, first == last ? 6 : 0));
+                    first.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 12, first == last ? 12 : 0));
+                } else if (first != null && first.getBackground() instanceof RippleDrawable) {
+                    first.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 12, first == last ? 12 : 0));
                 }
                 if (last instanceof ActionBarMenuSubItem) {
-                    ((ActionBarMenuSubItem) last).updateSelectorBackground(last == first, true);
+                    ((ActionBarMenuSubItem) last).updateSelectorBackground(last == first, true, 12);
                 } else if (last instanceof MessagePreviewView.ToggleButton || last instanceof FrameLayout) {
-                    last.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), first == last ? 6 : 0, 6));
+                    last.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), first == last ? 12 : 0, 12));
+                } else if (last != null && last.getBackground() instanceof RippleDrawable) {
+                    last.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), first == last ? 12 : 0, 12));
                 }
             }
         }
@@ -1525,6 +1602,15 @@ public class ItemOptions {
                         );
                     }
                     scrimViewBackground.setAlpha((int) (0xFF * dimProgress));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && scrimViewBackground instanceof ShapeDrawable) {
+                        final Paint paint = ((ShapeDrawable) scrimViewBackground).getPaint();
+                        paint.setShadowLayer(
+                            paint.getShadowLayerRadius(),
+                            paint.getShadowLayerDx(),
+                            paint.getShadowLayerDy(),
+                            Theme.multAlpha(scrimViewBackgroundShadowColor, dimProgress)
+                        );
+                    }
                     scrimViewBackground.draw(canvas);
                 }
                 if (scrimViewPadding > 0 || scrimViewRoundRadius > 0) {

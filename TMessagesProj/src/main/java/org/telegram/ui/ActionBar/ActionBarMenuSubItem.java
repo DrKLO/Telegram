@@ -43,7 +43,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private int iconColor;
     private int selectorColor;
 
-    int selectorRad = 6;
+    int selectorRad = 12;
     boolean top;
     boolean bottom;
 
@@ -231,6 +231,20 @@ public class ActionBarMenuSubItem extends FrameLayout {
         imageView.setVisibility(INVISIBLE);
         backupImageView.setImage(imageLocation, imageFilter, thumb, parentObject);
     }
+
+
+    public void setIconColorImage(int iconColor) {
+        if (backupImageView != null) {
+            backupImageView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
+        }
+    }
+
+    public void setImageSize(int widthDp, int heightDp) {
+        if (backupImageView != null) {
+            backupImageView.setLayoutParams(LayoutHelper.createFrame(widthDp, heightDp, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+        }
+    }
+
 
     public ActionBarMenuSubItem setColors(int textColor, int iconColor) {
         setTextColor(textColor);

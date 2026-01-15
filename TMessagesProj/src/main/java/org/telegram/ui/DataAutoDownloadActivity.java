@@ -24,6 +24,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -68,15 +69,21 @@ public class DataAutoDownloadActivity extends BaseFragment {
 
     private boolean animateChecked;
 
+    @Keep
     private int autoDownloadRow;
     private int autoDownloadSectionRow;
     private int usageHeaderRow;
+    @Keep
     private int usageProgressRow;
     private int usageSectionRow;
     private int typeHeaderRow;
+    @Keep
     private int photosRow;
+    @Keep
     private int videosRow;
+    @Keep
     private int filesRow;
+    @Keep
     private int storiesRow;
     private int typeSectionRow;
 

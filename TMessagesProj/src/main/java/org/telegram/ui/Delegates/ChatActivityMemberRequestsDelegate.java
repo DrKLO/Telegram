@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.os.Build;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -25,17 +24,14 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AvatarsImageView;
-import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MemberRequestsBottomSheet;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.List;
 
 public class ChatActivityMemberRequestsDelegate {
 
     private final BaseFragment fragment;
-    private final SizeNotifierFrameLayout sizeNotifierFrameLayout;
     private final Callback callback;
     private final TLRPC.Chat currentChat;
     private final int currentAccount;
@@ -56,28 +52,35 @@ public class ChatActivityMemberRequestsDelegate {
     private int pendingRequestsCount;
     private int closePendingRequestsCount = -1;
 
-    public ChatActivityMemberRequestsDelegate(BaseFragment fragment, SizeNotifierFrameLayout sizeNotifierFrameLayout, TLRPC.Chat currentChat, Callback callback) {
+    public ChatActivityMemberRequestsDelegate(BaseFragment fragment, TLRPC.Chat currentChat, Callback callback) {
         this.fragment = fragment;
-        this.sizeNotifierFrameLayout = sizeNotifierFrameLayout;
         this.currentChat = currentChat;
         this.currentAccount = fragment.getCurrentAccount();
         this.callback = callback;
     }
 
+    private boolean isInsideBubble;
+    private ChangeVisibilityDelegate delegate;
+    public interface ChangeVisibilityDelegate {
+        void setVisible(boolean visible, boolean animated);
+    }
+
+    public void setDelegate(ChangeVisibilityDelegate delegate) {
+        this.delegate = delegate;
+        this.isInsideBubble = true;
+    }
+
     public View getView() {
         if (root == null) {
-            root = new BlurredFrameLayout(fragment.getParentActivity(), sizeNotifierFrameLayout);
-            root.setBackgroundColor(fragment.getThemedColor(Theme.key_chat_topPanelBackground));
-            root.setVisibility(View.GONE);
+            root = new FrameLayout(fragment.getParentActivity());
+            if (!isInsideBubble) {
+                root.setBackgroundColor(fragment.getThemedColor(Theme.key_chat_topPanelBackground));
+                root.setVisibility(View.GONE);
+            }
             pendingRequestsEnterOffset = -getViewHeight();
 
-            View pendingRequestsSelector = new View(fragment.getParentActivity());
-            pendingRequestsSelector.setBackground(Theme.getSelectorDrawable(false));
-            pendingRequestsSelector.setOnClickListener((v) -> {
-                showBottomSheet();
-            });
-            root.addView(pendingRequestsSelector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 2));
-
+            root.setBackground(Theme.getSelectorDrawable(false));
+            root.setOnClickListener((v) -> showBottomSheet());
             requestsDataLayout = new LinearLayout(fragment.getParentActivity());
             requestsDataLayout.setOrientation(LinearLayout.HORIZONTAL);
             root.addView(requestsDataLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 36 + 64, 0));
@@ -103,9 +106,7 @@ public class ChatActivityMemberRequestsDelegate {
             requestsDataLayout.addView(requestsCountTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 0));
 
             closeView = new ImageView(fragment.getParentActivity());
-            if (Build.VERSION.SDK_INT >= 21) {
-                closeView.setBackground(Theme.createSelectorDrawable(fragment.getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
-            }
+            closeView.setBackground(Theme.createSelectorDrawable(fragment.getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
             closeView.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_chat_topPanelClose), PorterDuff.Mode.MULTIPLY));
             closeView.setContentDescription(LocaleController.getString(R.string.Close));
             closeView.setImageResource(R.drawable.miniplayer_close);
@@ -115,7 +116,7 @@ public class ChatActivityMemberRequestsDelegate {
                 closePendingRequestsCount = pendingRequestsCount;
                 animatePendingRequests(false, true);
             });
-            root.addView(closeView, LayoutHelper.createFrame(36, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
+            root.addView(closeView, LayoutHelper.createFrame(36, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP, 0, 0, 4, 0));
             if (chatInfo != null) {
                 setPendingRequests((ChatActivity.DEBUG_TOP_PANELS ? 1 : 0) + chatInfo.requests_pending, chatInfo.recent_requesters, false);
             }
@@ -216,6 +217,11 @@ public class ChatActivityMemberRequestsDelegate {
         if (pendingRequestsAnimator != null) {
             pendingRequestsAnimator.cancel();
         }
+
+        if (delegate != null) {
+            delegate.setVisible(appear, animated);
+        }
+
         if (animated) {
             pendingRequestsAnimator = ValueAnimator.ofFloat(appear ? 0f : 1f, appear ? 1f : 0f);
             pendingRequestsAnimator.addUpdateListener(animation -> {
@@ -228,13 +234,13 @@ public class ChatActivityMemberRequestsDelegate {
             pendingRequestsAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animation) {
-                    if (appear) {
+                    if (appear && !isInsideBubble) {
                         root.setVisibility(View.VISIBLE);
                     }
                 }
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (!appear) {
+                    if (!appear && !isInsideBubble) {
                         root.setVisibility(View.GONE);
                     }
                     if (callback != null) {
@@ -245,7 +251,9 @@ public class ChatActivityMemberRequestsDelegate {
             pendingRequestsAnimator.setDuration(200);
             pendingRequestsAnimator.start();
         } else {
-            root.setVisibility(appear ? View.VISIBLE : View.GONE);
+            if (!isInsideBubble){
+                root.setVisibility(appear ? View.VISIBLE : View.GONE);
+            }
             pendingRequestsEnterOffset = appear ? 0 : -getViewHeight();
             if (callback != null) {
                 callback.onEnterOffsetChanged();

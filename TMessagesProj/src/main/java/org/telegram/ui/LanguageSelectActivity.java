@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -194,8 +195,8 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
                     drawItemBackground(canvas, 0, translateSettingsBackgroundHeight, backgroundColor);
 //                    drawItemBackground(canvas, 1, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                    if (listAdapter.settingsFromPosition != -1 && listAdapter.settingsToPosition != -1) {
-                        drawSectionBackground(canvas, listAdapter.settingsFromPosition, listAdapter.settingsToPosition, backgroundColor);
+                    if (settingsFromPosition != -1 && settingsToPosition != -1) {
+                        drawSectionBackground(canvas, settingsFromPosition, settingsToPosition, backgroundColor);
                     }
                 }
                 super.dispatchDraw(canvas);
@@ -222,12 +223,12 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             try {
                 if (view instanceof TextCheckCell) {
                     final boolean prevFullValue = getContextValue() || getChatValue();
-                    if (position == listAdapter.manualTranslationPosition) {
+                    if (position == manualTranslationPosition) {
                         boolean value = !getContextValue();
                         getMessagesController().getTranslateController().setContextTranslateEnabled(value);
                         ((TextCheckCell) view).setChecked(value);
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateSearchSettings);
-                    } else if (position == listAdapter.autoTranslationPosition) {
+                    } else if (position == autoTranslationPosition) {
                         boolean value = !getChatValue();
                         if (value && !getUserConfig().isPremium()) {
                             showDialog(new PremiumFeatureBottomSheet(LanguageSelectActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, false));
@@ -239,7 +240,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     }
                     final boolean currentFullValue = getContextValue() || getChatValue();
                     if (currentFullValue != prevFullValue) {
-                        int start = listAdapter.autoTranslationPosition >= 0 ? listAdapter.autoTranslationPosition : listAdapter.manualTranslationPosition;
+                        int start = autoTranslationPosition >= 0 ? autoTranslationPosition : manualTranslationPosition;
                         TextCheckCell last = null;
                         for (int i = 0; i < listView.getChildCount(); ++i) {
                             View child = listView.getChildAt(i);
@@ -306,7 +307,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search) {
-                    position -= listAdapter.languagesStartsPosition; // (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
+                    position -= languagesStartsPosition; // (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
                 }
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {
@@ -372,7 +373,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 }
                 boolean search = listView.getAdapter() == searchListViewAdapter;
                 if (!search) {
-                    position -= listAdapter.languagesStartsPosition; // (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
+                    position -= languagesStartsPosition; // (7 - (!(getChatValue() || getContextValue()) ? 1 : 0) - (getMessagesController().premiumFeaturesBlocked() ? 1 : 0));
                 }
                 LocaleController.LocaleInfo localeInfo;
                 if (search) {
@@ -579,6 +580,17 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
     public static final int VIEW_TYPE_SETTINGS_2 = 5;
     public static final int VIEW_TYPE_INFO = 6;
 
+    private int settingsFromPosition = -1;
+    private int settingsToPosition = -1;
+    @Keep
+    private int manualTranslationPosition = -1;
+    @Keep
+    private int autoTranslationPosition = -1;
+    @Keep
+    private int doNotTranslatePosition = -1;
+    private int infoPosition1;
+    private int languagesStartsPosition;
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
@@ -617,9 +629,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                         count++;
                     }
                     count++;
-                    if (!("system".equals(getMessagesController().translationsManualEnabled) && "system".equals(getMessagesController().translationsAutoEnabled))) {
-                        count++;
-                    }
+                    //if (!("system".equals(getMessagesController().translationsManualEnabled) && "system".equals(getMessagesController().translationsAutoEnabled))) {
+                    //    count++;
+                    //}
                 }
                 count++;
                 count += sortedLanguages.size();
@@ -798,7 +810,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     } else {
                         infoCell.setTopPadding(0);
                         infoCell.setBottomPadding(16);
-                        infoCell.setText(LocaleController.getString(R.string.TranslateMessagesInfo2));
+                        // infoCell.setText(LocaleController.getString(R.string.TranslateMessagesInfo2));
                         infoCell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
@@ -811,13 +823,6 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
             }
         }
 
-        private int settingsFromPosition = -1;
-        private int settingsToPosition = -1;
-        private int manualTranslationPosition = -1;
-        private int autoTranslationPosition = -1;
-        private int doNotTranslatePosition = -1;
-        private int infoPosition1, infoPosition2;
-        private int languagesStartsPosition;
         @Override
         public int getItemViewType(int i) {
             final int position = i;
@@ -855,14 +860,14 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                         infoPosition1 = position;
                         return VIEW_TYPE_INFO;
                     }
-                    if ("system".equals(getMessagesController().translationsManualEnabled) && "system".equals(getMessagesController().translationsAutoEnabled)) {
-                        infoPosition2 = -1;
-                    } else {
-                        if (i-- == 0) {
-                            infoPosition2 = position;
-                            return VIEW_TYPE_INFO;
-                        }
-                    }
+                    //if ("system".equals(getMessagesController().translationsManualEnabled) && "system".equals(getMessagesController().translationsAutoEnabled)) {
+                    //    infoPosition2 = -1;
+                    //} else {
+                    //    if (i-- == 0) {
+                    //        infoPosition2 = position;
+                    //        return VIEW_TYPE_INFO;
+                    //    }
+                    //}
                 } else {
                     settingsFromPosition = -1;
                     settingsToPosition = -1;

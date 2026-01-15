@@ -57,6 +57,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public Utilities.Callback<Integer> intCallback;
 
     public View.OnClickListener clickCallback;
+    public View.OnClickListener clickCallback2;
 
     public Object object;
     public Object object2;
@@ -80,11 +81,19 @@ public class UItem extends AdapterWithDiffUtils.Item {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
         i.id = id;
         i.view = view;
+        i.intValue = LayoutHelper.MATCH_PARENT;
         return i;
     }
     public static UItem asCustom(View view) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
         i.view = view;
+        i.intValue = LayoutHelper.MATCH_PARENT;
+        return i;
+    }
+    public static UItem asCustom(View view, int heightDp) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
+        i.view = view;
+        i.intValue = heightDp;
         return i;
     }
 
@@ -575,6 +584,9 @@ public class UItem extends AdapterWithDiffUtils.Item {
                 viewType == UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX) {
             return id == item.id;
         }
+        if (viewType == UniversalAdapter.VIEW_TYPE_SPACE) {
+            return id == item.id;
+        }
         if (viewType == UniversalAdapter.VIEW_TYPE_GRAY_SECTION) {
             return TextUtils.equals(text, item.text);
         }
@@ -596,6 +608,9 @@ public class UItem extends AdapterWithDiffUtils.Item {
             return false;
         if (viewType == UniversalAdapter.VIEW_TYPE_GRAY_SECTION) {
             return TextUtils.equals(text, item.text) && TextUtils.equals(subtext, item.subtext);
+        }
+        if (viewType == UniversalAdapter.VIEW_TYPE_SPACE) {
+            return intValue == item.intValue;
         }
         if (viewType == UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX ||
             viewType == UniversalAdapter.VIEW_TYPE_USER_CHECKBOX) {

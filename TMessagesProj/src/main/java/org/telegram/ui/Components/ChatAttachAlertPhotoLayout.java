@@ -871,7 +871,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (position == adapter.itemsCount - 1) {
                     return layoutManager.getSpanCount();
                 }
-                return itemSize + (position % itemsPerRow != itemsPerRow - 1 ? dp(5) : 0);
+                return itemSize + (position % itemsPerRow != itemsPerRow - 1 ? dp(GAP) : 0);
             }
         });
         gridView.setLayoutManager(layoutManager);
@@ -4037,6 +4037,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         checkCameraViewPosition();
     }
 
+    public static final int PADDING = 2;
+    public static final int GAP = 2;
+
     @Override
     public void onPreMeasure(int availableWidth, int availableHeight) {
         ignoreLayout = true;
@@ -4050,16 +4053,16 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         LayoutParams layoutParams = (LayoutParams) getLayoutParams();
         layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
 
-        itemSize = (availableWidth - dp(6 * 2) - dp(5 * 2)) / itemsPerRow;
+        itemSize = (availableWidth - dp(PADDING * 2) - dp(GAP * 2)) / itemsPerRow;
 
         if (lastItemSize != itemSize) {
             lastItemSize = itemSize;
             AndroidUtilities.runOnUIThread(() -> adapter.notifyDataSetChanged());
         }
 
-        layoutManager.setSpanCount(Math.max(1, itemSize * itemsPerRow + dp(5) * (itemsPerRow - 1)));
+        layoutManager.setSpanCount(Math.max(1, itemSize * itemsPerRow + dp(GAP) * (itemsPerRow - 1)));
         int rows = (int) Math.ceil((adapter.getItemCount() - 1) / (float) itemsPerRow);
-        int contentSize = rows * itemSize + (rows - 1) * dp(5);
+        int contentSize = rows * itemSize + (rows - 1) * dp(GAP);
         int newSize = Math.max(0, availableHeight - contentSize - ActionBar.getCurrentActionBarHeight() - dp(48 + 12));
         if (gridExtraSpace != newSize) {
             gridExtraSpace = newSize;
@@ -4076,7 +4079,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             paddingTop = 0;
         }
         if (gridView.getPaddingTop() != paddingTop) {
-            gridView.setPadding(dp(6), paddingTop, dp(6), dp(48));
+            gridView.setPadding(dp(PADDING), paddingTop, dp(PADDING), dp(48));
         }
         dropDown.setTextSize(!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? 18 : 20);
         ignoreLayout = false;

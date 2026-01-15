@@ -576,7 +576,7 @@ public class AvatarConstructorFragment extends BaseFragment {
             return;
         }
         if (wasChanged) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setMessage(getString(R.string.PhotoEditorDiscardAlert));
             builder.setTitle(getString(R.string.DiscardChanges));
             builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> finishFragment());
@@ -1577,9 +1577,21 @@ public class AvatarConstructorFragment extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
-        discardEditor();
-        return false;
+    public boolean onBackPressed(boolean invoked) {
+        if (wasChanged) {
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setMessage(getString(R.string.PhotoEditorDiscardAlert));
+                builder.setTitle(getString(R.string.DiscardChanges));
+                builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> finishFragment());
+                builder.setNegativeButton(getString(R.string.Cancel), null);
+                AlertDialog dialog = builder.create();
+                showDialog(dialog);
+                dialog.redPositive();
+            }
+            return false;
+        }
+        return super.onBackPressed(invoked);
     }
 
     public interface Delegate {

@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
@@ -132,11 +133,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     private boolean prevSubtypeContacts;
 
+    @Keep
     private int setBirthdayRow;
     private int messageRow;
     private int sectionRow;
+    @Keep
     private int everybodyRow;
     private int myContactsRow;
+    @Keep
     private int nobodyRow;
     private int detailRow;
     private int detailRow2;
@@ -148,23 +152,29 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private int phoneEverybodyRow;
     private int phoneContactsRow;
     private int phoneDetailRow;
+    @Keep
     private int photoForRestRow;
+    @Keep
     private int currentPhotoForRestRow;
     private int photoForRestDescriptionRow;
     private int p2pSectionRow;
     private int p2pRow;
     private int p2pDetailRow;
+    @Keep
     private int readRow;
     private int readDetailRow;
     private int readPremiumRow;
     private int readPremiumDetailRow;
     private int payRow;
     private int priceHeaderRow;
+    @Keep
     private int priceRow;
     private int priceButtonRow;
     private int priceInfoRow;
+    @Keep
     private int showGiftIconRow;
     private int showGiftIconInfoRow;
+    @Keep
     private int giftTypesHeaderRow;
     private int giftTypeUnlimitedRow;
     private int giftTypeLimitedRow;
@@ -544,7 +554,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -1665,8 +1675,8 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     @Override
-    public boolean onBackPressed() {
-        return checkDiscard();
+    public boolean onBackPressed(boolean invoked) {
+        return checkDiscard(invoked);
     }
 
     private void processDone() {
@@ -1701,14 +1711,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         applyCurrentPrivacySettings();
     }
 
-    private boolean checkDiscard() {
+    private boolean checkDiscard(boolean invoked) {
         if (doneButton.getAlpha() == 1.0f) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.UserRestrictionsApplyChanges));
-            builder.setMessage(LocaleController.getString(R.string.PrivacySettingsChangedAlert));
-            builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
-            builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
-            showDialog(builder.create());
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString(R.string.UserRestrictionsApplyChanges));
+                builder.setMessage(LocaleController.getString(R.string.PrivacySettingsChangedAlert));
+                builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
+                builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+                showDialog(builder.create());
+            }
             return false;
         }
         return true;
@@ -1716,7 +1728,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     @Override
     public boolean canBeginSlide() {
-        return checkDiscard();
+        return checkDiscard(true);
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -2009,7 +2021,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
                                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.premiumPromoUpdated);
                                 updateRows(true);
-                            }, null, false, getResourceProvider()).create());
+                            }, null, false, false, getResourceProvider()).create());
                         }), true));
                         backgroundResId = R.drawable.greydivider;
                     } else if (position == detailRow) {

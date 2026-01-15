@@ -28,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Keep;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -94,6 +95,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private ArrayList<NotificationException> exceptionAutoStories = null;
 
     private int accountsSectionRow;
+    @Keep
     private int accountsAllRow;
     private int accountsInfoRow;
 
@@ -101,18 +103,28 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int notificationsServiceConnectionRow;
 
     private int notificationsSectionRow;
+    @Keep
     private int privateRow;
+    @Keep
     private int groupRow;
+    @Keep
     private int channelsRow;
+    @Keep
     private int storiesRow;
+    @Keep
     private int reactionsRow;
     private int notificationsSection2Row;
 
     private int inappSectionRow;
+    @Keep
     private int inappSoundRow;
+    @Keep
     private int inappVibrateRow;
+    @Keep
     private int inappPreviewRow;
+    @Keep
     private int inchatSoundRow;
+    @Keep
     private int inappPriorityRow;
     private int callsSection2Row;
     private int callsSectionRow;
@@ -120,19 +132,25 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int callsRingtoneRow;
     private int eventsSection2Row;
     private int eventsSectionRow;
+    @Keep
     private int contactJoinedRow;
+    @Keep
     private int pinnedMessageRow;
     private int otherSection2Row;
     private int otherSectionRow;
     private int badgeNumberSection;
+    @Keep
     private int badgeNumberShowRow;
+    @Keep
     private int badgeNumberMutedRow;
+    @Keep
     private int badgeNumberMessagesRow;
     private int badgeNumberSection2Row;
     private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSection2Row;
     private int resetSectionRow;
+    @Keep
     private int resetNotificationsRow;
     private int resetNotificationsSectionRow;
     private int rowCount = 0;
@@ -144,7 +162,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     @Override
     public boolean onFragmentCreate() {
         MessagesController.getInstance(currentAccount).loadSignUpNotificationsSettings();
-        loadExceptions();
+        loadExceptions(null);
 
         if (UserConfig.getActivatedAccountsCount() > 1) {
             accountsSectionRow = rowCount++;
@@ -209,7 +227,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         return super.onFragmentCreate();
     }
 
-    private void loadExceptions() {
+    public void loadExceptions(Runnable onDone) {
         MediaDataController.getInstance(currentAccount).loadHints(true);
         final ArrayList<TLRPC.TL_topPeer> topPeers = new ArrayList<>(MediaDataController.getInstance(currentAccount).hints);
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
@@ -408,15 +426,39 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 exceptionChannels = channelsResult;
                 exceptionStories = storiesResult;
                 exceptionAutoStories = storiesAutoResult;
-                adapter.notifyItemChanged(privateRow);
-                adapter.notifyItemChanged(groupRow);
-                adapter.notifyItemChanged(channelsRow);
-                adapter.notifyItemChanged(storiesRow);
+                if (adapter != null) {
+                    adapter.notifyItemChanged(privateRow);
+                    adapter.notifyItemChanged(groupRow);
+                    adapter.notifyItemChanged(channelsRow);
+                    adapter.notifyItemChanged(storiesRow);
+                }
+
+                if (onDone != null) {
+                    onDone.run();
+                }
             });
         });
 
         // stories exceptions
         // adapter.notifyItemChanged(storiesRow);
+    }
+
+    public NotificationsCustomSettingsActivity makeNotificationsCustomSettingsActivity(int type) {
+        ArrayList<NotificationException> exceptions;
+        ArrayList<NotificationException> autoExceptions = null;
+        if (type == NotificationsController.TYPE_PRIVATE) {
+            exceptions = exceptionUsers;
+        } else if (type == NotificationsController.TYPE_GROUP) {
+            exceptions = exceptionChats;
+        } else if (type == NotificationsController.TYPE_REACTIONS_MESSAGES) {
+            exceptions = null;
+        } else if (type == NotificationsController.TYPE_STORIES) {
+            exceptions = exceptionStories;
+            autoExceptions = exceptionAutoStories;
+        } else {
+            exceptions = exceptionChannels;
+        }
+        return new NotificationsCustomSettingsActivity(type, exceptions, autoExceptions);
     }
 
     @Override

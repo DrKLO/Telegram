@@ -51,9 +51,19 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
     public final View rippleView;
     private boolean filled;
+    public boolean useWrapContent;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, true, resourcesProvider);
+    }
+
+    public void setUseWrapContent(boolean useWrapContent) {
+        this.useWrapContent = useWrapContent;
+    }
+
+    public ButtonWithCounterView setRound() {
+        setRoundRadius(24);
+        return this;
     }
 
     public void setRoundRadius(int radiusDp) {
@@ -211,6 +221,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     }
     public boolean isTimerActive() {
         return timerSeconds > 0;
+    }
+
+    public void setText(CharSequence newText) {
+        setText(newText, false);
     }
 
     public void setText(CharSequence newText, boolean animated) {
@@ -567,6 +581,14 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
                 canvas.restore();
             }
         }
+
+        if (useWrapContent) {
+            int wrapWidth = getWrapWidth();
+            if (lastWrapWidth != wrapWidth) {
+                lastWrapWidth = wrapWidth;
+                requestLayout();
+            }
+        }
     }
 
     @Override
@@ -597,9 +619,22 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         this.minWidth = px;
     }
 
+    private int lastWrapWidth;
+    private int getWrapWidth() {
+        float countAlpha = countAlphaAnimated.set(this.countAlpha);
+        float lightningWidth = withCounterIcon ? AndroidUtilities.dp(12) : 0;
+        float textWidth = text.getCurrentWidth();
+        float width = textWidth + lightningWidth + calculateCounterWidth((dp(5.66f + 5 + 5) + countText.getCurrentWidth()), countAlpha);
+
+        return getPaddingLeft() + (int) width + getPaddingRight();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (wrapWidth) {
+        if (useWrapContent) {
+            lastWrapWidth = getWrapWidth();
+            super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(lastWrapWidth, MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
+        } else if (wrapWidth) {
             super.onMeasure(MeasureSpec.makeMeasureSpec((int) Math.min(Math.max(getPaddingLeft() + text.getCurrentWidth() + getPaddingRight(), minWidth), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

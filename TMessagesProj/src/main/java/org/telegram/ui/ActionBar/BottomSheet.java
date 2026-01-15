@@ -72,6 +72,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.ViewPagerActivity;
 
 import java.util.ArrayList;
 
@@ -2339,6 +2340,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     public void makeAttached(BaseFragment fragment) {
         if (AndroidUtilities.isTablet()) return;
+        if (fragment != null && fragment.isSupportEdgeToEdge()) return;
         this.attachedFragment = fragment;
     }
 

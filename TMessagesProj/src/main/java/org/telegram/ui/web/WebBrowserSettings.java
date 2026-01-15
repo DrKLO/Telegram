@@ -202,19 +202,42 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
     public static final int BUTTON_CUSTOMTABS_ON = 10;
     public static final int BUTTON_CUSTOMTABS_OFF = 11;
 
+    public int enableRow;
+    public int clearCookiesRow;
+    public int clearCacheRow;
+    public int historyRow;
+    public int clearHistoryRow;
+    public int neverOpenRow;
+    public int clearListRow;
+    public int searchRow;
+
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        enableRow = -1;
+        clearCookiesRow = -1;
+        clearCacheRow = -1;
+        historyRow = -1;
+        clearHistoryRow = -1;
+        clearListRow = -1;
+        searchRow = -1;
+
+        enableRow = items.size();
         items.add(UItem.asRippleCheck(BUTTON_TOGGLE, getString(R.string.BrowserSettingsEnable)).setChecked(SharedConfig.inappBrowser));
         items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsEnableInfo)));
+        clearCookiesRow = items.size();
         items.add(UItem.asButton(BUTTON_CLEAR_COOKIES, R.drawable.menu_clear_cookies, LocaleController.getString(R.string.BrowserSettingsCookiesClear), cookiesSize > 0 ? AndroidUtilities.formatFileSize(cookiesSize) : ""));
+        clearCacheRow = items.size();
         items.add(UItem.asButton(BUTTON_CLEAR_CACHE, R.drawable.menu_clear_cache, LocaleController.getString(R.string.BrowserSettingsCacheClear), cacheSize > 0 ? AndroidUtilities.formatFileSize(cacheSize) : ""));
         items.add(UItem.asShadow(getString(R.string.BrowserSettingsCookiesInfo)));
         if (historySize > 0) {
+            historyRow = items.size();
             items.add(UItem.asButton(BUTTON_OPEN_HISTORY, R.drawable.menu_clear_recent, getString(R.string.BrowserSettingsHistoryShow)));
+            clearHistoryRow = items.size();
             items.add(UItem.asButton(BUTTON_CLEAR_HISTORY, R.drawable.menu_clear_cache, getString(R.string.BrowserSettingsHistoryClear), formatPluralStringComma("BrowserSettingsHistoryPages", (int) historySize, ',')));
             items.add(UItem.asShadow(null));
         }
         items.add(UItem.asHeader(LocaleController.getString(R.string.BrowserSettingsNeverOpenInTitle)));
+        neverOpenRow = items.size();
         items.add(UItem.asButton(BUTTON_ADD, addIcon, LocaleController.getString(R.string.BrowserSettingsNeverOpenInAdd)).accent());
         RestrictedDomainsList.getInstance().load();
         ArrayList<ArrayList<String>> allDomains = RestrictedDomainsList.getInstance().restrictedDomains;
@@ -227,9 +250,11 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             items.add(WebsiteView.Factory.as(domains, meta == null ? "" : (TextUtils.isEmpty(meta.sitename) ? (TextUtils.isEmpty(meta.title) ? "" : meta.title) : meta.sitename), meta == null ? null : meta.favicon));
         }
         if (!allDomains.isEmpty()) {
+            clearListRow = items.size();
             items.add(UItem.asButton(BUTTON_CLEAR_LIST, R.drawable.msg_clearcache, LocaleController.getString(R.string.BrowserSettingsNeverOpenInClearList)).red());
         }
         items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsNeverOpenInInfo)));
+        searchRow = items.size();
         items.add(UItem.asButton(BUTTON_SEARCH_ENGINE, R.drawable.msg_search, LocaleController.getString(R.string.SearchEngine), SearchEngine.getCurrent().name));
         items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsSearchEngineInfo)));
         if (!SharedConfig.inappBrowser) {

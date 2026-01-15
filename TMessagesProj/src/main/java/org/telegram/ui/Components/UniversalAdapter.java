@@ -733,8 +733,8 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     if (item.view != null) {
                         AndroidUtilities.removeFromParent(item.view);
                         FrameLayout.LayoutParams lp;
-                        if (viewType == VIEW_TYPE_CUSTOM || viewType == VIEW_TYPE_FULLSCREEN_CUSTOM) {
-                            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
+                        if (viewType == VIEW_TYPE_CUSTOM) {
+                            lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, item.intValue);
                         } else {
                             lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
                         }

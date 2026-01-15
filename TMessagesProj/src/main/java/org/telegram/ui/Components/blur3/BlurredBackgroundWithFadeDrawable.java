@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
@@ -26,6 +27,9 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
     private final Paint maskFadeGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final BlurredBackgroundDrawable drawable;
 
+    private final Matrix matrix = new Matrix();
+    private Shader shader;
+
     private int fadeHeight;
     private boolean opacity;
 
@@ -38,8 +42,15 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
     public void setFadeHeight(int fadeHeight, boolean opacity) {
         this.fadeHeight = fadeHeight;
         this.opacity = opacity;
-        maskFadeGradientPaint.setShader(createGradient(Color.BLACK, fadeHeight, opacity));
+        maskFadeGradientPaint.setShader(shader = createGradient(Color.BLACK, opacity));
         colorStaticPaint.setShader(null);
+
+        matrix.reset();
+        matrix.setScale(1, fadeHeight);
+        if (fadeHeight < 0) {
+            matrix.preTranslate(0, fadeHeight);
+        }
+        shader.setLocalMatrix(matrix);
     }
 
     @Override
@@ -64,8 +75,10 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
 
             final int color = ((BlurredBackgroundSourceColor) source).getColor();
             if (colorStaticLast != color || colorStaticPaint.getShader() == null) {
+                Shader s = createGradient(color, opacity);
                 colorStaticLast = color;
-                colorStaticPaint.setShader(createGradient(color, fadeHeight, opacity));
+                colorStaticPaint.setShader(s);
+                s.setLocalMatrix(matrix);
             }
 
             canvas.save();
@@ -98,11 +111,11 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
         return PixelFormat.UNKNOWN;
     }
 
-    private static LinearGradient createGradient(int color, int fadeHeight, boolean opacity) {
+    private static LinearGradient createGradient(int color, boolean opacity) {
         final int alpha = Color.alpha(color);
 
         if (opacity) {
-            return new LinearGradient(0, 0, 0, fadeHeight, new int[]{
+            return new LinearGradient(0, 0, 0, 1, new int[]{
                 ColorUtils.setAlphaComponent(color, 0),
                 ColorUtils.setAlphaComponent(color, 0x60 * alpha / 255),
                 ColorUtils.setAlphaComponent(color, 0xB0 * alpha / 255),
@@ -110,7 +123,7 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
             }, null, Shader.TileMode.CLAMP);
         }
 
-        return new LinearGradient(0, 0, 0, fadeHeight, new int[]{
+        return new LinearGradient(0, 0, 0, 1, new int[]{
             ColorUtils.setAlphaComponent(color, 0),
             ColorUtils.setAlphaComponent(color, 0x60 * alpha / 255),
             ColorUtils.setAlphaComponent(color, 0xB0 * alpha / 255),

@@ -523,7 +523,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             searchAdapter.addSearchFilter(filtersView.getFilterAt(position));
         });
         filtersView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        addView(filtersView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+        addView(filtersView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
         filtersView.setTranslationY(-AndroidUtilities.dp(44));
         filtersView.setVisibility(INVISIBLE);
 

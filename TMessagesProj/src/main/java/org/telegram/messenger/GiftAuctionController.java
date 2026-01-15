@@ -158,7 +158,7 @@ public class GiftAuctionController extends BaseController {
 
     private final LongSparseArray<Boolean> upgrades = new LongSparseArray<>();
 
-    private void requestAuctionUpgrades(long giftId, Utilities.Callback<ArrayList<TL_stars.StarGiftAttribute>> callback) {
+    public void requestAuctionUpgrades(long giftId, Utilities.Callback<ArrayList<TL_stars.StarGiftAttribute>> callback) {
         TL_stars.getStarGiftUpgradeAttributes req = new TL_stars.getStarGiftUpgradeAttributes();
         req.gift_id = giftId;
 

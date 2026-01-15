@@ -15,9 +15,9 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -45,25 +45,28 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -74,7 +77,7 @@ import java.util.HashSet;
 import java.util.Objects;
 
 @SuppressWarnings("JavaReflectionMemberAccess")
-public class RecyclerListView extends RecyclerView {
+public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     public final static int SECTIONS_TYPE_SIMPLE = 0,
             SECTIONS_TYPE_STICKY_HEADERS = 1,
             SECTIONS_TYPE_DATE = 2,
@@ -1686,7 +1689,7 @@ public class RecyclerListView extends RecyclerView {
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
                 if (linearLayoutManager.getOrientation() == LinearLayoutManager.VERTICAL) {
                     if (sectionsAdapter != null) {
-                        int paddingTop = getPaddingTop();
+                        int paddingTop = sectionsType == SECTIONS_TYPE_STICKY_HEADERS ? 0 : getPaddingTop();
                         if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS || sectionsType == SECTIONS_TYPE_FAST_SCROLL_ONLY) {
                             int childCount = getChildCount();
                             int maxBottom = 0;
@@ -2561,58 +2564,46 @@ public class RecyclerListView extends RecyclerView {
         translateSelector = position <= 0 ? -1 : position;
     }
 
+    private void drawSelectors2(Canvas canvas) {
+        if (selectorRect.isEmpty() || selectorDrawable == null) {
+            return;
+        }
+
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
+            int bottomPadding;
+            if (getAdapter() instanceof SelectionAdapter) {
+                bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
+            } else {
+                bottomPadding = 0;
+            }
+            selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
+        } else {
+            selectorDrawable.setBounds(selectorRect);
+        }
+        canvas.save();
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
+            selectorTransformer.accept(canvas);
+        }
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
+            canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
+            selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
+        }
+        selectorDrawable.draw(canvas);
+        canvas.restore();
+    }
+
     @Override
-    protected void dispatchDraw(Canvas canvas) {
+    protected void dispatchDraw(@NonNull Canvas canvas) {
         if (itemsEnterAnimator != null) {
             itemsEnterAnimator.dispatchDraw();
         }
 
-        if (drawSelection && drawSelectorBehind && !selectorRect.isEmpty() && selectorDrawable != null) {
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                int bottomPadding;
-                if (getAdapter() instanceof SelectionAdapter) {
-                    bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
-                } else {
-                    bottomPadding = 0;
-                }
-                selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
-            } else {
-                selectorDrawable.setBounds(selectorRect);
-            }
-            canvas.save();
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
-                selectorTransformer.accept(canvas);
-            }
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
-                selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
-            }
-            selectorDrawable.draw(canvas);
-            canvas.restore();
+        if (drawSelection && drawSelectorBehind) {
+            drawSelectors2(canvas);
         }
         super.dispatchDraw(canvas);
-        if (drawSelection && !drawSelectorBehind && !selectorRect.isEmpty() && selectorDrawable != null) {
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                int bottomPadding;
-                if (getAdapter() instanceof SelectionAdapter) {
-                    bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
-                } else {
-                    bottomPadding = 0;
-                }
-                selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
-            } else {
-                selectorDrawable.setBounds(selectorRect);
-            }
-            canvas.save();
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
-                selectorTransformer.accept(canvas);
-            }
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
-                selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
-            }
-            selectorDrawable.draw(canvas);
-            canvas.restore();
+        if (drawSelection && !drawSelectorBehind) {
+            drawSelectors2(canvas);
         }
         if (overlayContainer != null) {
             overlayContainer.draw(canvas);
@@ -2995,5 +2986,154 @@ public class RecyclerListView extends RecyclerView {
 
     public void setDrawSelection(boolean drawSelection) {
         this.drawSelection = drawSelection;
+    }
+
+
+
+    private OverscrollTrackerFactory.Listener overScrollListenerInternal;
+    private OverscrollTrackerFactory.Listener overScrollListener;
+    private int overScrollsCounter;
+
+    public boolean hasActiveOverScroll () {
+        return overScrollsCounter != 0;
+    }
+
+    public void setOverScrollListener(Runnable listener) {
+        setOverScrollListener(new OverscrollTrackerFactory.Listener() {
+            @Override
+            public void onOverscrollStart(int direction) {
+                listener.run();
+            }
+
+            @Override
+            public void onOverscrollEnd(int direction) {
+                listener.run();
+            }
+        });
+    }
+
+    public void setOverScrollListener(OverscrollTrackerFactory.Listener listener) {
+        this.overScrollListener = listener;
+        initOverScrollTracker();
+    }
+
+    private void initOverScrollTracker() {
+        if (overScrollListenerInternal != null) {
+            return;
+        }
+        overScrollListenerInternal = new OverscrollTrackerFactory.Listener() {
+            @Override
+            public void onOverscrollStart(int direction) {
+                overScrollsCounter++;
+                if (overScrollListener != null) {
+                    overScrollListener.onOverscrollStart(direction);
+                }
+            }
+
+            @Override
+            public void onOverscrollEnd(int direction) {
+                overScrollsCounter--;
+                if (overScrollListener != null) {
+                    overScrollListener.onOverscrollEnd(direction);
+                }
+            }
+
+            @Override
+            public void onOverscrollRelease(int direction) {
+                if (overScrollListener != null) {
+                    overScrollListener.onOverscrollRelease(direction);
+                }
+            }
+
+            @Override
+            public void onOverscrollPull(int direction, float deltaDistance) {
+                if (overScrollListener != null) {
+                    overScrollListener.onOverscrollPull(direction, deltaDistance);
+                }
+            }
+
+            @Override
+            public void onOverscrollAbsorb(int direction, int velocity) {
+                if (overScrollListener != null) {
+                    overScrollListener.onOverscrollAbsorb(direction, velocity);
+                }
+            }
+        };
+        setEdgeEffectFactory(new OverscrollTrackerFactory(overScrollListenerInternal));
+    }
+
+
+    /* Blur3 */
+
+    private Matrix selfTransformationsMatrix;
+
+    @Override
+    public void capture(Canvas canvas, RectF position) {
+        final long drawingTime = SystemClock.uptimeMillis();
+
+        if (hasActiveOverScroll() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+            if (selfTransformationsMatrix == null) {
+                selfTransformationsMatrix = new Matrix();
+            }
+
+            canvas.save();
+            final Matrix matrix = getMatrix();
+            if (matrix.invert(selfTransformationsMatrix)){
+                canvas.concat(selfTransformationsMatrix);
+            }
+            canvas.translate(-getX(), -getY());
+
+            // hack: call drawChild(this) for access to internal render node
+            drawChild(canvas, this, drawingTime);
+            canvas.restore();
+
+            if (BuildConfig.DEBUG_PRIVATE_VERSION) {
+            //     canvas.drawColor(0x80FF00FF);
+            }
+        } else {
+            for (int i = 0, N = getChildCount(); i < N; i++) {
+                final View child = getChildAt(i);
+
+                final float left = child.getX();
+                final float top = child.getY();
+                final float right = left + child.getWidth();
+                final float bottom = top + child.getHeight();
+
+                if (!position.intersects(left, top, right, bottom)) {
+                    continue;
+                }
+
+                drawChild(canvas, child, drawingTime);
+            }
+        }
+    }
+
+    @Override
+    public long captureCalculateHash(RectF position) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return -1;
+        }
+
+        if (hasActiveOverScroll() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+            return -1;
+        } else {
+            long hash = 0;
+            for (int i = 0, N = getChildCount(); i < N; i++) {
+                final View child = getChildAt(i);
+
+                final float left = child.getX();
+                final float top = child.getY();
+                final float right = left + child.getWidth();
+                final float bottom = top + child.getHeight();
+
+                if (!position.intersects(left, top, right, bottom)) {
+                    continue;
+                }
+
+                final long id = child.getUniqueDrawingId();
+                hash = MediaDataController.calcHash(hash, id);
+            }
+            return hash;
+        }
     }
 }

@@ -13,17 +13,10 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
-import android.graphics.Outline;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -35,13 +28,13 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -68,10 +61,10 @@ import org.telegram.ui.Cells.EditTextSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RLottieImageView;
@@ -79,7 +72,6 @@ import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TransformableLoginButtonView;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
-import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -100,7 +92,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private EmptyTextProgressView emptyView;
     private ScrollView scrollView;
 
-    private FrameLayout floatingButtonContainer;
+    private FragmentFloatingButton floatingButton;
     private TransformableLoginButtonView floatingButtonIcon;
 
     private String firstPassword;
@@ -120,8 +112,11 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
     private int setPasswordRow;
     private int setPasswordDetailRow;
+    @Keep
     private int changePasswordRow;
+    @Keep
     private int turnPasswordOffRow;
+    private int emailRow;
     private int setRecoveryEmailRow;
     private int changeRecoveryEmailRow;
     private int passwordEnabledDetailRow;
@@ -332,7 +327,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         bottomButton.setTextSize(15);
         bottomButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         bottomButton.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
-        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 56 : 60, Gravity.BOTTOM, 0, 0, 0, 16));
+        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
         bottomButton.setOnClickListener(v -> onPasswordForgot());
         VerticalPositionAutoAnimator.attach(bottomButton);
 
@@ -343,45 +338,23 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         cancelResetButton.setText(getString(R.string.CancelReset));
         cancelResetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         cancelResetButton.setVisibility(View.GONE);
-        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 56 : 60, Gravity.BOTTOM, 0, 0, 0, 16));
+        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
         cancelResetButton.setOnClickListener(v -> cancelPasswordReset());
         VerticalPositionAutoAnimator.attach(cancelResetButton);
 
-        floatingButtonContainer = new FrameLayout(context);
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            floatingButtonContainer.setStateListAnimator(animator);
-            floatingButtonContainer.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                }
-            });
-        }
-        VerticalPositionAutoAnimator.attach(floatingButtonContainer);
-        floatingButtonContainer.setOnClickListener(view -> processDone());
+        floatingButton = new FragmentFloatingButton(context, resourceProvider);
+        VerticalPositionAutoAnimator.attach(floatingButton);
+        floatingButton.setOnClickListener(view -> processDone());
 
         floatingButtonIcon = new TransformableLoginButtonView(context);
         floatingButtonIcon.setTransformType(TransformableLoginButtonView.TRANSFORM_ARROW_CHECK);
         floatingButtonIcon.setProgress(0f);
         floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
         floatingButtonIcon.setDrawBackground(false);
-        floatingButtonContainer.setContentDescription(getString(R.string.Next));
-        floatingButtonContainer.addView(floatingButtonIcon, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
-
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-            drawable = combinedDrawable;
-        }
-        floatingButtonContainer.setBackground(drawable);
-        frameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 24, 16));
+        floatingButton.setContentDescription(getString(R.string.Next));
+        floatingButton.addView(floatingButtonIcon, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
+        floatingButton.addAdditionalView(floatingButtonIcon);
+        frameLayout.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
 
         emptyView = new EmptyTextProgressView(context);
         emptyView.showProgress();
@@ -787,6 +760,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         setPasswordDetailRow = -1;
         changePasswordRow = -1;
         turnPasswordOffRow = -1;
+        emailRow = -1;
         setRecoveryEmailRow = -1;
         changeRecoveryEmailRow = -1;
         passwordEnabledDetailRow = -1;
@@ -794,6 +768,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             if (currentPassword.has_password) {
                 changePasswordRow = rowCount++;
                 turnPasswordOffRow = rowCount++;
+                emailRow = rowCount;
                 if (currentPassword.has_recovery) {
                     changeRecoveryEmailRow = rowCount++;
                 } else {
@@ -825,7 +800,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     listView.setEmptyView(emptyView);
                 }
                 if (passwordEditText != null) {
-                    floatingButtonContainer.setVisibility(View.GONE);
+                    floatingButton.setButtonVisible(false, false);
                     passwordEditText.setVisibility(View.INVISIBLE);
                     titleTextView.setVisibility(View.INVISIBLE);
                     bottomTextView.setVisibility(View.GONE);
@@ -842,7 +817,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     emptyView.setVisibility(View.INVISIBLE);
                 }
                 if (passwordEditText != null) {
-                    floatingButtonContainer.setVisibility(View.VISIBLE);
+                    floatingButton.setButtonVisible(true, false);
                     passwordEditText.setVisibility(View.VISIBLE);
                     fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     fragmentView.setTag(Theme.key_windowBackgroundWhite);
@@ -1295,12 +1270,12 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (otherwiseReloginDays >= 0) {
-            showSetForcePasswordAlert();
+            if (invoked) showSetForcePasswordAlert();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     private void showSetForcePasswordAlert() {
@@ -1323,7 +1298,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         if (otherwiseReloginDays >= 0) {
             final Bundle args = new Bundle();
             args.putBoolean("afterSignup", true);
-            presentFragment(new DialogsActivity(args), true);
+            MainTabsActivity mainTabsActivity = new MainTabsActivity();
+            mainTabsActivity.prepareDialogsActivity(args);
+            presentFragment(mainTabsActivity, true);
         } else {
             super.finishFragment();
         }

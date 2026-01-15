@@ -68,6 +68,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -101,6 +102,7 @@ import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.NestedSizeNotifierLayout;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.Components.StorageDiagramView;
 import org.telegram.ui.Components.StorageUsageView;
@@ -131,7 +133,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     private static final int VIEW_TYPE_SECTION = 11;
     private static final int VIEW_TYPE_SECTION_LOADING = 12;
     private static final int VIEW_TYPE_CLEAR_CACHE_BUTTON = 13;
-    private static final int VIEW_TYPE_MAX_CACHE_SIZE = 14;
+    public static final int VIEW_TYPE_MAX_CACHE_SIZE = 14;
 
     public static final int KEEP_MEDIA_TYPE_USER = 0;
     public static final int KEEP_MEDIA_TYPE_GROUP = 1;
@@ -274,42 +276,22 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         }
         Utilities.cacheClearQueue.postRunnable(() -> {
             File path;
-            if (Build.VERSION.SDK_INT >= 19) {
-                ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
-                String dir = (path = storageDirs.get(0)).getAbsolutePath();
-                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
-                    for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                        File file = storageDirs.get(a);
-                        if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir) && file.canWrite()) {
-                            path = file;
-                            break;
-                        }
+            ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
+            String dir = (path = storageDirs.get(0)).getAbsolutePath();
+            if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                    File file = storageDirs.get(a);
+                    if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir) && file.canWrite()) {
+                        path = file;
+                        break;
                     }
                 }
-            } else {
-                path = new File(SharedConfig.storageCacheDir);
             }
             try {
                 StatFs stat = new StatFs(path.getPath());
-                long blockSize;
-                long blockSizeExternal;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    blockSize = stat.getBlockSizeLong();
-                } else {
-                    blockSize = stat.getBlockSize();
-                }
-                long availableBlocks;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    availableBlocks = stat.getAvailableBlocksLong();
-                } else {
-                    availableBlocks = stat.getAvailableBlocks();
-                }
-                long blocksTotal;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    blocksTotal = stat.getBlockCountLong();
-                } else {
-                    blocksTotal = stat.getBlockCount();
-                }
+                final long blockSize = stat.getBlockSizeLong();
+                final long availableBlocks = stat.getAvailableBlocksLong();
+                final long blocksTotal = stat.getBlockCountLong();
 
                 AndroidUtilities.runOnUIThread(() -> {
                     lastDeviceTotalSize = blocksTotal * blockSize;
@@ -388,42 +370,22 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             lastTotalSizeCalculatedTime = System.currentTimeMillis();
 
             File path;
-            if (Build.VERSION.SDK_INT >= 19) {
-                ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
-                String dir = (path = storageDirs.get(0)).getAbsolutePath();
-                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
-                    for (int a = 0, N = storageDirs.size(); a < N; a++) {
-                        File file = storageDirs.get(a);
-                        if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
-                            path = file;
-                            break;
-                        }
+            ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
+            String dir = (path = storageDirs.get(0)).getAbsolutePath();
+            if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                    File file = storageDirs.get(a);
+                    if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                        path = file;
+                        break;
                     }
                 }
-            } else {
-                path = new File(SharedConfig.storageCacheDir);
             }
             try {
                 StatFs stat = new StatFs(path.getPath());
-                long blockSize;
-                long blockSizeExternal;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    blockSize = stat.getBlockSizeLong();
-                } else {
-                    blockSize = stat.getBlockSize();
-                }
-                long availableBlocks;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    availableBlocks = stat.getAvailableBlocksLong();
-                } else {
-                    availableBlocks = stat.getAvailableBlocks();
-                }
-                long blocksTotal;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                    blocksTotal = stat.getBlockCountLong();
-                } else {
-                    blocksTotal = stat.getBlockCount();
-                }
+                final long blockSize = stat.getBlockSizeLong();
+                final long availableBlocks = stat.getAvailableBlocksLong();
+                final long blocksTotal = stat.getBlockCountLong();
 
                 totalDeviceSize = blocksTotal * blockSize;
                 totalDeviceFreeSize = availableBlocks * blockSize;
@@ -1117,24 +1079,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
 
         File path = Environment.getDataDirectory();
         StatFs stat = new StatFs(path.getPath());
-        long blockSize;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            blockSize = stat.getBlockSizeLong();
-        } else {
-            blockSize = stat.getBlockSize();
-        }
-        long availableBlocks;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            availableBlocks = stat.getAvailableBlocksLong();
-        } else {
-            availableBlocks = stat.getAvailableBlocks();
-        }
-        long blocksTotal;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            blocksTotal = stat.getBlockCountLong();
-        } else {
-            blocksTotal = stat.getBlockCount();
-        }
+        final long blockSize = stat.getBlockSizeLong();
+        final long availableBlocks = stat.getAvailableBlocksLong();
+        final long blocksTotal = stat.getBlockCountLong();
 
         totalDeviceSize = blocksTotal * blockSize;
         totalDeviceFreeSize = availableBlocks * blockSize;
@@ -2164,6 +2111,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             };
             button.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
             button.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            BadWayToMakeButtonRound.round(button);
+            ScaleStateListAnimator.apply(button, 0.02f, 1.2f);
 
             if (LocaleController.isRTL) {
                 rtlTextView = new TextView(context);
@@ -2649,13 +2598,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     }
                     String value = CacheByChatsController.getKeepMediaString(cacheByChatsController.getKeepMedia(keepMediaType));
                     if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_USER) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.PrivateChats), value, true, R.drawable.msg_filled_menu_users, getThemedColor(Theme.key_statisticChartLine_lightblue), true);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.PrivateChats), value, true, R.drawable.msg_filled_menu_users, 0xFF4F85F6, 0xFF3568E8, true);
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_GROUP) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.GroupChats), value, true, R.drawable.msg_filled_menu_groups, getThemedColor(Theme.key_statisticChartLine_green), true);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.GroupChats), value, true, R.drawable.msg_filled_menu_groups, 0xFF55CA47, 0xFF27B434, true);
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_CHANNEL) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, getThemedColor(Theme.key_statisticChartLine_golden), true);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.CacheChannels), value, true, R.drawable.msg_filled_menu_channels, 0xFFF09F1B, 0xFFE18A11, true);
                     } else if (itemInners.get(position).keepMediaType == KEEP_MEDIA_TYPE_STORIES) {
-                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.CacheStories), value, false, R.drawable.msg_filled_stories, getThemedColor(Theme.key_statisticChartLine_red), false);
+                        textCell2.setTextAndValueAndColorfulIcon(LocaleController.getString(R.string.CacheStories), value, false, R.drawable.msg_filled_stories, 0xFFF45255, 0xFFDF3955, false);
                     }
                     textCell2.setSubtitle(subtitle);
                     break;
@@ -3097,6 +3046,10 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         public ArrayList<CacheModel.FileInfo> files = new ArrayList<>();
     }
 
+    public void scrollTo() {
+
+    }
+
     public static class ItemInner extends AdapterWithDiffUtils.Item {
 
         int headerTopMargin = 15;
@@ -3204,15 +3157,17 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (cacheModel != null && !cacheModel.selectedFiles.isEmpty()) {
-            cacheModel.clearSelection();
-            if (cachedMediaLayout != null) {
-                cachedMediaLayout.showActionMode(false);
-                cachedMediaLayout.updateVisibleRows();
+            if (invoked) {
+                cacheModel.clearSelection();
+                if (cachedMediaLayout != null) {
+                    cachedMediaLayout.showActionMode(false);
+                    cachedMediaLayout.updateVisibleRows();
+                }
             }
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 }

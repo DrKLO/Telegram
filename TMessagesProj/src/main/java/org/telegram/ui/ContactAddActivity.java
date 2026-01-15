@@ -482,7 +482,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         }));
                     },
                     null,
-                    false, resourcesProvider
+                    false, false, resourcesProvider
                 ).create());
             });
 

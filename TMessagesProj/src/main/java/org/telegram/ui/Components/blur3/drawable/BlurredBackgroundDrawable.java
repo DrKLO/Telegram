@@ -42,6 +42,10 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     public BlurredBackgroundDrawable() {
         boundProps.strokeWidthTop = dpf2(1);
         boundProps.strokeWidthBottom = dpf2(2 / 3f);
+
+        shadowLayerRadius = dpf2(1);
+        shadowLayerDx = 0;
+        shadowLayerDy = dpf2(1 / 3f);
     }
 
     protected float sourceOffsetX;
@@ -53,6 +57,10 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
             this.sourceOffsetY = sourceOffsetY;
             onSourceOffsetChange(sourceOffsetX, sourceOffsetY);
         }
+    }
+
+    public void setClipToOutline(boolean clipToOutline) {
+
     }
 
     public void setPadding(int padding) {
@@ -283,7 +291,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         final boolean radiiAreSame = radiiAreSame(radii);
 
         if (radiiAreSame) {
-            outline.setRoundRect(rect, radii[0]);
+            outline.setRoundRect(rect, Math.min(radii[0], Math.min(rect.width(), rect.height()) / 2f));
         } else {
             if (tmpPath == null) {
                 tmpPath = new Path();
@@ -416,6 +424,21 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     }
 
 
+    protected float shadowLayerRadius;
+    protected float shadowLayerDx;
+    protected float shadowLayerDy;
+
+    public void setShadowParams(float radius, float dx, float dy) {
+        shadowLayerRadius = radius;
+        shadowLayerDx = dx;
+        shadowLayerDy = dy;
+    }
+
+    public void setStrokeWidth(float strokeWidthTop, float strokeWidthBottom) {
+        boundProps.strokeWidthTop = strokeWidthTop;
+        boundProps.strokeWidthBottom = strokeWidthBottom;
+    }
+
 
 
     /* Universal */
@@ -454,7 +477,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     private void drawSourceColor(Canvas canvas, BlurredBackgroundSourceColor source) {
         final int backgroundColor = Theme.multAlpha(ColorUtils.compositeColors(this.backgroundColor, source.getColor()), alpha / 255f);
         if (Color.alpha(shadowColor) > 0 && alpha == 255) {
-            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            shadowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadowColor);
             boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
         }
 
@@ -479,7 +502,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         }
 
         if (Color.alpha(shadowColor) > 0 && alpha == 255) {
-            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            shadowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadowColor);
             boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
         }
 

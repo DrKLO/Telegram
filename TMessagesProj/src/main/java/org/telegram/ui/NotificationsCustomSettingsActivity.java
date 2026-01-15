@@ -46,6 +46,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -705,7 +706,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
                 }
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                     long did = dids.get(0).dialogId;
                     if (currentType == TYPE_STORIES) {
                         if (autoExceptions != null) {
@@ -1348,23 +1349,71 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
     private static final int BUTTON_MESSAGES_REACTIONS = 103;
     private static final int BUTTON_STORIES_REACTIONS = 104;
 
-    boolean expanded;
+    @Keep
+    public int newRow = -1;
+    @Keep
+    public int showRow = -1;
+    @Keep
+    public int importantRow = -1;
+    @Keep
+    public int messagesRow = -1;
+    @Keep
+    public int storiesRow = -1;
+    @Keep
+    public int previewRow = -1;
+    @Keep
+    public int showSenderRow = -1;
+    @Keep
+    public int soundRow = -1;
+    @Keep
+    public int addExceptionRow = -1;
+    @Keep
+    public int deleteExceptionsRow = -1;
+    @Keep
+    public int lightColorRow = -1;
+    @Keep
+    public int vibrateRow = -1;
+    @Keep
+    public int popupRow = -1;
+    @Keep
+    public int priorityRow = -1;
 
-    private void updateRows(boolean animated) {
+    public boolean expanded;
+
+    public void updateRows(boolean animated) {
+        newRow = -1;
+        showRow = -1;
+        importantRow = -1;
+        messagesRow = -1;
+        storiesRow = -1;
+        previewRow = -1;
+        showSenderRow = -1;
+        soundRow = -1;
+        addExceptionRow = -1;
+        deleteExceptionsRow = -1;
+        lightColorRow = -1;
+        popupRow = -1;
+        vibrateRow = -1;
+        priorityRow = -1;
+
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
+
         SharedPreferences prefs = getNotificationsSettings();
         boolean enabled = false;
         if (currentType != -1) {
             items.add(ItemInner.asHeader(getString(R.string.NotifyMeAbout)));
             if (currentType == TYPE_STORIES) {
+                newRow = items.size();
                 items.add(ItemInner.asCheck(BUTTON_NEW_STORIES, getString(R.string.NotifyMeAboutNewStories), prefs.getBoolean("EnableAllStories", false)));
                 if (!prefs.getBoolean("EnableAllStories", false)) {
+                    importantRow = items.size();
                     items.add(ItemInner.asCheck(BUTTON_IMPORTANT_STORIES, getString(R.string.NotifyMeAboutImportantStories), storiesAuto && (storiesEnabled == null || !storiesEnabled)));
                 }
                 items.add(ItemInner.asShadow(-1, getString(R.string.StoryAutoExceptionsInfo)));
             } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                messagesRow = items.size();
                 items.add(ItemInner.asCheck2(
                     BUTTON_MESSAGES_REACTIONS,
                     R.drawable.msg_markunread,
@@ -1378,6 +1427,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     ),
                     prefs.getBoolean("EnableReactionsMessages", true)
                 ));
+                storiesRow = items.size();
                 items.add(ItemInner.asCheck2(
                     BUTTON_STORIES_REACTIONS,
                     R.drawable.msg_stories_saved,
@@ -1401,6 +1451,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 } else {
                     text = R.string.NotifyMeAboutChannels;
                 }
+                showRow = items.size();
                 items.add(ItemInner.asCheck(BUTTON_ENABLE, getString(text), getNotificationsController().isGlobalNotificationsEnabled(currentType)));
                 items.add(ItemInner.asShadow(-1, null));
             }
@@ -1408,8 +1459,10 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
             settingsStart = items.size() - 1;
 
             if (currentType == TYPE_STORIES) {
+                showSenderRow = items.size();
                 items.add(ItemInner.asCheck(0, getString(R.string.NotificationShowSenderNames), !prefs.getBoolean("EnableHideStoriesSenders", false)));
             } else if (currentType == TYPE_REACTIONS_MESSAGES || currentType == TYPE_REACTIONS_STORIES) {
+                showSenderRow = items.size();
                 items.add(ItemInner.asCheck(0, getString(R.string.NotificationShowSenderNames), prefs.getBoolean("EnableReactionsPreview", true)));
             } else {
                 switch (currentType) {
@@ -1417,13 +1470,16 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                     case TYPE_GROUP:   enabled = prefs.getBoolean("EnablePreviewGroup", true); break;
                     case TYPE_CHANNEL: enabled = prefs.getBoolean("EnablePreviewChannel", true); break;
                 }
+                previewRow = items.size();
                 items.add(ItemInner.asCheck(0, getString(R.string.MessagePreview), enabled));
             }
 
+            soundRow = items.size();
             items.add(ItemInner.asSetting(3, getString("Sound", R.string.Sound), getSound()));
 
             if (expanded) {
 
+                lightColorRow = items.size();
                 items.add(ItemInner.asColor(getString("LedColor", R.string.LedColor), getLedColor()));
 
                 int vibrate = 0;
@@ -1445,13 +1501,17 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                         vibrate = prefs.getInt("vibrate_react", 0);
                         break;
                 }
+
+                vibrateRow = items.size();
                 items.add(ItemInner.asSetting(1, getString("Vibrate", R.string.Vibrate), getString(vibrateLabels[Utilities.clamp(vibrate, vibrateLabels.length - 1, 0)])));
 
                 if (currentType == TYPE_PRIVATE || currentType == TYPE_GROUP) {
+                    popupRow = items.size();
                     items.add(ItemInner.asSetting(2, getString("PopupNotification", R.string.PopupNotification), getPopupOption()));
                 }
 
                 if (Build.VERSION.SDK_INT >= 21) {
+                    priorityRow = items.size();
                     items.add(ItemInner.asSetting(4, getString("NotificationsImportance", R.string.NotificationsImportance), getPriorityOption()));
                 }
 
@@ -1465,6 +1525,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
         }
         if (currentType != TYPE_REACTIONS_MESSAGES && currentType != TYPE_REACTIONS_STORIES) {
             if (currentType != -1) {
+                addExceptionRow = items.size();
                 items.add(ItemInner.asButton(6, R.drawable.msg_contact_add, getString("NotificationsAddAnException", R.string.NotificationsAddAnException)));
             }
             exceptionsStart = items.size() - 1;
@@ -1483,6 +1544,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment implements
                 items.add(ItemInner.asShadow(-3, null));
             }
             if (exceptions != null && !exceptions.isEmpty()) {
+                deleteExceptionsRow = items.size();
                 items.add(ItemInner.asButton(7, 0, getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException)));
             }
         } else {

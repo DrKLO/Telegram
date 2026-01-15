@@ -235,7 +235,7 @@ public abstract class GiftInfoAdapter extends RecyclerListView.SelectionAdapter 
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
         DialogsActivity dialogFragment = new DialogsActivity(args);
-        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             long did = 0;
             for (int a = 0; a < dids.size(); a++) {
                 did = dids.get(a).dialogId;

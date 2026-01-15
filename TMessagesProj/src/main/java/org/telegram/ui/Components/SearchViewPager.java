@@ -19,6 +19,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -107,6 +108,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     public RecyclerListView hashtagSearchListView;
     public HashtagsSearchAdapter hashtagSearchAdapter;
 
+    private @Nullable ImageView actionModeCloseView;
     private NumberTextView selectedMessagesCountTextView;
     private boolean isActionModeShowed;
     private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedFiles = new HashMap<>();
@@ -132,7 +134,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     int currentAccount = UserConfig.selectedAccount;
 
     private boolean lastSearchScrolledToTop;
-    BaseFragment parent;
+    DialogsActivity parent;
 
     String lastSearchString;
     private FilteredSearchView.Delegate filteredSearchViewDelegate;
@@ -295,6 +297,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         };
         searchListView.setItemAnimator(itemAnimator);
         searchListView.setPivotY(0);
+        searchListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+        searchListView.setClipToPadding(false);
         searchListView.setAdapter(dialogsSearchAdapter);
         searchListView.setVerticalScrollBarEnabled(true);
         searchListView.setInstantClick(true);
@@ -383,6 +387,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         channelsSearchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         channelsSearchListView.setLayoutManager(channelsSearchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         channelsSearchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
+        channelsSearchListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+        channelsSearchListView.setClipToPadding(false);
 
         loadingView = new FlickerLoadingView(context);
         loadingView.setViewType(1);
@@ -455,6 +461,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         botsSearchListView = new BlurredRecyclerView(context);
         botsSearchListView.setItemAnimator(botsItemAnimator);
         botsSearchListView.setPivotY(0);
+        botsSearchListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+        botsSearchListView.setClipToPadding(false);
         botsSearchListView.setVerticalScrollBarEnabled(true);
         botsSearchListView.setInstantClick(true);
         botsSearchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
@@ -530,6 +538,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         hashtagSearchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         hashtagSearchListView.setLayoutManager(hashtagSearchLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         hashtagSearchListView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
+        hashtagSearchListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+        hashtagSearchListView.setClipToPadding(false);
 
         loadingView = new FlickerLoadingView(context);
         loadingView.setViewType(1);
@@ -583,8 +593,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
         postsAreNew = MessagesController.getGlobalMainSettings().getInt("searchpostsnew", 0) < 3;
         postsSearchContainer = new PostsSearchContainer(context, fragment);
+        postsSearchContainer.listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+        postsSearchContainer.listView.setClipToPadding(false);
 
         setAdapter(viewPagerAdapter = new ViewPagerAdapter());
+    }
+
+    public boolean isDownloadsTab(int position) {
+        return viewPagerAdapter != null && viewPagerAdapter.getItemViewType(position) == 2;
     }
 
     public ActionBarMenu getActionMode() {
@@ -761,6 +777,18 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         currentSearchFilters.remove(filterData);
     }
 
+    public boolean addSearchFilter(FiltersView.MediaFilterData filter) {
+        if (!currentSearchFilters.isEmpty()) {
+            for (int i = 0; i < currentSearchFilters.size(); i++) {
+                if (filter.isSameType(currentSearchFilters.get(i))) {
+                    return false;
+                }
+            }
+        }
+        currentSearchFilters.add(filter);
+        return true;
+    }
+
     public ArrayList<FiltersView.MediaFilterData> getCurrentSearchFilters() {
         return currentSearchFilters;
     }
@@ -796,11 +824,21 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         if (show && !parent.getActionBar().actionModeIsExist(actionModeTag)) {
             actionMode = parent.getActionBar().createActionMode(true, actionModeTag);
 
+            if (parent.hasMainTabs) {
+                actionModeCloseView = new ImageView(getContext());
+                actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
+                actionModeCloseView.setImageDrawable(new BackDrawable(true));
+                actionModeCloseView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
+                actionModeCloseView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)));
+                actionModeCloseView.setOnClickListener(v -> hideActionMode());
+                actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, 0f, Gravity.CENTER_VERTICAL));
+            }
+
             selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
             selectedMessagesCountTextView.setTextSize(18);
             selectedMessagesCountTextView.setTypeface(AndroidUtilities.bold());
             selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
-            actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
+            actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, parent.hasMainTabs ? 18 : 72, 0, 0, 0));
             selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
 
             speedItem = actionMode.addItemWithWidth(speedItemId, R.drawable.avd_speed, AndroidUtilities.dp(54), getString(R.string.AccDescrPremiumSpeed));
@@ -811,10 +849,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }
         if (selectedMessagesCountTextView != null) {
             boolean isForumSearch = dialogsSearchAdapter != null && dialogsSearchAdapter.delegate != null && dialogsSearchAdapter.delegate.getSearchForumDialogId() != 0;
-            ((MarginLayoutParams) selectedMessagesCountTextView.getLayoutParams()).leftMargin = AndroidUtilities.dp(72 + (isForumSearch ? 56 : 0));
+            ((MarginLayoutParams) selectedMessagesCountTextView.getLayoutParams()).leftMargin = AndroidUtilities.dp((parent.hasMainTabs ? 18 : 72) + (isForumSearch ? 56 : 0));
             selectedMessagesCountTextView.setLayoutParams(selectedMessagesCountTextView.getLayoutParams());
         }
-        if (parent.getActionBar().getBackButton().getDrawable() instanceof MenuDrawable) {
+        if (parent.getActionBar().getBackButton() != null && parent.getActionBar().getBackButton().getDrawable() instanceof MenuDrawable) {
             BackDrawable backDrawable = new BackDrawable(false);
             parent.getActionBar().setBackButtonDrawable(backDrawable);
             backDrawable.setColorFilter(null);
@@ -909,7 +947,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             args.putBoolean("onlySelect", true);
             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
             DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+            fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                 Iterator<FilteredSearchView.MessageHashId> idIterator = selectedFiles.keySet().iterator();
                 while (idIterator.hasNext()) {
@@ -1429,6 +1467,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 return hashtagSearchContainer;
             } else if (viewType == 2) {
                 downloadsContainer = new SearchDownloadsContainer(parent, currentAccount);
+                downloadsContainer.recyclerListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+                downloadsContainer.recyclerListView.setClipToPadding(false);
                 downloadsContainer.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
                     public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -1444,6 +1484,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 FilteredSearchView filteredSearchView = new FilteredSearchView(parent);
                 filteredSearchView.setChatPreviewDelegate(chatPreviewDelegate);
                 filteredSearchView.setUiCallback(SearchViewPager.this);
+                filteredSearchView.recyclerListView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+                filteredSearchView.recyclerListView.setClipToPadding(false);
                 filteredSearchView.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
                     public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {

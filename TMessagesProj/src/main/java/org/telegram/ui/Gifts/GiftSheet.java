@@ -2541,7 +2541,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             }
 
             if (selected > 0) {
-                selectedPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                selectedPaint.setColor(Theme.getColor(selectedColorKey, resourcesProvider));
                 selectedPaint.setStrokeWidth(lerp(0, dpf2(1.667f), selected));
                 AndroidUtilities.rectTmp.set(rect);
                 final float b = lerp(-dpf2(2.33f), dpf2(3.33f), selected);
@@ -2550,6 +2550,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, selectedPaint);
             }
         }
+
+        public int selectedColorKey = Theme.key_windowBackgroundWhite;
 
         @Override
         public boolean getPadding(@NonNull Rect padding) {

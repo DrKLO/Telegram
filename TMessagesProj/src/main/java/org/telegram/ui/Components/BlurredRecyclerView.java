@@ -14,6 +14,7 @@ public class BlurredRecyclerView extends RecyclerListView {
     public int bottomPadding;
     boolean globalIgnoreLayout;
     public int additionalClipBottom;
+    public boolean alwaysDrawChild;
 
     public BlurredRecyclerView(Context context) {
         super(context);
@@ -67,7 +68,7 @@ public class BlurredRecyclerView extends RecyclerListView {
 
     @Override
     public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        if (child.getY() + child.getMeasuredHeight() < blurTopPadding) {
+        if ((child.getY() + child.getMeasuredHeight() < blurTopPadding) && !alwaysDrawChild) {
             return true;
         }
         return super.drawChild(canvas, child, drawingTime);

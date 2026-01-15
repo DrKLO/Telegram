@@ -17,7 +17,6 @@ import android.graphics.PathMeasure;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
-import android.graphics.Xfermode;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
@@ -89,7 +88,7 @@ public class StoriesUtilities {
     public static Paint closeFriendsLastColor;
     public static int grayLastColor;
     public static Paint[] storyCellGreyPaint = new Paint[2];
-    public static int storyCellGrayLastColor;
+    private static final int[] storyCellGrayLastColor = new int[2];
 
     public static Drawable expiredStoryDrawable;
 
@@ -252,6 +251,7 @@ public class StoriesUtilities {
                 gradientTools.paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += dp(5) * (1f - progressToSate);
             }
+            inset += params.additionalInset;
             rectTmp.set(params.originalAvatarRect);
             rectTmp.inset(inset, inset);
 
@@ -292,6 +292,7 @@ public class StoriesUtilities {
                 paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += dp(5) * (1f - progressToSate);
             }
+            inset += params.additionalInset;
             rectTmp.set(params.originalAvatarRect);
             rectTmp.inset(inset, inset);
             if (params.drawSegments) {
@@ -342,6 +343,7 @@ public class StoriesUtilities {
                 paint.setAlpha((int) (0xFF * params.alpha * progressToSate));
                 inset += dp(5) * (1f - progressToSate);
             }
+            inset += params.additionalInset;
             rectTmp.set(params.originalAvatarRect);
             rectTmp.inset(inset, inset);
             if (params.drawSegments && params.currentState == STATE_PROGRESS && params.progressToProgressSegments != 1f) {
@@ -375,6 +377,7 @@ public class StoriesUtilities {
         avatarImage.draw(canvas);
         params.drawnLive = drawLive > 0.5f;
         if (drawLive > 0) {
+            insetTo += params.additionalInset;
             rectTmp.set(params.originalAvatarRect);
             rectTmp.inset(insetTo, insetTo);
             drawLive(canvas, rectTmp, drawLive, avatarImage.getVisible(), 0);
@@ -609,8 +612,8 @@ public class StoriesUtilities {
             storyCellGreyPaint[index].setStrokeCap(Paint.Cap.ROUND);
         }
         int color = Theme.getColor(!isArchive ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived, resourcesProvider);
-        if (storyCellGrayLastColor != color) {
-            storyCellGrayLastColor = color;
+        if (storyCellGrayLastColor[index] != color) {
+            storyCellGrayLastColor[index] = color;
             float brightness = AndroidUtilities.computePerceivedBrightness(color);
             final boolean isDark = brightness < 0.721f;
             if (isDark) {
@@ -693,19 +696,26 @@ public class StoriesUtilities {
             canvas.drawPath(forumSegmentPath, paint);
             return;
         }
-        if (!params.isFirst && !params.isLast) {
-            if (startAngle < 90) {
+        if (params.useArcProgress) {
+            if (!params.isFirst && !params.isLast) {
+                if (startAngle < 90) {
+                    drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2, params.progressToArc / 2);
+                } else {
+                    drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2 + 180, params.progressToArc / 2 + 180);
+                }
+            } else if (params.isLast) {
+                drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2 + 180, params.progressToArc / 2 + 180);
+            } else if (params.isFirst) {
                 drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2, params.progressToArc / 2);
             } else {
-                drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2 + 180, params.progressToArc / 2 + 180);
+                canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
             }
-        } else if (params.isLast) {
-            drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2 + 180, params.progressToArc / 2 + 180);
-        } else if (params.isFirst) {
-            // canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
-            drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, -params.progressToArc / 2, params.progressToArc / 2);
         } else {
-            canvas.drawArc(rectTmp, startAngle, endAngle - startAngle, false, paint);
+            if (startAngle < 90) {
+                drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle, params.rightTopAngleToExclude, params.rightBottomAngleToExclude);
+            } else {
+                drawArcExcludeArc(canvas, rectTmp, paint, startAngle, endAngle,  -params.leftTopAngleToExclude, params.leftBottomAngleToExclude);
+            }
         }
     }
 
@@ -747,7 +757,7 @@ public class StoriesUtilities {
             } else {
                 storiesGradientTools[i].setColors(Theme.getColor(Theme.key_stories_circle1), Theme.getColor(Theme.key_stories_circle2));
             }
-            storiesGradientTools[i].paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            storiesGradientTools[i].paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             storiesGradientTools[i].paint.setStyle(Paint.Style.STROKE);
             storiesGradientTools[i].paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -780,7 +790,7 @@ public class StoriesUtilities {
             closeFriendsGradientTools.isDiagonal = true;
             closeFriendsGradientTools.isRotate = true;
             closeFriendsGradientTools.setColors(Theme.getColor(Theme.key_stories_circle_closeFriends1), Theme.getColor(Theme.key_stories_circle_closeFriends2));
-            closeFriendsGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            closeFriendsGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             closeFriendsGradientTools.paint.setStyle(Paint.Style.STROKE);
             closeFriendsGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -794,7 +804,7 @@ public class StoriesUtilities {
             liveGradientTools.isDiagonal = true;
             liveGradientTools.isRotate = true;
             liveGradientTools.setColors(Theme.getColor(Theme.key_stories_circle_live1), Theme.getColor(Theme.key_stories_circle_live2));
-            liveGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            liveGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             liveGradientTools.paint.setStyle(Paint.Style.STROKE);
             liveGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -811,7 +821,7 @@ public class StoriesUtilities {
             final int red = Theme.getColor(Theme.key_text_RedBold);
             orange = ColorUtils.blendARGB(orange, red, .25f);
             errorGradientTools.setColors(orange, red);
-            errorGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            errorGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             errorGradientTools.paint.setStyle(Paint.Style.STROKE);
             errorGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -828,7 +838,7 @@ public class StoriesUtilities {
             final int red = Theme.getColor(Theme.key_text_RedBold);
             orange = ColorUtils.blendARGB(orange, red, .25f);
             errorGradientTools.setColors(orange, red);
-            errorGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            errorGradientTools.paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             errorGradientTools.paint.setStyle(Paint.Style.STROKE);
             errorGradientTools.paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -1188,6 +1198,11 @@ public class StoriesUtilities {
         public TL_stories.StoryItem storyItem;
         public float progressToSegments = 1f;
         public float progressToArc = 0;
+        public float rightTopAngleToExclude = 0;
+        public float rightBottomAngleToExclude = 0;
+        public float leftTopAngleToExclude = 0;
+        public float leftBottomAngleToExclude = 0;
+        public boolean useArcProgress = true;
         public boolean isLast;
         public boolean isFirst;
         public int globalState;
@@ -1214,6 +1229,7 @@ public class StoriesUtilities {
 
         public final boolean isStoryCell;
         public RectF originalAvatarRect = new RectF();
+        public float additionalInset;
 
         ButtonBounce buttonBounce;
         public boolean allowLongress = false;
@@ -1509,7 +1525,7 @@ public class StoriesUtilities {
             tools.isDiagonal = true;
             tools.isRotate = true;
             resetColors(false);
-            tools.paint.setStrokeWidth(AndroidUtilities.dpf2(2.3f));
+            tools.paint.setStrokeWidth(AndroidUtilities.dpf2(2f));
             tools.paint.setStyle(Paint.Style.STROKE);
             tools.paint.setStrokeCap(Paint.Cap.ROUND);
         }

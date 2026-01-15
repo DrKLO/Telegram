@@ -42,6 +42,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -150,6 +151,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     int privacyRow;
     int lastPaddingRow;
     int showAdsHeaderRow;
+    @Keep
     int showAdsRow;
     int showAdsInfoRow;
     Drawable shadowDrawable;
@@ -163,7 +165,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     FillLastLinearLayoutManager layoutManager;
     //icons
-    Shader shader;
+    Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    Shader shader, strokeShader;
     Matrix matrix = new Matrix();
     Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     BackgroundView backgroundView;
@@ -456,6 +459,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     @Override
     public View createView(Context context) {
         hasOwnBackground = true;
+        strokeShader = new LinearGradient(0, 0, 0, dp(28), new int[] { 0x4dffffff, 0, 0x1affffff }, new float[] { 0, 0.5f, 1 }, Shader.TileMode.CLAMP);
+        strokePaint.setShader(strokeShader);
+        strokePaint.setStyle(Paint.Style.STROKE);
         shader = new LinearGradient(
             0, 0, 0, 100,
             new int[]{
@@ -1445,12 +1451,27 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     view = new PremiumFeatureCell(context) {
                         @Override
                         protected void dispatchDraw(Canvas canvas) {
+                            final float r = dp(10);
+
                             AndroidUtilities.rectTmp.set(imageView.getLeft(), imageView.getTop(), imageView.getRight(), imageView.getBottom());
                             matrix.reset();
                             matrix.postScale(1f, totalGradientHeight / 100f, 0, 0);
                             matrix.postTranslate(0, -data.yOffset);
                             shader.setLocalMatrix(matrix);
-                            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8), dp(8), gradientPaint);
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, gradientPaint);
+
+                            final boolean border = resourceProvider != null ? resourceProvider.isDark() : Theme.isCurrentThemeDark();
+                            if (border) {
+                                final float sw = dp(1);
+                                strokePaint.setStrokeWidth(sw);
+                                canvas.save();
+                                canvas.translate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
+                                AndroidUtilities.rectTmp.offset(-AndroidUtilities.rectTmp.left, -AndroidUtilities.rectTmp.top);
+                                AndroidUtilities.rectTmp.inset(sw / 2.0f, sw / 2.0f);
+                                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, strokePaint);
+                                canvas.restore();
+                            }
+
                             super.dispatchDraw(canvas);
                         }
                     };
@@ -2108,12 +2129,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (settingsView != null) {
-            closeSetting();
+            if (invoked) closeSetting();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     private void closeSetting() {

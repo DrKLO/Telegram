@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
@@ -112,20 +113,25 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private boolean needReorder;
     private int currentType;
 
+    @Keep
     private int dynamicPackOrder;
     private int dynamicPackOrderInfo;
+    @Keep
     private int suggestRow;
     private int suggestAnimatedEmojiRow;
     private int suggestAnimatedEmojiInfoRow;
     private int loopRow;
     private int loopInfoRow;
+    @Keep
     private int largeEmojiRow;
     private int reactionsDoubleTapRow;
     private int stickersBotInfo;
+    @Keep
     private int featuredRow;
     private int masksRow;
     private int emojiPacksRow;
     private int masksInfoRow;
+    @Keep
     private int archivedRow;
     private int archivedInfoRow;
 
@@ -269,7 +275,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 } else if (id == MENU_ARCHIVE || id == MENU_DELETE || id == MENU_SHARE) {
@@ -484,12 +490,12 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (listAdapter.hasSelected()) {
-            listAdapter.clearSelected();
+            if (invoked) listAdapter.clearSelected();
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

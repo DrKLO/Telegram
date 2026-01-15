@@ -81,10 +81,10 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -414,15 +414,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         upgradeFeatureCells = new AffiliateProgramFragment.FeatureCell[3];
         upgradeFeatureCells[0] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.Gift2UpgradeFeature1Text));
+        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.GiftsFeature1Text));
         upgradeLayout.addView(upgradeFeatureCells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         upgradeFeatureCells[1] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), getString(R.string.Gift2UpgradeFeature2Text));
+        upgradeFeatureCells[1].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.GiftsFeature2Text));
         upgradeLayout.addView(upgradeFeatureCells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         upgradeFeatureCells[2] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.Gift2UpgradeFeature3Text));
+        upgradeFeatureCells[2].set(R.drawable.menu_wear, getString(R.string.GiftsFeature3Title), getString(R.string.GiftsFeature3Text));
         upgradeLayout.addView(upgradeFeatureCells[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         checkboxSeparator = new View(context);
@@ -870,7 +870,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_USERS_ONLY);
 
         DialogsActivity fragment = new DialogsActivity(args);
-        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             if (dids.isEmpty()) {
                 return false;
             }
@@ -2280,6 +2280,49 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 AndroidUtilities.runOnUIThread(this.checkToRotateRunnable, 150);
             }
         };
+
+        public void setPreviewAttributes(StarGiftPreviewSheet.Attributes attributes) {
+            if (currentPage == null || currentPage.to != PAGE_UPGRADE || !isAttachedToWindow()) {
+                return;
+            }
+            AndroidUtilities.cancelRunOnUIThread(checkToRotateRunnable);
+            if (rotationAnimator != null) {
+                rotationAnimator.cancel();
+                rotationAnimator = null;
+            }
+
+            toggled = 1 - toggled;
+
+            final RLottieDrawable fromAnimation = imageView[1 + (1 - toggled)].getImageReceiver().getLottieAnimation();
+            final RLottieDrawable toAnimation = imageView[1 + toggled].getImageReceiver().getLottieAnimation();
+            if (toAnimation != null && fromAnimation != null) {
+                toAnimation.setProgress(fromAnimation.getProgress(), false);
+            }
+
+            setBackdropPaint(1 + toggled, backdrop[1 + toggled] = attributes.backdrop);
+            setPattern(1, attributes.pattern, true);
+            imageViewAttributes[1 + toggled] = attributes.model;
+            setGiftImage(imageView[1 + toggled].getImageReceiver(), imageViewAttributes[1 + toggled].document, 160);
+
+            animateSwitch();
+
+            rotationAnimator = ValueAnimator.ofFloat(1.0f - toggled, toggled);
+            rotationAnimator.addUpdateListener(anm -> {
+                toggleBackdrop = (float) anm.getAnimatedValue();
+                onSwitchPage(currentPage);
+            });
+            rotationAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    toggleBackdrop = toggled;
+                    onSwitchPage(currentPage);
+                }
+            });
+            rotationAnimator.setDuration(320);
+            rotationAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            rotationAnimator.start();
+        }
+
         private void rotateAttributes() {
             if (currentPage == null || currentPage.to != PAGE_UPGRADE || !isAttachedToWindow()) {
                 return;
@@ -2829,8 +2872,23 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (index == 2) roller.modelText = textView;
             }
         } else {
+            final boolean[] loading = new boolean[1];
             final ButtonSpan.TextViewButtons[] textViewArr = new ButtonSpan.TextViewButtons[1];
-            final TableRow row = tableView.addRow(name, attr.name, percents(attr.rarity_permille), () -> showHint(LocaleController.formatString(R.string.Gift2RarityHint, percents(attr.rarity_permille)), textViewArr[0], false));
+            final TableRow row = tableView.addRow(name, attr.name, percents(attr.rarity_permille), () -> {
+                if (loading[0]) {
+                    return;
+                }
+                loading[0] = true;
+                final TL_stars.StarGift gift = getGift();
+                GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(gift.gift_id, attrs -> {
+                    if (attrs != null) {
+                        new StarGiftPreviewSheet(getContext(), resourcesProvider, currentAccount, gift, attrs).show();
+                    } else {
+                        showHint(LocaleController.formatString(R.string.Gift2RarityHint, percents(attr.rarity_permille)), textViewArr[0], false);
+                    }
+                    loading[0] = false;
+                });
+            });
             textViewArr[0] = (ButtonSpan.TextViewButtons) ((TableView.TableRowContent) row.getChildAt(1)).getChildAt(0);
         }
     }
@@ -5366,9 +5424,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             checkboxSeparator.setVisibility(View.VISIBLE);
         }
 
-        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique,   getString(R.string.Gift2UpgradeFeature1Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature1Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature1Text));
-        upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature2Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature2Text));
-        upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature3Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature3Text));
+        if (prepaying) {
+            upgradeFeatureCells[0].set(R.drawable.menu_feature_unique,   getString(R.string.Gift2UpgradeFeature1Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature1Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature1Text));
+            upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature2Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature2Text));
+            upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature3Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature3Text));
+        } else {
+            upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.GiftsFeature1Text));
+            upgradeFeatureCells[1].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.GiftsFeature2Text));
+            upgradeFeatureCells[2].set(R.drawable.menu_wear, getString(R.string.GiftsFeature3Title), getString(R.string.GiftsFeature3Text));
+        }
 
         AndroidUtilities.runOnUIThread(() -> {
             switchPage(PAGE_UPGRADE, true);
@@ -7619,10 +7683,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             ssb = (SpannableStringBuilder) cs;
         }
 
-        SpannableString ok = new SpannableString("👌");
+        final SpannableString ok = new SpannableString("👌");
         ok.setSpan(new ColoredImageSpan(R.drawable.filled_understood), 0, ok.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        SpannableString thumbs = new SpannableString("👍");
+        final SpannableString thumbs = new SpannableString("👍");
         thumbs.setSpan(new ColoredImageSpan(R.drawable.filled_reactions), 0, thumbs.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         AndroidUtilities.replaceMultipleCharSequence("👌", ssb, ok);

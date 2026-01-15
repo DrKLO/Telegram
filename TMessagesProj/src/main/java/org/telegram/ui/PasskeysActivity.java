@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -96,13 +97,18 @@ public class PasskeysActivity extends BaseFragment {
         return fragmentView = contentView;
     }
 
+    @Keep
+    public int addPasskeyRow;
+
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        addPasskeyRow = -1;
         items.add(UItem.asTopView(getString(R.string.PasskeyTopInfo), R.raw.passkey));
         for (int i = 0; i < passkeys.size(); ++i) {
             final TL_account.Passkey passkey = passkeys.get(i);
             items.add(PasskeyCell.Factory.of(passkey, this::openMenu));
         }
         if (passkeys.size() + 1 <= getMessagesController().config.passkeysAccountPasskeysMax.get()) {
+            addPasskeyRow = items.size();
             items.add(UItem.asButton(-1, R.drawable.menu_passkey_add, getString(R.string.PasskeyAdd)).accent());
         }
         items.add(UItem.asShadow(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.PasskeyInfo), () -> {
@@ -157,8 +163,16 @@ public class PasskeysActivity extends BaseFragment {
         if (item.id == -1) {
             PasskeysController.create(getContext(), currentAccount, (passkey, error) -> {
                 if (error != null) {
-                    if ("CANCELLED".equalsIgnoreCase(error) || "EMPTY".equalsIgnoreCase(error))
+                    if ("CANCELLED".equalsIgnoreCase(error))
                         return;
+                    if ("EMPTY".equalsIgnoreCase(error)) {
+                        new AlertDialog.Builder(getContext())
+                            .setTitle(getString(R.string.PasskeyNoOptionsTitle))
+                            .setMessage(getString(R.string.PasskeyNoOptionsText))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
+                        return;
+                    }
                     BulletinFactory.of(this).showForError(error, true);
                 } else if (passkey != null) {
                     MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
@@ -296,7 +310,7 @@ public class PasskeysActivity extends BaseFragment {
         }
     }
 
-    @RequiresApi(api = 28)
+    // @RequiresApi(api = 28)
     public static void showLearnSheet(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, boolean withCreateButton) {
         BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider);
 
@@ -341,8 +355,19 @@ public class PasskeysActivity extends BaseFragment {
             button.setLoading(true);
             PasskeysController.create(context, currentAccount, (passkey, error) -> {
                 button.setLoading(false);
-                if ("CANCELLED".equalsIgnoreCase(error) || "EMPTY".equalsIgnoreCase(error))
+                if ("CANCELLED".equalsIgnoreCase(error))
                     return;
+                if ("EMPTY".equalsIgnoreCase(error)) {
+                    new AlertDialog.Builder(context)
+                        .setTitle(getString(R.string.PasskeyNoOptionsTitle))
+                        .setMessage(getString(R.string.PasskeyNoOptionsText))
+                        .setPositiveButton(getString(R.string.OK), null)
+                        .setOnDismissListener((di) -> {
+                            sheet.dismiss();
+                        })
+                        .show();
+                    return;
+                }
 
                 BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                 if (fragment == null) return;

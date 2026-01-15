@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.PorterDuff;
@@ -17,7 +16,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -29,12 +27,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.core.graphics.ColorUtils;
-import androidx.core.view.insets.GradientProtection;
+import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -60,16 +56,20 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
+import org.telegram.ui.Components.glass.GlassTabView;
+import org.telegram.ui.Components.glass.GlassTabsView;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.bots.AffiliateProgramFragment;
 
@@ -96,29 +96,35 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
     private final BagRandomizer<TL_stars.starGiftAttributePattern> rPatterns;
     private final BagRandomizer<TL_stars.starGiftAttributeModel> rModels;
 
+    private Mode mode = Mode.RANDOM;
+
     private final ExtendedGridLayoutManager layoutManager;
     private final DefaultItemAnimator itemAnimator;
     private final TabsSelectorView tabsSelectorView;
     private UniversalAdapter adapter;
 
     private final FrameLayout headerView;
+    private final ImageView backButton;
+    private final ImageView headerPlay;
     private final StarGiftSheet.TopView topView;
     private final TextView giftNameTextView;
     private final TextView giftStatusTextView;
     private final TL_stars.StarGift gift;
     private final View gradientTop;
-
+    private final ViewGroupPartRenderer viewGroupPartRenderer;
 
     private final DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
     private final @Nullable BlurredBackgroundSourceRenderNode glassSourceRenderNode;
     private final @Nullable BlurredBackgroundSourceColor glassSourceFallback;
     private final BlurredBackgroundDrawableViewFactory glassFactory;
+    private @Nullable Attributes selectedAttributes;
 
     public StarGiftPreviewSheet(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, TL_stars.StarGift gift, ArrayList<TL_stars.StarGiftAttribute> attributes) {
         super(context, null, false, false, false, resourcesProvider);
         this.currentAccount = currentAccount;
         this.gift = gift;
 
+        this.viewGroupPartRenderer = new ViewGroupPartRenderer(recyclerListView, container, recyclerListView::drawChild);
         this.backdrops = TlUtils.findAllInstances(attributes, TL_stars.starGiftAttributeBackdrop.class);
         this.rBackdrops = new BagRandomizer<>(backdrops);
         this.rBackdrops.setReshuffleIfEnd(false);
@@ -136,7 +142,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         }
 
         ignoreTouchActionBar = false;
-        headerMoveTop = dp(64);
+        headerMoveTop = dp(6);
         occupyNavigationBar = true;
 
         setBackgroundColor(getBackgroundColor());
@@ -226,6 +232,12 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             @Override
             protected void updateButtonsBackgrounds(int color) {
                 super.updateButtonsBackgrounds(color);
+                if (backButton != null && Theme.setSelectorDrawableColor(backButton.getBackground(), color, false)) {
+                    backButton.invalidate();
+                }
+                if (headerPlay != null && Theme.setSelectorDrawableColor(headerPlay.getBackground(), color, false)) {
+                    headerPlay.invalidate();
+                }
                 for (StarGiftPreviewSheet.Button btn : StarGiftPreviewSheet.this.buttons) {
                     if (Theme.setSelectorDrawableColor(btn.getBackground(), color, false)) {
                         btn.invalidate();
@@ -274,6 +286,35 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         headerView.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         headerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
+        backButton = new ImageView(context);
+        backButton.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 16, 16));
+        backButton.setImageResource(R.drawable.ic_ab_back);
+        backButton.setScaleType(ImageView.ScaleType.CENTER);
+        backButton.setOnClickListener(v -> dismiss());
+        ScaleStateListAnimator.apply(backButton);
+        headerView.addView(backButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 12, 14, 0, 0));
+
+        headerPlay = new ImageView(context);
+        headerPlay.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 16, 16));
+        headerPlay.setImageResource(R.drawable.filled_gift_pause_24);
+        headerPlay.setScaleType(ImageView.ScaleType.CENTER);
+        headerPlay.setOnClickListener(v -> {
+            if (mode == Mode.SELECTED) {
+                topView.setPreviewingAttributes(attributes);
+                setMode(Mode.RANDOM);
+            } else if (mode == Mode.RANDOM) {
+                selectedAttributes = new Attributes(
+                    topView.getUpgradeBackdropAttribute(),
+                    topView.getUpgradePatternAttribute(),
+                    topView.getUpgradeImageViewAttribute()
+                );
+                topView.setPreviewAttributes(selectedAttributes);
+                setMode(Mode.SELECTED);
+            }
+        });
+        ScaleStateListAnimator.apply(headerPlay);
+        headerView.addView(headerPlay, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.RIGHT, 0, 14, 12, 0));
+
         giftNameTextView = new TextView(context);
         giftNameTextView.setTypeface(AndroidUtilities.bold());
         giftNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 21);
@@ -294,6 +335,11 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
         buttonsLayout.setClipChildren(false);
         buttons = new Button[3];
+        tabsSelectorView = new TabsSelectorView(context, resourcesProvider, tab -> {
+            itemAnimator.endAnimations();
+            adapter.update(true);
+        });
+
         for (int i = 0; i < buttons.length; ++i) {
             buttons[i] = new Button(context);
             switch (i) {
@@ -308,11 +354,16 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                     break;
             }
 
+            ScaleStateListAnimator.apply(buttons[i]);
+            int finalI = i;
+            buttons[i].setOnClickListener(v -> {
+                tabsSelectorView.selectTab(finalI);
+            });
             buttons[i].setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 10, 10));
             buttonsLayout.addView(buttons[i], LayoutHelper.createLinear(0, 42, 1, Gravity.FILL_HORIZONTAL, 0, 0, i != buttons.length - 1 ? 11 : 0, 0));
         }
         headerView.addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 16, 0, 16, 18));
-        containerView.addView(headerView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 315, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+        containerView.addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 315, Gravity.FILL_HORIZONTAL | Gravity.TOP));
 
         int color = getBackgroundColor();
         gradientTop = new View(context);
@@ -322,10 +373,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         lp.height = AndroidUtilities.statusBarHeight;
         containerView.addView(gradientTop, lp);
 
-        tabsSelectorView = new TabsSelectorView(context, resourcesProvider, tab -> {
-            itemAnimator.endAnimations();
-            adapter.update(true);
-        });
+
         tabsSelectorView.setPadding(dp(8), dp(8), dp(8), dp(8));
         BlurredBackgroundDrawable drawable = glassFactory.create(tabsSelectorView);
         drawable.setPadding(dp(4));
@@ -334,13 +382,15 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         tabsSelectorView.setBackground(drawable);
         containerView.addView(tabsSelectorView, LayoutHelper.createFrame(268, 64, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 5));
 
-
+        selectedAttributes = new Attributes(
+            TlUtils.findFirstInstance(attributes, TL_stars.starGiftAttributeBackdrop.class),
+            TlUtils.findFirstInstance(attributes, TL_stars.starGiftAttributePattern.class),
+            TlUtils.findFirstInstance(attributes, TL_stars.starGiftAttributeModel.class)
+        );
 
         adapter.update(false);
         updateHeaderAttributes(false);
     }
-
-
 
     @Override
     protected CharSequence getTitle() {
@@ -349,7 +399,36 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
     @Override
     protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
-        adapter = new UniversalAdapter(recyclerListView, getContext(), currentAccount, 0, true, this::fillItems, resourcesProvider);
+        adapter = new UniversalAdapter(recyclerListView, getContext(), currentAccount, 0, true, this::fillItems, resourcesProvider) {
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+                super.onBindViewHolder(holder, position);
+                if (!(holder.itemView instanceof GiftAttributeCell)) {
+                    return;
+                }
+
+                final GiftAttributeCell cell = (GiftAttributeCell) holder.itemView;
+                final Attributes attributes = cell.attributes;
+
+                final boolean isSelected = isSelectedWithCurrentTab(attributes);
+                cell.setSelected(isSelected, false);
+                cell.setOnClickListener(v -> {
+                    if (mode == Mode.RANDOM) {
+                        selectedAttributes = new Attributes(
+                            topView.getUpgradeBackdropAttribute(),
+                            topView.getUpgradePatternAttribute(),
+                            topView.getUpgradeImageViewAttribute()
+                        );
+                        setMode(Mode.SELECTED);
+                    }
+
+                    selectedAttributes = newSelectedWithCurrentTab(attributes);
+                    topView.setPreviewAttributes(selectedAttributes);
+                    updateSelectedForVisibleViews();
+                });
+            }
+        };
+
         adapter.setApplyBackground(false);
         return adapter;
     }
@@ -385,7 +464,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             gradientTop.animate().alpha(newGradientVisible ? 1 : 0).setDuration(200).start();
         }
 
-        headerMoveTop = top <= 0 ? 0 : dp(64);
+        headerMoveTop = top <= 0 ? 0 : dp(6);
         headerView.setVisibility(found ? View.VISIBLE : View.GONE);
         headerView.setTranslationY(top);
     }
@@ -411,9 +490,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         }
 
         items.add(UItem.asSpace(dp(315)));
-        // items.add(UItem.asCustom(-1, topView));
 
-        //for (int a = 0; a < 2; a++) {
         rBackdrops.reset();
         rPatterns.reset();
         rModels.reset();
@@ -438,11 +515,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                     rBackdrops.next(), pattern, rModels.next())));
             }
         }
-        //}
     }
-
-
-
 
     public static class Attributes {
         public final TL_stars.starGiftAttributeBackdrop backdrop;
@@ -458,7 +531,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
 
     @SuppressLint("ViewConstructor")
-    public static class GiftAttributeCell extends FrameLayout {
+    public static class GiftAttributeCell extends FrameLayout implements FactorAnimator.Target {
         private final int currentAccount;
         private final Theme.ResourcesProvider resourcesProvider;
 
@@ -490,11 +563,17 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.NO_GRAVITY, 12, 106, 12, 14));
 
             percentageView = new TextView(context);
+            percentageView.setClickable(false);
             percentageView.setTypeface(AndroidUtilities.bold());
             percentageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             percentageView.setPadding(dp(4), dp(1), dp(5), dp(1));
             percentageView.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 10, 10));
             addView(percentageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 10, 10, 0));
+        }
+
+        public void setSelected(boolean isSelected, boolean animated) {
+            cardBackground.setSelected(isSelected, animated);
+            this.isSelected.setValue(isSelected, animated);
         }
 
         private TLRPC.Document lastDocument;
@@ -523,6 +602,41 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             );
         }
 
+        private final BoolAnimator isSelected = new BoolAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 320);
+
+        @Override
+        public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+            checkPercentageViewBackground();
+        }
+
+        private void checkPercentageViewBackground() {
+            final int color;
+
+            if (noPercentageBackground) {
+                color = ColorUtils.blendARGB(ColorUtils.blendARGB(
+                    Theme.getColor(Theme.key_windowBackgroundWhite),
+                    Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), 0.05f),
+                    Theme.getColor(Theme.key_featuredStickers_addButton), isSelected.getFloatValue());
+
+                percentageView.setTextColor(ColorUtils.blendARGB(ColorUtils.blendARGB(
+                        Theme.getColor(Theme.key_windowBackgroundWhite),
+                        Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), 0.5f), Color.WHITE, isSelected.getFloatValue()));
+            } else {
+                color = ColorUtils.blendARGB(
+                    ColorUtils.setAlphaComponent(attributes.backdrop.center_color, 255),
+                    ColorUtils.setAlphaComponent(attributes.backdrop.pattern_color, 255), 0.5f);
+
+                percentageView.setTextColor(Color.WHITE);
+            }
+
+            if (Theme.setSelectorDrawableColor(percentageView.getBackground(), color, false)) {
+                percentageView.invalidate();
+            }
+        }
+
+        private boolean noPercentageBackground;
+        private Attributes attributes;
+
         public static class Factory extends UItem.UItemFactory<GiftAttributeCell> {
             static { setup(new GiftAttributeCell.Factory()); }
 
@@ -538,8 +652,8 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                 final int tab = item.intValue;
                 int percent = 0;
 
-
-                final boolean noPercentageBackground = tab == TAB_MODELS;
+                cell.noPercentageBackground = tab == TAB_MODELS;
+                cell.attributes = attributes;
 
                 if (tab == TAB_MODELS) {
                     cell.cardBackground.setBackdrop(null);
@@ -548,11 +662,13 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                     cell.textView.setText(attributes.model.name);
                     cell.setSticker(attributes.model.document, 90, item.object);
                     cell.imageView.setColorFilter(null);
+                    cell.cardBackground.selectedColorKey = Theme.key_featuredStickers_addButton;
 
                     percent = attributes.model.rarity_permille;
                 } else if (tab == TAB_BACKDROPS) {
                     cell.cardBackground.setBackdrop(attributes.backdrop);
                     cell.cardBackground.setPattern(attributes.pattern);
+                    cell.cardBackground.selectedColorKey = Theme.key_windowBackgroundWhite;
 
                     cell.textView.setText(attributes.backdrop.name);
                     cell.setSticker(attributes.pattern.document, 48, item.object);
@@ -562,6 +678,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                 } else if (tab == TAB_PATTERNS) {
                     cell.cardBackground.setBackdrop(attributes.backdrop);
                     cell.cardBackground.setPattern(attributes.pattern);
+                    cell.cardBackground.selectedColorKey = Theme.key_windowBackgroundWhite;
 
                     cell.textView.setText(attributes.pattern.name);
                     cell.setSticker(attributes.pattern.document, 64, item.object);
@@ -572,23 +689,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
                 cell.textView.setTextColor(tab == TAB_MODELS ? Theme.getColor(Theme.key_dialogTextBlack, cell.resourcesProvider) : Color.WHITE);
                 cell.percentageView.setText(AffiliateProgramFragment.percents(percent));
-
-                if (noPercentageBackground) {
-                    cell.percentageView.setTextColor(ColorUtils.blendARGB(
-                            Theme.getColor(Theme.key_windowBackgroundWhite),
-                            Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), 0.5f));
-
-                    Theme.setSelectorDrawableColor(cell.percentageView.getBackground(), ColorUtils.blendARGB(
-                            Theme.getColor(Theme.key_windowBackgroundWhite),
-                            Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), 0.05f), false);
-                } else {
-                    cell.percentageView.setTextColor(Color.WHITE);
-                    Theme.setSelectorDrawableColor(cell.percentageView.getBackground(), ColorUtils.blendARGB(
-                            ColorUtils.setAlphaComponent(attributes.backdrop.center_color, 255),
-                            ColorUtils.setAlphaComponent(attributes.backdrop.pattern_color, 255), 0.5f), false);
-                }
-
-
+                cell.checkPercentageViewBackground();
             }
 
             public static UItem asAttribute(int tab, Attributes attributes) {
@@ -597,40 +698,8 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                 item.object = attributes;
                 return item;
             }
-
-
-
-            /*
-            @Override
-            public boolean equals(UItem a, UItem b) {
-                if (a.accent != b.accent) return false;
-                if (a.object != null || b.object != null) {
-                    if (a.object instanceof GiftPremiumBottomSheet.GiftTier) {
-                        return a.object == b.object;
-                    } else if (a.object instanceof TL_stars.StarGift && b.object instanceof TL_stars.StarGift) {
-                        final TL_stars.StarGift ag = (TL_stars.StarGift) a.object;
-                        final TL_stars.StarGift bg = (TL_stars.StarGift) b.object;
-                        return ag.id == bg.id;
-                    } else if (a.object instanceof TL_stars.SavedStarGift && b.object instanceof TL_stars.SavedStarGift) {
-                        final TL_stars.SavedStarGift ag = (TL_stars.SavedStarGift) a.object;
-                        final TL_stars.SavedStarGift bg = (TL_stars.SavedStarGift) b.object;
-                        return ag.gift.id == bg.gift.id && ag.date == bg.date && ag.saved_id == bg.saved_id;
-                    }
-                }
-                return (
-                        a.intValue == b.intValue &&
-                                a.checked == b.checked &&
-                                a.longValue == b.longValue &&
-                                TextUtils.equals(a.text, b.text)
-                );
-            }
-            */
-
         }
     }
-
-
-
 
     protected RecyclerListView createRecyclerView(Context context) {
         return new RecyclerListView(context, resourcesProvider) {
@@ -663,7 +732,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         blurredPositions.add(tabsRectF);
     }
 
-
     @Override
     protected void mainContainerDispatchDraw(Canvas canvas) {
         super.mainContainerDispatchDraw(canvas);
@@ -686,31 +754,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             // scrollableViewNoiseSuppressor.drawDebugPositions(canvas);
         }
     }
-
-
-    private final RectF tmpViewRectF = new RectF();
-    private final PointF tmpViewPointF = new PointF();
-    private void drawList(Canvas canvas, RectF position) {
-        final long drawingTime = SystemClock.uptimeMillis();
-        ViewPositionWatcher.computeCoordinatesInParent(recyclerListView, container, tmpViewPointF);
-        canvas.save();
-        canvas.clipRect(position);
-        canvas.translate(tmpViewPointF.x, tmpViewPointF.y);
-        for (int i = 0; i < recyclerListView.getChildCount(); i++) {
-            View child = recyclerListView.getChildAt(i);
-
-            ViewPositionWatcher.computeCoordinatesInParent(child, container, tmpViewPointF);
-            tmpViewRectF.set(tmpViewPointF.x, tmpViewPointF.y, tmpViewPointF.x + child.getWidth(), tmpViewPointF.y + child.getHeight());
-            if (!tmpViewRectF.intersect(position)) {
-                continue;
-            }
-
-            recyclerListView.drawChild(canvas, child, drawingTime);
-        }
-        canvas.restore();
-    }
-
-
 
     private void invalidateMergedVisibleBlurredPositionsAndSourcesPositions() {
         invalidateMergedVisibleBlurredPositionsAndSources(BLUR_INVALIDATE_FLAG_POSITIONS);
@@ -749,15 +792,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             return;
         }
 
-        final RectF position = scrollableViewNoiseSuppressor.getPosition(0);
-        Canvas c = scrollableViewNoiseSuppressor.beginRecordingRect(0);
-        c.save();
-        c.translate(-position.left, -position.top);
-        drawList(c, position);
-        c.restore();
-        scrollableViewNoiseSuppressor.endRecordingRect();
-
-        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(container.getWidth(), container.getHeight());
+        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(viewGroupPartRenderer, container.getWidth(), container.getHeight());
     }
 
     private int lastBottomInset;
@@ -783,8 +818,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             getThemedColor(Theme.key_dialogBackgroundGray),
             getThemedColor(Theme.key_dialogBackground), 0.1f);
     }
-
-
 
     private static class Button extends FrameLayout {
 
@@ -812,7 +845,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 4, 20, 4, 0));
 
             percentView = new AnimatedTextView(context);
-            percentView.setText("WTF");
             percentView.setTypeface(AndroidUtilities.bold());
             percentView.setTextColor(Color.WHITE);
             percentView.setGravity(Gravity.RIGHT);
@@ -823,88 +855,40 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         }
     }
 
-    private static class Tab extends FrameLayout implements FactorAnimator.Target {
-        private final TextView textView;
-        private final ImageView imageView;
-
-        private final BoolAnimator isSelectedAnimator = new BoolAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 300);
-        private int color;
-
-        public Tab(@NonNull Context context) {
-            super(context);
-            imageView = new ImageView(context);
-            addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 6, 0, 0));
-
-            imageView.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN));
-
-            textView = new TextView(context);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-            textView.setSingleLine();
-            textView.setLines(1);
-            textView.setEllipsize(TextUtils.TruncateAt.END);
-            textView.setTypeface(AndroidUtilities.bold());
-            textView.setGravity(Gravity.CENTER);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 30, 0, 0));
-        }
-
-
-
-        public static Tab create(Context context, Theme.ResourcesProvider resourcesProvider, @DrawableRes int drawableRes, @StringRes int stringRes, Runnable onClick) {
-            Tab tab = new Tab(context);
-            tab.textView.setText(LocaleController.getString(stringRes));
-            tab.imageView.setImageResource(drawableRes);
-            tab.color = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
-            tab.setOnClickListener(v -> onClick.run());
-            tab.updateColors();
-            return tab;
-        }
-
-        @Override
-        public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
-            updateColors();
-        }
-
-        private void updateColors() {
-            final int alpha = lerp(153, 255, isSelectedAnimator.getFloatValue());
-
-            imageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.setAlphaComponent(color, alpha), PorterDuff.Mode.SRC_IN));
-            textView.setTextColor(ColorUtils.setAlphaComponent(color, alpha));
-        }
-    }
-
-    private static class TabsSelectorView extends LinearLayout implements FactorAnimator.Target {
-        public final FactorAnimator animator = new FactorAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 320);
+    private static class TabsSelectorView extends GlassTabsView implements FactorAnimator.Target {
+        public final FactorAnimator animator = new FactorAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 320 * 5);
         public final Utilities.Callback<Integer> onTabSelectListener;
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        private final Tab[] tabs;
+        private GlassTabView[] tabs;
 
         public TabsSelectorView(Context context, Theme.ResourcesProvider resourcesProvider, Utilities.Callback<Integer> onTabSelectListener) {
             super(context);
-            setOrientation(HORIZONTAL);
 
             this.onTabSelectListener = onTabSelectListener;
-            paint.setColor(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider));
-            paint.setAlpha(16);
 
-            this.tabs = new Tab[]{
-                Tab.create(context, resourcesProvider, R.drawable.filled_gift_models_24, R.string.GiftPreviewModels, () -> selectTab(0)),
-                Tab.create(context, resourcesProvider, R.drawable.filled_gift_palette_24, R.string.GiftPreviewBackdrops, () -> selectTab(1)),
-                Tab.create(context, resourcesProvider, R.drawable.filled_gift_symbols_24, R.string.GiftPreviewSymbols, () -> selectTab(2))
+            setLensColor(
+                Theme.multAlpha(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 24 / 255f),
+                Theme.multAlpha(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 32 / 255f)
+            );
+
+            this.tabs = new GlassTabView[]{
+                GlassTabView.create(context, resourcesProvider, R.drawable.filled_gift_models_24, R.string.GiftPreviewModels, () -> selectTab(0)),
+                GlassTabView.create(context, resourcesProvider, R.drawable.filled_gift_palette_24, R.string.GiftPreviewBackdrops, () -> selectTab(1)),
+                GlassTabView.create(context, resourcesProvider, R.drawable.filled_gift_symbols_24, R.string.GiftPreviewSymbols, () -> selectTab(2))
             };
 
-            addView(tabs[0], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
-            addView(tabs[1], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
-            addView(tabs[2], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+            linearLayout.addView(tabs[0], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+            linearLayout.addView(tabs[1], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+            linearLayout.addView(tabs[2], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
 
-            tabs[0].isSelectedAnimator.setValue(true, false);
+            tabs[0].setSelected(true, false);
         }
 
         private int selectedTab;
         private void selectTab(int tab) {
             if (selectedTab != tab) {
-                tabs[selectedTab].isSelectedAnimator.setValue(false, true);
-                tabs[tab].isSelectedAnimator.setValue(true, true);
+                tabs[selectedTab].setSelected(false, true);
+                tabs[tab].setSelected(true, true);
 
                 selectedTab = tab;
                 animator.animateTo(tab);
@@ -916,20 +900,104 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             return selectedTab;
         }
 
-        @Override
-        protected void dispatchDraw(@NonNull Canvas canvas) {
+        private void updateLens() {
             final float start = animator.getFactor();
             final float left = lerp(dp(8), getMeasuredWidth() - dp(8), start / 3);
             final float right = lerp(dp(8), getMeasuredWidth() - dp(8), (start + 1) / 3);
 
-            canvas.drawRoundRect(left, dp(8), right, getMeasuredHeight() - dp(8), dp(24), dp(24), paint);
+            setLensBounds((int) left, dp(8), (int) right, getMeasuredHeight() - dp(8));
 
-            super.dispatchDraw(canvas);
+            int a = MathUtils.clamp((int) ((1f - Math.abs(start - 1f)) * 255), 0, 255);
+
+//            setLensVisibility(a);
+
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            updateLens();
         }
 
         @Override
         public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+            updateLens();
             invalidate();
         }
+    }
+
+
+    private void setMode(Mode mode) {
+        if (this.mode == mode) {
+            return;
+        }
+
+        this.mode = mode;
+
+        headerPlay.setImageResource(mode == Mode.SELECTED ?
+            R.drawable.filled_gift_play_24:
+            R.drawable.filled_gift_pause_24);
+
+        giftStatusTextView.setText(getString(mode == Mode.SELECTED ?
+            R.string.Gift2PreviewSelectedTraits:
+            R.string.Gift2PreviewRandomTraits));
+
+
+        updateSelectedForVisibleViews();
+    }
+
+    @Override
+    protected boolean isTouchOutside(float x, float y) {
+        return headerView.getVisibility() == View.VISIBLE && headerView.getY() > y;
+    }
+
+    private boolean isSelectedWithCurrentTab(Attributes attributes) {
+        if (mode == Mode.RANDOM) {
+            return false;
+        }
+
+        final int tab = tabsSelectorView.getSelectedTab();
+        if (selectedAttributes != null) {
+            if (tab == TAB_BACKDROPS) {
+                return attributes.backdrop == selectedAttributes.backdrop;
+            } else if (tab == TAB_PATTERNS) {
+                return attributes.pattern == selectedAttributes.pattern;
+            } else if (tab == TAB_MODELS) {
+                return attributes.model == selectedAttributes.model;
+            }
+        }
+        return false;
+    }
+
+    private Attributes newSelectedWithCurrentTab(Attributes attributes) {
+        final int tab = tabsSelectorView.getSelectedTab();
+        if (selectedAttributes != null) {
+            if (tab == TAB_BACKDROPS) {
+                return new Attributes(attributes.backdrop, selectedAttributes.pattern, selectedAttributes.model);
+            } else if (tab == TAB_PATTERNS) {
+                return new Attributes(selectedAttributes.backdrop, attributes.pattern, selectedAttributes.model);
+            } else if (tab == TAB_MODELS) {
+                return new Attributes(selectedAttributes.backdrop, selectedAttributes.pattern, attributes.model);
+            }
+        }
+        return null;
+    }
+
+    private void updateSelectedForVisibleViews() {
+        for (int a = 0, N = recyclerListView.getChildCount(); a < N; a++) {
+            final View view = recyclerListView.getChildAt(a);
+            if ((view instanceof GiftAttributeCell)) {
+                final GiftAttributeCell cell = (GiftAttributeCell) view;
+                final Attributes attributes = cell.attributes;
+                if (attributes != null) {
+                    boolean isSelected = isSelectedWithCurrentTab(attributes);
+                    cell.setSelected(isSelected, true);
+                }
+            }
+        }
+    }
+
+    private enum Mode {
+        RANDOM, SELECTED
     }
 }

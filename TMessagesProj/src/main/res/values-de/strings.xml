@@ -374,7 +374,6 @@
     <string name="Languages_other">%1$d Sprachen</string>
     <string name="ChooseLanguages">Sprachen wählen</string>
     <string name="TranslateMessagesInfo1">Der Übersetzen-Knopf erscheint in der App, sobald du eine einzelne Nachricht 1x kurz antippst.</string>
-    <string name="TranslateMessagesInfo2">Google hat unter Umständen Zugriff auf die Texte der Nachrichten, die du im Chat übersetzt.</string>
     <string name="Language">Sprache</string>
     <string name="LanguageCustom">Eigene</string>
     <string name="LanguageTitle">Sprache ändern?</string>

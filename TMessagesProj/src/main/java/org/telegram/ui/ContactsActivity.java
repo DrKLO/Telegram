@@ -8,14 +8,13 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.Manifest;
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
-import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
@@ -23,14 +22,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Canvas;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,21 +36,25 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
-import android.view.ViewTreeObserver;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.core.math.MathUtils;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -63,17 +65,18 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.SearchTextWatcher;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -93,44 +96,67 @@ import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.ContactsEmptyView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.ItemOptions;
+import org.telegram.ui.Components.FragmentFloatingButton;
+import org.telegram.ui.Components.FragmentSearchField;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
-import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
-import org.telegram.ui.Stories.StoriesListPlaceProvider;
+import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
+import org.telegram.ui.Components.inset.WindowAnimatedInsetsProvider;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
-public class ContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
+
+public class ContactsActivity extends BaseFragment implements FactorAnimator.Target, NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate, WindowAnimatedInsetsProvider.Listener {
+    private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
+
+    private static final int ANIMATOR_ID_SEARCH_FIELD_VISIBLE = 0;
+    private static final int ANIMATOR_ID_SEARCH_FIELD_HEIGHT = 1;
+    private static final int ANIMATOR_ID_SEARCH_HAS_QUERY = 2;
+
+    private final BoolAnimator animatorSearchFieldVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_FIELD_VISIBLE,
+        this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+    private final FactorAnimator animatorSearchFieldHeight = new FactorAnimator(ANIMATOR_ID_SEARCH_FIELD_HEIGHT,
+        this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+    private final BoolAnimator animatorSearchHasQuery = new BoolAnimator(ANIMATOR_ID_SEARCH_HAS_QUERY,
+            this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+
+    @Keep
+    public int phonebookRow = 0;
 
     private ContactsAdapter listViewAdapter;
     private StickerEmptyView emptyView;
     private RecyclerListView listView;
+    private RecyclerAnimationScrollHelper scrollHelper;
     private LinearLayoutManager layoutManager;
     private SearchAdapter searchListViewAdapter;
 
     private ActionBarMenuItem sortItem;
     private boolean sortByName;
 
-    private RLottieImageView floatingButton;
-    private FrameLayout floatingButtonContainer;
-    private AccelerateDecelerateInterpolator floatingInterpolator = new AccelerateDecelerateInterpolator();
-    private int prevPosition;
-    private int prevTop;
-    private boolean scrollUpdated;
-    private boolean floatingHidden;
+    private View actionBarBackgroundView;
+    private FragmentFloatingButton floatingButton;
+    private boolean floatingButtonVisibleByScroll = true;
+    private SizeNotifierFrameLayout contentView;
 
     private boolean searchWas;
     private boolean searching;
     private boolean onlyUsers;
     private boolean needPhonebook;
+    private boolean hasMainTabs;
     private boolean destroyAfterSelect;
     private boolean returnAsResult;
     private boolean createSecretChat;
@@ -147,17 +173,20 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
     private String initialSearchString;
+    private HeaderShadowView headerShadowView;
+    private FragmentSearchField searchField;
 
     private AlertDialog permissionDialog;
     private boolean askAboutContacts = true;
 
     private boolean disableSections;
 
-    private LongSparseArray<TLRPC.User> selectedContacts = new LongSparseArray<>();
+    private final LongSparseArray<TLRPC.User> selectedContacts = new LongSparseArray<>();
 
+    private @Nullable ImageView actionModeCloseView;
     private NumberTextView selectedContactsCountTextView;
 
-    private ActionBarMenuItem deleteItem;
+    private ActionBarMenuItem searchItem;
 
     private BackDrawable backDrawable;
 
@@ -166,13 +195,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean checkPermission = true;
     private long permissionRequestTime;
 
-    private AnimatorSet bounceIconAnimator;
-    private int animationIndex = -1;
-
     private final static int search_button = 0;
     private final static int sort_button = 1;
 
     private final static int delete = 100;
+
+
 
     public interface ContactsActivityDelegate {
         void didSelectContact(TLRPC.User user, String param, ContactsActivity activity);
@@ -180,13 +208,22 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     public ContactsActivity(Bundle args) {
         super(args);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
+            iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
+            iBlur3SourceGlass = new BlurredBackgroundSourceRenderNode(null);
+        } else {
+            scrollableViewNoiseSuppressor = null;
+            iBlur3SourceGlassFrosted = null;
+            iBlur3SourceGlass = null;
+        }
     }
 
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesUpdated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
@@ -206,6 +243,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             chatId = arguments.getLong("chat_id", 0);
             disableSections = arguments.getBoolean("disableSections", false);
             resetDelegate = arguments.getBoolean("resetDelegate", false);
+            needPhonebook = arguments.getBoolean("needPhonebook", false);
+            hasMainTabs = arguments.getBoolean("hasMainTabs", false);
         } else {
             needPhonebook = true;
         }
@@ -216,8 +255,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
         getContactsController().checkInviteText();
         getContactsController().reloadContactsStatusesMaybe(false);
-        MessagesController.getInstance(currentAccount).getStoriesController().loadHiddenStories();
 
+        additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
 
         return true;
     }
@@ -226,13 +266,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
         delegate = null;
-        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
-        getNotificationCenter().onAnimationFinish(animationIndex);
     }
 
     @Override
@@ -251,33 +288,42 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         actionBar.setAllowOverlayTitle(true);
         if (destroyAfterSelect) {
             if (returnAsResult) {
-                actionBar.setTitle(LocaleController.getString(R.string.SelectContact));
+                actionBar.setTitle(getString(R.string.SelectContact));
             } else {
-                if (createSecretChat) {
-                    actionBar.setTitle(LocaleController.getString(R.string.NewSecretChat));
-                } else {
-                    actionBar.setTitle(LocaleController.getString(R.string.NewMessageTitle));
-                }
+                actionBar.setTitle(getString(createSecretChat ? R.string.NewSecretChat : R.string.NewMessageTitle));
             }
         } else {
-            actionBar.setTitle(LocaleController.getString(R.string.Contacts));
+            actionBar.setTitle(getString(R.string.Contacts));
         }
 
-        actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
+        backDrawable = new BackDrawable(false);
+        if (!hasMainTabs) {
+            actionBar.setBackButtonDrawable(backDrawable);
+        }
 
+        searchField = new FragmentSearchField(context, resourceProvider);
+        searchField.setPivotY(0);
         final ActionBarMenu actionMode = actionBar.createActionMode(false, null);
         actionMode.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        actionMode.drawBlur = false;
+
+        if (hasMainTabs) {
+            actionModeCloseView = new ImageView(context);
+            actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
+            actionModeCloseView.setImageDrawable(new BackDrawable(true));
+            actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
+            actionModeCloseView.setOnClickListener(v -> hideActionMode());
+            actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
+        }
 
         selectedContactsCountTextView = new NumberTextView(actionMode.getContext());
         selectedContactsCountTextView.setTextSize(18);
         selectedContactsCountTextView.setTypeface(AndroidUtilities.bold());
-        selectedContactsCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
-        actionMode.addView(selectedContactsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
+        selectedContactsCountTextView.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
+        actionMode.addView(selectedContactsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, hasMainTabs ? 18 : 72, 0, 0, 0));
         selectedContactsCountTextView.setOnTouchListener((v, event) -> true);
 
-        deleteItem = actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), LocaleController.getString(R.string.Delete));
-
+        actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(54), getString(R.string.Delete));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -294,21 +340,27 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     sortByName = SharedConfig.sortContactsByName;
                     listViewAdapter.setSortType(sortByName ? 1 : 2, false);
                     sortItem.setIcon(sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
+                } else if (id == search_button) {
+                    animatorSearchFieldVisible.setValue(true, true);
+                    animatorSearchFieldHeight.animateTo(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
+                    AndroidUtilities.doOnPreDraw(searchField.editText, () -> {
+                        searchField.editText.requestFocus();
+                        AndroidUtilities.showKeyboard(searchField.editText);
+                    });
                 }
             }
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem item = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+
+        searchItem = menu.addItem(search_button, R.drawable.ic_ab_search);
+        searchItem.setContentDescription(getString(R.string.SearchContacts));
+
+        searchField.editText.addTextChangedListener(new SearchTextWatcher(searchField.editText, new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
-                if (floatingButtonContainer != null) {
-                    floatingButtonContainer.setVisibility(View.GONE);
-                }
-                if (sortItem != null) {
-                    sortItem.setVisibility(View.GONE);
-                }
+                checkUi_floatingButtonVisible();
             }
 
             @Override
@@ -321,17 +373,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 listViewAdapter.notifyDataSetChanged();
                 listView.setFastScrollVisible(true);
                 listView.setVerticalScrollBarEnabled(false);
-                listView.getFastScroll().topOffset = AndroidUtilities.dp(90);
+                listView.getFastScroll().topOffset = dp(90);
                 // emptyView.setText(LocaleController.getString(R.string.NoContacts));
-                if (floatingButtonContainer != null) {
-                    floatingButtonContainer.setVisibility(View.VISIBLE);
-                    floatingHidden = true;
-                    floatingButtonContainer.setTranslationY(AndroidUtilities.dp(100));
-                    hideFloatingButton(false);
-                }
-                if (sortItem != null && !listViewAdapter.isEmpty) {
-                    sortItem.setVisibility(View.VISIBLE);
-                }
+                checkUi_floatingButtonVisible();
             }
 
             @Override
@@ -340,8 +384,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     return;
                 }
                 String text = editText.getText().toString();
+                animatorSearchHasQuery.setValue(!text.isEmpty(), true);
                 searchQuery = text;
-                if (text.length() != 0) {
+                if (!text.isEmpty()) {
                     searchWas = true;
                     if (listView != null) {
                         listView.setAdapter(searchListViewAdapter);
@@ -359,12 +404,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
-        });
-        item.setSearchFieldHint(LocaleController.getString(R.string.Search));
-        item.setContentDescription(LocaleController.getString(R.string.Search));
+        }));
         if (!createSecretChat && !returnAsResult) {
             sortItem = menu.addItem(sort_button, sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
-            sortItem.setContentDescription(LocaleController.getString(R.string.AccDescrContactSorting));
+            sortItem.setContentDescription(getString(R.string.AccDescrContactSorting));
         }
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, selectedContacts, allowUsernameSearch, false, false, allowBots, allowSelf, true, 0) {
@@ -387,7 +430,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         } else {
             inviteViaLink = 0;
         }
-        listViewAdapter = new ContactsAdapter(context, this, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, selectedContacts, inviteViaLink, false) {
+        listViewAdapter = new ContactsAdapter(context, this, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, selectedContacts, inviteViaLink) {
             @Override
             public void notifyDataSetChanged() {
                 super.notifyDataSetChanged();
@@ -401,50 +444,106 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         listView.setFastScrollVisible(count != 0);
                     }
                 }
-                if (sortItem != null) {
-                    sortItem.setVisibility(!isEmpty && !item.isSearchFieldVisible() ? View.VISIBLE : View.GONE);
-                }
+            }
+
+            @Override
+            public int getSectionCount() {
+                final int result = super.getSectionCount();
+                checkUi_floatingButtonVisible();
+                checkUi_sortItem();
+                checkUi_searchFieldHint();
+                return result;
             }
         };
         listViewAdapter.setSortType(sortItem != null ? (sortByName ? 1 : 2) : 0, false);
         listViewAdapter.setDisableSections(disableSections);
 
-        fragmentView = new FrameLayout(context) {
-
-            Paint actionBarPaint = new Paint();
-
+        listView = new RecyclerListView(context);
+        fragmentView = contentView = new SizeNotifierFrameLayout(context) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                actionBarPaint.setColor(Theme.getColor(Theme.key_actionBarDefault));
-                float actionBarBottom = actionBar.getMeasuredHeight();
-                canvas.drawRect(0, 0, getMeasuredWidth(), actionBar.getMeasuredHeight(), actionBarPaint);
-                parentLayout.drawHeaderShadow(canvas, (int) actionBarBottom);
-                super.dispatchDraw(canvas);
+                if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
+                    blur3_InvalidateBlur();
 
-                // canvas.drawColor(0x8000FF00);
+                    final int width = getMeasuredWidth();
+                    final int height = getMeasuredHeight();
+                    if (iBlur3SourceGlassFrosted != null && !iBlur3SourceGlassFrosted.inRecording()) {
+                        // if (iBlur3SourceGlassFrosted.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
+                        final Canvas c = iBlur3SourceGlassFrosted.beginRecording(width, height);
+                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                        if (SharedConfig.chatBlurEnabled()) {
+                            scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
+                        }
+                        iBlur3SourceGlassFrosted.endRecording();
+                        // }
+                    }
+                    if (iBlur3SourceGlass != null && !iBlur3SourceGlass.inRecording()) {
+                        // if (iBlur3SourceGlass.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
+                        final Canvas c = iBlur3SourceGlass.beginRecording(width, height);
+                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                        if (SharedConfig.chatBlurEnabled()) {
+                            scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
+                        }
+                        iBlur3SourceGlass.endRecording();
+                        // }
+                    }
+                    iBlur3Invalidated = false;
+                }
+
+                super.dispatchDraw(canvas);
+                if (!hasMainTabs) {
+                    AndroidUtilities.drawNavigationBarProtection(canvas, this, getThemedColor(Theme.key_windowBackgroundWhite), navigationBarHeight);
+                }
+            }
+
+            @Override
+            public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !SharedConfig.chatBlurEnabled() || iBlur3SourceGlassFrosted == null) {
+                    canvas.drawRect(rectTmp, blurScrimPaint);
+                    return;
+                }
+
+                canvas.save();
+                canvas.translate(0, -y);
+                iBlur3SourceGlassFrosted.draw(canvas, rectTmp.left, rectTmp.top + y, rectTmp.right, rectTmp.bottom + y);
+                canvas.restore();
+
+                final int oldScrimAlpha = blurScrimPaint.getAlpha();
+                blurScrimPaint.setAlpha(ChatActivity.ACTION_BAR_BLUR_ALPHA);
+                canvas.drawRect(rectTmp, blurScrimPaint);
+                blurScrimPaint.setAlpha(oldScrimAlpha);
             }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                ((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
-                ((MarginLayoutParams) listView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
+                ((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight() + dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
+                ((MarginLayoutParams) headerShadowView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
+                ((MarginLayoutParams) searchField.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
+
+                MarginLayoutParams lp = (MarginLayoutParams) actionBarBackgroundView.getLayoutParams();
+                lp.height = actionBar.getMeasuredHeight() + dp(DialogsActivity.SEARCH_FIELD_HEIGHT + 5);
+
+                checkUi_listViewPadding();
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
-                if (listView.getAdapter() == listViewAdapter) {
-                    if (emptyView.getVisibility() == VISIBLE) {
-                        emptyView.setTranslationY(AndroidUtilities.dp(74));
-                    }
-                } else {
-                    emptyView.setTranslationY(AndroidUtilities.dp(0));
-                }
+
+                checkUi_emptyView();
+                checkUi_searchButton();
+                checkUi_sortItem();
+                checkUi_floatingButtonPosition();
+                checkUi_listClip();
             }
         };
-        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        iBlur3Capture = new ViewGroupPartRenderer(listView, contentView, listView::drawChild);
+        listView.setOverScrollListener(() -> listView.postOnAnimation(() -> {
+            checkUi_listClip();
+            blur3_InvalidateBlur();
+        }));
 
         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
         flickerLoadingView.setViewType(FlickerLoadingView.USERS_TYPE);
@@ -454,19 +553,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         emptyView.addView(flickerLoadingView, 0);
         emptyView.setAnimateLayoutChange(true);
         emptyView.showProgress(true, false);
-        emptyView.title.setText(LocaleController.getString(R.string.NoResult));
-        emptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
-        frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        emptyView.title.setText(getString(R.string.NoResult));
+        emptyView.subtitle.setText(getString(R.string.SearchEmptyViewFilteredSubtitle2));
+        contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        listView = new RecyclerListView(context) {
-            @Override
-            public void setPadding(int left, int top, int right, int bottom) {
-                super.setPadding(left, top, right, bottom);
-                if (emptyView != null) {
-                    emptyView.setPadding(left, top, right, bottom);
-                }
-            }
-        };
         DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
         defaultItemAnimator.setDelayAnimations(false);
         defaultItemAnimator.setDurations(150);
@@ -477,11 +567,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         listView.setFastScrollEnabled(RecyclerListView.FastScroll.LETTER_TYPE);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter);
-        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        listView.setClipToPadding(false);
+        scrollHelper = new RecyclerAnimationScrollHelper(listView, layoutManager);
+        scrollHelper.setScrollListener(this::blur3_InvalidateBlur);
+        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, -ADDITIONAL_LIST_HEIGHT_DP, 0, -ADDITIONAL_LIST_HEIGHT_DP));
 
         listView.setEmptyView(emptyView);
         listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
-
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (listView.getAdapter() == searchListViewAdapter) {
                 Object object = searchListViewAdapter.getItem(position);
@@ -546,23 +638,37 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     return;
                 }
 
+                //if (view instanceof InviteUserCell) {
+                //    InviteUserCell cell = (InviteUserCell) view;
+                //    ContactsController.Contact contact = cell.getContact();
+                //    AlertsCreator.createContactInviteDialog(ContactsActivity.this, contact.first_name, contact.last_name, contact.phones.get(0));
+                //    return;
+                //}
+
+                if (view instanceof ViewGroup && ((ViewGroup) view).getChildAt(0) instanceof ContactsEmptyView) {
+                    if (floatingButton != null) {
+                        floatingButton.performClick();
+                    }
+                    return;
+                }
+
                 if (!selectedContacts.isEmpty() && view instanceof UserCell) {
                     UserCell userCell = (UserCell) view;
                     showOrUpdateActionMode(userCell);
                     return;
                 }
 
-                if (listViewAdapter.hasStories && section == 1) {
-                    if (!(view instanceof UserCell)) {
-                        return;
-                    }
-                    UserCell userCell = (UserCell) view;
-                    long dialogId = userCell.getDialogId();
-                    getOrCreateStoryViewer().open(getContext(), dialogId, StoriesListPlaceProvider.of(listView));
-                    return;
-                } else if (listViewAdapter.hasStories && section > 1) {
-                    section--;
-                }
+//                if (listViewAdapter.hasStories && section == 1) {
+//                    if (!(view instanceof UserCell)) {
+//                        return;
+//                    }
+//                    UserCell userCell = (UserCell) view;
+//                    long dialogId = userCell.getDialogId();
+//                    getOrCreateStoryViewer().open(getContext(), dialogId, StoriesListPlaceProvider.of(listView));
+//                    return;
+//                } else if (listViewAdapter.hasStories && section > 1) {
+//                    section--;
+//                }
                 if ((!onlyUsers || inviteViaLink != 0) && section == 0) {
                     if (needPhonebook) {
                         if (row == 0) {
@@ -571,6 +677,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 return;
                             }
                             presentFragment(new InviteContactsActivity());
+                        } else if (row == 1) {
+                            presentFragment(new CallLogActivity());
                         }
                     } else if (inviteViaLink != 0) {
                         if (row == 0) {
@@ -593,14 +701,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 AccountFrozenAlert.show(currentAccount);
                                 return;
                             }
-                            AndroidUtilities.requestAdjustNothing(getParentActivity(), getClassGuid());
-                            new NewContactBottomSheet(ContactsActivity.this, getContext()) {
-                                @Override
-                                public void dismissInternal() {
-                                    super.dismissInternal();
-                                    AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-                                }
-                            }.show();
+                            new NewContactBottomSheet(ContactsActivity.this, getContext()).show();
                         } else if (row == 2) {
                             if (MessagesController.getInstance(currentAccount).isFrozen()) {
                                 AccountFrozenAlert.show(currentAccount);
@@ -651,10 +752,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             return;
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString(R.string.InviteUser));
-                        builder.setTitle(LocaleController.getString(R.string.AppName));
+                        builder.setMessage(getString(R.string.InviteUser));
+                        builder.setTitle(getString(R.string.AppName));
                         final String arg1 = usePhone;
-                        builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialogInterface, i) -> {
+                        builder.setPositiveButton(getString(R.string.OK), (dialogInterface, i) -> {
                             try {
                                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
                                 intent.putExtra("sms_body", ContactsController.getInstance(currentAccount).getInviteText(1));
@@ -663,78 +764,68 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 FileLog.e(e);
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                        builder.setNegativeButton(getString(R.string.Cancel), null);
                         showDialog(builder.create());
                     }
                 }
             }
         });
-        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemClick(View view, int position) {
-                if (listView.getAdapter() == listViewAdapter) {
-                    int section = listViewAdapter.getSectionForPosition(position);
-                    int row = listViewAdapter.getPositionInSectionForPosition(position);
-                    if (Bulletin.getVisibleBulletin() != null) {
-                        Bulletin.getVisibleBulletin().hide();
-                    }
-                    if (row < 0 || section < 0) {
-                        return false;
-                    }
-                    if (listViewAdapter.hasStories && section == 1 && view instanceof UserCell) {
-                        UserCell userCell = (UserCell) view;
-                        long dialogId = userCell.getDialogId();
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                        final String key = NotificationsController.getSharedPrefKey(dialogId, 0);
-                        boolean muted = !NotificationsCustomSettingsActivity.areStoriesNotMuted(currentAccount, dialogId);
-                        ItemOptions filterOptions = ItemOptions.makeOptions(ContactsActivity.this, view)
-                                //.setViewAdditionalOffsets(0, AndroidUtilities.dp(8), 0, 0)
-                                .setScrimViewBackground(Theme.createRoundRectDrawable(0, 0, Theme.getColor(Theme.key_windowBackgroundWhite)))
-                                .add(R.drawable.msg_discussion, LocaleController.getString(R.string.SendMessage), () -> {
-                                    presentFragment(ChatActivity.of(dialogId));
-                                })
-                                .add(R.drawable.msg_openprofile, LocaleController.getString(R.string.OpenProfile), () -> {
-                                    presentFragment(ProfileActivity.of(dialogId));
-                                })
-                                .addIf(!muted, R.drawable.msg_mute, LocaleController.getString(R.string.NotificationsStoryMute), () -> {
-                                    MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("stories_" + key, false).apply();
-                                    getNotificationsController().updateServerNotificationsSettings(dialogId, 0);
-                                    String name = user == null ? "" : user.first_name.trim();
-                                    int index = name.indexOf(" ");
-                                    if (index > 0) {
-                                        name = name.substring(0, index);
-                                    }
-                                    BulletinFactory.of(ContactsActivity.this).createUsersBulletin(Arrays.asList(user), AndroidUtilities.replaceTags(LocaleController.formatString("NotificationsStoryMutedHint", R.string.NotificationsStoryMutedHint, name))).show();
-                                })
-                                .addIf(muted, R.drawable.msg_unmute, LocaleController.getString(R.string.NotificationsStoryUnmute), () -> {
-                                    MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("stories_" + key, true).apply();
-                                    getNotificationsController().updateServerNotificationsSettings(dialogId, 0);
-                                    String name = user == null ? "" : user.first_name.trim();
-                                    int index = name.indexOf(" ");
-                                    if (index > 0) {
-                                        name = name.substring(0, index);
-                                    }
-                                    BulletinFactory.of(ContactsActivity.this).createUsersBulletin(Arrays.asList(user), AndroidUtilities.replaceTags(LocaleController.formatString("NotificationsStoryUnmutedHint", R.string.NotificationsStoryUnmutedHint, name))).show();
-                                });
-                        // if (user.stories_hidden) {
-                        filterOptions.add(R.drawable.msg_viewintopic, LocaleController.getString(R.string.ShowInChats), () -> {
-                            // listViewAdapter.removeStory(dialogId);
-                            getMessagesController().getStoriesController().toggleHidden(dialogId, false, false, true);
-                            BulletinFactory.UndoObject undoObject = new BulletinFactory.UndoObject();
-                            undoObject.onUndo = () -> {
-                                getMessagesController().getStoriesController().toggleHidden(dialogId, true, false, true);
-                            };
-                            undoObject.onAction = () -> {
-                                getMessagesController().getStoriesController().toggleHidden(dialogId, false, true, true);
-                            };
-                            BulletinFactory.global().createUsersBulletin(
-                                    Arrays.asList(user),
-                                    AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToDialogs", R.string.StoriesMovedToDialogs, ContactsController.formatName(user.first_name, null, 20))),
-                                    null,
-                                    undoObject
-                            ).show();
-
-                        });
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (listView.getAdapter() == listViewAdapter) {
+                int section = listViewAdapter.getSectionForPosition(position);
+                int row = listViewAdapter.getPositionInSectionForPosition(position);
+                if (Bulletin.getVisibleBulletin() != null) {
+                    Bulletin.getVisibleBulletin().hide();
+                }
+                if (row < 0 || section < 0) {
+                    return false;
+                }
+//                if (listViewAdapter.hasStories && section == 1 && view instanceof UserCell) {
+//                    UserCell userCell = (UserCell) view;
+//                    long dialogId = userCell.getDialogId();
+//                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+//                    final String key = NotificationsController.getSharedPrefKey(dialogId, 0);
+//                    boolean muted = !NotificationsCustomSettingsActivity.areStoriesNotMuted(currentAccount, dialogId);
+//                    ItemOptions filterOptions = ItemOptions.makeOptions(ContactsActivity.this, view)
+//                            //.setViewAdditionalOffsets(0, dp(8), 0, 0)
+//                            .setScrimViewBackground(Theme.createRoundRectDrawable(0, 0, getThemedColor(Theme.key_windowBackgroundWhite)))
+//                            .add(R.drawable.msg_discussion, getString(R.string.SendMessage), () -> presentFragment(ChatActivity.of(dialogId)))
+//                            .add(R.drawable.msg_openprofile, getString(R.string.OpenProfile), () -> presentFragment(ProfileActivity.of(dialogId)))
+//                            .addIf(!muted, R.drawable.msg_mute, getString(R.string.NotificationsStoryMute), () -> {
+//                                MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("stories_" + key, false).apply();
+//                                getNotificationsController().updateServerNotificationsSettings(dialogId, 0);
+//                                String name = user == null ? "" : user.first_name.trim();
+//                                int index = name.indexOf(" ");
+//                                if (index > 0) {
+//                                   name = name.substring(0, index);
+//                               }
+//                                BulletinFactory.of(ContactsActivity.this).createUsersBulletin(Arrays.asList(user), AndroidUtilities.replaceTags(LocaleController.formatString("NotificationsStoryMutedHint", R.string.NotificationsStoryMutedHint, name))).show();
+//                            })
+//                            .addIf(muted, R.drawable.msg_unmute, getString(R.string.NotificationsStoryUnmute), () -> {
+//                                MessagesController.getNotificationsSettings(currentAccount).edit().putBoolean("stories_" + key, true).apply();
+//                                getNotificationsController().updateServerNotificationsSettings(dialogId, 0);
+//                                String name = user == null ? "" : user.first_name.trim();
+//                                int index = name.indexOf(" ");
+//                                if (index > 0) {
+//                                    name = name.substring(0, index);
+//                                }
+//                                BulletinFactory.of(ContactsActivity.this).createUsersBulletin(Arrays.asList(user), AndroidUtilities.replaceTags(LocaleController.formatString("NotificationsStoryUnmutedHint", R.string.NotificationsStoryUnmutedHint, name))).show();
+//                            });
+//                    // if (user.stories_hidden) {
+//                    filterOptions.add(R.drawable.msg_viewintopic, getString(R.string.ShowInChats), () -> {
+//                        // listViewAdapter.removeStory(dialogId);
+//                        getMessagesController().getStoriesController().toggleHidden(dialogId, false, false, true);
+//                        BulletinFactory.UndoObject undoObject = new BulletinFactory.UndoObject();
+//                        undoObject.onUndo = () -> getMessagesController().getStoriesController().toggleHidden(dialogId, true, false, true);
+//                        undoObject.onAction = () -> getMessagesController().getStoriesController().toggleHidden(dialogId, false, true, true);
+//                        BulletinFactory.global().createUsersBulletin(
+//                            Arrays.asList(user),
+//                            AndroidUtilities.replaceTags(LocaleController.formatString("StoriesMovedToDialogs", R.string.StoriesMovedToDialogs, ContactsController.formatName(user.first_name, null, 20))),
+//                            null,
+//                            undoObject
+//                        ).show();
+//
+//                    });
 //                    } else {
 //                        filterOptions.add(R.drawable.msg_cancel, LocaleController.getString(R.string.Hide), () -> {
 //                            BulletinFactory.global().createUndoBulletin(
@@ -748,119 +839,117 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 //                                    }).show();
 //                        });
 //                    }
-
-                        filterOptions.setGravity(Gravity.RIGHT)
-                                .show();
-                        return true;
-                    }
-                }
-
-                if (!returnAsResult && !createSecretChat && view instanceof UserCell) {
-                    UserCell cell = (UserCell) view;
-                    showOrUpdateActionMode(cell);
-                    return true;
-                }
-
-                if (!returnAsResult && !createSecretChat && view instanceof ProfileSearchCell) {
-                    ProfileSearchCell cell = (ProfileSearchCell) view;
-                    if (cell.getUser() != null && cell.getUser().contact) {
-                        showOrUpdateActionMode(cell);
-                    }
-                    return true;
-                }
-                return false;
+//
+//                    filterOptions.setGravity(Gravity.RIGHT)
+//                            .show();
+//                    return true;
+//                }
             }
+
+            if (!returnAsResult && !createSecretChat && view instanceof UserCell) {
+                UserCell cell = (UserCell) view;
+                showOrUpdateActionMode(cell);
+                return true;
+            }
+
+            if (!returnAsResult && !createSecretChat && view instanceof ProfileSearchCell) {
+                ProfileSearchCell cell = (ProfileSearchCell) view;
+                if (cell.getUser() != null && cell.getUser().contact) {
+                    showOrUpdateActionMode(cell);
+                }
+                return true;
+            }
+            return false;
         });
-
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-
+            private boolean scrollUpdated;
             private boolean scrollingManually;
 
             @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (scrollingManually && newState != RecyclerView.SCROLL_STATE_DRAGGING) {
+                    final int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+                    final View topChild = recyclerView.getChildAt(0);
+                    final int firstViewTop = topChild != null ? topChild.getTop() : 0;
+
+                    final boolean searchForcedVisible = animatorSearchHasQuery.getValue() || (firstVisibleItem == 0 && firstViewTop >= (listView.getPaddingTop() - dp(DialogsActivity.SEARCH_FIELD_HEIGHT)));
+                    final boolean searchVisible = searchForcedVisible || (animatorSearchFieldHeight.getFactor() > dp(DialogsActivity.SEARCH_FIELD_HEIGHT * (lastScrollToDown ? 1 : 4) / 5f));
+
+                    final float heightTo = dp(searchVisible ? DialogsActivity.SEARCH_FIELD_HEIGHT : 0);
+                    if (animatorSearchFieldHeight.getToFactor() != heightTo) {
+                        animatorSearchFieldHeight.animateTo(heightTo);
+                        canScrollByAnimation = true;
+                    }
+                    animatorSearchFieldVisible.setValue(searchVisible, true);
+                }
+
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    if (searching && searchWas) {
+                    if (searching && searchWas || searchField.editText.isFocused()) {
                         AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                     scrollingManually = true;
                 } else {
                     scrollingManually = false;
                 }
+                lastListScrollState = newState;
             }
 
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                if (floatingButtonContainer != null && floatingButtonContainer.getVisibility() != View.GONE) {
-                    int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+            private boolean lastScrollToDown;
 
-                    final View topChild = recyclerView.getChildAt(0);
-                    int firstViewTop = 0;
-                    if (topChild != null) {
-                        firstViewTop = topChild.getTop();
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                final int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+                final View topChild = recyclerView.getChildAt(0);
+                final int firstViewTop = topChild != null ? topChild.getTop() : 0;
+
+                if (floatingButton != null && !searching) {
+                    boolean goingDown = dy > 0;
+                    if (dy != 0 && scrollUpdated && (goingDown || scrollingManually)) {
+                        floatingButtonVisibleByScroll = !goingDown;
+                        checkUi_floatingButtonVisible();
                     }
-                    boolean goingDown;
-                    boolean changed = true;
-                    if (prevPosition == firstVisibleItem) {
-                        final int topDelta = prevTop - firstViewTop;
-                        goingDown = firstViewTop < prevTop;
-                        changed = Math.abs(topDelta) > 1;
-                    } else {
-                        goingDown = firstVisibleItem > prevPosition;
-                    }
-                    if (changed && scrollUpdated && (goingDown || scrollingManually)) {
-                        hideFloatingButton(goingDown);
-                    }
-                    prevPosition = firstVisibleItem;
-                    prevTop = firstViewTop;
                     scrollUpdated = true;
+                }
+
+                if (scrollingManually) {
+                    final boolean searchForcedVisible = animatorSearchHasQuery.getValue() || (firstVisibleItem == 0 && firstViewTop >= (listView.getPaddingTop() /*- dp(DialogsActivity.SEARCH_FIELD_HEIGHT)*/));
+                    float searchH = animatorSearchFieldHeight.getFactor();
+                    if (!searchForcedVisible && dy != 0) {
+                        searchH = MathUtils.clamp(searchH - dy, 0, dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
+                        animatorSearchFieldHeight.forceFactor(searchH);
+                    }
+
+                    final boolean searchVisible = searchForcedVisible || (animatorSearchFieldHeight.getFactor() > 0);
+                    animatorSearchFieldVisible.setValue(searchVisible, true);
+                }
+
+                final boolean shadowVisible = !(firstVisibleItem == 0 && firstViewTop >= listView.getPaddingTop());
+                headerShadowView.setShadowVisible(shadowVisible, true);
+
+                actionBarBackgroundView.invalidate();
+                lastScrollToDown = dy < 0;
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableViewNoiseSuppressor != null) {
+                    scrollableViewNoiseSuppressor.onScrolled(dx, dy);
+                    blur3_InvalidateBlur();
                 }
             }
         });
 
         if (!createSecretChat && !returnAsResult) {
-            floatingButtonContainer = new FrameLayout(context);
-            frameLayout.addView(floatingButtonContainer, makeLayoutParamsForFloatingContainer(0));
-            floatingButtonContainer.setOnClickListener(v -> {
-                AndroidUtilities.requestAdjustNothing(getParentActivity(), getClassGuid());
+            floatingButton = new FragmentFloatingButton(context, resourceProvider);
+            contentView.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
+            floatingButton.setOnClickListener(v -> {
                 if (MessagesController.getInstance(currentAccount).isFrozen()) {
                     AccountFrozenAlert.show(currentAccount);
                     return;
                 }
-                new NewContactBottomSheet(ContactsActivity.this, getContext()) {
-                    @Override
-                    public void dismissInternal() {
-                        super.dismissInternal();
-                        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-                    }
-                }.show();
+                new NewContactBottomSheet(ContactsActivity.this, getContext()).show();
             });
 
-            floatingButton = new RLottieImageView(context);
-            floatingButton.setScaleType(ImageView.ScaleType.CENTER);
-            Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-            floatingButton.setBackground(drawable);
-            floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
-            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-            boolean configAnimationsEnabled = preferences.getBoolean("view_animations", true);
-            if (getMessagesController().storiesEnabled()) {
-                floatingButton.setAnimation(configAnimationsEnabled ? R.raw.write_contacts_fab_icon_camera : R.raw.write_contacts_fab_icon_reverse_camera, 56, 56);
-            } else {
-                floatingButton.setAnimation(configAnimationsEnabled ? R.raw.write_contacts_fab_icon : R.raw.write_contacts_fab_icon_reverse, 52, 52);
-            }
-            floatingButtonContainer.setContentDescription(LocaleController.getString(R.string.CreateNewContact));
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, View.TRANSLATION_Z, AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, View.TRANSLATION_Z, AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            floatingButton.setStateListAnimator(animator);
-            floatingButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                }
-            });
-            floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame(56, 56, Gravity.LEFT | Gravity.TOP, 10, 6, 10, 0));
+            floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 44);
+            floatingButton.imageView.getAnimatedDrawable().setCurrentFrame(floatingButton.imageView.getAnimatedDrawable().getFramesCount() - 1);
+            floatingButton.setContentDescription(getString(R.string.CreateNewContact));
         }
 
         if (initialSearchString != null) {
@@ -868,18 +957,66 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             initialSearchString = null;
         }
 
-        ((FrameLayout) fragmentView).addView(actionBar);
+        actionBarBackgroundView = new View(context) {
+            private final Rect rectTmp = new Rect();
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        listViewAdapter.setStories(getMessagesController().storiesController.getHiddenList(), false);
+            @Override
+            protected void dispatchDraw(@NonNull Canvas canvas) {
+                super.dispatchDraw(canvas);
+                final int searchH = (int) animatorSearchFieldHeight.getFactor();
 
+                paint.setColor(getThemedColor(Theme.key_actionBarDefault));
+                rectTmp.set(0, 0, getMeasuredWidth(), actionBar.getMeasuredHeight() + searchH);
+                contentView.drawBlurRect(canvas, 0, rectTmp, paint, true);
+            }
+        };
+        contentView.addView(actionBarBackgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
+
+
+        contentView.addView(actionBar);
+        contentView.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP, 11, 0, 11, 0));
+
+        headerShadowView = new HeaderShadowView(context, parentLayout);
+        headerShadowView.setShadowVisible(false, false);
+        contentView.addView(headerShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 5, Gravity.TOP));
+
+        actionBar.setDrawBlurBackground(contentView);
+
+        animatorSearchFieldHeight.forceFactor(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
+        animatorSearchFieldVisible.setValue(true, false);
+
+        checkUi_searchFieldHint();
+
+        Bulletin.addDelegate(this, new Bulletin.Delegate() {
+            @Override
+            public void onBottomOffsetChange(float offset) {
+                additionalFloatingTranslation = Math.max(0, offset - navigationBarHeight - additionFloatingButtonOffset);
+                checkUi_floatingButtonPosition();
+            }
+
+            @Override
+            public int getBottomOffset(int tag) {
+                return navigationBarHeight + additionFloatingButtonOffset;
+            }
+        });
+        if (LaunchActivity.instance != null) {
+            LaunchActivity.instance.getRootAnimatedInsetsListener().subscribeToWindowInsetsAnimation(this);
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
     }
 
     @Override
     public ActionBar createActionBar(Context context) {
         ActionBar actionBar = super.createActionBar(context);
-        actionBar.setBackground(null);
+        actionBar.setUseContainerForTitles();
+        actionBar.getTitlesContainer().setTranslationX(dp(4));
+        actionBar.setBackgroundColor(0);
         actionBar.setAddToContainer(false);
+        actionBar.createTitleOverlayContainer();
+        actionBar.getTitleOverlayContainer().setTranslationX(dp(4));
+        actionBar.getTitleOverlayContainer().setTranslationY(-dp(2));
         return actionBar;
     }
 
@@ -888,15 +1025,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (selectedContacts.indexOfKey(dialogId) >= 0) {
             selectedContacts.remove(dialogId);
             cell.setChecked(false, true);
-            return false;
-        } else {
-            if (cell.getCurrentObject() instanceof TLRPC.User) {
-                selectedContacts.put(dialogId, (TLRPC.User) cell.getCurrentObject());
-                cell.setChecked(true, true);
-                return true;
-            }
-            return false;
+        } else if (cell.getCurrentObject() instanceof TLRPC.User) {
+            selectedContacts.put(dialogId, (TLRPC.User) cell.getCurrentObject());
+            cell.setChecked(true, true);
+            return true;
         }
+
+        return false;
     }
 
     public boolean addOrRemoveSelectedContact(ProfileSearchCell cell) {
@@ -904,15 +1039,14 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (selectedContacts.indexOfKey(dialogId) >= 0) {
             selectedContacts.remove(dialogId);
             cell.setChecked(false, true);
-            return false;
         } else {
             if (cell.getUser() != null) {
                 selectedContacts.put(dialogId, cell.getUser());
                 cell.setChecked(true, true);
                 return true;
             }
-            return false;
         }
+        return false;
     }
 
     private void showOrUpdateActionMode(Object cell) {
@@ -966,13 +1100,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private void performSelectedContactsDelete() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), getResourceProvider());
         if (selectedContacts.size() == 1) {
-            builder.setTitle(LocaleController.getString(R.string.DeleteContactTitle));
-            builder.setMessage(LocaleController.getString(R.string.DeleteContactSubtitle));
+            builder.setTitle(getString(R.string.DeleteContactTitle));
+            builder.setMessage(getString(R.string.DeleteContactSubtitle));
         } else {
             builder.setTitle(LocaleController.formatPluralString("DeleteContactsTitle", selectedContacts.size()));
-            builder.setMessage(LocaleController.getString(R.string.DeleteContactsSubtitle));
+            builder.setMessage(getString(R.string.DeleteContactsSubtitle));
         }
-        builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog, which) -> {
+        builder.setPositiveButton(getString(R.string.Delete), (dialog, which) -> {
             ArrayList<TLRPC.User> contacts = new ArrayList<>(selectedContacts.size());
             for (int i = 0; i < selectedContacts.size(); i++) {
                 long key = selectedContacts.keyAt(i);
@@ -984,9 +1118,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             hideActionMode();
         });
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialog, which) -> {
-            dialog.dismiss();
-        });
+        builder.setNegativeButton(getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
         dialog.show();
         dialog.redPositive();
@@ -1000,7 +1132,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (user.bot) {
                 if (user.bot_nochats) {
                     try {
-                        BulletinFactory.of(this).createErrorBulletin(LocaleController.getString(R.string.BotCantJoinGroups)).show();
+                        BulletinFactory.of(this).createErrorBulletin(getString(R.string.BotCantJoinGroups)).show();
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -1010,37 +1142,37 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     TLRPC.Chat chat = getMessagesController().getChat(channelId);
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     if (ChatObject.canAddAdmins(chat)) {
-                        builder.setTitle(LocaleController.getString(R.string.AddBotAdminAlert));
-                        builder.setMessage(LocaleController.getString(R.string.AddBotAsAdmin));
-                        builder.setPositiveButton(LocaleController.getString(R.string.AddAsAdmin), (dialogInterface, i) -> {
+                        builder.setTitle(getString(R.string.AddBotAdminAlert));
+                        builder.setMessage(getString(R.string.AddBotAsAdmin));
+                        builder.setPositiveButton(getString(R.string.AddAsAdmin), (dialogInterface, i) -> {
                             if (delegate != null) {
                                 delegate.didSelectContact(user, param, this);
                                 delegate = null;
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                        builder.setNegativeButton(getString(R.string.Cancel), null);
                     } else {
-                        builder.setMessage(LocaleController.getString(R.string.CantAddBotAsAdmin));
-                        builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
+                        builder.setMessage(getString(R.string.CantAddBotAsAdmin));
+                        builder.setPositiveButton(getString(R.string.OK), null);
                     }
                     showDialog(builder.create());
                     return;
                 }
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.AppName));
+            builder.setTitle(getString(R.string.AppName));
             String message = LocaleController.formatStringSimple(selectAlertString, UserObject.getUserName(user));
             EditTextBoldCursor editText = null;
             if (!user.bot && needForwardCount) {
-                message = String.format("%s\n\n%s", message, LocaleController.getString(R.string.AddToTheGroupForwardCount));
+                message = String.format("%s\n\n%s", message, getString(R.string.AddToTheGroupForwardCount));
                 editText = new EditTextBoldCursor(getParentActivity());
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                 editText.setText("50");
-                editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
                 editText.setGravity(Gravity.CENTER);
                 editText.setInputType(InputType.TYPE_CLASS_NUMBER);
                 editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                editText.setBackgroundDrawable(Theme.createEditTextDrawable(getParentActivity(), true));
+                editText.setBackground(Theme.createEditTextDrawable(getParentActivity(), true));
                 final EditText editTextFinal = editText;
                 editText.addTextChangedListener(new TextWatcher() {
                     @Override
@@ -1057,7 +1189,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     public void afterTextChanged(Editable s) {
                         try {
                             String str = s.toString();
-                            if (str.length() != 0) {
+                            if (!str.isEmpty()) {
                                 int value = Utilities.parseInt(str);
                                 if (value < 0) {
                                     editTextFinal.setText("0");
@@ -1080,8 +1212,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             builder.setMessage(message);
             final EditText finalEditText = editText;
-            builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialogInterface, i) -> didSelectResult(user, false, finalEditText != null ? finalEditText.getText().toString() : "0"));
-            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            builder.setPositiveButton(getString(R.string.OK), (dialogInterface, i) -> didSelectResult(user, false, finalEditText != null ? finalEditText.getText().toString() : "0"));
+            builder.setNegativeButton(getString(R.string.Cancel), null);
             showDialog(builder.create());
             if (editText != null) {
                 ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();
@@ -1089,8 +1221,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (layoutParams instanceof FrameLayout.LayoutParams) {
                         ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
                     }
-                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(24);
-                    layoutParams.height = AndroidUtilities.dp(36);
+                    layoutParams.rightMargin = layoutParams.leftMargin = dp(24);
+                    layoutParams.height = dp(36);
                     editText.setLayoutParams(layoutParams);
                 }
                 editText.setSelection(editText.getText().length());
@@ -1109,22 +1241,30 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (actionBar.isActionModeShowed()) {
-            hideActionMode();
+            if (invoked) hideActionMode();
             return false;
-        } else {
-            return super.onBackPressed();
+        } else if (animatorSearchHasQuery.getValue()) {
+            if (invoked) {
+                searchField.editText.getText().clear();
+            }
+            return false;
         }
+        return super.onBackPressed(invoked);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+    }
+
+    @Override
+    public void onBecomeFullyVisible() {
+        super.onBecomeFullyVisible();
         if (checkPermission && Build.VERSION.SDK_INT >= 23) {
             Activity activity = getParentActivity();
             if (activity != null) {
@@ -1151,23 +1291,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     protected RecyclerListView getListView() {
         return listView;
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (floatingButtonContainer != null) {
-            floatingButtonContainer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    floatingButtonContainer.setTranslationY((floatingHidden ? AndroidUtilities.dp(100) : 0));
-                    floatingButtonContainer.setClickable(!floatingHidden);
-                    if (floatingButtonContainer != null) {
-                        floatingButtonContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    }
-                }
-            });
-        }
     }
 
     @Override
@@ -1247,12 +1370,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.storiesUpdated) {
-            if (listViewAdapter != null) {
-                listViewAdapter.setStories(getMessagesController().getStoriesController().getHiddenList(), true);
-            }
-            MessagesController.getInstance(currentAccount).getStoriesController().loadHiddenStories();
-        } else if (id == NotificationCenter.contactsDidLoad) {
+        if (id == NotificationCenter.contactsDidLoad) {
             if (listViewAdapter != null) {
                 if (!sortByName) {
                     listViewAdapter.setSortType(2, true);
@@ -1314,19 +1432,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void hideFloatingButton(boolean hide) {
-        if (floatingHidden == hide) {
-            return;
-        }
-        floatingHidden = hide;
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y, (floatingHidden ? AndroidUtilities.dp(100) : 0)));
-        animatorSet.setDuration(300);
-        animatorSet.setInterpolator(floatingInterpolator);
-        floatingButtonContainer.setClickable(!hide);
-        animatorSet.start();
-    }
-
     public void setDelegate(ContactsActivityDelegate delegate) {
         this.delegate = delegate;
     }
@@ -1342,247 +1447,23 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private void showItemsAnimated() {
         int from = layoutManager == null ? 0 : layoutManager.findLastVisibleItemPosition();
         listView.invalidate();
-        listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                listView.getViewTreeObserver().removeOnPreDrawListener(this);
-                int n = listView.getChildCount();
-                AnimatorSet animatorSet = new AnimatorSet();
-                for (int i = 0; i < n; i++) {
-                    View child = listView.getChildAt(i);
-                    if (listView.getChildAdapterPosition(child) <= from) {
-                        continue;
-                    }
-                    child.setAlpha(0);
-                    int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
-                    int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
-                    ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
-                    a.setStartDelay(delay);
-                    a.setDuration(200);
-                    animatorSet.playTogether(a);
+        AndroidUtilities.doOnPreDraw(listView, () -> {
+            final AnimatorSet animatorSet = new AnimatorSet();
+            for (int i = 0, N = listView.getChildCount(); i < N; i++) {
+                final View child = listView.getChildAt(i);
+                if (listView.getChildAdapterPosition(child) <= from) {
+                    continue;
                 }
-                animatorSet.start();
-                return true;
+                child.setAlpha(0);
+                int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
+                int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
+                ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
+                a.setStartDelay(delay);
+                a.setDuration(200);
+                animatorSet.playTogether(a);
             }
-        });
-    }
-
-    @Override
-    public AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
-        ValueAnimator valueAnimator = isOpen ? ValueAnimator.ofFloat(1f, 0) : ValueAnimator.ofFloat(0, 1f);
-        ViewGroup parent = (ViewGroup) fragmentView.getParent();
-        BaseFragment previousFragment = parentLayout.getFragmentStack().size() > 1 ? parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2) : null;
-        DialogsActivity dialogsActivity = null;
-        if (previousFragment instanceof DialogsActivity) {
-            dialogsActivity = (DialogsActivity) previousFragment;
-        }
-        if (dialogsActivity == null) {
-            return null;
-        }
-        final boolean stories = dialogsActivity.storiesEnabled;
-        RLottieImageView previousFab = dialogsActivity.getFloatingButton();
-        View previousFabContainer = previousFab.getParent() != null ? (View) previousFab.getParent() : null;
-        if (floatingButton != null && (floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4))) {
-            if (stories) {
-                floatingButton.setAnimation(R.raw.write_contacts_fab_icon_camera, 56, 56);
-            } else {
-                floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
-            }
-            floatingButton.getAnimatedDrawable().setCurrentFrame(floatingButton.getAnimatedDrawable().getFramesCount() - 1);
-            return null;
-        }
-        previousFabContainer.setVisibility(View.GONE);
-        if (isOpen) {
-            parent.setAlpha(0f);
-        }
-        valueAnimator.addUpdateListener(valueAnimator1 -> {
-            float v = (float) valueAnimator.getAnimatedValue();
-            parent.setTranslationX(AndroidUtilities.dp(48) * v);
-            parent.setAlpha(1f - v);
-        });
-        if (floatingButtonContainer != null) {
-            ((ViewGroup) fragmentView).removeView(floatingButtonContainer);
-            parentLayout.getOverlayContainerView().addView(floatingButtonContainer, makeLayoutParamsForFloatingContainer(AndroidUtilities.navigationBarHeight));
-        }
-        valueAnimator.setDuration(150);
-        valueAnimator.setInterpolator(new DecelerateInterpolator(1.5f));
-
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (floatingButtonContainer != null) {
-                    ViewGroup viewParent;
-                    if (floatingButtonContainer.getParent() instanceof ViewGroup) {
-                        viewParent = (ViewGroup) floatingButtonContainer.getParent();
-                        viewParent.removeView(floatingButtonContainer);
-                    }
-                    ((ViewGroup) fragmentView).addView(floatingButtonContainer, makeLayoutParamsForFloatingContainer(0));
-
-                    previousFabContainer.setVisibility(View.VISIBLE);
-                    if (!isOpen) {
-                        if (stories) {
-                            previousFab.setAnimation(R.raw.write_contacts_fab_icon_reverse_camera, 56, 56);
-                        } else {
-                            previousFab.setAnimation(R.raw.write_contacts_fab_icon_reverse, 52, 52);
-                        }
-                        previousFab.getAnimatedDrawable().setCurrentFrame(floatingButton.getAnimatedDrawable().getCurrentFrame());
-                        previousFab.playAnimation();
-                    }
-                }
-                callback.run();
-            }
-        });
-        animatorSet.playTogether(valueAnimator);
-        AndroidUtilities.runOnUIThread(() -> {
-            if (floatingButton == null) {
-                return;
-            }
-            animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, new int[]{NotificationCenter.diceStickersDidLoad}, false);
             animatorSet.start();
-            if (stories) {
-                floatingButton.setAnimation(isOpen ? R.raw.write_contacts_fab_icon_camera : R.raw.write_contacts_fab_icon_reverse_camera, 56, 56);
-            } else {
-                floatingButton.setAnimation(isOpen ? R.raw.write_contacts_fab_icon : R.raw.write_contacts_fab_icon_reverse, 52, 52);
-            }
-            floatingButton.playAnimation();
-            if (bounceIconAnimator != null) {
-                bounceIconAnimator.cancel();
-            }
-            bounceIconAnimator = new AnimatorSet();
-            float totalDuration = floatingButton.getAnimatedDrawable().getDuration();
-            long delay = 0;
-            if (isOpen) {
-                for (int i = 0; i < 6; i++) {
-                    AnimatorSet set = new AnimatorSet();
-                    if (i == 0) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1f, 0.9f)
-                        );
-                        set.setDuration((long) (6f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                    } else if (i == 1) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 0.9f, 1.06f)
-                        );
-                        set.setDuration((long) (17f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else if (i == 2) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.06f, 0.9f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.06f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1.06f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1.06f, 0.9f)
-                        );
-                        set.setDuration((long) (10f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else if (i == 3) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.03f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.03f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 0.9f, 1.03f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 0.9f, 1.03f)
-                        );
-                        set.setDuration((long) (5f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else if (i == 4) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.03f, 0.98f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.03f, 0.98f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1.03f, 0.98f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1.03f, 0.98f)
-                        );
-                        set.setDuration((long) (5f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.98f, 1f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.98f, 1f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 0.98f, 1f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 0.98f, 1f)
-                        );
-
-                        set.setDuration((long) (4f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_IN);
-                    }
-                    set.setStartDelay(delay);
-                    delay += set.getDuration();
-                    bounceIconAnimator.playTogether(set);
-                }
-            } else {
-                for (int i = 0; i < 5; i++) {
-                    AnimatorSet set = new AnimatorSet();
-                    if (i == 0) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1f, 0.9f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1f, 0.9f)
-                        );
-                        set.setDuration((long) (7f / 36f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-                    } else if (i == 1) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 0.9f, 1.06f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 0.9f, 1.06f)
-                        );
-                        set.setDuration((long) (8f / 36f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else if (i == 2) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.06f, 0.92f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.06f, 0.92f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1.06f, 0.92f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1.06f, 0.92f)
-                        );
-                        set.setDuration((long) (7f / 36f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else if (i == 3) {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.92f, 1.02f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.92f, 1.02f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 0.92f, 1.02f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 0.92f, 1.02f)
-                        );
-                        set.setDuration((long) (9f / 36f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
-                    } else {
-                        set.playTogether(
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.02f, 1f),
-                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.02f, 1f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_X, 1.02f, 1f),
-                                ObjectAnimator.ofFloat(previousFabContainer, View.SCALE_Y, 1.02f, 1f)
-                        );
-                        set.setDuration((long) (5f / 47f * totalDuration));
-                        set.setInterpolator(CubicBezierInterpolator.EASE_IN);
-                    }
-                    set.setStartDelay(delay);
-                    delay += set.getDuration();
-                    bounceIconAnimator.playTogether(set);
-                }
-            }
-            bounceIconAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    floatingButton.setScaleX(1f);
-                    floatingButton.setScaleY(1f);
-                    previousFabContainer.setScaleX(1f);
-                    previousFabContainer.setScaleY(1f);
-                    bounceIconAnimator = null;
-                    getNotificationCenter().onAnimationFinish(animationIndex);
-                }
-            });
-            bounceIconAnimator.start();
-        }, 50);
-        return animatorSet;
+        });
     }
 
     @Override
@@ -1601,11 +1482,21 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             }
+            if (actionModeCloseView != null) {
+                actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
+                actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
+            }
+            if (searchField != null) {
+                searchField.updateColors();
+            }
+            if (actionBar != null) {
+                actionBar.updateColors();
+            }
         };
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        if (!hasMainTabs) {
+            themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        }
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
@@ -1639,10 +1530,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText2));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
 
-        themeDescriptions.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
-        themeDescriptions.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
-        themeDescriptions.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
-
+        if (floatingButton != null) {
+            themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
+            themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
+            themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
+        }
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection));
 
@@ -1656,12 +1548,204 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         return themeDescriptions;
     }
 
-    private static ViewGroup.LayoutParams makeLayoutParamsForFloatingContainer(int bottomMargin) {
-        FrameLayout.LayoutParams lp = LayoutHelper.createFrame(56 + 20, 56 + 20,
-                (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                LocaleController.isRTL ? 4 : 0, 0, LocaleController.isRTL ? 0 : 4, 0);
-        lp.bottomMargin = bottomMargin;
+    private int lastListScrollState;
+    private boolean canScrollByAnimation;
+    private float lastSearchFieldHeight;
+    private float scrollByAcc;
 
-        return lp;
+    @Override
+    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+        if (id == ANIMATOR_ID_SEARCH_FIELD_VISIBLE) {
+            searchField.setAlpha(animatorSearchFieldVisible.getFloatValue() * (animatorSearchFieldHeight.getFactor() / dp(DialogsActivity.SEARCH_FIELD_HEIGHT)));
+            searchField.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+            checkUi_searchButton();
+        } else if (id == ANIMATOR_ID_SEARCH_FIELD_HEIGHT) {
+            searchField.setAlpha(animatorSearchFieldVisible.getFloatValue() * (animatorSearchFieldHeight.getFactor() / dp(DialogsActivity.SEARCH_FIELD_HEIGHT)));
+            headerShadowView.setTranslationY(factor);
+            final float alpha = factor / dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
+            searchField.setClipHeight(alpha);
+            actionBarBackgroundView.invalidate();
+
+            if (canScrollByAnimation && lastListScrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                scrollByAcc += (lastSearchFieldHeight - factor);
+                int scrollBy = Math.round(scrollByAcc);
+                scrollByAcc -= scrollBy;
+                listView.scrollBy(0, scrollBy);
+            }
+
+            lastSearchFieldHeight = factor;
+            checkUi_listClip();
+        } else if (id == ANIMATOR_ID_SEARCH_HAS_QUERY) {
+            checkUi_searchButton();
+            checkUi_sortItem();
+        }
+    }
+
+    @Override
+    public boolean canParentTabsSlide(MotionEvent ev, boolean forward) {
+        if (listView != null && listView.getFastScroll() != null && listView.getFastScroll().isPressed()) {
+            return false;
+        }
+        return !animatorSearchHasQuery.getValue();
+    }
+
+    @Override
+    public void onFactorChangeFinished(int id, float finalFactor, FactorAnimator callee) {
+        if (id == ANIMATOR_ID_SEARCH_FIELD_HEIGHT) {
+            canScrollByAnimation = false;
+            scrollByAcc = 0;
+        }
+    }
+
+    /* * */
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    private int additionNavigationBarHeight;
+    private int additionFloatingButtonOffset;
+    private float additionalFloatingTranslation;
+    private int navigationBarHeight;
+    private int imeInsetAnimatedHeight;
+
+    @Override
+    public View getAnimatedInsetsTargetView() {
+        return fragmentView;
+    }
+
+    @Override
+    public void onAnimatedInsetsChanged(View view, WindowInsetsCompat insets) {
+        imeInsetAnimatedHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+        checkUi_emptyView();
+    }
+
+    @NonNull
+    private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+        navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+
+        checkUi_listViewPadding();
+        checkUi_floatingButtonPosition();
+        checkUi_emptyView();
+
+        return WindowInsetsCompat.CONSUMED;
+    }
+
+    private void checkUi_emptyView() {
+        if (emptyView != null) {
+            emptyView.setKeyboardHeight(Math.max(navigationBarHeight + additionNavigationBarHeight, imeInsetAnimatedHeight), false);
+        }
+    }
+
+    private void checkUi_listViewPadding() {
+        listView.setPadding(
+                0,
+                dp(ADDITIONAL_LIST_HEIGHT_DP + DialogsActivity.SEARCH_FIELD_HEIGHT) + actionBar.getMeasuredHeight(),
+                0,
+                dp(ADDITIONAL_LIST_HEIGHT_DP) + navigationBarHeight + additionNavigationBarHeight);
+    }
+
+    private boolean lastIsEmpty;
+
+    private void checkUi_searchFieldHint() {
+        final boolean isEmpty = listViewAdapter != null && listViewAdapter.isEmpty();
+
+        if (lastIsEmpty != isEmpty || TextUtils.isEmpty(searchField.editText.getHint())) {
+            searchField.editText.setHint(getString(isEmpty ? R.string.SearchPeopleByUsername : R.string.SearchContacts));
+            searchField.editText.setContentDescription(getString(isEmpty ? R.string.SearchPeopleByUsername : R.string.SearchContacts));
+            lastIsEmpty = isEmpty;
+        }
+    }
+
+    private void checkUi_sortItem() {
+        final float factor1 = 1f - animatorSearchHasQuery.getFloatValue();
+        final float factor2 = listViewAdapter == null || listViewAdapter.isEmpty() ? 0 : 1;
+        final float factor = factor1 * factor2;
+        FragmentFloatingButton.setAnimatedVisibility(sortItem, factor);
+    }
+
+    private void checkUi_searchButton() {
+        final float factor1 = 1f - animatorSearchFieldVisible.getFloatValue();
+        final float factor2 = 1f - animatorSearchHasQuery.getFloatValue();
+        final float factor = factor1 * factor2;
+        FragmentFloatingButton.setAnimatedVisibility(searchItem, factor);
+    }
+
+    private void checkUi_floatingButtonPosition() {
+        if (floatingButton != null) {
+            floatingButton.setTranslationY(- navigationBarHeight - additionFloatingButtonOffset - additionalFloatingTranslation);
+        }
+    }
+
+    private void checkUi_floatingButtonVisible() {
+        if (floatingButton != null && listViewAdapter != null) {
+            floatingButton.setButtonVisible(floatingButtonVisibleByScroll && !searching && !listViewAdapter.isEmpty(), true);
+        }
+    }
+
+    private final Rect tmpClipRect = new Rect();
+    private void checkUi_listClip() {
+        if (listView.hasActiveOverScroll()) {
+            listView.setClipBounds(null);
+            return;
+        }
+        tmpClipRect.set(0, dp(ADDITIONAL_LIST_HEIGHT_DP) + actionBar.getMeasuredHeight() + (int) animatorSearchFieldHeight.getFactor(), listView.getMeasuredWidth(), listView.getMeasuredHeight() - dp(ADDITIONAL_LIST_HEIGHT_DP));
+        listView.setClipBounds(tmpClipRect);
+    }
+
+
+
+    /* Blur */
+
+    private final @Nullable DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
+    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlassFrosted;
+    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlass;
+
+    private IBlur3Capture iBlur3Capture;
+    private boolean iBlur3Invalidated;
+
+    private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
+    private final RectF iBlur3PositionActionBar = new RectF();
+    private final RectF iBlur3PositionMainTabs = new RectF(); {
+        iBlur3Positions.add(iBlur3PositionActionBar);
+        iBlur3Positions.add(iBlur3PositionMainTabs);
+    }
+
+    private void blur3_InvalidateBlur() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
+            return;
+        }
+
+        final int additionalList = dp(48);
+        final int additionalSearch = dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
+
+        final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(DialogsActivity.MAIN_TABS_MARGIN);
+        final int mainTabTop = mainTabBottom - dp(DialogsActivity.MAIN_TABS_HEIGHT);
+
+        iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), actionBar.getMeasuredHeight() + additionalList + additionalSearch );
+        iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
+        iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
+
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
+        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+    }
+
+    @Override
+    public BlurredBackgroundSourceRenderNode getGlassSource() {
+        return iBlur3SourceGlass;
+    }
+
+
+    @Override
+    public void onParentScrollToTop() {
+        if (layoutManager.findFirstVisibleItemPosition() < 15) {
+            listView.smoothScrollToPosition(0);
+        } else {
+            scrollHelper.setScrollDirection(RecyclerAnimationScrollHelper.SCROLL_DIRECTION_UP);
+            scrollHelper.scrollToPosition(0, 0, false, true);
+        }
+        animatorSearchFieldHeight.animateTo(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
+        animatorSearchFieldVisible.setValue(true, true);
     }
 }

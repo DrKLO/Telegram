@@ -37,9 +37,9 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
     private boolean renderNodeInvalidated;
 
     public BlurredBackgroundDrawableRenderNode(BlurredBackgroundSourceRenderNode source) {
-        this.renderNode = new RenderNode("BlurredBackgroundDrawableRenderNode");
-        this.renderNodeFill = new RenderNode("BlurredBackgroundDrawableRenderNode.Fill");
-        this.renderNodeStroke = new RenderNode("BlurredBackgroundDrawableRenderNode.Stroke");
+        this.renderNode = new RenderNode("BlurredNode");
+        this.renderNodeFill = new RenderNode("BlurredFill");
+        this.renderNodeStroke = new RenderNode("BlurredStroke");
         this.renderNode.setClipToOutline(true);
         this.renderNode.setClipToBounds(true);
 
@@ -48,6 +48,12 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
         this.paintShadow.setColor(0);
         this.paintStrokeTop.setStyle(Paint.Style.STROKE);
         this.paintStrokeBottom.setStyle(Paint.Style.STROKE);
+    }
+
+    @Override
+    public void setClipToOutline(boolean clipToOutline) {
+        super.setClipToOutline(clipToOutline);
+        renderNode.setClipToOutline(clipToOutline);
     }
 
     private LiquidGlassEffect liquidGlassEffect;
@@ -156,7 +162,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
     public void updateColors() {
         super.updateColors();
 
-        paintShadow.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+        paintShadow.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadowColor);
         paintStrokeTop.setColor(strokeColorTop);
         paintStrokeBottom.setColor(strokeColorBottom);
 
@@ -184,7 +190,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
 
         int color = Theme.multAlpha(shadowColor, renderNode.getAlpha());
         if (Color.alpha(color) != 0) {
-            paintShadow.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), color);
+            paintShadow.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, color);
             boundProps.drawShadows(canvas, paintShadow, inAppKeyboardOptimization);
         }
 

@@ -130,6 +130,8 @@ import org.telegram.ui.ChatActivityContainer;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Gifts.ProfileGiftsContainer;
 import org.telegram.ui.LaunchActivity;
@@ -480,6 +482,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         private DefaultItemAnimator itemAnimator;
         private RecyclerView.RecycledViewPool viewPool, searchViewPool;
         private InternalListView listView;
+        private @Nullable IBlur3Capture iBlur3Capture;
         private InternalListView animationSupportingListView;
         private GridLayoutManager animationSupportingLayoutManager;
         private FlickerLoadingView progressView;
@@ -2477,7 +2480,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             };
 
-            storiesContainer = new ProfileStoriesCollectionTabs(context,
+            storiesContainer = new ProfileStoriesCollectionTabs(
+                context,
+                sizeNotifierFrameLayout,
                 getStoriesController().getStoryAlbumsList(dialog_id),
                 new ProfileStoriesCollectionTabs.Delegate() {
                     @Override
@@ -3505,6 +3510,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (storiesContainer != null && initialStoryAlbumId > 0) {
             storiesContainer.setInitialTabId(initialStoryAlbumId);
         }
+
+        iBlur3Capture = (canvas, position) -> {
+            for (MediaPage mediaPage : mediaPages) {
+                if (mediaPage.iBlur3Capture != null) {
+                    mediaPage.iBlur3Capture.capture(canvas, position);
+                }
+            }
+            if (giftsContainer != null && giftsContainer.iBlur3Capture != null) {
+                giftsContainer.iBlur3Capture.capture(canvas, position);
+            }
+        };
     }
 
     protected boolean customTabs() {
@@ -3784,7 +3800,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 mediaPage.animationSupportingListView.getPaddingLeft(),
                 changeColumnsTab == TAB_ARCHIVED_STORIES ? dp(64) : 0,
                 mediaPage.animationSupportingListView.getPaddingRight(),
-                isStoriesView() ? dp(72) : 0
+                getPagePaddingBottom(isStoriesView())
             );
             mediaPage.buttonView.setVisibility(changeColumnsTab == TAB_STORIES && isStoriesView() ? View.VISIBLE : View.GONE);
 
@@ -3981,7 +3997,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 mediaPage.animationSupportingListView.getPaddingLeft(),
                 (mediaPage.animationSupportingListView.hintPaddingTop = (changeColumnsTab == TAB_ARCHIVED_STORIES ? dp(64) : 0)),
                 mediaPage.animationSupportingListView.getPaddingRight(),
-                (mediaPage.animationSupportingListView.hintPaddingBottom = (isStoriesView() ? dp(72) : 0))
+                (mediaPage.animationSupportingListView.hintPaddingBottom = getPagePaddingBottom(isStoriesView()))
             );
             mediaPage.buttonView.setVisibility(changeColumnsTab == TAB_STORIES ? View.VISIBLE : View.GONE);
             mediaPage.buttonView.setVisibility(changeColumnsTab == TAB_STORIES ? View.VISIBLE : View.GONE);
@@ -5023,7 +5039,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             args.putBoolean("canSelectTopics", true);
             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
             DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+            fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                 for (int a = 1; a >= 0; a--) {
                     ArrayList<Integer> ids = new ArrayList<>();
@@ -5872,7 +5888,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 if (adapter != null) {
                     RecyclerListView listView = null;
                     for (int a = 0; a < mediaPages.length; a++) {
-                        if (mediaPages[a].listView.getAdapter() == adapter) {
+                        if (mediaPages[a] != null && mediaPages[a].listView != null && mediaPages[a].listView.getAdapter() == adapter) {
                             listView = mediaPages[a].listView;
                             mediaPages[a].listView.stopScroll();
                         }
@@ -5939,7 +5955,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                     if (adapter != null) {
                         for (int a = 0; a < mediaPages.length; a++) {
-                            if (mediaPages[a].listView.getAdapter() == adapter) {
+                            if (mediaPages[a] != null && mediaPages[a].listView != null && mediaPages[a].listView.getAdapter() == adapter) {
                                 mediaPages[a].listView.stopScroll();
                             }
                         }
@@ -6074,6 +6090,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         } else if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
             if (id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.messagePlayingPlayStateChanged) {
                 for (int b = 0; b < mediaPages.length; b++) {
+                    if (mediaPages[b] == null || mediaPages[b].listView == null) continue;
                     int count = mediaPages[b].listView.getChildCount();
                     for (int a = 0; a < count; a++) {
                         View view = mediaPages[b].listView.getChildAt(a);
@@ -6903,7 +6920,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 mediaPages[a].listView.getPaddingLeft(),
                 (mediaPages[a].listView.hintPaddingTop = mediaPages[a].selectedType == TAB_ARCHIVED_STORIES ? dp(64) : 0),
                 mediaPages[a].listView.getPaddingRight(),
-                (mediaPages[a].listView.hintPaddingBottom = isStoriesView() ? dp(72) : 0)
+                (mediaPages[a].listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView()))
             );
             mediaPages[a].buttonView.setVisibility(mediaPages[a].selectedType == TAB_STORIES && isStoriesView() ? View.VISIBLE : View.GONE);
 
@@ -10980,6 +10997,31 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         return !TextUtils.isEmpty(getStoriesHashtag()) || getStoriesArea() != null;
     }
 
+    private int pagesPaddingBottom;
+
+    public void setPagesPaddingBottom(int pagesPaddingBottom) {
+        if (this.pagesPaddingBottom != pagesPaddingBottom) {
+            this.pagesPaddingBottom = pagesPaddingBottom;
+
+            if (mediaPages != null) {
+                for (MediaPage page : mediaPages) {
+                    if (page != null) {
+                        page.listView.setPadding(
+                            page.listView.getPaddingLeft(),
+                            page.listView.topPadding,
+                            page.listView.getPaddingRight(),
+                            page.listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView())
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    private int getPagePaddingBottom(boolean hasButtonPadding) {
+        return pagesPaddingBottom + (hasButtonPadding ? dp(44 + 8) : 0);
+    }
+
     public static class SharedMediaListView extends InternalListView {
 
         public SharedMediaListView(Context context) {
@@ -11662,5 +11704,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 //        }
 //
 //        profileActivity.getConnectionsManager().sendRequest(req, null);
+    }
+
+
+    public final @Nullable IBlur3Capture iBlur3Capture;
+
+    public void initBlurCapture(ViewGroup parent) {
+        for (MediaPage mediaPage : mediaPages) {
+            mediaPage.iBlur3Capture = new ViewGroupPartRenderer(mediaPage.listView, parent, mediaPage.listView::drawChild);
+        }
+        if (giftsContainer != null) {
+            giftsContainer.initBlurCapture(parent);
+        }
     }
 }

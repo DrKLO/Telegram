@@ -2297,9 +2297,14 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 break;
             }
             case "web_app_request_fullscreen": {
+                boolean blur = true;
+                try {
+                    final JSONObject jsonObject = new JSONObject(eventData);
+                    blur = jsonObject.optBoolean("blur", true);
+                } catch (Exception e) {}
                 final String err;
-                if ((err = delegate.onFullscreenRequested(true)) == null) {
-                    notifyEvent("fullscreen_changed", obj("is_fullscreen", true));
+                if ((err = delegate.onFullscreenRequested(true, blur)) == null) {
+                    notifyEvent("fullscreen_changed", obj("is_fullscreen", true, "blur_enabled", blur));
                 } else {
                     notifyEvent("fullscreen_failed", obj("error", err));
                 }
@@ -2307,7 +2312,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             }
             case "web_app_exit_fullscreen": {
                 final String err;
-                if ((err = delegate.onFullscreenRequested(false)) == null) {
+                if ((err = delegate.onFullscreenRequested(false, true)) == null) {
                     notifyEvent("fullscreen_changed", obj("is_fullscreen", false));
                 } else {
                     notifyEvent("fullscreen_failed", obj("error", err));
@@ -3290,7 +3295,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
             return null;
         }
 
-        default String onFullscreenRequested(boolean fullscreen) {
+        default String onFullscreenRequested(boolean fullscreen, boolean blur) {
             return "UNSUPPORTED";
         }
 

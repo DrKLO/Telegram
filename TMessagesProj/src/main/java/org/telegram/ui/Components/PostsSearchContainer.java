@@ -58,7 +58,7 @@ public class PostsSearchContainer extends FrameLayout {
 
     private final BaseFragment fragment;
     private final int currentAccount;
-    private final UniversalRecyclerView listView;
+    public final UniversalRecyclerView listView;
 
     private TLRPC.SearchPostsFlood flood;
 

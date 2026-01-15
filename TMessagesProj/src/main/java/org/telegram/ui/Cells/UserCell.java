@@ -125,6 +125,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         this(context, padding, checkbox, admin, needAddButton, null);
     }
 
+    private final int padding;
+
     public UserCell(Context context, int padding, int checkbox, boolean admin, boolean needAddButton, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -145,8 +147,10 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             additionalPadding = 0;
         }
 
+        this.padding = padding;
+
         statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
-        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_telegram_color_text, resourcesProvider);
 
         avatarDrawable = new AvatarDrawable();
 
@@ -223,23 +227,26 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     }
 
     public void setAvatarPadding(int padding) {
+        setAvatarPadding(padding, 0);
+    }
+    public void setAvatarPadding(int padding, int paddingText) {
         LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.leftMargin = dp(LocaleController.isRTL ? 0 : 7 + padding);
         layoutParams.rightMargin = dp(LocaleController.isRTL ? 7 + padding : 0);
         avatarImageView.setLayoutParams(layoutParams);
 
         layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.leftMargin = dp(LocaleController.isRTL ? 28 + (checkBoxBig != null ? 18 : 0) : (64 + padding));
-        layoutParams.rightMargin = dp(LocaleController.isRTL ? (64 + padding) : 28 + (checkBoxBig != null ? 18 : 0));
+        layoutParams.leftMargin = dp(LocaleController.isRTL ? 28 + (checkBoxBig != null ? 18 : 0) : (64 + padding + paddingText));
+        layoutParams.rightMargin = dp(LocaleController.isRTL ? (64 + padding + paddingText) : 28 + (checkBoxBig != null ? 18 : 0));
 
         layoutParams = (FrameLayout.LayoutParams) statusTextView.getLayoutParams();
-        layoutParams.leftMargin = dp(LocaleController.isRTL ? 28 : (64 + padding));
-        layoutParams.rightMargin = dp(LocaleController.isRTL ? (64 + padding) : 28);
+        layoutParams.leftMargin = dp(LocaleController.isRTL ? 28 : (64 + padding + paddingText));
+        layoutParams.rightMargin = dp(LocaleController.isRTL ? (64 + padding + paddingText) : 28);
 
         if (checkBox != null) {
             layoutParams = (FrameLayout.LayoutParams) checkBox.getLayoutParams();
-            layoutParams.leftMargin = dp(LocaleController.isRTL ? 0 : 37 + padding);
-            layoutParams.rightMargin = dp(LocaleController.isRTL ? 37 + padding : 0);
+            layoutParams.leftMargin = dp(LocaleController.isRTL ? 0 : (37 + padding + paddingText));
+            layoutParams.rightMargin = dp(LocaleController.isRTL ? (37 + padding + paddingText) : 0);
         }
     }
 
@@ -421,9 +428,28 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
     }
 
+
+    private boolean callCellStyle;
+
+    public void setCallCellStyle(int padding) {
+        callCellStyle = true;
+        nameTextView.setTextSize(15);
+        nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 30 : (66 + padding), 10, LocaleController.isRTL ? (66 + padding) : 30, 0));
+        statusTextView.setTextSize(13);
+        statusTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 30 : (66 + padding), 32, LocaleController.isRTL ? (66 + padding) : 30, 0));
+        avatarImageView.setRoundRadius(dp(22));
+        avatarImageView.setLayoutParams(LayoutHelper.createFrame(44, 44, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 8 + padding, 6, LocaleController.isRTL ? 8 + padding : 0, 0));
+        if (checkBox != null) {
+            checkBox.setLayoutParams(LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 32, LocaleController.isRTL ? 37 + padding : 0, 0));
+        }
+    }
+
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(58) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(
+            MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(dp(callCellStyle ? 56 : 58) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setStatusColors(int color, int onlineColor) {

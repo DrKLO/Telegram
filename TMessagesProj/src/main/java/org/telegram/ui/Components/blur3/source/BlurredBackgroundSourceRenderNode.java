@@ -74,7 +74,9 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     @Override
     public void draw(Canvas canvas, float left, float top, float right, float bottom) {
         if (!canvas.isHardwareAccelerated()) {
-            fallbackSource.draw(canvas, left, top, right, bottom);
+            if (fallbackSource != null) {
+                fallbackSource.draw(canvas, left, top, right, bottom);
+            }
             return;
         }
 

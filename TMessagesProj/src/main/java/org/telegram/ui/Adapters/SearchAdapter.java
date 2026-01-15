@@ -334,7 +334,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 if (useUserCell) {
                     view = new UserCell(mContext, 1, 1, false);
                 } else {
-                    view = new ProfileSearchCell(mContext);
+                    ProfileSearchCell cell = new ProfileSearchCell(mContext);
+                    cell.setCallCellStyle();
+                    view = cell;
                 }
                 break;
             case 1:
@@ -345,7 +347,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = new TextCell(mContext, 16, false);
                 break;
             case 3:
-                view = new ProfileSearchCell(mContext);
+                ProfileSearchCell cell = new ProfileSearchCell(mContext);
+                cell.setCallCellStyle();
+                view = cell;
                 break;
         }
         return new RecyclerListView.Holder(view);
@@ -426,7 +430,6 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                             name = LocaleController.getString(R.string.SavedMessages);
                         }
                         profileSearchCell.setData(object, null, name, username, false, self);
-                        profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
                         profileSearchCell.setChecked(selectedUsers.indexOfKey(id) >= 0, false);
                         /*if (ignoreUsers != null) {
                             if (ignoreUsers.containsKey(id)) {
@@ -460,7 +463,6 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             case 3: {
                 ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
                 ContactsController.Contact contact = (ContactsController.Contact) getItem(position);
-                profileSearchCell.useSeparator = getItem(position + 1) instanceof ContactsController.Contact ;
                 profileSearchCell.setData(contact, null, ContactsController.formatName(contact.first_name, contact.last_name), PhoneFormat.getInstance().format("+" + contact.shortPhones.get(0)), false, false);
                 break;
             }

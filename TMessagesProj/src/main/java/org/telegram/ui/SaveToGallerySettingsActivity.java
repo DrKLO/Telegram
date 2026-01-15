@@ -16,6 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -179,7 +180,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                     Bundle args2 = new Bundle();
                     args2.putLong("dialog_id", dids.get(0).dialogId);
                     args2.putInt("type", type);
@@ -269,7 +270,18 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
         return fragmentView;
     }
 
+    @Keep
+    public int maxVideoSizeRow;
+    @Keep
+    public int addExceptionRow;
+    @Keep
+    public int deleteAllExceptionsRow;
+
     private void updateRows() {
+        maxVideoSizeRow = -1;
+        addExceptionRow = -1;
+        deleteAllExceptionsRow = -1;
+
         boolean animated = !isPaused && adapter != null;
         ArrayList<Item> oldItems = null;
         if (animated) {
@@ -302,6 +314,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
         if (getSettings().saveVideo) {
             items.add(new Item(VIEW_TYPE_HEADER, LocaleController.getString(R.string.MaxVideoSize)));
+            maxVideoSizeRow = items.size();
             items.add(new Item(VIEW_TYPE_CHOOSER));
             videoDividerRow = items.size();
             items.add(new Item(VIEW_TYPE_DIVIDER_INFO));
@@ -311,6 +324,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
         if (dialogException == null) {
             exceptionsDialogs = getUserConfig().getSaveGalleryExceptions(type);
+            addExceptionRow = items.size();
             items.add(new Item(VIEW_TYPE_ADD_EXCEPTION));
             boolean added = false;
             for (int i = 0; i < exceptionsDialogs.size(); i++) {
@@ -320,6 +334,7 @@ public class SaveToGallerySettingsActivity extends BaseFragment {
 
             if (added) {
                 items.add(new Item(VIEW_TYPE_DIVIDER));
+                deleteAllExceptionsRow = items.size();
                 items.add(new Item(VIEW_TYPE_DELETE_ALL));
             }
             items.add(new Item(VIEW_TYPE_DIVIDER_LAST));

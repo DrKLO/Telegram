@@ -3532,29 +3532,66 @@ public class MessageObject {
     }
 
     public boolean translated = false;
+    public boolean summarized = false;
     public boolean updateTranslation(boolean force) {
         boolean replyUpdated = replyMessageObject != null && replyMessageObject != this && replyMessageObject.updateTranslation(force);
         TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
         final TLRPC.TL_textWithEntities translatedText = messageOwner != null ? (messageOwner.voiceTranscriptionOpen ? messageOwner.translatedVoiceTranscription : messageOwner.translatedText) : null;
+        final TLRPC.TL_textWithEntities summarizedText = messageOwner != null && messageOwner.summarizedOpen ? messageOwner.summaryText : null;
+        final TLRPC.TL_textWithEntities summarizeTranslatedText = messageOwner != null && messageOwner.summarizedOpen ? messageOwner.translatedSummaryText : null;
         if (
+            summarizeTranslatedText != null &&
+            messageOwner != null &&
+            messageOwner.summarizedOpen &&
+            TranslateController.isSummarizable(this) &&
             TranslateController.isTranslatable(this) &&
             translateController.isTranslatingDialog(getDialogId()) &&
             !translateController.isTranslateDialogHidden(getDialogId()) &&
+            TextUtils.equals(translateController.getDialogTranslateTo(getDialogId()), messageOwner.translatedSummaryLanguage)
+        ) {
+            if (summarized && translated) {
+                return replyUpdated || false;
+            }
+            summarized = true;
+            translated = true;
+            applyNewText(summarizeTranslatedText.text);
+            generateCaption();
+            return replyUpdated || true;
+        } else if (
             messageOwner != null &&
+            messageOwner.summarizedOpen &&
+            TranslateController.isSummarizable(this) &&
+            summarizedText != null
+        ) {
+            if (summarized && !translated) {
+                return replyUpdated || false;
+            }
+            summarized = true;
+            translated = false;
+            applyNewText(summarizedText.text);
+            generateCaption();
+            return replyUpdated || true;
+        } else if (
+            messageOwner != null &&
+            TranslateController.isTranslatable(this) &&
+            translateController.isTranslatingDialog(getDialogId()) &&
+            !translateController.isTranslateDialogHidden(getDialogId()) &&
             (translatedText != null || messageOwner.translatedPoll != null) &&
             TextUtils.equals(translateController.getDialogTranslateTo(getDialogId()), messageOwner.translatedToLanguage)
         ) {
-            if (translated) {
+            if (translated && !summarized) {
                 return replyUpdated || false;
             }
             translated = true;
+            summarized = false;
             if (translatedText != null) {
                 applyNewText(translatedText.text);
                 generateCaption();
             }
             return replyUpdated || true;
-        } else if (messageOwner != null && (force || translated)) {
+        } else if (messageOwner != null && (force || translated || summarized)) {
             translated = false;
+            summarized = false;
             applyNewText(messageOwner.message);
             generateCaption();
             return replyUpdated || true;
@@ -3564,6 +3601,7 @@ public class MessageObject {
 
     public void applyNewText() {
         translated = false;
+        summarized = false;
         applyNewText(messageOwner.message);
     }
 
@@ -3576,14 +3614,8 @@ public class MessageObject {
             fromUser = MessagesController.getInstance(currentAccount).getUser(messageOwner.from_id.user_id);
         }
         messageText = text;
-        ArrayList<TLRPC.MessageEntity> entities =
-            translated ?
-                (messageOwner.voiceTranscriptionOpen ?
-                    (messageOwner.translatedVoiceTranscription != null ? messageOwner.translatedVoiceTranscription.entities : null) :
-                    (messageOwner.translatedText != null ? messageOwner.translatedText.entities : null)
-                ) :
-                messageOwner.entities;
-        TextPaint paint;
+        final ArrayList<TLRPC.MessageEntity> entities = getEntities();
+        final TextPaint paint;
         if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
             paint = Theme.chat_msgGameTextPaint;
         } else {
@@ -5532,10 +5564,18 @@ public class MessageObject {
                     final String amountFmt = amount.asFormatString();
 
                     final int key;
-                    if (amount.currency == AmountUtils.Currency.STARS) {
-                        key = isOut() ? R.string.GiftOfferOfferedTextStarsRejectedOut : R.string.GiftOfferOfferedTextStarsRejected;
+                    if (action.expired) {
+                        if (amount.currency == AmountUtils.Currency.STARS) {
+                            key = isOut() ? R.string.GiftOfferOfferedTextStarsExpiredOut : R.string.GiftOfferOfferedTextStarsExpired;
+                        } else {
+                            key = isOut() ? R.string.GiftOfferOfferedTextTONExpiredOut : R.string.GiftOfferOfferedTextTONExpired;
+                        }
                     } else {
-                        key = isOut() ? R.string.GiftOfferOfferedTextTONRejectedOut : R.string.GiftOfferOfferedTextTONRejected;
+                        if (amount.currency == AmountUtils.Currency.STARS) {
+                            key = isOut() ? R.string.GiftOfferOfferedTextStarsRejectedOut : R.string.GiftOfferOfferedTextStarsRejected;
+                        } else {
+                            key = isOut() ? R.string.GiftOfferOfferedTextTONRejectedOut : R.string.GiftOfferOfferedTextTONRejected;
+                        }
                     }
 
                     messageText = replaceTags(formatString(key, userName, amountFmt, giftName));
@@ -6835,9 +6875,14 @@ public class MessageObject {
     }
 
     private boolean captionTranslated;
+    private boolean captionSummarized;
 
     public void generateCaption() {
-        if (caption != null && (translated && messageOwner.translatedText != null) == captionTranslated || isRoundVideo()) {
+        if (isRoundVideo()) return;
+        if (caption != null &&
+            (translated && (messageOwner.translatedText != null || summarized && messageOwner.translatedSummaryText != null)) == captionTranslated &&
+            summarized == captionSummarized
+        ) {
             return;
         }
         String text = messageOwner.message;
@@ -6855,9 +6900,24 @@ public class MessageObject {
         } else if (hasExtendedMedia()) {
             text = messageOwner.message = messageOwner.media.description;
         }
-        if (messageOwner.translatedText != null && (captionTranslated = translated)) {
+        if (messageOwner.translatedSummaryText != null && summarized && translated) {
+            captionSummarized = true;
+            captionTranslated = true;
+            text = messageOwner.translatedSummaryText.text;
+            entities = messageOwner.translatedSummaryText.entities;
+        } else if (messageOwner.summaryText != null && summarized) {
+            captionSummarized = true;
+            captionTranslated = false;
+            text = messageOwner.summaryText.text;
+            entities = messageOwner.summaryText.entities;
+        } else if (messageOwner.translatedText != null && translated) {
+            captionSummarized = false;
+            captionTranslated = true;
             text = messageOwner.translatedText.text;
             entities = messageOwner.translatedText.entities;
+        } else {
+            captionSummarized = false;
+            captionTranslated = false;
         }
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
             caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
@@ -7188,6 +7248,14 @@ public class MessageObject {
 
     public ArrayList<TLRPC.MessageEntity> getEntities() {
         if (messageOwner == null) return null;
+        if (summarized) {
+            if (translated && messageOwner.translatedSummaryText != null) {
+                return messageOwner.translatedSummaryText.entities;
+            } else if (messageOwner.summaryText != null) {
+                return messageOwner.summaryText.entities;
+            }
+            return null;
+        }
         if (translated) {
             if (messageOwner.voiceTranscriptionOpen) {
                 return messageOwner.translatedVoiceTranscription != null ? messageOwner.translatedVoiceTranscription.entities : null;
@@ -10078,13 +10146,41 @@ public class MessageObject {
         return getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDice;
     }
 
+    public boolean isStakedDice() {
+        final TLRPC.MessageMedia media = getMedia(messageOwner);
+        if (media instanceof TLRPC.TL_messageMediaDice)
+            return ((TLRPC.TL_messageMediaDice) media).game_outcome != null;
+        return false;
+    }
+
+    public long getStakedDiceWinAmount() {
+        final TLRPC.MessageMedia media = getMedia(messageOwner);
+        if (media instanceof TLRPC.TL_messageMediaDice && ((TLRPC.TL_messageMediaDice) media).game_outcome != null) {
+            final TLRPC.TL_messages_emojiGameOutcome outcome = ((TLRPC.TL_messageMediaDice) media).game_outcome;
+            if (outcome.ton_amount > 0) {
+                return outcome.ton_amount;
+            } else {
+                return -outcome.stake_ton_amount;
+            }
+        }
+        return 0;
+    }
+
+    public long getStakedDiceAmount() {
+        final TLRPC.MessageMedia media = getMedia(messageOwner);
+        if (media instanceof TLRPC.TL_messageMediaDice && ((TLRPC.TL_messageMediaDice) media).game_outcome != null) {
+            return ((TLRPC.TL_messageMediaDice) media).game_outcome.stake_ton_amount;
+        }
+        return 0;
+    }
+
     public String getDiceEmoji() {
         if (!isDice()) {
             return null;
         }
         TLRPC.TL_messageMediaDice messageMediaDice = (TLRPC.TL_messageMediaDice) getMedia(messageOwner);
         if (TextUtils.isEmpty(messageMediaDice.emoticon)) {
-            return "\uD83C\uDFB2";
+            return "\uD83C\uDFB2"; // 🎲
         }
         return messageMediaDice.emoticon.replace("\ufe0f", "");
     }
@@ -12394,6 +12490,9 @@ public class MessageObject {
     public CharSequence getMessageTextToTranslate(GroupedMessages groupedMessages, int[] messageIdToTranslate) {
         if (translated || isRestrictedMessage) {
             return null;
+        }
+        if (summarized) {
+            return messageText;
         }
         CharSequence messageTextToTranslate = null;
         if (type != MessageObject.TYPE_EMOJIS && type != MessageObject.TYPE_ANIMATED_STICKER && type != MessageObject.TYPE_STICKER) {

@@ -15,7 +15,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -29,7 +28,6 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -50,7 +48,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.view.animation.OvershootInterpolator;
 import android.widget.EditText;
@@ -83,6 +80,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -109,13 +107,13 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MapPlaceholderDrawable;
 import org.telegram.ui.Components.ProximitySheet;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
@@ -712,32 +710,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             searchAreaButton = new SearchButton(context);
             searchAreaButton.setTranslationX(-dp(80));
             Drawable drawable = Theme.createSimpleSelectorRoundRectDrawable(dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
-            if (Build.VERSION.SDK_INT < 21) {
-                Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.places_btn).mutate();
-                shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, dp(2), dp(2));
-                combinedDrawable.setFullsize(true);
-                drawable = combinedDrawable;
-            } else {
-                StateListAnimator animator = new StateListAnimator();
-                animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(searchAreaButton, View.TRANSLATION_Z, dp(2), dp(4)).setDuration(200));
-                animator.addState(new int[]{}, ObjectAnimator.ofFloat(searchAreaButton, View.TRANSLATION_Z, dp(4), dp(2)).setDuration(200));
-                searchAreaButton.setStateListAnimator(animator);
-                searchAreaButton.setOutlineProvider(new ViewOutlineProvider() {
-                    @SuppressLint("NewApi")
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), view.getMeasuredHeight() / 2);
-                    }
-                });
-            }
+            ScaleStateListAnimator.apply(searchAreaButton);
+            searchAreaButton.setTranslationZ(dp(2));
+            searchAreaButton.setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_ROUND_RECT);
             searchAreaButton.setBackgroundDrawable(drawable);
             searchAreaButton.setTextColor(getThemedColor(Theme.key_location_actionActiveIcon));
             searchAreaButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             searchAreaButton.setTypeface(AndroidUtilities.bold());
             searchAreaButton.setGravity(Gravity.CENTER);
             searchAreaButton.setPadding(dp(20), 0, dp(20), 0);
-            mapViewClip.addView(searchAreaButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 80, 12, 80, 0));
+            mapViewClip.addView(searchAreaButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 80, 12, 80, 0));
             if (locationType == 3) {
                 searchAreaButton.setText(LocaleController.getString(R.string.OpenInMaps));
                 searchAreaButton.setOnClickListener(v -> {
@@ -771,28 +753,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         mapTypeButton.addSubItem(map_list_menu_hybrid, R.drawable.msg_hybrid, LocaleController.getString(R.string.Hybrid), getResourceProvider());
         mapTypeButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         Drawable drawable = Theme.createSimpleSelectorCircleDrawable(dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow_profile).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(dp(40), dp(40));
-            drawable = combinedDrawable;
-        } else {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(mapTypeButton, View.TRANSLATION_Z, dp(2), dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(mapTypeButton, View.TRANSLATION_Z, dp(4), dp(2)).setDuration(200));
-            mapTypeButton.setStateListAnimator(animator);
-            mapTypeButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, dp(40), dp(40));
-                }
-            });
-        }
+        ScaleStateListAnimator.apply(mapTypeButton);
+        mapTypeButton.setTranslationZ(dp(2));
+        mapTypeButton.setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
         mapTypeButton.setBackgroundDrawable(drawable);
         mapTypeButton.setIcon(R.drawable.msg_map_type);
-        mapViewClip.addView(mapTypeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
+        mapViewClip.addView(mapTypeButton, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
         mapTypeButton.setOnClickListener(v -> mapTypeButton.toggleSubMenu());
         mapTypeButton.setDelegate(id -> {
             if (map == null) {
@@ -809,32 +775,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
         locationButton = new ImageView(context);
         drawable = Theme.createSimpleSelectorCircleDrawable(dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow_profile).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(dp(40), dp(40));
-            drawable = combinedDrawable;
-        } else {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(locationButton, View.TRANSLATION_Z, dp(2), dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(locationButton, View.TRANSLATION_Z, dp(4), dp(2)).setDuration(200));
-            locationButton.setStateListAnimator(animator);
-            locationButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, dp(40), dp(40));
-                }
-            });
-        }
+        ScaleStateListAnimator.apply(locationButton);
+        locationButton.setTranslationZ(dp(2));
+        locationButton.setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
         locationButton.setBackgroundDrawable(drawable);
         locationButton.setImageResource(R.drawable.msg_current_location);
         locationButton.setScaleType(ImageView.ScaleType.CENTER);
         locationButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
         locationButton.setTag(Theme.key_location_actionActiveIcon);
         locationButton.setContentDescription(LocaleController.getString(R.string.AccDescrMyLocation));
-        FrameLayout.LayoutParams layoutParams1 = LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 12);
+        FrameLayout.LayoutParams layoutParams1 = LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 12);
         layoutParams1.bottomMargin += layoutParams.height - padding.top;
         mapViewClip.addView(locationButton, layoutParams1);
         locationButton.setOnClickListener(v -> {
@@ -876,30 +826,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
         proximityButton = new ImageView(context);
         drawable = Theme.createSimpleSelectorCircleDrawable(dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow_profile).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(dp(40), dp(40));
-            drawable = combinedDrawable;
-        } else {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(proximityButton, View.TRANSLATION_Z, dp(2), dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(proximityButton, View.TRANSLATION_Z, dp(4), dp(2)).setDuration(200));
-            proximityButton.setStateListAnimator(animator);
-            proximityButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, dp(40), dp(40));
-                }
-            });
-        }
+        ScaleStateListAnimator.apply(proximityButton);
+        proximityButton.setTranslationZ(dp(2));
+        proximityButton.setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
         proximityButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
         proximityButton.setBackgroundDrawable(drawable);
         proximityButton.setScaleType(ImageView.ScaleType.CENTER);
         proximityButton.setContentDescription(LocaleController.getString(R.string.AccDescrLocationNotify));
-        mapViewClip.addView(proximityButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12 + 50, 12, 0));
+        mapViewClip.addView(proximityButton, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP, 0, 12 + 50, 12, 0));
         proximityButton.setOnClickListener(v -> {
             if (getParentActivity() == null || myLocation == null || !checkGpsEnabled() || map == null) {
                 return;
@@ -1442,9 +1376,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         for (int a = 0; a < 2; a++) {
             undoView[a] = new UndoView(context);
             undoView[a].setAdditionalTranslationY(dp(10));
-            if (Build.VERSION.SDK_INT >= 21) {
-                undoView[a].setTranslationZ(dp(5));
-            }
+            undoView[a].setTranslationZ(dp(5));
             mapViewClip.addView(undoView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
         }
 
@@ -1468,9 +1400,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         };
-        if (Build.VERSION.SDK_INT >= 21) {
-            shadow.setTranslationZ(dp(6));
-        }
+        shadow.setTranslationZ(dp(6));
         mapViewClip.addView(shadow, layoutParams);
 
         if (messageObject == null && chatLocation == null && initialLocation != null) {
@@ -2784,16 +2714,17 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (proximitySheet != null) {
-            proximitySheet.dismiss();
+            if (invoked) proximitySheet.dismiss();
             return false;
         }
-        if (onCheckGlScreenshot()) {
+        if (mapView != null && mapView.getGlSurfaceView() != null && !hasScreenshot) {
+            if (invoked) onCheckGlScreenshot();
             return false;
         }
 
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override
@@ -2806,7 +2737,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     private boolean onCheckGlScreenshot() {
         if (mapView != null && mapView.getGlSurfaceView() != null && !hasScreenshot) {
-            GLSurfaceView glSurfaceView = mapView.getGlSurfaceView();
+            final GLSurfaceView glSurfaceView = mapView.getGlSurfaceView();
             glSurfaceView.queueEvent(() -> {
                 if (glSurfaceView.getWidth() == 0 || glSurfaceView.getHeight() == 0) {
                     return;

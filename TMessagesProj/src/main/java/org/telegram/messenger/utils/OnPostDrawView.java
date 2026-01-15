@@ -34,7 +34,7 @@ public class OnPostDrawView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(LayoutHelper.measureSpecExactly(0), LayoutHelper.measureSpecExactly(0));
+        super.onMeasure(LayoutHelper.measureSpecExactly(1), LayoutHelper.measureSpecExactly(1));
     }
 
     @Override

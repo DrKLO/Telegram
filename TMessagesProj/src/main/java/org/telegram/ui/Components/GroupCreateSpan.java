@@ -208,7 +208,7 @@ public class GroupCreateSpan extends View {
             imageLocation = null;
             imageParent = null;
         } else {
-            avatarDrawable.setInfo(0, contact.first_name, contact.last_name);
+            avatarDrawable.setInfo(contact.contact_id, contact.first_name, contact.last_name);
             uid = contact.contact_id;
             key = contact.key;
             if (!TextUtils.isEmpty(contact.first_name)) {
@@ -255,7 +255,7 @@ public class GroupCreateSpan extends View {
 
     public void updateColors() {
         int color = avatarDrawable.getColor();
-        int back = Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider);
+        int back = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.05f);
         int delete = Theme.getColor(Theme.key_groupcreate_spanDelete, resourcesProvider);
         colors[0] = Color.red(back);
         colors[1] = Color.red(color);

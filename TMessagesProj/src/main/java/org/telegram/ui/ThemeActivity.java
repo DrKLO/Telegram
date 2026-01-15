@@ -146,13 +146,17 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
     boolean hasThemeAccents;
 
+    @Keep
     private int backgroundRow;
     private int textSizeHeaderRow;
+    @Keep
     private int textSizeRow;
     private int settingsRow;
     private int directShareRow;
+    @Keep
     private int sensitiveContentRow;
     private int raiseToSpeakRow;
+    @Keep
     private int raiseToListenRow;
     private int nextMediaTapRow;
     private int sendByEnterRow;
@@ -164,12 +168,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int bluetoothScoRow;
     private int enableAnimationsRow;
     private int settings2Row;
+    @Keep
     private int changeUserColor;
 
     private int contactsReimportRow;
     private int contactsSortRow;
 
+    @Keep
     private int nightThemeRow;
+    @Keep
     private int browserRow;
     private int nightDisabledRow;
     private int nightScheduledRow;
@@ -190,6 +197,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int newThemeInfoRow;
     private int themeHeaderRow;
     private int bubbleRadiusHeaderRow;
+    @Keep
     private int bubbleRadiusRow;
     private int bubbleRadiusInfoRow;
     private int chatListHeaderRow;
@@ -200,7 +208,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int themeAccentListRow;
     private int themeInfoRow;
     private int chatBlurRow;
+    @Keep
     private int pauseOnRecordRow;
+    @Keep
     private int pauseOnMediaRow;
 
     private int swipeGestureHeaderRow;
@@ -210,16 +220,20 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int selectThemeHeaderRow;
     private int themePreviewRow;
     private int editThemeRow;
+    @Keep
     private int createNewThemeRow;
     private int lastShadowRow;
+    @Keep
     private int stickersRow;
     private int stickersInfoRow;
     private int stickersSectionRow, mediaSoundSectionRow, otherSectionRow;
     private int mediaSoundHeaderRow, otherHeaderRow;
+    @Keep
     private int liteModeRow;
     private int liteModeInfoRow;
 
     private int appIconHeaderRow;
+    @Keep
     private int appIconSelectorRow;
     private int appIconShadowRow;
 
@@ -957,7 +971,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 });
             }
         } else {
-            actionBar.setTitle(getString("AutoNightTheme", R.string.AutoNightTheme));
+            actionBar.setTitle(getString(R.string.AutoNightTheme));
         }
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -1379,7 +1393,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         }
                         value = type + " " + value;
                     }
-                    checkCell.setTextAndValueAndIconAndCheck(getString("AutoNightTheme", R.string.AutoNightTheme), value, R.drawable.msg2_night_auto, enabled, 0, false, true);
+                    checkCell.setTextAndValueAndIconAndCheck(getString("AutoNightTheme", R.string.AutoNightTheme), value, R.drawable.menu_night_mode_24, enabled, 0, false, true);
                 } else {
                     presentFragment(new ThemeActivity(THEME_TYPE_NIGHT));
                 }
@@ -2623,7 +2637,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                             }
                             value = type + " " + value;
                         }
-                        checkCell.setTextAndValueAndIconAndCheck(getString("AutoNightTheme", R.string.AutoNightTheme), value, R.drawable.msg2_night_auto, enabled, 0, false, true);
+                        checkCell.setTextAndValueAndIconAndCheck(getString("AutoNightTheme", R.string.AutoNightTheme), value, R.drawable.menu_night_mode_24, enabled, 0, false, true);
                     } else if (position == browserRow) {
                         checkCell.setTextAndValueAndIconAndCheck(getString(R.string.InappBrowser), getString(R.string.InappBrowserInfo), R.drawable.msg2_language, SharedConfig.inappBrowser, 0, false, true);
                     }

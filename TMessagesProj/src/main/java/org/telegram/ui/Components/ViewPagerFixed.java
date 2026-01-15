@@ -38,6 +38,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.math.MathUtils;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -116,6 +117,14 @@ public class ViewPagerFixed extends FrameLayout {
 
     }
 
+    public float getPositionVisibility(int position) {
+        if (getMeasuredWidth() == 0) {
+            return MathUtils.clamp(1 - Math.abs(getCurrentPosition() - position), 0, 1);
+        } else {
+            return MathUtils.clamp(1f - Math.abs(getPositionAnimated() - position), 0, 1);
+        }
+    }
+
     public float getPositionAnimated() {
         float position = 0;
         if (viewPages[0] != null && viewPages[0].getVisibility() == View.VISIBLE) {
@@ -155,6 +164,10 @@ public class ViewPagerFixed extends FrameLayout {
 
     protected boolean canScrollForward(MotionEvent e) {
         return canScroll(e);
+    }
+
+    protected boolean canScrollBackward(MotionEvent e) {
+        return true;
     }
 
     protected void onScrollEnd() {}
@@ -271,10 +284,14 @@ public class ViewPagerFixed extends FrameLayout {
                 notificationsLocker.unlock();
             }
         });
-        manualScrolling.setDuration(540);
+        manualScrolling.setDuration(getManualScrollDuration());
         manualScrolling.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         manualScrolling.start();
         return true;
+    }
+
+    protected long getManualScrollDuration() {
+        return 540;
     }
 
     public TabsView createTabsView(boolean hasStableIds, int selectorType) {
@@ -496,6 +513,10 @@ public class ViewPagerFixed extends FrameLayout {
         if (forward && !canScrollForward(ev)) {
             return false;
         }
+        if (!forward && !canScrollBackward(ev)) {
+            return false;
+        }
+
         if (adapter != null && !adapter.canScrollTo(currentPosition + (forward ? +1 : -1))) {
             return false;
         }

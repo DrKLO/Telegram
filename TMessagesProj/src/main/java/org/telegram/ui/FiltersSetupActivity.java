@@ -22,6 +22,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -43,6 +44,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -541,11 +543,15 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     private ArrayList<ItemInner> oldItems = new ArrayList<>();
     private ArrayList<ItemInner> items = new ArrayList<>();
 
+    @Keep
+    private int showTagsRow;
     private int filtersStartPosition;
     private int filtersSectionStart = -1, filtersSectionEnd = -1;
     private int folderTagsPosition;
 
     private void updateRows(boolean animated) {
+        showTagsRow = -1;
+
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
@@ -579,6 +585,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         }
         items.add(ItemInner.asShadow(null));
         folderTagsPosition = items.size();
+        showTagsRow = items.size();
         items.add(ItemInner.asCheck(LocaleController.getString(R.string.FolderShowTags)));
         items.add(ItemInner.asShadow(!getUserConfig().isPremium() ? AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.FolderShowTagsInfoPremium), Theme.key_windowBackgroundWhiteBlueHeader, AndroidUtilities.REPLACING_TAG_TYPE_LINKBOLD, () -> {
             presentFragment(new PremiumPreviewFragment("settings"));
@@ -697,15 +704,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     presentFragment(new FilterCreateActivity(filter));
                 }
             } else if (item.viewType == VIEW_TYPE_BUTTON) {
-                final int count = getMessagesController().getDialogFilters().size();
-                if (
-                    count - 1 >= getMessagesController().dialogFiltersLimitDefault && !getUserConfig().isPremium() ||
-                    count >= getMessagesController().dialogFiltersLimitPremium
-                ) {
-                    showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
-                } else {
-                    presentFragment(new FilterCreateActivity());
-                }
+                createFolder(getParentLayout());
             }
         });
 
@@ -719,6 +718,18 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         }
 
         return fragmentView;
+    }
+
+    public void createFolder(INavigationLayout navigationLayout) {
+        final int count = getMessagesController().getDialogFilters().size();
+        if (
+            count - 1 >= getMessagesController().dialogFiltersLimitDefault && !getUserConfig().isPremium() ||
+            count >= getMessagesController().dialogFiltersLimitPremium
+        ) {
+            showDialog(new LimitReachedBottomSheet(this, getContext(), LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
+        } else if (navigationLayout != null) {
+            navigationLayout.presentFragment(new FilterCreateActivity());
+        }
     }
 
     public UndoView getUndoView() {

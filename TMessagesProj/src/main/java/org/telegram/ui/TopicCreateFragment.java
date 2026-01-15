@@ -63,7 +63,7 @@ public class TopicCreateFragment extends BaseFragment {
 
     private final static int CREATE_ID = 1;
     private final static int EDIT_ID = 2;
-    long chatId;
+    long dialogId;
     long selectedEmojiDocumentId;
     long topicId;
 
@@ -100,10 +100,10 @@ public class TopicCreateFragment extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
-        chatId = arguments.getLong("chat_id");
+        dialogId = -arguments.getLong("chat_id");
         topicId = arguments.getLong("topic_id", 0);
         if (topicId != 0) {
-            topicForEdit = getMessagesController().getTopicsController().findTopic(chatId, topicId);
+            topicForEdit = getMessagesController().getTopicsController().findTopic(-dialogId, topicId);
             if (topicForEdit == null) {
                 return false;
             }
@@ -150,7 +150,7 @@ public class TopicCreateFragment extends BaseFragment {
 
                     TL_forum.TL_messages_createForumTopic reqSend = new TL_forum.TL_messages_createForumTopic();
 
-                    reqSend.peer = getMessagesController().getInputPeer(-chatId);
+                    reqSend.peer = getMessagesController().getInputPeer(dialogId);
                     reqSend.title = topicName;
                     if (selectedEmojiDocumentId != 0) {
                         reqSend.icon_emoji_id = selectedEmojiDocumentId;
@@ -171,14 +171,14 @@ public class TopicCreateFragment extends BaseFragment {
                                     actionMessage.title = topicName;
                                     TLRPC.TL_messageService message = new TLRPC.TL_messageService();
                                     message.action = actionMessage;
-                                    message.peer_id = getMessagesController().getPeer(-chatId);
-                                    message.dialog_id = -chatId;
+                                    message.peer_id = getMessagesController().getPeer(dialogId);
+                                    message.dialog_id = dialogId;
                                     message.id = updateMessageID.id;
                                     message.date = (int) (System.currentTimeMillis() / 1000);
 
                                     ArrayList<MessageObject> messageObjects = new ArrayList<>();
                                     messageObjects.add(new MessageObject(currentAccount, message, false, false));
-                                    TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
+                                    TLRPC.Chat chatLocal = getMessagesController().getChat(-dialogId);
                                     TLRPC.TL_forumTopic forumTopic = new TLRPC.TL_forumTopic();
                                     forumTopic.id = updateMessageID.id;
                                     if (selectedEmojiDocumentId != 0) {
@@ -215,12 +215,12 @@ public class TopicCreateFragment extends BaseFragment {
                                         chatActivity.applyDraftMaybe(true, true);
 
                                         chatActivity.reloadPinnedMessages();
-                                        getMessagesController().getTopicsController().onTopicCreated(-chatId, forumTopic, true);
+                                        getMessagesController().getTopicsController().onTopicCreated(dialogId, forumTopic, true);
 
                                         finishFragment();
                                     } else {
                                         Bundle args = new Bundle();
-                                        args.putLong("chat_id", chatId);
+                                        args.putLong("chat_id", -dialogId);
                                         args.putInt("message_id", 1);
                                         args.putInt("unread_count", 0);
                                         args.putBoolean("historyPreloaded", false);
@@ -228,7 +228,7 @@ public class TopicCreateFragment extends BaseFragment {
 
                                         chatActivity.setThreadMessages(messageObjects, chatLocal, message.id, 1, 1, forumTopic);
                                         chatActivity.justCreatedTopic = true;
-                                        getMessagesController().getTopicsController().onTopicCreated(-chatId, forumTopic, true);
+                                        getMessagesController().getTopicsController().onTopicCreated(dialogId, forumTopic, true);
                                         presentFragment(chatActivity);
                                     }
                                 }
@@ -249,7 +249,7 @@ public class TopicCreateFragment extends BaseFragment {
                     }
                     if (!topicForEdit.title.equals(topicName) || topicForEdit.icon_emoji_id != selectedEmojiDocumentId) {
                         TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
-                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
+                        editForumRequest.peer = getMessagesController().getInputPeer(dialogId);
                         editForumRequest.topic_id = topicForEdit.id;
                         if (!topicForEdit.title.equals(topicName)) {
                             editForumRequest.title = topicName;
@@ -269,7 +269,7 @@ public class TopicCreateFragment extends BaseFragment {
                     }
                     if (checkBoxCell != null && topicForEdit.id == 1 && !checkBoxCell.isChecked() != topicForEdit.hidden) {
                         TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
-                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
+                        editForumRequest.peer = getMessagesController().getInputPeer(dialogId);
                         editForumRequest.topic_id = topicForEdit.id;
                         editForumRequest.hidden = !checkBoxCell.isChecked();
                         editForumRequest.flags |= 8;
@@ -288,7 +288,7 @@ public class TopicCreateFragment extends BaseFragment {
                     if (checkBoxCell != null) {
                         topicForEdit.hidden = !checkBoxCell.isChecked();
                     }
-                    getMessagesController().getTopicsController().onTopicEdited(-chatId, topicForEdit);
+                    getMessagesController().getTopicsController().onTopicEdited(dialogId, topicForEdit);
                     finishFragment();
                 }
             }
