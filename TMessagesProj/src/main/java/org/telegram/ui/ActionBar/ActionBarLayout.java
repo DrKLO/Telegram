@@ -1407,6 +1407,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         return false;
     }
 
+    private boolean predictiveInput;
     private boolean predictiveBackInProgress;
     private boolean predictiveBackHasProgress;
     private float predictiveBackY;
@@ -1414,14 +1415,20 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     public void onBackStarted(float touchX, float touchY) {
         if (animationInProgress) {
             if (backAnimator != null) {
-                backAnimator.end();
+                if (!backAnimatorIsBack) {
+                    backAnimator.cancel();
+                } else {
+                    backAnimator.end();
+                }
                 backAnimator = null;
             } else {
                 return;
             }
             if (animationInProgress) return;
         }
-        if (predictiveBackInProgress) return;
+        if (predictiveBackInProgress || predictiveInput) {
+            return;
+        }
         if (transitionAnimationPreviewMode || startedTracking || checkTransitionAnimation() || fragmentsStack.size() <= 1) {
             return;
         }
@@ -1440,6 +1447,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
         predictiveBackHasProgress = false;
         predictiveBackInProgress = true;
+        predictiveInput = true;
         predictiveBackLeft = touchX < AndroidUtilities.displaySize.x / 2f;
         predictiveBackY = touchY;
         prepareForMoving();
@@ -1450,7 +1458,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     }
 
     public void onBackProgress(float t) {
-        if (!predictiveBackInProgress) return;
+        if (!predictiveInput) return;
         final float dx = dp(56) * t;
         predictiveBackHasProgress = t > 0;
         containerView.setTranslationX(dx);
@@ -1458,15 +1466,17 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     }
 
     public void onBackCancelled() {
-        if (!predictiveBackInProgress) return;
+        if (!predictiveInput) return;
+        predictiveInput = false;
         animateBackEndAnimation(true);
     }
 
     public void onBackInvoked() {
-        if (!predictiveBackInProgress) {
+        if (!predictiveInput) {
             onBackPressed();
             return;
         }
+        predictiveInput = false;
         animateBackEndAnimation(false);
     }
 
@@ -1474,6 +1484,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         return predictiveBackInProgress && predictiveBackHasProgress;
     }
 
+    private boolean backAnimatorIsBack;
     private AnimatorSet backAnimator;
     private void animateBackEndAnimation(boolean backAnimation) {
         final BaseFragment currentFragment = !fragmentsStack.isEmpty() ? fragmentsStack.get(fragmentsStack.size() - 1) : null;
@@ -1524,14 +1535,26 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
 
         animatorSet.addListener(new AnimatorListenerAdapter() {
+            private boolean cancelled;
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                cancelled = true;
+                predictiveBackInProgress = false;
+                containerView.setAlpha(1.0f);
+                onSlideAnimationEnd(true);
+                backAnimator = null;
+            }
             @Override
             public void onAnimationEnd(Animator animator) {
+                if (cancelled) return;
                 predictiveBackInProgress = false;
                 containerView.setAlpha(1.0f);
                 onSlideAnimationEnd(backAnimation);
+                backAnimator = null;
             }
         });
         backAnimator = animatorSet;
+        backAnimatorIsBack = backAnimation;
         animatorSet.start();
         animationInProgress = true;
         layoutToIgnore = containerViewBack;
