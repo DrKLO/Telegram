@@ -109,6 +109,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.EncryptionManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlagSecureReason;
@@ -5969,6 +5970,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             this.lastInChatList = lastInChatList;
             pinnedTop = topNear;
             currentMessageObject = messageObject;
+            applyEncryptionStatusToMessageText(currentMessageObject);
             currentMessagesGroup = groupedMessages;
             wasAllChats = isAllChats;
             lastTime = -2;
@@ -12099,6 +12101,30 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
         return w;
+    }
+
+    private void applyEncryptionStatusToMessageText(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.message == null) {
+            return;
+        }
+        if (messageObject.type != MessageObject.TYPE_TEXT && messageObject.type != MessageObject.TYPE_EMOJIS) {
+            return;
+        }
+        String raw = messageObject.messageOwner.message;
+        if (!raw.startsWith(EncryptionManager.ENCRYPTION_PREFIX)) {
+            return;
+        }
+        EncryptionManager.DisplayResult result = EncryptionManager.getDisplayText(currentAccount, messageObject.getFromChatId(), raw);
+        if (result == null || TextUtils.isEmpty(result.statusLine)) {
+            return;
+        }
+        String display = result.displayText == null ? "" : result.displayText;
+        String combined = result.statusLine + "\n" + display;
+        if (TextUtils.equals(messageObject.messageText, combined)) {
+            return;
+        }
+        messageObject.messageText = combined;
+        messageObject.generateLayout(null);
     }
 
     public void createSelectorDrawable(int num) {
