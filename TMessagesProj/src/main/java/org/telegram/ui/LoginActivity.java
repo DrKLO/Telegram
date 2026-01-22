@@ -1856,6 +1856,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private boolean isRequestingFirebaseSms;
+    private boolean isSmsSentCodeType(TLRPC.auth_SentCodeType type) {
+        return type instanceof TLRPC.TL_auth_sentCodeTypeSms
+                || type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms
+                || type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord
+                || type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase;
+    }
+
     private void fillNextCodeParams(Bundle params, TLRPC.auth_SentCode res, boolean animate) {
         if (res instanceof TLRPC.TL_auth_sentCodePaymentRequired) {
             final TLRPC.TL_auth_sentCodePaymentRequired auth = (TLRPC.TL_auth_sentCodePaymentRequired) res;
@@ -1866,6 +1873,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             params.putString("currency", auth.currency);
             params.putLong("amount", auth.amount);
             setPage(VIEW_PAY, true, params, true);
+            return;
+        }
+        if (!isSmsSentCodeType(res.type)) {
+            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.SmsOnlyLoginMessage));
+            setPage(VIEW_PHONE_INPUT, true, null, true);
             return;
         }
         if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms && !res.type.verifiedFirebase && !isRequestingFirebaseSms) {
@@ -1985,71 +1997,28 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         params.putString("phoneHash", res.phone_code_hash);
-        if (res.next_type instanceof TLRPC.TL_auth_codeTypeCall) {
-            params.putInt("nextType", AUTH_TYPE_CALL);
-        } else if (res.next_type instanceof TLRPC.TL_auth_codeTypeFlashCall) {
-            params.putInt("nextType", AUTH_TYPE_FLASH_CALL);
-        } else if (res.next_type instanceof TLRPC.TL_auth_codeTypeSms) {
+        if (res.next_type instanceof TLRPC.TL_auth_codeTypeSms) {
             params.putInt("nextType", AUTH_TYPE_SMS);
-        } else if (res.next_type instanceof TLRPC.TL_auth_codeTypeMissedCall) {
-            params.putInt("nextType", AUTH_TYPE_MISSED_CALL);
-        } else if (res.next_type instanceof TLRPC.TL_auth_codeTypeFragmentSms) {
-            params.putInt("nextType", AUTH_TYPE_FRAGMENT_SMS);
         }
-        if (res.type instanceof TLRPC.TL_auth_sentCodeTypeApp) {
-            params.putInt("type", AUTH_TYPE_MESSAGE);
+        if (res.timeout == 0) {
+            res.timeout = BuildVars.DEBUG_PRIVATE_VERSION ? 5 : 60;
+        }
+        params.putInt("timeout", res.timeout * 1000);
+        if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSms || res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms) {
+            params.putInt("type", AUTH_TYPE_SMS);
             params.putInt("length", res.type.length);
-            setPage(VIEW_CODE_MESSAGE, animate, params, false);
-        } else {
-            if (res.timeout == 0) {
-                res.timeout = BuildVars.DEBUG_PRIVATE_VERSION ? 5 : 60;
+            params.putBoolean("firebase", res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms);
+            setPage(VIEW_CODE_SMS, animate, params, false);
+        } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
+            if (res.type.beginning != null) {
+                params.putString("beginning", res.type.beginning);
             }
-            params.putInt("timeout", res.timeout * 1000);
-            if (res.type instanceof TLRPC.TL_auth_sentCodeTypeCall) {
-                params.putInt("type", AUTH_TYPE_CALL);
-                params.putInt("length", res.type.length);
-                setPage(VIEW_CODE_CALL, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFlashCall) {
-                params.putInt("type", AUTH_TYPE_FLASH_CALL);
-                params.putString("pattern", res.type.pattern);
-                setPage(VIEW_CODE_FLASH_CALL, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSms || res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms) {
-                params.putInt("type", AUTH_TYPE_SMS);
-                params.putInt("length", res.type.length);
-                params.putBoolean("firebase", res.type instanceof TLRPC.TL_auth_sentCodeTypeFirebaseSms);
-                setPage(VIEW_CODE_SMS, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeFragmentSms) {
-                params.putInt("type", AUTH_TYPE_FRAGMENT_SMS);
-                params.putString("url", res.type.url);
-                params.putInt("length", res.type.length);
-                setPage(VIEW_CODE_FRAGMENT_SMS, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeMissedCall) {
-                params.putInt("type", AUTH_TYPE_MISSED_CALL);
-                params.putInt("length", res.type.length);
-                params.putString("prefix", res.type.prefix);
-                setPage(VIEW_CODE_MISSED_CALL, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSetUpEmailRequired) {
-                params.putBoolean("googleSignInAllowed", res.type.google_signin_allowed);
-                setPage(VIEW_ADD_EMAIL, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeEmailCode) {
-                params.putBoolean("googleSignInAllowed", res.type.google_signin_allowed);
-                params.putString("emailPattern", res.type.email_pattern);
-                params.putInt("length", res.type.length);
-                params.putInt("nextPhoneLoginDate", res.type.next_phone_login_date);
-                params.putInt("resetAvailablePeriod", res.type.reset_available_period);
-                params.putInt("resetPendingDate", res.type.reset_pending_date);
-                setPage(VIEW_CODE_EMAIL, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
-                if (res.type.beginning != null) {
-                    params.putString("beginning", res.type.beginning);
-                }
-                setPage(VIEW_CODE_WORD, animate, params, false);
-            } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
-                if (res.type.beginning != null) {
-                    params.putString("beginning", res.type.beginning);
-                }
-                setPage(VIEW_CODE_PHRASE, animate, params, false);
+            setPage(VIEW_CODE_WORD, animate, params, false);
+        } else if (res.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
+            if (res.type.beginning != null) {
+                params.putString("beginning", res.type.beginning);
             }
+            setPage(VIEW_CODE_PHRASE, animate, params, false);
         }
     }
 
@@ -3182,8 +3151,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
 
             TLRPC.TL_codeSettings settings = new TLRPC.TL_codeSettings();
-            settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
-            settings.allow_missed_call = simcardAvailable && allowCall;
+            settings.allow_flashcall = false;
+            settings.allow_missed_call = false;
             settings.allow_app_hash = settings.allow_firebase = PushListenerController.GooglePushListenerServiceProvider.INSTANCE.hasServices();
             if (forceDisableSafetyNet || TextUtils.isEmpty(BuildVars.SAFETYNET_KEY)) {
                 settings.allow_firebase = false;

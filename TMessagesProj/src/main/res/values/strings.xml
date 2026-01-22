@@ -6083,6 +6083,7 @@
     <string name="LoginEmailResetPremiumRequiredTitle">Telegram Premium Required</string>
     <string name="LoginEmailResetPremiumRequiredMessage">Due to the high cost of SMS in your country, you need a **Telegram Premium** account to immediately reset this email via an SMS code.\n\nYou can ask a friend to gift a Premium subscription for your account **%1$s**</string>
     <string name="LoginEmailResetPleaseWait">Resetting email, please wait...</string>
+    <string name="SmsOnlyLoginMessage">This build only supports receiving login codes via SMS. Please try again with SMS.</string>
     <string name="DeleteAndBlock">Delete and Block</string>
     <string name="BlockBot">Block bot</string>
     <string name="AreYouSureDeleteThisChatWithBotWithCheckmark">Are you sure you want to delete the chat with **%1$s**?</string>
@@ -10199,7 +10200,7 @@
 
     <string name="CocoonPoweredBy">Translations are powered by\n**🥚 Cocoon**.</string>
     <string name="CocoonPoweredByLink">**How does it work?**</string>
-    <string name="CocoonSubtitle">Cocoon (**Co**nfidential **Co**mpute **O**pen **N**etwork)\nhandles AI tasks safely and efficiently.</string>
+</resources>
     <string name="CocoonFeature1Title">Private</string>
     <string name="CocoonFeature1Text">No third party can access any data, such as translations, inside **@cocoon**</string>
     <string name="CocoonFeature1TextLink">https://t.me/cocoon</string>
