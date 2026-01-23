@@ -107,7 +107,7 @@ public class MP3Info extends AudioInfo {
 		}
 	}
 
-	MP3Frame readFirstFrame(MP3Input data, StopReadCondition stopCondition) throws IOException {
+	MP3Frame readFirstFrame(MP3Input data, StopReadCondition stopCondition) throws IOException, MP3Exception {
 		int b0 = 0;
 		int b1 = stopCondition.stopRead(data) ? -1 : data.read();
 		while (b1 != -1) {
@@ -121,12 +121,7 @@ public class MP3Info extends AudioInfo {
 				if (b3 == -1) {
 					break;
 				}
-				MP3Frame.Header header = null;
-				try {
-					header = new MP3Frame.Header(b1, b2, b3);
-				} catch (MP3Exception e) {
-					// not a valid frame header
-				}
+				MP3Frame.Header header = new MP3Frame.Header(b1, b2, b3);
 				if (header != null) { // we have a candidate
 					/*
 					 * The code gets a bit complex here, because we need to be able to reset() to b2 if
@@ -162,14 +157,10 @@ public class MP3Info extends AudioInfo {
 							if (nextB2 == -1 || nextB3 == -1) {
 								return frame;
 							}
-							try {
-								if (new MP3Frame.Header(nextB1, nextB2, nextB3).isCompatible(header)) {
-									data.reset(); // reset input to b2
-									data.skipFully(frameBytes.length - 2); // skip to end of frame
-									return frame;
-								}
-							} catch (MP3Exception e) {
-								// not a valid frame header
+							if (new MP3Frame.Header(nextB1, nextB2, nextB3).isCompatible(header)) {
+								data.reset(); // reset input to b2
+								data.skipFully(frameBytes.length - 2); // skip to end of frame
+								return frame;
 							}
 						}
 					}
@@ -190,7 +181,7 @@ public class MP3Info extends AudioInfo {
 		return null;
 	}
 
-	MP3Frame readNextFrame(MP3Input data, StopReadCondition stopCondition, MP3Frame previousFrame) throws IOException {
+	MP3Frame readNextFrame(MP3Input data, StopReadCondition stopCondition, MP3Frame previousFrame) throws IOException, MP3Exception {
 		MP3Frame.Header previousHeader = previousFrame.getHeader();
 		data.mark(4);
 		int b0 = stopCondition.stopRead(data) ? -1 : data.read();
@@ -209,6 +200,10 @@ public class MP3Info extends AudioInfo {
 				nextHeader = new MP3Frame.Header(b1, b2, b3);
 			} catch (MP3Exception e) {
 				// not a valid frame header
+				data.exceptionsCount++;
+				if (data.exceptionsCount > 5) {
+					throw e;
+				}
 			}
 			if (nextHeader != null && nextHeader.isCompatible(previousHeader)) {
 				byte[] frameBytes = new byte[nextHeader.getFrameSize()];

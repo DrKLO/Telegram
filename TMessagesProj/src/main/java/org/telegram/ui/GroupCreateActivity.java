@@ -610,7 +610,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -1271,16 +1271,20 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean canBeginSlide() {
-        return checkDiscard();
+        return checkDiscard(true);
     }
 
     @Override
-    public boolean onBackPressed() {
-        return checkDiscard();
+    public boolean onBackPressed(boolean invoked) {
+        if (!checkDiscard(invoked)) {
+            return false;
+        }
+        return super.onBackPressed(invoked);
     }
 
-    private boolean checkDiscard() {
-        if (!showDiscardConfirm) return true;
+    private boolean checkDiscard(boolean invoked) {
+        if (!showDiscardConfirm)
+            return true;
         final HashSet<Long> current = new HashSet<>();
         for (int a = 0; a < selectedContacts.size(); a++) {
             current.add(selectedContacts.keyAt(a));
@@ -1295,12 +1299,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         }
         if (hasChanges) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(getString(R.string.UserRestrictionsApplyChanges));
-            builder.setMessage(getString(R.string.PrivacySettingsChangedAlert));
-            builder.setPositiveButton(getString(R.string.ApplyTheme), (dialogInterface, i) -> onDonePressed(true));
-            builder.setNegativeButton(getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
-            showDialog(builder.create());
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(getString(R.string.UserRestrictionsApplyChanges));
+                builder.setMessage(getString(R.string.PrivacySettingsChangedAlert));
+                builder.setPositiveButton(getString(R.string.ApplyTheme), (dialogInterface, i) -> onDonePressed(true));
+                builder.setNegativeButton(getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+                showDialog(builder.create());
+            }
             return false;
         }
         return true;

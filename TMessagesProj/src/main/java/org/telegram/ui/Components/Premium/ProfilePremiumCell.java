@@ -6,14 +6,18 @@ import android.content.Context;
 import android.graphics.Canvas;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LiteMode;
+import org.telegram.messenger.utils.FrameTickScheduler;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Stars.StarsReactionsSheet;
 
 public class ProfilePremiumCell extends TextCell {
 
-    private final StarsReactionsSheet.Particles particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 30);
+    private final StarsReactionsSheet.Particles particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 15);
     private final int colorKey;
+
+    private final Runnable invalidateRunnable = this::invalidate;
 
     public ProfilePremiumCell(Context context, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
@@ -34,9 +38,19 @@ public class ProfilePremiumCell extends TextCell {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        particles.process();
-        particles.draw(canvas, Theme.getColor(colorKey));
-        invalidate();
+        if (LiteMode.isEnabled(LiteMode.FLAG_PARTICLES)) {
+            particles.process();
+            particles.draw(canvas, Theme.getColor(colorKey));
+            FrameTickScheduler.subscribe(invalidateRunnable, 15);
+        } else {
+            FrameTickScheduler.unsubscribe(invalidateRunnable);
+        }
         super.dispatchDraw(canvas);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        FrameTickScheduler.unsubscribe(invalidateRunnable);
     }
 }

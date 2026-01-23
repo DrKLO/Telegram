@@ -10,6 +10,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.LongSparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
@@ -52,19 +53,19 @@ public class UserListPoller {
                 for (int i = 0; i < dialogsFinal.size(); i++) {
                     request.id.add(MessagesController.getInstance(currentAccount).getInputPeer(dialogsFinal.get(i)));
                 }
-                ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (response instanceof Vector) {
-                        Vector vector = (Vector) response;
+                ConnectionsManager.getInstance(currentAccount).sendRequestTyped(request, AndroidUtilities::runOnUIThread, (response, error) -> {
+                    if (response != null) {
                         ArrayList<TLRPC.User> usersToUpdate = new ArrayList<>();
                         ArrayList<TLRPC.Chat> chatsToUpdate = new ArrayList<>();
-                        for (int i = 0; i < vector.objects.size(); i++) {
+                        for (int i = 0; i < response.objects.size(); i++) {
                             if (dialogsFinal.get(i) > 0) {
                                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogsFinal.get(i));
                                 if (user == null) {
                                     continue;
                                 }
-                                user.stories_max_id = ((Vector.Int) vector.objects.get(i)).value;
-                                if (user.stories_max_id != 0) {
+                                TLRPC.TL_recentStory recentStory = response.objects.get(i);
+                                user.stories_max_id = recentStory;
+                                if (recentStory != null) {
                                     user.flags2 |= 32;
                                 } else {
                                     user.flags2 &= ~32;
@@ -75,8 +76,9 @@ public class UserListPoller {
                                 if (chat == null) {
                                     continue;
                                 }
-                                chat.stories_max_id = ((Vector.Int) vector.objects.get(i)).value;
-                                if (chat.stories_max_id != 0) {
+                                TLRPC.TL_recentStory recentStory = response.objects.get(i);
+                                chat.stories_max_id = recentStory;
+                                if (recentStory != null) {
                                     chat.flags2 |= 16;
                                 } else {
                                     chat.flags2 &= ~16;
@@ -87,7 +89,7 @@ public class UserListPoller {
                         MessagesStorage.getInstance(currentAccount).putUsersAndChats(usersToUpdate, chatsToUpdate, true, true);
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
                     }
-                }));
+                });
             }
         }
     };

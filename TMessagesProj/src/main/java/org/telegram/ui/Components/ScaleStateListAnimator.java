@@ -3,7 +3,6 @@ package org.telegram.ui.Components;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
-import android.os.Build;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
@@ -14,11 +13,9 @@ public class ScaleStateListAnimator {
     }
 
     public static void apply(View view, float scale, float tension) {
-        if (view == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+        if (view == null) {
             return;
         }
-
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         AnimatorSet pressedAnimator = new AnimatorSet();
         pressedAnimator.playTogether(
@@ -44,9 +41,7 @@ public class ScaleStateListAnimator {
     }
 
     public static void reset(View view) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.setStateListAnimator(null);
-        }
+        view.setStateListAnimator(null);
     }
 
 }

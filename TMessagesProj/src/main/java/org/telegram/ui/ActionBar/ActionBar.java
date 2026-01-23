@@ -414,7 +414,7 @@ public class ActionBar extends FrameLayout {
             return;
         }
         titleTextView[i] = new SimpleTextView(getContext());
-        titleTextView[i].setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        titleTextView[i].setGravity(isCenterTitle ? Gravity.CENTER : Gravity.LEFT | Gravity.CENTER_VERTICAL);
         if (titleColorToSet != 0) {
             titleTextView[i].setTextColor(titleColorToSet);
         } else {
@@ -429,6 +429,19 @@ public class ActionBar extends FrameLayout {
             titlesContainer.addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
         } else {
             addView(titleTextView[i], 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        }
+    }
+
+    private boolean isCenterTitle;
+
+    public void centerTitle() {
+        isCenterTitle = true;
+        if (titleTextView != null) {
+            for (int a = 0; a < titleTextView.length; a++) {
+                if (titleTextView[a] != null) {
+                    titleTextView[a].setGravity(Gravity.CENTER);
+                }
+            }
         }
     }
 

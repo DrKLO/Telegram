@@ -122,7 +122,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             @Override
             public void onItemClick(int id) {
             if (id == -1) {
-                if (onBackPressed()) {
+                if (onBackPressed(true)) {
                     finishFragment();
                 }
             } else if (id == done_button) {
@@ -230,7 +230,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
                     checkDone(true);
                 },
                 null,
-                getResourceProvider()
+                false, getResourceProvider()
             ).create());
         } else if (item.id == BUTTON_REMOVE_BIRTHDAY) {
             birthday = null;

@@ -2,12 +2,12 @@ package org.telegram.messenger;
 
 import android.content.SharedPreferences;
 
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 
@@ -253,15 +253,8 @@ public class BirthdayController {
         public ArrayList<TL_account.TL_contactBirthday> contacts = new ArrayList<>();
 
         public static TL_birthdays TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_birthdays.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_birthdays", constructor));
-                }
-                return null;
-            }
-            TL_birthdays result = new TL_birthdays();
-            result.readParams(stream, exception);
-            return result;
+            final TL_birthdays result = constructor != TL_birthdays.constructor ? null : new TL_birthdays();
+            return TLdeserialize(TL_birthdays.class, result, stream, constructor, exception);
         }
 
         @Override

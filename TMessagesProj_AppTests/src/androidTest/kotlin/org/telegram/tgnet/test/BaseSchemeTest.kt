@@ -13,7 +13,6 @@ import com.appmattus.kotlinfixture.decorator.recursion.recursionStrategy
 import org.junit.BeforeClass
 import org.telegram.tgnet.InputSerializedData
 import org.telegram.tgnet.NativeByteBuffer
-import org.telegram.tgnet.TLEnum
 import org.telegram.tgnet.TLObject
 import org.telegram.tgnet.model.TlGen_Object
 import kotlin.reflect.KClass
@@ -45,41 +44,6 @@ open class BaseSchemeTest {
         deserializer: ((stream: InputSerializedData, constructor: Int, exception: Boolean) -> TLObject),
         isLegacyLayer: Int? = null
     ) {
-        createConfigs(clazz).forEach {
-            @Suppress("DEPRECATION_ERROR")
-            val generated = fixture.create(clazz, it) as TlGen_Object
-
-            try {
-                buffer.rewind()
-                generated.serializeToStream(buffer)
-                val expectedPosition = buffer.position()
-
-                buffer.rewind()
-                val result = deserializer.invoke(buffer, buffer.readInt32(true), true)
-                assertEquals(expectedPosition, buffer.position())
-
-                buffer2.rewind()
-                result.serializeToStream(buffer2)
-
-                if (isLegacyLayer != null/* && expectedPosition != buffer2.position() */) {
-                    buffer2.rewind()
-                    val result2 = deserializer.invoke(buffer2, buffer2.readInt32(true), true)
-                } else {
-                    assertEquals(expectedPosition, buffer2.position())
-                    assertBuffersEquals(buffer, buffer2)
-                }
-            } catch (t: Throwable) {
-                println(generated.toString())
-                throw t
-            }
-        }
-    }
-
-    protected fun <T> test_TLdeserializeEnum(
-        clazz: KClass<out TlGen_Object>,
-        deserializer: ((stream: InputSerializedData, constructor: Int, exception: Boolean) -> T),
-        isLegacyLayer: Int? = null
-    ) where T : Enum<T>, T : TLEnum.Constructor {
         createConfigs(clazz).forEach {
             @Suppress("DEPRECATION_ERROR")
             val generated = fixture.create(clazz, it) as TlGen_Object

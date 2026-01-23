@@ -61,7 +61,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {

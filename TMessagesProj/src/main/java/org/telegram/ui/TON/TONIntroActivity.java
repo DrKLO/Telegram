@@ -708,11 +708,11 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         }
 
         public StarsNeededSheet(
-                Context context,
-                Theme.ResourcesProvider resourcesProvider,
-                AmountUtils.Amount requiredAmount,
-                boolean canToUpFragment,
-                Runnable whenPurchased
+            Context context,
+            Theme.ResourcesProvider resourcesProvider,
+            AmountUtils.Amount requiredAmount,
+            boolean canToUpFragment,
+            Runnable whenPurchased
         ) {
             super(context, null, false, false, false, resourcesProvider);
 

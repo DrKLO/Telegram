@@ -423,7 +423,7 @@ public class FilterCreateActivity extends BaseFragment {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -915,12 +915,12 @@ public class FilterCreateActivity extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (nameEditTextCell != null && nameEditTextCell.editTextEmoji != null && nameEditTextCell.editTextEmoji.isPopupShowing()) {
-            nameEditTextCell.editTextEmoji.hidePopup(true);
+            if (invoked) nameEditTextCell.editTextEmoji.hidePopup(true);
             return false;
         }
-        return checkDiscard();
+        return checkDiscard(invoked);
     }
 
     private void fillFilterName() {
@@ -974,20 +974,22 @@ public class FilterCreateActivity extends BaseFragment {
         }
     }
 
-    private boolean checkDiscard() {
+    private boolean checkDiscard(boolean invoked) {
         if (doneItem.getAlpha() == 1.0f) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            if (creatingNew) {
-                builder.setTitle(LocaleController.getString(R.string.FilterDiscardNewTitle));
-                builder.setMessage(LocaleController.getString(R.string.FilterDiscardNewAlert));
-                builder.setPositiveButton(LocaleController.getString(R.string.FilterDiscardNewSave), (dialogInterface, i) -> processDone());
-            } else {
-                builder.setTitle(LocaleController.getString(R.string.FilterDiscardTitle));
-                builder.setMessage(LocaleController.getString(R.string.FilterDiscardAlert));
-                builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                if (creatingNew) {
+                    builder.setTitle(LocaleController.getString(R.string.FilterDiscardNewTitle));
+                    builder.setMessage(LocaleController.getString(R.string.FilterDiscardNewAlert));
+                    builder.setPositiveButton(LocaleController.getString(R.string.FilterDiscardNewSave), (dialogInterface, i) -> processDone());
+                } else {
+                    builder.setTitle(LocaleController.getString(R.string.FilterDiscardTitle));
+                    builder.setMessage(LocaleController.getString(R.string.FilterDiscardAlert));
+                    builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
+                }
+                builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+                showDialog(builder.create());
             }
-            builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
-            showDialog(builder.create());
             return false;
         }
         return true;
@@ -1230,7 +1232,7 @@ public class FilterCreateActivity extends BaseFragment {
 
     @Override
     public boolean canBeginSlide() {
-        return checkDiscard();
+        return checkDiscard(true);
     }
 
     private boolean hasChanges() {

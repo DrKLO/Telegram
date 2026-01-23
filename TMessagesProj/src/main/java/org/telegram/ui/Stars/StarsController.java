@@ -3452,6 +3452,7 @@ public class StarsController {
         }
 
         public boolean sort_by_date = true; // false => sort_by_value
+        public boolean peer_color_available = false;
 
         public static final int INCLUDE_TYPE_UNLIMITED_FLAG = 1;
         public static final int INCLUDE_TYPE_LIMITED_FLAG = 1 << 1;
@@ -3509,6 +3510,12 @@ public class StarsController {
         public void resetFilters() {
             if (!hasFilters()) return;
             includeFlags = INCLUDE_TYPE_MASK | INCLUDE_VISIBILITY_MASK;
+            sort_by_date = true;
+            invalidate(true);
+        }
+
+        public void setFilters(int flags) {
+            includeFlags = flags;
             sort_by_date = true;
             invalidate(true);
         }
@@ -3593,6 +3600,7 @@ public class StarsController {
             req.exclude_unique = !isInclude_unique();
             req.exclude_saved = !isInclude_displayed();
             req.exclude_unsaved = !isInclude_hidden();
+            req.peer_color_available = peer_color_available;
             if (dialogId == 0) {
                 req.peer = new TLRPC.TL_inputPeerSelf();
             } else {

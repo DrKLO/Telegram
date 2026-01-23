@@ -1,6 +1,7 @@
 package org.telegram.tgnet;
 
 public interface InputSerializedData {
+    TLDataSourceType getDataSourceType();
 
     boolean readBool(boolean exception);
     int readInt32(boolean exception);

@@ -312,6 +312,10 @@ public class CustomEmojiReactionsWindow {
         }
     }
 
+    public void setLongPressEnabled(boolean isEnabled) {
+        this.selectAnimatedEmojiDialog.setLongPressEnabled(isEnabled);
+    }
+
     private void updateWindowPosition() {
         if (dismissed) {
             return;

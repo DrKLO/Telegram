@@ -89,7 +89,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         args.putBoolean("resetDelegate", false);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_BLOCK);
         dialogsActivity = new DialogsActivity(args);
-        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             if (dids.isEmpty()) {
                 return true;
             }

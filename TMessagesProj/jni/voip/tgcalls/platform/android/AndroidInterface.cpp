@@ -19,6 +19,7 @@
 #include "sdk/android/src/jni/android_network_monitor.h"
 #include "api/video_track_source_proxy_factory.h"
 #include "AndroidContext.h"
+#include "media/engine/simulcast_encoder_adapter.h"
 
 
 namespace tgcalls {
@@ -27,7 +28,40 @@ void AndroidInterface::configurePlatformAudio(int numChannels) {
 
 }
 
-std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext,  bool preferHardwareEncoding, bool isScreencast) {
+class SimulcastVideoEncoderFactory : public webrtc::VideoEncoderFactory {
+public:
+
+    std::unique_ptr<webrtc::VideoEncoderFactory> main_factory;
+    std::unique_ptr<webrtc::SimulcastEncoderAdapter> simulcast_adapter;
+
+    SimulcastVideoEncoderFactory(
+        std::unique_ptr<webrtc::VideoEncoderFactory> main_factory
+    ): main_factory(std::move(main_factory)) {}
+
+    std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override {
+        return main_factory->GetSupportedFormats();
+    }
+
+    std::vector<webrtc::SdpVideoFormat> GetImplementations() const override {
+        return main_factory->GetImplementations();
+    }
+
+    std::unique_ptr<EncoderSelectorInterface> GetEncoderSelector() const override {
+        return main_factory->GetEncoderSelector();
+    }
+
+    std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(const webrtc::SdpVideoFormat& format) override {
+        return std::make_unique<webrtc::SimulcastEncoderAdapter>(main_factory.get(), format);
+    }
+
+    CodecSupport QueryCodecSupport(
+            const webrtc::SdpVideoFormat& format,
+            absl::optional<std::string> scalability_mode) const override {
+        return main_factory->QueryCodecSupport(format, scalability_mode);
+    }
+};
+
+std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext, bool preferHardwareEncoding, bool isScreencast) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
 //    AndroidContext *context = (AndroidContext *) platformContext.get();
@@ -43,7 +77,10 @@ std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderF
                                 nullptr /* shared_context */,
                                 false /* enable_intel_vp8_encoder */,
                                 true /* enable_h264_high_profile */));
-    return webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj());
+
+//    return webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj());
+
+    return std::make_unique<SimulcastVideoEncoderFactory>(webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj()));
 }
 
 std::unique_ptr<webrtc::VideoDecoderFactory> AndroidInterface::makeVideoDecoderFactory(std::shared_ptr<PlatformContext> platformContext) {

@@ -89,7 +89,7 @@ public class CacheChatsExceptionsFragment extends BaseFragment {
                 }
                 args.putBoolean("allowGlobalSearch", false);
                 DialogsActivity activity = new DialogsActivity(args);
-                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                activity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                     activity.finishFragment();
                     CacheByChatsController.KeepMediaException newException = null;
                     for (int i = 0; i < dids.size(); i++) {

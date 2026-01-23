@@ -118,6 +118,14 @@ public class Text {
         }
     }
 
+    public float calculateRealWidth() {
+        float width = 0;
+        for (int i = 0; i < layout.getLineCount(); ++i) {
+            width = Math.max(width, layout.getLineWidth(i));
+        }
+        return width;
+    }
+
     public Text multiline(int maxLines) {
         this.maxLines = maxLines;
         setText(layout.getText());

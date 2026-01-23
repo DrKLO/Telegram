@@ -1,7 +1,7 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -10,6 +10,10 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.PointF;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -23,7 +27,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingFlowParams;
@@ -34,6 +40,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -62,6 +69,8 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.EditTextSuggestionsFix;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
 import org.telegram.ui.Components.Premium.boosts.BoostDialogs;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
@@ -71,6 +80,10 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
@@ -85,13 +98,14 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
-public class SendGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
+public class SendGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate, GiftAuctionController.OnAuctionUpdateListener {
 
     private final boolean self;
     private final int currentAccount;
     private final long dialogId;
     private final boolean forceUpgrade, forceNotUpgrade;
     private final TL_stars.StarGift starGift;
+    private @Nullable GiftAuctionController.Auction auction;
     private final GiftPremiumBottomSheet.GiftTier premiumTier;
     private final String name;
     private final Runnable closeParentSheet;
@@ -110,6 +124,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
     private final ButtonWithCounterView button;
 
     private final FrameLayout limitContainer;
+    private final @Nullable FrameLayout limitContainerWrapper;
     private final View limitProgressView;
     private final FrameLayout valueContainerView;
     private final TextView soldTextView, soldTextView2;
@@ -151,6 +166,10 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         this.currentAccount = currentAccount;
         this.dialogId = dialogId;
         this.starGift = starGift;
+        if (starGift != null && starGift.auction) {
+            auction = GiftAuctionController.getInstance(currentAccount).subscribeToGiftAuction(starGift.id, this);
+        }
+
         this.premiumTier = premiumTier;
         this.closeParentSheet = closeParentSheet;
         this.forceUpgrade = forceUpgrade;
@@ -202,13 +221,43 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
                 }
             }
             @Override
+            protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+                if (child == backgroundView) {
+                    return true;
+                }
+                return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 super.onLayout(changed, l, t, r, b);
                 chatLinearLayout.setTranslationY(((b - t) - chatLinearLayout.getMeasuredHeight()) / 2f);
                 actionCell.setVisiblePart(chatLinearLayout.getY() + actionCell.getY(), getBackgroundSizeY());
             }
         };
-        chatView.setBackgroundImage(PreviewView.getBackgroundDrawable(null, currentAccount, dialogId, Theme.isCurrentThemeDark()), false);
+
+        final Drawable drawable = PreviewView.getBackgroundDrawable(null, currentAccount, dialogId, Theme.isCurrentThemeDark());
+        chatView.setBackgroundImage(drawable, false);
+        Integer color = null;
+        BlurredBackgroundSourceColor sourceColor = new BlurredBackgroundSourceColor();
+        if (drawable instanceof ColorDrawable) {
+            color = ((ColorDrawable) drawable).getColor();
+        } else if (drawable instanceof MotionBackgroundDrawable) {
+            if (((MotionBackgroundDrawable) drawable).getIntensity() < 0) {
+                color = Color.BLACK;
+            } else {
+                int[] colors = ((MotionBackgroundDrawable) drawable).getColors();
+                if (colors != null && colors.length > 0) {
+                    color = colors[0];
+                }
+            }
+        }
+        sourceColor.setColor(color != null ? color : getThemedColor(Theme.key_dialogBackground));
+        BlurredBackgroundDrawable msgDrawable = sourceColor.createDrawable();
+        msgDrawable.setColorProvider(new BlurredBackgroundColorProviderThemed(resourcesProvider, Theme.key_dialogBackground));
+        msgDrawable.setRadius(dp(20));
+        msgDrawable.setPadding(dp(4));
+
 
         chatLinearLayout = new LinearLayout(context);
         chatLinearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -273,6 +322,19 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         messageEdit = new EditEmojiTextCell(context, (SizeNotifierFrameLayout) containerView, getString(starGift != null ? R.string.Gift2Message : R.string.Gift2MessageOptional), true, MessagesController.getInstance(currentAccount).stargiftsMessageLengthMax, EditTextEmoji.STYLE_GIFT, resourcesProvider) {
             @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                setPadding(dp(16), 0, dp(12), 0);
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
+
+            @Override
+            protected void dispatchDraw(@NonNull Canvas canvas) {
+                msgDrawable.setBounds(dp(10), 0, getMeasuredWidth() - dp(10), getMeasuredHeight());
+                msgDrawable.draw(canvas);
+                super.dispatchDraw(canvas);
+            }
+
+            @Override
             protected void onTextChanged(CharSequence newText) {
                 TLRPC.TL_textWithEntities txt;
                 if (action instanceof TLRPC.TL_messageActionStarGift) {
@@ -303,7 +365,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         messageEdit.setShowLimitWhenNear(50);
         setEditTextEmoji(messageEdit.editTextEmoji);
         messageEdit.setShowLimitOnFocus(true);
-        messageEdit.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+
         messageEdit.setDivider(false);
         messageEdit.hideKeyboardOnEnter();
         messageEdit.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
@@ -320,7 +382,6 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDelayIncrement(40);
         recyclerListView.setItemAnimator(itemAnimator);
-        recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(48 + 10 + 10 + (starGift != null && starGift.limited ? 30 + 10 : 0)));
         adapter.update(false);
 
         buttonContainer = new LinearLayout(context);
@@ -333,11 +394,19 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogGrayLine, resourcesProvider));
         buttonContainer.addView(buttonShadow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
 
-        final float limitedProgress = Utilities.clamp(starGift == null ? 0 : (float) starGift.availability_remains / starGift.availability_total, 0.97f, 0);
+        final float limitedProgress = Utilities.clamp(starGift == null ? 0 : (float) starGift.availability_remains / starGift.availability_total, 1f, 0);
         limitContainer = new FrameLayout(context);
-        limitContainer.setVisibility(starGift != null && starGift.limited ? View.VISIBLE : View.GONE);
         limitContainer.setBackground(Theme.createRoundRectDrawable(dp(6), Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)));
-        buttonContainer.addView(limitContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 10, 10, 10, 0));
+
+        if (starGift != null && starGift.auction) {
+            limitContainerWrapper = new FrameLayout(context);
+            limitContainerWrapper.addView(limitContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 10, 14, 10, 14));
+            limitContainerWrapper.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        } else {
+            limitContainer.setVisibility(starGift != null && starGift.limited ? View.VISIBLE : View.GONE);
+            buttonContainer.addView(limitContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30, 10, 10, 10, 0));
+            limitContainerWrapper = null;
+        }
 
         leftTextView = new TextView(context);
         leftTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -409,6 +478,21 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         buttonContainer.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 10, 10, 10, 10));
         button.setOnClickListener(v -> {
             if (button.isLoading()) return;
+
+            if (auction != null) {
+                final AuctionBidSheet.Params p = new AuctionBidSheet.Params(dialogId, anonymous, getMessage());
+                AuctionBidSheet auctionSheet = new AuctionBidSheet(context, resourcesProvider, p, auction);
+                auctionSheet.show();
+                auctionSheet.setCloseParentSheet(closeParentSheet);
+
+                AndroidUtilities.hideKeyboard(messageEdit);
+                dismiss();
+                if (!isDismissed) {
+                    AndroidUtilities.runOnUIThread(this::dismiss, 500);
+                }
+                return;
+            }
+
             button.setLoading(true);
             if (messageEdit.editTextEmoji.getEmojiPadding() > 0) {
                 messageEdit.editTextEmoji.hidePopup(true);
@@ -426,6 +510,38 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         adapter.update(false);
         layoutManager.scrollToPositionWithOffset(adapter.getItemCount(), dp(200));
 
+        recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(48 + 10 + 10 + (starGift != null && starGift.limited && limitContainerWrapper == null ? 30 + 10 : 0)));
+        recyclerListView.addItemDecoration(new RecyclerView.ItemDecoration() {
+            final PointF p = new PointF();
+
+            @Override
+            public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                float top = parent.getHeight();
+                float bottom = 0;
+                float left = 0;
+
+                if (ViewPositionWatcher.computeCoordinatesInParent(chatView, recyclerListView, p)) {
+                    left = p.x;
+                    top = Math.min(top, p.y);
+                    bottom = Math.max(bottom, p.y + chatView.getMeasuredHeight());
+                }
+                if (ViewPositionWatcher.computeCoordinatesInParent(messageEdit, recyclerListView, p)) {
+                    top = Math.min(top, p.y);
+                    bottom = Math.max(bottom, p.y + messageEdit.getMeasuredHeight() + dp(12));
+                }
+
+                if (top < bottom && chatView.backgroundView != null) {
+                    final float s = (float) (bottom - top) / chatView.backgroundView.getHeight();
+                    c.save();
+                    c.clipRect(0, top, parent.getWidth(), bottom);
+                    c.translate(left, top);
+                    c.scale(s, s);
+                    chatView.backgroundView.draw(c);
+                    c.restore();
+                }
+                super.onDraw(c, parent, state);
+            }
+        });
         recyclerListView.setOnItemClickListener((view, position) -> {
             final UItem item = adapter.getItem(reverseLayout ? position : position - 1);
             if (item == null) return;
@@ -512,7 +628,21 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
     }
 
     private void setButtonText(boolean animated) {
-        if (starGift != null) {
+        if (auction != null) {
+            final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            if (auction.isUpcoming(currentTime)) {
+                final int timeLeft = auction.gift.auction_start_date - currentTime;
+                button.setText(getString(R.string.Gift2AuctionPlaceAEarlyBid), animated);
+                button.setSubText(formatString(R.string.Gift2AuctionStartsIn, LocaleController.formatTTLString(timeLeft)), animated);
+            } else if (auction.auctionStateActive != null) {
+                final int timeLeft = auction.auctionStateActive.end_date - currentTime;
+                button.setText(getString(R.string.Gift2AuctionPlaceABid), animated);
+                button.setSubText(formatString(R.string.Gift2AuctionTimeLeft, LocaleController.formatTTLString(timeLeft)), animated);
+            } else {
+                button.setText(getString(R.string.Gift2AuctionPlaceABid), animated);
+                button.setSubText(null, animated);
+            }
+        } else if (starGift != null) {
             final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
             final long price = this.starGift.stars + (upgrade ? this.starGift.upgrade_stars : 0) + (TextUtils.isEmpty(messageEdit.getText()) ? 0 : send_paid_messages_stars);
             button.setText(StarsIntroActivity.replaceStars(LocaleController.formatPluralStringComma(self ? "Gift2SendSelf" : "Gift2Send", (int) price), cachedStarSpan), animated);
@@ -531,6 +661,12 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
             button.setSubText(null, animated);
         }
     }
+
+    @Override
+    public void onUpdate(GiftAuctionController.Auction auction) {
+        this.auction = auction;
+    }
+
 
     protected BulletinFactory getParentBulletinFactory() {
         final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
@@ -588,6 +724,12 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
                 button.setLoading(false);
             }
         );
+    }
+
+    @Override
+    public void onOpenAnimationEnd() {
+        super.onOpenAnimationEnd();
+        recyclerListView.invalidateItemDecorations();
     }
 
     private void buyPremiumTier() {
@@ -780,6 +922,7 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         items.add(UItem.asCustom(-1, chatView));
         if (paidMessagesStarsPrice <= 0) {
             items.add(UItem.asCustom(-2, messageEdit));
+            items.add(UItem.asSpace(dp(12)));
         }
         if (starGift != null) {
             if (starGift.can_upgrade && !self) {
@@ -794,6 +937,13 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
             items.add(UItem.asCheck(1, getString(self ? R.string.Gift2HideSelf : R.string.Gift2Hide)).setChecked(anonymous));
             items.add(UItem.asShadow(-6, self ? getString(R.string.Gift2HideSelfInfo) : dialogId < 0 ? getString(R.string.Gift2HideChannelInfo) : formatString(R.string.Gift2HideInfo, name)));
+
+            if (limitContainerWrapper != null) {
+                final CharSequence s = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(formatPluralString("Gift2AuctionInfoLearnMore2", starGift.gifts_per_round, starGift.gifts_per_round),
+                    () -> AuctionJoinSheet.showMoreInfo(getContext(), resourcesProvider, starGift)), true);
+                items.add(UItem.asCustom(-43, limitContainerWrapper));
+                items.add(UItem.asShadow(-44, s));
+            }
         } else {
             if (paidMessagesStarsPrice <= 0) {
                 items.add(UItem.asShadow(-3, formatString(R.string.Gift2MessagePremiumInfo, name)));
@@ -823,6 +973,8 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         super.show();
     }
 
+    boolean isDismissed = false;
+
     @Override
     public void dismiss() {
         if (messageEdit.editTextEmoji.getEmojiPadding() > 0) {
@@ -835,6 +987,12 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
         if (messageEdit != null) {
             messageEdit.editTextEmoji.onPause();
         }
+
+        if (auction != null) {
+            GiftAuctionController.getInstance(currentAccount).unsubscribeFromGiftAuction(auction.giftId, this);
+        }
+
+        isDismissed = true;
         super.dismiss();
     }
 

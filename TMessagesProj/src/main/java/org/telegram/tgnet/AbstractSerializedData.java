@@ -1,6 +1,16 @@
 package org.telegram.tgnet;
 
 public abstract class AbstractSerializedData implements InputSerializedData, OutputSerializedData {
+    private TLDataSourceType dataSourceType = TLDataSourceType.UNKNOWN;
+
+    public void setDataSourceType(TLDataSourceType dataSourceType) {
+        this.dataSourceType = dataSourceType;
+    }
+
+    @Override
+    public TLDataSourceType getDataSourceType() {
+        return dataSourceType;
+    }
 
     public abstract void writeInt32(int x);
 

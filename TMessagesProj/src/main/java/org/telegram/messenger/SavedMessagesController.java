@@ -27,16 +27,10 @@ import java.util.Objects;
 public class SavedMessagesController {
 
     private final int currentAccount;
-    private final long forumDialogId;
     public boolean unsupported;
 
     public SavedMessagesController(int account) {
-        this(account, 0);
-    }
-
-    public SavedMessagesController(int account, long forumDialogId) {
         this.currentAccount = account;
-        this.forumDialogId = forumDialogId;
         unsupported = MessagesController.getMainSettings(currentAccount).getBoolean("savedMessagesUnsupported", true);
     }
 
@@ -99,7 +93,7 @@ public class SavedMessagesController {
         Collections.sort(dialogs, (d1, d2) -> d2.getDate() - d1.getDate());
         allDialogs.addAll(dialogs);
         if (notify) {
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.savedMessagesDialogsUpdate, forumDialogId);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.savedMessagesDialogsUpdate);
             if (!hasDialogs() && MessagesController.getInstance(currentAccount).savedViewAsChats) {
                 MessagesController.getInstance(currentAccount).setSavedViewAs(false);
             }
@@ -239,11 +233,6 @@ public class SavedMessagesController {
             req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
         req.limit = 20;
-        if (forumDialogId != 0) {
-            req.flags |= 2;
-            req.parent_peer = MessagesController.getInstance(currentAccount).getInputPeer(forumDialogId);
-        }
-
         final ArrayList<SavedDialog> expectedDialogs = new ArrayList<>();
         expectedDialogs.addAll(allDialogs.subList(
             Math.min(loadedDialogs.size(), allDialogs.size()),
@@ -267,7 +256,7 @@ public class SavedMessagesController {
                 MessagesStorage.getInstance(currentAccount).putUsersAndChats(r.users, r.chats, true, true);
                 MessagesStorage.getInstance(currentAccount).putMessages(r.messages, false, true, false, 0, false, ChatActivity.MODE_SAVED, 0);
                 for (int i = 0; i < r.dialogs.size(); ++i) {
-                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, forumDialogId == 0);
+                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, true);
                     for (int j = 0; j < cachedDialogs.size(); ++j) {
                         if (cachedDialogs.get(j).dialogId == d.dialogId) {
                             d.messagesCount = cachedDialogs.get(j).messagesCount;
@@ -301,7 +290,7 @@ public class SavedMessagesController {
                 MessagesStorage.getInstance(currentAccount).putUsersAndChats(r.users, r.chats, true, true);
                 MessagesStorage.getInstance(currentAccount).putMessages(r.messages, false, true, false, 0, false, ChatActivity.MODE_SAVED, 0);
                 for (int i = 0; i < r.dialogs.size(); ++i) {
-                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, forumDialogId == 0);
+                    SavedDialog d = SavedDialog.fromTL(currentAccount, r.dialogs.get(i), r.messages, true);
                     for (int j = 0; j < cachedDialogs.size(); ++j) {
                         if (cachedDialogs.get(j).dialogId == d.dialogId) {
                             d.messagesCount = cachedDialogs.get(j).messagesCount;
@@ -354,10 +343,6 @@ public class SavedMessagesController {
                 MessagesController.getMainSettings(currentAccount).edit().putBoolean("savedMessagesUnsupported", unsupported).apply();
             }
 
-            if (forumDialogId != 0 && dialogsEndReached) {
-                UserConfig.getInstance(currentAccount).getPreferences().edit().putBoolean("topics_end_reached_" + -forumDialogId, true).apply();
-            }
-
             dialogsLoading = false;
         }));
     }
@@ -391,9 +376,6 @@ public class SavedMessagesController {
             long dialogId = messages.keyAt(i);
             TLRPC.Message message = messages.valueAt(i);
             Integer newMessagesCount = messagesCount.get(dialogId);
-            if (forumDialogId != 0 && MessageObject.getMonoForumTopicId(message) == 0) {
-                continue;
-            }
             boolean found = false;
             for (int j = 0; j < cachedDialogs.size(); ++j) {
                 SavedDialog d = cachedDialogs.get(j);
@@ -420,7 +402,7 @@ public class SavedMessagesController {
                 }
             }
             if (!found) {
-                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, forumDialogId == 0);
+                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, true);
                 if (newMessagesCount != null) {
                     d.messagesCount = newMessagesCount;
                 }
@@ -453,7 +435,7 @@ public class SavedMessagesController {
                 }
             }
             if (!found /*&& forumDialogId == 0*/) {
-                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, forumDialogId == 0);
+                SavedDialog d = SavedDialog.fromMessage(currentAccount, message, true);
                 if (newMessagesCount != null) {
                     d.messagesCount = newMessagesCount;
                 }
@@ -576,9 +558,6 @@ public class SavedMessagesController {
             }
         }
         // reload
-        if (forumDialogId != 0) {
-            UserConfig.getInstance(currentAccount).getPreferences().edit().remove("topics_end_reached_" + -forumDialogId).apply();
-        }
         loadedDialogs.clear();
         dialogsLoaded = false;
         dialogsCount = 0;
@@ -629,10 +608,6 @@ public class SavedMessagesController {
                 cachedDialogs.remove(i);
                 i--;
             }
-        }
-
-        if (forumDialogId != 0) {
-            MessagesStorage.getInstance(currentAccount).removeTopic(forumDialogId, did);
         }
 
         return Math.max(acount, lcount);
@@ -831,7 +806,7 @@ public class SavedMessagesController {
             final ArrayList<TLRPC.Document> emojis = new ArrayList<>();
 
             try {
-                cursor = db.queryFinalized("SELECT did, date, last_mid, pinned, flags, folder_id, last_mid_group, count, unread_count, max_read_id, read_outbox FROM saved_dialogs WHERE forumChatId = ? ORDER BY pinned ASC, date DESC", forumDialogId);
+                cursor = db.queryFinalized("SELECT did, date, last_mid, pinned, flags, folder_id, last_mid_group, count, unread_count, max_read_id, read_outbox FROM saved_dialogs WHERE forumChatId = ? ORDER BY pinned ASC, date DESC", 0);
                 while (cursor.next()) {
                     SavedDialog d = new SavedDialog();
                     d.dialogId = cursor.longValue(0);
@@ -851,12 +826,12 @@ public class SavedMessagesController {
                         usersToLoad.add(d.dialogId);
                     }
 
-                    cursor2 = db.queryFinalized("SELECT data FROM messages_topics WHERE uid = ? AND mid = ? AND topic_id = ?", forumDialogId != 0 ? forumDialogId : selfId, d.top_message_id, d.dialogId);
+                    cursor2 = db.queryFinalized("SELECT data FROM messages_topics WHERE uid = ? AND mid = ? AND topic_id = ?", selfId, d.top_message_id, d.dialogId);
                     if (cursor2.next()) {
                         NativeByteBuffer buffer = cursor2.byteBufferValue(0);
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(buffer, buffer.readInt32(true), true);
                         MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, emojiToLoad);
-                        d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, forumDialogId == 0);
+                        d.message = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, true);
                     }
                     cursor2.dispose();
 
@@ -925,7 +900,7 @@ public class SavedMessagesController {
                 for (int i = 0; i < dialogs.size(); ++i) {
                     SavedDialog d = dialogs.get(i);
 
-                    cursor = db.queryFinalized("SELECT mid, data FROM messages_topics WHERE uid = ? AND topic_id = ? ORDER BY mid DESC LIMIT 1", forumDialogId != 0 ? forumDialogId : selfId, d.dialogId);
+                    cursor = db.queryFinalized("SELECT mid, data FROM messages_topics WHERE uid = ? AND topic_id = ? ORDER BY mid DESC LIMIT 1", selfId, d.dialogId);
                     if (cursor.next()) {
                         int topMessageId = cursor.intValue(0);
                         NativeByteBuffer buffer = cursor.byteBufferValue(1);
@@ -966,7 +941,7 @@ public class SavedMessagesController {
                 for (int i = 0; i < newMessages.size(); ++i) {
                     long did = newMessages.keyAt(i);
                     TLRPC.Message message = newMessages.valueAt(i);
-                    MessageObject messageObject = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, forumDialogId == 0);
+                    MessageObject messageObject = new MessageObject(currentAccount, message, null, null, null, null, null, false, false, 0, false, false, true);
                     for (int j = 0; j < loadedDialogs.size(); ++j) {
                         SavedDialog d = loadedDialogs.get(j);
                         if (d.dialogId == did) {
@@ -1008,7 +983,7 @@ public class SavedMessagesController {
             try {
                 SQLitePreparedStatement state2 = db.executeFast("DELETE FROM saved_dialogs WHERE forumChatId = ?");
                 state2.requery();
-                state2.bindLong(1, forumDialogId);
+                state2.bindLong(1, 0);
                 state2.step();
                 state2.dispose();
 
@@ -1024,7 +999,7 @@ public class SavedMessagesController {
                     state.bindInteger(6, 0);
                     state.bindInteger(7, 0);
                     state.bindInteger(8, d.messagesCount);
-                    state.bindLong(9, forumDialogId);
+                    state.bindLong(9, 0);
                     state.bindLong(10, d.unreadCount);
                     state.bindLong(11, d.readInboxMaxId);
                     state.bindLong(12, d.readOutboxMaxId);
@@ -1057,7 +1032,7 @@ public class SavedMessagesController {
             try {
                 SQLitePreparedStatement state2 = db.executeFast("DELETE FROM saved_dialogs WHERE forumChatId = ?");
                 state2.requery();
-                state2.bindLong(1, forumDialogId);
+                state2.bindLong(1, 0);
                 state2.step();
                 state2.dispose();
             } catch (Exception e) {
@@ -1176,9 +1151,6 @@ public class SavedMessagesController {
 
         TLRPC.TL_messages_getSavedHistory req = new TLRPC.TL_messages_getSavedHistory();
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(did);
-        if (forumDialogId != 0) {
-            req.parent_peer = MessagesController.getInstance(currentAccount).getInputPeer(forumDialogId);
-        }
         req.limit = 1;
         req.hash = 0;
         req.offset_id = Integer.MAX_VALUE;
@@ -1190,8 +1162,6 @@ public class SavedMessagesController {
                 int count = r.messages.size();
                 if (r instanceof TLRPC.TL_messages_messagesSlice) {
                     count = ((TLRPC.TL_messages_messagesSlice) r).count;
-                } else if (forumDialogId != 0 && r instanceof TLRPC.TL_messages_channelMessages) {
-                    count = r.count;
                 }
 
                 MessagesController.getInstance(currentAccount).putUsers(r.users, false);
@@ -1202,7 +1172,7 @@ public class SavedMessagesController {
                 if (count > 0) {
                     if (!updatedDialogCount(did, count, true)) {
                         if (!r.messages.isEmpty()) {
-                            SavedDialog dialog = SavedDialog.fromMessage(currentAccount, r.messages.get(0), forumDialogId == 0);
+                            SavedDialog dialog = SavedDialog.fromMessage(currentAccount, r.messages.get(0), true);
                             dialog.messagesCount = count;
                             dialog.messagesCountLoaded = true;
                             cachedDialogs.add(dialog);

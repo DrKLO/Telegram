@@ -559,6 +559,10 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
         private TextView textView;
 
         public FeatureCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+            this(context, false, resourcesProvider);
+        }
+
+        public FeatureCell(Context context, boolean compact, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
             this.resourcesProvider = resourcesProvider;
@@ -570,7 +574,7 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
 
             textLayout = new LinearLayout(context);
             textLayout.setOrientation(LinearLayout.VERTICAL);
-            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 64, 3, 24, 5 + 7.66f));
+            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 64, compact ? 2 : 3, 24, compact ? 4 : 5 + 7.66f));
 
             titleView = new TextView(context);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));

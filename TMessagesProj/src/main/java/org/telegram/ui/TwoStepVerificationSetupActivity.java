@@ -2156,12 +2156,12 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (otherwiseReloginDays >= 0 && parentLayout.getFragmentStack().size() == 1) {
-            showSetForcePasswordAlert();
+            if (invoked) showSetForcePasswordAlert();
             return false;
         }
-        finishFragment();
+        if (invoked) finishFragment(); // ???
         return true;
     }
 

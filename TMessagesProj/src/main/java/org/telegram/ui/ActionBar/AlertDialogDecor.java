@@ -95,7 +95,6 @@ public class AlertDialogDecor extends AlertDialog {
 
         contentView = inflateContent(false);
         contentView.setClickable(true);
-        contentView.setFitsSystemWindows(false);
 
         WindowManager.LayoutParams params = getWindow().getAttributes();
         FrameLayout container = new FrameLayout(getContext());

@@ -860,7 +860,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         cancelThemeApply(false);
                     }
                 } else if (id >= 1 && id <= 3) {
@@ -1018,7 +1018,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         PhotoViewer.getInstance().setParentActivity(getParentActivity());
                         PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_WALLPAPER, false, new PhotoViewer.EmptyPhotoViewerProvider() {
                             @Override
-                            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+                            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
                                 if (photoEntry.imagePath != null) {
                                     File currentWallpaperPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.random.nextInt() + ".jpg");
                                     Point screenSize = AndroidUtilities.getRealScreenSize();
@@ -3234,7 +3234,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         return false;
     }
 
-    private boolean checkDiscard() {
+    private boolean checkDiscard(boolean invoked) {
         if (screenType == SCREEN_TYPE_ACCENT_COLOR && (
                 accent.accentColor != backupAccentColor ||
                         accent.accentColor2 != backupAccentColor2 ||
@@ -3253,12 +3253,14 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         selectedPattern != null && accent.patternMotion != isMotion ||
                         selectedPattern != null && accent.patternIntensity != currentIntensity
         )) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.SaveChangesAlertTitle));
-            builder.setMessage(LocaleController.getString(R.string.SaveChangesAlertText));
-            builder.setPositiveButton(LocaleController.getString(R.string.Save), (dialogInterface, i) -> actionBar2.getActionBarMenuOnItemClick().onItemClick(4));
-            builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> cancelThemeApply(false));
-            showDialog(builder.create());
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString(R.string.SaveChangesAlertTitle));
+                builder.setMessage(LocaleController.getString(R.string.SaveChangesAlertText));
+                builder.setPositiveButton(LocaleController.getString(R.string.Save), (dialogInterface, i) -> actionBar2.getActionBarMenuOnItemClick().onItemClick(4));
+                builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> cancelThemeApply(false));
+                showDialog(builder.create());
+            }
             return false;
         }
         return true;
@@ -3542,12 +3544,12 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     }
 
     @Override
-    public boolean onBackPressed() {
-        if (!checkDiscard()) {
+    public boolean onBackPressed(boolean invoked) {
+        if (!checkDiscard(invoked)) {
             return false;
         }
         cancelThemeApply(true);
-        return true;
+        return super.onBackPressed(invoked);
     }
 
     @SuppressWarnings("unchecked")

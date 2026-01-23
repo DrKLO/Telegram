@@ -1,7 +1,7 @@
 package org.telegram.tgnet.model.generated
 
-import kotlin.Int
 import kotlin.Long
+import kotlin.String
 import kotlin.UInt
 import kotlin.collections.List
 import org.telegram.tgnet.OutputSerializedData
@@ -22,7 +22,7 @@ public sealed class TlGen_account_ChatThemes : TlGen_Object {
     public val themes: List<TlGen_ChatTheme>,
     public val chats: List<TlGen_Chat>,
     public val users: List<TlGen_User>,
-    public val next_offset: Int?,
+    public val next_offset: String?,
   ) : TlGen_account_ChatThemes() {
     internal val flags: UInt
       get() {
@@ -38,11 +38,11 @@ public sealed class TlGen_account_ChatThemes : TlGen_Object {
       TlGen_Vector.serialize(stream, themes)
       TlGen_Vector.serialize(stream, chats)
       TlGen_Vector.serialize(stream, users)
-      next_offset?.let { stream.writeInt32(it) }
+      next_offset?.let { stream.writeString(it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x16484857U
+      public const val MAGIC: UInt = 0xBE098173U
     }
   }
 }

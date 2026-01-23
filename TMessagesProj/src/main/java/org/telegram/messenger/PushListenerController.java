@@ -435,7 +435,7 @@ public class PushListenerController {
                             }
 
                             int story_id = -1;
-                            if (loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_HIDDEN_AUTHOR")) {
+                            if (loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_LIVE") || loc_key.equals("STORY_HIDDEN_AUTHOR")) {
                                 if (custom.has("story_id")) {
                                     story_id = custom.getInt("story_id");
                                 }
@@ -496,6 +496,12 @@ public class PushListenerController {
                                             msg_id = story_id;
                                             break;
                                         }
+                                        case "STORY_LIVE": {
+                                            messageText = getString(R.string.StoryLiveNotificationSingle);
+                                            message1 = null;
+                                            msg_id = story_id;
+                                            break;
+                                        }
                                         case "STORY_HIDDEN_AUTHOR": {
                                             messageText = LocaleController.formatPluralString("StoryNotificationHidden", 1);
                                             message1 = null;
@@ -539,6 +545,18 @@ public class PushListenerController {
                                             userName = args[0];
                                             messageText = LocaleController.formatString(R.string.NotificationMessageUniqueStarGiftUpgrade, args[0]);
                                             message1 = getString(R.string.Gift2UniqueUpgradeNotification);
+                                            break;
+                                        }
+                                        case "MESSAGE_STARGIFT_PREPAID_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatPluralStringComma("NotificationMessageUniqueStarGiftPrepaidUpgrade", Integer.parseInt(args[1]), args[0]);
+                                            message1 = getString(R.string.Gift2UniquePrepaidUpgradeNotification);
+                                            break;
+                                        }
+                                        case "MESSAGE_STARGIFT_UNPACK_UPGRADE": {
+                                            userName = args[0];
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageUniqueStarGiftUnpackUpgrade, args[0]);
+                                            message1 = getString(R.string.Gift2UniqueUnpackUpgradeNotification);
                                             break;
                                         }
                                         case "MESSAGE_PAID_MEDIA": {
@@ -729,8 +747,12 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "MESSAGE_SUGGEST_BIRTHDAY": {
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageSuggestBirthday, args[0]);
+                                            break;
+                                        }
                                         case "MESSAGES": {
-                                            messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
+                                            messageText = LocaleController.formatString(R.string.NotificationMessageAlbum, args[0]);
                                             localMessage = true;
                                             break;
                                         }
@@ -1408,6 +1430,7 @@ public class PushListenerController {
                                     messageObject.isStoryReactionPush = loc_key.startsWith("REACT_STORY");
                                     messageObject.isReactionPush = !messageObject.isStoryReactionPush && (loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_"));
                                     messageObject.isStoryPush = loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_HIDDEN_AUTHOR");
+                                    messageObject.isLiveStoryPush = loc_key.equals("STORY_LIVE");
                                     messageObject.isStoryMentionPush = loc_key.equals("MESSAGE_STORY_MENTION");
                                     messageObject.isStoryPushHidden = loc_key.equals("STORY_HIDDEN_AUTHOR");
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();

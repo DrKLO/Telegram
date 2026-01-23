@@ -1647,15 +1647,17 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (inSelectionMode) {
-            inSelectionMode = false;
-            dateSelectedStart = dateSelectedEnd = 0;
-            updateTitle();
-            animateSelection();
+            if (invoked) {
+                inSelectionMode = false;
+                dateSelectedStart = dateSelectedEnd = 0;
+                updateTitle();
+                animateSelection();
+            }
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

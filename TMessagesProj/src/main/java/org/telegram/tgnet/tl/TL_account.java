@@ -6,6 +6,7 @@ import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 
@@ -21,16 +22,8 @@ public class TL_account {
         public boolean sensitive_can_change;
 
         public static contentSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (contentSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account.contentSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            contentSettings result = new contentSettings();
-            result.readParams(stream, exception);
-            return result;
+            final contentSettings result = contentSettings.constructor != constructor ? null : new contentSettings();
+            return TLdeserialize(contentSettings.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -93,13 +86,7 @@ public class TL_account {
                     result = new TL_emailVerifiedLogin();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_EmailVerified", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(EmailVerified.class, result, stream, constructor, exception);
         }
     }
 
@@ -144,16 +131,8 @@ public class TL_account {
         public TLRPC.TL_secureSecretSettings secure_settings;
 
         public static passwordSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (passwordSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_passwordSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            passwordSettings result = new passwordSettings();
-            result.readParams(stream, exception);
-            return result;
+            final passwordSettings result = passwordSettings.constructor != constructor ? null : new passwordSettings();
+            return TLdeserialize(passwordSettings.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -186,15 +165,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static privacyRules TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (privacyRules.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_privacyRules", constructor));
-                }
-                return null;
-            }
-            privacyRules result = new privacyRules();
-            result.readParams(stream, exception);
-            return result;
+            final privacyRules result = privacyRules.constructor != constructor ? null : new privacyRules();
+            return TLdeserialize(privacyRules.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -217,7 +189,7 @@ public class TL_account {
         public ArrayList<TLRPC.EmojiStatus> statuses = new ArrayList<>();
 
         public static EmojiStatuses TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            EmojiStatuses result;
+            EmojiStatuses result = null;
             switch (constructor) {
                 case TL_emojiStatusesNotModified.constructor:
                     result = new TL_emojiStatusesNotModified();
@@ -225,14 +197,8 @@ public class TL_account {
                 case TL_emojiStatuses.constructor:
                     result = new TL_emojiStatuses();
                     break;
-                default:
-                    if (exception) {
-                        throw new RuntimeException(String.format("can't parse magic %x in account_EmojiStatuses", constructor));
-                    }
-                    return null;
             }
-            result.readParams(stream, exception);
-            return result;
+            return TLdeserialize(EmojiStatuses.class, result, stream, constructor, exception);
         }
     }
 
@@ -262,7 +228,7 @@ public class TL_account {
     public static class Themes extends TLObject {
 
         public static Themes TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            Themes result;
+            Themes result = null;
             switch (constructor) {
                 case TL_themes.constructor:
                     result = new TL_themes();
@@ -270,14 +236,8 @@ public class TL_account {
                 case TL_themesNotModified.constructor:
                     result = new TL_themesNotModified();
                     break;
-                default:
-                    if (exception) {
-                        throw new RuntimeException(String.format("can't parse magic %x in account_Themes", constructor));
-                    }
-                    return null;
             }
-            result.readParams(stream, exception);
-            return result;
+            return TLdeserialize(Themes.class, result, stream, constructor, exception);
         }
     }
 
@@ -318,13 +278,7 @@ public class TL_account {
                     result = new TL_wallPapers();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_WallPapers", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(WallPapers.class, result, stream, constructor, exception);
         }
     }
 
@@ -381,13 +335,7 @@ public class TL_account {
                     result = new TL_password_layer144();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_Password", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(Password.class, result, stream, constructor, exception);
         }
     }
 
@@ -526,16 +474,8 @@ public class TL_account {
         public int valid_until;
 
         public static tmpPassword TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (tmpPassword.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_tmpPassword", constructor));
-                } else {
-                    return null;
-                }
-            }
-            tmpPassword result = new tmpPassword();
-            result.readParams(stream, exception);
-            return result;
+            final tmpPassword result = tmpPassword.constructor != constructor ? null : new tmpPassword();
+            return TLdeserialize(tmpPassword.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -561,16 +501,8 @@ public class TL_account {
         public String privacy_policy_url;
 
         public static authorizationForm TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (authorizationForm.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_authorizationForm", constructor));
-                } else {
-                    return null;
-                }
-            }
-            authorizationForm result = new authorizationForm();
-            result.readParams(stream, exception);
-            return result;
+            final authorizationForm result = authorizationForm.constructor != constructor ? null : new authorizationForm();
+            return TLdeserialize(authorizationForm.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -605,16 +537,8 @@ public class TL_account {
         public TLRPC.TL_autoDownloadSettings high;
 
         public static autoDownloadSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (autoDownloadSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_autoDownloadSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            autoDownloadSettings result = new autoDownloadSettings();
-            result.readParams(stream, exception);
-            return result;
+            final autoDownloadSettings result = autoDownloadSettings.constructor != constructor ? null : new autoDownloadSettings();
+            return TLdeserialize(autoDownloadSettings.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -638,16 +562,8 @@ public class TL_account {
         public int length;
 
         public static sentEmailCode TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (sentEmailCode.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_sentEmailCode", constructor));
-                } else {
-                    return null;
-                }
-            }
-            sentEmailCode result = new sentEmailCode();
-            result.readParams(stream, exception);
-            return result;
+            final sentEmailCode result = sentEmailCode.constructor != constructor ? null : new sentEmailCode();
+            return TLdeserialize(sentEmailCode.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -669,15 +585,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static webAuthorizations TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (webAuthorizations.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_webAuthorizations", constructor));
-                }
-                return null;
-            }
-            webAuthorizations result = new webAuthorizations();
-            result.readParams(stream, exception);
-            return result;
+            final webAuthorizations result = webAuthorizations.constructor != constructor ? null : new webAuthorizations();
+            return TLdeserialize(webAuthorizations.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -703,16 +612,8 @@ public class TL_account {
         public TLRPC.TL_secureSecretSettings new_secure_settings;
 
         public static passwordInputSettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (passwordInputSettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_passwordInputSettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            passwordInputSettings result = new passwordInputSettings();
-            result.readParams(stream, exception);
-            return result;
+            final passwordInputSettings result = passwordInputSettings.constructor != constructor ? null : new passwordInputSettings();
+            return TLdeserialize(passwordInputSettings.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -770,13 +671,7 @@ public class TL_account {
                     result = new resetPasswordOk();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_ResetPasswordResult", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(ResetPasswordResult.class, result, stream, constructor, exception);
         }
     }
 
@@ -826,16 +721,8 @@ public class TL_account {
         public ArrayList<TLRPC.TL_authorization> authorizations = new ArrayList<>();
 
         public static TL_account.authorizations TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_account.authorizations.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_authorizations", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_account.authorizations result = new authorizations();
-            result.readParams(stream, exception);
-            return result;
+            final TL_account.authorizations result = TL_account.authorizations.constructor != constructor ? null : new TL_account.authorizations();
+            return TLdeserialize(TL_account.authorizations.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -2002,16 +1889,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static webPagePreview TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (webPagePreview.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in webPagePreview", constructor));
-                } else {
-                    return null;
-                }
-            }
-            webPagePreview result = new webPagePreview();
-            result.readParams(stream, exception);
-            return result;
+            final webPagePreview result = webPagePreview.constructor != constructor ? null : new webPagePreview();
+            return TLdeserialize(webPagePreview.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2187,13 +2066,7 @@ public class TL_account {
                     result = new TL_savedRingtones();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_SavedRingtones", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(SavedRingtones.class, result, stream, constructor, exception);
         }
     }
 
@@ -2319,13 +2192,7 @@ public class TL_account {
                     result = new TL_savedRingtone();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in account_SavedRingtone", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(SavedRingtone.class, result, stream, constructor, exception);
         }
     }
 
@@ -2399,12 +2266,11 @@ public class TL_account {
     }
 
     public static class updateColor extends TLObject {
-        public static final int constructor = 0x7cefa15d;
+        public static final int constructor = 0x684d214e;
 
         public int flags;
         public boolean for_profile;
-        public int color;
-        public long background_emoji_id;
+        public TLRPC.PeerColor color;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
@@ -2415,10 +2281,7 @@ public class TL_account {
             flags = for_profile ? (flags | 2) : (flags &~ 2);
             stream.writeInt32(flags);
             if ((flags & 4) != 0) {
-                stream.writeInt32(color);
-            }
-            if ((flags & 1) != 0) {
-                stream.writeInt64(background_emoji_id);
+                color.serializeToStream(stream);
             }
         }
     }
@@ -2430,15 +2293,8 @@ public class TL_account {
         public int end_minute;
 
         public static TL_businessWeeklyOpen TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessWeeklyOpen.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessWeeklyOpen", constructor));
-                }
-                return null;
-            }
-            TL_businessWeeklyOpen result = new TL_businessWeeklyOpen();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessWeeklyOpen result = constructor != TL_businessWeeklyOpen.constructor ? null : new TL_businessWeeklyOpen();
+            return TLdeserialize(TL_businessWeeklyOpen.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2464,15 +2320,8 @@ public class TL_account {
         public ArrayList<TL_businessWeeklyOpen> weekly_open = new ArrayList<>();
 
         public static TL_businessWorkHours TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessWorkHours.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessWorkHours", constructor));
-                }
-                return null;
-            }
-            TL_businessWorkHours result = new TL_businessWorkHours();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessWorkHours result = constructor != TL_businessWorkHours.constructor ? null : new TL_businessWorkHours();
+            return TLdeserialize(TL_businessWorkHours.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2553,13 +2402,7 @@ public class TL_account {
                     result = new TL_businessAwayMessageScheduleCustom();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in BusinessAwayMessageSchedule", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(BusinessAwayMessageSchedule.class, result, stream, constructor, exception);
         }
     }
 
@@ -2632,15 +2475,8 @@ public class TL_account {
         public int no_activity_days;
 
         public static TL_businessGreetingMessage TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessGreetingMessage.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessGreetingMessage", constructor));
-                }
-                return null;
-            }
-            TL_businessGreetingMessage result = new TL_businessGreetingMessage();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessGreetingMessage result = constructor != TL_businessGreetingMessage.constructor ? null : new TL_businessGreetingMessage();
+            return TLdeserialize(TL_businessGreetingMessage.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2698,15 +2534,8 @@ public class TL_account {
         public TL_businessRecipients recipients;
 
         public static TL_businessAwayMessage TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessAwayMessage.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessAwayMessage", constructor));
-                }
-                return null;
-            }
-            TL_businessAwayMessage result = new TL_businessAwayMessage();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessAwayMessage result = constructor != TL_businessAwayMessage.constructor ? null : new TL_businessAwayMessage();
+            return TLdeserialize(TL_businessAwayMessage.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2784,15 +2613,8 @@ public class TL_account {
         public ArrayList<TLRPC.InputUser> exclude_users = new ArrayList<>();
 
         public static TL_inputBusinessBotRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_inputBusinessBotRecipients.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessBotRecipients", constructor));
-                }
-                return null;
-            }
-            TL_inputBusinessBotRecipients result = new TL_inputBusinessBotRecipients();
-            result.readParams(stream, exception);
-            return result;
+            final TL_inputBusinessBotRecipients result = constructor != TL_inputBusinessBotRecipients.constructor ? null : new TL_inputBusinessBotRecipients();
+            return TLdeserialize(TL_inputBusinessBotRecipients.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2842,15 +2664,8 @@ public class TL_account {
         public ArrayList<Long> exclude_users = new ArrayList<>();
 
         public static TL_businessBotRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessBotRecipients.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessBotRecipients", constructor));
-                }
-                return null;
-            }
-            TL_businessBotRecipients result = new TL_businessBotRecipients();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessBotRecipients result = constructor != TL_businessBotRecipients.constructor ? null : new TL_businessBotRecipients();
+            return TLdeserialize(TL_businessBotRecipients.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2899,15 +2714,8 @@ public class TL_account {
         public ArrayList<TLRPC.InputUser> users = new ArrayList<>();
 
         public static TL_inputBusinessRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_inputBusinessRecipients.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessRecipients", constructor));
-                }
-                return null;
-            }
-            TL_inputBusinessRecipients result = new TL_inputBusinessRecipients();
-            result.readParams(stream, exception);
-            return result;
+            final TL_inputBusinessRecipients result = constructor != TL_inputBusinessRecipients.constructor ? null : new TL_inputBusinessRecipients();
+            return TLdeserialize(TL_inputBusinessRecipients.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -2950,15 +2758,8 @@ public class TL_account {
         public ArrayList<Long> users = new ArrayList<>();
 
         public static TL_businessRecipients TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessRecipients.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessRecipients", constructor));
-                }
-                return null;
-            }
-            TL_businessRecipients result = new TL_businessRecipients();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessRecipients result = constructor != TL_businessRecipients.constructor ? null : new TL_businessRecipients();
+            return TLdeserialize(TL_businessRecipients.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3009,15 +2810,8 @@ public class TL_account {
         public boolean manage_stories;
 
         public static TL_businessBotRights TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessBotRights.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessBotRights", constructor));
-                }
-                return null;
-            }
-            TL_businessBotRights result = new TL_businessBotRights();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessBotRights result = constructor != TL_businessBotRights.constructor ? null : new TL_businessBotRights();
+            return TLdeserialize(TL_businessBotRights.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3149,15 +2943,8 @@ public class TL_account {
         public TL_businessBotRights rights;
 
         public static TL_connectedBot TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_connectedBot.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_connectedBot", constructor));
-                }
-                return null;
-            }
-            TL_connectedBot result = new TL_connectedBot();
-            result.readParams(stream, exception);
-            return result;
+            final TL_connectedBot result = constructor != TL_connectedBot.constructor ? null : new TL_connectedBot();
+            return TLdeserialize(TL_connectedBot.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3185,15 +2972,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static connectedBots TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != connectedBots.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_connectedBots", constructor));
-                }
-                return null;
-            }
-            connectedBots result = new connectedBots();
-            result.readParams(stream, exception);
-            return result;
+            final connectedBots result = constructor != connectedBots.constructor ? null : new connectedBots();
+            return TLdeserialize(connectedBots.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3297,15 +3077,8 @@ public class TL_account {
         public int year;
 
         public static TL_birthday TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_birthday.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_birthday", constructor));
-                }
-                return null;
-            }
-            TL_birthday result = new TL_birthday();
-            result.readParams(stream, exception);
-            return result;
+            final TL_birthday result = constructor != TL_birthday.constructor ? null : new TL_birthday();
+            return TLdeserialize(TL_birthday.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3337,15 +3110,8 @@ public class TL_account {
         public TL_birthday birthday;
 
         public static TL_contactBirthday TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_contactBirthday.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_contactBirthday", constructor));
-                }
-                return null;
-            }
-            TL_contactBirthday result = new TL_contactBirthday();
-            result.readParams(stream, exception);
-            return result;
+            final TL_contactBirthday result = constructor != TL_contactBirthday.constructor ? null : new TL_contactBirthday();
+            return TLdeserialize(TL_contactBirthday.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3369,15 +3135,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static contactBirthdays TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != contactBirthdays.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_contacts_contactBirthdays", constructor));
-                }
-                return null;
-            }
-            contactBirthdays result = new contactBirthdays();
-            result.readParams(stream, exception);
-            return result;
+            final contactBirthdays result = constructor != contactBirthdays.constructor ? null : new contactBirthdays();
+            return TLdeserialize(contactBirthdays.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3441,16 +3200,8 @@ public class TL_account {
         public String title;
 
         public static TL_inputBusinessChatLink TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_inputBusinessChatLink.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessChatLink", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_inputBusinessChatLink result = new TL_inputBusinessChatLink();
-            result.readParams(stream, exception);
-            return result;
+            final TL_inputBusinessChatLink result = TL_inputBusinessChatLink.constructor != constructor ? null : new TL_inputBusinessChatLink();
+            return TLdeserialize(TL_inputBusinessChatLink.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3488,16 +3239,8 @@ public class TL_account {
         public int views;
 
         public static TL_businessChatLink TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_businessChatLink.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessChatLink", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_businessChatLink result = new TL_businessChatLink();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessChatLink result = TL_businessChatLink.constructor != constructor ? null : new TL_businessChatLink();
+            return TLdeserialize(TL_businessChatLink.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3536,16 +3279,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static businessChatLinks TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (businessChatLinks.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_businessChatLinks", constructor));
-                } else {
-                    return null;
-                }
-            }
-            businessChatLinks result = new businessChatLinks();
-            result.readParams(stream, exception);
-            return result;
+            final businessChatLinks result = businessChatLinks.constructor != constructor ? null : new businessChatLinks();
+            return TLdeserialize(businessChatLinks.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3573,16 +3308,8 @@ public class TL_account {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static resolvedBusinessChatLinks TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (resolvedBusinessChatLinks.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_account_businessChatLinks", constructor));
-                } else {
-                    return null;
-                }
-            }
-            resolvedBusinessChatLinks result = new resolvedBusinessChatLinks();
-            result.readParams(stream, exception);
-            return result;
+            final resolvedBusinessChatLinks result = resolvedBusinessChatLinks.constructor != constructor ? null : new resolvedBusinessChatLinks();
+            return TLdeserialize(resolvedBusinessChatLinks.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3707,15 +3434,8 @@ public class TL_account {
         public TLRPC.Document sticker;
 
         public static TL_businessIntro TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_businessIntro.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_businessIntro", constructor));
-                }
-                return null;
-            }
-            TL_businessIntro result = new TL_businessIntro();
-            result.readParams(stream, exception);
-            return result;
+            final TL_businessIntro result = constructor != TL_businessIntro.constructor ? null : new TL_businessIntro();
+            return TLdeserialize(TL_businessIntro.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3749,15 +3469,8 @@ public class TL_account {
         public TLRPC.InputDocument sticker;
 
         public static TL_inputBusinessIntro TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != TL_inputBusinessIntro.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_inputBusinessIntro", constructor));
-                }
-                return null;
-            }
-            TL_inputBusinessIntro result = new TL_inputBusinessIntro();
-            result.readParams(stream, exception);
-            return result;
+            final TL_inputBusinessIntro result = constructor != TL_inputBusinessIntro.constructor ? null : new TL_inputBusinessIntro();
+            return TLdeserialize(TL_inputBusinessIntro.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -3831,13 +3544,7 @@ public class TL_account {
                     result = new TL_account.TL_reactionNotificationsFromAll();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in ReactionNotificationsFrom", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(ReactionNotificationsFrom.class, result, stream, constructor, exception);
         }
     }
 
@@ -3871,16 +3578,8 @@ public class TL_account {
         public boolean show_previews;
 
         public static TL_reactionsNotifySettings TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_reactionsNotifySettings.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_reactionsNotifySettings", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_reactionsNotifySettings result = new TL_reactionsNotifySettings();
-            result.readParams(stream, exception);
-            return result;
+            final TL_reactionsNotifySettings result = TL_reactionsNotifySettings.constructor != constructor ? null : new TL_reactionsNotifySettings();
+            return TLdeserialize(TL_reactionsNotifySettings.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -3942,15 +3641,8 @@ public class TL_account {
         public long stars_amount;
 
         public static paidMessagesRevenue TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (constructor != paidMessagesRevenue.constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in paidMessagesRevenue", constructor));
-                }
-                return null;
-            }
-            paidMessagesRevenue result = new paidMessagesRevenue();
-            result.readParams(stream, exception);
-            return result;
+            final paidMessagesRevenue result = constructor != paidMessagesRevenue.constructor ? null : new paidMessagesRevenue();
+            return TLdeserialize(paidMessagesRevenue.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -4031,13 +3723,7 @@ public class TL_account {
                     result = new requirementToContactPaidMessages();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in RequirementToContact", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(RequirementToContact.class, result, stream, constructor, exception);
         }
     }
 
@@ -4112,13 +3798,7 @@ public class TL_account {
                     result = new TL_savedMusicIds();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in SavedMusicIds", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(SavedMusicIds.class, result, stream, constructor, exception);
         }
     }
 
@@ -4184,16 +3864,16 @@ public class TL_account {
 
 
     public static class Tl_getUniqueGiftChatThemes extends TLMethod<ChatThemes> {
-        public static final int constructor = 0xfe74ef9f;
+        public static final int constructor = 0xe42ce9c9;
 
-        public int offset;
+        public String offset;
         public int limit;
         public long hash;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            stream.writeInt32(offset);
+            stream.writeString(offset);
             stream.writeInt32(limit);
             stream.writeInt64(hash);
         }
@@ -4233,14 +3913,14 @@ public class TL_account {
     }
 
     public static class Tl_chatThemes extends ChatThemes {
-        public static final int constructor = 0x16484857;
+        public static final int constructor = 0xBE098173;
         public int flags;
         public long hash;
 
         public ArrayList<TLRPC.ChatTheme> themes;
         public ArrayList<TLRPC.Chat> chats;
         public ArrayList<TLRPC.User> users;
-        public int next_offset;
+        public String next_offset;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
@@ -4251,7 +3931,7 @@ public class TL_account {
             Vector.serialize(stream, chats);
             Vector.serialize(stream, users);
             if (hasFlag(flags, FLAG_0)) {
-                stream.writeInt32(next_offset);
+                stream.writeString(next_offset);
             }
         }
 
@@ -4263,7 +3943,316 @@ public class TL_account {
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
             if (hasFlag(flags, FLAG_0)) {
-                next_offset = stream.readInt32(exception);
+                next_offset = stream.readString(exception);
+            }
+        }
+    }
+
+    public static class Passkey extends TLObject {
+        public static final int constructor = 0x98613ebf;
+
+        public int flags;
+        public String id;
+        public String name;
+        public int date;
+        public long software_emoji_id;
+        public int last_usage_date;
+
+        public static Passkey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final Passkey result = constructor != Passkey.constructor ? null : new Passkey();
+            return TLdeserialize(Passkey.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            id = stream.readString(exception);
+            name = stream.readString(exception);
+            date = stream.readInt32(exception);
+            if (hasFlag(flags, FLAG_0)) {
+                software_emoji_id = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                last_usage_date = stream.readInt32(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeString(id);
+            stream.writeString(name);
+            stream.writeInt32(date);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt64(software_emoji_id);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                stream.writeInt32(last_usage_date);
+            }
+        }
+    }
+
+    public static class Passkeys extends TLObject {
+        public static final int constructor = 0xf8e0aa1c;
+
+        public ArrayList<Passkey> passkeys = new ArrayList<>();
+
+        public static Passkeys TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final Passkeys result = constructor != Passkeys.constructor ? null : new Passkeys();
+            return TLdeserialize(Passkeys.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            passkeys = Vector.deserialize(stream, Passkey::TLdeserialize, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serialize(stream, passkeys);
+        }
+    }
+
+    public static class passkeyRegistrationOptions extends TLObject {
+        public static final int constructor = 0xe16b5ce1;
+
+        public TLRPC.TL_dataJSON options;
+
+        public static passkeyRegistrationOptions TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final passkeyRegistrationOptions result = constructor != passkeyRegistrationOptions.constructor ? null : new passkeyRegistrationOptions();
+            return TLdeserialize(passkeyRegistrationOptions.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            options = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            options.serializeToStream(stream);
+        }
+    }
+
+    public static class passkeyLoginOptions extends TLObject {
+        public static final int constructor = 0xe2037789;
+
+        public TLRPC.TL_dataJSON options;
+
+        public static passkeyLoginOptions TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final passkeyLoginOptions result = constructor != passkeyLoginOptions.constructor ? null : new passkeyLoginOptions();
+            return TLdeserialize(passkeyLoginOptions.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            options = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            options.serializeToStream(stream);
+        }
+    }
+
+    public static class InputPasskeyResponse extends TLObject {
+
+        public static InputPasskeyResponse TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            InputPasskeyResponse result = null;
+            switch (constructor) {
+                case inputPasskeyResponseRegister.constructor:
+                    result = new inputPasskeyResponseRegister();
+                    break;
+                case inputPasskeyResponseLogin.constructor:
+                    result = new inputPasskeyResponseLogin();
+                    break;
+            }
+            return TLdeserialize(InputPasskeyResponse.class, result, stream, constructor, exception);
+        }
+    }
+
+    public static class inputPasskeyResponseRegister extends InputPasskeyResponse {
+        public static final int constructor = 0x3e63935c;
+
+        public TLRPC.TL_dataJSON client_data;
+        public byte[] attestation_object;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            client_data = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+            attestation_object = stream.readByteArray(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            client_data.serializeToStream(stream);
+            stream.writeByteArray(attestation_object);
+        }
+    }
+
+    public static class inputPasskeyResponseLogin extends InputPasskeyResponse {
+        public static final int constructor = 0xc31fc14a;
+
+        public TLRPC.TL_dataJSON client_data;
+        public byte[] authenticator_data;
+        public byte[] signature;
+        public String user_handle;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            client_data = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+            authenticator_data = stream.readByteArray(exception);
+            signature = stream.readByteArray(exception);
+            user_handle = stream.readString(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            client_data.serializeToStream(stream);
+            stream.writeByteArray(authenticator_data);
+            stream.writeByteArray(signature);
+            stream.writeString(user_handle);
+        }
+    }
+
+    public static class inputPasskeyCredentialPublicKey extends TLObject {
+        public static final int constructor = 0x3c27b78f;
+
+        public String id;
+        public String raw_id;
+        public InputPasskeyResponse response;
+
+        public static inputPasskeyCredentialPublicKey TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final inputPasskeyCredentialPublicKey result = constructor != inputPasskeyCredentialPublicKey.constructor ? null : new inputPasskeyCredentialPublicKey();
+            return TLdeserialize(inputPasskeyCredentialPublicKey.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            id = stream.readString(exception);
+            raw_id = stream.readString(exception);
+            response = InputPasskeyResponse.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(id);
+            stream.writeString(raw_id);
+            response.serializeToStream(stream);
+        }
+    }
+
+    public static class initPasskeyRegistration extends TLMethod<passkeyRegistrationOptions> {
+        public static final int constructor = 0x429547e8;
+
+        @Override
+        public passkeyRegistrationOptions deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return passkeyRegistrationOptions.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class registerPasskey extends TLMethod<Passkey> {
+        public static final int constructor = 0x55b41fd6;
+
+        public inputPasskeyCredentialPublicKey credential;
+
+        @Override
+        public Passkey deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Passkey.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            credential.serializeToStream(stream);
+        }
+    }
+
+    public static class getPasskeys extends TLMethod<Passkeys> {
+        public static final int constructor = 0xea1f0c52;
+
+        @Override
+        public Passkeys deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Passkeys.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class deletePasskey extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0xf5b5563f;
+
+        public String id;
+
+        @Override
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(id);
+        }
+    }
+
+    public static class initPasskeyLogin extends TLMethod<passkeyLoginOptions> {
+        public static final int constructor = 0x518ad0b7;
+
+        public int api_id;
+        public String api_hash;
+
+        @Override
+        public passkeyLoginOptions deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return passkeyLoginOptions.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(api_id);
+            stream.writeString(api_hash);
+        }
+    }
+
+    public static class finishPasskeyLogin extends TLMethod<TLRPC.auth_Authorization> {
+        public static final int constructor = 0x9857ad07;
+
+        public int flags;
+        public int from_dc_id;
+        public long from_auth_key_id;
+        public inputPasskeyCredentialPublicKey credential;
+
+        @Override
+        public TLRPC.auth_Authorization deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.auth_Authorization.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            credential.serializeToStream(stream);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt32(from_dc_id);
+            }
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt64(from_auth_key_id);
             }
         }
     }

@@ -19,6 +19,7 @@ import org.telegram.messenger.pip.source.PipSourceHandlerState2;
 import org.telegram.messenger.pip.utils.PipPositionObserver;
 import org.telegram.messenger.pip.utils.PipSourceParams;
 import org.telegram.messenger.pip.utils.PipUtils;
+import org.telegram.ui.Stories.LiveStoryPipOverlay;
 import org.webrtc.TextureViewRenderer;
 
 import java.util.ArrayList;
@@ -117,6 +118,10 @@ public class PipSource {
             final int width = ((TextureViewRenderer) v).rotatedFrameWidth;
             final int height = ((TextureViewRenderer) v).rotatedFrameHeight;
             changed |= params.setRatio(width, height);
+        } else if (v.getWidth() != 0 && v.getHeight() != 0) {
+            final int width = v.getWidth();
+            final int height = v.getHeight();
+            changed |= params.setRatio(width, height);
         }
 
         if (changed) {
@@ -183,6 +188,7 @@ public class PipSource {
         private Player player;
         private int width, height;
         private View contentView;
+        private View contentLocationView;
         private View placeholderView;
 
         public Builder(Activity activity, IPipSourceDelegate delegate) {
@@ -222,6 +228,11 @@ public class PipSource {
 
         public Builder setContentView(View contentView) {
             this.contentView = contentView;
+            return this;
+        }
+
+        public Builder setContentLocationView(View contentLocationView) {
+            this.contentLocationView = contentLocationView;
             return this;
         }
 

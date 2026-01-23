@@ -104,7 +104,7 @@ class PipSourcePlaceholder {
         @Override
         public void setBounds(int left, int top, int right, int bottom) {
             super.setBounds(left, top, right, bottom);
-            if (bitmap.isRecycled()) {
+            if (bitmap == null || bitmap.isRecycled()) {
                 return;
             }
 

@@ -39,6 +39,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.utils.FrameTickScheduler;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
@@ -1182,7 +1183,9 @@ public class AnimatedEmojiDrawable extends Drawable {
                 particles.setBounds(bounds);
                 particles.process();
                 particles.draw(canvas, Theme.multAlpha(lastColor == null ? 0xFFFFFFFF : lastColor, particlesAlpha));
-                invalidate();
+                FrameTickScheduler.subscribe(invalidateRunnable, 15);
+            } else {
+                FrameTickScheduler.unsubscribe(invalidateRunnable);
             }
             if (drawables[1] != null && progress < 1) {
                 drawables[1].setAlpha((int) (alpha * (1f - progress)));
@@ -1453,6 +1456,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             return PixelFormat.TRANSPARENT;
         }
 
+        private final Runnable invalidateRunnable = this::invalidate;
         @Override
         public void invalidate() {
             if (parentView != null) {

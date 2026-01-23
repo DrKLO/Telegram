@@ -50,6 +50,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 
@@ -71,6 +72,7 @@ public class LimitPreviewView extends LinearLayout {
     int width1;
 
     int icon;
+    float iconScale = 1.0f;
 
     AnimatedTextView premiumCount;
     TextView defaultCount;
@@ -84,6 +86,7 @@ public class LimitPreviewView extends LinearLayout {
     private boolean premiumLocked;
     private final Paint ratingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean isRatingNegative;
+    private boolean drawFromRight;
     private final AnimatedTextView defaultText;
     private final TextView premiumText;
     private boolean isBoostsStyle;
@@ -233,7 +236,7 @@ public class LimitPreviewView extends LinearLayout {
                     paint.setAlpha((int) (wasAlpha * (float) arrowAnimator.getAnimatedValue()));
                 }
                 if (isBoostsStyle) {
-                    if (isRatingNegative) {
+                    if (isRatingNegative || drawFromRight) {
                         AndroidUtilities.rectTmp.set(width1, 0, getMeasuredWidth(), getMeasuredHeight());
                     } else {
                         AndroidUtilities.rectTmp.set(0, 0, width1, getMeasuredHeight());
@@ -335,6 +338,10 @@ public class LimitPreviewView extends LinearLayout {
         return darkGradientProvider != null;
     }
 
+    public void setIconScale(float iconScale) {
+        this.iconScale = iconScale;
+    }
+
     public void setIconValue(int currentValue, boolean animated) {
         ColoredImageSpan span;
         if (currentValue < 0) {
@@ -342,6 +349,7 @@ public class LimitPreviewView extends LinearLayout {
             span = new ColoredImageSpan(R.drawable.warning_sign);
         } else {
             span = new ColoredImageSpan(icon);
+            span.setScale(iconScale, iconScale);
         }
 
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
@@ -639,6 +647,30 @@ public class LimitPreviewView extends LinearLayout {
 
         setIconValue(boosts.boosts, false);
         isBoostsStyle = true;
+    }
+
+    public void setStarsUpgradePrice(
+        TL_stars.StarGiftUpgradePrice from,
+        long current_stars,
+        TL_stars.StarGiftUpgradePrice to
+    ) {
+        drawFromRight = true;
+        ratingPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        percent = AndroidUtilities.ilerp(current_stars, from.upgrade_stars, to.upgrade_stars);
+        defaultText.setText(LocaleController.formatPluralStringComma("Stars", (int) from.upgrade_stars));
+        premiumCount.setText(LocaleController.formatPluralStringComma("Stars", (int) to.upgrade_stars));
+        ((FrameLayout.LayoutParams) premiumCount.getLayoutParams()).gravity = Gravity.RIGHT;
+        setType(LimitReachedBottomSheet.TYPE_BOOSTS);
+        defaultCount.setVisibility(View.GONE);
+        premiumText.setVisibility(View.GONE);
+
+        premiumCount.setTextColor(isRatingNegative ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(Color.WHITE);
+
+        setIconValue((int) current_stars, false);
+        isBoostsStyle = true;
+        isSimpleStyle = true;
+        isRatingStyle = true;
     }
 
     public void setStarRating(TL_stars.Tl_starsRating rating) {
@@ -997,7 +1029,7 @@ public class LimitPreviewView extends LinearLayout {
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            textWidth = textPaint.measureText(text, 0, text.length());
+            textWidth = HintView2.measureCorrectly(text, textPaint); // textPaint.measureText(text, 0, text.length());
             textLayout = new StaticLayout(text, textPaint, (int) textWidth + dp(12), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             textWidth = 0;
             for (int i = 0; i < textLayout.getLineCount(); ++i) {

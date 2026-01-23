@@ -57,9 +57,7 @@ half4 main(in float2 fragCoord) {
         offset += ripple.xy;
         add += ripple.z;
     }
-    float2 uv = fragCoord / size;
-    uv *= size;
-    uv += offset;
+    float2 uv = fragCoord + offset;
     if (sdfRoundedBox(uv - size * .5, size * .5, radius) > 0.0)
         return half4(0.0, 0.0, 0.0, 1.0);
     return img.eval(uv) + half4(add, add, add, 1.);

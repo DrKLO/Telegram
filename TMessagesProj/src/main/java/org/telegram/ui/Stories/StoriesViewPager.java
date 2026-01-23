@@ -29,7 +29,7 @@ public class StoriesViewPager extends ViewPager {
     long daysDialogId;
     ArrayList<ArrayList<Integer>> days;
 
-    int currentAccount = UserConfig.selectedAccount;
+    int currentAccount;
     PagerAdapter pagerAdapter;
     ArrayList<Long> dialogs = new ArrayList<>();
     PeerStoriesView.Delegate delegate;
@@ -58,8 +58,9 @@ public class StoriesViewPager extends ViewPager {
     private int selectedPositionInPage;
     private int updateVisibleItemPosition = -1;
 
-    public StoriesViewPager(@NonNull Context context, StoryViewer storyViewer, Theme.ResourcesProvider resourcesProvider) {
+    public StoriesViewPager(int account, @NonNull Context context, StoryViewer storyViewer, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.currentAccount = account;
         resources = new PeerStoriesView.SharedResources(context);
         this.storyViewer = storyViewer;
         setAdapter(pagerAdapter = new PagerAdapter() {

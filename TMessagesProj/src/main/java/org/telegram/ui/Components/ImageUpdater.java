@@ -397,7 +397,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             }
 
             @Override
-            public void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate) {
+            public void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
                 if (photos.isEmpty() || delegate == null || sendPressed || canceled) {
                     return;
                 }
@@ -475,7 +475,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
                     if (parentFragment == null || parentFragment.getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -787,7 +787,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         PhotoViewer.getInstance().setParentActivity(parentFragment);
         PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, false, new PhotoViewer.EmptyPhotoViewerProvider() {
             @Override
-            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
                 processEntry(photoEntry);
             }

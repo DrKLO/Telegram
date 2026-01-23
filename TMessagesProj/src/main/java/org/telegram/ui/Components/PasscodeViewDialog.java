@@ -109,7 +109,7 @@ public class PasscodeViewDialog extends Dialog {
 
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
 
-        AndroidUtilities.setLightNavigationBar(window, false);
+        AndroidUtilities.setLightNavigationBar(this, false);
     }
 
     @Override

@@ -185,7 +185,7 @@ public class AutoDeleteMessagesActivity extends BaseFragment implements Notifica
                 if (v == customTimeButton) {
                     AlertsCreator.createAutoDeleteDatePickerDialog(getContext(), 1, null, new AlertsCreator.ScheduleDatePickerDelegate() {
                         @Override
-                        public void didSelectDate(boolean notify, int scheduleDate) {
+                        public void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
                             AndroidUtilities.runOnUIThread(() -> {
                                 selectDate(scheduleDate, true);
                             }, 50);

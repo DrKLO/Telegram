@@ -1092,15 +1092,15 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 }
             }
 
-            if (BuildVars.LOGS_ENABLED) {
-                for (Quality q : qualities) {
-                    FileLog.d("debug_loading_player: Quality "+q.p()+"p (" + q.width + "x" + q.height + ")" + (q.original ? " (source)" : "") + ":");
-                    for (VideoUri uri : q.uris) {
-                        FileLog.d("debug_loading_player: - video " + uri.width + "x" + uri.height + ", codec=" + uri.codec + ", bitrate=" + (int) (uri.bitrate*8) + ", doc#" + uri.docId + (uri.isCached() ? " (cached)" : "") + ", manifest#" + uri.manifestDocId + (uri.isManifestCached() ? " (cached)" : ""));
-                    }
-                }
-                FileLog.d("debug_loading_player: ");
-            }
+//            if (BuildVars.LOGS_ENABLED) {
+//                for (Quality q : qualities) {
+//                    FileLog.d("debug_loading_player: Quality "+q.p()+"p (" + q.width + "x" + q.height + ")" + (q.original ? " (source)" : "") + ":");
+//                    for (VideoUri uri : q.uris) {
+//                        FileLog.d("debug_loading_player: - video " + uri.width + "x" + uri.height + ", codec=" + uri.codec + ", bitrate=" + (int) (uri.bitrate*8) + ", doc#" + uri.docId + (uri.isCached() ? " (cached)" : "") + ", manifest#" + uri.manifestDocId + (uri.isManifestCached() ? " (cached)" : ""));
+//                    }
+//                }
+//                FileLog.d("debug_loading_player: ");
+//            }
 
             return qualities;
         }

@@ -822,6 +822,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                     giftCode.from_id = MessagesController.getInstance(UserConfig.selectedAccount).getPeer(-currentChat.id);
                     giftCode.date = boost.date;
                     giftCode.via_giveaway = boost.giveaway;
+                    giftCode.days = (boost.expires - boost.date) / 86400;
                     giftCode.months = (boost.expires - boost.date) / 30 / 86400;
                     if (boost.unclaimed) {
                         giftCode.to_id = NO_USER_ID;

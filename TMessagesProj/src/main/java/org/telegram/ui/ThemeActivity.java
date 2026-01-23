@@ -2659,22 +2659,22 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == editThemeRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        cell.setTextAndIcon(getString("EditCurrentTheme", R.string.EditCurrentTheme), R.drawable.msg_theme, true);
+                        cell.setTextAndIcon(getString(R.string.EditCurrentTheme), R.drawable.msg_theme, true);
                     } else if (position == createNewThemeRow) {
                         cell.setSubtitle(null);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        cell.setTextAndIcon(getString("CreateNewTheme", R.string.CreateNewTheme), R.drawable.msg_colors, false);
+                        cell.setTextAndIcon(getString(R.string.CreateNewTheme), R.drawable.msg_colors, false);
                     } else if (position == liteModeRow) {
                         cell.setColors(Theme.key_dialogIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndIcon(getString("LiteMode", R.string.LiteMode), R.drawable.msg2_animations, true);
-                        cell.setSubtitle(getString("LiteModeInfo", R.string.LiteModeInfo));
+                        cell.setTextAndIcon(getString(R.string.LiteMode), R.drawable.msg2_animations, true);
+                        cell.setSubtitle(getString(R.string.LiteModeInfo));
                         cell.heightDp = 60;
                         cell.offsetFromImage = 64;
                         cell.imageLeft = 20;
                     } else if (position == stickersRow) {
                         cell.setColors(Theme.key_dialogIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndIcon(getString("StickersName", R.string.StickersName), R.drawable.msg2_sticker, false);
-                        cell.setSubtitle(getString("StickersNameInfo2", R.string.StickersNameInfo2));
+                        cell.setTextAndIcon(getString(R.string.StickersName), R.drawable.msg2_sticker, false);
+                        cell.setSubtitle(getString(R.string.StickersNameInfo2));
                         cell.offsetFromImage = 64;
                         cell.heightDp = 60;
                         cell.imageLeft = 20;

@@ -591,7 +591,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
    */
   private int determineIdealSelectedIndex(int type, long nowMs, long chunkDurationUs) {
     final long effectiveBitrate = getAllocatedBandwidth(chunkDurationUs);
-    FileLog.d("debug_loading_player: determineIdealSelectedIndex: type="+type+" effectiveBitrate=" + effectiveBitrate);
+//    FileLog.d("debug_loading_player: determineIdealSelectedIndex: type="+type+" effectiveBitrate=" + effectiveBitrate);
     final HashMap<Integer, Integer> formatsByResolution = new HashMap<>();
     final ArrayList<Integer> formatIndices = new ArrayList<>();
     for (int i = 0; i < length; i++) {
@@ -619,7 +619,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
       for (int i : formatIndices) {
         Format format = getFormat(i);
         if (format.cached) {
-          FileLog.d("debug_loading_player: determineIdealSelectedIndex: initial setup, choose cached format#" + i);
+//          FileLog.d("debug_loading_player: determineIdealSelectedIndex: initial setup, choose cached format#" + i);
           return i;
         }
       }
@@ -627,7 +627,7 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
     int lowestBitrateAllowedIndex = 0;
     for (int i : formatIndices) {
       Format format = getFormat(i);
-      FileLog.d("debug_loading_player: determineIdealSelectedIndex: format#" + i + " bitrate=" + format.bitrate + " " + format.width + "x" + format.height + " codecs="+format.codecs+" (cached=" + format.cached + ")");
+//      FileLog.d("debug_loading_player: determineIdealSelectedIndex: format#" + i + " bitrate=" + format.bitrate + " " + format.width + "x" + format.height + " codecs="+format.codecs+" (cached=" + format.cached + ")");
       if (canSelectFormat(format, format.bitrate, effectiveBitrate)) {
 //        if (!format.cached && type == 0) {
 //          for (int j = i + 1; j < formatIndices.size(); ++j) {
@@ -638,13 +638,13 @@ public class AdaptiveTrackSelection extends BaseTrackSelection {
 //            }
 //          }
 //        }
-        FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + i);
+//        FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + i);
         return i;
       } else {
         lowestBitrateAllowedIndex = i;
       }
     }
-    FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + lowestBitrateAllowedIndex + " (lowest, nothing is fit)");
+//    FileLog.d("debug_loading_player: determineIdealSelectedIndex: selected format#" + lowestBitrateAllowedIndex + " (lowest, nothing is fit)");
     return lowestBitrateAllowedIndex;
   }
 

@@ -226,7 +226,7 @@ public class MessagePrivateSeenView extends FrameLayout {
             button1.setLoading(true);
             if (lastSeen) {
                 TL_account.setPrivacy req = new TL_account.setPrivacy();
-                req.key = TLRPC.InputPrivacyKey.inputPrivacyKeyStatusTimestamp;
+                req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
                 req.rules.add(new TLRPC.TL_inputPrivacyValueAllowAll());
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     if (err != null) {

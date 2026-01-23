@@ -17,6 +17,7 @@ import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.util.Log;
 
 /**
  * Display the video stream on a SurfaceView.

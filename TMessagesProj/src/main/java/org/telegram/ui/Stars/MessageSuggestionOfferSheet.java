@@ -31,7 +31,6 @@ import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -44,7 +43,6 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.HorizontalRoundTabsLayout;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -275,7 +273,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             publishingTimeOutline.attachEditText(publishingTimeField);
             publishingTimeOutline.addView(publishingTimeField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 0, 48, 0));
             ScaleStateListAnimator.apply(publishingTimeOutline, .02f, 1.2f);
-            publishingTimeOutline.setOnClickListener(v -> AlertsCreator.createSuggestedMessageDatePickerDialog(context, selectedTime, (notify, scheduleDate) -> {
+            publishingTimeOutline.setOnClickListener(v -> AlertsCreator.createSuggestedMessageDatePickerDialog(context, selectedTime, (notify, scheduleDate, scheduleRepeatPeriod) -> {
                 if (notify) {
                     setSelectedTime(scheduleDate, true);
                 }

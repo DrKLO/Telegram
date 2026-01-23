@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PeerColorActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.HintView2;
 
@@ -96,15 +97,33 @@ public final class BulletinFactory {
     }
 
     public void showForError(TLRPC.TL_error error) {
+        showForError(error, false);
+    }
+    public void showForError(TLRPC.TL_error error, boolean top) {
         if (!LaunchActivity.isActive) return;
         if (error == null) {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
             b.hideAfterBottomSheet = false;
-            b.show();
+            b.show(top);
         } else {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text));
             b.hideAfterBottomSheet = false;
-            b.show();
+            b.show(top);
+        }
+    }
+    public void showForError(String errorCode) {
+        showForError(errorCode, false);
+    }
+    public void showForError(String errorCode, boolean top) {
+        if (!LaunchActivity.isActive) return;
+        if (TextUtils.isEmpty(errorCode)) {
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
+            b.hideAfterBottomSheet = false;
+            b.show(top);
+        } else {
+            Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, errorCode));
+            b.hideAfterBottomSheet = false;
+            b.show(top);
         }
     }
 
@@ -436,6 +455,9 @@ public final class BulletinFactory {
     public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.imageView.setImageDrawable(drawable);
+        if (drawable instanceof PeerColorActivity.PeerColorDrawable) {
+            ((PeerColorActivity.PeerColorDrawable) drawable).setView(layout.imageView);
+        }
         layout.textView.setText(text);
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);

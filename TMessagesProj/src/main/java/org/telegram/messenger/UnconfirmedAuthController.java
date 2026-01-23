@@ -8,6 +8,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 
@@ -270,7 +271,7 @@ public class UnconfirmedAuthController {
         public UnconfirmedAuth(AbstractSerializedData stream) {
             int magic = stream.readInt32(true);
             if (magic != 0x7ab6618c) {
-                throw new RuntimeException("UnconfirmedAuth can't parse magic " + Integer.toHexString(magic));
+                TLParseException.doThrowOrLog(stream, "UnconfirmedAuth", magic, true);
             }
             hash = stream.readInt64(true);
             date = stream.readInt32(true);
