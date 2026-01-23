@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -88,6 +87,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     public static final int STYLE_STORY = 2;
     public static final int STYLE_PHOTOVIEWER = 3;
     public static final int STYLE_GIFT = 4;
+    public static final int STYLE_CALL = 5;
 
     private boolean waitingForKeyboardOpen;
     private boolean isAnimatePopupClosing;
@@ -196,7 +196,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             @Override
             protected void extendActionMode(ActionMode actionMode, Menu menu) {
                 if (allowEntities()) {
-                    ChatActivity.fillActionModeMenu(menu, null, currentStyle == STYLE_PHOTOVIEWER);
+                    ChatActivity.fillActionModeMenu(menu, null, currentStyle == STYLE_PHOTOVIEWER, true);
                 } else {
                     EditTextEmoji.this.extendActionMode(actionMode, menu);
                 }
@@ -315,14 +315,16 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 0, 0, 0));
+        } else if (style == STYLE_CALL) {
+            emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_graySectionText), PorterDuff.Mode.MULTIPLY));
+            emojiIconDrawable.setIcon(R.drawable.input_smile, false);
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         } else {
             emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         }
-        if (Build.VERSION.SDK_INT >= 21) {
-            emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        }
+        emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         emojiButton.setOnClickListener(view -> {
             if (!emojiButton.isEnabled() || emojiButton.getAlpha() < 0.5f || (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress())) {
                 return;
@@ -367,7 +369,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     }
 
     protected boolean allowEntities() {
-        return currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER;
+        return currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER || currentStyle == STYLE_CALL;
     }
 
     public void setSuggestionsEnabled(boolean enabled) {
@@ -770,7 +772,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         if (emojiView != null) {
             return;
         }
-        emojiView = new EmojiView(parentFragment, allowAnimatedEmoji, false, false, getContext(), allowSearch(), null, null, currentStyle != STYLE_STORY && currentStyle != STYLE_PHOTOVIEWER, resourcesProvider, false) {
+        emojiView = new EmojiView(parentFragment, allowAnimatedEmoji, false, false, getContext(), allowSearch(), null, null, currentStyle != STYLE_STORY && currentStyle != STYLE_PHOTOVIEWER && currentStyle != STYLE_CALL, resourcesProvider, false) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 if (currentStyle == STYLE_STORY || currentStyle == STYLE_PHOTOVIEWER) {

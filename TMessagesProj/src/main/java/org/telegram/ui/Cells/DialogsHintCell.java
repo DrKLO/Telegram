@@ -69,12 +69,14 @@ public class DialogsHintCell extends BlurredFrameLayout {
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setSingleLine();
+        titleView.setMaxLines(5);
+
         contentView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP));
 
         messageView = new LinkSpanDrawable.LinksTextView(context);
         messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         messageView.setEllipsize(TextUtils.TruncateAt.END);
+        messageView.setMaxLines(5);
         contentView.addView(messageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP));
 
         NotificationCenter.getGlobalInstance().listenGlobal(this, NotificationCenter.emojiLoaded, args -> {
@@ -90,11 +92,11 @@ public class DialogsHintCell extends BlurredFrameLayout {
         parentView.setOrientation(LinearLayout.HORIZONTAL);
         if (LocaleController.isRTL) {
             parentView.addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 7, 0, 7, 0));
-            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 2, 0, 8, 0));
+            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, 36, Gravity.CENTER_VERTICAL, 2, 0, 8, 0));
             parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 2, 1, 0, 0));
         } else {
             parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 1, 2, 0));
-            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 0, 0, 2, 0));
+            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, 36, Gravity.CENTER_VERTICAL, 0, 0, 2, 0));
             parentView.addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 7, 0, 7, 0));
         }
         addView(parentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -215,7 +217,7 @@ public class DialogsHintCell extends BlurredFrameLayout {
                 MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST)
         );
-        this.height = contentView.getMeasuredHeight() + getPaddingTop() + getPaddingBottom() + 1;
+        this.height = parentView.getMeasuredHeight() + getPaddingTop() + getPaddingBottom() + 1;
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
     }
 

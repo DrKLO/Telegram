@@ -109,4 +109,12 @@ public sealed class TlGen_InputPrivacyKey : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
     }
   }
+
+  public data object TL_inputPrivacyKeySavedMusic : TlGen_InputPrivacyKey() {
+    public const val MAGIC: UInt = 0x4DBE9226U
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
 }

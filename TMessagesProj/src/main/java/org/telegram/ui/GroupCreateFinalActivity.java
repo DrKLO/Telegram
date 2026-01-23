@@ -256,12 +256,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (editText != null && editText.isPopupShowing()) {
-            editText.hidePopup(true);
+            if (invoked) editText.hidePopup(true);
             return false;
         }
-        return true;
+        return super.onBackPressed(invoked);
     }
 
     @Override

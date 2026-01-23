@@ -374,7 +374,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     args.putBoolean("allowBots", chatTypes.contains("bots"));
 
                     DialogsActivity dialogsActivity = new DialogsActivity(args);
-                    dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, topicsFragment) -> {
+                    dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                         long did = dids.get(0).dialogId;
 
                         Bundle args1 = new Bundle();
@@ -454,7 +454,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
             @Override
             public boolean isClipboardAvailable() {
-                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId);
+                return MediaDataController.getInstance(currentAccount).botInAttachMenu(botId) || MessagesController.getInstance(currentAccount).whitelistedBots.contains(botId);
             }
         });
 

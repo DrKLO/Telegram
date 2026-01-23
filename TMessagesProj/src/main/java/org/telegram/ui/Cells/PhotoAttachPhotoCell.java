@@ -59,6 +59,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -437,7 +438,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (itemSizeChanged) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemSize + dp(5), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemSize + dp(ChatAttachAlertPhotoLayout.GAP), MeasureSpec.EXACTLY));
         } else {
             if (isVertical) {
                 super.onMeasure(MeasureSpec.makeMeasureSpec(dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY));

@@ -34,6 +34,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_forum;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -147,9 +148,9 @@ public class TopicCreateFragment extends BaseFragment {
                     progressDialog.showDelayed(500);
                     created = true;
 
-                    TLRPC.TL_channels_createForumTopic reqSend = new TLRPC.TL_channels_createForumTopic();
+                    TL_forum.TL_messages_createForumTopic reqSend = new TL_forum.TL_messages_createForumTopic();
 
-                    reqSend.channel = getMessagesController().getInputChannel(chatId);
+                    reqSend.peer = getMessagesController().getInputPeer(-chatId);
                     reqSend.title = topicName;
                     if (selectedEmojiDocumentId != 0) {
                         reqSend.icon_emoji_id = selectedEmojiDocumentId;
@@ -247,8 +248,8 @@ public class TopicCreateFragment extends BaseFragment {
                         return;
                     }
                     if (!topicForEdit.title.equals(topicName) || topicForEdit.icon_emoji_id != selectedEmojiDocumentId) {
-                        TLRPC.TL_channels_editForumTopic editForumRequest = new TLRPC.TL_channels_editForumTopic();
-                        editForumRequest.channel = getMessagesController().getInputChannel(chatId);
+                        TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
+                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
                         editForumRequest.topic_id = topicForEdit.id;
                         if (!topicForEdit.title.equals(topicName)) {
                             editForumRequest.title = topicName;
@@ -267,8 +268,8 @@ public class TopicCreateFragment extends BaseFragment {
                         });
                     }
                     if (checkBoxCell != null && topicForEdit.id == 1 && !checkBoxCell.isChecked() != topicForEdit.hidden) {
-                        TLRPC.TL_channels_editForumTopic editForumRequest = new TLRPC.TL_channels_editForumTopic();
-                        editForumRequest.channel = getMessagesController().getInputChannel(chatId);
+                        TL_forum.TL_messages_editForumTopic editForumRequest = new TL_forum.TL_messages_editForumTopic();
+                        editForumRequest.peer = getMessagesController().getInputPeer(-chatId);
                         editForumRequest.topic_id = topicForEdit.id;
                         editForumRequest.hidden = !checkBoxCell.isChecked();
                         editForumRequest.flags |= 8;

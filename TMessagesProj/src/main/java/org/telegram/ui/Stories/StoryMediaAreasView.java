@@ -527,7 +527,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                 canvas.scale(s, s, rectF.centerX(), rectF.centerY());
                 canvas.rotate(lastSelectedArea.getRotation(), rectF.centerX(), rectF.centerY());
                 final float r = (lastSelectedArea.mediaArea.coordinates.flags & 1) != 0 ?
-                    (float) (lastSelectedArea.mediaArea.coordinates.radius / 100.0 * getWidth()) :
+                    (float) (lastSelectedArea.mediaArea.coordinates.radius / 100.0 * lastSelectedArea.getMeasuredWidth()) :
                     .2f * lastSelectedArea.getMeasuredHeight();
                 clipPath.addRoundRect(rectF, r, r, Path.Direction.CW);
                 canvas.clipPath(clipPath);
@@ -733,7 +733,7 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         public float getInnerRadius() {
             if (getParent() instanceof View && mediaArea != null && mediaArea.coordinates != null) {
                 return (mediaArea.coordinates.flags & 1) != 0 ?
-                        (float) (mediaArea.coordinates.radius / 100.0 * ((View) getParent()).getWidth() / getScaleX()) :
+                        (float) (mediaArea.coordinates.radius / 100.0 * getWidth() / getScaleX()) :
                         .2f * getMeasuredHeight();
             } else {
                 return .2f * getMeasuredHeight();

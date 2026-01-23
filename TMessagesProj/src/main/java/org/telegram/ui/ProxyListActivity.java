@@ -613,12 +613,12 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (!selectedItems.isEmpty()) {
-            listAdapter.clearSelected();
+            if (invoked) listAdapter.clearSelected();
             return false;
         }
-        return true;
+        return super.onBackPressed(invoked);
     }
 
     private void updateRows(boolean notify) {

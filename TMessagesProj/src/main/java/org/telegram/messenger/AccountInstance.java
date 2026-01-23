@@ -30,6 +30,10 @@ public class AccountInstance {
         return MessagesController.getInstance(currentAccount);
     }
 
+    public GiftAuctionController getGiftAuctionsController() {
+        return GiftAuctionController.getInstance(currentAccount);
+    }
+
     public MessagesStorage getMessagesStorage() {
         return MessagesStorage.getInstance(currentAccount);
     }

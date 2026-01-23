@@ -511,6 +511,69 @@ JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jcla
     return hasAlpha && matching / total > 0.85;
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_telegram_messenger_Utilities_applyAlphaThreshold(JNIEnv *env, jclass, jobject bitmap,jint threshold) {
+    if (bitmap == nullptr) {
+        return;
+    }
+
+    AndroidBitmapInfo info;
+    if (AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        return;
+    }
+
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        return;
+    }
+
+    void *pixels = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        return;
+    }
+
+    const auto thresh = static_cast<uint8_t>(threshold);
+
+    auto *line = static_cast<uint32_t *>(pixels);
+    const auto width  = info.width;
+    const auto height = info.height;
+    const auto stridePixels = info.stride / 4;
+
+    for (int32_t y = 0; y < height; ++y) {
+        uint32_t *row = line + y * stridePixels;
+        for (int32_t x = 0; x < width; ++x) {
+            uint32_t c = row[x];
+            uint8_t a = (c >> 24) & 0xFF;
+            if (a == 0 || a == 255) {
+                continue;
+            }
+
+            if (a >= thresh) {
+                uint32_t r = (c >> 16) & 0xFF;
+                uint32_t g = (c >> 8)  & 0xFF;
+                uint32_t b =  c        & 0xFF;
+
+                uint32_t r_lin = (r * 255 + a / 2) / a;
+                uint32_t g_lin = (g * 255 + a / 2) / a;
+                uint32_t b_lin = (b * 255 + a / 2) / a;
+
+                if (r_lin > 255) r_lin = 255;
+                if (g_lin > 255) g_lin = 255;
+                if (b_lin > 255) b_lin = 255;
+
+                row[x] = (0xFFu << 24) |
+                         (r_lin << 16) |
+                         (g_lin << 8)  |
+                         (b_lin);
+            } else {
+                row[x] = 0;
+            }
+        }
+    }
+
+    AndroidBitmap_unlockPixels(env, bitmap);
+}
+
 JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius, jint unpin, jint width, jint height, jint stride) {
     if (!bitmap) {
         return;

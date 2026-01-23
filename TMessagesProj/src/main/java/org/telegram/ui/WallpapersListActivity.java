@@ -595,7 +595,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     DialogsActivity fragment = new DialogsActivity(args);
-                    fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                    fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                         StringBuilder fmessage = new StringBuilder();
                         for (int b = 0; b < selectedWallPapers.size(); b++) {
                             Object object = selectedWallPapers.valueAt(b);
@@ -623,10 +623,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             for (int a = 0; a < dids.size(); a++) {
                                 long did = dids.get(a).dialogId;
                                 if (message != null) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, null, false));
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                                 }
                                 if (!TextUtils.isEmpty(fmessage)) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false));
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                                 }
                             }
                             fragment1.finishFragment();
@@ -650,7 +650,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
                             ChatActivity chatActivity = new ChatActivity(args1);
                             presentFragment(chatActivity, true);
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, null, false));
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(fmessage.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                         }
                         return true;
                     });

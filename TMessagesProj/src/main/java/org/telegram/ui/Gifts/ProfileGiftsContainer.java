@@ -188,7 +188,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             listView.adapter.setApplyBackground(false);
             listView.setSelectorType(9);
             listView.setSelectorDrawableColor(0);
-            listView.setPadding(dp(9), dp(12), dp(9), dp(30));
+            listView.setPadding(dp(9), 0, dp(9), dp(30));
             listView.setClipToPadding(false);
             listView.setClipChildren(false);
             addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
@@ -198,8 +198,36 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     if (isAttachedToWindow() && (!listView.canScrollVertically(1) || isLoadingVisible())) {
                         list.load();
                     }
+                    parent.updateTabsY();
                 }
             });
+            DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
+                @Override
+                protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    super.onMoveAnimationUpdate(holder);
+                    parent.updateTabsY();
+                }
+                @Override
+                protected void onAddAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    super.onAddAnimationUpdate(holder);
+                    parent.updateTabsY();
+                }
+                @Override
+                protected void onChangeAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    super.onChangeAnimationUpdate(holder);
+                    parent.updateTabsY();
+                }
+                @Override
+                protected void onRemoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+                    super.onRemoveAnimationUpdate(holder);
+                    parent.updateTabsY();
+                }
+            };
+            itemAnimator.setSupportsChangeAnimations(false);
+            itemAnimator.setDelayAnimations(false);
+            itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            itemAnimator.setDurations(350);
+            listView.setItemAnimator(itemAnimator);
 
             reorder = new ItemTouchHelper(new ItemTouchHelper.Callback() {
                 private TL_stars.SavedStarGift getSavedGift(RecyclerView.ViewHolder holder) {
@@ -515,6 +543,34 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             setReordering(false);
         }
 
+        private boolean hasTabs;
+        public void setHasTabs(boolean hasTabs) {
+            if (this.hasTabs == hasTabs) return;
+            this.hasTabs = hasTabs;
+            final boolean atTop = !listView.canScrollVertically(-1);
+            listView.adapter.update(true);
+            if (atTop) {
+                listView.scrollToPosition(0);
+            }
+        }
+
+        public float getTabsHeight() {
+            for (int i = 0; i < listView.getChildCount(); ++i) {
+                final View child = listView.getChildAt(i);
+                final int position = listView.getChildAdapterPosition(child);
+                if (child instanceof GiftSheet.GiftCell) {
+                    if (position == 0) {
+                        return Math.max(0, listView.getPaddingTop() + child.getY());
+                    }
+                } else {
+                    if (position == 0) {
+                        return Math.max(0, listView.getPaddingTop() + child.getY() + child.getHeight() * child.getAlpha());
+                    }
+                }
+            }
+            return 0;
+        }
+
         public boolean isReordering() {
             return reordering;
         }
@@ -551,6 +607,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 items.add(UItem.asSpace(dp(24 + 48 + 10)));
             } else if (!items.isEmpty()) {
                 items.add(UItem.asSpace(dp(24 + 48 + 10)));
+            }
+
+            if (!items.isEmpty()) {
+                items.add(0, UItem.asSpace(dp(hasTabs ? 42 : 12)));
             }
 
             if (listView.getSpanCount() != spanCount) {
@@ -896,7 +956,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return viewPager.getCurrentPosition() <= 0;
     }
 
-    public ProfileGiftsContainer(BaseFragment fragment, Context context, int currentAccount, long did, Theme.ResourcesProvider resourcesProvider) {
+    public ProfileGiftsContainer(
+        BaseFragment fragment,
+        Context context,
+        int currentAccount,
+        long did,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
         super(context);
         this.fragment = fragment;
 
@@ -916,7 +982,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         this.collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, true);
         this.collections.all = list;
         this.list.shown = true;
-        this.list.resetFilters();
+        if (fragment instanceof ProfileActivity && ((ProfileActivity) fragment).openGiftsUpgradable) {
+            this.list.setFilters(StarsController.GiftsList.INCLUDE_TYPE_UPGRADABLE_FLAG);
+        } else {
+            this.list.resetFilters();
+        }
         this.list.load();
         this.resourcesProvider = resourcesProvider;
 
@@ -928,6 +998,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 if (fragment instanceof ProfileActivity) {
                     ((ProfileActivity) fragment).updateSelectedMediaTabText();
                 }
+                updateTabsY();
             }
 
             @Override
@@ -993,6 +1064,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 }
                 page.bind(isCollection, thisList);
                 page.setVisibleHeight(visibleHeight);
+                page.setHasTabs(!collections.getCollections().isEmpty());
             }
 
             @Override
@@ -1069,9 +1141,6 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             if (page == -1 || page == -2 || page == 0 || reorderingCollections)
                 return false;
 
-            if (!collections.isMine())
-                return false;
-
             int _index = -1;
             TL_stars.TL_starGiftCollection _collection = null;
             for (int i = 0; i < collections.getCollections().size(); ++i) {
@@ -1085,6 +1154,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             final TL_stars.TL_starGiftCollection collection = _collection;
 
             final String username = DialogObject.getPublicUsername(MessagesController.getInstance(currentAccount).getUserOrChat(dialogId));
+            final boolean isMine = collections.isMine();
+            if (TextUtils.isEmpty(username) && !isMine) {
+                return false;
+            }
 
             currentMenu = ItemOptions.makeOptions(fragment, view)
                 .setScrimViewBackground(new Drawable() {
@@ -1108,7 +1181,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         return PixelFormat.TRANSPARENT;
                     }
                 })
-                .add(R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
+                .addIf(isMine, R.drawable.menu_gift_add, getString(R.string.Gift2CollectionsAdd), this::addGifts)
                 .addIf(!TextUtils.isEmpty(username), R.drawable.msg_share, getString(R.string.Gift2CollectionsShare), () -> {
                     final String link = MessagesController.getInstance(currentAccount).linkPrefix + "/" + username + "/c/" + collection.collection_id;
                     new ShareAlert(context, null, link, false, link, false, resourcesProvider) {
@@ -1139,17 +1212,17 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     }
                         .show();
                 })
-                .add(R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
+                .addIf(isMine, R.drawable.msg_edit, getString(R.string.Gift2CollectionsRename), () -> {
                     openEnterNameAlert(collection.title, newName -> {
                         collections.rename(collection.collection_id, newName);
                         collection.title = newName;
                         fillTabs(true);
                     });
                 })
-                .add(R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
+                .addIf(isMine, R.drawable.tabs_reorder, getString(R.string.Gift2CollectionsReorder), () -> {
                     setReorderingCollections(true);
                 })
-                .add(R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
+                .addIf(isMine, R.drawable.msg_delete, getString(R.string.Gift2CollectionsDelete), true, () -> {
                     if (index != -1) {
                         collections.removeCollection(collection.collection_id);
                         fillTabs(true);
@@ -1160,7 +1233,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             currentMenu.show();
             return true;
         });
-        tabsView.setBackgroundColor(backgroundColor);
+//        tabsView.setBackgroundColor(backgroundColor);
         addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.TOP));
 
         buttonContainer = new FrameLayout(context);
@@ -1259,23 +1332,52 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
     public void updateTabsShown(boolean animated) {
         final boolean shown = !collections.getCollections().isEmpty();
-        if (animated) {
-            tabsView.animate()
-                .translationY(shown ? 0 : dp(-42))
-                .setDuration(200)
-                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .start();
-            viewPager.animate()
-                .translationY(shown ? dp(30) : 0)
-                .setDuration(200)
-                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .start();
-        } else {
-            tabsView.animate().cancel();
-            tabsView.setTranslationY(shown ? 0 : dp(-42));
-            viewPager.animate().cancel();
-            viewPager.setTranslationY(shown ? dp(30) : 0);
+//        if (animated) {
+//            tabsView.animate()
+//                .translationY(shown ? 0 : dp(-42))
+//                .setDuration(200)
+//                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+//                .start();
+//            viewPager.animate()
+//                .translationY(shown ? dp(30) : 0)
+//                .setDuration(200)
+//                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+//                .start();
+//        } else {
+//            tabsView.animate().cancel();
+//            tabsView.setTranslationY(shown ? 0 : dp(-42));
+//            viewPager.animate().cancel();
+//            viewPager.setTranslationY(shown ? dp(30) : 0);
+//        }
+        if (viewPager.getViewPages() != null) {
+            final View[] views = viewPager.getViewPages();
+            for (View view : views) {
+                if (view instanceof Page) {
+                    ((Page) view).setHasTabs(shown);
+                }
+            }
         }
+    }
+
+    public float getTabsHeight() {
+        float h = 0;
+        if (viewPager.getViewPages() != null) {
+            final View[] views = viewPager.getViewPages();
+            for (View view : views) {
+                if (view instanceof Page) {
+                    h += (1.0f - (float) view.getTranslationX() / view.getWidth()) * ((Page) view).getTabsHeight();
+                }
+            }
+        }
+        return h;
+    }
+
+    public void updateTabsY() {
+        if (tabsView == null) return;
+        final float ty = Math.min(0, getTabsHeight() - dp(42));
+        final float alpha = clamp01(ilerp(ty, -dp(42), 0));
+        tabsView.setTranslationY(ty);
+        tabsView.setAlpha(alpha);
     }
 
     protected void updatedReordering(boolean reordering) {
@@ -1645,7 +1747,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
             Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)
         ));
-        tabsView.setBackgroundColor(backgroundColor);
+//        tabsView.setBackgroundColor(backgroundColor);
         button.updateColors();
         button.setBackground(Theme.createRoundRectDrawable(dp(8), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
         View[] pages = viewPager.getViewPages();

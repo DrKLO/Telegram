@@ -20,6 +20,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class ColoredImageSpan extends ReplacementSpan {
 
+    public boolean draw = true;
     int drawableColor;
     public Drawable drawable;
     public boolean recolorDrawable = true;
@@ -28,7 +29,7 @@ public class ColoredImageSpan extends ReplacementSpan {
     public boolean useLinkPaintColor = false;
     int colorKey;
     private int topOffset = 0;
-    private float translateX, translateY, rotate;
+    public float translateX, translateY, rotate;
     private float alpha = 1f;
     private int overrideColor;
 
@@ -124,6 +125,8 @@ public class ColoredImageSpan extends ReplacementSpan {
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+        if (!draw) return;
+
         boolean drawableColorIsPaintColor = false;
         int color;
         if (checkColorDelegate != null) {

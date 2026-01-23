@@ -384,6 +384,13 @@ public class TodoItemMenu extends Dialog {
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     setMeasuredDimension(finalWidth, finalHeight);
                 }
+
+                @Override
+                public void drawOverlays(Canvas canvas) {
+                    firstVisiblePollButton = 0;
+                    lastVisiblePollButton = pollButtons.size() - 1;
+                    super.drawOverlays(canvas);
+                }
             };
             cell.copyParamsTo(myTaskCell);
             myTaskCell.copySpoilerEffect2AttachIndexFrom(cell);
@@ -412,6 +419,13 @@ public class TodoItemMenu extends Dialog {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     setMeasuredDimension(finalWidth, finalHeight);
+                }
+
+                @Override
+                public void drawOverlays(Canvas canvas) {
+                    firstVisiblePollButton = 0;
+                    lastVisiblePollButton = pollButtons.size() - 1;
+                    super.drawOverlays(canvas);
                 }
             };
             cell.copyVisiblePartTo(myCell);
@@ -524,6 +538,9 @@ public class TodoItemMenu extends Dialog {
                         final TLRPC.TodoCompletion c = media.completions.get(i);
                         if (c.id == taskId) {
                             media.completions.remove(i);
+                            if (media.completions.isEmpty()) {
+                                media.flags &=~ 1;
+                            }
                             i--;
                         }
                     }

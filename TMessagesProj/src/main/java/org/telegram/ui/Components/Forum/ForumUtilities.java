@@ -34,6 +34,7 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
@@ -353,6 +354,22 @@ public class ForumUtilities {
         if (topic == null) {
             return;
         }
+
+        if (topicKey.dialogId > 0) {
+            TLRPC.User userLocal = chatActivity.getMessagesController().getUser(topicKey.dialogId);
+            if (!UserObject.isBotForum(userLocal)) {
+                return;
+            }
+
+            ArrayList<MessageObject> messageObjects = new ArrayList<>();
+            messageObjects.add(new MessageObject(chatActivity.getCurrentAccount(), topic.topicStartMessage, false, false));
+            chatActivity.setThreadMessages(messageObjects, null, topic.id, topic.read_inbox_max_id, topic.read_outbox_max_id, topic);
+
+            chatActivity.getMessagesController().setForumLastTopicId(-topicKey.dialogId, topicKey.topicId);
+
+            return;
+        }
+
         TLRPC.Chat chatLocal = chatActivity.getMessagesController().getChat(-topicKey.dialogId);
         if (chatLocal == null) {
             return;

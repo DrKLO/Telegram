@@ -68,7 +68,7 @@ public class FragmentUsernameBottomSheet {
         RLottieImageView imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         int sz = type == TYPE_USERNAME ? 70 : 78;
-        imageView.setAnimation(type == TYPE_USERNAME ? R.raw.fragment_username : R.raw.fragment_phone, sz, sz);
+        imageView.setAnimation(type == TYPE_USERNAME ? R.raw.fragment_username : R.raw.fragment, sz, sz);
         imageView.playAnimation();
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         if (type == TYPE_USERNAME) {

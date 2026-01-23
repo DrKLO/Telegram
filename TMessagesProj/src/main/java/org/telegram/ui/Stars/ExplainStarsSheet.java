@@ -132,7 +132,7 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
         public final TextView titleView;
         public final LinkSpanDrawable.LinksTextView subtitleView;
 
-        public FeatureCell(Context context, int style) {
+        public FeatureCell(Context context, int style, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
             setOrientation(HORIZONTAL);
@@ -150,14 +150,14 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
             titleView = new LinkSpanDrawable.LinksTextView(context);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            titleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            titleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 0, 0, 0, 3));
 
             subtitleView = new LinkSpanDrawable.LinksTextView(context);
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-            subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
             textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL));
 
             addView(textLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
@@ -174,7 +174,7 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
 
             @Override
             public FeatureCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new FeatureCell(context, 0);
+                return new FeatureCell(context, 0, resourcesProvider);
             }
 
             @Override

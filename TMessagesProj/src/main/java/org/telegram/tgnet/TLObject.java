@@ -8,6 +8,8 @@
 
 package org.telegram.tgnet;
 
+import me.vkryl.core.BitwiseUtils;
+
 public class TLObject {
 
     public static final int FLAG_0  = 1;
@@ -44,11 +46,11 @@ public class TLObject {
     public static final int FLAG_31 = 1 << 31;
 
     public static int setFlag(int flags, int flag, boolean value) {
-        return value ? (flags | flag) : (flags &~ flag);
+        return BitwiseUtils.setFlag(flags, flag, value);
     }
 
     public static boolean hasFlag(int flags, int flag) {
-        return (flags & flag) != 0;
+        return BitwiseUtils.hasFlag(flags, flag);
     }
 
 
@@ -96,9 +98,7 @@ public class TLObject {
             boolean exception
     ) {
         if (object == null) {
-            if (exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in %s", constructor, tClass.getName()));
-            }
+            TLParseException.doThrowOrLog(stream, tClass.getName(), constructor, exception);
             return null;
         }
 

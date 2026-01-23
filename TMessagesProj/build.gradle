@@ -17,12 +17,10 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'androidx.fragment:fragment:1.2.0'
-    implementation 'androidx.core:core:1.10.1'
+    implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
     implementation "androidx.sharetarget:sharetarget:1.2.0"
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.biometric:biometric:1.1.0'
@@ -55,6 +53,9 @@ dependencies {
     implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
     implementation 'com.google.android.gms:play-services-mlkit-image-labeling:16.0.8'
 
+    implementation "androidx.credentials:credentials:1.6.0-alpha04"
+    implementation "androidx.credentials:credentials-play-services-auth:1.6.0-alpha04"
+
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
     constraints {
@@ -65,7 +66,7 @@ dependencies {
             because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
         }
     }
-    implementation 'com.google.android.recaptcha:recaptcha:18.4.0'
+    implementation 'com.google.android.recaptcha:recaptcha:18.7.1'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }

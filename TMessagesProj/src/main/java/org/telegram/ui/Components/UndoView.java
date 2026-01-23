@@ -760,7 +760,7 @@ public class UndoView extends FrameLayout {
                     infoText = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.VoipGroupRemovedFromGroup, name));
                 }
                 subInfoText = null;
-                icon = R.raw.voip_group_removed;
+                icon = R.raw.ic_ban;
                 timeLeft = 3000;
             } else if (action == ACTION_OWNER_TRANSFERED_CHANNEL || action == ACTION_OWNER_TRANSFERED_GROUP) {
                 TLRPC.User user = (TLRPC.User) infoObject;

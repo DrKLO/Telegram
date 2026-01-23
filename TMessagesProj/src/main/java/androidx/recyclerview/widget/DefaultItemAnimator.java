@@ -126,7 +126,6 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         for (RecyclerView.ViewHolder holder : mPendingRemovals) {
             animateRemoveImpl(holder);
         }
-        final long[] delay = new long[] { 0 };
         mPendingRemovals.clear();
         // Next, move stuff
         if (movesPending) {
@@ -185,10 +184,14 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             Runnable adder = new Runnable() {
                 @Override
                 public void run() {
+                    int minPosition = Integer.MAX_VALUE;
+                    for (int i = additions.size() - 1; i >= 0; --i) {
+                        minPosition = Math.min(minPosition, additions.get(i).getAdapterPosition());
+                    }
                     for (int i = additions.size() - 1; i >= 0; --i) {
 //                    for (int i = 0; i < additions.size(); ++i) {
                         final RecyclerView.ViewHolder holder = additions.get(i);
-                        animateAddImpl(holder, delay[0] += delayIncrement);
+                        animateAddImpl(holder, (holder.getAdapterPosition() - minPosition) * delayIncrement);
                     }
                     additions.clear();
                     mAdditionsList.remove(additions);
@@ -271,6 +274,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         view.setTranslationX(0);
                         view.setTranslationY(0);
+                        onRemoveAnimationUpdate(holder);
                         dispatchRemoveFinished(holder);
                         mRemoveAnimations.remove(holder);
                         dispatchFinishedWhenDone();
@@ -328,6 +332,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     animation.setListener(null);
+                    onAddAnimationUpdate(holder);
                     dispatchAddFinished(holder);
                     mAddAnimations.remove(holder);
                     dispatchFinishedWhenDone();
@@ -445,6 +450,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     animation.setListener(null);
+                    onMoveAnimationUpdate(holder);
                     dispatchMoveFinished(holder);
                     mMoveAnimations.remove(holder);
                     dispatchFinishedWhenDone();
@@ -533,6 +539,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         view.setTranslationX(0);
                         view.setTranslationY(0);
+                        onChangeAnimationUpdate(changeInfo.oldHolder);
                         dispatchChangeFinished(changeInfo.oldHolder, true);
                         mChangeAnimations.remove(changeInfo.oldHolder);
                         dispatchFinishedWhenDone();
@@ -570,6 +577,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                         }
                         newView.setTranslationX(0);
                         newView.setTranslationY(0);
+                        onChangeAnimationUpdate(changeInfo.newHolder);
                         dispatchChangeFinished(changeInfo.newHolder, false);
                         mChangeAnimations.remove(changeInfo.newHolder);
                         dispatchFinishedWhenDone();
