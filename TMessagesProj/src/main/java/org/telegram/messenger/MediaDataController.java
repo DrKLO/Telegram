@@ -2969,6 +2969,14 @@ public class MediaDataController extends BaseController {
                 });
             });
         } else {
+            boolean needForce = force;
+            if (!force) {
+                int lastDate = loadDate[type];
+                int now = (int) (System.currentTimeMillis() / 1000);
+                if (lastDate != 0 && now - lastDate > 6 * 60 * 60) { // 6 hours
+                    needForce = true;
+                }
+            }
             if (type == TYPE_FEATURED || type == TYPE_FEATURED_EMOJIPACKS) {
                 final boolean emoji = type == TYPE_FEATURED_EMOJIPACKS;
                 TLRPC.TL_messages_allStickers response = new TLRPC.TL_messages_allStickers();
@@ -3007,13 +3015,13 @@ public class MediaDataController extends BaseController {
                 long hash;
                 if (type == TYPE_IMAGE) {
                     req = new TLRPC.TL_messages_getAllStickers();
-                    hash = ((TLRPC.TL_messages_getAllStickers) req).hash = force ? 0 : loadHash[type];
+                    hash = ((TLRPC.TL_messages_getAllStickers) req).hash = needForce ? 0 : loadHash[type];
                 } else if (type == TYPE_EMOJIPACKS) {
                     req = new TLRPC.TL_messages_getEmojiStickers();
-                    hash = ((TLRPC.TL_messages_getEmojiStickers) req).hash = force ? 0 : loadHash[type];
+                    hash = ((TLRPC.TL_messages_getEmojiStickers) req).hash = needForce ? 0 : loadHash[type];
                 } else {
                     req = new TLRPC.TL_messages_getMaskStickers();
-                    hash = ((TLRPC.TL_messages_getMaskStickers) req).hash = force ? 0 : loadHash[type];
+                    hash = ((TLRPC.TL_messages_getMaskStickers) req).hash = needForce ? 0 : loadHash[type];
                 }
                 getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (response instanceof TLRPC.TL_messages_allStickers) {
