@@ -1879,7 +1879,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             additionalHeight += titleHeight + dp(24);
         }
 
-        if (messageObject != null && isNewStyleButtonLayout()) {
+        if (birthdayLayout != null || (messageObject != null && isNewStyleButtonLayout())) {
             setMeasuredDimension(width, topicSeparatorTopPadding + exactlyHeight);
         } else {
             setMeasuredDimension(width, topicSeparatorTopPadding + textHeight + additionalHeight + dp(14));
