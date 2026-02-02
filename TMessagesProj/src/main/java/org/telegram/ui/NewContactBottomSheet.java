@@ -1353,7 +1353,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             op = op.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, firstName);
         }
         if (!TextUtils.isEmpty(lastName)) {
-            op = op.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, lastName);
+            op = op.withValue(ContactsContract.CommonDataKinds.StructuredName.FAMILY_NAME, lastName);
         }
         ops.add(op.build());
 
