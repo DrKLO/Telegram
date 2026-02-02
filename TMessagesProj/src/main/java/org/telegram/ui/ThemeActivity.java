@@ -696,9 +696,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             nightDisabledRow = rowCount++;
             nightScheduledRow = rowCount++;
             nightAutomaticRow = rowCount++;
-            if (Build.VERSION.SDK_INT >= 29) {
-                nightSystemDefaultRow = rowCount++;
-            }
+            nightSystemDefaultRow = rowCount++;
             nightTypeInfoRow = rowCount++;
             if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_SCHEDULED) {
                 scheduleHeaderRow = rowCount++;
