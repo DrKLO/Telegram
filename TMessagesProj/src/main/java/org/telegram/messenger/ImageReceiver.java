@@ -1712,7 +1712,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 }
                 try {
                     drawable.setAlpha(alpha);
-                    if (backgroundThreadDrawHolder != null) {
+                    if (drawable instanceof AvatarDrawable && imageW > 0 && imageH > 0) {
+                        final int avatarDrawSize = 200;
+                        canvas.save();
+                        canvas.translate(imageX, imageY);
+                        canvas.scale(imageW / avatarDrawSize, imageH / avatarDrawSize);
+                        drawable.setBounds(0, 0, avatarDrawSize, avatarDrawSize);
+                        ((AvatarDrawable) drawable).setRoundRadius(avatarDrawSize / 2);
+                        drawable.draw(canvas);
+                        canvas.restore();
+                    } else if (backgroundThreadDrawHolder != null) {
                         if (svgDrawable != null) {
                             long time = backgroundThreadDrawHolder.time;
                             if (time == 0) {

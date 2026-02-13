@@ -477,20 +477,20 @@ public class StoriesUtilities {
             } else if (u == 2) {
                 localPaint = livePaint;
             }
-            float startAngle = -90;
-            float endAngle = 90;
+            float startAngle = -90 + params.segmentRotationOffset;
+            float endAngle = 90 + params.segmentRotationOffset;
             drawSegment(canvas, rectTmp, localPaint, startAngle, endAngle, params, isForum);
-            startAngle = 90;
-            endAngle = 270;
+            startAngle = 90 + params.segmentRotationOffset;
+            endAngle = 270 + params.segmentRotationOffset;
             drawSegment(canvas, rectTmp, localPaint, startAngle, endAngle, params, isForum);
 
             if (params.progressToSegments != 1 && localPaint != globalPaint) {
                 globalPaint.setAlpha((int) (255 * (1f - params.progressToSegments)));
-                startAngle = -90;
-                endAngle = 90;
+                startAngle = -90 + params.segmentRotationOffset;
+                endAngle = 90 + params.segmentRotationOffset;
                 drawSegment(canvas, rectTmp, globalPaint, startAngle, endAngle, params, isForum);
-                startAngle = 90;
-                endAngle = 270;
+                startAngle = 90 + params.segmentRotationOffset;
+                endAngle = 270 + params.segmentRotationOffset;
                 drawSegment(canvas, rectTmp, globalPaint, startAngle, endAngle, params, isForum);
                 globalPaint.setAlpha(255);
             }
@@ -529,7 +529,7 @@ public class StoriesUtilities {
                         }
                     }
                 }
-                float startAngle = step * i - 90;
+                float startAngle = step * i - 90 + params.segmentRotationOffset;
                 float endAngle = startAngle + step;
                 startAngle += gapLen;
                 endAngle -= gapLen;
@@ -1230,6 +1230,7 @@ public class StoriesUtilities {
         public final boolean isStoryCell;
         public RectF originalAvatarRect = new RectF();
         public float additionalInset;
+        public float segmentRotationOffset = 0f;
 
         ButtonBounce buttonBounce;
         public boolean allowLongress = false;
