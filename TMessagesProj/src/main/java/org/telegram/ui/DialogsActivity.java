@@ -71,7 +71,10 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AnticipateInterpolator;
 import android.view.animation.Interpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -186,7 +189,6 @@ import org.telegram.ui.Components.FragmentSearchField;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.blur3.Blur3HashImpl;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
@@ -207,6 +209,7 @@ import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StealthModeAlert;
+import org.telegram.ui.Stories.UploadingDotsSpannable;
 import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
@@ -577,7 +580,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private float additionalFloatingTranslation;
     private float floatingButtonPanOffset;
 
+    public float STORIES_K = 0.3f;
     private AnimatorSet searchAnimator;
+    private ValueAnimator logoAnimator;
+    private boolean logoCollapsed = true;
+    private ValueAnimator storiesProgressAnimator;
+    private float storiesAnimatorFrom;
+    private float storiesAnimatorTo;
+    private boolean storiesCollapsed = true;
+    private float logoAnimatedTranslationX = 0f;
     private float searchAnimationProgress;
 
     private ChatInputViewsContainer chatInputViewsContainer;
@@ -635,6 +646,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean canSelectTopics;
     private String searchString;
     private String initialSearchString;
+    private SpannableStringBuilder uploadingString;
     private MessagesStorage.TopicKey openedDialogId = new MessagesStorage.TopicKey();
     private boolean cantSendToChannels;
     private boolean allowSwitchAccount;
@@ -930,7 +942,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
-            if (invalidateScrollY && (rightSlidingDialogContainer == null || !rightSlidingDialogContainer.hasFragment()) && progressToActionMode == 0) {
+            if (invalidateScrollY && (rightSlidingDialogContainer == null || !rightSlidingDialogContainer.hasFragment()) && hasStories  && progressToActionMode == 0 && (storiesProgressAnimator == null || !storiesProgressAnimator.isRunning())) {
                 invalidateScrollY = false;
                 int firstItemPosition = hasHiddenArchive() && viewPages[0].dialogsType == DIALOGS_TYPE_DEFAULT ? 1 : 0;
                 DialogsRecyclerView recyclerView = viewPages[0].listView;
@@ -1061,6 +1073,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             updateContextViewPosition();
             updateStoriesViewAlpha(storiesAlpha);
+            updateLogoPosition();
             super.dispatchDraw(canvas);
             drawHeaderShadow(canvas, top + actionBarHeight);
 
@@ -1583,26 +1596,125 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private void updateStoriesViewAlpha(float alpha) {
         final float factorSearch = Utilities.clamp(searchAnimationProgress * 2, 1f, 0f);
         dialogStoriesCell.setAlpha((1f - progressToActionMode) * alpha * progressToDialogStoriesCell * (1f - factorSearch));
-        float containersAlpha;
 
         if (hasStories || animateToHasStories) {
             float p = Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
             if (progressToActionMode == 1f) {
                 p = 1f;
             }
-            float pHalf = Utilities.clamp(p / 0.5f, 1f, 0f);
             dialogStoriesCell.setClipTop(0);
             if (!hasStories && animateToHasStories) {
                 dialogStoriesCell.setTranslationY(-dp(DialogStoriesCell.HEIGHT_IN_DP) - dp(8));
                 dialogStoriesCell.setProgressToCollapse(1f);
-                containersAlpha = 1f - progressToDialogStoriesCell;
             } else {
                 dialogStoriesCell.setTranslationY(Math.max(scrollYOffset, -getMaxScrollYOffsetWithoutSearch()) + storiesYOffset + storiesOverscroll / 2f - dp(8));
-                dialogStoriesCell.setProgressToCollapse(p, !rightSlidingDialogContainer.hasFragment());
-                if (!animateToHasStories) {
-                    containersAlpha = 1f - progressToDialogStoriesCell;
+                boolean animated = !rightSlidingDialogContainer.hasFragment();
+                boolean newStoriesCollapsed = p > STORIES_K;
+
+                if (newStoriesCollapsed != storiesCollapsed) {
+                    storiesCollapsed = newStoriesCollapsed;
+                    if (storiesProgressAnimator != null) {
+                        storiesProgressAnimator.cancel();
+                        storiesProgressAnimator = null;
+                    }
+                    if (animated) {
+                        float from = p;
+                        float to = storiesCollapsed ? 1f : 0f;
+                        storiesAnimatorFrom = from;
+                        storiesAnimatorTo = to;
+                        storiesProgressAnimator = ValueAnimator.ofFloat(from, to);
+                        storiesProgressAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                            private final Interpolator interpolator = new AccelerateDecelerateInterpolator();
+                            @Override
+                            public void onAnimationUpdate(@NonNull ValueAnimator animation) {
+                                float animatedVal = (float) animation.getAnimatedValue();
+                                float realFromList = getStoriesProgressFromList();
+                                float progress = realFromList >= 0
+                                        ? (storiesCollapsed ? Math.max(animatedVal, realFromList) : Math.min(animatedVal, realFromList)) : animatedVal;
+                                float newScrollY = -progress * dp(DialogStoriesCell.HEIGHT_IN_DP);
+                                setScrollY(newScrollY);
+                                if (viewPages != null && viewPages.length > 0 && viewPages[0].layoutManager != null) {
+                                    int pos = viewPages[0].dialogsType == DIALOGS_TYPE_DEFAULT && hasHiddenArchive() && viewPages[0].archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN ? 1 : 0;
+                                    viewPages[0].layoutManager.scrollToPositionWithOffset(pos, (int) newScrollY);
+                                }
+                                float totalDist = to - from;
+                                float remainder = Math.abs(totalDist) > 0.001f
+                                        ? Utilities.clamp((progress - from) / totalDist, 1f, 0f)
+                                        : 1f;
+                                float cellProgress = from + totalDist * (storiesCollapsed
+                                        ? remainder
+                                        : interpolator.getInterpolation(remainder));
+                                if (dialogStoriesCell != null) {
+                                    dialogStoriesCell.setProgressToCollapse(cellProgress);
+                                }
+                                if ((storiesCollapsed && progress >= 1f) || (!storiesCollapsed && progress <= 0f)) {
+                                    if (storiesProgressAnimator != null) {
+                                        storiesProgressAnimator.cancel();
+                                    }
+                                    invalidateScrollY = true;
+                                }
+                            }
+                        });
+                        float finalP = p;
+                        storiesProgressAnimator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationStart(Animator animation) {
+                                super.onAnimationStart(animation);
+                                float totalDistance = storiesAnimatorTo - storiesAnimatorFrom;
+                                if (Math.abs(totalDistance) > 0.01f) {
+                                    float fraction = Utilities.clamp((finalP - storiesAnimatorFrom) / totalDistance, 1f, 0f);
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                                        if (fraction > storiesProgressAnimator.getAnimatedFraction()) {
+                                            storiesProgressAnimator.setCurrentFraction(fraction);
+                                        }
+                                    } else {
+                                        long duration = storiesProgressAnimator.getDuration();
+                                        if ((long) (fraction * duration) > storiesProgressAnimator.getCurrentPlayTime()) {
+                                            storiesProgressAnimator.setCurrentPlayTime((long) (fraction * duration));
+                                        }
+                                    }
+                                }
+                                if (dialogStoriesCell != null) {
+                                    dialogStoriesCell.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                }
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                storiesProgressAnimator = null;
+                                invalidateScrollY = true;
+                            }
+                        });
+                        storiesProgressAnimator.setInterpolator(null);
+                        storiesProgressAnimator.setDuration(150);
+                        storiesProgressAnimator.start();
+                    } else {
+                        float targetScrollY = storiesCollapsed ? -dp(DialogStoriesCell.HEIGHT_IN_DP) : 0;
+                        setScrollY(targetScrollY);
+                        if (viewPages != null && viewPages.length > 0 && viewPages[0].layoutManager != null) {
+                            int pos = viewPages[0].dialogsType == DIALOGS_TYPE_DEFAULT && hasHiddenArchive() && viewPages[0].archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN ? 1 : 0;
+                            viewPages[0].layoutManager.scrollToPositionWithOffset(pos, (int) targetScrollY);
+                        }
+                        dialogStoriesCell.setProgressToCollapse(storiesCollapsed ? 1f : 0f);
+                    }
+                } else if (storiesProgressAnimator != null && storiesProgressAnimator.isRunning()) {
+                    float totalDistance = storiesAnimatorTo - storiesAnimatorFrom;
+                    if (Math.abs(totalDistance) > 0.01f) {
+                        float fraction = Utilities.clamp((p - storiesAnimatorFrom) / totalDistance, 1f, 0f);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                            if (fraction > storiesProgressAnimator.getAnimatedFraction()) {
+                                storiesProgressAnimator.setCurrentFraction(fraction);
+                            }
+                        } else {
+                            long duration = storiesProgressAnimator.getDuration();
+                            if ((long) (fraction * duration) > storiesProgressAnimator.getCurrentPlayTime()) {
+                                storiesProgressAnimator.setCurrentPlayTime((long) (fraction * duration));
+                            }
+                        }
+
+                    }
                 } else {
-                    containersAlpha = (1f - pHalf);
+                    dialogStoriesCell.setProgressToCollapse(p);
                 }
             }
             actionBar.setTranslationY(0);
@@ -1612,11 +1724,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 dialogStoriesCell.setProgressToCollapse(1f);
                 dialogStoriesCell.setClipTop((int) (AndroidUtilities.statusBarHeight - dialogStoriesCell.getY()));
             }
-            containersAlpha = 1f - progressToDialogStoriesCell;
 
             actionBar.setTranslationY(0);
         }
-        containersAlpha *= (1f - factorSearch);
+        float containersAlpha = (1f - factorSearch);
         if (containersAlpha != 1f) {
             actionBar.getTitlesContainer().setPivotY(AndroidUtilities.statusBarHeight);
             actionBar.getTitlesContainer().setPivotX(dp(20));
@@ -1639,6 +1750,69 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBar.getAdditionalSubTitleOverlayContainer().setScaleX(1f);
             actionBar.getAdditionalSubTitleOverlayContainer().setAlpha(1f - progressToActionMode);
         }
+    }
+
+    private void updateLogoPosition() {
+        if (dialogStoriesCell == null || !dialogStoriesCellVisible || !hasStories) return;
+        if (storiesVisibilityAnimator2 != null && storiesVisibilityAnimator2.isRunning()) return;
+
+        float p = Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
+        if (progressToActionMode == 1f) {
+            p = 1f;
+        }
+
+        boolean newCollapsed = p > STORIES_K;
+
+        if (newCollapsed != logoCollapsed) {
+            logoCollapsed = newCollapsed;
+            if (logoAnimator != null) {
+                logoAnimator.cancel();
+            }
+
+            float fromX = logoAnimatedTranslationX;
+
+            logoAnimator = ValueAnimator.ofFloat(p, 1f);
+            logoAnimator.setInterpolator(new AnticipateInterpolator(2f));
+            logoAnimator.addUpdateListener(animation -> {
+                float realProgress = Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
+                float progress = Math.max((float) animation.getAnimatedValue(), realProgress);
+                float currentTarget;
+
+                if (newCollapsed) {
+                    float storiesRightEdge = dialogStoriesCell.getStoriesMiniRight();
+                    currentTarget = storiesRightEdge + dp(20);
+                } else {
+                    currentTarget = -scrollYOffset;
+                }
+
+                logoAnimatedTranslationX = AndroidUtilities.lerp(fromX, currentTarget, progress);
+                actionBar.getTitlesContainer().setTranslationX(logoAnimatedTranslationX);
+            });
+            logoAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    logoAnimator = null;
+                }
+            });
+            logoAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            logoAnimator.setDuration(250);
+            logoAnimator.start();
+        }
+
+        if (logoAnimator == null || !logoAnimator.isRunning()) {
+            if (p == 0f) {
+                logoAnimatedTranslationX = 0f;
+            } else if (p > STORIES_K) {
+                float storiesRightEdge = dialogStoriesCell.getStoriesMiniRight();
+                logoAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(20), 0, p);
+            } else {
+                logoAnimatedTranslationX = -scrollYOffset;
+
+            }
+            actionBar.getTitlesContainer().setTranslationX(logoAnimatedTranslationX);
+        }
+
+
     }
 
     public static float viewOffset = 0.0f;
@@ -2906,9 +3080,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private Drawable premiumStar;
 
     public void updateStatus(TLRPC.User user, boolean animated) {
-        if (dialogStoriesCell != null) {
-            dialogStoriesCell.updateStatus(user, animated);
-        }
         if (statusDrawable == null || actionBar == null) {
             return;
         }
@@ -3135,9 +3306,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (actionBar != null && selectAnimatedEmojiDialog != null && selectAnimatedEmojiDialog.getContentView() instanceof SelectAnimatedEmojiDialog) {
             SimpleTextView textView = actionBar.getTitleTextView();
             ((SelectAnimatedEmojiDialog) selectAnimatedEmojiDialog.getContentView()).setScrimDrawable(textView != null && textView.getRightDrawable() == statusDrawable ? statusDrawable : null, textView);
-        }
-        if (dialogStoriesCell != null) {
-            dialogStoriesCell.setTitleOverlayText(title, titleId);
         }
     }
 
@@ -3436,6 +3604,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             if (folderId != 0) {
                 actionBar.setTitle(getString(R.string.ArchivedChats));
+            } else if (getStoriesController().hasOnlySelfStories() && getStoriesController().hasUploadingStories(UserConfig.getInstance(currentAccount).getClientUserId())) {
+                String str = LocaleController.getString(R.string.UploadingStory);
+                int index = str.indexOf("…");
+                if (index > 0) {
+                    if (uploadingString == null) {
+                        SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(str);
+                        UploadingDotsSpannable dotsSpannable = new UploadingDotsSpannable();
+                        spannableStringBuilder.setSpan(dotsSpannable, spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+                        dotsSpannable.setParent(actionBar.getTitleTextView(), true);
+                        uploadingString = spannableStringBuilder;
+                    }
+                    actionBar.setTitle(uploadingString);
+                } else {
+                    actionBar.setTitle(str);
+                }
             } else {
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
                 statusDrawable.center = true;
@@ -5220,7 +5403,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 return !actionBar.isActionModeShowed() && super.dispatchTouchEvent(ev);
             }
         };
-        dialogStoriesCell.setActionBar(actionBar);
         dialogStoriesCell.setMenuItemsOffset(isArchive() ? dp(68) : dpf2(16.66f));
         dialogStoriesCell.allowGlobalUpdates = false;
         dialogStoriesCell.setVisibility(View.GONE);
@@ -5603,7 +5785,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 final float p = progressToActionMode == 1f ? 1 :
                     Utilities.clamp(-scrollYOffset / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
 
-                if (p < dialogStoriesCell.K) {
+                if (p < STORIES_K) {
                     viewPage.scroller.smoothScrollBy(-scrollY);
                     // viewPage.listView.smoothScrollBy(0, -scrollY);
                 } else {
@@ -8655,6 +8837,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT && folderId == 0 && getMessagesController().hasHiddenArchive();
     }
 
+    private float getStoriesProgressFromList() {
+        if (viewPages == null || viewPages.length == 0 || viewPages[0].listView == null) {
+            return -1f;
+        }
+        int firstItemPosition = hasHiddenArchive() && viewPages[0].dialogsType == DIALOGS_TYPE_DEFAULT ? 1 : 0;
+        RecyclerView.ViewHolder holder = viewPages[0].listView.findViewHolderForLayoutPosition(firstItemPosition);
+        if (holder == null) {
+            return -1f;
+        }
+        float visiblePartAfterScroll = viewPages[0].listView.getPaddingTop() - holder.itemView.getY();
+        if (visiblePartAfterScroll < 0) {
+            return 0f;
+        }
+        int maxScrollYOffset = getMaxScrollYOffset();
+        float newTranslation = -visiblePartAfterScroll;
+        if (newTranslation < -maxScrollYOffset) {
+            newTranslation = -maxScrollYOffset;
+        } else if (newTranslation > 0) {
+            newTranslation = 0;
+        }
+        return Utilities.clamp(-newTranslation / dp(DialogStoriesCell.HEIGHT_IN_DP), 1f, 0f);
+    }
+
     private boolean waitingForDialogsAnimationEnd(ViewPage viewPage) {
         return viewPage.dialogsItemAnimator.isRunning();
     }
@@ -9806,7 +10011,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             viewPages[i].listView.requestLayout();
                         }
                     }
-                    dialogStoriesCell.setProgressToCollapse(1f, false);
+                    if (storiesProgressAnimator != null) {
+                        storiesProgressAnimator.cancel();
+                        storiesProgressAnimator = null;
+                    }
+                    storiesCollapsed = true;
+                    dialogStoriesCell.setProgressToCollapse(1f);
                     fragmentView.requestLayout();
                 }
             });
@@ -12217,11 +12427,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (dialogStoriesCellVisible && !isInPreviewMode()) {
                     dialogStoriesCell.setVisibility(View.VISIBLE);
                 }
+                final float fromLogoX = logoAnimatedTranslationX;
+                final float toLogoX = dialogStoriesCellVisible ? (dialogStoriesCell.getStoriesMiniRight() + dp(20)) : 0;
                 storiesVisibilityAnimator2 = ValueAnimator.ofFloat(progressToDialogStoriesCell, dialogStoriesCellVisible ? 1f : 0);
                 storiesVisibilityAnimator2.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    private final Interpolator interpolator = new OvershootInterpolator(1.3f);
                     @Override
                     public void onAnimationUpdate(@NonNull ValueAnimator animation) {
-                        progressToDialogStoriesCell = (float) animation.getAnimatedValue();
+                        float progress = (float) animation.getAnimatedValue();
+                        progressToDialogStoriesCell = progress;
+                        logoAnimatedTranslationX = AndroidUtilities.lerp(fromLogoX, toLogoX, interpolator.getInterpolation(progress));
+                        if (actionBar != null) {
+                            actionBar.getTitlesContainer().setTranslationX(logoAnimatedTranslationX);
+                        }
                         if (fragmentView != null) {
                             fragmentView.invalidate();
                         }
@@ -12231,6 +12449,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         progressToDialogStoriesCell = dialogStoriesCellVisible ? 1f : 0;
+                        logoAnimatedTranslationX = toLogoX;
                         if (!dialogStoriesCellVisible) {
                             dialogStoriesCell.setVisibility(View.GONE);
                         }
@@ -12239,7 +12458,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
                 });
-                storiesVisibilityAnimator2.setDuration(200);
+                storiesVisibilityAnimator2.setDuration(450);
                 storiesVisibilityAnimator2.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 storiesVisibilityAnimator2.start();
             } else {
@@ -12256,7 +12475,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         animateToHasStories = newVisibility;
 
         if (newVisibility) {
-            dialogStoriesCell.setProgressToCollapse(1f, false);
+            if (storiesProgressAnimator != null) {
+                storiesProgressAnimator.cancel();
+                storiesProgressAnimator = null;
+            }
+            storiesCollapsed = true;
+            dialogStoriesCell.setProgressToCollapse(1f);
         }
         if (animated && !isInPreviewMode()) {
             dialogStoriesCell.setVisibility(View.VISIBLE);
