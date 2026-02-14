@@ -272,6 +272,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private final static ArrayList<BaseFragment> mainFragmentsStack = new ArrayList<>();
     private final static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
     private final static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
+    private final static java.util.WeakHashMap<BaseFragment, Integer> fragmentOwnerTaskIds = new java.util.WeakHashMap<>();
     private ViewTreeObserver.OnGlobalLayoutListener onGlobalLayoutListener;
     private ArrayList<Parcelable> importingStickers;
     private ArrayList<String> importingStickersEmoji;
@@ -528,6 +529,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
         actionBarLayout.setFragmentStack(mainFragmentsStack);
         actionBarLayout.setFragmentStackChangedListener(() -> {
+            // Track ownership of fragments in the stack
+            final int taskId = getTaskId();
+            for (BaseFragment fragment : mainFragmentsStack) {
+                if (!fragmentOwnerTaskIds.containsKey(fragment)) {
+                    fragmentOwnerTaskIds.put(fragment, taskId);
+                }
+            }
             checkSystemBarColors(true, false);
             if (getLastFragment() != null && getLastFragment().getLastStoryViewer() != null) {
                 getLastFragment().getLastStoryViewer().updatePlayingMode();
@@ -974,6 +982,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
             rightActionBarLayout = new ActionBarLayout(this, false);
             rightActionBarLayout.setFragmentStack(rightFragmentsStack);
+            rightActionBarLayout.setFragmentStackChangedListener(() -> {
+                final int taskId = getTaskId();
+                for (BaseFragment fragment : rightFragmentsStack) {
+                    if (!fragmentOwnerTaskIds.containsKey(fragment)) {
+                        fragmentOwnerTaskIds.put(fragment, taskId);
+                    }
+                }
+            });
             rightActionBarLayout.setDelegate(this);
             launchLayout.addView(rightActionBarLayout.getView());
 
@@ -1020,6 +1036,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             layersActionBarLayout.setBackgroundView(shadowTablet);
             layersActionBarLayout.setUseAlphaAnimations(true);
             layersActionBarLayout.setFragmentStack(layerFragmentsStack);
+            layersActionBarLayout.setFragmentStackChangedListener(() -> {
+                final int taskId = getTaskId();
+                for (BaseFragment fragment : layerFragmentsStack) {
+                    if (!fragmentOwnerTaskIds.containsKey(fragment)) {
+                        fragmentOwnerTaskIds.put(fragment, taskId);
+                    }
+                }
+            });
             layersActionBarLayout.setDelegate(this);
             layersActionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
 
@@ -6659,40 +6683,50 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     protected void onDestroy() {
+        // Skip global teardown if other LaunchActivity instances exist (e.g. from share intents)
+        // to avoid destroying their static fragment stacks
+        final boolean hasOtherLaunchActivityInstance = !isChangingConfigurations() && hasOtherLaunchActivityInstanceInAppTasks();
+        final boolean allowGlobalUiTeardown = !isChangingConfigurations() && !hasOtherLaunchActivityInstance;
+
         isActive = false;
         unregisterReceiver(batteryReceiver);
-        if (PhotoViewer.getPipInstance() != null) {
-            PhotoViewer.getPipInstance().destroyPhotoViewer();
-        }
-        if (PhotoViewer.hasInstance()) {
-            PhotoViewer.getInstance().destroyPhotoViewer();
-        }
-        if (SecretMediaViewer.hasInstance()) {
-            SecretMediaViewer.getInstance().destroyPhotoViewer();
-        }
-        if (ArticleViewer.hasInstance()) {
-            ArticleViewer.getInstance().destroyArticleViewer();
-        }
-        if (ContentPreviewViewer.hasInstance()) {
-            ContentPreviewViewer.getInstance().destroy();
-        }
-        if (GroupCallActivity.groupCallInstance != null) {
-            GroupCallActivity.groupCallInstance.dismissInternal();
+
+        if (allowGlobalUiTeardown) {
+            if (PhotoViewer.getPipInstance() != null) {
+                PhotoViewer.getPipInstance().destroyPhotoViewer();
+            }
+            if (PhotoViewer.hasInstance()) {
+                PhotoViewer.getInstance().destroyPhotoViewer();
+            }
+            if (SecretMediaViewer.hasInstance()) {
+                SecretMediaViewer.getInstance().destroyPhotoViewer();
+            }
+            if (ArticleViewer.hasInstance()) {
+                ArticleViewer.getInstance().destroyArticleViewer();
+            }
+            if (ContentPreviewViewer.hasInstance()) {
+                ContentPreviewViewer.getInstance().destroy();
+            }
+            if (GroupCallActivity.groupCallInstance != null) {
+                GroupCallActivity.groupCallInstance.dismissInternal();
+            }
         }
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
-        MediaController.getInstance().setBaseActivity(this, false);
-        MediaController.getInstance().setFeedbackView(feedbackView, false);
-        if (pipRoundVideoView != null) {
-            pipRoundVideoView.close(false);
-        }
-        Theme.destroyResources();
-        EmbedBottomSheet embedBottomSheet = EmbedBottomSheet.getInstance();
-        if (embedBottomSheet != null) {
-            embedBottomSheet.destroy();
-        }
-        ThemeEditorView editorView = ThemeEditorView.getInstance();
-        if (editorView != null) {
-            editorView.destroy();
+        if (allowGlobalUiTeardown) {
+            MediaController.getInstance().setBaseActivity(this, false);
+            MediaController.getInstance().setFeedbackView(feedbackView, false);
+            if (pipRoundVideoView != null) {
+                pipRoundVideoView.close(false);
+            }
+            Theme.destroyResources();
+            EmbedBottomSheet embedBottomSheet = EmbedBottomSheet.getInstance();
+            if (embedBottomSheet != null) {
+                embedBottomSheet.destroy();
+            }
+            ThemeEditorView editorView = ThemeEditorView.getInstance();
+            if (editorView != null) {
+                editorView.destroy();
+            }
         }
         try {
             for (int i = 0; i < visibleDialogs.size(); ++i) {
@@ -6722,7 +6756,60 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((OnBackInvokedCallback) onBackInvokedCallback);
             }
         }
-        clearFragments();
+        // Remove only fragments owned by this instance to prevent memory leaks
+        // while avoiding cross-instance fragment destruction
+        final int myTaskId = getTaskId();
+
+        // Clean up mainFragmentsStack
+        if (actionBarLayout != null) {
+            java.util.List<BaseFragment> toRemove = new java.util.ArrayList<>();
+            for (BaseFragment fragment : mainFragmentsStack) {
+                Integer ownerTaskId = fragmentOwnerTaskIds.get(fragment);
+                if (ownerTaskId != null && ownerTaskId == myTaskId) {
+                    toRemove.add(fragment);
+                }
+            }
+            for (BaseFragment fragment : toRemove) {
+                fragment.onFragmentDestroy();
+                mainFragmentsStack.remove(fragment);
+                fragmentOwnerTaskIds.remove(fragment);
+            }
+        }
+
+        // Clean up tablet layouts
+        if (AndroidUtilities.isTablet()) {
+            // Clean up rightFragmentsStack
+            if (rightActionBarLayout != null) {
+                java.util.List<BaseFragment> toRemove = new java.util.ArrayList<>();
+                for (BaseFragment fragment : rightFragmentsStack) {
+                    Integer ownerTaskId = fragmentOwnerTaskIds.get(fragment);
+                    if (ownerTaskId != null && ownerTaskId == myTaskId) {
+                        toRemove.add(fragment);
+                    }
+                }
+                for (BaseFragment fragment : toRemove) {
+                    fragment.onFragmentDestroy();
+                    rightFragmentsStack.remove(fragment);
+                    fragmentOwnerTaskIds.remove(fragment);
+                }
+            }
+
+            // Clean up layerFragmentsStack
+            if (layersActionBarLayout != null) {
+                java.util.List<BaseFragment> toRemove = new java.util.ArrayList<>();
+                for (BaseFragment fragment : layerFragmentsStack) {
+                    Integer ownerTaskId = fragmentOwnerTaskIds.get(fragment);
+                    if (ownerTaskId != null && ownerTaskId == myTaskId) {
+                        toRemove.add(fragment);
+                    }
+                }
+                for (BaseFragment fragment : toRemove) {
+                    fragment.onFragmentDestroy();
+                    layerFragmentsStack.remove(fragment);
+                    fragmentOwnerTaskIds.remove(fragment);
+                }
+            }
+        }
         super.onDestroy();
         onFinish();
         FloatingDebugController.onDestroy();
@@ -6733,6 +6820,41 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && frameMetricsOverlayView != null) {
             frameMetricsOverlayView.detach();
         }
+    }
+
+    private boolean hasOtherLaunchActivityInstanceInAppTasks() {
+        try {
+            ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+            if (am == null) {
+                return false;
+            }
+            final int myTaskId = getTaskId();
+            final String launchClassName = LaunchActivity.class.getName();
+            final java.util.List<ActivityManager.AppTask> tasks = am.getAppTasks();
+            if (tasks == null) {
+                return false;
+            }
+            for (int i = 0, size = tasks.size(); i < size; i++) {
+                ActivityManager.AppTask task = tasks.get(i);
+                if (task == null) {
+                    continue;
+                }
+                ActivityManager.RecentTaskInfo info = task.getTaskInfo();
+                if (info == null || info.id == myTaskId) {
+                    continue;
+                }
+                Intent baseIntent = info.baseIntent;
+                if (baseIntent == null || baseIntent.getComponent() == null) {
+                    continue;
+                }
+                if (launchClassName.equals(baseIntent.getComponent().getClassName())) {
+                    return true;
+                }
+            }
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+        return false;
     }
 
     @Override
