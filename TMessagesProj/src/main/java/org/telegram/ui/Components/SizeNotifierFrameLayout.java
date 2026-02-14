@@ -58,7 +58,7 @@ import org.telegram.ui.ChatBackgroundDrawable;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class SizeNotifierFrameLayout extends FrameLayout {
+public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colorable {
 
     public boolean DRAW_USING_RENDERNODE() {
         return Build.VERSION.SDK_INT >= 31 && SharedConfig.useNewBlur;
@@ -1250,4 +1250,8 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
     }
 
+    @Override
+    public void updateColors() {
+
+    }
 }

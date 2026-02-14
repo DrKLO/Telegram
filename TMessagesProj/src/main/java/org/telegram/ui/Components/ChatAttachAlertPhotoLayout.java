@@ -66,6 +66,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -107,6 +108,8 @@ import org.telegram.ui.Cells.PhotoAttachPermissionCell;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -807,7 +810,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         gridView.getFastScroll().usePadding = false;
         gridView.getFastScroll().topOffset = ActionBar.getCurrentActionBarHeight(); // + AndroidUtilities.statusBarHeight;
         gridView.setAdapter(adapter = new PhotoAttachAdapter(context, needCamera));
-        gridView.addItemDecoration(cameraViewItemDecoration = new CameraViewItemDecoration());
+        gridView.addItemDecoration(cameraViewItemDecoration = new CameraViewItemDecoration(gridView));
         adapter.createCache();
         gridView.setClipToPadding(false);
         gridView.setItemAnimator(null);
@@ -1494,6 +1497,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
         });
     }
+
+
 
     private void requestGalleryPermission() {
         try {
@@ -3398,8 +3403,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
     }
 
-    private static int getTopScrollOffset() {
-        return dp(7) + ActionBar.getCurrentActionBarHeight(); // + AndroidUtilities.statusBarHeight;
+    private int getTopScrollOffset() {
+        return dp(7) + ActionBar.getCurrentActionBarHeight() + listAdditionalH; // + AndroidUtilities.statusBarHeight;
     }
 
     @Override
@@ -3633,7 +3638,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         View child = gridView.getChildAt(0);
         RecyclerListView.Holder holder = (RecyclerListView.Holder) gridView.findContainingViewHolder(child);
-        int top = child.getTop();
+        int top = child.getTop() - listAdditionalH;
         int newOffset = dp(7);
         if (top >= dp(7) && holder != null && holder.getAdapterPosition() == 0) {
             newOffset = top;
@@ -3950,6 +3955,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     public static final int PADDING = 2;
     public static final int GAP = 2;
 
+    public int listAdditionalH;
+
     @Override
     public void onPreMeasure(int availableWidth, int availableHeight) {
         ignoreLayout = true;
@@ -3964,6 +3971,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         //
         // LayoutParams layoutParams = (LayoutParams) getLayoutParams();
         // layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
+
+        listAdditionalH = AndroidUtilities.navigationBarHeight + dp(48);
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) gridView.getLayoutParams();
+        lp.topMargin = -listAdditionalH;
 
         itemSize = (availableWidth - dp(PADDING * 2) - dp(GAP * 2)) / itemsPerRow;
 
@@ -3997,6 +4008,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         paddingTop += insetsTop;
         paddingTop -= dp(52);
+        paddingTop += listAdditionalH;
         if (paddingTop < 0) {
             paddingTop = 0;
         }
@@ -4656,18 +4668,38 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
     }
 
-    private class CameraViewItemDecoration extends RecyclerView.ItemDecoration {
+    private class CameraViewItemDecoration extends RecyclerView.ItemDecoration implements IBlur3Capture {
         private Drawable placeholderDrawable;
         private final Path clipPath = new Path();
         private final Drawable cameraDrawable;
+        private final @NonNull RecyclerView parent;
 
-        public CameraViewItemDecoration() {
-            cameraDrawable = getContext().getResources().getDrawable(R.drawable.camera).mutate();
+        public CameraViewItemDecoration(@NonNull RecyclerView parent) {
+            this.parent = parent;
+            this.cameraDrawable = getContext().getResources().getDrawable(R.drawable.camera).mutate();
+        }
+
+
+        @Override
+        public void capture(Canvas canvas, RectF position) {
+            draw(canvas, parent, null, position);
         }
 
         @Override
         public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            draw(c, parent, null, null);
+        }
+
+        @Override
+        public void captureCalculateHash(IBlur3Hash builder, RectF position) {
+            draw(null, parent, builder, position);
+        }
+
+        private void draw(@Nullable Canvas c, @NonNull RecyclerView parent, @Nullable IBlur3Hash builder, @Nullable RectF position) {
             if (cameraAnimationInProgress || cameraOpened || !adapter.hasCamera || noCameraPermissions || noGalleryPermissions) {
+                if (builder != null) {
+                    builder.unsupported();
+                }
                 return;
             }
 
@@ -4680,6 +4712,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (viewHolder != null) {
                     top = viewHolder.itemView.getTop() - dp(GAP) - itemSize;
                 } else {
+                    if (builder != null) {
+                        builder.unsupported();
+                    }
                     return;
                 }
             }
@@ -4687,6 +4722,27 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             final int left = viewHolder.itemView.getLeft();
             final int right = left + itemSize;
             final int bottom = top + itemSize * 2 + dp(GAP);
+
+            if (builder != null) {
+                builder.add(left);
+                builder.add(top);
+                builder.add(right);
+                builder.add(bottom);
+            }
+
+            if (position != null && !position.intersects(left, top, right, bottom)) {
+                return;
+            }
+
+            if (builder != null) {
+                builder.add(placeholderDrawable != null && !(cameraView != null && cameraView.isInited() && !isHidden));
+                builder.add(cameraView != null);
+                builder.add(cameraDrawable != null);
+            }
+
+            if (c == null) {
+                return;
+            }
 
             final float r = dp(RADIUS * parentAlert.cornerRadius);
             clipPath.rewind();

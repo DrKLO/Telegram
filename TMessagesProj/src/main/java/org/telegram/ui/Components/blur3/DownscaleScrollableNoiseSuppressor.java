@@ -10,7 +10,6 @@ import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -363,6 +362,7 @@ public class DownscaleScrollableNoiseSuppressor {
     }
 
     private final RectF tmpRectF = new RectF();
+    private final Blur3HashImpl builder = new Blur3HashImpl();
 
     public boolean invalidateResultRenderNodes(IBlur3Capture capture, int width, int height) {
         int updatedCount = 0;
@@ -371,8 +371,11 @@ public class DownscaleScrollableNoiseSuppressor {
             final Rect position = sourcePart.position;
             tmpRectF.set(position);
 
-            final long hash = capture.captureCalculateHash(tmpRectF);
-            if (hash != -1 && sourcePart.lastHash == hash && sourcePart.renderNode.hasDisplayList()) {
+            builder.start();
+            capture.captureCalculateHash(builder, tmpRectF);
+            final long hash = builder.get();
+
+            if (!builder.isUnsupported() && sourcePart.lastHash == hash && sourcePart.renderNode.hasDisplayList()) {
                 continue;
             }
 

@@ -40,7 +40,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Bundle;
@@ -109,6 +108,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.utils.RectFMergeBounding;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -128,11 +128,13 @@ import org.telegram.ui.Business.ChatAttachAlertQuickRepliesLayout;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.blur3.Blur3HashImpl;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
@@ -1173,7 +1175,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             iBlur3SourceGlass = new BlurredBackgroundSourceRenderNode(null);
             iBlur3SourceGlass.setupRenderer(new RenderNodeWithHash.Renderer() {
                 @Override
-                public void renderNodeCalculateHash(RenderNodeWithHash.HashBuilder hash) {
+                public void renderNodeCalculateHash(IBlur3Hash hash) {
                     hash.add(getThemedColor(Theme.key_windowBackgroundWhite));
                     hash.add(SharedConfig.chatBlurEnabled());
                 }
@@ -1190,7 +1192,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
             iBlur3SourceGlassFrosted.setupRenderer(new RenderNodeWithHash.Renderer() {
                 @Override
-                public void renderNodeCalculateHash(RenderNodeWithHash.HashBuilder hash) {
+                public void renderNodeCalculateHash(IBlur3Hash hash) {
                     hash.add(getThemedColor(Theme.key_windowBackgroundWhite));
                     hash.add(SharedConfig.chatBlurEnabled());
                 }
@@ -1219,18 +1221,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         iBlur3Capture = new IBlur3Capture() {
             @Override
-            public long captureCalculateHash(RectF position) {
-                long hash = 0;
+            public void captureCalculateHash(IBlur3Hash builder, RectF position) {
                 for (int a = 0; a < 2; a++) {
                     AttachAlertLayout layout = a == 0 ? currentAttachLayout : nextAttachLayout;
                     if (layout != null && layout.iBlur3Capture != null && layout.getVisibility() == View.VISIBLE && layout.getAlpha() > 0.9f) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            hash = MediaDataController.calcHash(hash, layout.getUniqueDrawingId());
-                        }
-                        hash = MediaDataController.calcHash(hash, layout.iBlur3Capture.captureCalculateHash(position));
+                        builder.add(layout);
+                        layout.iBlur3Capture.captureCalculateHash(builder, position);
                     }
                 }
-                return hash;
             }
 
             @Override
@@ -1641,6 +1639,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if (captionAbove) {
                     updateCommentTextViewPosition();
                 }
+                if (photoLayout != null && photoLayout.gridView != null && photoLayout.gridView.getFastScroll() != null) {
+                    photoLayout.gridView.getFastScroll().topOffset = ActionBar.getCurrentActionBarHeight() + photoLayout.listAdditionalH
+                            + (captionAbove ? (int) (topCommentContainer.getMeasuredHeight() * topCommentContainer.getAlpha()) : 0);
+                    photoLayout.gridView.getFastScroll().invalidate();
+                }
             }
 
             @Override
@@ -1975,18 +1978,20 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !SharedConfig.chatBlurEnabled() || iBlur3SourceGlassFrosted == null) {
+                if (currentAttachLayout != photoLayout || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !SharedConfig.chatBlurEnabled() || iBlur3SourceGlassFrosted == null || !BlurredBackgroundProviderImpl.checkBlurEnabled(currentAccount, resourcesProvider)) {
                     canvas.drawRect(rectTmp, blurScrimPaint);
                     return;
                 }
 
+                final boolean isThemeLight = resourcesProvider != null ? !resourcesProvider.isDark() : !Theme.isCurrentThemeDark();
+                int blurAlpha = isThemeLight ? 216 : ChatActivity.ACTION_BAR_BLUR_ALPHA;
                 canvas.save();
                 canvas.translate(0, -y);
                 iBlur3SourceGlassFrosted.draw(canvas, rectTmp.left, rectTmp.top + y, rectTmp.right, rectTmp.bottom + y);
                 canvas.restore();
 
                 final int oldScrimAlpha = blurScrimPaint.getAlpha();
-                blurScrimPaint.setAlpha(ChatActivity.ACTION_BAR_BLUR_ALPHA);
+                blurScrimPaint.setAlpha(blurAlpha);
                 canvas.drawRect(rectTmp, blurScrimPaint);
                 blurScrimPaint.setAlpha(oldScrimAlpha);
             }
@@ -2098,7 +2103,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         actionBar.setTitleColor(getThemedColor(Theme.key_dialogTextBlack));
         actionBar.setOccupyStatusBar(true);
         actionBar.setAlpha(0.0f);
-        // actionBar.setDrawBlurBackground(sizeNotifierFrameLayout);
+        actionBar.setDrawBlurBackground(sizeNotifierFrameLayout);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -3814,6 +3819,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (forceDarkTheme) {
             checkColors();
             navBarColorKey = -1;
+        }
+
+        if (photoLayout != null) {
+            photoLayout.gridView.getFastScroll().applyBlurDrawables(iBlur3FactoryLiquidGlass, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
         }
 
         passcodeView = new PasscodeView(context);
@@ -6297,8 +6306,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (photoLayout != null) {
             photoLayout.checkCameraViewPosition();
             if (photoLayout.gridView != null && photoLayout.gridView.getFastScroll() != null) {
-                photoLayout.gridView.getFastScroll().topOffset = (captionAbove ? (int) (topCommentContainer.getMeasuredHeight() * topCommentContainer.getAlpha()) : 0)
-                    + ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+                photoLayout.gridView.getFastScroll().topOffset = ActionBar.getCurrentActionBarHeight() + photoLayout.listAdditionalH
+                    + (captionAbove ? (int) (topCommentContainer.getMeasuredHeight() * topCommentContainer.getAlpha()) : 0);
                 photoLayout.gridView.getFastScroll().invalidate();
             }
         }
@@ -6328,10 +6337,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
     private final RectF iBlur3PositionActionBar = new RectF();
-    private final RectF iBlur3PositionMainTabs = new RectF(); {
-        // iBlur3Positions.add(iBlur3PositionActionBar);
+    private final RectF iBlur3PositionMainTabs = new RectF();
+    private final RectF iBlur3PositionFastScroll = new RectF();
+    {
+        iBlur3Positions.add(iBlur3PositionActionBar);
         iBlur3Positions.add(iBlur3PositionMainTabs);
+        iBlur3Positions.add(iBlur3PositionFastScroll);
     }
+
+    private final ArrayList<RectF> iBlur3PositionsMerged = new ArrayList<>();
 
     private void blur3_InvalidateBlur() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
@@ -6340,14 +6354,28 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         ViewPositionWatcher.computeRectInParent(buttonsRecyclerViewWrapper, containerView, iBlur3PositionMainTabs);
 
-
-        // iBlur3PositionActionBar.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+        iBlur3PositionActionBar.set(0, 0, containerView.getMeasuredWidth(), actionBar.getMeasuredHeight());
+        iBlur3PositionActionBar.inset(0, -dp(48));
 
         final int bottomBlurHeight = Math.max(AndroidUtilities.navigationBarHeight, getEmojiPadding()) + dp(180);
         iBlur3PositionMainTabs.set(0, containerView.getMeasuredHeight() - bottomBlurHeight, containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
         iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, 1);
+        boolean hasFastScroll = false;
+        if (currentAttachLayout == photoLayout && photoLayout != null && photoLayout.gridView.getFastScroll() != null) {
+            photoLayout.gridView.getFastScroll().fillDrawablesRect(iBlur3PositionFastScroll);
+
+            ViewPositionWatcher.computeRectInParent(photoLayout.gridView.getFastScroll(), containerView, AndroidUtilities.rectTmp);
+
+            iBlur3PositionFastScroll.offset(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
+            iBlur3PositionFastScroll.inset(-dp(48), -dp(48));
+            iBlur3PositionFastScroll.left = Math.max(0, iBlur3PositionFastScroll.left);
+            iBlur3PositionFastScroll.right = Math.min(containerView.getMeasuredWidth(), iBlur3PositionFastScroll.right);
+            hasFastScroll = true;
+        }
+
+        final int mergedPositionsCount = RectFMergeBounding.mergeOverlapping(iBlur3Positions, hasFastScroll ? 3 : 2, iBlur3PositionsMerged);
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3PositionsMerged, mergedPositionsCount);
         scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
     }
 }

@@ -9,8 +9,8 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.MediaDataController;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 
 public class ViewGroupPartRenderer implements IBlur3Capture {
@@ -73,26 +73,25 @@ public class ViewGroupPartRenderer implements IBlur3Capture {
     }
 
     @Override
-    public long captureCalculateHash(RectF position) {
+    public void captureCalculateHash(IBlur3Hash builder, RectF position) {
         if (!ViewPositionWatcher.computeCoordinatesInParent(listView, listViewParent, tmpDrawListViewPointF)) {
-            return -1;
+            builder.unsupported();
+            return;
         }
 
 
         if (listView instanceof IBlur3Capture && !ignoreBlurCap) {
+            builder.addF(tmpDrawListViewPointF.x);
+            builder.addF(tmpDrawListViewPointF.y);
+
             IBlur3Capture capture = (IBlur3Capture) listView;
 
             savedPos.set(position);
             position.offset(-tmpDrawListViewPointF.x, -tmpDrawListViewPointF.y);
-            long hash = capture.captureCalculateHash(position);
+            capture.captureCalculateHash(builder, position);
             position.set(savedPos);
-
-            hash = MediaDataController.calcHash(hash, Float.floatToIntBits(tmpDrawListViewPointF.x));
-            hash = MediaDataController.calcHash(hash, Float.floatToIntBits(tmpDrawListViewPointF.y));
-
-            return hash;
         } else {
-            return -1;
+            builder.unsupported();
         }
     }
 }

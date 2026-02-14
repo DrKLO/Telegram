@@ -272,6 +272,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 canvas.drawRect(rectTmp, blurScrimPaint);
                 blurScrimPaint.setAlpha(oldScrimAlpha);
             }
+
+            @Override
+            public void updateColors() {
+                super.updateColors();
+                SettingsActivity.this.updateColors();
+            }
         };
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -356,9 +362,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             private final Paint blurScrimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             @Override
             protected void onDraw(@NonNull Canvas canvas) {
-//                int top = (int) top();
-//                top = lerp(top, actionBar.getHeight(), searchItem.getSearchContainer() == null ? 0 : searchItem.getSearchContainer().getAlpha());
-//                top = Math.max(actionBar.getHeight(), top);
                 int top = actionBar.getHeight();
                 AndroidUtilities.rectTmp2.set(0, 0, getMeasuredWidth(), top);
                 blurScrimPaint.setColor(Theme.getColor(Theme.key_actionBarDefault, resourceProvider));
@@ -534,6 +537,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
 
     public void updateColors() {
+        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
         contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
@@ -541,6 +546,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         final int navigationBarColor = getThemedColor(Theme.key_windowBackgroundWhite);
         navigationBar.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(navigationBarColor, 0.0f), navigationBarColor }));
+
+        actionBarBackground.invalidate();
+        listView.invalidate();
     }
 
     private boolean actionBarVisible;
@@ -887,7 +895,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return WindowInsetsCompat.CONSUMED;
     }
 
-    public static class AccountCell extends LinearLayout {
+    public static class AccountCell extends LinearLayout implements Theme.Colorable {
 
         private final Theme.ResourcesProvider resourcesProvider;
         private AvatarDrawable avatarDrawable;
@@ -962,6 +970,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
         }
 
+        @Override
         public void updateColors() {
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             counterView.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
@@ -1051,7 +1060,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return super.onBackPressed(invoked);
     }
 
-    public static class SettingCell extends LinearLayout {
+    public static class SettingCell extends LinearLayout implements Theme.Colorable {
 
         private final Theme.ResourcesProvider resourcesProvider;
         private final Background iconBackground;
@@ -1096,6 +1105,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             updateColors();
         }
 
+        @Override
         public void updateColors() {
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
@@ -1221,14 +1231,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    public static class SuggestionCell extends LinearLayout {
+    public static class SuggestionCell extends LinearLayout implements Theme.Colorable {
 
+        private final Theme.ResourcesProvider resourcesProvider;
         private LinkSpanDrawable.LinksTextView titleView;
         private LinkSpanDrawable.LinksTextView textView;
         private ButtonWithCounterView no, yes;
 
         public SuggestionCell(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourcesProvider = resourcesProvider;
 
             setOrientation(VERTICAL);
 
@@ -1249,6 +1261,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             buttons.addView(yes, LayoutHelper.createLinear(0, 42, 1f, Gravity.FILL_VERTICAL, 0, 0, 0, 0));
 
             addView(buttons, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 24, 18, 24, 16));
+        }
+
+        public void updateColors() {
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         }
 
         public void set(

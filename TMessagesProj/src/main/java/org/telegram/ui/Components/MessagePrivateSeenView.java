@@ -219,7 +219,7 @@ public class MessagePrivateSeenView extends FrameLayout {
         descriptionView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(lastSeen ? (premiumLocked ? R.string.PremiumLastSeenText1Locked : R.string.PremiumLastSeenText1) : (premiumLocked ? R.string.PremiumReadText1Locked : R.string.PremiumReadText1), username)));
         layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 9, 32, 19));
 
-        ButtonWithCounterView button1 = new ButtonWithCounterView(context, resourcesProvider);
+        ButtonWithCounterView button1 = new ButtonWithCounterView(context, resourcesProvider).setRound();
         button1.setText(LocaleController.getString(lastSeen ? R.string.PremiumLastSeenButton1 : R.string.PremiumReadButton1), false);
         layout.addView(button1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL));
         button1.setOnClickListener(v -> {

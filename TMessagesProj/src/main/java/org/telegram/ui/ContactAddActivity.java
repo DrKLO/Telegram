@@ -512,10 +512,15 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
         actionBar.setAdaptiveBackground(listView);
 
+        if (addContact && needAddException) {
+            checkShare = true;
+        }
+        listView.adapter.update(false);
+
         return fragmentView = frameLayout;
     }
 
-    private boolean checkShare = true;
+    private boolean checkShare = false;
 
     private boolean firstSet = true;
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {

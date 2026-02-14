@@ -9776,6 +9776,7 @@
     <string name="TodoCheck">Check</string>
     <string name="TodoUncheck">Uncheck</string>
     <string name="Gift2ReleasedBy">released by **%s**</string>
+    <string name="Gift2ReleasedBy2">by **%s**</string>
     <string name="Gift2ActionReleasedBy">Released by **%s**</string>
     <string name="StoriesRemoveFromRecent">Remove from Recent</string>
     <string name="TodoItemQuote">Reply to Item</string>
@@ -10343,6 +10344,7 @@
     <string name="GiftCraftViewAllVariants">View all craftable models  ></string>
     <string name="GiftCraftButton">Craft Gift</string>
     <string name="GiftCraftButtonFailed">Craft New Gift</string>
+    <string name="GiftCraftButtonNext">Craft New Gift</string>
     <string name="GiftCraftButtonEmpty">Tap + to add your first gift</string>
     <string name="GiftCraftSuccessChance">**%s** Success Chance</string>
     <string name="GiftCraftProgressTitle">Crafting</string>
@@ -10371,7 +10373,7 @@
     <string name="GiftCraftInfoFeature3Text">Use gifts with the same attribute to boost its chance.</string>
     <string name="GiftCraftInfoButton">Start Crafting</string>
     <string name="GiftCraftLaterTitle">Try Later</string>
-    <string name="GiftCraftLaterText">You will be able to craft this gift on %s.</string>
+    <string name="GiftCraftLaterText">You will be able to craft this gift %s.</string>
     <string name="GiftCrafted">crafted</string>
     <string name="GiftCraft">Craft</string>
     <string name="GiftCraftUnavailableTitle">Crafting Unavailable</string>

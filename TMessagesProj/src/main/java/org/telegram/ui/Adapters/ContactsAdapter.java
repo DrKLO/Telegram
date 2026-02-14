@@ -340,7 +340,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         } else {
             if (section == 0) {
                 if (isEmpty) {
-                    return (includeSearch ? 1 : 0) + 1;
+                    return (includeSearch ? 1 : 0) + 2;
                 }
 
                 if (isAdmin) {

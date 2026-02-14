@@ -79,6 +79,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.quickforward.BlurVisibilityDrawable;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.ViewPagerActivity;
 
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
@@ -320,13 +321,17 @@ public class Bulletin {
                     layout.removeOnLayoutChangeListener(this);
                     if (showing) {
                         layout.onShow();
-                        currentDelegate = findDelegate(containerFragment, containerLayout);
-                        if (currentDelegate == null && containerFragment != null) {
-                            final BaseFragment fragment = containerFragment;
+                        BaseFragment fragment = containerFragment;
+                        if (fragment instanceof ViewPagerActivity) {
+                            fragment = ((ViewPagerActivity) fragment).getCurrentVisibleFragment();
+                        }
+                        currentDelegate = findDelegate(fragment, containerLayout);
+                        if (currentDelegate == null && fragment != null) {
+                            final BaseFragment finalFragment = fragment;
                             currentDelegate = new Delegate() {
                                 @Override
                                 public int getBottomOffset(int tag) {
-                                    return fragment.getBottomInset();
+                                    return finalFragment.getBottomInset();
                                 }
                             };
                         }

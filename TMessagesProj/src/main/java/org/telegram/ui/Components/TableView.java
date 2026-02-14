@@ -162,8 +162,8 @@ public class TableView extends TableLayout {
     public TableRow addRowUserWithEmojiStatus(CharSequence title, final int currentAccount, final long did, Runnable onClick) {
         final LinkSpanDrawable.LinksSimpleTextView textView = new LinkSpanDrawable.LinksSimpleTextView(getContext(), resourcesProvider);
         textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
-        textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        textView.setLinkTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         textView.setTextSize(14);
         AvatarSpan avatarSpan = new AvatarSpan(textView, currentAccount, 24);
         CharSequence username;
@@ -491,7 +491,7 @@ public class TableView extends TableLayout {
         @Override
         protected void onDraw(Canvas canvas) {
             if (first || last) {
-                final float r = dp(8);
+                final float r = dp(10);
                 table.radii[0] = table.radii[1] = first ? r : 0; // top left
                 table.radii[2] = table.radii[3] = 0; // top right
                 table.radii[4] = table.radii[5] = 0; // bottom right
@@ -548,7 +548,7 @@ public class TableView extends TableLayout {
         @Override
         protected void onDraw(Canvas canvas) {
             if (first || last) {
-                final float r = dp(8);
+                final float r = dp(10);
                 table.radii[0] = table.radii[1] = first ? r : 0; // top left
                 table.radii[2] = table.radii[3] = first ? r : 0; // top right
                 table.radii[4] = table.radii[5] = last ? r : 0; // bottom right
@@ -609,7 +609,7 @@ public class TableView extends TableLayout {
         @Override
         protected void onDraw(Canvas canvas) {
             if (first || last) {
-                final float r = dp(8);
+                final float r = dp(10);
                 table.radii[0] = table.radii[1] = first && left ? r : 0; // top left
                 table.radii[2] = table.radii[3] = first && right ? r : 0; // top right
                 table.radii[4] = table.radii[5] = last && right ? r : 0; // bottom right

@@ -4,11 +4,10 @@ import android.graphics.Canvas;
 import android.graphics.RecordingCanvas;
 import android.graphics.RenderNode;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.MediaDataController;
+import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class RenderNodeWithHash {
@@ -16,7 +15,7 @@ public class RenderNodeWithHash {
 
     public final RenderNode renderNode;
     private final Renderer renderer;
-    private final HashBuilder hashBuilder = new HashBuilder();
+    private final Blur3HashImpl hashBuilder = new Blur3HashImpl();
 
     private long lastHash = 0;
     private int lastWidth, lastHeight;
@@ -33,14 +32,14 @@ public class RenderNodeWithHash {
 
     public interface Renderer {
         void renderNodeUpdateDisplayList(Canvas canvas);
-        default void renderNodeCalculateHash(HashBuilder hash) { hash.unsupported(); }
+        default void renderNodeCalculateHash(IBlur3Hash hash) { hash.unsupported(); }
     }
 
     public void updateDisplayListIfNeeded() {
         final int width = renderNode.getWidth();
         final int height = renderNode.getHeight();
 
-        hashBuilder.reset();
+        hashBuilder.start();
         renderer.renderNodeCalculateHash(hashBuilder);
 
         final long hash = hashBuilder.get();
@@ -63,35 +62,5 @@ public class RenderNodeWithHash {
 
     public void invalidate() {
         lastHash = 0;
-    }
-
-
-
-    public static class HashBuilder {
-        private long hash;
-
-        private void reset() {
-            hash = 0;
-        }
-
-        public long get() {
-            return hash;
-        }
-
-        public void add(long value) {
-            hash = MediaDataController.calcHash(hash, value);
-        }
-
-        public void addF(float value) {
-            hash = MediaDataController.calcHash(hash, Float.floatToIntBits(value));
-        }
-
-        public void add(boolean value) {
-            hash = MediaDataController.calcHash(hash, value ? 1 : 0);
-        }
-
-        public void unsupported() {
-            hash = -1;
-        }
     }
 }
