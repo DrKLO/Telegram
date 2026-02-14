@@ -8179,12 +8179,12 @@ public class Theme {
                                 int value;
                                 if (param.length() > 0 && param.charAt(0) == '#') {
                                     try {
-                                        value = Color.parseColor(param);
+                                        value = Color.parseColor(param.trim());
                                     } catch (Exception ignore) {
-                                        value = Utilities.parseInt(param);
+                                        value = Utilities.parseInt(param.trim());
                                     }
                                 } else {
-                                    value = Utilities.parseInt(param);
+                                    value = Utilities.parseInt(param.trim());
                                 }
                                 int keyFromString = ThemeColors.stringKeyToInt(key);
                                 if (keyFromString >= 0) {
