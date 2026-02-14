@@ -52,8 +52,11 @@ import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationCompat.CarExtender;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
@@ -163,6 +166,8 @@ public class NotificationsController extends BaseController {
     public static final int SETTING_SOUND_OFF = 1;
 
     NotificationsSettingsFacade dialogsNotificationsFacade;
+
+    private static final String TAG = "NotificationsController";
 
     static {
         if (Build.VERSION.SDK_INT >= 26 && ApplicationLoader.applicationContext != null) {
@@ -5059,6 +5064,8 @@ public class NotificationsController extends BaseController {
                 personCache.put(-chat.id, personBuilder.build());
             }
 
+            PendingIntent replyPendingIntent = null;
+            RemoteInput remoteInputWear = null;
             NotificationCompat.Action wearReplyAction = null;
 
             if ((!isChannel || isSupergroup) && canReply && !SharedConfig.isWaitingForPasscodeEnter && selfUserId != dialogId && !UserObject.isReplyUser(dialogId) && MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(dialogId) <= 0) {
@@ -5067,8 +5074,8 @@ public class NotificationsController extends BaseController {
                 replyIntent.putExtra("max_id", maxId);
                 replyIntent.putExtra("topic_id", topicId);
                 replyIntent.putExtra("currentAccount", currentAccount);
-                PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, internalId, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-                RemoteInput remoteInputWear = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString(R.string.Reply)).build();
+                replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, internalId, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                remoteInputWear = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString(R.string.Reply)).build();
                 String replyToString;
                 if (DialogObject.isChatDialog(dialogId)) {
                     replyToString = LocaleController.formatString(R.string.ReplyToGroup, name);
@@ -5136,6 +5143,8 @@ public class NotificationsController extends BaseController {
             boolean[] preview = new boolean[1];
             ArrayList<TLRPC.TL_keyboardButtonRow> rows = null;
             int rowsMid = 0;
+            ArrayList<String> carConversationLines = dialogKey.story ? null : new ArrayList<>();
+            long carLatestTimestamp = 0L;
             if (dialogKey.story) {
                 ArrayList<String> names = new ArrayList<>();
                 ArrayList<Object> avatars = new ArrayList<>();
@@ -5201,11 +5210,25 @@ public class NotificationsController extends BaseController {
                     if (dialogId != selfUserId && messageObject.messageOwner.from_scheduled && DialogObject.isUserDialog(dialogId)) {
                         message = String.format("%1$s: %2$s", LocaleController.getString(R.string.NotificationMessageScheduledName), message);
                         text.append(message);
+                        if (carConversationLines != null) {
+                            if (carConversationLines.isEmpty()) {
+                                carLatestTimestamp = ((long) messageObject.messageOwner.date) * 1000;
+                            }
+                            carConversationLines.add(message);
+                        }
                     } else {
+                        String formattedLine;
                         if (senderName[0] != null) {
-                            text.append(String.format("%1$s: %2$s", senderName[0], message));
+                            formattedLine = String.format("%1$s: %2$s", senderName[0], message);
                         } else {
-                            text.append(message);
+                            formattedLine = message;
+                        }
+                        text.append(formattedLine);
+                        if (carConversationLines != null) {
+                            if (carConversationLines.isEmpty()) {
+                                carLatestTimestamp = ((long) messageObject.messageOwner.date) * 1000;
+                            }
+                            carConversationLines.add(formattedLine);
                         }
                     }
 
@@ -5470,6 +5493,9 @@ public class NotificationsController extends BaseController {
                 summaryExtender.setDismissalId("summary_" + dismissalID);
                 notificationBuilder.extend(summaryExtender);
             }
+            if (!waitingForPasscode && !dialogKey.story && (lastMessageObject == null || !lastMessageObject.isStoryReactionPush)) {
+                wearableExtender.addAction(readAction);
+            }
             wearableExtender.setBridgeTag("tgaccount" + selfUserId);
 
             long date;
@@ -5497,6 +5523,13 @@ public class NotificationsController extends BaseController {
                     .extend(wearableExtender)
                     .setSortKey(String.valueOf(Long.MAX_VALUE - date))
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);
+
+            if (carConversationLines != null && !carConversationLines.isEmpty()) {
+                android.util.Log.d(TAG, "build dialog " + dialogId + " lines=" + carConversationLines.size() + " account=" + currentAccount);
+                extendForCar(builder, conversationName, carConversationLines, readPendingIntent, carLatestTimestamp != 0L ? carLatestTimestamp : date, replyPendingIntent, remoteInputWear);
+            } else {
+                android.util.Log.d(TAG, "skip dialog " + dialogId + " (no car lines)");
+            }
 
             try {
                 Intent dismissIntent = new Intent(ApplicationLoader.applicationContext, NotificationDismissReceiver.class);
@@ -6293,6 +6326,35 @@ public class NotificationsController extends BaseController {
         if (minChangeTime != Long.MAX_VALUE) {
             notificationsQueue.postRunnable(checkStoryPushesRunnable, Math.max(0, delay));
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void extendForCar(NotificationCompat.Builder builder,String conversationName,List<String> messages,PendingIntent readIntent,long latestTimestamp,PendingIntent replyIntent,RemoteInput remoteInput) {
+        if (builder == null || conversationName == null || conversationName.isEmpty()) {
+            return;
+        }
+
+        NotificationCompat.CarExtender.UnreadConversation.Builder carBuilder = new NotificationCompat.CarExtender.UnreadConversation.Builder(conversationName);
+        carBuilder.setLatestTimestamp(latestTimestamp);
+
+        if (readIntent != null) {
+            carBuilder.setReadPendingIntent(readIntent);
+        }
+
+        if (replyIntent != null && remoteInput != null) {
+            carBuilder.setReplyAction(replyIntent, remoteInput);
+        }
+
+        if (messages != null && !messages.isEmpty()) {
+            for (int i = messages.size() - 1; i >= 0; i--) {
+                String msg = messages.get(i);
+                if (msg != null && !msg.isEmpty()) {
+                    carBuilder.addMessage(msg);
+                }
+            }
+        }
+
+        builder.extend(new NotificationCompat.CarExtender().setUnreadConversation(carBuilder.build()));
     }
 
     private String getTitle(TLRPC.Chat chat) {
