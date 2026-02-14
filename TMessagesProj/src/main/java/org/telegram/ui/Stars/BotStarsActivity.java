@@ -311,14 +311,14 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             protected boolean subTextSplitToWords() {
                 return false;
             }
-        };
+        }.setRound();
         balanceButton.setEnabled(MessagesController.getInstance(currentAccount).channelRevenueWithdrawalEnabled);
         balanceButton.setText(getString(R.string.BotStarsButtonWithdrawShortAll), false);
         balanceButton.setOnClickListener(v -> {
             withdraw();
         });
 
-        adsButton = new ButtonWithCounterView(context, getResourceProvider());
+        adsButton = new ButtonWithCounterView(context, getResourceProvider()).setRound();
         adsButton.setEnabled(true);
         adsButton.setText(getString(R.string.MonetizationStarsAds), false);
         adsButton.setOnClickListener(v -> {
@@ -391,6 +391,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onItemClick, this::onItemLongClick);
         listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        listView.setSections();
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -400,6 +401,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                 }
             }
         });
+        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView = frameLayout;
     }

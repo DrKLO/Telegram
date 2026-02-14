@@ -142,7 +142,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.max(0, lastItemHeight), MeasureSpec.EXACTLY));
                         }
                     };
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
                 case HEADER_PADDING:
                     view = getHeader(getContext());
@@ -151,7 +151,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                     view = new TextInfoPrivacyCell(parent.getContext(), 20, resourceProvider);
                     break;
                 case DIVIDER_VIEW_TYPE:
-                    view = new ShadowSectionCell(parent.getContext(), 12, Theme.getColor(Theme.key_windowBackgroundGray));
+                    view = new ShadowSectionCell(parent.getContext(), 12, 0);
                     break;
                 case OVERVIEW_TYPE:
                     view = new StatisticActivity.OverviewCell(getContext());
@@ -200,7 +200,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                     break;
                 case SHOW_BOOST_BY_GIFTS:
                     TextCell textCell = new TextCell(getContext());
-                    textCell.setTextAndIcon(LocaleController.formatString("BoostingGetBoostsViaGifts", R.string.BoostingGetBoostsViaGifts), R.drawable.msg_gift_premium, false);
+                    textCell.setTextAndIcon(LocaleController.formatString(R.string.BoostingGetBoostsViaGifts), R.drawable.msg_gift_premium, false);
                     textCell.offsetFromImage = 64;
                     textCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
                     view = textCell;
@@ -263,9 +263,6 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
                 if (holder.getItemViewType() == HEADER_VIEW_TYPE_SMALL) {
                     headerCell.setPadding(dp(3), headerCell.getPaddingTop(), headerCell.getPaddingRight(), headerCell.getPaddingBottom());
                 }
-                if (holder.getItemViewType() == HEADER_VIEW_TYPE_OVERVIEW) {
-                    headerCell.setPadding(dp(6), 0, dp(6), headerCell.getPaddingBottom());
-                }
             } else if (holder.getItemViewType() == OVERVIEW_TYPE) {
                 StatisticActivity.OverviewCell overviewCell = (StatisticActivity.OverviewCell) holder.itemView;
                 overviewCell.setData(0, Integer.toString(boostsStatus.level), null, LocaleController.getString(R.string.BoostsLevel2));
@@ -291,12 +288,7 @@ public class BoostsActivity extends GradientHeaderActivity implements Notificati
             } else if (holder.getItemViewType() == DIVIDER_TEXT_VIEW_TYPE) {
                 TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
                 privacyCell.setText(items.get(position).title);
-                boolean isLast = position == items.size() - 2;
-                Drawable shadowDrawable = Theme.getThemedDrawable(getContext(), isLast ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourceProvider));
-                Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-                combinedDrawable.setFullsize(true);
-                privacyCell.setBackground(combinedDrawable);
+                privacyCell.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.875f));
             } else if (holder.getItemViewType() == SHOW_MORE_VIEW_TYPE) {
                 ManageChatTextCell actionCell = (ManageChatTextCell) holder.itemView;
                 if (selectedTab == TAB_BOOSTS) {

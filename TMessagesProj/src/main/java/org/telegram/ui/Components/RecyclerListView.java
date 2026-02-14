@@ -8,6 +8,12 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.AndroidUtilities.quietSleep;
+import static org.telegram.ui.ActionBar.Theme.multAlpha;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
@@ -15,9 +21,11 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PointF;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -30,6 +38,8 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.Log;
+import android.util.Pair;
 import android.util.SparseIntArray;
 import android.util.StateSet;
 import android.view.HapticFeedbackConstants;
@@ -45,36 +55,47 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.GraySectionCell;
+import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.FiltersSetupActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 
 @SuppressWarnings("JavaReflectionMemberAccess")
-public class RecyclerListView extends RecyclerView {
+public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     public final static int SECTIONS_TYPE_SIMPLE = 0,
             SECTIONS_TYPE_STICKY_HEADERS = 1,
             SECTIONS_TYPE_DATE = 2,
@@ -570,7 +591,10 @@ public class RecyclerListView extends RecyclerView {
                 radii[a] = AndroidUtilities.dp(44);
             }
 
-            scrollX = isRtl ? AndroidUtilities.dp(10) : AndroidUtilities.dp((type == LETTER_TYPE ? 132 : 240) - 15);
+            scrollX = isRtl ? dp(10) : dp((type == LETTER_TYPE ? 132 : 240) - 15);
+            if (hasSections()) {
+                scrollX += dp(isRtl ? -4 : 6);
+            }
             updateColors();
             setFocusableInTouchMode(true);
             ViewConfiguration vc = ViewConfiguration.get(context);
@@ -764,7 +788,7 @@ public class RecyclerListView extends RecyclerView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            int topPadding = usePadding ? getPaddingTop() : topOffset;
+            int topPadding = usePadding ? getPaddingTop() : 0;
             int y = topPadding + (int) Math.ceil((getMeasuredHeight() - topPadding - AndroidUtilities.dp(24 + 30)) * progress);
             rect.set(scrollX, AndroidUtilities.dp(12) + y, scrollX + AndroidUtilities.dp(5), AndroidUtilities.dp(12 + 30) + y);
             if (type == LETTER_TYPE) {
@@ -1404,7 +1428,9 @@ public class RecyclerListView extends RecyclerView {
     public RecyclerListView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.edgeEffectTrackerFactory = new EdgeEffectTrackerFactory();
 
+        setEdgeEffectFactory(edgeEffectTrackerFactory);
         setGlowColor(getThemedColor(Theme.key_actionBarDefault));
         selectorDrawable = Theme.getSelectorDrawable(getThemedColor(Theme.key_listSelector), false);
         selectorDrawable.setCallback(this);
@@ -1516,7 +1542,6 @@ public class RecyclerListView extends RecyclerView {
             canvas.drawRect(0, top - topMargin, getWidth(), bottom + bottomMargin, backgroundPaint);
         }
     }
-
     protected void drawSectionBackgroundExclusive(Canvas canvas, int fromAdapterPositionExclusive, int toAdapterPositionExclusive, int color) {
         int top = Integer.MAX_VALUE;
         int bottom = Integer.MIN_VALUE;
@@ -1686,7 +1711,7 @@ public class RecyclerListView extends RecyclerView {
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
                 if (linearLayoutManager.getOrientation() == LinearLayoutManager.VERTICAL) {
                     if (sectionsAdapter != null) {
-                        int paddingTop = getPaddingTop();
+                        int paddingTop = sectionsType == SECTIONS_TYPE_STICKY_HEADERS ? 0 : getPaddingTop();
                         if (sectionsType == SECTIONS_TYPE_STICKY_HEADERS || sectionsType == SECTIONS_TYPE_FAST_SCROLL_ONLY) {
                             int childCount = getChildCount();
                             int maxBottom = 0;
@@ -1894,7 +1919,7 @@ public class RecyclerListView extends RecyclerView {
     }
 
     public void setListSelectorColor(Integer color) {
-        Theme.setSelectorDrawableColor(selectorDrawable, color == null ? getThemedColor(Theme.key_listSelector) : color, true);
+        Theme.setSelectorDrawableColor(selectorDrawable, color == null ? getThemedColor(hasSections() ? Theme.key_settings_listSelector : Theme.key_listSelector) : color, true);
     }
 
     private GenericProvider<Integer, Integer> getSelectorColor;
@@ -2118,8 +2143,29 @@ public class RecyclerListView extends RecyclerView {
         return onInterceptTouchListener != null && onInterceptTouchListener.onInterceptTouchEvent(e) || super.onInterceptTouchEvent(e);
     }
 
+    private int activeTouches;
+    private boolean adaptiveOverScroll;
+
+    public void setAdaptiveOverScroll() {
+        adaptiveOverScroll = true;
+        setOverScrollMode(OVER_SCROLL_NEVER);
+    }
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        final int action = ev.getAction();
+        if (action == MotionEvent.ACTION_DOWN) {
+            if (activeTouches == 0 && adaptiveOverScroll) {
+                setOverScrollMode(OVER_SCROLL_ALWAYS);
+            }
+            activeTouches++;
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            activeTouches--;
+            if (activeTouches == 0 && adaptiveOverScroll) {
+                setOverScrollMode(OVER_SCROLL_NEVER);
+            }
+        }
+
         FastScroll fastScroll = getFastScroll();
         if (fastScroll != null && fastScroll.isVisible && fastScroll.isMoving && (ev.getActionMasked() != MotionEvent.ACTION_UP && ev.getActionMasked() != MotionEvent.ACTION_CANCEL)) {
             return true;
@@ -2561,58 +2607,73 @@ public class RecyclerListView extends RecyclerView {
         translateSelector = position <= 0 ? -1 : position;
     }
 
+    private void drawSelectors2(Canvas canvas) {
+        if (selectorRect.isEmpty() || selectorDrawable == null) {
+            return;
+        }
+
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
+            int bottomPadding;
+            if (getAdapter() instanceof SelectionAdapter) {
+                bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
+            } else {
+                bottomPadding = 0;
+            }
+            selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
+        } else {
+            selectorDrawable.setBounds(selectorRect);
+        }
+        canvas.save();
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
+            selectorTransformer.accept(canvas);
+        }
+        if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
+            canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
+            selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
+        }
+        drawSelector(canvas);
+        canvas.restore();
+    }
+
+    private void drawSelector(Canvas canvas) {
+        if (hasSections()) {
+            canvas.save();
+            clipChild(canvas, selectorView);
+            selectorDrawable.draw(canvas);
+            canvas.restore();
+        } else {
+            selectorDrawable.draw(canvas);
+        }
+    }
+
+    private boolean ignoreClipChild;
+
     @Override
-    protected void dispatchDraw(Canvas canvas) {
+    public boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (hasSections() && !ignoreClipChild) {
+            canvas.save();
+            clipChild(canvas, child);
+            boolean r = super.drawChild(canvas, child, drawingTime);
+            canvas.restore();
+            return r;
+        } else {
+            return super.drawChild(canvas, child, drawingTime);
+        }
+    }
+
+    @Override
+    protected void dispatchDraw(@NonNull Canvas canvas) {
         if (itemsEnterAnimator != null) {
             itemsEnterAnimator.dispatchDraw();
         }
 
-        if (drawSelection && drawSelectorBehind && !selectorRect.isEmpty() && selectorDrawable != null) {
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                int bottomPadding;
-                if (getAdapter() instanceof SelectionAdapter) {
-                    bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
-                } else {
-                    bottomPadding = 0;
-                }
-                selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
-            } else {
-                selectorDrawable.setBounds(selectorRect);
-            }
-            canvas.save();
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
-                selectorTransformer.accept(canvas);
-            }
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
-                selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
-            }
-            selectorDrawable.draw(canvas);
-            canvas.restore();
+//        drawSectionsBackgrounds(canvas);
+        if (drawSelection && drawSelectorBehind) {
+            drawSelectors2(canvas);
         }
         super.dispatchDraw(canvas);
-        if (drawSelection && !drawSelectorBehind && !selectorRect.isEmpty() && selectorDrawable != null) {
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                int bottomPadding;
-                if (getAdapter() instanceof SelectionAdapter) {
-                    bottomPadding = ((SelectionAdapter) getAdapter()).getSelectionBottomPadding(selectorView);
-                } else {
-                    bottomPadding = 0;
-                }
-                selectorDrawable.setBounds(selectorView.getLeft(), selectorView.getTop(), selectorView.getRight(), selectorView.getBottom() - bottomPadding);
-            } else {
-                selectorDrawable.setBounds(selectorRect);
-            }
-            canvas.save();
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorTransformer != null) {
-                selectorTransformer.accept(canvas);
-            }
-            if ((translateSelector == -2 || translateSelector == selectorPosition) && selectorView != null) {
-                canvas.translate(selectorView.getX() - selectorRect.left, selectorView.getY() - selectorRect.top);
-                selectorDrawable.setAlpha((int) (0xFF * selectorView.getAlpha()));
-            }
-            selectorDrawable.draw(canvas);
-            canvas.restore();
+        if (drawSelection && !drawSelectorBehind) {
+            drawSelectors2(canvas);
         }
         if (overlayContainer != null) {
             overlayContainer.draw(canvas);
@@ -2730,10 +2791,28 @@ public class RecyclerListView extends RecyclerView {
 
     @Override
     public void requestLayout() {
-        if (fastScrollAnimationRunning) {
+        if (fastScrollAnimationRunning || ignoreLayout) {
             return;
         }
         super.requestLayout();
+    }
+
+    private boolean ignoreLayout;
+
+    public void setPadding(int left, int top, int right, int bottom, boolean doNotRequestLayout) {
+        if (doNotRequestLayout) {
+            setPaddingWithoutRequestLayout(left, top, right, bottom);
+        } else {
+            setPadding(left, top, right, bottom);
+        }
+    }
+
+    public void setPaddingWithoutRequestLayout(int left, int top, int right, int bottom) {
+        if (getPaddingLeft() != left || getPaddingTop() != top || getPaddingRight() != right || getPaddingBottom() != bottom) {
+            ignoreLayout = true;
+            setPadding(left, top, right, bottom);
+            ignoreLayout = false;
+        }
     }
 
     public ViewParent getTouchParent() {
@@ -2995,5 +3074,731 @@ public class RecyclerListView extends RecyclerView {
 
     public void setDrawSelection(boolean drawSelection) {
         this.drawSelection = drawSelection;
+    }
+
+
+    /* Overscroll */
+
+    private final @NonNull EdgeEffectTrackerFactory edgeEffectTrackerFactory;
+
+    public boolean hasActiveEdgeEffects() {
+        return edgeEffectTrackerFactory.hasVisibleEdges();
+    }
+
+    public void addEdgeEffectListener(Runnable listener) {
+        addEdgeEffectListener((direction, isVisible) -> listener.run());
+    }
+
+    public void addEdgeEffectListener(EdgeEffectTrackerFactory.OnEdgeEffectListener listener) {
+        edgeEffectTrackerFactory.addEdgeEffectListener(listener);
+    }
+
+    public void removeEdgeEffectListener(EdgeEffectTrackerFactory.OnEdgeEffectListener listener) {
+        edgeEffectTrackerFactory.removeEdgeEffectListener(listener);
+    }
+
+
+    /* Blur3 */
+
+    private Matrix selfTransformationsMatrix;
+
+    @Override
+    public void capture(Canvas canvas, RectF position) {
+        final long drawingTime = SystemClock.uptimeMillis();
+
+        if (hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+            if (selfTransformationsMatrix == null) {
+                selfTransformationsMatrix = new Matrix();
+            }
+
+            canvas.save();
+            final Matrix matrix = getMatrix();
+            if (matrix.invert(selfTransformationsMatrix)){
+                canvas.concat(selfTransformationsMatrix);
+            }
+            canvas.translate(-getX(), -getY());
+
+            // hack: call drawChild(this) for access to internal render node
+            try {
+                super.drawChild(canvas, this, drawingTime);
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+            canvas.restore();
+
+            if (BuildConfig.DEBUG_PRIVATE_VERSION) {
+            //     canvas.drawColor(0x80FF00FF);
+            }
+        } else {
+            for (int i = 0, N = getChildCount(); i < N; i++) {
+                final View child = getChildAt(i);
+
+                final float left = child.getX();
+                final float top = child.getY();
+                final float right = left + child.getWidth();
+                final float bottom = top + child.getHeight();
+
+                if (!position.intersects(left, top, right, bottom)) {
+                    continue;
+                }
+
+                ignoreClipChild = true;
+                drawChild(canvas, child, drawingTime);
+                ignoreClipChild = false;
+            }
+        }
+    }
+
+    @Override
+    public long captureCalculateHash(RectF position) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return -1;
+        }
+
+        if (hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+            return -1;
+        } else {
+            long hash = 0;
+            for (int i = 0, N = getChildCount(); i < N; i++) {
+                final View child = getChildAt(i);
+
+                final float left = child.getX();
+                final float top = child.getY();
+                final float right = left + child.getWidth();
+                final float bottom = top + child.getHeight();
+
+                if (!position.intersects(left, top, right, bottom)) {
+                    continue;
+                }
+
+                final long id = child.getUniqueDrawingId();
+                hash = MediaDataController.calcHash(hash, id);
+            }
+            return hash;
+        }
+    }
+
+    public View findViewByPosition(int position) {
+        if (position == NO_POSITION) return null;
+        for (int i = 0; i < getChildCount(); ++i) {
+            View child = getChildAt(i);
+            int childPosition = getChildAdapterPosition(child);
+            if (childPosition != NO_POSITION && childPosition == position) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    public boolean hasSections() {
+        return sectionsItemDecoration != null;
+    }
+
+    private ListSectionsDecoration sectionsItemDecoration;
+    private Utilities.CallbackReturn<Integer, Boolean> isViewTypeSection;
+    private Utilities.Callback5<Canvas, RectF, Float, Float, Float> drawSectionBackground;
+    public ArrayList<Long> forcedSections;
+    private float sectionRadius;
+    private float[] sectionRadiusTop, sectionRadiusBottom;
+    public boolean applyPaddingToSections = false;
+
+    public static final int TAG_NOT_SECTION = -33024;
+
+    public void setSections() {
+        setSections(dp(12), dp(16), false);
+    }
+    public void setSections(boolean topPadding) {
+        setSections(dp(12), dp(16), topPadding);
+    }
+    public void setSections(int padding, float roundRadius, boolean topPadding) {
+        setSections(
+            view -> !(view instanceof TextInfoPrivacyCell || view instanceof ShadowSectionCell || view instanceof FiltersSetupActivity.HintInnerCell || view instanceof GraySectionCell) && !Objects.equals(view.getTag(), TAG_NOT_SECTION),
+            padding,
+            roundRadius,
+            this::drawBackgroundRect,
+            topPadding
+        );
+    }
+    private static Pair<Utilities.CallbackReturn<View, Boolean>, Utilities.CallbackReturn<Integer, Boolean>> cachedIsViewTypeShadow(RecyclerListView listView, Utilities.CallbackReturn<View, Boolean> isSectionView) {
+        SparseIntArray cache = new SparseIntArray();
+        return new Pair<>(
+            (view) -> {
+                try {
+                    if (view.getParent() != listView) return false;
+                    final boolean isSection = isSectionView.run(view);
+                    final ViewHolder viewHolder = listView.getChildViewHolder(view);
+                    if (viewHolder != null) {
+                        cache.put(viewHolder.getItemViewType(), isSection ? 1 : 0);
+                    }
+                    return isSection;
+                } catch (Exception e) {
+                    return false;
+                }
+            },
+            (viewType) -> {
+                int cached = cache.get(viewType, -1);
+                if (cached == -1) return true;
+                return cached == 1;
+            }
+        );
+    }
+    public void setSections(
+        Utilities.CallbackReturn<View, Boolean> isSectionView,
+        int padding,
+        float roundRadius,
+        Utilities.Callback5<Canvas, RectF, Float, Float, Float> drawSectionBackground,
+        boolean topPadding
+    ) {
+        final Pair<Utilities.CallbackReturn<View, Boolean>, Utilities.CallbackReturn<Integer, Boolean>> callbacks = cachedIsViewTypeShadow(this, isSectionView);
+        setSections(callbacks.first, callbacks.second, padding, roundRadius, drawSectionBackground, topPadding);
+    }
+    public void setSections(
+        Utilities.CallbackReturn<View, Boolean> isSectionView,
+        Utilities.CallbackReturn<Integer, Boolean> isViewTypeSection,
+        int padding,
+        float roundRadius,
+        Utilities.Callback5<Canvas, RectF, Float, Float, Float> drawSectionBackground,
+        boolean topPadding
+    ) {
+        setSelectorDrawableColor(getThemedColor(Theme.key_settings_listSelector));
+        this.isViewTypeSection = isViewTypeSection;
+        this.sectionRadius = roundRadius;
+        this.sectionRadiusTop = new float[] {
+            roundRadius, roundRadius,
+            roundRadius, roundRadius,
+            0, 0,
+            0, 0
+        };
+        this.sectionRadiusBottom = new float[] {
+            0, 0,
+            0, 0,
+            roundRadius, roundRadius,
+            roundRadius, roundRadius
+        };
+        this.drawSectionBackground = drawSectionBackground;
+        if (sectionsItemDecoration != null) {
+            removeItemDecoration(sectionsItemDecoration);
+        }
+        addItemDecoration(sectionsItemDecoration = new ListSectionsDecoration(isSectionView, padding, topPadding));
+//        if (getItemAnimator() != null) {
+//            getItemAnimator().listenToAnimationUpdates(this::invalidate);
+//        }
+    }
+
+    @Override
+    public void setItemAnimator(@Nullable ItemAnimator animator) {
+        super.setItemAnimator(animator);
+//        if (hasSections() && getItemAnimator() != null) {
+//            getItemAnimator().listenToAnimationUpdates(this::invalidate);
+//        }
+    }
+
+    public static class ListSectionsDecoration extends RecyclerView.ItemDecoration {
+
+        public final Utilities.CallbackReturn<View, Boolean> isSectionItem;
+        private int padding;
+        private boolean enableTopPadding;
+
+        public ListSectionsDecoration(Utilities.CallbackReturn<View, Boolean> isSectionItem, int padding, boolean enableTopPadding) {
+            this.isSectionItem = isSectionItem;
+            this.padding = padding;
+            this.enableTopPadding = enableTopPadding;
+        }
+
+        @Override
+        public void getItemOffsets(
+            @NonNull Rect outRect,
+            @NonNull View view,
+            @NonNull RecyclerView parent,
+            @NonNull RecyclerView.State state
+        ) {
+            if (isSectionItem.run(view)) {
+                outRect.left = outRect.right = padding;
+
+                final ViewHolder viewHolder = parent.getChildViewHolder(view);
+                final Adapter adapter = parent.getAdapter();
+                if (viewHolder != null && adapter != null) {
+                    final int position = viewHolder.getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        final boolean first = position == 0;
+                        final boolean last = position == adapter.getItemCount() - 1;
+
+                        if (first) outRect.top = enableTopPadding ? padding : dp(4);
+                        if (last) outRect.bottom = padding;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull State state) {
+            if (parent instanceof RecyclerListView) {
+                ((RecyclerListView) parent).drawSectionsBackgrounds(c);
+            }
+        }
+    }
+
+    private void drawSectionBackground(
+        Canvas canvas,
+        View from, View to,
+        boolean hasAbove, boolean hasBelow
+    ) {
+        if (from == null || to == null) return;
+
+        float bottomMargin = 0;
+        if (to instanceof JoinToSendSettingsView) {
+            bottomMargin = ((JoinToSendSettingsView) to).getBottomInfoMargin();
+        }
+
+        AndroidUtilities.rectTmp.set(
+            from.getLeft(),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, from.getY() - (hasAbove ? sectionRadius : 0)),
+            from.getRight(),
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), to.getY() + to.getHeight() + (hasBelow ? sectionRadius : 0) - bottomMargin)
+        );
+        if (AndroidUtilities.rectTmp.bottom < AndroidUtilities.rectTmp.top) return;
+        drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, sectionRadius, sectionRadius, from.getAlpha());
+    }
+
+    private boolean hasAbove(View view, int index) {
+        if (view == null || index > 0 || getAdapter() == null || isViewTypeSection == null) return false;
+        final int position = getChildAdapterPosition(view);
+        if (position == NO_POSITION || position == 0) return false;
+        final int viewType = getAdapter().getItemViewType(position - 1);
+        return isViewTypeSection.run(viewType);
+    }
+    private boolean hasBelow(View view, int index) {
+        if (view == null || index < getChildCount() - 1 || getAdapter() == null || isViewTypeSection == null) return false;
+        final int position = getChildAdapterPosition(view);
+        if (position == NO_POSITION || position == getAdapter().getItemCount() - 1) return false;
+        final int viewType = getAdapter().getItemViewType(position + 1);
+        return isViewTypeSection.run(viewType);
+    }
+    private ArrayList<SectionsDrawer.Section> sections;
+    public boolean isInsideForcedSection(int position) {
+        if (forcedSections == null || position < 0) return false;
+        for (int j = 0; j < forcedSections.size(); ++j) {
+            final long section = forcedSections.get(j);
+            final int beginPosition = AndroidUtilities.unpackA(section);
+            final int endPosition = AndroidUtilities.unpackB(section);
+            if (position >= beginPosition && position <= endPosition) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public void drawSectionsBackgrounds(Canvas canvas) {
+        if (drawSectionBackground == null) return;
+
+        if (isAnimating()) {
+            if (sections == null) {
+                sections = new ArrayList<>();
+            }
+            for (int i = 0; i < getChildCount(); ++i) {
+                final View child = getChildAt(i);
+                if (
+                    child == emptyView ||
+                    child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0 ||
+                    !sectionsItemDecoration.isSectionItem.run(child)
+                ) continue;
+
+                float from = child.getY();
+                float to = child.getY() + child.getHeight();
+                final ViewHolder viewHolder = getChildViewHolder(child);
+                if (viewHolder.isRemoved() && child.getAlpha() < 1) {
+                    View nextStableChild = null;
+                    if (viewHolder != null && viewHolder.isRemoved() && viewHolder.mOldCompoundPosition >= 0) {
+                        final int nextStablePosition = (int) Math.ceil(viewHolder.mOldCompoundPosition / 1000.0) + 1;
+                        for (int j = 0; j < getChildCount(); ++j) {
+                            final View nchild = getChildAt(j);
+                            if (nchild == null || nchild == child) continue;
+                            if (getChildAdapterPosition(nchild) == nextStablePosition) {
+                                nextStableChild = nchild;
+                                break;
+                            }
+                        }
+                        if (nextStableChild != null && to > nextStableChild.getY() && sectionsItemDecoration.isSectionItem.run(nextStableChild)) {
+                            final ViewHolder nextStableHolder = getChildViewHolder(nextStableChild);
+                            if (!nextStableHolder.isRemoved()) {
+                                from--;
+                                to = nextStableChild.getY();
+                                if (to < from)
+                                    continue;
+                            }
+                        }
+                    }
+                } else if (isInsideForcedSection(viewHolder.getAdapterPosition())) {
+                    continue;
+                }
+                sections.add(new SectionsDrawer.Section(from, to, child.getAlpha()));
+            }
+            SectionsDrawer.draw(sections, sectionRadius, (from, to, topRoundRadius, bottomRoundRadius, alpha) -> {
+                AndroidUtilities.rectTmp.set(sectionsItemDecoration.padding, from, getWidth() - sectionsItemDecoration.padding, to);
+                drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, topRoundRadius, bottomRoundRadius, alpha);
+            });
+            sections.clear();
+        } else {
+            int startIndex = -1, prevIndex = -1;
+            View start = null, prev = null;
+            for (int i = 0; i < getChildCount(); ++i) {
+                final View child = getChildAt(i);
+                if (
+                    child == emptyView ||
+                    child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0 ||
+                    !sectionsItemDecoration.isSectionItem.run(child) ||
+                    isInsideForcedSection(getChildAdapterPosition(child))
+                ) {
+                    drawSectionBackground(canvas, start, prev, hasAbove(start, startIndex), hasBelow(prev, prevIndex));
+                    startIndex = prevIndex = -1;
+                    start = prev = null;
+                    continue;
+                }
+                if (start != null && Math.abs(prev.getAlpha() - child.getAlpha()) > 0.1f) {
+                    drawSectionBackground(canvas, start, prev, hasAbove(start, startIndex), hasBelow(prev, prevIndex));
+                    startIndex = -1;
+                    start = null;
+                }
+                if (start == null) {
+                    startIndex = i;
+                    start = child;
+                }
+                prevIndex = i;
+                prev = child;
+            }
+            drawSectionBackground(canvas, start, prev, hasAbove(start, startIndex), hasBelow(prev, prevIndex));
+        }
+
+        if (forcedSections != null) {
+            for (int j = 0; j < forcedSections.size(); ++j) {
+                final long section = forcedSections.get(j);
+                final int beginPosition = AndroidUtilities.unpackA(section);
+                final int endPosition = AndroidUtilities.unpackB(section);
+
+                float from = getHeight() + sectionRadius, to = -sectionRadius;
+                for (int i = 0; i < getChildCount(); ++i) {
+                    final View child = getChildAt(i);
+                    final int position = getChildAdapterPosition(child);
+
+                    if (position >= beginPosition && position <= endPosition) {
+                        from = Math.min(from, child.getY());
+                        to = Math.max(to, child.getY() + child.getHeight());
+                    }
+                }
+
+                if (from < to) {
+                    AndroidUtilities.rectTmp.set(
+                        getPaddingLeft() + sectionsItemDecoration.padding,
+                        from,
+                        getWidth() - getPaddingRight() - sectionsItemDecoration.padding,
+                        to
+                    );
+                    drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, sectionRadius, sectionRadius, 1.0f);
+                }
+            }
+        }
+    }
+
+    private final static Paint sectionBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final static Paint sectionBackgroundStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final static Path sectionBackgroundPath = new Path();
+    private final static float[] radii = new float[8];
+    public static void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha, Theme.ResourcesProvider resourcesProvider) {
+        if (SharedConfig.shadowsInSections) {
+            sectionBackgroundStrokePaint.setShadowLayer(dpf2(0.33f), 0, 0, multAlpha(0x0c000000, alpha));
+            sectionBackgroundStrokePaint.setColor(0);
+            sectionBackgroundPaint.setShadowLayer(dpf2(2), 0, dpf2(0.33f), multAlpha(0x0a000000, alpha));
+        } else {
+            sectionBackgroundPaint.setShadowLayer(0, 0, 0, 0);
+        }
+        sectionBackgroundPaint.setColor(multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), alpha));
+        if (topRadius == bottomRadius) {
+            if (SharedConfig.shadowsInSections) {
+                canvas.drawRoundRect(rect, topRadius, topRadius, sectionBackgroundStrokePaint);
+            }
+            canvas.drawRoundRect(rect, topRadius, topRadius, sectionBackgroundPaint);
+        } else {
+            sectionBackgroundPath.rewind();
+            radii[0] = radii[1] = radii[2] = radii[3] = topRadius;
+            radii[4] = radii[5] = radii[6] = radii[7] = bottomRadius;
+            sectionBackgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
+            if (SharedConfig.shadowsInSections) {
+                canvas.drawPath(sectionBackgroundPath, sectionBackgroundStrokePaint);
+            }
+            canvas.drawPath(sectionBackgroundPath, sectionBackgroundPaint);
+        }
+    }
+    public void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha) {
+        drawBackgroundRect(canvas, rect, topRadius, bottomRadius, alpha, resourcesProvider);
+    }
+
+    private final Path clipPath = new Path();
+    private void clipChild(Canvas canvas, View child) {
+        if (child == null || !sectionsItemDecoration.isSectionItem.run(child))
+            return;
+
+        boolean prev, next;
+        int position = getChildAdapterPosition(child);
+        if (position == RecyclerView.NO_POSITION) {
+            prev = next = false;
+        } else {
+            final View prevChild = findViewByPosition(position - 1);
+            final View nextChild = findViewByPosition(position + 1);
+            prev = prevChild != null && sectionsItemDecoration.isSectionItem.run(prevChild);
+            next = nextChild != null && sectionsItemDecoration.isSectionItem.run(nextChild);
+        }
+
+        AndroidUtilities.rectTmp.set(
+            child.getX(),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, child.getY()),
+            child.getX() + child.getWidth(),
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), child.getY() + child.getHeight())
+        );
+        if (prev && next) {
+            prev = child.getY() >= AndroidUtilities.rectTmp.top;
+            next = child.getY() + child.getHeight() <= AndroidUtilities.rectTmp.bottom;
+            if (prev && next) return;
+        }
+        if (!prev && !next) {
+            clipPath.rewind();
+            clipPath.addRoundRect(AndroidUtilities.rectTmp, sectionRadius, sectionRadius, Path.Direction.CW);
+            canvas.clipPath(clipPath);
+        } else if (!prev) {
+            clipPath.rewind();
+            clipPath.addRoundRect(AndroidUtilities.rectTmp, sectionRadiusTop, Path.Direction.CW);
+            canvas.clipPath(clipPath);
+        } else if (!next) {
+            clipPath.rewind();
+            clipPath.addRoundRect(AndroidUtilities.rectTmp, sectionRadiusBottom, Path.Direction.CW);
+            canvas.clipPath(clipPath);
+        }
+    }
+
+    public Drawable getClipBackground(View child) {
+        if (child.getParent() != this || !hasSections() || !sectionsItemDecoration.isSectionItem.run(child)) return null;
+
+        boolean prev, next;
+        int position = getChildAdapterPosition(child);
+        if (position == RecyclerView.NO_POSITION) {
+            prev = next = false;
+        } else {
+            final View prevChild = findViewByPosition(position - 1);
+            final View nextChild = findViewByPosition(position + 1);
+            prev = prevChild != null && sectionsItemDecoration.isSectionItem.run(prevChild);
+            next = nextChild != null && sectionsItemDecoration.isSectionItem.run(nextChild);
+        }
+
+        final RectF rect = new RectF();
+        rect.set(
+            child.getX(),
+            Math.max(applyPaddingToSections ? getPaddingTop() : 0, child.getY()),
+            child.getX() + child.getWidth(),
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : 0), child.getY() + child.getHeight())
+        );
+        if (prev && next) {
+            prev = child.getY() >= rect.top;
+            next = child.getY() + child.getHeight() <= rect.bottom;
+            if (prev && next) return Theme.createRoundRectDrawable(0, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        }
+        final Path clipPath = new Path();
+        if (!prev && !next) {
+            clipPath.rewind();
+            clipPath.addRoundRect(rect, sectionRadius, sectionRadius, Path.Direction.CW);
+        } else if (!prev) {
+            clipPath.rewind();
+            clipPath.addRoundRect(rect, sectionRadiusTop, Path.Direction.CW);
+        } else if (!next) {
+            clipPath.rewind();
+            clipPath.addRoundRect(rect, sectionRadiusBottom, Path.Direction.CW);
+        }
+
+        return new Drawable() {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                canvas.save();
+                canvas.translate(-child.getX(), -child.getY());
+                canvas.clipPath(clipPath);
+                paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), paint.getAlpha()));
+                canvas.drawRect(rect, paint);
+                canvas.restore();
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+                paint.setAlpha(alpha);
+            }
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() { return PixelFormat.TRANSPARENT; }
+        };
+    }
+
+    public static class SectionsDrawer {
+
+        public static class Section {
+            public float from, to;
+            public float alpha = 1.0f;
+
+            public Section(float from, float to, float alpha) {
+                this.from = from;
+                this.to = to;
+                this.alpha = alpha;
+            }
+        }
+
+        private static final ArrayList<float[]> groups = new ArrayList<>();
+
+        private static final float CONNECT_TOLERANCE = 1.5f;
+
+        public static void draw(
+            List<Section> sections,
+            float roundRadius,
+            Utilities.Callback5<Float, Float, Float, Float, Float> drawRoundRect
+        ) {
+            if (sections == null || sections.isEmpty()) return;
+
+            Collections.sort(sections, (a, b) -> Float.compare(a.from, b.from));
+
+            groups.clear();
+
+            int groupStart = 0;
+            while (groupStart < sections.size()) {
+                float groupTo = sections.get(groupStart).to;
+                int groupEnd = groupStart + 1;
+
+                while (groupEnd < sections.size() && sections.get(groupEnd).from <= groupTo + CONNECT_TOLERANCE) {
+                    groupTo = Math.max(groupTo, sections.get(groupEnd).to);
+                    groupEnd++;
+                }
+
+                float[] groupData = calculateGroup(sections, groupStart, groupEnd, roundRadius);
+                if (groupData != null) {
+                    groups.add(groupData);
+                }
+
+                groupStart = groupEnd;
+            }
+
+            for (int i = 0; i < groups.size(); i++) {
+                float[] g = groups.get(i);
+                float drawFrom = g[0];
+                float drawTo = g[1];
+                float topRadius = g[2];
+                float bottomRadius = g[3];
+                float alpha = g[4];
+
+                if (i > 0) {
+                    float[] prev = groups.get(i - 1);
+                    float gap = drawFrom - prev[1];
+                    if (gap < roundRadius * 0.2f) {
+                        float t = gap / (roundRadius * 0.2f);
+                        topRadius = Math.min(topRadius, roundRadius * t);
+                    }
+                }
+
+                if (i < groups.size() - 1) {
+                    float[] next = groups.get(i + 1);
+                    float gap = next[0] - drawTo;
+                    if (gap < roundRadius * 0.2f) {
+                        float t = gap / (roundRadius * 0.2f);
+                        bottomRadius = Math.min(bottomRadius, roundRadius * t);
+                    }
+                }
+
+                drawRoundRect.run(drawFrom, drawTo, topRadius, bottomRadius, alpha);
+            }
+        }
+
+        private static float[] calculateGroup(List<Section> sections, int start, int end, float roundRadius) {
+            float stableFrom = Float.MAX_VALUE;
+            float stableTo = Float.MIN_VALUE;
+            for (int i = start; i < end; i++) {
+                Section s = sections.get(i);
+                if (s.alpha >= 0.99f) {
+                    stableFrom = Math.min(stableFrom, s.from);
+                    stableTo = Math.max(stableTo, s.to);
+                }
+            }
+            boolean hasStable = stableFrom != Float.MAX_VALUE;
+
+            float minFrom = Float.MAX_VALUE;
+            float maxTo = Float.MIN_VALUE;
+            float maxAlpha = 0;
+            for (int i = start; i < end; i++) {
+                Section s = sections.get(i);
+                minFrom = Math.min(minFrom, s.from);
+                maxTo = Math.max(maxTo, s.to);
+                maxAlpha = Math.max(maxAlpha, s.alpha);
+            }
+
+            if (maxAlpha < 0.001f) return null;
+
+            float drawFrom, drawTo;
+            float topRadius, bottomRadius;
+            float alpha;
+
+            if (!hasStable) {
+                drawFrom = minFrom;
+                drawTo = maxTo;
+                alpha = maxAlpha;
+                topRadius = roundRadius;
+                bottomRadius = roundRadius;
+            } else {
+                alpha = 1f;
+
+                drawFrom = stableFrom;
+                drawTo = stableTo;
+                topRadius = roundRadius;
+                bottomRadius = roundRadius;
+
+                Section topExtender = null;
+                float topExtension = 0;
+                for (int i = start; i < end; i++) {
+                    Section s = sections.get(i);
+                    if (s.alpha >= 0.99f) continue;
+                    if (s.from < stableFrom) {
+                        float extension = (stableFrom - s.from) * s.alpha;
+                        if (extension > topExtension) {
+                            topExtension = extension;
+                            topExtender = s;
+                        }
+                    }
+                }
+
+                Section bottomExtender = null;
+                float bottomExtension = 0;
+                for (int i = start; i < end; i++) {
+                    Section s = sections.get(i);
+                    if (s.alpha >= 0.99f) continue;
+                    if (s.to > stableTo) {
+                        float extension = (s.to - stableTo) * s.alpha;
+                        if (extension > bottomExtension) {
+                            bottomExtension = extension;
+                            bottomExtender = s;
+                        }
+                    }
+                }
+
+                if (topExtender != null && topExtender.alpha > 0.001f) {
+                    float extendedFrom = lerp(stableFrom, topExtender.from, topExtender.alpha);
+                    drawFrom = extendedFrom;
+
+                    float t = (stableFrom - drawFrom) / (stableFrom - topExtender.from + 0.001f);
+                    topRadius = lerp(roundRadius, roundRadius * topExtender.alpha, t);
+                }
+                if (bottomExtender != null && bottomExtender.alpha > 0.001f) {
+                    float extendedTo = lerp(stableTo, bottomExtender.to, bottomExtender.alpha);
+                    drawTo = extendedTo;
+
+                    float t = (drawTo - stableTo) / (bottomExtender.to - stableTo + 0.001f);
+                    bottomRadius = lerp(roundRadius, roundRadius * bottomExtender.alpha, t);
+                }
+            }
+
+            if (drawTo <= drawFrom) return null;
+
+            return new float[]{drawFrom, drawTo, topRadius, bottomRadius, alpha};
+        }
     }
 }

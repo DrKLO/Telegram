@@ -397,17 +397,21 @@ public class TableView extends TableLayout {
     }
 
     public TableRow addRow(CharSequence title, CharSequence text, CharSequence buttonText, Runnable buttonOnClick) {
-        ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
+        return addRow(title, text, buttonText, buttonOnClick, null);
+    }
+
+    public TableRow addRow(CharSequence title, CharSequence text, CharSequence buttonText, Runnable buttonOnClick, Integer buttonColor) {
+        final ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        SpannableStringBuilder ssb = new SpannableStringBuilder(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
+        final SpannableStringBuilder ssb = new SpannableStringBuilder(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
         if (buttonText != null) {
-            ssb.append(" ").append(ButtonSpan.make(buttonText, buttonOnClick, resourcesProvider));
+            ssb.append(" ").append(ButtonSpan.make(buttonText, buttonOnClick, resourcesProvider, buttonColor));
         }
         textView.setText(ssb);
         NotificationCenter.listenEmojiLoading(textView);
 
-        TableRow row = new TableRow(getContext());
+        final TableRow row = new TableRow(getContext());
         TableRow.LayoutParams lp;
         lp = new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
         row.addView(new TableRowTitle(this, title), lp);

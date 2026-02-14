@@ -547,6 +547,8 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         listView.setItemAnimator(itemAnimator);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -998,7 +1000,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         } else {
                             builder.setTitle(LocaleController.getString(R.string.EditAdminGroupTransfer));
                         }
-                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("EditAdminTransferReadyAlertText", R.string.EditAdminTransferReadyAlertText, currentChat.title, UserObject.getFirstName(currentUser))));
+                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.EditAdminTransferReadyAlertText, currentChat.title, UserObject.getFirstName(currentUser))));
                         builder.setPositiveButton(LocaleController.getString(R.string.EditAdminTransferChangeOwner), (dialogInterface, i) -> {
                             TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
                             fragment.setDelegate(0, password -> initTransfer(password, fragment));
@@ -1689,7 +1691,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     break;
                 case VIEW_TYPE_INFO_CELL:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case VIEW_TYPE_TRANSFER_CELL:
                 default:
@@ -2039,15 +2040,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     } else {
                         shadowCell.setAlpha(1);
                     }
-                    if (position == rightsShadowRow) {
-                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, removeAdminRow == -1 && rankRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    } else if (position == removeAdminShadowRow) {
-                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    } else if (position == rankInfoRow) {
-                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, canEdit ? R.drawable.greydivider : R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    } else {
-                        shadowCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    }
                     break;
                 case VIEW_TYPE_UNTIL_DATE_CELL:
                     TextDetailCell detailCell = (TextDetailCell) holder.itemView;
@@ -2363,7 +2355,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
@@ -2378,8 +2369,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked));
-
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_text_RedRegular));

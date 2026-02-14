@@ -19,7 +19,7 @@ public sealed class TlGen_contacts_Link : TlGen_Object {
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xECCEA3F5U
+      public const val MAGIC: UInt = 0xECCD1D55U
     }
   }
 

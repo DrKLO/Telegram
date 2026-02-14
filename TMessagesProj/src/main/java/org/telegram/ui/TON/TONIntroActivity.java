@@ -235,7 +235,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
         balanceLayout = new LinearLayout(getContext());
         balanceLayout.setOrientation(LinearLayout.VERTICAL);
-        balanceLayout.setPadding(0, 0, 0, dp(10));
+        balanceLayout.setPadding(0, dp(20), 0, dp(10));
 
         starBalanceTextView = new AnimatedTextView(getContext(), false, true, false);
         starBalanceTextView.setTypeface(AndroidUtilities.bold());
@@ -270,7 +270,8 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         buttonsLayout.addView(oneButtonsLayout);
 
         if (allowTopUp) {
-            buyButton = new ButtonWithCounterView(getContext(), resourceProvider);
+            buyButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
+            buyButton.setRound();
             buyButton.setText(getString(R.string.TopUpViaFragment), false);
             buyButton.setOnClickListener(v -> {
                 Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
@@ -287,7 +288,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         };
         buttonsLayout.addView(twoButtonsLayout);
 
-        topUpButton = new ButtonWithCounterView(getContext(), resourceProvider);
+        topUpButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
         SpannableStringBuilder ssb = new SpannableStringBuilder("x  ");
         ssb.setSpan(new ColoredImageSpan(R.drawable.mini_topup, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ssb.append(getString(R.string.TonTopUp));
@@ -299,7 +300,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             twoButtonsLayout.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 1, 0, 0, 8, 0));
         }
 
-        withdrawButton = new ButtonWithCounterView(getContext(), resourceProvider);
+        withdrawButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
         ssb = new SpannableStringBuilder("x  ");
         ssb.setSpan(new ColoredImageSpan(R.drawable.mini_stats, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ssb.append(getString(R.string.TonStats));
@@ -587,7 +588,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     private UniversalAdapter adapter;
     @Override
     protected RecyclerView.Adapter<?> createAdapter() {
-        return adapter = new UniversalAdapter(listView, getContext(), currentAccount, classGuid, true, this::fillItems, getResourceProvider()) {
+        adapter = new UniversalAdapter(listView, getContext(), currentAccount, classGuid, true, this::fillItems, getResourceProvider()) {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -599,6 +600,8 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 return super.onCreateViewHolder(parent, viewType);
             }
         };
+        adapter.setApplyBackground(false);
+        return adapter;
     }
 
     private boolean expanded = false;
@@ -622,7 +625,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
         if (hadTransactions = c.hasTransactions()) {
             if (!allowTopUp) items.add(UItem.asShadow(null));
-            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight));
+            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(12)));
         } else {
             items.add(UItem.asCustom(emptyLayout));
         }

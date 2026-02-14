@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarGiftSheet.replaceUnderstood;
@@ -83,20 +84,28 @@ public class TranslateButton extends FrameLayout {
         this.fragment = fragment;
         this.resourcesProvider = resourcesProvider;
 
-        textView = new AnimatedTextView(context, true, true, false);
+        textView = new AnimatedTextView(context, true, true, false) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                canvas.save();
+                canvas.translate(dp(17), 0);
+                super.onDraw(canvas);
+                canvas.restore();
+            }
+        };
         textView.setAnimationProperties(.3f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-        textView.setTextSize(dp(15));
+        textView.setTextSize(dp(14));
         textView.setTypeface(AndroidUtilities.bold());
         textView.setPadding(dp(4), 0, dp(4), 0);
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
         textView.setIgnoreRTL(!LocaleController.isRTL);
         textView.adaptWidth = false;
         textView.setOnClickListener(e -> onButtonClick());
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 34, 0));
 
         translateDrawable = getContext().getResources().getDrawable(R.drawable.msg_translate).mutate();
-        translateDrawable.setBounds(0, dp(-8), dp(20), dp(20 - 8));
+        translateDrawable.setBounds(0, dp(-6), dp(20), dp(20 - 6));
         translateIcon = new SpannableString("x");
         translateIcon.setSpan(new ImageSpan(translateDrawable, DynamicDrawableSpan.ALIGN_BOTTOM), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
@@ -111,16 +120,16 @@ public class TranslateButton extends FrameLayout {
                 onCloseClick();
             }
         });
-        addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
+        addView(menuView, LayoutHelper.createFrame(30, 30, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 7, 0));
 
         updateColors();
     }
 
     public void updateColors() {
         textView.setTextColor(Theme.getColor(Theme.key_chat_addContact, resourcesProvider));
-        textView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, 3));
-        menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
-        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        textView.setBackground(Theme.createInsetRoundRectDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, dp(15), dp(3)));
+        menuView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0));
+        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         translateDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
     }
 
@@ -139,7 +148,7 @@ public class TranslateButton extends FrameLayout {
     protected void onMenuClick() {
         TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
 
-        final ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert3, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK);
+        final ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert4, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK);
         final ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
         popupLayout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
 
@@ -288,7 +297,7 @@ public class TranslateButton extends FrameLayout {
         });
 
         if (UserConfig.getInstance(currentAccount).isPremium() && detectedLanguageNameAccusative != null) {
-            final ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
+            final ActionBarMenuSubItem dontTranslateButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
             String text;
             if (accusative[0]) {
                 text = LocaleController.formatString(R.string.DoNotTranslateLanguage, detectedLanguageNameAccusative);
@@ -320,7 +329,7 @@ public class TranslateButton extends FrameLayout {
             popupLayout.addView(dontTranslateButton);
         }
 
-        final ActionBarMenuSubItem hideButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
+        final ActionBarMenuSubItem hideButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
         hideButton.setTextAndIcon(getString(R.string.Hide), R.drawable.msg_cancel);
         hideButton.setOnClickListener(e -> {
             translateController.setHideTranslateDialog(dialogId, true);
@@ -333,7 +342,7 @@ public class TranslateButton extends FrameLayout {
                         getString(R.string.TranslationBarHiddenForGroup) :
                         getString(R.string.TranslationBarHiddenForChat)
             );
-            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_translate, message, getString(R.string.Undo), () -> {
+            BulletinFactory.of(fragment).createSimpleBulletin(R.raw.msg_translate, message, getString(R.string.UndoNoCaps), () -> {
                 translateController.setHideTranslateDialog(dialogId, false);
             }).show();
             popupWindow.dismiss();
@@ -450,7 +459,7 @@ public class TranslateButton extends FrameLayout {
         layout.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         layout.addView(
-            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.msg_channel, getString(R.string.CocoonFeature1Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature1Text), () -> {
+            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.menu_privacy, getString(R.string.CocoonFeature1Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature1Text), () -> {
                 sheet[0].dismiss();
                 Browser.openUrl(context, getString(R.string.CocoonFeature1TextLink));
             }), resourcesProvider),
@@ -463,7 +472,7 @@ public class TranslateButton extends FrameLayout {
         );
 
         layout.addView(
-            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.menu_feature_withdrawals, getString(R.string.CocoonFeature3Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature3Text), () -> {
+            new ChannelMonetizationLayout.FeatureCell(context, R.drawable.menu_gift, getString(R.string.CocoonFeature3Title), AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFeature3Text), () -> {
                 sheet[0].dismiss();
                 Browser.openUrlInSystemBrowser(context, getString(R.string.CocoonFeature3TextLink));
             }), resourcesProvider),

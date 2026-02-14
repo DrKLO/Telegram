@@ -120,11 +120,11 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         }
         String str;
         if (currentBot.show_in_side_menu && currentBot.show_in_attach_menu) {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttachAndSide", R.string.BotAttachMenuShortcatAddedAttachAndSide, user.first_name);
+            str = LocaleController.formatString(R.string.BotAttachMenuShortcatAddedAttachAndSide, user.first_name);
         } else if (currentBot.show_in_side_menu) {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedSide", R.string.BotAttachMenuShortcatAddedSide, user.first_name);
+            str = LocaleController.formatString(R.string.BotAttachMenuShortcatAddedSide, user.first_name);
         } else {
-            str = LocaleController.formatString("BotAttachMenuShortcatAddedAttach", R.string.BotAttachMenuShortcatAddedAttach, user.first_name);
+            str = LocaleController.formatString( R.string.BotAttachMenuShortcatAddedAttach, user.first_name);
         }
         AndroidUtilities.runOnUIThread(() -> {
             BulletinFactory.of(windowView, resourcesProvider)
@@ -1925,4 +1925,8 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         return true;
     }
 
+    @Override
+    public BulletinFactory getBulletinFactory() {
+        return BulletinFactory.of(windowView, resourcesProvider);
+    }
 }

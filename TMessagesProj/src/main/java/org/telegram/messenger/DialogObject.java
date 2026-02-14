@@ -56,6 +56,16 @@ public class DialogObject {
         }
     }
 
+    public static long getDialogId(TLObject obj) {
+        if (obj instanceof TLRPC.User) {
+            return ((TLRPC.User) obj).id;
+        } else if (obj instanceof TLRPC.Chat) {
+            return -((TLRPC.Chat) obj).id;
+        } else {
+            return 0;
+        }
+    }
+
     public static long getPeerDialogId(TLRPC.Peer peer) {
         if (peer == null) {
             return 0;
@@ -108,6 +118,16 @@ public class DialogObject {
 
     public static int getFolderId(long dialogId) {
         return (int) dialogId;
+    }
+
+    public static String getShortTitle(TLObject dialog) {
+        if (dialog instanceof TLRPC.User) {
+            final TLRPC.User user = (TLRPC.User) dialog;
+            return UserObject.getForcedFirstName(user);
+        } else if (dialog instanceof TLRPC.Chat) {
+            return ((TLRPC.Chat) dialog).title;
+        }
+        return "";
     }
 
     public static String getDialogTitle(TLObject dialog) {

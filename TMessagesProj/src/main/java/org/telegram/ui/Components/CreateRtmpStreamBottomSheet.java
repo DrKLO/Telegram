@@ -19,7 +19,6 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -35,7 +34,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.TextViewWithLoading;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -315,7 +313,7 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
     public static class TextDetailCellFactory extends UItem.UItemFactory<TextDetailCell> {
         static { setup(new TextDetailCellFactory()); }
         @Override
-        public TextDetailCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public TextDetailCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             TextDetailCell view = new TextDetailCell(context, resourcesProvider, true, false);
             view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             Drawable drawable = ContextCompat.getDrawable(context, R.drawable.msg_copy).mutate();

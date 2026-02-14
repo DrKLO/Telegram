@@ -168,8 +168,8 @@ public class ThanosEffect extends TextureView {
 
     public boolean destroyed;
     private void destroy() {
-        destroyed = true;
         if (whenDone != null) {
+            destroyed = true;
             Runnable runnable = whenDone;
             whenDone = null;
             ensureRunOnUIThread(runnable);
@@ -578,8 +578,10 @@ public class ThanosEffect extends TextureView {
             uvOffsetHandle = GLES31.glGetUniformLocation(drawProgram, "uvOffset");
 
             GLES31.glViewport(0, 0, width, height);
-            GLES31.glEnable(GLES31.GL_BLEND);
-            GLES31.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+            GLES31.glDisable(GLES31.GL_BLEND);
+//            GLES31.glEnable(GLES31.GL_BLEND);
+//            GLES31.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+//            GLES31.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
             GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
             GLES31.glUseProgram(drawProgram);
@@ -626,6 +628,7 @@ public class ThanosEffect extends TextureView {
             try {
                 egl.eglSwapBuffers(eglDisplay, eglSurface);
             } catch (Exception e) {
+                FileLog.e(e);
                 for (int i = 0; i < toRunStartCallback.size(); ++i) {
                     AndroidUtilities.runOnUIThread(toRunStartCallback.get(i).startCallback);
                 }

@@ -117,21 +117,6 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
-  public data class TL_messageMediaDice(
-    public val `value`: Int,
-    public val emoticon: String,
-  ) : TlGen_MessageMedia() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(value)
-      stream.writeString(emoticon)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x3F7EE58BU
-    }
-  }
-
   public data class TL_messageMediaGeoLive(
     public val geo: TlGen_GeoPoint,
     public val heading: Int?,
@@ -466,6 +451,31 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
+  public data class TL_messageMediaDice(
+    public val `value`: Int,
+    public val emoticon: String,
+    public val game_outcome: TlGen_messages_EmojiGameOutcome?,
+  ) : TlGen_MessageMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (game_outcome != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(value)
+      stream.writeString(emoticon)
+      game_outcome?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x08CBEC07U
+    }
+  }
+
   public data class TL_messageMediaPhoto_layer27(
     public val photo: TlGen_Photo,
   ) : TlGen_Object {
@@ -782,6 +792,21 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x638FE46BU
+    }
+  }
+
+  public data class TL_messageMediaDice_layer220(
+    public val `value`: Int,
+    public val emoticon: String,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(value)
+      stream.writeString(emoticon)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3F7EE58BU
     }
   }
 

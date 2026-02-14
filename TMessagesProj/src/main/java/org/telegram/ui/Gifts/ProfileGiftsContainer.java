@@ -44,6 +44,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -101,6 +102,12 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PeerColorActivity;
 import org.telegram.ui.ProfileActivity;
@@ -112,6 +119,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
+
+import me.vkryl.android.animator.BoolAnimator;
 
 public class ProfileGiftsContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -127,7 +136,6 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     private final ViewPagerFixed.TabsView tabsView;
 
     private final FrameLayout buttonContainer;
-    private final View buttonShadow;
     private final CharSequence sendGiftsToFriendsText, addGiftsText;
     private final ButtonWithCounterView button;
     private int buttonContainerHeightDp;
@@ -152,6 +160,29 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         checkScrollToCollection();
     }
 
+    private int externalPaddingTop;
+
+    public void setPaddingTop(int paddingTop) {
+        if (externalPaddingTop != paddingTop) {
+            externalPaddingTop = paddingTop;
+
+            View[] pages = viewPager.getViewPages();
+            for (View view : pages) {
+                if (view instanceof Page) {
+                    Page page = (Page) view;
+                    final int paddingTopOld = page.listView.getPaddingTop();
+                    page.listView.setPadding(dp(9), externalPaddingTop, dp(9), dp(30 + 56));
+                    final int paddingTopNew = page.listView.getPaddingTop();
+                    final int scroll = paddingTopOld - paddingTopNew;
+                    AndroidUtilities.doOnLayout(page.listView, () -> page.listView.scrollBy(0, scroll));
+                }
+            }
+
+            updateTabsY();
+            updateButton();
+        }
+    }
+
     public static class Page extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
         private final ProfileGiftsContainer parent;
@@ -164,6 +195,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
         private final UniversalRecyclerView listView;
         private final ItemTouchHelper reorder;
+        public @Nullable IBlur3Capture iBlur3Capture;
 
         private boolean reordering;
 
@@ -184,11 +216,17 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             this.currentAccount = currentAccount;
             this.resourcesProvider = resourcesProvider;
 
-            listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3, LinearLayoutManager.VERTICAL);
+            listView = new UniversalRecyclerView(context, currentAccount, 0, false, this::fillItems, this::onItemClick, this::onItemLongPress, resourcesProvider, 3, LinearLayoutManager.VERTICAL) {
+                @Override
+                protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                    super.onLayout(changed, l, t, r, b);
+                    parent.updateTabsY();
+                }
+            };
             listView.adapter.setApplyBackground(false);
             listView.setSelectorType(9);
             listView.setSelectorDrawableColor(0);
-            listView.setPadding(dp(9), 0, dp(9), dp(30));
+            listView.setPadding(dp(9), parent.externalPaddingTop, dp(9), dp(30 + 56));
             listView.setClipToPadding(false);
             listView.setClipChildren(false);
             addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
@@ -552,6 +590,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             if (atTop) {
                 listView.scrollToPosition(0);
             }
+            parent.updateTabsY();
         }
 
         public float getTabsHeight() {
@@ -560,11 +599,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 final int position = listView.getChildAdapterPosition(child);
                 if (child instanceof GiftSheet.GiftCell) {
                     if (position == 0) {
-                        return Math.max(0, listView.getPaddingTop() + child.getY());
+                        return Math.max(0, child.getY());
                     }
                 } else {
                     if (position == 0) {
-                        return Math.max(0, listView.getPaddingTop() + child.getY() + child.getHeight() * child.getAlpha());
+                        return Math.max(0, child.getY() + child.getHeight() * child.getAlpha());
                     }
                 }
             }
@@ -619,6 +658,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                         listView.setSpanCount(spanCount);
                     }
                 });
+            }
+
+            if (parent != null) {
+                parent.updateTabsY();
+                parent.post(parent::updateTabsY);
             }
         }
 
@@ -1236,13 +1280,24 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 //        tabsView.setBackgroundColor(backgroundColor);
         addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.TOP));
 
-        buttonContainer = new FrameLayout(context);
-        buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-        addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
+        BlurredBackgroundSourceColor source = new BlurredBackgroundSourceColor();
+        source.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        BlurredBackgroundDrawableViewFactory factory = new BlurredBackgroundDrawableViewFactory(source);
+        ProfileActivity.Button2 button2 = new ProfileActivity.Button2(context);
+        BlurredBackgroundDrawable drawable = factory.create(button2, new BlurredBackgroundColorProviderThemed(resourcesProvider, Theme.key_windowBackgroundWhite));
+        drawable.setPadding(dp(8));
+        drawable.setRadius(dp(22));
+        button2.setBackground(drawable);
+        ScaleStateListAnimator.apply(button2, .02f, 1.2f);
 
-        buttonShadow = new View(context);
-        buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogGrayLine, resourcesProvider));
-        buttonContainer.addView(buttonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+        buttonContainer = new FrameLayout(context);
+        // buttonContainer.setVisibility(INVISIBLE);
+
+        FrameLayout.LayoutParams lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM);
+        lp.bottomMargin += AndroidUtilities.navigationBarHeight;
+        addView(buttonContainer, lp);
+
+        buttonContainer.addView(button2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 60, Gravity.CENTER_HORIZONTAL));
 
         bulletinContainer = new FrameLayout(context);
 
@@ -1262,7 +1317,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkboxTextView.setText(LocaleController.getString(R.string.Gift2ChannelNotify));
         checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
-        buttonContainer.addView(checkboxLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER, 0, 1f / AndroidUtilities.density + 6, 0, 6));
+        button2.addView(checkboxLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER, 0, 6, 0, 6));
         ScaleStateListAnimator.apply(checkboxLayout, 0.025f, 1.5f);
         checkboxLayout.setOnClickListener(v -> {
             checkbox.setChecked(!checkbox.isChecked(), true);
@@ -1304,9 +1359,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         addGiftsText = sb2;
 
         button = new ButtonWithCounterView(context, resourcesProvider);
+        button.setUseWrapContent(true);
+        button.setPadding(dp(16), 0, dp(16), 0);
+        button.setRoundRadius(dp(19));
         button.setText(sendGiftsToFriendsText, false);
-        buttonContainer.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 10, 10 + 1f / AndroidUtilities.density, 10, 10));
-        button.setOnClickListener(v -> {
+        button.setStateListAnimator(null);
+        button2.addView(button, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        button2.setOnClickListener(v -> {
             if (!collections.isMine() || viewPager.getCurrentPosition() == 0) {
                 if (sendToSpecificDialog) {
                     new GiftSheet(getContext(), currentAccount, dialogId, null, null)
@@ -1322,7 +1381,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
         button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
         checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
-        buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
+        buttonContainerHeightDp = 60;//canSwitchNotify() ? 50 : 10 + 48 + 10;
 
         addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
@@ -1331,24 +1390,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public void updateTabsShown(boolean animated) {
-        final boolean shown = !collections.getCollections().isEmpty();
-//        if (animated) {
-//            tabsView.animate()
-//                .translationY(shown ? 0 : dp(-42))
-//                .setDuration(200)
-//                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-//                .start();
-//            viewPager.animate()
-//                .translationY(shown ? dp(30) : 0)
-//                .setDuration(200)
-//                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-//                .start();
-//        } else {
-//            tabsView.animate().cancel();
-//            tabsView.setTranslationY(shown ? 0 : dp(-42));
-//            viewPager.animate().cancel();
-//            viewPager.setTranslationY(shown ? dp(30) : 0);
-//        }
+        final boolean shown = !collections.getCollections().isEmpty() || canAdd();
         if (viewPager.getViewPages() != null) {
             final View[] views = viewPager.getViewPages();
             for (View view : views) {
@@ -1372,12 +1414,29 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return h;
     }
 
+    private float hasTabs() {
+        float h = 0;
+        if (viewPager.getViewPages() != null) {
+            final View[] views = viewPager.getViewPages();
+            for (View view : views) {
+                if (view instanceof Page) {
+                    h += ((Page) view).hasTabs ? 1 : 0;
+                }
+            }
+        }
+        return MathUtils.clamp(h, 0, 1);
+    }
+
     public void updateTabsY() {
         if (tabsView == null) return;
-        final float ty = Math.min(0, getTabsHeight() - dp(42));
+        final float ty = Math.min(externalPaddingTop, getTabsHeight() - dp(42));
         final float alpha = clamp01(ilerp(ty, -dp(42), 0));
         tabsView.setTranslationY(ty);
-        tabsView.setAlpha(alpha);
+        tabsView.setAlpha(alpha * hasTabs());
+    }
+
+    public float getTabsVisibility() {
+        return tabsView != null ? tabsView.getAlpha() : 0;
     }
 
     protected void updatedReordering(boolean reordering) {
@@ -1470,6 +1529,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         return list.gifts.isEmpty();
     }
 
+    private final BoolAnimator animatorBottomButtonVisibility = new BoolAnimator(0,
+            (a, b, c, d) -> updateButton(),
+            CubicBezierInterpolator.EASE_OUT_QUINT, 380, true);
+
     public void updateButton() {
         if (viewPager == null) return;
         float ty;
@@ -1483,11 +1546,29 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             );
             ty = (dp(10 + 48 + 10) + 2) * hide;
         }
-        ty += -buttonContainer.getTop() + Math.max(dp(240), visibleHeight) - dp(buttonContainerHeightDp) - 1;
+        ty += -buttonContainer.getTop() + visibleHeight - dp(buttonContainerHeightDp) - 1;
+
+        animatorBottomButtonVisibility.setValue(visibleHeight > dp(184), true);
+
+        final float factor = animatorBottomButtonVisibility.getFloatValue();
+        ty = lerp(ty + dp(60), ty, factor);
+
         bulletinContainer.setTranslationY(ty - dp(200));
-        buttonContainer.setTranslationY(ty);
+        buttonContainer.setTranslationY(ty - buttonContainerOffset);
+        buttonContainer.setAlpha(factor);
+        buttonContainer.setVisibility(factor > 0 ? View.VISIBLE : View.INVISIBLE);
         button.setText(!collections.isMine() || viewPager.getPositionAnimated() < 0.5f ? sendGiftsToFriendsText : addGiftsText, true);
         Bulletin.updateCurrentPosition();
+    }
+
+
+    private int buttonContainerOffset;
+
+    public void setButtonOffset(int offset) {
+        if (buttonContainerOffset != offset) {
+            buttonContainerOffset = offset;
+            updateButton();
+        }
     }
 
     public int getBottomOffset() {
@@ -1528,7 +1609,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
             button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
             checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
-            buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
+            buttonContainerHeightDp = 60; // canSwitchNotify() ? 50 : 10 + 48 + 10;
             if (list.chat_notifications_enabled != null) {
                 checkbox.setChecked(list.chat_notifications_enabled, true);
             }
@@ -1539,7 +1620,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         } else if (id == NotificationCenter.updateInterfaces) {
             button.setVisibility(canSwitchNotify() ? View.GONE : View.VISIBLE);
             checkboxLayout.setVisibility(canSwitchNotify() ? View.VISIBLE : View.GONE);
-            buttonContainerHeightDp = canSwitchNotify() ? 50 : 10 + 48 + 10;
+            buttonContainerHeightDp = 60; //canSwitchNotify() ? 50 : 10 + 48 + 10;
             setVisibleHeight(visibleHeight);
         }
     }
@@ -1699,7 +1780,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         static { setup(new TextFactory()); }
 
         @Override
-        public LinkSpanDrawable.LinksTextView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public LinkSpanDrawable.LinksTextView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             return new LinkSpanDrawable.LinksTextView(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -1743,13 +1824,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public void updateColors() {
-        setBackgroundColor(backgroundColor = Theme.blendOver(
-            Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider),
-            Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f)
-        ));
+        setBackgroundColor(backgroundColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
 //        tabsView.setBackgroundColor(backgroundColor);
         button.updateColors();
-        button.setBackground(Theme.createRoundRectDrawable(dp(8), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
+        button.setBackground(Theme.createRoundRectDrawable(dp(19), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
         View[] pages = viewPager.getViewPages();
         if (pages != null) {
             for (int i = 0; i < pages.length; ++i) {
@@ -1758,8 +1836,6 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                 }
             }
         }
-        buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-        buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogGrayLine, resourcesProvider));
         checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
     }
@@ -2359,5 +2435,25 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             update.run();
             return true;
         });
+    }
+
+    public @Nullable IBlur3Capture iBlur3Capture;
+    private ViewGroup iBlur3CaptureParent;
+
+    public void initBlurCapture(ViewGroup parent) {
+        iBlur3CaptureParent = parent;
+
+        iBlur3Capture = (canvas, position) -> {
+            View[] pages = viewPager.getViewPages();
+            for (View view : pages) {
+                if (view instanceof Page) {
+                    Page page = (Page) view;
+                    if (page.iBlur3Capture == null) {
+                        page.iBlur3Capture = new ViewGroupPartRenderer(page.listView, iBlur3CaptureParent, page.listView::drawChild);
+                    }
+                    page.iBlur3Capture.capture(canvas, position);
+                }
+            }
+        };
     }
 }

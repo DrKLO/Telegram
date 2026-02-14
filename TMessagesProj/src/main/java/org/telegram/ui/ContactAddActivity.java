@@ -482,7 +482,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                         }));
                     },
                     null,
-                    false, resourcesProvider
+                    false, false, resourcesProvider
                 ).create());
             });
 
@@ -499,6 +499,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         }
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onItemClick, null);
+        listView.setSections();
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -509,6 +510,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         });
         listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView = frameLayout;
     }
@@ -991,7 +993,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+//        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));

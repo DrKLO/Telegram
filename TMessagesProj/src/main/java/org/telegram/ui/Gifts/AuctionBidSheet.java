@@ -288,6 +288,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
                 return super.dispatchTouchEvent(ev);
             }
         };
+        buttonView.setRound();
 
         FrameLayout.LayoutParams lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 16, 16, 16);
         lp.leftMargin += backgroundPaddingLeft;

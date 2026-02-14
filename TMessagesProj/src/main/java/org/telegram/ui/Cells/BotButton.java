@@ -12,6 +12,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotInlineKeyboard;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.Text;
 
@@ -29,6 +30,7 @@ class BotButton {
     public TLRPC.KeyboardButton button;
     @Nullable
     public BotInlineKeyboard.ButtonCustom buttonCustom;
+    public BotInlineKeyboard.Button buttonImpl;
     public TLRPC.TL_reactionCount reaction;
     public int angle;
     public float progressAlpha;
@@ -39,6 +41,7 @@ class BotButton {
     public LoadingDrawable loadingDrawable;
     public Drawable selectorDrawable;
     public Drawable iconDrawable;
+    public AnimatedEmojiDrawable animatedEmojiDrawable;
 
     public boolean pressed;
     public float pressT;

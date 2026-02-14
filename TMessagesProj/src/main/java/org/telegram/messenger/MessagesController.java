@@ -99,6 +99,7 @@ import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.EditWidgetActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.SecretMediaViewer;
@@ -709,6 +710,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public long tonStakeddiceStakeAmountMin;
     public long tonStakeddiceStakeAmountMax;
     public long[] tonStakediceStakeSuggestedAmounts;
+    public int[][] stargiftsCraftAttributesPermilles;
 
     private final SharedPreferences notificationsPreferences;
     private final SharedPreferences mainPreferences;
@@ -1727,6 +1729,11 @@ public class MessagesController extends BaseController implements NotificationCe
         tonStakeddiceStakeAmountMin = mainPreferences.getLong("tonStakeddiceStakeAmountMin", 100000000L);
         tonStakeddiceStakeAmountMax = mainPreferences.getLong("tonStakeddiceStakeAmountMax", 50000000000L);
         tonStakediceStakeSuggestedAmounts = Arrays.stream(mainPreferences.getString("tonStakediceStakeSuggestedAmounts", "100000000,1000000000,2000000000,5000000000,10000000000,20000000000").split(",")).mapToLong(Long::parseLong).toArray();
+        stargiftsCraftAttributesPermilles = Arrays.stream(mainPreferences.getString("stargiftsCraftAttributesPermilles", "90,,80,200,,70,190,460,,60,180,450,1000").split(",,"))
+                .map(r -> Arrays.stream(r.split(","))
+                    .mapToInt(Integer::parseInt)
+                    .toArray())
+                .toArray(int[][]::new);
         config.load(mainPreferences);
 
         final boolean paidReactionsActual = (System.currentTimeMillis() - paidReactionsPrivacyTime) < 1000 * 60 * 60 * 2;
@@ -4918,6 +4925,33 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         if (!Arrays.equals(values, tonStakediceStakeSuggestedAmounts)) {
                             editor.putString("tonStakeddiceStakeSuggestedAmounts", Arrays.stream(tonStakediceStakeSuggestedAmounts = values).mapToObj(String::valueOf).collect(Collectors.joining(",")));
+                            changed = true;
+                        }
+                    }
+                    break;
+                }
+                case "stargifts_craft_attribute_permilles": {
+                    if (value.value instanceof TLRPC.TL_jsonArray) {
+                        final TLRPC.TL_jsonArray arr = (TLRPC.TL_jsonArray) value.value;
+                        final int[][] values = new int[arr.value.size()][];
+                        for (int i = 0; i < arr.value.size(); ++i) {
+                            if (arr.value.get(i) instanceof TLRPC.TL_jsonArray) {
+                                final TLRPC.TL_jsonArray darr = (TLRPC.TL_jsonArray) arr.value.get(i);
+                                values[i] = new int[darr.value.size()];
+                                for (int j = 0; j < darr.value.size(); ++j) {
+                                    if (darr.value.get(j) instanceof TLRPC.TL_jsonNumber)
+                                        values[i][j] = (int) ((TLRPC.TL_jsonNumber) darr.value.get(j)).value;
+                                }
+                            }
+                        }
+                        if (!Arrays.deepEquals(values, stargiftsCraftAttributesPermilles)) {
+                            editor.putString("stargiftsCraftAttributesPermilles",
+                                Arrays.stream(stargiftsCraftAttributesPermilles = values)
+                                    .map(row -> Arrays.stream(row)
+                                        .mapToObj(String::valueOf)
+                                        .collect(Collectors.joining(",")))
+                                    .collect(Collectors.joining(",,"))
+                            );
                             changed = true;
                         }
                     }
@@ -21270,7 +21304,8 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         boolean doNotCloseLast = false;
-        if (LaunchActivity.getLastFragment() instanceof DialogsActivity) {
+        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+        if (lastFragment instanceof DialogsActivity || lastFragment instanceof MainTabsActivity) {
             doNotCloseLast = true;
         }
         if (reason != null) {

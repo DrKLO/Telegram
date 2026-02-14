@@ -22,6 +22,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -42,8 +43,11 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -111,6 +115,7 @@ import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
 import org.telegram.ui.Components.TextStyleSpan;
+import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanBotCommand;
 import org.telegram.ui.Components.URLSpanBrowser;
 import org.telegram.ui.Components.URLSpanMono;
@@ -150,6 +155,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     int privacyRow;
     int lastPaddingRow;
     int showAdsHeaderRow;
+    @Keep
     int showAdsRow;
     int showAdsInfoRow;
     Drawable shadowDrawable;
@@ -163,7 +169,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
 
     FillLastLinearLayoutManager layoutManager;
     //icons
-    Shader shader;
+    Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    Shader shader, strokeShader;
     Matrix matrix = new Matrix();
     Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     BackgroundView backgroundView;
@@ -456,6 +463,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     @Override
     public View createView(Context context) {
         hasOwnBackground = true;
+        strokeShader = new LinearGradient(0, 0, 0, dp(28), new int[] { 0x4dffffff, 0, 0x1affffff }, new float[] { 0, 0.5f, 1 }, Shader.TileMode.CLAMP);
+        strokePaint.setShader(strokeShader);
+        strokePaint.setStyle(Paint.Style.STROKE);
         shader = new LinearGradient(
             0, 0, 0, 100,
             new int[]{
@@ -657,10 +667,14 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 }
                 gradientTools.gradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -getMeasuredWidth() * 0.1f * progress, 0);
                 if (whiteBackground) {
-                    backgroundPaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundGray), getThemedColor(Theme.key_windowBackgroundWhite), progressToFull));
-                    canvas.drawRect(0, 0, getMeasuredWidth(), currentYOffset + dp(20), backgroundPaint);
+                    backgroundPaint.setColor(getThemedColor(Theme.key_windowBackgroundGray));
+                    canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+                    if (progressToFull > 0 && actionBar != null) {
+                        backgroundPaint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundGray), getThemedColor(Theme.key_windowBackgroundWhite), progressToFull));
+                        canvas.drawRect(0, 0, getMeasuredWidth(), actionBar.getHeight(), backgroundPaint);
+                    }
                 } else {
-                    canvas.drawRect(0, 0, getMeasuredWidth(), currentYOffset + dp(20), gradientTools.paint);
+                    canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), gradientTools.paint);
                 }
 
                 super.dispatchDraw(canvas);
@@ -684,14 +698,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         };
         contentView.setFitsSystemWindows(true);
 
-        listView = new RecyclerListView(context) {
-            @Override
-            public void onDraw(Canvas canvas) {
-                shadowDrawable.setBounds((int) (-padding.left - dp(16) * progressToFull), currentYOffset - padding.top - dp(16), (int) (getMeasuredWidth() + padding.right + dp(16) * progressToFull), getMeasuredHeight());
-                shadowDrawable.draw(canvas);
-                super.onDraw(canvas);
-            }
-        };
+        listView = new RecyclerListView(context);
+        listView.setSections(true);
+        listView.setClipToPadding(false);
+        listView.setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), 0, 0);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, dp(68) + statusBarHeight - dp(16), listView));
         layoutManager.setFixedLastItemHeight();
 
@@ -946,9 +956,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_QUICK_REPLIES, R.drawable.filled_open_message, getString(R.string.PremiumBusinessQuickReplies), getString(R.string.PremiumBusinessQuickRepliesDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_GREETING_MESSAGES, R.drawable.premium_status, getString(R.string.PremiumBusinessGreetingMessages), getString(R.string.PremiumBusinessGreetingMessagesDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_AWAY_MESSAGES, R.drawable.filled_premium_away, getString(R.string.PremiumBusinessAwayMessages), getString(R.string.PremiumBusinessAwayMessagesDescription)));
-            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHATBOTS, R.drawable.filled_premium_bots, applyNewSpan(getString(R.string.PremiumBusinessChatbots2)), getString(R.string.PremiumBusinessChatbotsDescription)));
-            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHAT_LINKS, R.drawable.filled_premium_chatlink, applyNewSpan(getString(R.string.PremiumBusinessChatLinks)), getString(R.string.PremiumBusinessChatLinksDescription)));
-            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_INTRO, R.drawable.filled_premium_intro, applyNewSpan(getString(R.string.PremiumBusinessIntro)), getString(R.string.PremiumBusinessIntroDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHATBOTS, R.drawable.filled_premium_bots, getString(R.string.PremiumBusinessChatbots2), getString(R.string.PremiumBusinessChatbotsDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_CHAT_LINKS, R.drawable.filled_premium_chatlink, getString(R.string.PremiumBusinessChatLinks), getString(R.string.PremiumBusinessChatLinksDescription)));
+            premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS_INTRO, R.drawable.filled_premium_intro, getString(R.string.PremiumBusinessIntro), getString(R.string.PremiumBusinessIntroDescription)));
         } else {
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_EMOJI_STATUS, R.drawable.filled_premium_status2, getString(R.string.PremiumPreviewBusinessEmojiStatus), getString(R.string.PremiumPreviewBusinessEmojiStatusDescription)));
             premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_FOLDER_TAGS, R.drawable.premium_tags, getString(R.string.PremiumPreviewFolderTags), getString(R.string.PremiumPreviewFolderTagsDescription)));
@@ -1426,17 +1436,18 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                         @Override
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             if (isLandscapeMode) {
-                                firstViewHeight = statusBarHeight + actionBar.getMeasuredHeight() - dp(16);
+                                firstViewHeight = 0;
                             } else {
-                                int h = dp(80) + statusBarHeight;
-                                if (backgroundView.getMeasuredHeight() + dp(24) > h) {
-                                    h = backgroundView.getMeasuredHeight() + dp(24);
+                                int h = dp(80 - 16);
+                                if (backgroundView.getMeasuredHeight() + dp(24 - 16) > h) {
+                                    h = backgroundView.getMeasuredHeight() + dp(24 - 16);
                                 }
                                 firstViewHeight = h;
                             }
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
                         }
                     };
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
                 case TYPE_SHADOW:
                     view = new TextInfoPrivacyCell(context);
@@ -1445,23 +1456,33 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     view = new PremiumFeatureCell(context) {
                         @Override
                         protected void dispatchDraw(Canvas canvas) {
+                            final float r = dp(10);
+
                             AndroidUtilities.rectTmp.set(imageView.getLeft(), imageView.getTop(), imageView.getRight(), imageView.getBottom());
                             matrix.reset();
                             matrix.postScale(1f, totalGradientHeight / 100f, 0, 0);
                             matrix.postTranslate(0, -data.yOffset);
                             shader.setLocalMatrix(matrix);
-                            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8), dp(8), gradientPaint);
+                            canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, gradientPaint);
+
+                            final boolean border = resourceProvider != null ? resourceProvider.isDark() : Theme.isCurrentThemeDark();
+                            if (border) {
+                                final float sw = dp(1);
+                                strokePaint.setStrokeWidth(sw);
+                                canvas.save();
+                                canvas.translate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
+                                AndroidUtilities.rectTmp.offset(-AndroidUtilities.rectTmp.left, -AndroidUtilities.rectTmp.top);
+                                AndroidUtilities.rectTmp.inset(sw / 2.0f, sw / 2.0f);
+                                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, strokePaint);
+                                canvas.restore();
+                            }
+
                             super.dispatchDraw(canvas);
                         }
                     };
                     break;
                 case TYPE_SHADOW_SECTION:
-                    ShadowSectionCell shadowSectionCell = new ShadowSectionCell(context, 12, Theme.getColor(Theme.key_windowBackgroundGray));
-                    Drawable shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.getColor(Theme.key_windowBackgroundGrayShadow));
-                    Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-                    combinedDrawable.setFullsize(true);
-                    shadowSectionCell.setBackgroundDrawable(combinedDrawable);
+                    ShadowSectionCell shadowSectionCell = new ShadowSectionCell(context, 12, 0);
                     view = shadowSectionCell;
                     break;
                 case TYPE_HELP_US:
@@ -1469,7 +1490,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                     break;
                 case TYPE_BOTTOM_PADDING:
                     view = new View(context);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
                 case TYPE_HEADER:
                     view = new HeaderCell(context);
@@ -1490,23 +1511,15 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 ((PremiumFeatureCell) holder.itemView).setData(morePremiumFeatures.get(position - moreFeaturesStartRow), position != moreFeaturesEndRow - 1);
             } else if (position == sectionRow) {
                 TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
-
-                Drawable shadowDrawable = Theme.getThemedDrawable(privacyCell.getContext(), R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow));
-                Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-                combinedDrawable.setFullsize(true);
-                privacyCell.setBackground(combinedDrawable);
-
                 privacyCell.setText("");
                 privacyCell.setFixedSize(12);
             } else if (position == statusRow || position == privacyRow || position == showAdsInfoRow) {
                 TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
-
-                Drawable shadowDrawable = Theme.getThemedDrawable(privacyCell.getContext(), R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow));
-                Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
-                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-                combinedDrawable.setFullsize(true);
-                privacyCell.setBackground(combinedDrawable);
+                if (!whiteBackground) {
+                    privacyCell.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.75f));
+                    privacyCell.getTextView().setLinkTextColor(0xFFFFFFFF);
+                    privacyCell.setLinkTextRippleColor(Theme.multAlpha(0xFFFFFFFF, 0.15f));
+                }
                 privacyCell.setFixedSize(0);
 
                 if (position == showAdsInfoRow) {
@@ -1553,6 +1566,9 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                             URLSpanReplacement spanReplacement = new URLSpanReplacement(run.urlEntity.url, run);
                             spanReplacement.setNavigateToPremiumBot(true);
                             spannableString.setSpan(spanReplacement, run.start, run.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            if (!whiteBackground) {
+                                spannableString.setSpan(new TypefaceSpan(AndroidUtilities.bold()), run.start, run.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
                         } else if (run.urlEntity instanceof TLRPC.TL_messageEntityMentionName) {
                             spannableString.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) run.urlEntity).user_id, t, run), run.start, run.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         } else if (run.urlEntity instanceof TLRPC.TL_inputMessageEntityMentionName) {

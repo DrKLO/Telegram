@@ -46,6 +46,10 @@ public class BlurredBackgroundDrawableViewFactory {
         isLiquidGlassEffectAllowed = liquidGlassEffectAllowed;
     }
 
+    public BlurredBackgroundDrawable create() {
+        return create(null);
+    }
+
     public BlurredBackgroundDrawable create(View view) {
         return create(view, null);
     }
@@ -64,7 +68,7 @@ public class BlurredBackgroundDrawableViewFactory {
             linkedViews.add(view);
         }
 
-        if (viewPositionWatcher != null && parent != null) {
+        if (viewPositionWatcher != null && parent != null && view != null) {
             viewPositionWatcher.subscribe(view, parent, (v, pos) -> {
                 drawable.setSourceOffset(pos.left, pos.top);
                 view.invalidate();

@@ -175,7 +175,7 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                             layout.setButton(undoButton);
                             Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT).show();
                         } else {
-                            BulletinFactory.of(fragment).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.Undo), undoAction).show();
+                            BulletinFactory.of(fragment).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.UndoNoCaps), undoAction).show();
                         }
                     }
                 }

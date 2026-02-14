@@ -387,7 +387,7 @@ public class QrActivity extends BaseFragment {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE);
                     return;
                 }
-                openCameraScanActivity();
+                openCameraScanActivity(this);
             });
         }
         rootLayout.addView(themeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
@@ -730,11 +730,11 @@ public class QrActivity extends BaseFragment {
         });
     }
 
-    private void performShare() {
+    public void performShare() {
         int width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         int height = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         if (height * 1f / width > 1.92f) {
-            height = (int)(width * 1.92f);
+            height = (int) (width * 1.92f);
         }
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -787,14 +787,15 @@ public class QrActivity extends BaseFragment {
     }
 
 
-    private void openCameraScanActivity() {
-        CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
+    public static void openCameraScanActivity(BaseFragment fragment) {
+        final int currentAccount = fragment.getCurrentAccount();
+        CameraScanActivity.showAsSheet(fragment, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
             @Override
             public void didFindQr(String text) {
                 final String username = Browser.extractUsername(text);
                 if (!TextUtils.isEmpty(username)) {
                     MessagesController.getInstance(currentAccount).getUserNameResolver().resolve(username, peerId -> {
-                        if (isFinished) {
+                        if (fragment.isFinished) {
                             return;
                         }
                         if (peerId == null || peerId == Long.MAX_VALUE) {
@@ -804,7 +805,7 @@ public class QrActivity extends BaseFragment {
                             ).show());
                             return;
                         }
-                        presentFragment(ProfileActivity.of(peerId), true);
+                        fragment.presentFragment(ProfileActivity.of(peerId), true);
                     });
                 } else {
                     AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
@@ -823,7 +824,7 @@ public class QrActivity extends BaseFragment {
         }
         if (requestCode == ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCameraScanActivity();
+                openCameraScanActivity(this);
             } else {
                 new AlertDialog.Builder(getParentActivity())
                         .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.QRCodePermissionNoCameraWithHint)))
@@ -1554,7 +1555,7 @@ public class QrActivity extends BaseFragment {
             rootLayout.addView(bottomShadow);
 
             shareButton = new TextView(context);
-            shareButton.setBackground(Theme.AdaptiveRipple.filledRect(fragment.getThemedColor(Theme.key_featuredStickers_addButton), 6));
+            shareButton.setBackground(Theme.AdaptiveRipple.filledRect(fragment.getThemedColor(Theme.key_featuredStickers_addButton), 24));
             shareButton.setEllipsize(TextUtils.TruncateAt.END);
             shareButton.setGravity(Gravity.CENTER);
             shareButton.setLines(1);
@@ -1568,7 +1569,7 @@ public class QrActivity extends BaseFragment {
 
             if (UserConfig.getInstance(currentAccount).getClientUserId() == userId) {
                 scanButtonWrap = new LinearLayout(context);
-                scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton)), 25), 6f));
+                scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton)), 25), 24f));
                 scanButtonWrap.setOrientation(LinearLayout.HORIZONTAL);
                 scanButtonWrap.setGravity(Gravity.CENTER);
 

@@ -321,6 +321,15 @@ public class Bulletin {
                     if (showing) {
                         layout.onShow();
                         currentDelegate = findDelegate(containerFragment, containerLayout);
+                        if (currentDelegate == null && containerFragment != null) {
+                            final BaseFragment fragment = containerFragment;
+                            currentDelegate = new Delegate() {
+                                @Override
+                                public int getBottomOffset(int tag) {
+                                    return fragment.getBottomInset();
+                                }
+                            };
+                        }
                         if (bottomOffsetSpring == null || !bottomOffsetSpring.isRunning()) {
                             lastBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
                         }
@@ -488,7 +497,7 @@ public class Bulletin {
     }
 
     private static boolean isTransitionsEnabled() {
-        return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
+        return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true);
     }
 
     public void updatePosition() {
@@ -766,7 +775,7 @@ public class Bulletin {
             setMinimumHeight(dp(48));
             setBackground(getThemedColor(Theme.key_undo_background));
             updateSize();
-            setPadding(dp(8), dp(8), dp(8), dp(8));
+            setPadding(dp(16), dp(8), dp(16), dp(8));
             setWillNotDraw(false);
             ScaleStateListAnimator.apply(this, .02f, 1.5f);
         }
@@ -777,7 +786,7 @@ public class Bulletin {
         }
 
         protected void setBackground(int color) {
-            setBackground(color, 10);
+            setBackground(color, 16);
         }
 
         public void setBackground(int color, int rounding) {
@@ -2171,7 +2180,7 @@ public class Bulletin {
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 undoTextView.setTypeface(AndroidUtilities.bold());
                 undoTextView.setTextColor(undoCancelColor);
-                undoTextView.setText(LocaleController.getString(R.string.Undo));
+                undoTextView.setText(LocaleController.getString(R.string.UndoNoCaps));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);
                 ViewHelper.setPaddingRelative(undoTextView, icon ? 34 : 12, 8, 12, 8);
                 addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
@@ -2432,15 +2441,11 @@ public class Bulletin {
                 params.dimAmount = 0;
                 params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
                 params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    params.flags |= WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
-                }
+                params.flags |= WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
                 params.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-                if (Build.VERSION.SDK_INT >= 21) {
-                    params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                            WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-                }
+                params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
                 params.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
                 if (Build.VERSION.SDK_INT >= 28) {
                     params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;

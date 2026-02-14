@@ -44,6 +44,7 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SimpleThemeDescription;
+import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
@@ -116,7 +117,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
     }
 
     protected View getHeader(Context context) {
-        return new View(context) {
+        final View view = new View(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 if (isLandscapeMode) {
@@ -132,6 +133,8 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
             }
         };
+        view.setTag(RecyclerListView.TAG_NOT_SECTION);
+        return view;
     }
 
     @Override
@@ -154,15 +157,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         contentView = createContentView();
         contentView.setFitsSystemWindows(true);
-        listView = new RecyclerListView(context) {
-            @Override
-            public void onDraw(Canvas canvas) {
-                float alpha = 1f - (totalProgress > 0.5f ? (totalProgress - 0.5f) / 0.5f : 0f);
-                shadowDrawable.setBounds((int) (-padding.left - AndroidUtilities.dp(16) * progressToFull), currentYOffset + (int) (yOffset * alpha) - padding.top - AndroidUtilities.dp(16), (int) (getMeasuredWidth() + padding.right + AndroidUtilities.dp(16) * progressToFull), getMeasuredHeight());
-                shadowDrawable.draw(canvas);
-                super.onDraw(canvas);
-            }
-        };
+        listView = new RecyclerListView(context);
         if (useFillLastLayoutManager) {
             layoutManager = new FillLastLinearLayoutManager(context, AndroidUtilities.dp(68) + statusBarHeight - AndroidUtilities.dp(16), listView);
         } else {
@@ -173,7 +168,18 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             ((FillLastLinearLayoutManager) layoutManager).setFixedLastItemHeight();
         }
 
-        listView.setAdapter(createAdapter());
+        final RecyclerView.Adapter adapter = createAdapter();
+        listView.setAdapter(adapter);
+        if (adapter instanceof UniversalAdapter) {
+            listView.setSections(view -> {
+                if (view.getParent() != listView) return false;
+                final RecyclerView.ViewHolder viewHolder = listView.getChildViewHolder(view);
+                return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
+            }, dp(12), dp(16), listView::drawBackgroundRect, true);
+        } else {
+            listView.setSections(true);
+        }
+        listView.setClipToPadding(false);
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
             @Override
@@ -400,9 +406,9 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                     backgroundGradient = new LinearGradient(0, 0, 0, dp(350), new int[] {getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_windowBackgroundGray)}, new float[] {0.3f, 1}, Shader.TileMode.CLAMP);
                     backgroundGradientPaint.setShader(backgroundGradient);
                 }
-                canvas.drawRect(0, 0, getMeasuredWidth(), currentYOffset + yOffset + dp(20), backgroundGradientPaint);
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundGradientPaint);
             } else {
-                canvas.drawRect(0, 0, getMeasuredWidth(), currentYOffset + yOffset + AndroidUtilities.dp(20), gradientTools.paint);
+                canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), gradientTools.paint);
             }
 
             int titleColor = ColorUtils.blendARGB(getThemedColor(Theme.key_dialogTextBlack), getThemedColor(whiteBackground ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_premiumGradientBackgroundOverlay), alpha);
@@ -410,7 +416,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             backgroundView.titleView.setTextColor(titleColor);
             headerBgPaint.setAlpha((int) (255 * (1f - alpha)));
             setLightStatusBar(Theme.blendOver(Theme.getColor(Theme.key_premiumGradientBackground4, resourceProvider), headerBgPaint.getColor()));
-            canvas.drawRect(0, 0, getMeasuredWidth(), currentYOffset + yOffset + AndroidUtilities.dp(20), headerBgPaint);
+            canvas.drawRect(0, 0, getMeasuredWidth(), actionBar.getMeasuredHeight(), headerBgPaint);
             super.dispatchDraw(canvas);
             if (alpha <= 0.01f && drawActionBarShadow()) {
                 parentLayout.drawHeaderShadow(canvas, 0xFF, actionBar.getMeasuredHeight());

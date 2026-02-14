@@ -8,6 +8,13 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatNumber;
+import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.messenger.MediaDataController.TYPE_EMOJIPACKS;
+import static org.telegram.messenger.MediaDataController.TYPE_IMAGE;
+import static org.telegram.messenger.MediaDataController.TYPE_MASK;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -23,6 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
@@ -57,6 +65,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.FeaturedStickerSetCell2;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.RadioColorCell;
@@ -82,10 +91,14 @@ import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.TrendingStickersAlert;
 import org.telegram.ui.Components.TrendingStickersLayout;
+import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -94,15 +107,18 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private static final int MENU_ARCHIVE = 0;
     private static final int MENU_DELETE = 1;
     private static final int MENU_SHARE = 2;
+    private static final int MENU_COPY = 3;
+    private static final int MENU_REORDER = 4;
 
-    private RecyclerListView listView;
-    private ListAdapter listAdapter;
+    private UniversalRecyclerView listView;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
-    private DefaultItemAnimator itemAnimator;
-    private ItemTouchHelper itemTouchHelper;
     private NumberTextView selectedCountTextView;
     private TrendingStickersAlert trendingStickersAlert;
+
+    private ArrayList<TLRPC.TL_messages_stickerSet> sets;
+    private ArrayList<TLRPC.StickerSetCovered> featured;
+    private final List<Long> loadingFeaturedStickerSets = new ArrayList<>();
 
     private ActionBarMenuItem archiveMenuItem;
     private ActionBarMenuItem deleteMenuItem;
@@ -112,46 +128,35 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private boolean needReorder;
     private int currentType;
 
+    @Keep
     private int dynamicPackOrder;
     private int dynamicPackOrderInfo;
+    @Keep
     private int suggestRow;
     private int suggestAnimatedEmojiRow;
     private int suggestAnimatedEmojiInfoRow;
     private int loopRow;
     private int loopInfoRow;
+    @Keep
     private int largeEmojiRow;
     private int reactionsDoubleTapRow;
     private int stickersBotInfo;
+    @Keep
     private int featuredRow;
     private int masksRow;
     private int emojiPacksRow;
     private int masksInfoRow;
+    @Keep
     private int archivedRow;
     private int archivedInfoRow;
 
-    private int featuredStickersHeaderRow;
-    private int featuredStickersStartRow;
-    private int featuredStickersEndRow;
-    private int featuredStickersShowMoreRow;
-    private int featuredStickersShadowRow;
-    private int stickersSettingsRow;
-
-    private int stickersHeaderRow;
-    private int stickersStartRow;
-    private int stickersEndRow;
-    private int stickersShadowRow;
-    private int rowCount;
-
-    private boolean updateSuggestStickers;
-
-    private boolean isListeningForFeaturedUpdate;
     ArrayList<TLRPC.TL_messages_stickerSet> frozenEmojiPacks;
 
     private ArrayList<TLRPC.TL_messages_stickerSet> emojiPacks;
-    private List<TLRPC.StickerSetCovered> getFeaturedSets() {
+    private ArrayList<TLRPC.StickerSetCovered> getFeaturedSets() {
         final MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
-        List<TLRPC.StickerSetCovered> featuredStickerSets;
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
+        ArrayList<TLRPC.StickerSetCovered> featuredStickerSets;
+        if (currentType == TYPE_EMOJIPACKS) {
             featuredStickerSets = new ArrayList<>(mediaDataController.getFeaturedEmojiSets());
             for (int i = 0; i < featuredStickerSets.size(); ++i) {
                 if (featuredStickerSets.get(i) == null || mediaDataController.isStickerPackInstalled(featuredStickerSets.get(i).set.id, false)) {
@@ -164,57 +169,6 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         return featuredStickerSets;
     }
 
-    public class TouchHelperCallback extends ItemTouchHelper.Callback {
-
-        @Override
-        public boolean isLongPressDragEnabled() {
-            return listAdapter.hasSelected();
-        }
-
-        @Override
-        public int getMovementFlags(@NonNull RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            if (viewHolder.getItemViewType() != ListAdapter.TYPE_STICKER_SET) {
-                return makeMovementFlags(0, 0);
-            }
-            return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
-        }
-
-        @Override
-        public boolean onMove(@NonNull RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
-            if (source.getItemViewType() != target.getItemViewType()) {
-                return false;
-            }
-            listAdapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
-            return true;
-        }
-
-        @Override
-        public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-        }
-
-        @Override
-        public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
-            if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                sendReorder();
-            } else {
-                listView.cancelClickRunnables(false);
-                viewHolder.itemView.setPressed(true);
-            }
-            super.onSelectedChanged(viewHolder, actionState);
-        }
-
-        @Override
-        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-        }
-
-        @Override
-        public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-            super.clearView(recyclerView, viewHolder);
-            viewHolder.itemView.setPressed(false);
-        }
-    }
-
     public StickersActivity(int type, ArrayList<TLRPC.TL_messages_stickerSet> frozenEmojiPacks) {
         super();
         currentType = type;
@@ -225,10 +179,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         MediaDataController.getInstance(currentAccount).checkStickers(currentType);
-        if (currentType == MediaDataController.TYPE_IMAGE) {
+        if (currentType == TYPE_IMAGE) {
             MediaDataController.getInstance(currentAccount).checkFeaturedStickers();
-            MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_MASK);
-            MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_EMOJIPACKS);
+            MediaDataController.getInstance(currentAccount).checkStickers(TYPE_MASK);
+            MediaDataController.getInstance(currentAccount).checkStickers(TYPE_EMOJIPACKS);
         } else if (currentType == MediaDataController.TYPE_FEATURED_EMOJIPACKS) {
             MediaDataController.getInstance(currentAccount).checkFeaturedEmoji();
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredEmojiDidLoad);
@@ -237,7 +191,6 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.archivedStickersCountDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredStickersDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
-        updateRows(false);
         return true;
     }
 
@@ -258,12 +211,12 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     public View createView(Context context) {
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setAllowOverlayTitle(true);
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            actionBar.setTitle(LocaleController.getString(R.string.StickersName));
-        } else if (currentType == MediaDataController.TYPE_MASK) {
-            actionBar.setTitle(LocaleController.getString(R.string.Masks));
-        } else if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            actionBar.setTitle(LocaleController.getString(R.string.Emoji));
+        if (currentType == TYPE_IMAGE) {
+            actionBar.setTitle(getString(R.string.StickersName));
+        } else if (currentType == TYPE_MASK) {
+            actionBar.setTitle(getString(R.string.Masks));
+        } else if (currentType == TYPE_EMOJIPACKS) {
+            actionBar.setTitle(getString(R.string.Emoji));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -272,14 +225,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (onBackPressed(true)) {
                         finishFragment();
                     }
-                } else if (id == MENU_ARCHIVE || id == MENU_DELETE || id == MENU_SHARE) {
-                    if (!needReorder) {
-                        if (activeReorderingRequests == 0) {
-                            listAdapter.processSelectionMenu(id);
-                        }
-                    } else {
-                        sendReorder();
-                    }
+                } else {
+                    processSelectionMenu(id);
                 }
             }
         });
@@ -293,45 +240,27 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedCountTextView.setOnTouchListener((v, event) -> true);
 
-        shareMenuItem = actionMode.addItemWithWidth(MENU_SHARE, R.drawable.msg_share, AndroidUtilities.dp(54));
-        archiveMenuItem = actionMode.addItemWithWidth(MENU_ARCHIVE, R.drawable.msg_archive, AndroidUtilities.dp(54));
-        deleteMenuItem = actionMode.addItemWithWidth(MENU_DELETE, R.drawable.msg_delete, AndroidUtilities.dp(54));
+        shareMenuItem = actionMode.addItemWithWidth(MENU_SHARE, R.drawable.msg_share, dp(54));
+        archiveMenuItem = actionMode.addItemWithWidth(MENU_ARCHIVE, R.drawable.msg_archive, dp(54));
+        deleteMenuItem = actionMode.addItemWithWidth(MENU_DELETE, R.drawable.msg_delete, dp(54));
 
-        ArrayList<TLRPC.TL_messages_stickerSet> sets;
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS && frozenEmojiPacks != null) {
+        if (currentType == TYPE_EMOJIPACKS && frozenEmojiPacks != null) {
             sets = frozenEmojiPacks;
         } else {
             sets = new ArrayList<>(MessagesController.getInstance(currentAccount).filterPremiumStickers(MediaDataController.getInstance(currentAccount).getStickerSets(currentType)));
         }
-        List<TLRPC.StickerSetCovered> featured = getFeaturedSets();
-        listAdapter = new ListAdapter(context, sets, featured);
+        featured = getFeaturedSets();
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new RecyclerListView(context) {
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                if (actionBar.isActionModeShowed()) {
-                    drawSectionBackground(canvas, stickersHeaderRow, stickersEndRow - 1, getThemedColor(Theme.key_windowBackgroundWhite));
-                }
-                super.dispatchDraw(canvas);
-            }
-        };
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
         listView.setFocusable(true);
         listView.setTag(7);
-        DefaultItemAnimator itemAnimator = new DefaultItemAnimator() {
-            @Override
-            protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
-                super.onMoveAnimationUpdate(holder);
-                listView.invalidate();
-            }
-        };
-        itemAnimator.setMoveDuration(350);
-        itemAnimator.setSupportsChangeAnimations(false);
-        itemAnimator.setMoveInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-        listView.setItemAnimator(itemAnimator);
+        listView.listenReorder(this::whenReordered);
         layoutManager = new LinearLayoutManager(context) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
@@ -345,26 +274,256 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         };
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         listView.setLayoutManager(layoutManager);
-        itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
-        itemTouchHelper.attachToRecyclerView(listView);
-
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener((view, position) -> {
-            if (position >= featuredStickersStartRow && position < featuredStickersEndRow && getParentActivity() != null) {
-                TLRPC.StickerSetCovered setCovered = listAdapter.featuredStickerSets.get(position - featuredStickersStartRow);
-                TLRPC.TL_inputStickerSetID inputStickerSetID = new TLRPC.TL_inputStickerSetID();
-                inputStickerSetID.id = setCovered.set.id;
-                inputStickerSetID.access_hash = setCovered.set.access_hash;
-                if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                    ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>(1);
-                    inputStickerSets.add(inputStickerSetID);
-                    showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputStickerSets));
-                } else {
-                    showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, inputStickerSetID, null, null, false));
+        return fragmentView;
+    }
+
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
+        if (!selectedSets.isEmpty()) {
+            if (invoked) clearSelected();
+            return false;
+        }
+        return super.onBackPressed(invoked);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.stickersDidLoad) {
+            int type = (int) args[0];
+            if (type == currentType) {
+                loadingFeaturedStickerSets.clear();
+            }
+            listView.adapter.update(true);
+        } else if (id == NotificationCenter.featuredStickersDidLoad || id == NotificationCenter.featuredEmojiDidLoad) {
+            listView.adapter.update(true);
+        } else if (id == NotificationCenter.archivedStickersCountDidLoad) {
+            if ((Integer) args[0] == currentType) {
+                listView.adapter.update(true);
+            }
+        } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
+
+        }
+    }
+
+    private String suggestStickersName() {
+        switch (SharedConfig.suggestStickers) {
+            case 0: return getString(R.string.SuggestStickersAll);
+            case 1: return getString(R.string.SuggestStickersInstalled);
+            default:
+            case 2: return getString(R.string.SuggestStickersNone);
+        }
+    }
+
+    private final HashSet<Long> selectedSets = new HashSet<>();
+
+    private static final int ID_FEATURED = 1;
+    private static final int ID_ARCHIVED = 2;
+    private static final int ID_EMOJI = 3;
+    private static final int ID_QUICK_REACTION = 4;
+    private static final int ID_SUGGEST_STICKERS = 5;
+    private static final int ID_LARGE_EMOJI = 6;
+    private static final int ID_DYNAMIC_PACK_ORDER = 7;
+    private static final int ID_SHOW_MORE_FEATURED = 8;
+    private static final int ID_SUGGEST_EMOJI = 9;
+
+    private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
+        if (listView == null || !listView.isReorderAllowed() && !needReorder && activeReorderingRequests <= 0) {
+            if (currentType == TYPE_EMOJIPACKS) {
+                if (true || frozenEmojiPacks == null) {
+                    frozenEmojiPacks = new ArrayList<>(MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(currentType)));
                 }
-            } else if (position == featuredStickersShowMoreRow || position == featuredRow) {
-                if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
+                sets = frozenEmojiPacks;
+            } else {
+                sets = new ArrayList<>(MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(currentType)));
+            }
+        }
+
+        boolean truncatedFeaturedStickers = false;
+        featured = new ArrayList<>(getFeaturedSets());
+        for (int i = 0; i < featured.size(); ++i) {
+            if (loadingFeaturedStickerSets.contains(featured.get(i).set.id)) {
+                featured.remove(i);
+                i--;
+            }
+        }
+
+        final int featuredCount = featured.size();
+        final int archivedCount = mediaDataController.getArchivedStickersCount(currentType);
+        final int emojiCount    = mediaDataController.getStickerSets(TYPE_EMOJIPACKS).size();
+
+        if (currentType == TYPE_IMAGE) {
+            featuredRow = items.size();
+            items.add(UItem.asButton(ID_FEATURED, R.drawable.msg2_trending, getString(R.string.FeaturedStickers), featuredCount > 0 ? formatNumber(featuredCount, ',') : ""));
+            if (archivedCount > 0) {
+                archivedRow = items.size();
+                if (currentType == TYPE_IMAGE) {
+                    items.add(UItem.asButton(ID_ARCHIVED, R.drawable.msg2_archived_stickers, getString(R.string.ArchivedStickers), formatNumber(archivedCount, ',')));
+                } else {
+                    items.add(UItem.asButton(ID_ARCHIVED, getString(currentType == TYPE_EMOJIPACKS ? R.string.ArchivedEmojiPacks : R.string.ArchivedMasks), formatNumber(archivedCount, ',')));
+                }
+            }
+            emojiPacksRow = items.size();
+            items.add(UItem.asSettingsCell(ID_EMOJI, R.drawable.msg2_smile_status, getString(R.string.Emoji), emojiCount > 0 ? LocaleController.formatNumber(emojiCount, ',') : ""));
+        } else {
+            if (archivedCount > 0) {
+                archivedRow = items.size();
+                if (currentType == TYPE_IMAGE) {
+                    items.add(UItem.asButton(ID_ARCHIVED, R.drawable.msg2_archived_stickers, getString(R.string.ArchivedStickers), formatNumber(archivedCount, ',')));
+                } else {
+                    items.add(UItem.asButton(ID_ARCHIVED, getString(currentType == TYPE_EMOJIPACKS ? R.string.ArchivedEmojiPacks : R.string.ArchivedMasks), formatNumber(archivedCount, ',')));
+                }
+                if (currentType == TYPE_MASK) {
+                    items.add(UItem.asShadow(getString(R.string.ArchivedMasksInfo)));
+                }
+            }
+        }
+
+        if (currentType == TYPE_IMAGE) {
+            reactionsDoubleTapRow = items.size();
+            items.add(UItem.asSettingsCell(ID_QUICK_REACTION, R.drawable.msg2_reactions2, getString(R.string.DoubleTapSetting)).onBind(this::setQuickReactionImage));
+            items.add(UItem.asShadow(addStickersBotSpan(getString(currentType == TYPE_EMOJIPACKS ? R.string.EmojiBotInfo : R.string.StickersBotInfo))));
+
+            items.add(UItem.asHeader(getString(R.string.StickersSettings)));
+            suggestRow = items.size();
+            items.add(UItem.asSettingsCell(ID_SUGGEST_STICKERS, getString(R.string.SuggestStickers), suggestStickersName()));
+            largeEmojiRow = items.size();
+            items.add(UItem.asCheck(ID_LARGE_EMOJI, getString(R.string.LargeEmoji)).setChecked(SharedConfig.allowBigEmoji));
+            dynamicPackOrder = items.size();
+            items.add(UItem.asCheck(ID_DYNAMIC_PACK_ORDER, getString(R.string.DynamicPackOrder)).setChecked(SharedConfig.updateStickersOrderOnSend));
+            items.add(UItem.asShadow(getString(R.string.DynamicPackOrderInfo)));
+        }
+
+        if (currentType == TYPE_EMOJIPACKS) {
+            items.add(UItem.asCheck(ID_SUGGEST_EMOJI, getString(R.string.SuggestAnimatedEmoji)).setChecked(SharedConfig.suggestAnimatedEmoji));
+            items.add(UItem.asShadow(getString(R.string.SuggestAnimatedEmojiInfo)));
+        }
+
+        if (sets.size() > 0) {
+            adapter.whiteSectionStart();
+            if (currentType == TYPE_EMOJIPACKS || !featured.isEmpty() && currentType == TYPE_IMAGE) {
+                items.add(UItem.asHeader(getString(currentType == TYPE_EMOJIPACKS ? R.string.ChooseStickerMyEmojiPacks : R.string.ChooseStickerMyStickerSets)));
+            }
+
+            adapter.reorderSectionStart();
+            for (TLRPC.TL_messages_stickerSet set : sets) {
+                items.add(
+                    StickerSetCell.Factory.of(set)
+                        .setClickCallback(this::openStickerSetOptions)
+                        .setClickCallback2(this::onStickerSetButtonClick)
+                        .setChecked(selectedSets.contains(set.set.id))
+                );
+            }
+            adapter.reorderSectionEnd();
+
+            adapter.whiteSectionEnd();
+
+            if (currentType != TYPE_MASK && currentType != TYPE_EMOJIPACKS) {
+                items.add(UItem.asShadow(null));
+            } else if (currentType == TYPE_MASK) {
+                items.add(UItem.asShadow(getString(R.string.MasksInfo)));
+            }
+        }
+
+        if (featured.size() > 3) {
+            featured.removeAll(featured.subList(3, featured.size()));
+            truncatedFeaturedStickers = true;
+        }
+        if (currentType == TYPE_EMOJIPACKS && !featured.isEmpty()) {
+            if (sets.size() > 0) {
+                items.add(UItem.asShadow(null));
+            }
+
+            items.add(UItem.asHeader(getString(currentType == TYPE_EMOJIPACKS ? R.string.FeaturedEmojiPacks : R.string.FeaturedStickers)));
+            for (TLRPC.StickerSetCovered set : featured) {
+                final UItem featuredItem =
+                    FeaturedStickerSetCell2.Factory.of(set)
+                        .setClickCallback(this::onFeaturedAddClick)
+                        .setLocked(loadingFeaturedStickerSets.contains(set.set.id));
+                items.add(featuredItem);
+            }
+
+            if (truncatedFeaturedStickers) {
+                items.add(UItem.asButton(ID_SHOW_MORE_FEATURED, R.drawable.msg2_trending, getString(R.string.ShowMoreEmojiPacks)).accent());
+            }
+        }
+
+        if (currentType == TYPE_EMOJIPACKS) {
+            items.add(UItem.asShadow(addStickersBotSpan(getString(currentType == TYPE_EMOJIPACKS ? R.string.EmojiBotInfo : R.string.StickersBotInfo))));
+        }
+    }
+
+    private void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.object instanceof TLRPC.TL_messages_stickerSet) {
+            final TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) item.object;
+            if (selectedSets.isEmpty()) {
+                final ArrayList<TLRPC.Document> stickers = set.documents;
+                if (stickers == null || stickers.isEmpty()) {
+                    return;
+                }
+                if (set.set != null && set.set.emojis) {
+                    final ArrayList<TLRPC.InputStickerSet> inputs = new ArrayList<>();
+                    final TLRPC.TL_inputStickerSetID inputId = new TLRPC.TL_inputStickerSetID();
+                    inputId.id = set.set.id;
+                    inputId.access_hash = set.set.access_hash;
+                    inputs.add(inputId);
+                    showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputs));
+                } else {
+                    showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, set, null, false));
+                }
+            } else {
+                toggleSelected((StickerSetCell) view);
+            }
+            return;
+        }
+        if (item.object instanceof TLRPC.StickerSetCovered) {
+            final TLRPC.StickerSetCovered set = (TLRPC.StickerSetCovered) item.object;
+            final TLRPC.TL_inputStickerSetID inputStickerSetID = new TLRPC.TL_inputStickerSetID();
+            inputStickerSetID.id = set.set.id;
+            inputStickerSetID.access_hash = set.set.access_hash;
+            if (currentType == TYPE_EMOJIPACKS) {
+                final ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>(1);
+                inputStickerSets.add(inputStickerSetID);
+                showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputStickerSets));
+            } else {
+                showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, inputStickerSetID, null, null, false));
+            }
+            return;
+        }
+        switch (item.id) {
+            case ID_ARCHIVED:
+                presentFragment(new ArchivedStickersActivity(currentType));
+                break;
+            case ID_EMOJI:
+                presentFragment(new StickersActivity(TYPE_EMOJIPACKS, null));
+                break;
+            case ID_QUICK_REACTION:
+                presentFragment(new ReactionsDoubleTapManageActivity());
+                break;
+            case ID_DYNAMIC_PACK_ORDER:
+                SharedConfig.toggleUpdateStickersOrderOnSend();
+                ((TextCheckCell) view).setChecked(SharedConfig.updateStickersOrderOnSend);
+                break;
+            case ID_SUGGEST_EMOJI:
+                SharedConfig.toggleSuggestAnimatedEmoji();
+                ((TextCheckCell) view).setChecked(SharedConfig.suggestAnimatedEmoji);
+                break;
+            case ID_LARGE_EMOJI:
+                SharedConfig.toggleBigEmoji();
+                ((TextCheckCell) view).setChecked(SharedConfig.allowBigEmoji);
+                break;
+            case ID_SUGGEST_STICKERS:
+                ItemOptions.makeOptions(this, view)
+                    .addChecked(SharedConfig.suggestStickers == 0, getString(R.string.SuggestStickersAll),       () -> { SharedConfig.setSuggestStickers(0); ((TextSettingsCell) view).setValue(getString(R.string.SuggestStickersAll), true); })
+                    .addChecked(SharedConfig.suggestStickers == 1, getString(R.string.SuggestStickersInstalled), () -> { SharedConfig.setSuggestStickers(1); ((TextSettingsCell) view).setValue(getString(R.string.SuggestStickersInstalled), true); })
+                    .addChecked(SharedConfig.suggestStickers == 2, getString(R.string.SuggestStickersNone),      () -> { SharedConfig.setSuggestStickers(2); ((TextSettingsCell) view).setValue(getString(R.string.SuggestStickersNone), true); })
+                    .show();
+                break;
+            case ID_FEATURED:
+            case ID_SHOW_MORE_FEATURED:
+                if (currentType == TYPE_EMOJIPACKS) {
                     ArrayList<TLRPC.InputStickerSet> inputStickerSets = new ArrayList<>();
                     List<TLRPC.StickerSetCovered> featuredStickerSets = getFeaturedSets();
                     if (featuredStickerSets != null) {
@@ -392,457 +551,208 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, 0, StickersActivity.this, false, false);
                         }
                     };
-                    trendingStickersAlert = new TrendingStickersAlert(context, this, new TrendingStickersLayout(context, trendingDelegate), null);
+                    trendingStickersAlert = new TrendingStickersAlert(getContext(), this, new TrendingStickersLayout(getContext(), trendingDelegate), null);
                     trendingStickersAlert.show();
                 }
-            } else if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
-                if (!listAdapter.hasSelected()) {
-                    TLRPC.TL_messages_stickerSet stickerSet = listAdapter.stickerSets.get(position - stickersStartRow);
-                    ArrayList<TLRPC.Document> stickers = stickerSet.documents;
-                    if (stickers == null || stickers.isEmpty()) {
-                        return;
-                    }
-                    if (stickerSet.set != null && stickerSet.set.emojis) {
-                        ArrayList<TLRPC.InputStickerSet> inputs = new ArrayList<>();
-                        TLRPC.TL_inputStickerSetID inputId = new TLRPC.TL_inputStickerSetID();
-                        inputId.id = stickerSet.set.id;
-                        inputId.access_hash = stickerSet.set.access_hash;
-                        inputs.add(inputId);
-                        showDialog(new EmojiPacksAlert(StickersActivity.this, getParentActivity(), getResourceProvider(), inputs));
-                    } else {
-                        showDialog(new StickersAlert(getParentActivity(), StickersActivity.this, null, stickerSet, null, false));
-                    }
-                } else {
-                    listAdapter.toggleSelected(position);
-                }
-            } else if (position == archivedRow) {
-                presentFragment(new ArchivedStickersActivity(currentType));
-            } else if (position == masksRow) {
-                presentFragment(new StickersActivity(MediaDataController.TYPE_MASK, null));
-            } else if (position == emojiPacksRow) {
-                presentFragment(new StickersActivity(MediaDataController.TYPE_EMOJIPACKS, null));
-            } else if (position == suggestRow) {
-                if (getParentActivity() == null) {
-                    return;
-                }
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString(R.string.SuggestStickers));
-                String[] items = new String[]{
-                        LocaleController.getString(R.string.SuggestStickersAll),
-                        LocaleController.getString(R.string.SuggestStickersInstalled),
-                        LocaleController.getString(R.string.SuggestStickersNone),
-                };
-
-                LinearLayout linearLayout = new LinearLayout(getParentActivity());
-                linearLayout.setOrientation(LinearLayout.VERTICAL);
-                builder.setView(linearLayout);
-
-                for (int a = 0; a < items.length; a++) {
-                    RadioColorCell cell = new RadioColorCell(getParentActivity());
-                    cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
-                    cell.setTag(a);
-                    cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
-                    cell.setTextAndValue(items[a], SharedConfig.suggestStickers == a);
-                    cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
-                    linearLayout.addView(cell);
-                    cell.setOnClickListener(v -> {
-                        Integer which = (Integer) v.getTag();
-                        SharedConfig.setSuggestStickers(which);
-                        updateSuggestStickers = true;
-                        listAdapter.notifyItemChanged(suggestRow);
-                        builder.getDismissRunnable().run();
-                    });
-                }
-                showDialog(builder.create());
-            } else if (position == loopRow) {
-                SharedConfig.toggleLoopStickers();
-                listAdapter.notifyItemChanged(loopRow, ListAdapter.UPDATE_LOOP_STICKERS);
-            } else if (position == largeEmojiRow) {
-                SharedConfig.toggleBigEmoji();
-                ((TextCheckCell) view).setChecked(SharedConfig.allowBigEmoji);
-            } else if (position == suggestAnimatedEmojiRow) {
-                SharedConfig.toggleSuggestAnimatedEmoji();
-                ((TextCheckCell) view).setChecked(SharedConfig.suggestAnimatedEmoji);
-            } else if (position == reactionsDoubleTapRow) {
-                presentFragment(new ReactionsDoubleTapManageActivity());
-            } else if (position == dynamicPackOrder) {
-                SharedConfig.toggleUpdateStickersOrderOnSend();
-                ((TextCheckCell) view).setChecked(SharedConfig.updateStickersOrderOnSend);
-            }
-        });
-        listView.setOnItemLongClickListener((view, position) -> {
-            if (!listAdapter.hasSelected() && position >= stickersStartRow && position < stickersEndRow) {
-                listAdapter.toggleSelected(position);
-                return true;
-            } else {
-                return false;
-            }
-        });
-
-        return fragmentView;
+                break;
+//            case ID_MASKS:
+//                presentFragment(new StickersActivity(MediaDataController.TYPE_MASK, null));
+//                break;
+//            case ID_LOOP:
+//                SharedConfig.toggleLoopStickers();
+//                listAdapter.notifyItemChanged(loopRow, ListAdapter.UPDATE_LOOP_STICKERS);
+//                break;
+        }
     }
 
-
-    @Override
-    public boolean onBackPressed(boolean invoked) {
-        if (listAdapter.hasSelected()) {
-            if (invoked) listAdapter.clearSelected();
+    private boolean onLongClick(UItem item, View view, int position, float x, float y) {
+        if (!selectedSets.isEmpty()) {
             return false;
         }
-        return super.onBackPressed(invoked);
-    }
-
-    @Override
-    public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.stickersDidLoad) {
-            int type = (int) args[0];
-            if (type == currentType) {
-                listAdapter.loadingFeaturedStickerSets.clear();
-                updateRows((Boolean) args[1]);
-            } else if (currentType == MediaDataController.TYPE_IMAGE && type == MediaDataController.TYPE_MASK) {
-                listAdapter.notifyItemChanged(masksRow);
-            }
-        } else if (id == NotificationCenter.featuredStickersDidLoad || id == NotificationCenter.featuredEmojiDidLoad) {
-            updateRows(false);
-        } else if (id == NotificationCenter.archivedStickersCountDidLoad) {
-            if ((Integer) args[0] == currentType) {
-                updateRows(false);
-            }
-        } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {
-
+        if (item.object instanceof TLRPC.TL_messages_stickerSet) {
+            toggleSelected((StickerSetCell) view);
+            return true;
         }
+        return false;
     }
 
+    private void whenReordered(int sectionId, ArrayList<UItem> items) {
+        final ArrayList<TLRPC.TL_messages_stickerSet> newSets = new ArrayList<>();
+        for (UItem item : items) {
+            if (item.object instanceof TLRPC.TL_messages_stickerSet) {
+                newSets.add((TLRPC.TL_messages_stickerSet) item.object);
+            }
+        }
+        sets = newSets;
+        needReorder = true;
+
+        Collections.sort(MediaDataController.getInstance(currentAccount).getStickerSets(currentType), (o1, o2) -> {
+            int i1 = sets.indexOf(o1);
+            int i2 = sets.indexOf(o2);
+            if (i1 >= 0 && i2 >= 0) {
+                return i1 - i2;
+            }
+            return 0;
+        });
+
+        AndroidUtilities.cancelRunOnUIThread(sendReorderRunnable);
+        AndroidUtilities.runOnUIThread(sendReorderRunnable, 1000);
+    }
+
+    private Runnable sendReorderRunnable = () -> sendReorder();
     private void sendReorder() {
-        if (!needReorder) {
-            return;
-        }
-        MediaDataController.getInstance(currentAccount).calcNewHash(currentType);
+        if (!needReorder) return;
+
         needReorder = false;
+
+        MediaDataController.getInstance(currentAccount).calcNewHash(currentType);
         activeReorderingRequests++;
-        TLRPC.TL_messages_reorderStickerSets req = new TLRPC.TL_messages_reorderStickerSets();
-        req.masks = currentType == MediaDataController.TYPE_MASK;
-        req.emojis = currentType == MediaDataController.TYPE_EMOJIPACKS;
-        for (int a = 0; a < listAdapter.stickerSets.size(); a++) {
-            req.order.add(listAdapter.stickerSets.get(a).set.id);
+
+        final TLRPC.TL_messages_reorderStickerSets req = new TLRPC.TL_messages_reorderStickerSets();
+        req.masks = currentType == TYPE_MASK;
+        req.emojis = currentType == TYPE_EMOJIPACKS;
+        for (int a = 0; a < sets.size(); a++) {
+            req.order.add(sets.get(a).set.id);
         }
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> activeReorderingRequests--));
         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.stickersDidLoad, currentType, true);
 
-        if (SharedConfig.updateStickersOrderOnSend && dynamicPackOrder != -1) {
+        if (SharedConfig.updateStickersOrderOnSend) {
             SharedConfig.toggleUpdateStickersOrderOnSend();
-            BulletinFactory.of(StickersActivity.this).createSimpleBulletin(R.raw.filter_reorder, LocaleController.getString(R.string.DynamicPackOrderOff), LocaleController.getString(R.string.DynamicPackOrderOffInfo)).show();
-
-            for (int i = 0; i < listView.getChildCount(); ++i) {
-                View child = listView.getChildAt(i);
-                int position = listView.getChildAdapterPosition(child);
-                if (position == dynamicPackOrder && child instanceof TextCheckCell) {
-                    ((TextCheckCell) child).setChecked(SharedConfig.updateStickersOrderOnSend);
-                    break;
-                }
-            }
+            BulletinFactory.of(StickersActivity.this).createSimpleBulletin(R.raw.filter_reorder, getString(R.string.DynamicPackOrderOff), getString(R.string.DynamicPackOrderOffInfo)).show();
+            listView.adapter.update(true);
         }
     }
 
-    private void updateRows(boolean updateEmojipacks) {
-        MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
-        List<TLRPC.TL_messages_stickerSet> newList;
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            if (updateEmojipacks || frozenEmojiPacks == null) {
-                frozenEmojiPacks = new ArrayList<>(MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(currentType)));
-            }
-            newList = frozenEmojiPacks;
-        } else {
-            newList = new ArrayList<>(MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(currentType)));
-        }
+    private void openStickerSetOptions(View view) {
+        if (view == null || !(view.getParent() instanceof StickerSetCell)) return;
+        final StickerSetCell cell = (StickerSetCell) view.getParent();
+        final TLRPC.TL_messages_stickerSet set = cell.getStickersSet();
+        ItemOptions.makeOptions(StickersActivity.this, cell)
+            .add(R.drawable.msg_archive, LocaleController.getString(R.string.StickersHide), () -> {
+                MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), set, !set.set.archived ? 1 : 2, StickersActivity.this, true, true);
+            })
+            .addIf(!set.set.official, R.drawable.msg_link, LocaleController.getString(R.string.StickersCopy), () -> {
+                try {
+                    final android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    final android.content.ClipData clip = android.content.ClipData.newPlainText("label", getLinkForSet(set));
+                    clipboard.setPrimaryClip(clip);
+                    BulletinFactory.createCopyLinkBulletin(StickersActivity.this).show();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            })
+            .add(R.drawable.msg_reorder, LocaleController.getString(R.string.StickersReorder), () -> {
+                toggleSelected(cell);
+            })
+            .addIf(!set.set.official, R.drawable.msg_share, LocaleController.getString(R.string.StickersShare), () -> {
+                try {
+                    final Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, getLinkForSet(set));
+                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.StickersShare)), 500);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            })
+            .addIf(!set.set.official, R.drawable.msg_delete, LocaleController.getString(R.string.StickersRemove), true, () -> {
+                MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), set, 0, StickersActivity.this, true, true);
+            })
+            .setMinWidth(190)
+            .show();
+    }
 
+    private void onStickerSetButtonClick(View view) {
+        if (view == null || !(view.getParent() instanceof ViewGroup)) return;
+        final ViewGroup parent = (ViewGroup) view.getParent();
+        if (!(parent.getParent() instanceof StickerSetCell)) return;
+        final StickerSetCell cell = (StickerSetCell) parent.getParent();
 
-        boolean truncatedFeaturedStickers = false;
-        List<TLRPC.StickerSetCovered> featuredStickerSets = getFeaturedSets();
-        if (featuredStickerSets.size() > 3) {
-            featuredStickerSets = featuredStickerSets.subList(0, 3);
-            truncatedFeaturedStickers = true;
-        }
-        List<TLRPC.StickerSetCovered> featuredStickersList = new ArrayList<>(featuredStickerSets);
-        DiffUtil.DiffResult diffResult = null;
-        DiffUtil.DiffResult featuredDiffResult = null;
+        final TLRPC.TL_messages_stickerSet set = cell.getStickersSet();
+        if (set == null || set.set == null)
+            return;
 
-        boolean hasUsefulPacks = false;
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            if (UserConfig.getInstance(currentAccount).isPremium()) {
-                hasUsefulPacks = true;
-            }
-            if (!hasUsefulPacks) {
-                for (int i = 0; i < newList.size(); ++i) {
-                    if (!MessageObject.isPremiumEmojiPack(newList.get(i))) {
-                        hasUsefulPacks = true;
-                        break;
-                    }
+        if (cell.addButtonView == view) {
+            final ArrayList<TLRPC.StickerSetCovered> featured = getMediaDataController().getFeaturedEmojiSets();
+            TLRPC.StickerSetCovered covered = null;
+            for (int i = 0; i < featured.size(); ++i) {
+                if (set.set.id == featured.get(i).set.id) {
+                    covered = featured.get(i);
+                    break;
                 }
             }
-            if (!hasUsefulPacks) {
-                for (int i = 0; i < featuredStickerSets.size(); ++i) {
-                    if (!MessageObject.isPremiumEmojiPack(featuredStickerSets.get(i))) {
-                        hasUsefulPacks = true;
-                        break;
+            if (covered != null) {
+                if (loadingFeaturedStickerSets.contains(covered.set.id))
+                    return;
+                loadingFeaturedStickerSets.add(covered.set.id);
+            }
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), covered == null ? set : covered, 2, this, false, false);
+        } else if (cell.removeButtonView == view) {
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), set, 0, this, false, true);
+        } else if (cell.premiumButtonView == view) {
+            showDialog(new PremiumFeatureBottomSheet(this, PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI, false));
+        }
+    }
+
+    private void onFeaturedAddClick(View view) {
+        final FeaturedStickerSetCell2 cell = (FeaturedStickerSetCell2) view.getParent();
+        final TLRPC.StickerSetCovered pack = cell.getStickerSet();
+        if (loadingFeaturedStickerSets.contains(pack.set.id)) {
+            return;
+        }
+        loadingFeaturedStickerSets.add(pack.set.id);
+        cell.setDrawProgress(true, true);
+        if (cell.isInstalled()) {
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 0, StickersActivity.this, false, false);
+        } else {
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 2, StickersActivity.this, false, false);
+        }
+    }
+
+    private void toggleSelected(StickerSetCell cell) {
+        final TLRPC.TL_messages_stickerSet set = cell.getStickersSet();
+        if (set == null) return;
+        if (selectedSets.contains(set.set.id)) {
+            selectedSets.remove(set.set.id);
+            cell.setChecked(false, true);
+        } else {
+            selectedSets.add(set.set.id);
+            cell.setChecked(true, true);
+        }
+        listView.adapter.update(true);
+        checkActionMode();
+    }
+
+    private void toggleSelected(TLRPC.TL_messages_stickerSet set) {
+        if (set == null) return;
+        if (selectedSets.contains(set.set.id)) {
+            selectedSets.remove(set.set.id);
+        } else {
+            selectedSets.add(set.set.id);
+        }
+        listView.adapter.update(true);
+        checkActionMode();
+    }
+
+    private void setQuickReactionImage(View view) {
+        if (view instanceof TextSettingsCell) {
+            final TextSettingsCell cell = (TextSettingsCell) view;
+            final String reaction = MediaDataController.getInstance(currentAccount).getDoubleTapReaction();
+            if (reaction != null) {
+                if (reaction.startsWith("animated_")) {
+                    try {
+                        final long documentId = Long.parseLong(reaction.substring(9));
+                        final AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, documentId);
+                        drawable.addView(cell.getValueBackupImageView());
+                        cell.getValueBackupImageView().setImageDrawable(drawable);
+                    } catch (Exception e) {}
+                } else {
+                    final TLRPC.TL_availableReaction availableReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
+                    if (availableReaction != null) {
+                        final SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(availableReaction.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
+                        cell.getValueBackupImageView().getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "100_100_lastreactframe", svgThumb, "webp", availableReaction, 1);
                     }
                 }
-            }
-        }
-
-        if (listAdapter != null) {
-            if (!isPaused) {
-                diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-
-                    List<TLRPC.TL_messages_stickerSet> oldList = listAdapter.stickerSets;
-
-                    @Override
-                    public int getOldListSize() {
-                        return oldList.size();
-                    }
-
-                    @Override
-                    public int getNewListSize() {
-                        return newList.size();
-                    }
-
-                    @Override
-                    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                        return oldList.get(oldItemPosition).set.id == newList.get(newItemPosition).set.id;
-                    }
-
-                    @Override
-                    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                        TLRPC.StickerSet oldSet = oldList.get(oldItemPosition).set;
-                        TLRPC.StickerSet newSet = newList.get(newItemPosition).set;
-                        return TextUtils.equals(oldSet.title, newSet.title) && oldSet.count == newSet.count;
-                    }
-                });
-                featuredDiffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                    List<TLRPC.StickerSetCovered> oldList = listAdapter.featuredStickerSets;
-
-                    @Override
-                    public int getOldListSize() {
-                        return oldList.size();
-                    }
-
-                    @Override
-                    public int getNewListSize() {
-                        return featuredStickersList.size();
-                    }
-
-                    @Override
-                    public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                        return oldList.get(oldItemPosition).set.id == featuredStickersList.get(newItemPosition).set.id;
-                    }
-
-                    @Override
-                    public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                        TLRPC.StickerSet oldSet = oldList.get(oldItemPosition).set;
-                        TLRPC.StickerSet newSet = featuredStickersList.get(newItemPosition).set;
-                        return TextUtils.equals(oldSet.title, newSet.title) && oldSet.count == newSet.count && oldSet.installed == newSet.installed;
-                    }
-                });
-            }
-            listAdapter.setStickerSets(newList);
-            listAdapter.setFeaturedStickerSets(featuredStickersList);
-        }
-
-        rowCount = 0;
-
-        archivedRow = -1;
-        loopRow = -1;
-        loopInfoRow = -1;
-
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            featuredRow = rowCount++;
-            masksRow = -1;
-            if (mediaDataController.getArchivedStickersCount(currentType) != 0) {
-                boolean inserted = archivedRow == -1;
-                archivedRow = rowCount++;
-                if (listAdapter != null && inserted) {
-                    listAdapter.notifyItemRangeInserted(archivedRow, 1);
-                }
-            }
-            archivedInfoRow = -1;
-            emojiPacksRow = rowCount++;
-        } else {
-            featuredRow = -1;
-            masksRow = -1;
-            emojiPacksRow = -1;
-
-            if (mediaDataController.getArchivedStickersCount(currentType) != 0) {
-                boolean inserted = archivedRow == -1;
-
-                archivedRow = rowCount++;
-                archivedInfoRow = currentType == MediaDataController.TYPE_MASK ? rowCount++ : -1;
-
-                if (listAdapter != null && inserted) {
-                    listAdapter.notifyItemRangeInserted(archivedRow, archivedInfoRow != -1 ? 2 : 1);
-                }
-            } else {
-                int oldArchivedRow = archivedRow;
-                int oldArchivedInfoRow = archivedInfoRow;
-
-                archivedRow = -1;
-                archivedInfoRow = -1;
-
-                if (listAdapter != null && oldArchivedRow != -1) {
-                    listAdapter.notifyItemRangeRemoved(oldArchivedRow, oldArchivedInfoRow != -1 ? 2 : 1);
-                }
-            }
-        }
-
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            suggestAnimatedEmojiRow = rowCount++;
-            suggestAnimatedEmojiInfoRow = rowCount++;
-        } else {
-            suggestAnimatedEmojiRow = -1;
-            suggestAnimatedEmojiInfoRow = -1;
-        }
-
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            reactionsDoubleTapRow = rowCount++;
-        } else {
-            reactionsDoubleTapRow = -1;
-        }
-
-        stickersBotInfo = -1;
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            stickersBotInfo = rowCount++;
-        }
-
-        featuredStickersHeaderRow = -1;
-        featuredStickersStartRow = -1;
-        featuredStickersEndRow = -1;
-        featuredStickersShowMoreRow = -1;
-        featuredStickersShadowRow = -1;
-//        if (!featuredStickersList.isEmpty() && (currentType == MediaDataController.TYPE_IMAGE)) {
-//            featuredStickersHeaderRow = rowCount++;
-//            featuredStickersStartRow = rowCount;
-//            rowCount += featuredStickersList.size();
-//            featuredStickersEndRow = rowCount;
-//
-//            if (truncatedFeaturedStickers) {
-//                featuredStickersShowMoreRow = rowCount++;
-//            }
-//            featuredStickersShadowRow = rowCount++;
-//        }
-
-        if (currentType == MediaDataController.TYPE_IMAGE) {
-            stickersSettingsRow = rowCount++;
-            suggestRow = rowCount++;
-            largeEmojiRow = rowCount++;
-            dynamicPackOrder = rowCount++;
-            dynamicPackOrderInfo = rowCount++;
-        } else {
-            stickersSettingsRow = -1;
-            suggestRow = -1;
-            largeEmojiRow = -1;
-            dynamicPackOrder = -1;
-            dynamicPackOrderInfo = -1;
-        }
-
-        int stickerSetsCount = newList.size();
-        if (stickerSetsCount > 0) {
-            if (currentType == MediaDataController.TYPE_EMOJIPACKS || !featuredStickersList.isEmpty() && currentType == MediaDataController.TYPE_IMAGE) {
-                stickersHeaderRow = rowCount++;
-            } else {
-                stickersHeaderRow = -1;
-            }
-
-            stickersStartRow = rowCount;
-            rowCount += stickerSetsCount;
-            stickersEndRow = rowCount;
-
-            if (currentType != MediaDataController.TYPE_MASK && currentType != MediaDataController.TYPE_EMOJIPACKS) {
-                stickersShadowRow = rowCount++;
-                masksInfoRow = -1;
-            } else if (currentType == MediaDataController.TYPE_MASK) {
-                masksInfoRow = rowCount++;
-                stickersShadowRow = -1;
-            } else {
-                stickersShadowRow = -1;
-                masksInfoRow = -1;
-            }
-        } else {
-            stickersHeaderRow = -1;
-            stickersStartRow = -1;
-            stickersEndRow = -1;
-            stickersShadowRow = -1;
-            masksInfoRow = -1;
-        }
-
-        if (!featuredStickersList.isEmpty() && (currentType == MediaDataController.TYPE_EMOJIPACKS)) {
-            if (stickerSetsCount > 0) {
-                featuredStickersShadowRow = rowCount++;
-            }
-
-            featuredStickersHeaderRow = rowCount++;
-            featuredStickersStartRow = rowCount;
-            rowCount += featuredStickersList.size();
-            featuredStickersEndRow = rowCount;
-
-            if (truncatedFeaturedStickers) {
-                featuredStickersShowMoreRow = rowCount++;
-            }
-        }
-
-        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-            stickersBotInfo = rowCount++;
-        }
-
-        if (listAdapter != null) {
-            if (diffResult != null) {
-                int startRow = stickersStartRow >= 0 ? stickersStartRow : rowCount;
-                listAdapter.notifyItemRangeChanged(0, startRow);
-                diffResult.dispatchUpdatesTo(new ListUpdateCallback() {
-                    @Override
-                    public void onInserted(int position, int count) {
-                        listAdapter.notifyItemRangeInserted(startRow + position, count);
-                    }
-
-                    @Override
-                    public void onRemoved(int position, int count) {
-                        listAdapter.notifyItemRangeRemoved(startRow + position, count);
-                    }
-
-                    @Override
-                    public void onMoved(int fromPosition, int toPosition) {
-                        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                            listAdapter.notifyItemMoved(startRow + fromPosition, startRow + toPosition);
-                        }
-                    }
-
-                    @Override
-                    public void onChanged(int position, int count, @Nullable Object payload) {
-                        listAdapter.notifyItemRangeChanged(startRow + position, count);
-                    }
-                });
-            }
-            if (featuredDiffResult != null) {
-                int startRow = featuredStickersStartRow >= 0 ? featuredStickersStartRow : rowCount;
-                listAdapter.notifyItemRangeChanged(0, startRow);
-                featuredDiffResult.dispatchUpdatesTo(new ListUpdateCallback() {
-                    @Override
-                    public void onInserted(int position, int count) {
-                        listAdapter.notifyItemRangeInserted(startRow + position, count);
-                    }
-
-                    @Override
-                    public void onRemoved(int position, int count) {
-                        listAdapter.notifyItemRangeRemoved(startRow + position, count);
-                    }
-
-                    @Override
-                    public void onMoved(int fromPosition, int toPosition) {
-                    }
-
-                    @Override
-                    public void onChanged(int position, int count, @Nullable Object payload) {
-                        listAdapter.notifyItemRangeChanged(startRow + position, count);
-                    }
-                });
             }
         }
     }
@@ -851,691 +761,83 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
+        if (listView != null) {
+            listView.adapter.update(true);
         }
     }
 
-    private class ListAdapter extends RecyclerListView.SelectionAdapter {
-        private final static int TYPE_STICKER_SET = 0,
-                TYPE_INFO = 1,
-                TYPE_TEXT_AND_VALUE = 2,
-                TYPE_SHADOW = 3,
-                TYPE_SWITCH = 4,
-                TYPE_DOUBLE_TAP_REACTIONS = 5,
-                TYPE_HEADER = 6,
-                TYPE_FEATURED_STICKER_SET = 7;
+    public void clearSelected() {
+        selectedSets.clear();
+        listView.adapter.update(true);
+        checkActionMode();
+    }
 
-        public static final int UPDATE_LOOP_STICKERS = 0;
-        public static final int UPDATE_SELECTION = 1;
-        public static final int UPDATE_REORDERABLE = 2;
-        public static final int UPDATE_DIVIDER = 3;
-        public static final int UPDATE_FEATURED_ANIMATED = 4;
+    public boolean hasSelected() {
+        return selectedSets.size() > 0;
+    }
 
-        private final LongSparseArray<Boolean> selectedItems = new LongSparseArray<>();
-        private final List<TLRPC.TL_messages_stickerSet> stickerSets = new ArrayList<>();
-        private final List<TLRPC.StickerSetCovered> featuredStickerSets = new ArrayList<>();
-        private final List<Long> loadingFeaturedStickerSets = new ArrayList<>();
+    public int getSelectedCount() {
+        return selectedSets.size();
+    }
 
-        private Context mContext;
-
-        public ListAdapter(Context context, List<TLRPC.TL_messages_stickerSet> stickerSets, List<TLRPC.StickerSetCovered> featuredStickerSets) {
-            mContext = context;
-            setStickerSets(stickerSets);
-            if (featuredStickerSets.size() > 3) {
-                setFeaturedStickerSets(featuredStickerSets.subList(0, 3));
-            } else {
-                setFeaturedStickerSets(featuredStickerSets);
-            }
-        }
-
-        @SuppressLint("NotifyDataSetChanged")
-        @Override
-        public void notifyDataSetChanged() {
-            super.notifyDataSetChanged();
-
-            if (isListeningForFeaturedUpdate) {
-                isListeningForFeaturedUpdate = false;
-            }
-        }
-
-        public void setStickerSets(List<TLRPC.TL_messages_stickerSet> stickerSets) {
-            this.stickerSets.clear();
-            this.stickerSets.addAll(stickerSets);
-        }
-
-        public void setFeaturedStickerSets(List<TLRPC.StickerSetCovered> featuredStickerSets) {
-            this.featuredStickerSets.clear();
-            this.featuredStickerSets.addAll(featuredStickerSets);
-        }
-
-        @Override
-        public int getItemCount() {
-            return rowCount;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            if (i >= featuredStickersStartRow && i < featuredStickersEndRow) {
-                return featuredStickerSets.get(i - featuredStickersStartRow).set.id;
-            } else if (i >= stickersStartRow && i < stickersEndRow) {
-                return stickerSets.get(i - stickersStartRow).set.id;
-            }
-            return i;
-        }
-
-        private void processSelectionMenu(int which) {
-            if (which == MENU_SHARE) {
-                StringBuilder stringBuilder = new StringBuilder();
-                for (int i = 0, size = stickerSets.size(); i < size; i++) {
-                    TLRPC.TL_messages_stickerSet stickerSet = stickerSets.get(i);
-                    if (selectedItems.get(stickerSet.set.id, false)) {
-                        if (stringBuilder.length() != 0) {
-                            stringBuilder.append("\n");
-                        }
-                        stringBuilder.append(getLinkForSet(stickerSet));
-                    }
+    private void checkActionMode() {
+        final int selectedCount = getSelectedCount();
+        final boolean actionModeShowed = actionBar.isActionModeShowed();
+        if (selectedCount > 0) {
+            checkActionModeIcons();
+            selectedCountTextView.setNumber(selectedCount, actionModeShowed);
+            if (!actionModeShowed) {
+                actionBar.showActionMode();
+                listView.allowReorder(true);
+                if (!SharedConfig.stickersReorderingHintUsed && currentType != MediaDataController.TYPE_EMOJIPACKS) {
+                    SharedConfig.setStickersReorderingHintUsed(true);
+                    String stickersReorderHint = LocaleController.getString(R.string.StickersReorderHint);
+                    Bulletin.make(this, new ReorderingBulletinLayout(getContext(), stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
                 }
-                String link = stringBuilder.toString();
-                ShareAlert shareAlert = ShareAlert.createShareAlert(fragmentView.getContext(), null, link, false, link, false);
-                shareAlert.setDelegate(new ShareAlert.ShareAlertDelegate() {
+            }
+        } else if (actionModeShowed) {
+            actionBar.hideActionMode();
+            listView.allowReorder(false);
+            sendReorder();
+        }
+    }
+
+    private void checkActionModeIcons() {
+        if (hasSelected()) {
+            boolean canDelete = true;
+            for (TLRPC.TL_messages_stickerSet set : sets) {
+                if (selectedSets.contains(set.set.id) && set.set.official && !set.set.emojis) {
+                    canDelete = false;
+                    break;
+                }
+            }
+            int visibility = canDelete ? View.VISIBLE : View.GONE;
+            if (deleteMenuItem.getVisibility() != visibility) {
+                deleteMenuItem.setVisibility(visibility);
+            }
+        }
+    }
+
+    private CharSequence addStickersBotSpan(String text) {
+        String botName = "@stickers";
+        int index = text.indexOf(botName);
+        if (index != -1) {
+            try {
+                SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
+                URLSpanNoUnderline urlSpan = new URLSpanNoUnderline("@stickers") {
                     @Override
-                    public void didShare() {
-                        clearSelected();
+                    public void onClick(View widget) {
+                        MessagesController.getInstance(currentAccount).openByUserName("stickers", StickersActivity.this, 3);
                     }
-
-                    @Override
-                    public boolean didCopy() {
-                        clearSelected();
-                        return true;
-                    }
-                });
-                shareAlert.show();
-            } else if (which == MENU_ARCHIVE || which == MENU_DELETE) {
-                ArrayList<TLRPC.StickerSet> stickerSetList = new ArrayList<>(selectedItems.size());
-
-                for (int i = 0, size = stickerSets.size(); i < size; i++) {
-                    TLRPC.StickerSet stickerSet = stickerSets.get(i).set;
-                    if (selectedItems.get(stickerSet.id, false)) {
-                        stickerSetList.add(stickerSet);
-                    }
-                }
-
-                int count = stickerSetList.size();
-
-                switch (count) {
-                    case 0:
-                        break;
-                    case 1:
-                        for (int i = 0, size = stickerSets.size(); i < size; i++) {
-                            TLRPC.TL_messages_stickerSet stickerSet = stickerSets.get(i);
-                            if (selectedItems.get(stickerSet.set.id, false)) {
-                                processSelectionOption(which, stickerSet);
-                                break;
-                            }
-                        }
-                        listAdapter.clearSelected();
-                        break;
-                    default:
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                        String buttonText;
-                        if (which == MENU_DELETE) {
-                            builder.setTitle(LocaleController.formatString("DeleteStickerSetsAlertTitle", R.string.DeleteStickerSetsAlertTitle, LocaleController.formatPluralString("StickerSets", count)));
-                            builder.setMessage(LocaleController.formatString("DeleteStickersAlertMessage", R.string.DeleteStickersAlertMessage, count));
-                            buttonText = LocaleController.getString(R.string.Delete);
-                        } else {
-                            builder.setTitle(LocaleController.formatString("ArchiveStickerSetsAlertTitle", R.string.ArchiveStickerSetsAlertTitle, LocaleController.formatPluralString("StickerSets", count)));
-                            builder.setMessage(LocaleController.formatString("ArchiveStickersAlertMessage", R.string.ArchiveStickersAlertMessage, count));
-                            buttonText = LocaleController.getString(R.string.Archive);
-                        }
-                        builder.setPositiveButton(buttonText, (dialog, which1) -> {
-                            listAdapter.clearSelected();
-                            MediaDataController.getInstance(currentAccount).toggleStickerSets(stickerSetList, currentType, which == MENU_DELETE ? 0 : 1, StickersActivity.this, true);
-                        });
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-
-                        AlertDialog dialog = builder.create();
-                        showDialog(dialog);
-                        if (which == MENU_DELETE) {
-                            TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
-                            if (button != null) {
-                                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
-                            }
-                        }
-                        break;
-                }
-            }
-        }
-
-        private void processSelectionOption(int which, TLRPC.TL_messages_stickerSet stickerSet) {
-            if (which == MENU_ARCHIVE) {
-                MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, !stickerSet.set.archived ? 1 : 2, StickersActivity.this, true, true);
-            } else if (which == MENU_DELETE) {
-                MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, 0, StickersActivity.this, true, true);
-            } else if (which == 2) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_SEND);
-                    intent.setType("text/plain");
-                    intent.putExtra(Intent.EXTRA_TEXT, getLinkForSet(stickerSet));
-                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.StickersShare)), 500);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            } else if (which == 3) {
-                try {
-                    String link = String.format(Locale.US, "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + (stickerSet.set.emojis ? "addemoji" : "addstickers") + "/%s", stickerSet.set.short_name);
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", link);
-                    clipboard.setPrimaryClip(clip);
-                    BulletinFactory.createCopyLinkBulletin(StickersActivity.this).show();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            } else if (which == 4) {
-                int index = stickerSets.indexOf(stickerSet);
-                if (index >= 0) {
-                    listAdapter.toggleSelected(stickersStartRow + index);
-                }
-            }
-        }
-
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            switch (holder.getItemViewType()) {
-                case TYPE_HEADER:
-                    HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    if (position == featuredStickersHeaderRow) {
-                        headerCell.setText(LocaleController.getString(currentType == MediaDataController.TYPE_EMOJIPACKS ? R.string.FeaturedEmojiPacks : R.string.FeaturedStickers));
-                    } else if (position == stickersHeaderRow) {
-                        headerCell.setText(LocaleController.getString(currentType == MediaDataController.TYPE_EMOJIPACKS ? R.string.ChooseStickerMyEmojiPacks : R.string.ChooseStickerMyStickerSets));
-                    } else if (position == stickersSettingsRow) {
-                        headerCell.setText(LocaleController.getString(R.string.StickersSettings));
-                    }
-                    break;
-                case TYPE_FEATURED_STICKER_SET: {
-                    FeaturedStickerSetCell2 stickerSetCell = (FeaturedStickerSetCell2) holder.itemView;
-                    int row = position - featuredStickersStartRow;
-                    TLRPC.StickerSetCovered setCovered = featuredStickerSets.get(row);
-                    boolean animated = isListeningForFeaturedUpdate || stickerSetCell.getStickerSet() != null && stickerSetCell.getStickerSet().set.id == setCovered.set.id;
-                    stickerSetCell.setStickersSet(setCovered, true, false, false, animated);
-                    stickerSetCell.setDrawProgress(loadingFeaturedStickerSets.contains(setCovered.set.id), animated);
-
-                    stickerSetCell.setAddOnClickListener(v -> {
-                        FeaturedStickerSetCell2 cell = (FeaturedStickerSetCell2) v.getParent();
-                        TLRPC.StickerSetCovered pack = cell.getStickerSet();
-                        if (loadingFeaturedStickerSets.contains(pack.set.id)) {
-                            return;
-                        }
-
-                        isListeningForFeaturedUpdate = true;
-                        loadingFeaturedStickerSets.add(pack.set.id);
-
-                        cell.setDrawProgress(true, true);
-                        if (cell.isInstalled()) {
-                            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 0, StickersActivity.this, false, false);
-                        } else {
-                            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 2, StickersActivity.this, false, false);
-                        }
-                    });
-
-                    break;
-                }
-                case TYPE_STICKER_SET:
-                    StickerSetCell stickerSetCell = (StickerSetCell) holder.itemView;
-                    int row = position - stickersStartRow;
-                    TLRPC.TL_messages_stickerSet set = stickerSets.get(row);
-                    boolean sameSet = (stickerSetCell.getStickersSet() == null && set == null) || (stickerSetCell.getStickersSet() != null && set != null && stickerSetCell.getStickersSet().set.id == set.set.id);
-                    stickerSetCell.setStickersSet(set, row != stickerSets.size() - 1);
-                    stickerSetCell.setChecked(selectedItems.get(getItemId(position), false), false);
-                    stickerSetCell.setReorderable(hasSelected(), false);
-                    if (set != null && set.set != null && set.set.emojis) {
-                        boolean installed = getMediaDataController().isStickerPackInstalled(set.set.id);
-                        boolean unlock = !UserConfig.getInstance(currentAccount).isPremium();
-                        if (unlock) {
-                            boolean premium = false;
-                            for (int i = 0; i < set.documents.size(); ++i) {
-                                if (!MessageObject.isFreeEmoji(set.documents.get(i))) {
-                                    premium = true;
-                                    break;
-                                }
-                            }
-                            if (!premium) {
-                                unlock = false;
-                            }
-                        }
-                        stickerSetCell.updateButtonState(
-                            unlock ? (
-                                installed && !set.set.official ? StickerSetCell.BUTTON_STATE_LOCKED_RESTORE : StickerSetCell.BUTTON_STATE_LOCKED
-                            ) : (
-                                installed ? StickerSetCell.BUTTON_STATE_REMOVE : StickerSetCell.BUTTON_STATE_ADD
-                            ),
-                            sameSet
-                        );
-                    }
-                    break;
-                case TYPE_INFO:
-                    TextInfoPrivacyCell infoPrivacyCell = (TextInfoPrivacyCell) holder.itemView;
-                    infoPrivacyCell.setFixedSize(0);
-                    if (position == stickersBotInfo) {
-                        infoPrivacyCell.setText(addStickersBotSpan(
-                            currentType == MediaDataController.TYPE_EMOJIPACKS ?
-                                LocaleController.getString(R.string.EmojiBotInfo) :
-                                LocaleController.getString(R.string.StickersBotInfo)
-                        ));
-                    } else if (position == archivedInfoRow) {
-                        if (currentType == MediaDataController.TYPE_IMAGE) {
-                            infoPrivacyCell.setText(LocaleController.getString(R.string.ArchivedStickersInfo));
-                        } else {
-                            infoPrivacyCell.setText(LocaleController.getString(R.string.ArchivedMasksInfo));
-                        }
-                    } else if (position == loopInfoRow) {
-//                        infoPrivacyCell.setText(LocaleController.getString(R.string.LoopAnimatedStickersInfo));
-                        infoPrivacyCell.setText(null);
-                        infoPrivacyCell.setFixedSize(12);
-                    } else if (position == suggestAnimatedEmojiInfoRow) {
-                        infoPrivacyCell.setText(LocaleController.getString(R.string.SuggestAnimatedEmojiInfo));
-                    } else if (position == masksInfoRow) {
-                        infoPrivacyCell.setText(LocaleController.getString(R.string.MasksInfo));
-                    } else if (position == dynamicPackOrderInfo) {
-                        infoPrivacyCell.setText(LocaleController.getString("DynamicPackOrderInfo"));
-                    }
-                    break;
-                case TYPE_TEXT_AND_VALUE: {
-                    TextCell settingsCell = (TextCell) holder.itemView;
-                    if (position == featuredStickersShowMoreRow) {
-                        settingsCell.setColors(Theme.key_windowBackgroundWhiteBlueText4, Theme.key_windowBackgroundWhiteBlueText4);
-                        if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreEmojiPacks), R.drawable.msg2_trending, false);
-                        } else {
-                            settingsCell.setTextAndIcon(LocaleController.getString(R.string.ShowMoreStickers), R.drawable.msg2_trending, false);
-                        }
-                    } else {
-                        settingsCell.imageView.setTranslationX(0);
-                        settingsCell.textView.setTranslationX(0);
-                        settingsCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        if (position == archivedRow) {
-                            int count = MediaDataController.getInstance(currentAccount).getArchivedStickersCount(currentType);
-                            String value = count > 0 ? Integer.toString(count) : "";
-                            if (currentType == MediaDataController.TYPE_IMAGE) {
-                                settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ArchivedStickers), value, R.drawable.msg2_archived_stickers, true);
-                            } else if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
-                                settingsCell.setTextAndValue(LocaleController.getString(R.string.ArchivedEmojiPacks), value, false, true);
-                            } else {
-                                settingsCell.setTextAndValue(LocaleController.getString(R.string.ArchivedMasks), value, false, true);
-                            }
-                        } else if (position == masksRow) {
-                            int type = MediaDataController.TYPE_MASK;
-                            MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
-                            int count = MessagesController.getInstance(currentAccount).filterPremiumStickers(mediaDataController.getStickerSets(type)).size() + mediaDataController.getArchivedStickersCount(type);
-                            settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.Masks), count > 0 ? Integer.toString(count) : "", R.drawable.msg_mask, true);
-                        } else if (position == featuredRow) {
-                            List<TLRPC.StickerSetCovered> sets = getFeaturedSets();
-                            settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.FeaturedStickers), sets != null ? "" + sets.size() : "", R.drawable.msg2_trending, true);
-                        } else if (position == emojiPacksRow) {
-                            int type = MediaDataController.TYPE_EMOJIPACKS;
-                            MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
-                            int count = mediaDataController.getStickerSets(type).size();
-                            settingsCell.imageView.setTranslationX(-AndroidUtilities.dp(2));
-                            settingsCell.setTextAndValueAndIcon(LocaleController.getString(R.string.Emoji), count > 0 ? Integer.toString(count) : "", R.drawable.msg2_smile_status, true);
-                        } else if (position == suggestRow) {
-                            String value;
-                            switch (SharedConfig.suggestStickers) {
-                                case 0:
-                                    value = LocaleController.getString(R.string.SuggestStickersAll);
-                                    break;
-                                case 1:
-                                    value = LocaleController.getString(R.string.SuggestStickersInstalled);
-                                    break;
-                                case 2:
-                                default:
-                                    value = LocaleController.getString(R.string.SuggestStickersNone);
-                                    break;
-                            }
-                            if (!LocaleController.isRTL) {
-                                settingsCell.textView.setTranslationX(AndroidUtilities.dp(-2));
-                            }
-                            settingsCell.setTextAndValue(LocaleController.getString(R.string.SuggestStickers), value, updateSuggestStickers, true);
-                            updateSuggestStickers = false;
-                        }
-                    }
-                    break;
-                }
-                case TYPE_SHADOW:
-                    if (position == stickersShadowRow) {
-                        holder.itemView.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    }
-                    break;
-                case TYPE_SWITCH:
-                    TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == loopRow) {
-                        cell.setTextAndCheck(LocaleController.getString(R.string.LoopAnimatedStickers), SharedConfig.loopStickers(), true);
-                    } else if (position == largeEmojiRow) {
-                        cell.setTextAndCheck(LocaleController.getString(R.string.LargeEmoji), SharedConfig.allowBigEmoji, true);
-                    } else if (position == suggestAnimatedEmojiRow) {
-                        cell.setTextAndCheck(LocaleController.getString(R.string.SuggestAnimatedEmoji), SharedConfig.suggestAnimatedEmoji, false);
-                    } else if (position == dynamicPackOrder) {
-                        cell.setTextAndCheck(LocaleController.getString("DynamicPackOrder"), SharedConfig.updateStickersOrderOnSend, false);
-                    }
-                    break;
-                case TYPE_DOUBLE_TAP_REACTIONS: {
-                    TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-                    settingsCell.setText(LocaleController.getString(R.string.DoubleTapSetting), false);
-                    settingsCell.setIcon(R.drawable.msg2_reactions2);
-                    String reaction = MediaDataController.getInstance(currentAccount).getDoubleTapReaction();
-                    if (reaction != null) {
-                        if (reaction.startsWith("animated_")) {
-                            try {
-                                long documentId = Long.parseLong(reaction.substring(9));
-                                AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, documentId);
-                                drawable.addView(settingsCell.getValueBackupImageView());
-                                settingsCell.getValueBackupImageView().setImageDrawable(drawable);
-                            } catch (Exception e) {}
-                        } else {
-                            TLRPC.TL_availableReaction availableReaction = MediaDataController.getInstance(currentAccount).getReactionsMap().get(reaction);
-                            if (availableReaction != null) {
-                                SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(availableReaction.static_icon.thumbs, Theme.key_windowBackgroundGray, 1.0f);
-                                settingsCell.getValueBackupImageView().getImageReceiver().setImage(ImageLocation.getForDocument(availableReaction.center_icon), "100_100_lastreactframe", svgThumb, "webp", availableReaction, 1);
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
-            if (payloads.isEmpty()) {
-                onBindViewHolder(holder, position);
-            } else {
-                switch (holder.getItemViewType()) {
-                    case TYPE_STICKER_SET:
-                        if (position >= stickersStartRow && position < stickersEndRow) {
-                            StickerSetCell stickerSetCell = (StickerSetCell) holder.itemView;
-                            if (payloads.contains(UPDATE_SELECTION)) {
-                                stickerSetCell.setChecked(selectedItems.get(getItemId(position), false));
-                            }
-                            if (payloads.contains(UPDATE_REORDERABLE)) {
-                                stickerSetCell.setReorderable(hasSelected());
-                            }
-                            if (payloads.contains(UPDATE_DIVIDER)) {
-                                stickerSetCell.setNeedDivider(position - stickersStartRow != stickerSets.size() - 1);
-                            }
-                        }
-                        break;
-                    case TYPE_SWITCH:
-                        if (payloads.contains(UPDATE_LOOP_STICKERS) && position == loopRow) {
-                            ((TextCheckCell) holder.itemView).setChecked(SharedConfig.loopStickers());
-                        }
-                        break;
-                    case TYPE_FEATURED_STICKER_SET:
-                        if (payloads.contains(UPDATE_FEATURED_ANIMATED) && position >= featuredStickersStartRow && position <= featuredStickersEndRow) {
-                            ((FeaturedStickerSetCell2) holder.itemView).setStickersSet(featuredStickerSets.get(position - featuredStickersStartRow), true, false, false, true);
-                        }
-                        break;
-                }
-            }
-        }
-
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            int type = holder.getItemViewType();
-            return type == TYPE_STICKER_SET || type == TYPE_FEATURED_STICKER_SET || type == TYPE_TEXT_AND_VALUE || type == TYPE_SWITCH || type == TYPE_DOUBLE_TAP_REACTIONS;
-        }
-
-        @Override
-        @SuppressLint("ClickableViewAccessibility")
-        @NonNull
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case TYPE_FEATURED_STICKER_SET:
-                    view = new FeaturedStickerSetCell2(mContext, getResourceProvider()) {
-                        @Override
-                        protected void onPremiumButtonClick() {
-                            showDialog(new PremiumFeatureBottomSheet(StickersActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI, false));
-                        }
-                    };
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    ((FeaturedStickerSetCell2) view).getTextView().setTypeface(AndroidUtilities.bold());
-                    break;
-                case TYPE_STICKER_SET:
-                    view = new StickerSetCell(mContext, 1) {
-                        @Override
-                        protected void onPremiumButtonClick() {
-                            showDialog(new PremiumFeatureBottomSheet(StickersActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI, false));
-                        }
-
-                        @Override
-                        protected void onAddButtonClick() {
-                            TLRPC.TL_messages_stickerSet set = getStickersSet();
-                            if (set == null || set.set == null) {
-                                return;
-                            }
-                            ArrayList<TLRPC.StickerSetCovered> featured = getMediaDataController().getFeaturedEmojiSets();
-                            TLRPC.StickerSetCovered covered = null;
-                            for (int i = 0; i < featured.size(); ++i) {
-                                if (set.set.id == featured.get(i).set.id) {
-                                    covered = featured.get(i);
-                                    break;
-                                }
-                            }
-                            if (covered != null) {
-                                if (loadingFeaturedStickerSets.contains(covered.set.id)) {
-                                    return;
-                                }
-                                loadingFeaturedStickerSets.add(covered.set.id);
-                            }
-//                            updateButtonState(BUTTON_STATE_REMOVE, true);
-                            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), covered == null ? set : covered, 2, StickersActivity.this, false, false);
-                        }
-
-                        @Override
-                        protected void onRemoveButtonClick() {
-//                            updateButtonState(BUTTON_STATE_ADD, true);
-                            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), getStickersSet(), 0, StickersActivity.this, false, true);
-                        }
-                    };
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    StickerSetCell stickerSetCell = (StickerSetCell) view;
-                    stickerSetCell.setOnReorderButtonTouchListener((v, event) -> {
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            itemTouchHelper.startDrag(listView.getChildViewHolder(stickerSetCell));
-                        }
-                        return false;
-                    });
-                    stickerSetCell.setOnOptionsClick(v -> {
-                        StickerSetCell cell = (StickerSetCell) v.getParent();
-                        TLRPC.TL_messages_stickerSet stickerSet = cell.getStickersSet();
-                        ItemOptions options = ItemOptions.makeOptions(StickersActivity.this, cell);
-                        options.add(R.drawable.msg_archive, LocaleController.getString(R.string.StickersHide), () -> processSelectionOption(MENU_ARCHIVE, stickerSet));
-                        if (stickerSet.set.official) {
-                            options.add(R.drawable.msg_reorder, LocaleController.getString(R.string.StickersReorder), () -> processSelectionOption(4, stickerSet));
-                        } else {
-                            options.add(R.drawable.msg_link, LocaleController.getString(R.string.StickersCopy), () -> processSelectionOption(3, stickerSet));
-                            options.add(R.drawable.msg_reorder, LocaleController.getString(R.string.StickersReorder), () -> processSelectionOption(4, stickerSet));
-                            options.add(R.drawable.msg_share, LocaleController.getString(R.string.StickersShare), () -> processSelectionOption(2, stickerSet));
-                            options.add(R.drawable.msg_delete, LocaleController.getString(R.string.StickersRemove), true, () -> processSelectionOption(MENU_DELETE, stickerSet));
-                        }
-                        options.setMinWidth(190);
-                        options.show();
-                    });
-                    break;
-                case TYPE_INFO:
-                    view = new TextInfoPrivacyCell(mContext);
-                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                    break;
-                case TYPE_TEXT_AND_VALUE:
-                    view = new TextCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    break;
-                case TYPE_SHADOW:
-                    view = new ShadowSectionCell(mContext);
-                    break;
-                case TYPE_DOUBLE_TAP_REACTIONS:
-                    view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    break;
-                case TYPE_HEADER:
-                    view = new HeaderCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    break;
-                case TYPE_SWITCH:
-                default:
-                    view = new TextCheckCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    break;
-            }
-            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-            return new RecyclerListView.Holder(view);
-        }
-
-        @Override
-        public int getItemViewType(int i) {
-            if (i >= featuredStickersStartRow && i < featuredStickersEndRow) {
-                return TYPE_FEATURED_STICKER_SET;
-            } else if (i >= stickersStartRow && i < stickersEndRow) {
-                return TYPE_STICKER_SET;
-            } else if (i == stickersBotInfo || i == archivedInfoRow || i == loopInfoRow || i == suggestAnimatedEmojiInfoRow || i == masksInfoRow || i == dynamicPackOrderInfo) {
-                return TYPE_INFO;
-            } else if (i == archivedRow || i == masksRow || i == featuredRow || i == emojiPacksRow || i == suggestRow || i == featuredStickersShowMoreRow) {
-                return TYPE_TEXT_AND_VALUE;
-            } else if (i == stickersShadowRow || i == featuredStickersShadowRow) {
-                return TYPE_SHADOW;
-            } else if (i == loopRow || i == largeEmojiRow || i == suggestAnimatedEmojiRow || i == dynamicPackOrder) {
-                return TYPE_SWITCH;
-            } else if (i == reactionsDoubleTapRow) {
-                return TYPE_DOUBLE_TAP_REACTIONS;
-            } else if (i == featuredStickersHeaderRow || i == stickersHeaderRow || i == stickersSettingsRow) {
-                return TYPE_HEADER;
-            }
-            return TYPE_STICKER_SET;
-        }
-
-        public void swapElements(int fromIndex, int toIndex) {
-            if (fromIndex != toIndex) {
-                needReorder = true;
-            }
-
-            MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
-
-            int index1 = fromIndex - stickersStartRow;
-            int index2 = toIndex - stickersStartRow;
-
-            swapListElements(stickerSets, index1, index2);
-            Collections.sort(mediaDataController.getStickerSets(currentType), (o1, o2) -> {
-                int i1 = stickerSets.indexOf(o1);
-                int i2 = stickerSets.indexOf(o2);
-                if (i1 >= 0 && i2 >= 0) {
-                    return i1 - i2;
-                }
-                return 0;
-            });
-
-            notifyItemMoved(fromIndex, toIndex);
-
-            if (fromIndex == stickersEndRow - 1 || toIndex == stickersEndRow - 1) {
-                notifyItemRangeChanged(fromIndex, UPDATE_DIVIDER);
-                notifyItemRangeChanged(toIndex, UPDATE_DIVIDER);
-            }
-        }
-
-        private void swapListElements(List<TLRPC.TL_messages_stickerSet> list, int index1, int index2) {
-            TLRPC.TL_messages_stickerSet set1 = list.get(index1);
-            list.set(index1, list.get(index2));
-            list.set(index2, set1);
-        }
-
-        public void toggleSelected(int position) {
-            long id = getItemId(position);
-            selectedItems.put(id, !selectedItems.get(id, false));
-            notifyItemChanged(position, UPDATE_SELECTION);
-            checkActionMode();
-        }
-
-        public void clearSelected() {
-            selectedItems.clear();
-            notifyStickersItemsChanged(UPDATE_SELECTION);
-            checkActionMode();
-        }
-
-        public boolean hasSelected() {
-            return selectedItems.indexOfValue(true) != -1;
-        }
-
-        public int getSelectedCount() {
-            int count = 0;
-            for (int i = 0, size = selectedItems.size(); i < size; i++) {
-                if (selectedItems.valueAt(i)) {
-                    count++;
-                }
-            }
-            return count;
-        }
-
-        private void checkActionMode() {
-            int selectedCount = listAdapter.getSelectedCount();
-            boolean actionModeShowed = actionBar.isActionModeShowed();
-            if (selectedCount > 0) {
-                checkActionModeIcons();
-                selectedCountTextView.setNumber(selectedCount, actionModeShowed);
-                if (!actionModeShowed) {
-                    actionBar.showActionMode();
-                    notifyStickersItemsChanged(UPDATE_REORDERABLE);
-                    if (!SharedConfig.stickersReorderingHintUsed && currentType != MediaDataController.TYPE_EMOJIPACKS) {
-                        SharedConfig.setStickersReorderingHintUsed(true);
-                        String stickersReorderHint = LocaleController.getString(R.string.StickersReorderHint);
-                        Bulletin.make(parentLayout.getLastFragment(), new ReorderingBulletinLayout(mContext, stickersReorderHint, null), ReorderingHintDrawable.DURATION * 2 + 250).show();
-                    }
-                }
-            } else if (actionModeShowed) {
-                actionBar.hideActionMode();
-                notifyStickersItemsChanged(UPDATE_REORDERABLE);
-            }
-        }
-
-        private void checkActionModeIcons() {
-            if (hasSelected()) {
-                boolean canDelete = true;
-                for (int i = 0, size = stickerSets.size(); i < size; i++) {
-                    if (selectedItems.get(stickerSets.get(i).set.id, false) && stickerSets.get(i).set.official && !stickerSets.get(i).set.emojis) {
-                        canDelete = false;
-                        break;
-                    }
-                }
-                int visibility = canDelete ? View.VISIBLE : View.GONE;
-                if (deleteMenuItem.getVisibility() != visibility) {
-                    deleteMenuItem.setVisibility(visibility);
-                }
-            }
-        }
-
-        private void notifyStickersItemsChanged(Object payload) {
-            notifyItemRangeChanged(stickersStartRow, stickersEndRow - stickersStartRow, payload);
-        }
-
-        private CharSequence addStickersBotSpan(String text) {
-            String botName = "@stickers";
-            int index = text.indexOf(botName);
-            if (index != -1) {
-                try {
-                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
-                    URLSpanNoUnderline urlSpan = new URLSpanNoUnderline("@stickers") {
-                        @Override
-                        public void onClick(View widget) {
-                            MessagesController.getInstance(currentAccount).openByUserName("stickers", StickersActivity.this, 3);
-                        }
-                    };
-                    stringBuilder.setSpan(urlSpan, index, index + botName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    return stringBuilder;
-                } catch (Exception e) {
-                    FileLog.e(e);
-                    return text;
-                }
-            } else {
+                };
+                stringBuilder.setSpan(urlSpan, index, index + botName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                return stringBuilder;
+            } catch (Exception e) {
+                FileLog.e(e);
                 return text;
             }
+        } else {
+            return text;
         }
     }
 
@@ -1598,6 +900,118 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         return String.format(Locale.US, "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + (stickerSet.set.emojis ? "addemoji" : "addstickers") + "/%s", stickerSet.set.short_name);
     }
 
+    private void processSelectionMenu(int which) {
+        if (which == MENU_SHARE) {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i = 0, size = sets.size(); i < size; i++) {
+                final TLRPC.TL_messages_stickerSet stickerSet = sets.get(i);
+                if (selectedSets.contains(stickerSet.set.id)) {
+                    if (stringBuilder.length() != 0) {
+                        stringBuilder.append("\n");
+                    }
+                    stringBuilder.append(getLinkForSet(stickerSet));
+                }
+            }
+            String link = stringBuilder.toString();
+            ShareAlert shareAlert = ShareAlert.createShareAlert(fragmentView.getContext(), null, link, false, link, false);
+            shareAlert.setDelegate(new ShareAlert.ShareAlertDelegate() {
+                @Override
+                public void didShare() {
+                    clearSelected();
+                }
+
+                @Override
+                public boolean didCopy() {
+                    clearSelected();
+                    return true;
+                }
+            });
+            shareAlert.show();
+        } else if (which == MENU_ARCHIVE || which == MENU_DELETE) {
+            ArrayList<TLRPC.StickerSet> stickerSetList = new ArrayList<>(selectedSets.size());
+            for (int i = 0, size = sets.size(); i < size; i++) {
+                final TLRPC.TL_messages_stickerSet stickerSet = sets.get(i);
+                if (selectedSets.contains(stickerSet.set.id)) {
+                    stickerSetList.add(stickerSet.set);
+                }
+            }
+
+            final int count = stickerSetList.size();
+
+            switch (count) {
+                case MENU_ARCHIVE:
+                    break;
+                case MENU_DELETE:
+                    for (int i = 0, size = sets.size(); i < size; i++) {
+                        final TLRPC.TL_messages_stickerSet stickerSet = sets.get(i);
+                        if (selectedSets.contains(stickerSet.set.id)) {
+                            processSelectionOption(which, stickerSet);
+                            break;
+                        }
+                    }
+                    clearSelected();
+                    break;
+                default:
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+
+                    String buttonText;
+                    if (which == MENU_DELETE) {
+                        builder.setTitle(LocaleController.formatString(R.string.DeleteStickerSetsAlertTitle, LocaleController.formatPluralString("StickerSets", count)));
+                        builder.setMessage(LocaleController.formatString(R.string.DeleteStickersAlertMessage, count));
+                        buttonText = LocaleController.getString(R.string.Delete);
+                    } else {
+                        builder.setTitle(LocaleController.formatString(R.string.ArchiveStickerSetsAlertTitle, LocaleController.formatPluralString("StickerSets", count)));
+                        builder.setMessage(LocaleController.formatString(R.string.ArchiveStickersAlertMessage, count));
+                        buttonText = LocaleController.getString(R.string.Archive);
+                    }
+                    builder.setPositiveButton(buttonText, (dialog, which1) -> {
+                        clearSelected();
+                        MediaDataController.getInstance(currentAccount).toggleStickerSets(stickerSetList, currentType, which == MENU_DELETE ? 0 : 1, StickersActivity.this, true);
+                    });
+                    builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+
+                    final AlertDialog dialog = builder.create();
+                    showDialog(dialog);
+                    if (which == MENU_DELETE) {
+                        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                        if (button != null) {
+                            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    private void processSelectionOption(int which, TLRPC.TL_messages_stickerSet stickerSet) {
+        if (which == MENU_ARCHIVE) {
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, !stickerSet.set.archived ? 1 : 2, StickersActivity.this, true, true);
+        } else if (which == MENU_DELETE) {
+            MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, 0, StickersActivity.this, true, true);
+        } else if (which == MENU_SHARE) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TEXT, getLinkForSet(stickerSet));
+                getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString(R.string.StickersShare)), 500);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        } else if (which == MENU_COPY) {
+            try {
+                final android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                final android.content.ClipData clip = android.content.ClipData.newPlainText("label", getLinkForSet(stickerSet));
+                clipboard.setPrimaryClip(clip);
+                BulletinFactory.createCopyLinkBulletin(StickersActivity.this).show();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        } else if (which == MENU_REORDER) {
+            toggleSelected(stickerSet);
+        }
+    }
+
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -1605,7 +1019,6 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{StickerSetCell.class, TextSettingsCell.class, TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
@@ -1625,14 +1038,11 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
-
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
@@ -1647,5 +1057,16 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
 
         return themeDescriptions;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
     }
 }

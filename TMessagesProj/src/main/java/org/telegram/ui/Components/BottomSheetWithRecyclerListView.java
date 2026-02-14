@@ -620,6 +620,8 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             if (showHandle && handleOffset) {
                 top -= dp(actionBarType == ActionBarType.SLIDING ? 8 : 16);
             }
+            lastTop = top;
+            onSheetTop(top);
 
             float handleAlpha = 1.0f;
             float progressToFullView = 0.0f;
@@ -688,6 +690,16 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
             onPreDraw(canvas, top, progressToFullView);
         }
+    }
+
+    @Override
+    protected void onContainerViewTranslation() {
+        onSheetTop(lastTop);
+    }
+
+    private float lastTop;
+    public void onSheetTop(float top) {
+
     }
 
     protected boolean shouldDrawBackground() {

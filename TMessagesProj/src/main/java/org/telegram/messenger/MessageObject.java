@@ -4296,7 +4296,7 @@ public class MessageObject {
                         if (left < width) {
                             width -= left;
                         }
-                        if (button.getIcon() != 0) {
+                        if (button.getIconRes() != 0) {
                             width += dp(24 + 12);
                         }
                         maxButtonSize = Math.max(maxButtonSize, (int) Math.ceil(width) + dp(4));
@@ -4359,7 +4359,19 @@ public class MessageObject {
         channelJoined = false;
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action != null) {
-                if (messageOwner.action instanceof TLRPC.TL_messageActionSetSameChatWallPaper) {
+                if (messageOwner.action instanceof TLRPC.TL_messageActionNewCreatorPending) {
+                    final TLRPC.TL_messageActionNewCreatorPending action = (TLRPC.TL_messageActionNewCreatorPending) messageOwner.action;
+                    final TLRPC.User new_creator = getUser(users, sUsers, action.new_creator_id);
+                    messageText = getString(R.string.ActionNewCreatorPending);
+                    messageText = replaceWithLink(messageText, "un1", new_creator);
+                    messageText = replaceWithLink(messageText, "un2", fromObject);
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionChangeCreator) {
+                    final TLRPC.TL_messageActionChangeCreator action = (TLRPC.TL_messageActionChangeCreator) messageOwner.action;
+                    final TLRPC.User new_creator = getUser(users, sUsers, action.new_creator_id);
+                    messageText = getString(R.string.ActionChangeCreator);
+                    messageText = replaceWithLink(messageText, "un1", fromObject);
+                    messageText = replaceWithLink(messageText, "un2", new_creator);
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetSameChatWallPaper) {
                     contentType = 1;
                     type = TYPE_DATE;
                     TLRPC.TL_messageActionSetSameChatWallPaper action = (TLRPC.TL_messageActionSetSameChatWallPaper) messageOwner.action;
@@ -4807,7 +4819,9 @@ public class MessageObject {
                         } else {
                             obj = getChat(chats, sChats, -fromId);
                         }
-                        if (action.peer != null) {
+                        if (action.craft) {
+                            messageText = AndroidUtilities.replaceTags(getString(R.string.ActionUniqueGiftCrafted));
+                        } else if (action.peer != null) {
                             long peerId = DialogObject.getPeerDialogId(action.peer);
                             TLObject peer;
                             if (peerId >= 0) {
@@ -4861,7 +4875,9 @@ public class MessageObject {
                         } else {
                             obj = getChat(chats, sChats, -fromId);
                         }
-                        if (action.peer != null) {
+                        if (action.craft) {
+                            messageText = AndroidUtilities.replaceTags(getString(R.string.ActionUniqueGiftCrafted));
+                        } else if (action.peer != null) {
                             long peerId = DialogObject.getPeerDialogId(action.peer);
                             TLObject peer;
                             if (peerId >= 0) {
@@ -5564,10 +5580,18 @@ public class MessageObject {
                     final String amountFmt = amount.asFormatString();
 
                     final int key;
-                    if (amount.currency == AmountUtils.Currency.STARS) {
-                        key = isOut() ? R.string.GiftOfferOfferedTextStarsRejectedOut : R.string.GiftOfferOfferedTextStarsRejected;
+                    if (action.expired) {
+                        if (amount.currency == AmountUtils.Currency.STARS) {
+                            key = isOut() ? R.string.GiftOfferOfferedTextStarsExpiredOut : R.string.GiftOfferOfferedTextStarsExpired;
+                        } else {
+                            key = isOut() ? R.string.GiftOfferOfferedTextTONExpiredOut : R.string.GiftOfferOfferedTextTONExpired;
+                        }
                     } else {
-                        key = isOut() ? R.string.GiftOfferOfferedTextTONRejectedOut : R.string.GiftOfferOfferedTextTONRejected;
+                        if (amount.currency == AmountUtils.Currency.STARS) {
+                            key = isOut() ? R.string.GiftOfferOfferedTextStarsRejectedOut : R.string.GiftOfferOfferedTextStarsRejected;
+                        } else {
+                            key = isOut() ? R.string.GiftOfferOfferedTextTONRejectedOut : R.string.GiftOfferOfferedTextTONRejected;
+                        }
                     }
 
                     messageText = replaceTags(formatString(key, userName, amountFmt, giftName));
@@ -5800,7 +5824,7 @@ public class MessageObject {
                 return getString(R.string.ForwardedStory);
             }
         } else if (media instanceof TLRPC.TL_messageMediaDice) {
-            return getDiceEmoji();
+            return getDiceEmoji((TLRPC.TL_messageMediaDice) media);
         } else if (media instanceof TLRPC.TL_messageMediaPoll) {
             if (((TLRPC.TL_messageMediaPoll) media).poll.quiz) {
                 return getString(R.string.QuizPoll);
@@ -6062,7 +6086,10 @@ public class MessageObject {
                 }
             }
         } else if (messageOwner instanceof TLRPC.TL_messageService) {
-            if (messageOwner.action instanceof TLRPC.TL_messageActionSetSameChatWallPaper) {
+            if (messageOwner.action instanceof TLRPC.TL_messageActionChangeCreator || messageOwner.action instanceof TLRPC.TL_messageActionNewCreatorPending) {
+                contentType = 1;
+                type = TYPE_DATE;
+            } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetSameChatWallPaper) {
                 contentType = 1;
                 type = TYPE_DATE;
             } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetChatWallPaper) {
@@ -6565,6 +6592,14 @@ public class MessageObject {
                 }
             }
             return TextUtils.replace(source, new String[]{param}, new CharSequence[]{names});
+        }
+        return source;
+    }
+
+    public static CharSequence replaceWithLink(CharSequence source, String param, CharSequence object) {
+        int start = TextUtils.indexOf(source, param);
+        if (start >= 0) {
+            return TextUtils.replace(source, new String[]{param}, new CharSequence[]{object});
         }
         return source;
     }
@@ -10145,6 +10180,17 @@ public class MessageObject {
         return false;
     }
 
+    public static long getStakedDiceWinAmount(TLRPC.TL_messageMediaDice media) {
+        if (media.game_outcome != null) {
+            if (media.game_outcome.ton_amount > 0) {
+                return media.game_outcome.ton_amount;
+            } else {
+                return -media.game_outcome.stake_ton_amount;
+            }
+        }
+        return 0;
+    }
+
     public long getStakedDiceWinAmount() {
         final TLRPC.MessageMedia media = getMedia(messageOwner);
         if (media instanceof TLRPC.TL_messageMediaDice && ((TLRPC.TL_messageMediaDice) media).game_outcome != null) {
@@ -10175,6 +10221,14 @@ public class MessageObject {
             return "\uD83C\uDFB2"; // 🎲
         }
         return messageMediaDice.emoticon.replace("\ufe0f", "");
+    }
+
+    public String getDiceEmoji(TLRPC.TL_messageMediaDice dice) {
+        if (dice == null) return null;
+        if (TextUtils.isEmpty(dice.emoticon)) {
+            return "\uD83C\uDFB2"; // 🎲
+        }
+        return dice.emoticon.replace("\ufe0f", "");
     }
 
     public int getDiceValue() {
@@ -10816,6 +10870,12 @@ public class MessageObject {
         if (messageOwner.fwd_from == null) return null;
         if (messageOwner.fwd_from.from_id == null) return null;
         return DialogObject.getPeerDialogId(messageOwner.fwd_from.from_id);
+    }
+
+    public TLObject getForwardedFromPeerObject() {
+        final Long id = getForwardedFromId();
+        if (id == null) return null;
+        return MessagesController.getInstance(currentAccount).getUserOrChat(id);
     }
 
     public int getReplyMsgId() {
@@ -12480,8 +12540,11 @@ public class MessageObject {
     }
 
     public CharSequence getMessageTextToTranslate(GroupedMessages groupedMessages, int[] messageIdToTranslate) {
-        if (translated || summarized || isRestrictedMessage) {
+        if (translated || isRestrictedMessage) {
             return null;
+        }
+        if (summarized) {
+            return messageText;
         }
         CharSequence messageTextToTranslate = null;
         if (type != MessageObject.TYPE_EMOJIS && type != MessageObject.TYPE_ANIMATED_STICKER && type != MessageObject.TYPE_STICKER) {

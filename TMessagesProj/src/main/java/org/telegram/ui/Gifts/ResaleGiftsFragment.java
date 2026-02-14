@@ -1,9 +1,12 @@
 package org.telegram.ui.Gifts;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.ilerp;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.messenger.Utilities.clamp01;
 import static org.telegram.ui.Stars.StarsController.findAttributes;
 
 import android.animation.Animator;
@@ -22,6 +25,7 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -30,25 +34,32 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -59,6 +70,7 @@ import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -69,6 +81,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -98,15 +111,15 @@ public class ResaleGiftsFragment extends BaseFragment {
     }
 
     private BackDrawable backDrawable;
-    private HorizontalScrollView filterScrollView;
     private View filtersDivider;
-    private LinearLayout filtersContainer;
     private UniversalRecyclerView listView;
     private FrameLayout clearFiltersContainer;
     private TextView clearFiltersButton;
     private LargeEmptyView emptyView;
     private boolean emptyViewVisible;
 
+    private HorizontalScrollView filterScrollView;
+    private LinearLayout filtersContainer;
     private Filter sortButton;
     private Filter modelButton;
     private Filter backdropButton;
@@ -217,6 +230,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         filterScrollView.setHorizontalScrollBarEnabled(false);
         filterScrollView.addView(filtersContainer);
         filterScrollView.setBackgroundColor(backgroundColor);
+        filterScrollView.setClipChildren(false);
         fragmentView.addView(filterScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 47, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         filtersDivider = new View(context);
@@ -709,7 +723,7 @@ public class ResaleGiftsFragment extends BaseFragment {
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         for (TL_stars.TL_starGiftUnique gift : list.gifts) {
-            items.add(GiftSheet.GiftCell.Factory.asStarGift(0, gift, false, false, false, true));
+            items.add(GiftSheet.GiftCell.Factory.asStarGift(0, gift, false, false, false, true, false));
         }
         if (list.loading || !list.endReached) {
             items.add(UItem.asFlicker(-1, FlickerLoadingView.STAR_GIFT).setSpanCount(1));
@@ -906,6 +920,12 @@ public class ResaleGiftsFragment extends BaseFragment {
 
         }
 
+        private boolean for_craft;
+        public ResaleGiftsList forCraft() {
+            this.for_craft = true;
+            return this;
+        }
+
         public boolean loading;
         public boolean endReached = false;
         private int reqId = -1;
@@ -919,6 +939,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             req.gift_id = gift_id;
             req.offset = last_offset == null ? "" : last_offset;
             req.limit = 15;
+            req.for_craft = for_craft;
             if (sorting == Sorting.BY_NUMBER) {
                 req.sort_by_num = true;
                 req.sort_by_price = false;
@@ -1152,7 +1173,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             static { setup(new Factory()); }
 
             @Override
-            public EmptyView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public EmptyView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new EmptyView(context, resourcesProvider);
             }
 
@@ -1299,7 +1320,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             static { setup(new Factory()); }
 
             @Override
-            public ModelItem createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public ModelItem createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new ModelItem(context, currentAccount, resourcesProvider);
             }
 
@@ -1326,7 +1347,7 @@ public class ResaleGiftsFragment extends BaseFragment {
 
             setPadding(dp(18), 0, dp(18), 0);
             setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
-            setIconColor(0xFFFFFFFF);
+            setIconColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             imageView.setTranslationX(dp(2));
             makeCheckView(2);
             setBackground(null);
@@ -1402,7 +1423,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             static { setup(new Factory()); }
 
             @Override
-            public PatternItem createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public PatternItem createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new PatternItem(context, currentAccount, resourcesProvider);
             }
 
@@ -1466,7 +1487,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             static { setup(new Factory()); }
 
             @Override
-            public BackdropItem createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public BackdropItem createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new BackdropItem(context, resourcesProvider);
             }
 
@@ -1481,6 +1502,682 @@ public class ResaleGiftsFragment extends BaseFragment {
                 item.text = query;
                 item.intValue = counter;
                 return item;
+            }
+        }
+    }
+
+    public static class SelectGiftSheet extends BottomSheetWithRecyclerListView {
+
+        private final String collectionName;
+        private final State state;
+
+        private HorizontalScrollView filterScrollView;
+        private LinearLayout filtersContainer;
+        private Filter sortButton;
+        private Filter modelButton;
+        private Filter backdropButton;
+        private Filter patternButton;
+
+        public static class State implements NotificationCenter.NotificationCenterDelegate {
+            public final int currentAccount;
+            public final long giftId;
+            private final StarsController.GiftsList list;
+            private final ResaleGiftsList resaleList;
+            public State(int currentAccount, long gift_id) {
+                this.currentAccount = currentAccount;
+                this.giftId = gift_id;
+                list = new StarsController.GiftsList(currentAccount, 0, false);
+                list.forCrafting(gift_id);
+                resaleList = new ResaleGiftsList(currentAccount, gift_id, this::update).forCraft();
+            }
+            private void update(boolean first) {
+                if (currentListener != null) {
+                    currentListener.run();
+                }
+            }
+            private Runnable currentListener;
+            public void listen(Runnable listener) {
+                currentListener = listener;
+            }
+            private boolean attached;
+            public void attach() {
+                if (attached) return;
+                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+                list.load();
+                resaleList.load();
+                attached = true;
+            }
+            public void detach() {
+                if (!attached) return;
+                NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
+                list.cancel();
+                resaleList.cancel();
+                attached = false;
+            }
+
+            @Override
+            public void didReceivedNotification(int id, int account, Object... args) {
+                if (id == NotificationCenter.starUserGiftsLoaded) {
+                    if (args[1] == list) {
+                        update(true);
+                    }
+                }
+            }
+        }
+
+        private StarGiftSheet.ActionView actionView;
+
+        public SelectGiftSheet(Context context, String collectionName, State state) {
+            super(context, null, false, false, false, ActionBarType.SLIDING, null);
+
+            headerMoveTop = dp(12);
+            fixNavigationBar();
+
+            this.collectionName = collectionName;
+            this.state = state;
+
+            actionBar.setTitle(getTitle());
+
+            filtersContainer = new LinearLayout(context);
+            filtersContainer.setPadding(dp(11), dp(6), dp(11), dp(6));
+            filtersContainer.setOrientation(LinearLayout.HORIZONTAL);
+            filtersContainer.setClipChildren(false);
+            filtersContainer.setClipToPadding(false);
+
+            filterScrollView = new HorizontalScrollView(context);
+            filterScrollView.setHorizontalScrollBarEnabled(false);
+            filterScrollView.setClipChildren(false);
+            filterScrollView.setClipToPadding(false);
+            filterScrollView.addView(filtersContainer);
+
+            sortButton = new Filter(context, resourcesProvider);
+            sortButton.setSorting(state.resaleList.getSorting());
+            filtersContainer.addView(sortButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+            sortButton.setOnClickListener(v -> {
+                ItemOptions.makeOptions(container, resourcesProvider, sortButton)
+                    .add(R.drawable.menu_sort_value, getString(ResaleGiftsList.Sorting.BY_PRICE.buttonStringResId), () -> {
+                        state.resaleList.setSorting(ResaleGiftsList.Sorting.BY_PRICE);
+                    })
+                    .add(R.drawable.menu_sort_date, getString(ResaleGiftsList.Sorting.BY_DATE.buttonStringResId), () -> {
+                        state.resaleList.setSorting(ResaleGiftsList.Sorting.BY_DATE);
+                    })
+                    .add(R.drawable.menu_sort_number, getString(ResaleGiftsList.Sorting.BY_NUMBER.buttonStringResId), () -> {
+                        state.resaleList.setSorting(ResaleGiftsList.Sorting.BY_NUMBER);
+                    })
+                    .setDrawScrim(false)
+                    .setOnTopOfScrim()
+                    .translate(0, dp(-8))
+                    .show();
+            });
+
+            modelButton = new Filter(context, resourcesProvider);
+            modelButton.setValue(getString(R.string.Gift2AttributeModel));
+            filtersContainer.addView(modelButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+            modelButton.setOnClickListener(v -> {
+                if (state.resaleList.modelAttributes.isEmpty()) return;
+                final ItemOptions ie = ItemOptions.makeOptions(container, resourcesProvider, modelButton, false, true)
+                        .setDrawScrim(false)
+                        .setOnTopOfScrim()
+                        .translate(0, dp(-8))
+                        .needsFocus();
+                ie.setOnDismiss(() -> {
+                    if (ie.actionBarPopupWindow != null) {
+                        AndroidUtilities.hideKeyboard(ie.actionBarPopupWindow.getContentView());
+                    }
+                });
+
+                final String[] query = new String[] { "" };
+                final ArrayList<TL_stars.starGiftAttributeModel> attributes = new ArrayList<>(state.resaleList.modelAttributes);
+                Collections.sort(attributes, (a, b) -> {
+                    final Integer aCount = state.resaleList.modelAttributesCounter.get(a.document.id);
+                    final Integer bCount = state.resaleList.modelAttributesCounter.get(b.document.id);
+                    if (aCount == null) return 1;
+                    if (bCount == null) return -1;
+                    return bCount - aCount;
+                });
+                final UniversalRecyclerView listView = new UniversalRecyclerView(context, currentAccount, 0, (items, adapter) -> {
+                    final String q = query[0].toLowerCase(), tq = AndroidUtilities.translitSafe(q);
+                    final boolean allSelected = state.resaleList.notSelectedModelAttributes.isEmpty();
+                    for (TL_stars.starGiftAttributeModel attr : attributes) {
+                        final boolean checked = !state.resaleList.notSelectedModelAttributes.contains(attr.document.id);
+                        if (TextUtils.isEmpty(q) || attr.name.toLowerCase().startsWith(q) || attr.name.toLowerCase().startsWith(tq) || attr.name.toLowerCase().contains(" " + q) || attr.name.toLowerCase().contains(" " + tq)) {
+                            final Integer counter = state.resaleList.modelAttributesCounter.get(attr.document.id);
+                            items.add(ModelItem.Factory.asModel(attr, counter == null ? 0 : counter, q).setChecked(!TextUtils.isEmpty(q) ? !allSelected && checked : checked));
+                        }
+                    }
+                    if (items.isEmpty()) {
+                        items.add(EmptyView.Factory.asEmptyView(getString(R.string.Gift2ResaleFiltersModelEmpty)));
+                    }
+                }, (item, view, position, x, y) -> {
+                    final TL_stars.starGiftAttributeModel pattern = (TL_stars.starGiftAttributeModel) item.object;
+                    final long document_id = pattern.document.id;
+                    final boolean checked = !state.resaleList.notSelectedModelAttributes.contains(document_id);
+                    if (checked) {
+                        if (state.resaleList.notSelectedModelAttributes.isEmpty()) {
+                            for (TL_stars.starGiftAttributeModel attr1 : state.resaleList.modelAttributes) {
+                                if (attr1.document.id != document_id) {
+                                    state.resaleList.notSelectedModelAttributes.add(attr1.document.id);
+                                }
+                            }
+                        } else {
+                            state.resaleList.notSelectedModelAttributes.add(document_id);
+                        }
+                    } else {
+                        state.resaleList.notSelectedModelAttributes.remove(document_id);
+                    }
+                    state.resaleList.reload();
+                    ie.dismiss();
+                }, null, resourcesProvider) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(
+                                Math.min((int) (AndroidUtilities.displaySize.y * 0.35f), MeasureSpec.getSize(heightMeasureSpec)),
+                                MeasureSpec.getMode(heightMeasureSpec)
+                        ));
+                    }
+                };
+                listView.adapter.setApplyBackground(false);
+
+                FrameLayout searchLayout = new FrameLayout(context);
+                ImageView searchIcon = new ImageView(context);
+                searchIcon.setScaleType(ImageView.ScaleType.CENTER);
+                searchIcon.setImageResource(R.drawable.smiles_inputsearch);
+                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
+                EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                editText.setCursorSize(dp(19));
+                editText.setCursorWidth(1.5f);
+                editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
+                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                editText.setBackground(null);
+                searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        query[0] = s.toString();
+                        listView.adapter.update(true);
+                    }
+                });
+                if (attributes.size() > 8) {
+                    ie.addView(searchLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44));
+                    ie.addGap();
+                }
+                if (!state.resaleList.notSelectedModelAttributes.isEmpty()) {
+                    ie.add(R.drawable.msg_select, getString(R.string.SelectAll), () -> {
+                        if (state.resaleList.notSelectedModelAttributes.isEmpty()) return;
+                        state.resaleList.notSelectedModelAttributes.clear();
+                        state.resaleList.reload();
+                    });
+                }
+                ie.addView(listView);
+                ie.show();
+            });
+
+            backdropButton = new Filter(context, resourcesProvider);
+            backdropButton.setValue(getString(R.string.Gift2AttributeBackdrop));
+            filtersContainer.addView(backdropButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+            backdropButton.setOnClickListener(v -> {
+                if (state.resaleList.backdropAttributes.isEmpty()) return;
+                final ItemOptions ie = ItemOptions.makeOptions(container, resourcesProvider, backdropButton, false, true)
+                        .setDrawScrim(false)
+                        .setOnTopOfScrim()
+                        .translate(0, dp(-8))
+                        .needsFocus();
+                ie.setOnDismiss(() -> {
+                    if (ie.actionBarPopupWindow != null) {
+                        AndroidUtilities.hideKeyboard(ie.actionBarPopupWindow.getContentView());
+                    }
+                });
+
+                final String[] query = new String[] { "" };
+                final ArrayList<TL_stars.starGiftAttributeBackdrop> attributes = new ArrayList<>(state.resaleList.backdropAttributes);
+                Collections.sort(attributes, (a, b) -> {
+                    final Integer aCount = state.resaleList.backdropAttributesCounter.get(a.backdrop_id);
+                    final Integer bCount = state.resaleList.backdropAttributesCounter.get(b.backdrop_id);
+                    if (aCount == null) return 1;
+                    if (bCount == null) return -1;
+                    return bCount - aCount;
+                });
+                final UniversalRecyclerView listView = new UniversalRecyclerView(context, currentAccount, 0, (items, adapter) -> {
+                    final String q = query[0].toLowerCase(), tq = AndroidUtilities.translitSafe(q);
+                    final boolean allSelected = state.resaleList.notSelectedBackdropAttributes.isEmpty();
+                    for (TL_stars.starGiftAttributeBackdrop attr : attributes) {
+                        final boolean checked = !state.resaleList.notSelectedBackdropAttributes.contains(attr.backdrop_id);
+                        if (TextUtils.isEmpty(q) || attr.name.toLowerCase().startsWith(q) || attr.name.toLowerCase().startsWith(tq) || attr.name.toLowerCase().contains(" " + q) || attr.name.toLowerCase().contains(" " + tq)) {
+                            final Integer counter = state.resaleList.backdropAttributesCounter.get(attr.backdrop_id);
+                            items.add(BackdropItem.Factory.asBackdrop(attr, counter == null ? 0 : counter, q).setChecked(!TextUtils.isEmpty(q) ? !allSelected && checked : checked));
+                        }
+                    }
+                    if (items.isEmpty()) {
+                        items.add(EmptyView.Factory.asEmptyView(getString(R.string.Gift2ResaleFiltersBackdropEmpty)));
+                    }
+                }, (item, view, position, x, y) -> {
+                    final TL_stars.starGiftAttributeBackdrop backdrop = (TL_stars.starGiftAttributeBackdrop) item.object;
+                    final int backdrop_id = backdrop.backdrop_id;
+                    final boolean checked = !state.resaleList.notSelectedBackdropAttributes.contains(backdrop_id);
+                    if (checked) {
+                        if (state.resaleList.notSelectedBackdropAttributes.isEmpty()) {
+                            for (TL_stars.starGiftAttributeBackdrop attr1 : state.resaleList.backdropAttributes) {
+                                if (attr1.backdrop_id != backdrop_id) {
+                                    state.resaleList.notSelectedBackdropAttributes.add(attr1.backdrop_id);
+                                }
+                            }
+                        } else {
+                            state.resaleList.notSelectedBackdropAttributes.add(backdrop_id);
+                        }
+                    } else {
+                        state.resaleList.notSelectedBackdropAttributes.remove(backdrop_id);
+                    }
+                    state.resaleList.reload();
+                    ie.dismiss();
+                }, null, resourcesProvider) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(
+                                Math.min((int) (AndroidUtilities.displaySize.y * 0.35f), MeasureSpec.getSize(heightMeasureSpec)),
+                                MeasureSpec.getMode(heightMeasureSpec)
+                        ));
+                    }
+                };
+                listView.adapter.setApplyBackground(false);
+
+                FrameLayout searchLayout = new FrameLayout(context);
+                ImageView searchIcon = new ImageView(context);
+                searchIcon.setScaleType(ImageView.ScaleType.CENTER);
+                searchIcon.setImageResource(R.drawable.smiles_inputsearch);
+                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
+                EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                editText.setCursorSize(dp(19));
+                editText.setCursorWidth(1.5f);
+                editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
+                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                editText.setBackground(null);
+                searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        query[0] = s.toString();
+                        listView.adapter.update(true);
+                    }
+                });
+                if (attributes.size() > 8) {
+                    ie.addView(searchLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44));
+                    ie.addGap();
+                }
+                if (!state.resaleList.notSelectedBackdropAttributes.isEmpty()) {
+                    ie.add(R.drawable.msg_select, getString(R.string.SelectAll), () -> {
+                        if (state.resaleList.notSelectedBackdropAttributes.isEmpty()) return;
+                        state.resaleList.notSelectedBackdropAttributes.clear();
+                        state.resaleList.reload();
+                    });
+                }
+                ie.addView(listView);
+                ie.show();
+            });
+
+            patternButton = new Filter(context, resourcesProvider);
+            patternButton.setValue(getString(R.string.Gift2AttributeSymbol));
+            filtersContainer.addView(patternButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            patternButton.setOnClickListener(v -> {
+                if (state.resaleList.patternAttributes.isEmpty()) return;
+                final ItemOptions ie = ItemOptions.makeOptions(container, resourcesProvider, patternButton, false, true)
+                        .setDrawScrim(false)
+                        .setOnTopOfScrim()
+                        .translate(0, dp(-8))
+                        .needsFocus();
+                ie.setOnDismiss(() -> {
+                    if (ie.actionBarPopupWindow != null) {
+                        AndroidUtilities.hideKeyboard(ie.actionBarPopupWindow.getContentView());
+                    }
+                });
+
+                final String[] query = new String[] { "" };
+                final ArrayList<TL_stars.starGiftAttributePattern> attributes = new ArrayList<>(state.resaleList.patternAttributes);
+                Collections.sort(attributes, (a, b) -> {
+                    final Integer aCount = state.resaleList.patternAttributesCounter.get(a.document.id);
+                    final Integer bCount = state.resaleList.patternAttributesCounter.get(b.document.id);
+                    if (aCount == null) return 1;
+                    if (bCount == null) return -1;
+                    return bCount - aCount;
+                });
+                final UniversalRecyclerView listView = new UniversalRecyclerView(context, currentAccount, 0, (items, adapter) -> {
+                    final String q = query[0].toLowerCase(), tq = AndroidUtilities.translitSafe(q);
+                    final boolean allSelected = state.resaleList.notSelectedPatternAttributes.isEmpty();
+                    for (TL_stars.starGiftAttributePattern attr : attributes) {
+                        final boolean checked = !state.resaleList.notSelectedPatternAttributes.contains(attr.document.id);
+                        if (TextUtils.isEmpty(q) || attr.name.toLowerCase().startsWith(q) || attr.name.toLowerCase().startsWith(tq) || attr.name.toLowerCase().contains(" " + q) || attr.name.toLowerCase().contains(" " + tq)) {
+                            final Integer counter = state.resaleList.patternAttributesCounter.get(attr.document.id);
+                            items.add(PatternItem.Factory.asPattern(attr, counter == null ? 0 : counter, q).setChecked(!TextUtils.isEmpty(q) ? !allSelected && checked : checked));
+                        }
+                    }
+                    if (items.isEmpty()) {
+                        items.add(EmptyView.Factory.asEmptyView(getString(R.string.Gift2ResaleFiltersSymbolEmpty)));
+                    }
+                }, (item, view, position, x, y) -> {
+                    final TL_stars.starGiftAttributePattern pattern = (TL_stars.starGiftAttributePattern) item.object;
+                    final long document_id = pattern.document.id;
+                    final boolean checked = !state.resaleList.notSelectedPatternAttributes.contains(document_id);
+                    if (checked) {
+                        if (state.resaleList.notSelectedPatternAttributes.isEmpty()) {
+                            for (TL_stars.starGiftAttributePattern attr1 : state.resaleList.patternAttributes) {
+                                if (attr1.document.id != document_id) {
+                                    state.resaleList.notSelectedPatternAttributes.add(attr1.document.id);
+                                }
+                            }
+                        } else {
+                            state.resaleList.notSelectedPatternAttributes.add(document_id);
+                        }
+                    } else {
+                        state.resaleList.notSelectedPatternAttributes.remove(document_id);
+                    }
+                    state.resaleList.reload();
+                    ie.dismiss();
+                }, null, resourcesProvider) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(
+                                Math.min((int) (AndroidUtilities.displaySize.y * 0.35f), MeasureSpec.getSize(heightMeasureSpec)),
+                                MeasureSpec.getMode(heightMeasureSpec)
+                        ));
+                    }
+                };
+                listView.adapter.setApplyBackground(false);
+
+                FrameLayout searchLayout = new FrameLayout(context);
+                ImageView searchIcon = new ImageView(context);
+                searchIcon.setScaleType(ImageView.ScaleType.CENTER);
+                searchIcon.setImageResource(R.drawable.smiles_inputsearch);
+                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
+                EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                editText.setCursorSize(dp(19));
+                editText.setCursorWidth(1.5f);
+                editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
+                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                editText.setBackground(null);
+                searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        query[0] = s.toString();
+                        listView.adapter.update(true);
+                    }
+                });
+                if (attributes.size() > 8) {
+                    ie.addView(searchLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44));
+                    ie.addGap();
+                }
+                if (!state.resaleList.notSelectedPatternAttributes.isEmpty()) {
+                    ie.add(R.drawable.msg_select, getString(R.string.SelectAll), () -> {
+                        if (state.resaleList.notSelectedPatternAttributes.isEmpty()) return;
+                        state.resaleList.notSelectedPatternAttributes.clear();
+                        state.resaleList.reload();
+                    });
+                }
+                ie.addView(listView);
+                ie.show();
+            });
+
+            final GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 3);
+            layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    final UItem item = adapter.getItem(position - 1);
+                    if (item == null || item.spanCount == UItem.MAX_SPAN_COUNT) return 3;
+                    return item.spanCount;
+                }
+            });
+            recyclerListView.setLayoutManager(layoutManager);
+            recyclerListView.setOnItemClickListener((view, position, x, y) -> {
+                final UItem item = adapter.getItem(position - 1);
+                if (item == null) return;
+                if (item.object instanceof TL_stars.StarGift) {
+                    final TL_stars.StarGift gift = (TL_stars.StarGift) item.object;
+                    final boolean resale = item.red;
+                    if (resale && gift instanceof TL_stars.TL_starGiftUnique) {
+                        buyGift((TL_stars.TL_starGiftUnique) item.object);
+                        return;
+                    } else if (!resale) {
+                        TL_stars.SavedStarGift savedStarGift = null;
+                        for (final TL_stars.SavedStarGift savedGift : state.list.gifts) {
+                            if (savedGift.gift == gift) {
+                                savedStarGift = savedGift;
+                                break;
+                            }
+                        }
+                        if (savedStarGift != null && savedStarGift.can_craft_at > 0) {
+                            final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                            if (savedStarGift.can_craft_at > now) {
+                                new AlertDialog.Builder(getContext())
+                                    .setTitle(getString(R.string.GiftCraftUnavailableTitle))
+                                    .setMessage(AndroidUtilities.replaceTags(formatString(R.string.GiftCraftUnavailableTextTime, LocaleController.formatDateTime(savedStarGift.can_craft_at, true))))
+                                    .setPositiveButton(getString(R.string.OK), null)
+                                    .show();
+                                return;
+                            }
+                        }
+                    }
+                    onSelect.run(gift);
+                    dismiss();
+                }
+            });
+            recyclerListView.setPadding(backgroundPaddingLeft + dp(8), 0, backgroundPaddingLeft + dp(8), 0);
+            recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    onScroll();
+                }
+            });
+
+            DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+            itemAnimator.setSupportsChangeAnimations(false);
+            itemAnimator.setDelayAnimations(false);
+            itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+            itemAnimator.setDurations(350);
+            recyclerListView.setItemAnimator(itemAnimator);
+            recyclerListView.setItemSelectorColorProvider(position -> 0);
+
+            actionView = new StarGiftSheet.ActionView(context);
+            actionView.setPadding(dp(20), dp(9));
+            actionView.setRoundRadius(dp(22));
+            actionView.setFullRect(true);
+            actionView.prepareBlur(null);
+            actionView.setPivotY(0);
+            container.addView(actionView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+
+            adapter.update(false);
+
+            state.listen(() -> {
+                adapter.update(true);
+                AndroidUtilities.runOnUIThread(this::onScroll, 150);
+            });
+        }
+
+        private void onScroll() {
+            boolean visibleListLoading = false, visibleResaleLoading = false;
+            for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
+                final View child = recyclerListView.getChildAt(i);
+                if (child instanceof FlickerLoadingView) {
+                    final int position = recyclerListView.getChildAdapterPosition(child) - 1;
+                    if (position < 0) continue;
+                    final UItem item = adapter.getItem(position);
+                    if (item != null) {
+                        if (item.id < 10) {
+                            visibleListLoading = true;
+                        } else {
+                            visibleResaleLoading = true;
+                        }
+                    }
+                }
+            }
+            if (visibleListLoading) {
+                state.list.load();
+            }
+            if (visibleResaleLoading) {
+                state.resaleList.load();
+            }
+        }
+
+        private void buyGift(TL_stars.TL_starGiftUnique gift) {
+            final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+            progressDialog.showDelayed(400);
+            final long to = UserConfig.getInstance(currentAccount).getClientUserId();
+            final AmountUtils.Currency currency = gift.resale_ton_only ? AmountUtils.Currency.TON : AmountUtils.Currency.STARS;
+            StarsController.getInstance(currentAccount, currency).getResellingGiftForm(gift, to, form -> {
+                progressDialog.dismiss();
+                if (form == null) return;
+                final StarGiftSheet.PaymentFormState initial = new StarGiftSheet.PaymentFormState(currency, form);
+
+                new StarGiftSheet.ResaleBuyTransferAlert(getContext(), resourcesProvider, gift, initial, currentAccount, to, gift.title + " #" + LocaleController.formatNumber(gift.num, ','), true, (state, progress) -> {
+                    progress.init();
+                    StarsController.getInstance(currentAccount, state.currency).buyResellingGift(state.form, gift, to, (status, err) -> {
+                        progress.end();
+                        if (status) {
+                            if (onSelect != null) {
+                                onSelect.run(gift);
+                            }
+                            dismiss();
+                        }
+                    });
+                }).show();
+            });
+        }
+
+        @Override
+        public void onSheetTop(float top) {
+            final float ty = top + containerView.getY() - actionView.getMeasuredHeight();
+            float s = 1.0f - clamp01(Math.max(0, -ty + dp(8)) / actionView.getMeasuredHeight());
+            final float halfHeight = container.getHeight() / 2.0f;
+            if (ty > halfHeight) {
+                s = Math.min(s, Utilities.clamp01(1.0f - (ty - halfHeight) / dpf2(128)));
+            }
+
+            actionView.setScaleX(s);
+            actionView.setScaleY(s);
+            actionView.setAlpha(ilerp(s, 0.5f, 1.0f));
+            actionView.setTranslationY(ty);
+        }
+
+        private Utilities.Callback<TL_stars.StarGift> onSelect;
+        public SelectGiftSheet setOnSelect(Utilities.Callback<TL_stars.StarGift> onSelect) {
+            this.onSelect = onSelect;
+            return this;
+        }
+
+        private HashSet<Long> without = new HashSet<>();
+        public SelectGiftSheet without(HashSet<Long> ids) {
+            without.addAll(ids);
+            updateList(false);
+            return this;
+        }
+
+        public SelectGiftSheet setActionText(CharSequence text) {
+            actionView.set(text);
+            return this;
+        }
+
+        private void updateList(boolean first) {
+            adapter.update(true);
+        }
+
+        @Override
+        protected CharSequence getTitle() {
+            if (collectionName != null) {
+                return collectionName;
+            }
+            return getString(R.string.GiftCraftSelectTitle);
+        }
+
+        private UniversalAdapter adapter;
+        @Override
+        protected RecyclerListView.SelectionAdapter createAdapter(RecyclerListView listView) {
+            return adapter = new UniversalAdapter(listView, getContext(), currentAccount, 0, this::fillItems, resourcesProvider) {
+                @NonNull
+                @Override
+                public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                    if (viewType == UniversalAdapter.VIEW_TYPE_HEADER) {
+                        final HeaderCell cell = new HeaderCell(getContext(), Theme.key_windowBackgroundWhiteBlueHeader, 21 - 8, 12, 4, false, resourcesProvider);
+                        return new RecyclerListView.Holder(cell);
+                    } else if (viewType == UniversalAdapter.VIEW_TYPE_ANIMATED_HEADER) {
+                        final HeaderCell cell = new HeaderCell(getContext(), Theme.key_windowBackgroundWhiteBlueHeader, 21 - 8, 12, 4, false, true, resourcesProvider);
+                        return new RecyclerListView.Holder(cell);
+                    }
+                    return super.onCreateViewHolder(parent, viewType);
+                }
+            };
+        }
+
+        private boolean hadResaleGifts;
+        private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+            if (state == null || state.list == null || state.resaleList == null) return;
+
+            final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            items.add(UItem.asHeader(-1, getString(R.string.GiftCraftSelectYour)));
+            boolean giftsEmpty = true;
+            int count = 0;
+            for (final TL_stars.SavedStarGift gift : state.list.gifts) {
+                if (without.contains(gift.gift.id)) continue;
+                final boolean canCraft = gift.can_craft_at <= now;
+                items.add(GiftSheet.GiftCell.Factory.asStarGift(0, gift.gift, false, true, false, false, true).setEnabled(canCraft));
+                giftsEmpty = false;
+                count++;
+            }
+            if (state.list.loading || !state.list.endReached) {
+                int rowOffset = 3 - (count % 3);
+                int loadCount = rowOffset + 3;
+
+                for (int i = 0; i < loadCount; ++i) {
+                    items.add(UItem.asFlicker(1 + (i - (count % 3)), FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                }
+            } else if (giftsEmpty) {
+                items.add(UItem.asCenterShadow(getString(R.string.GiftCraftSelectYourEmpty)));
+            }
+            if (state.resaleList.getTotalCount() > 0 || hadResaleGifts) {
+                hadResaleGifts = true;
+                items.add(UItem.asAnimatedHeader(-2, getString(R.string.GiftCraftSelectResale)));
+                if (filterScrollView != null) {
+                    items.add(UItem.asCustom(-3, filterScrollView));
+                }
+                for (final TL_stars.TL_starGiftUnique gift : state.resaleList.gifts) {
+                    items.add(GiftSheet.GiftCell.Factory.asStarGift(0, gift, false, true, false, true, true));
+                }
+                if (state.resaleList.loading || !state.resaleList.endReached) {
+                    items.add(UItem.asFlicker(10 + 0, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                    items.add(UItem.asFlicker(10 + 1, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                    items.add(UItem.asFlicker(10 + 2, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+
+                    items.add(UItem.asFlicker(10 + 3, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                    items.add(UItem.asFlicker(10 + 4, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                    items.add(UItem.asFlicker(10 + 5, FlickerLoadingView.STAR_GIFT_SELECT).setSpanCount(1));
+                }
             }
         }
     }

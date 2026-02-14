@@ -410,7 +410,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         searchContainer.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
         searchListView.setEmptyView(searchEmptyView);
 
-        searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
 
             private AnimatorSet animatorSet;
 
@@ -1472,7 +1472,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
             if (onlyPhotos && false) {
                 searchButton = new ImageView(context);
-                searchButton.setImageResource(R.drawable.ic_ab_search);
+                searchButton.setImageResource(R.drawable.outline_header_search);
                 searchButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 searchButton.setBackground(Theme.createSelectorDrawable(436207615));
                 searchButton.setOnClickListener(view -> openSearch());

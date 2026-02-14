@@ -10,10 +10,10 @@ public class BlurredBackgroundColorProviderThemed implements BlurredBackgroundCo
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final int backgroundColorId;
-    private final float alpha;
+    private float alpha;
 
     public BlurredBackgroundColorProviderThemed(Theme.ResourcesProvider resourcesProvider, int backgroundColorId) {
-        this(resourcesProvider, backgroundColorId, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.84f : 0.76f);
+        this(resourcesProvider, backgroundColorId, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f);
     }
 
     public BlurredBackgroundColorProviderThemed(Theme.ResourcesProvider resourcesProvider, int backgroundColorId, float alpha) {
@@ -24,14 +24,23 @@ public class BlurredBackgroundColorProviderThemed implements BlurredBackgroundCo
         updateColors();
     }
 
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+        updateColors();
+    }
+
     private int backgroundColor, shadowColor, strokeColorTop, strokeColorBottom;
+
+    public boolean isDark() {
+        final int color = Theme.getColor(backgroundColorId, resourcesProvider);
+        return AndroidUtilities.computePerceivedBrightness(color) < .721f;
+    }
 
     public void updateColors() {
         final int color = Theme.getColor(backgroundColorId, resourcesProvider);
-        final boolean isDark = AndroidUtilities.computePerceivedBrightness(color) < .721f;
-
         backgroundColor = Theme.multAlpha(color, alpha);
-        if (isDark) {
+
+        if (isDark()) {
             strokeColorTop = 0x28FFFFFF;
             strokeColorBottom = 0x14FFFFFF;
             shadowColor = 0;
@@ -41,7 +50,6 @@ public class BlurredBackgroundColorProviderThemed implements BlurredBackgroundCo
             shadowColor = 0x20000000; //0x19000000;
         }
     }
-
 
     @Override
     public int getShadowColor() {

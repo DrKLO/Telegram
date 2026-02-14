@@ -180,10 +180,15 @@
     <string name="Connecting">Connecting...</string>
     <string name="Connected">Connected</string>
     <string name="Ping">Ping: %1$d ms</string>
+    <string name="Ping2">%1$d ms ping</string>
     <string name="Checking">Checking...</string>
     <string name="Available">Available</string>
     <string name="Unavailable">Unavailable</string>
     <string name="ConnectingToProxy">Connecting to proxy</string>
+    <string name="ConnectingToProxyWithDots">Connecting to proxy...</string>
+    <string name="MenuProxyTitle">Proxy</string>
+    <string name="MenuProxyConnecting">Connecting</string>
+    <string name="MenuProxyConnected">Connected</string>
     <string name="ConnectingConnectProxy">Connect Proxy</string>
     <string name="Updating">Updating...</string>
     <string name="NewSecretChat">New Secret Chat</string>
@@ -232,6 +237,8 @@
     <string name="ChatDeletedUndo">Chat deleted</string>
     <string name="GroupDeletedUndo">Group deleted.</string>
     <string name="ChannelDeletedUndo">Channel deleted.</string>
+    <string name="GroupLeftUndo">You left the group.</string>
+    <string name="ChannelLeftUndo">You left the channel.</string>
     <string name="MonoforumDeletedUndo">Removed from your chat list.</string>
     <string name="ArchivePinned">Archive pinned.</string>
     <string name="ArchivePinnedInfo">Swipe left on the archive to hide it.</string>
@@ -241,6 +248,7 @@
     <string name="ChatsArchived">Chats archived.</string>
     <string name="ChatArchivedInfo">Hide the archive by swiping left on it.</string>
     <string name="Undo">Undo</string>
+    <string name="UndoNoCaps">Undo</string>
     <string name="ClearHistoryCache">Delete from cache</string>
     <string name="DeleteChat">Delete and exit</string>
     <string name="HideOnTop">Hide</string>
@@ -251,7 +259,7 @@
     <string name="ArchiveSearchFilter">Archive</string>
     <string name="Unarchive">Unarchive</string>
     <string name="ArchivedChats">Archived Chats</string>
-    <string name="DeleteChatUser">Delete chat</string>
+    <string name="DeleteChatUser">Delete Chat</string>
     <string name="HiddenName">Deleted Account</string>
     <string name="SelectChat">Select Chat</string>
     <string name="ChooseBot">Choose Bot</string>
@@ -270,6 +278,10 @@
     <string name="SearchMessages">Messages</string>
     <string name="SearchMessagesIn">Messages in %s</string>
     <string name="Search">Search</string>
+    <string name="SearchContacts">Search Contacts</string>
+    <string name="SearchPeopleByUsername">Search people by username</string>
+    <string name="SearchChats">Search Chats</string>
+    <string name="SearchTopics">Search Topics</string>
     <string name="MuteNotifications">Mute forever</string>
     <string name="MuteFor">Mute for %1$s</string>
     <string name="MuteFor1h">Mute for 1 hour</string>
@@ -370,7 +382,7 @@
     <string name="SearchAllChatsShort">Chats</string>
     <string name="MessagePinnedHint">Message pinned</string>
     <string name="MessageUnpinnedHint">Message unpinned</string>
-    <string name="TapOnThePencil">Tap on the pencil to start a new chat</string>
+    <string name="TapOnThePencilButton">Tap on the button to start a new chat</string>
     <string name="CreateGroupForImport">Create a New Group to Import</string>
     <string name="CreateChannelForThis">Create a New Channel For This</string>
     <string name="NoSuchChannels">No such channels</string>
@@ -426,9 +438,12 @@
     <string name="SetAsAdmin">Promote to admin</string>
     <string name="EditAdminRights">Edit admin rights</string>
     <string name="DeleteMega">Delete Group</string>
-    <string name="LeaveMegaMenu">Leave group</string>
-    <string name="LeaveConversationMenu">Leave conversation</string>
-    <string name="DeleteMegaMenu">Delete group</string>
+    <string name="DeleteMegaForAll">Delete Group For All</string>
+    <string name="DeleteChannelForAll2">Delete Channel For All</string>
+    <string name="LeaveMega">Leave Group</string>
+    <string name="LeaveMegaMenu">Leave Group</string>
+    <string name="LeaveConversationMenu">Leave Conversation</string>
+    <string name="DeleteMegaMenu">Delete Group</string>
     <string name="MegaAdminsInfo">You can add administrators to help you manage your group. Tap and hold to remove them.</string>
     <string name="DeleteGroupForAll">Delete the group for all members</string>
     <string name="DeleteChannelForAll">Delete for all subscribers</string>
@@ -570,6 +585,7 @@
     <string name="ActionUniqueGiftTransferService">**un1** transferred a gift to **un2**!</string>
     <string name="ActionUniqueGiftTransferOutbound">You transferred a gift to **un1**</string>
     <string name="ActionUniqueGiftTransferOutboundAssigned">You started displaying %s on your Telegram profile page.</string>
+    <string name="ActionUniqueGiftCrafted">You crafted a new gift!</string>
     <string name="ActionUniqueGiftResaleService_one">**un1** sent a gift to **un2** for %d Star!</string>
     <string name="ActionUniqueGiftResaleService_other">**un1** sent a gift to **un2** for %d Stars!</string>
     <string name="ActionUniqueGiftResaleServiceTON">**un1** sent a gift to **un2** for %s TON!</string>
@@ -707,6 +723,7 @@
     <string name="Gift2TransferToTONAlertText3">Please come back later.</string>
     <string name="Gift2TransferToTONSetPassword">Set Password</string>
     <string name="EditAdminTransferReadyAlertText">This will transfer the **full owner** rights for **%1$s** to **%2$s**.</string>
+    <string name="EditAdminTransferReadyAlertText2">This will transfer the full **owner rights** for **%1$s** to **%2$s**.</string>
     <string name="EditAdminTransferChangeOwner">Change Owner</string>
     <string name="EditAdminTransferGroupToast">**%1$s** is now the owner of the group.</string>
     <string name="EditAdminTransferChannelToast">**%1$s** is now the owner of the channel.</string>
@@ -1218,6 +1235,7 @@
     <string name="TypeMessageIn">Message in %1$s</string>
     <string name="TypeMessageForStars">Message for ⭐️%s</string>
     <string name="ShareMyPhone">SHARE MY PHONE NUMBER</string>
+    <string name="ShareMyPhoneNoCaps">Share my phone number</string>
     <string name="ShareMyContactInfo">Share my contact</string>
     <string name="AddToContacts">Add to contacts</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s invited you to join a secret chat.</string>
@@ -1262,20 +1280,20 @@
     <string name="OpenUrlOption2">Allow **%1$s** to send me messages</string>
     <string name="CancelSending">Cancel sending</string>
     <string name="BotPermissionGameAlert">Allow %1$s to pass your Telegram name and id (not your phone number) to pages you open with this bot?</string>
-    <string name="ReportSpamLocation">GROUP UNRELATED TO LOCATION?</string>
     <string name="ReportUnrelatedGroup">Report unrelated group</string>
     <string name="ReportUnrelatedGroupText">Please let us know if this group is not related to this location:\n\n**%1$s**</string>
     <string name="ReportUnrelatedGroupTextNoAddress">Please let us know if this group is not related to this location.</string>
-    <string name="ReportSpam">REPORT SPAM</string>
     <string name="ReportSpamTitle">Report spam</string>
     <string name="BlockUserTitle">Block %1$s</string>
-    <string name="ReportSpamUser">BLOCK USER</string>
-    <string name="ReportSpamAndLeave">REPORT SPAM AND LEAVE</string>
-    <string name="AddContactChat">ADD CONTACT</string>
-    <string name="AddContactFullChat">ADD %1$s TO CONTACTS</string>
     <string name="ViewContact">VIEW CONTACT</string>
     <string name="SharedContactAdd">ADD</string>
     <string name="SharedContactMessage">MESSAGE</string>
+    <string name="ReportSpamLocationNoCaps">Group unrelated to location?</string>
+    <string name="AddContactFullChatNoCaps">Add %1$s to Contacts</string>
+    <string name="AddContactChatNoCaps">Add Contact</string>
+    <string name="ReportSpamUserNoCaps">Block User</string>
+    <string name="ReportSpamNoCaps">Report Spam</string>
+    <string name="ReportSpamAndLeaveNoCaps">Report Spam and Leave</string>
     <string name="BlockUserAlert">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
     <string name="BlockUserReplyAlert">Do you want to block messages from **%1$s**?</string>
     <string name="ReportSpamAlert">Are you sure you want to report spam from this user?</string>
@@ -1482,6 +1500,7 @@
     <string name="ViaBot">via</string>
     <string name="MessageNotFound">Message doesn\'t exist</string>
     <string name="UniqueGiftNotFound">Gift was not found</string>
+    <string name="UniqueGiftNotFoundBurned">Gift has already been burned.</string>
     <string name="GiftAuctionNotFound">Gift auction was not found</string>
     <string name="SlowModeHint">Slow Mode is enabled. You can send\nyour next message in %1$s</string>
     <string name="TapForVideo">Tap for photo, hold for video</string>
@@ -1546,6 +1565,7 @@
     <string name="NoReplies">No replies here yet...</string>
     <string name="ViewInChat">View in chat</string>
     <string name="SendAnonymously">Send anonymously</string>
+    <string name="SendBotNoThread">Off-thread message</string>
     <string name="DiscussionStarted">Discussion started</string>
     <string name="ViewThread">View Thread</string>
     <string name="ChooseDate">Choose date</string>
@@ -1797,16 +1817,18 @@
     <string name="NewMessageTitle">New Message</string>
     <string name="InviteFriendsHelp">Select contacts to invite them to Telegram</string>
     <string name="InviteToTelegram">INVITE TO TELEGRAM</string>
-    <string name="ShareTelegram">Share Telegram...</string>
+    <string name="ShareTelegram2">Share Telegram</string>
     <string name="UpdateContactsTitle">Update contacts?</string>
     <string name="UpdateContactsMessage">Telegram has detected many unsynced contacts, would you like to sync them now? Choose \'OK\' if you\'re using your own device, SIM card and Google account.</string>
     <string name="SortedByName">Sorted by name</string>
     <string name="SortedByLastSeen">Sorted by last seen time</string>
     <string name="AddContactByPhone">Add %1$s</string>
     <string name="PhoneNumberSearch">Phone number</string>
-    <string name="NoContactsYet2">You have no contacts\non Telegram yet</string>
-    <string name="NoContactsYet2Sub">Invite friends to try Telegram or search\npeople by username.</string>
     <string name="NoContactsYet2Invite">Invite Friends ></string>
+
+    <string name="NoContactsYet3">Add Contacts</string>
+    <string name="NoContactsYet3Sub">You have no contacts on Telegram yet. How about adding them?</string>
+
     <string name="NewContactAlertTitle">New contact</string>
     <string name="NewContactAlertMessage">Phone number **%1$s** is not in your contacts list. Do you want to add it?</string>
     <string name="NewContactAlertButton">Add contact</string>
@@ -2349,7 +2371,6 @@
     <string name="Languages_other">%1$d Languages</string>
     <string name="ChooseLanguages">Choose languages</string>
     <string name="TranslateMessagesInfo1">The ‘Translate’ button will appear when you make a single tap on a text message.</string>
-    <string name="TranslateMessagesInfo2">Google may have access to the messages you translate.</string>
     <string name="Language">Language</string>
     <string name="LanguageCustom">Custom</string>
     <string name="LanguageTitle">Change language?</string>
@@ -2561,6 +2582,7 @@
     <string name="DeleteProxyTitle">Delete Proxy</string>
     <string name="DeleteProxyConfirm">Are you sure you want to delete this proxy?</string>
     <string name="DeleteProxyMultiConfirm">Are you sure you want to delete these proxies?</string>
+    <string name="UseProxyTitle">Proxy Server</string>
     <string name="UseProxySettings">Use Proxy</string>
     <string name="UseProxyAddress">Server</string>
     <string name="UseProxyPassword">Password</string>
@@ -2686,6 +2708,7 @@
     <string name="CheckPhoneNumberInfo">Keep your number up to date to ensure you can always log into Telegram. **Learn more**</string>
     <string name="CheckPhoneNumberLearnMoreUrl">https://telegram.org/faq#q-i-have-a-new-phone-number-what-do-i-do</string>
     <string name="CheckPhoneNumberYes">Yes</string>
+    <string name="CheckPhoneNumberYes2">👍 Yes</string>
     <string name="CheckPhoneNumberNo">No</string>
     <!--cache view-->
     <string name="LocalDatabase">Local Database</string>
@@ -3749,6 +3772,8 @@
     <string name="ActionBotDocumentRentalAgreement">Rental Agreement</string>
     <string name="ActionBotDocumentPhone">Phone Number</string>
     <string name="ActionBotDocumentEmail">Email Address</string>
+    <string name="ActionNewCreatorPending">un1 will be the new main admin in 7 days if un2 does not return.</string>
+    <string name="ActionChangeCreator">un1 has transferred ownership of the group to un2.</string>
     <string name="UnsupportedMedia2">This message is not supported on your version of Telegram. Please update to the latest version.</string>
     <string name="YourVersionIsLatest">Your version is up to date.</string>
     <string name="AttachPhoto">Photo</string>
@@ -4086,6 +4111,7 @@
     <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on Telegram.</string>
     <string name="Calls">Calls</string>
     <string name="DeleteAllCalls">Delete all calls</string>
+    <string name="HideCallTab">Hide Call Tab</string>
     <string name="DeleteCalls">Delete calls</string>
     <string name="DeleteCallsForEveryone">Delete for everyone</string>
     <string name="DeleteAllCallsText">Do you want to delete all recent calls?</string>
@@ -4122,6 +4148,8 @@
     <string name="CallMessageVideoIncomingDeclined">Declined Video Call</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoRecentCalls">No recent calls</string>
+    <string name="MakeYourFirstCall">Make your first call</string>
+    <string name="MakeYourFirstCallHint">You can make end-to-end encrypted calls\nwith up to %d friends at once</string>
     <string name="NoRecentCallsInfo">Your recent voice and video calls\nwill appear here.</string>
     <string name="VoipPeerIncompatible">**%1$s**\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
     <string name="VoipPeerOutdated">**%1$s**\'s app does not support calls. They need to update their app before you can call them.</string>
@@ -4174,6 +4202,7 @@
     <string name="RateCallVideoDistorted">Video was distorted</string>
     <string name="RateCallVideoPixelated">Video was pixelated</string>
     <string name="TapToTurnCamera">Tap here to turn on your camera</string>
+    <string name="TapToHideCallsTab">Tap here to hide **Calls** tab</string>
     <string name="VoipUnmute">Unmute</string>
     <string name="VoipHoldAndTalk">or hold and talk</string>
     <string name="VoipTapToMute">You\'re Live</string>
@@ -4317,8 +4346,8 @@
     <string name="VoipChannelTitle">Live stream title</string>
     <string name="VoipGroupInviteCanSpeak">Can speak</string>
     <string name="VoipGroupInviteListenOnly">Listen only</string>
-    <string name="VoipGroupCopySpeakerLink">COPY SPEAKER LINK</string>
-    <string name="VoipGroupCopyListenLink">COPY LISTENER LINK</string>
+    <string name="VoipGroupCopySpeakerLinkNoCaps">Copy speaker link</string>
+    <string name="VoipGroupCopyListenLinkNoCaps">Copy listener link</string>
     <string name="VoipGroupYouCanNowSpeak">You can now speak.</string>
     <string name="VoipGroupYouCanNowSpeakIn">You can now speak in **%1$s**.</string>
     <string name="VoipGroupStopRecordingTitle">Stop recording</string>
@@ -4379,6 +4408,7 @@
     <string name="VoipChannelChatJoined">**%1$s** joined the live stream.</string>
     <string name="VoipChatActiveChats">Active voice chats</string>
     <string name="VoipChatRecentCalls">Recent calls</string>
+    <string name="RecentCalls">Recent calls</string>
     <string name="VoipChatStartScreenCapture">Share screen</string>
     <string name="VoipChatStopScreenCapture">Stop screen sharing</string>
     <string name="ThisIsYou">this is you</string>
@@ -4972,6 +5002,7 @@
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
     <string name="chatDate">MMMM d</string>
+    <string name="chatDateShort">MMM d</string>
     <string name="chatFullDate">MMMM d, yyyy</string>
     <string name="formatterWeek">EEE</string>
     <string name="formatterWeekLong">EEEE</string>
@@ -6072,7 +6103,10 @@
     <string name="AccDescrRateTranscriptionUp">Rate up</string>
     <string name="AccDescrRateTranscriptionDown">Rate down</string>
     <string name="PauseMusicOnMedia">Pause music while playing media</string>
+    <string name="ProxyBottomSheetCheckStatus">**Check Status**</string>
     <string name="ProxyBottomSheetChecking">Checking</string>
+    <string name="ProxyBottomSheetCheckWarning">Warning</string>
+    <string name="ProxyBottomSheetCheckWarningText">This will expose your IP address to the admin of the proxy server.</string>
     <string name="LoginCantAccessThisEmail">Can\'t access this email?</string>
     <string name="LoginEmailResetInTime">Email will be reset in %1$s.\n*Reset now via SMS*</string>
     <string name="LoginEmailResetInSinglePattern">%1$s</string>
@@ -7453,7 +7487,7 @@
     <string name="MessageLockedStarsConfirmMessageDontAsk">Don\'t ask me again</string>
     <string name="MessageLockedStarsConfirmMessagePay_one">Pay for %d Message</string>
     <string name="MessageLockedStarsConfirmMessagePay_other">Pay for %d Messages</string>
-    <string name="MessageLockedStarsRemoveFee">%1$s must pay ⭐️ %2$s for each message to you.\n**Remove Fee**</string>
+    <string name="MessageLockedStarsRemoveFeeShort">%1$s pays ⭐️ %2$s for each message to you.\n**Remove Fee**</string>
     <string name="RemoveMessageFeeTitle">Remove Fee</string>
     <string name="RemoveMessageFeeMessage">Are you sure you want to allow **%s** to message you for free?</string>
     <string name="RemoveMessageFeeMessageChannel">Are you sure you want to allow **%s** to message channel for free?</string>
@@ -7804,14 +7838,19 @@
     <string name="PrivacyBiometryBotsInfo">Web-apps can request permission for fingerprint check.</string>
     <string name="GreetingHow">%s added the message above for all empty chats **how?**</string>
     <string name="GreetingHowSticker">%s set the sticker above for all empty chats **how?**</string>
+    <string name="EditAccountInfo2">Account</string>
+    <string name="EditAccountInfoHeader">Your Info</string>
+    <string name="AddUsername">Add Username</string>
+    <string name="AddBirthday">Add Birthday</string>
+    <string name="BirthdayRemove">Remove</string>
     <string name="EditInfo">Edit Info</string>
-    <string name="EditProfileInfo">Profile Info</string>
     <string name="EditProfileName">Your name</string>
     <string name="EditProfileFirstName">First name</string>
     <string name="EditProfileLastName">Last name</string>
     <string name="EditProfileBio">Your bio</string>
     <string name="EditProfileChannel">Your channel</string>
     <string name="EditProfileChannelTitle">Personal channel</string>
+    <string name="EditProfileChannelTitleAdd">Add Personal channel</string>
     <string name="EditProfileChannelSelect">Select your channel</string>
     <string name="EditProfileChannelHide">Hide Personal Channel</string>
     <string name="EditProfileChannelAdd">Add</string>
@@ -8584,6 +8623,7 @@
     <string name="Gift2MessageStarsInfo">Your balance is ⭐️%s</string>
     <string name="Gift2MessageStarsInfoTON">Your balance is ⭐️**%s**</string>
     <string name="Gift2MessageStarsInfoLink">**Get More Stars >**</string>
+    <string name="TitleSetupProxy">set up proxy ></string>
     <string name="Gift2Hide">Hide My Name</string>
     <string name="Gift2HideInfo">You can hide your name and message from visitors to %1$s`s profile. %1$s will still see your name and message.</string>
     <string name="Gift2HideChannelInfo">You can hide your name and message from all visitors of this channel except its admins.</string>
@@ -8666,6 +8706,9 @@
     <string name="Gift2ActionUpgradeTitle">Upgrade from </string>
     <string name="Gift2ActionUpgradeUnknownTitle">Upgrade from unknown</string>
     <string name="Gift2ActionSelfTitle">Saved Gift</string>
+    <string name="Gift2ActionCraftedTitle">Crafted Gift</string>
+    <string name="Gift2ActionPurchasedTitle">Purchased Gift</string>
+    <string name="Gift2ActionUpgradedTitle">Upgraded Gift</string>
     <string name="Gift2ActionTitleInAnonymous">%s received a gift!</string>
     <string name="Gift2ActionTitleAnonymous">You received a gift!</string>
     <string name="Gift2ActionConvertRefundedText">This gift cannot be converted to Stars because the payment related to it was refunded.</string>
@@ -9196,6 +9239,7 @@
     <string name="Gift2UniqueView">View</string>
     <string name="Gift2Unpack">Unpack</string>
     <string name="Gift2UniqueRibbon">gift</string>
+    <string name="Gift2UniqueRibbonBurned">burned</string>
     <string name="Gift2ExportTONTitle">Send via Blockchain</string>
     <string name="Gift2ExportTONUnlocksIn_one">unlocks in %d day</string>
     <string name="Gift2ExportTONUnlocksIn_other">unlocks in %d days</string>
@@ -9404,7 +9448,10 @@
     <string name="GroupCallCreateAddMembers">Add members</string>
     <string name="GroupCallCreateVoice">Voice</string>
     <string name="GroupCallCreateVideo">Video</string>
-    <string name="GroupCallCreate">Start New Call</string>
+    <string name="GroupCallCreate2">Create New Call</string>
+    <string name="GroupCallShowInMainTabs">Show Calls Tab</string>
+    <string name="GroupCallTabWasShownTitle">**Calls** tab is now visible</string>
+    <string name="GroupCallTabWasHiddenTitle">**Calls** tab is now hidden</string>
     <string name="GroupCalMessageDecryptionError">Unsupported message</string>
     <string name="GroupCallCreateInfo_one">You can add up to %d participant to a call.</string>
     <string name="GroupCallCreateInfo_other">You can add up to %d participants to a call.</string>
@@ -9869,6 +9916,7 @@
     <string name="ProfileActionsAddStory">Add Story</string>
     <string name="ProfileActionsStop">Stop</string>
     <string name="ProfileActionsEditPhoto">Set Profile</string>
+    <string name="ProfileActionsEditPhoto2">Set Photo</string>
     <string name="ProfileActionsEditUsername">Username</string>
     <string name="ProfileActionsEditInfo">Edit Info</string>
     <string name="PersonalChannel">personal channel</string>
@@ -9929,6 +9977,7 @@
     <string name="GiftAuctionInfo3Text">If your bid doesn’t win after the final round, your Stars will be fully refunded.</string>
     <string name="GiftTopAction">**%1$s** sent you this gift on **%2$s**</string>
     <string name="GiftSelfTopAction">You bought this gift on **%1$s**</string>
+    <string name="GiftSelfTopActionCrafted">You crafted this gift on **%1$s**</string>
     <string name="BotForumNewTopic">New Chat</string>
     <string name="BotForumContinueChat">Continue last thread</string>
     <string name="BotForumAskForStartNewChatTitle">New Thread</string>
@@ -10070,12 +10119,10 @@
     <string name="Gift2AuctionsAcquiredDate">Date</string>
     <string name="Gift2AuctionsAcquiredAcceptedBid">Accepted Bid</string>
     <string name="Gift2AuctionsAcquiredTop">TOP %d</string>
-
     <string name="Gift2AuctionsBidHasBeenPlaced">Your bid has been placed</string>
     <string name="Gift2AuctionsBidHasBeenIncreased">Your bid has been increased</string>
     <string name="Gift2AuctionsChangeRecipient">Change Recipient</string>
     <string name="Gift2AuctionsChangeRecipient2">You’ve already placed a bid on this gift for **%s.** Do you want to raise your bid and change the recipient to **%s?**</string>
-
     <string name="Passkey">Passkeys</string>
     <string name="PasskeyDeleteTitle">Delete Passkey</string>
     <string name="PasskeyDeleteText">Once deleted, this passkey can\'t be used to log in.\n\nDon\'t forget to remove it from your password manager too.</string>
@@ -10163,6 +10210,11 @@
     <string name="GiftOfferOfferedTextStarsRejected">**%1$s** rejected your offer. **%2$s Stars** for **%3$s**.</string>
     <string name="GiftOfferOfferedTextTONRejected">**%1$s** rejected your offer. **%2$s TON** for **%3$s**.</string>
 
+    <string name="GiftOfferOfferedTextStarsExpiredOut">**%1$s\'s** offer has expired. **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTONExpiredOut">**%1$s\'s** offer has expired. **%2$s TON** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextStarsExpired">Your offer to **%1$s** has expired. **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTONExpired">Your offer to **%1$s** has expired. **%2$s TON** for **%3$s**.</string>
+
     <string name="FeaturePreviewGifts">Unique Collectibles</string>
     <string name="FeaturePreviewGiftsDescription">Telegram Gifts are collectible items you can trade or showcase on your profile.</string>
     <string name="GiftsFeature1Title">Unique</string>
@@ -10171,22 +10223,22 @@
     <string name="GiftsFeature2Text">Sell your gift on Telegram or on third-part NFT marketplace</string>
     <string name="GiftsFeature3Title">Wearable</string>
     <string name="GiftsFeature3Text">Display gifts on your page and set them as profile covers or statuses.</string>
-
     <string name="GiftPreviewModels">Models</string>
     <string name="GiftPreviewBackdrops">Backdrops</string>
     <string name="GiftPreviewSymbols">Symbols</string>
-
     <string name="GiftPreviewModel">model</string>
     <string name="GiftPreviewBackdrop">backdrop</string>
     <string name="GiftPreviewSymbol">symbol</string>
-
     <string name="GiftPreviewCountModels_one">This collectible features **%d** unique models</string>
     <string name="GiftPreviewCountModels_other">This collectible features **%d** unique models</string>
+    <string name="GiftPreviewCountModelsCrafting_one">This collectible features **%d** crafted models.</string>
+    <string name="GiftPreviewCountModelsCrafting_other">This collectible features **%d** crafted models.</string>
+    <string name="GiftPreviewCountModelsCrafting2_one">This collectible features **%d** regular models you can craft from.</string>
+    <string name="GiftPreviewCountModelsCrafting2_other">This collectible features **%d** regular models you can craft from.</string>
     <string name="GiftPreviewCountBackdrops_one">This collectible features **%d** unique backdrop</string>
     <string name="GiftPreviewCountBackdrops_other">This collectible features **%d** unique backdrops</string>
     <string name="GiftPreviewCountSymbols_one">This collectible features **%d** unique symbol</string>
     <string name="GiftPreviewCountSymbols_other">This collectible features **%d** unique symbols</string>
-
     <string name="GiftAuctionWearInfoOnline">online</string>
     <string name="GiftAuctionWearInfoHeader">Wear %s</string>
     <string name="GiftAuctionWearInfoText">and get these benefits:</string>
@@ -10196,6 +10248,37 @@
     <string name="GiftAuctionWearInfo2Text">Your profile page will get the color and the symbol of this item.</string>
     <string name="GiftAuctionWearInfo3Header">Proof of Ownership</string>
     <string name="GiftAuctionWearInfo3Text">Tapping the icon of this item next to your name will show its info and owner.</string>
+
+    <string name="MainTabsContacts">Contacts</string>
+    <string name="MainTabsCalls">Calls</string>
+    <string name="MainTabsChats">Chats</string>
+    <string name="MainTabsProfile">Profile</string>
+    <string name="MainTabsSettings">Settings</string>
+    <string name="SwitchThemeToDay">Day Mode</string>
+    <string name="SwitchThemeToNight">Night Mode</string>
+
+    <string name="SettingsAccount">Account</string>
+    <string name="SettingsAccounts">Accounts</string>
+    <string name="SettingsAccountInfo">Number, Username, Bio</string>
+    <string name="SettingsChat">Chat Settings</string>
+    <string name="SettingsChatInfo">Wallpaper, Night Mode, Animations</string>
+    <string name="SettingsPrivacySecurity">Privacy &amp; Security</string>
+    <string name="SettingsPrivacySecurityInfo">Last Seen, Devices, Passkeys</string>
+    <string name="SettingsNotifications">Notifications</string>
+    <string name="SettingsNotificationsInfo">Sounds, Calls, Badges</string>
+    <string name="SettingsData">Data and Storage</string>
+    <string name="SettingsDataInfo">Media download settings</string>
+    <string name="SettingsFolders">Chat Folders</string>
+    <string name="SettingsFoldersInfo">Sort chats into folders</string>
+    <string name="SettingsDevices">Devices</string>
+    <string name="SettingsDevicesInfo">Manage connected devices</string>
+    <string name="SettingsPowerSaving">Power Saving</string>
+    <string name="SettingsPowerSavingInfo">Reduce power usage on low charge</string>
+    <string name="SettingsLanguage">Language</string>
+    <string name="AddAccountInfo1_one">You can add %d additional account.</string>
+    <string name="AddAccountInfo1_other">You can add %d additional accounts.</string>
+    <string name="AddAccountInfo2_one">Subscribe to **Telegram Premium** to use up to %d account.</string>
+    <string name="AddAccountInfo2_other">Subscribe to **Telegram Premium** to use up to %d accounts.</string>
 
     <string name="CocoonPoweredBy">Translations are powered by\n**🥚 Cocoon**.</string>
     <string name="CocoonPoweredByLink">**How does it work?**</string>
@@ -10212,6 +10295,8 @@
     <string name="CocoonFooterLink">https://t.me/cocoon?direct</string>
     <string name="SummaryTitle">AI Summary</string>
     <string name="SummarySubtitle">Tap to see original text</string>
+    <string name="SummaryLimit">Summarize large messages with AI — unlimited in Telegram Premium.</string>
+    <string name="SummaryLimitUpgrade">Upgrade</string>
 
     <string name="StakeDiceTitle">Emoji Stake</string>
     <string name="StakeDiceTitleBeta">Beta</string>
@@ -10226,4 +10311,88 @@
     <string name="StakeDiceActionYouLost">You lost 💎 %s</string>
     <string name="StakeDiceActionWon">un1 won 💎 %s</string>
     <string name="StakeDiceActionLost">un1 lost 💎 %s</string>
+
+    <string name="BotAuthTitle">Log in to **%s**</string>
+    <string name="BotAuthSiteSubtitle">This site will receive your **name**,\n**username** and **profile photo**.</string>
+    <string name="BotAuthBotSubtitle">This bot will receive your **name**,\n**username** and **profile photo**.</string>
+    <string name="BotAuthBasedOnIP">Based on the IP (%s)</string>
+    <string name="BotAuthInfo">This login attempt came from the device above.</string>
+    <string name="BotAuthAllowMessages">Allow Messages</string>
+    <string name="BotAuthAllowMessagesInfo">This will allow %s to message you.</string>
+    <string name="BotAuthPhoneNumber">Phone Number</string>
+    <string name="BotAuthPhoneNumberText">**%1$s** wants to access your phone number **%2$s**.\n\nAllow access?</string>
+    <string name="BotAuthPhoneNumberDeny">Deny</string>
+    <string name="BotAuthPhoneNumberAccept">Allow</string>
+    <string name="BotAuthLogin">Log In</string>
+    <string name="BotAuthLoggedInSuccessTitle">Login successful</string>
+    <string name="BotAuthLoggedInSuccess">You\'re now logged in to **%s**.</string>
+    <string name="BotAuthLoggedInSuccessWithoutPhoneNumber">You\'re now logged in to **%s**, but you didn\'t grant access to your phone number.</string>
+
+    <string name="GalleryAccessAllowAccess">Allow Access to Photos</string>
+    <string name="GalleryAccessAllowAccessTextNonPremium">Share an unlimited number of photos\nand videos of up to 2 GB each.</string>
+    <string name="GalleryAccessAllowAccessTextPremium">Share an unlimited number of photos\nand videos of up to 4 GB each.</string>
+    <string name="GalleryAccessAllowAccessButton">Allow Access</string>
+    <string name="GalleryAccessAllowAccessOpenCamera">Open Camera</string>
+    <string name="GalleryAccessAllowAccessCamera">Allow Access to Camera</string>
+
+    <string name="GiftRarityUncommon">uncommon</string>
+    <string name="GiftRarityRare">rare</string>
+    <string name="GiftRarityEpic">epic</string>
+    <string name="GiftRarityLegendary">legendary</string>
+    <string name="GiftCraftTitle">Craft Gift</string>
+    <string name="GiftCraftViewAllVariants">View all craftable models  ></string>
+    <string name="GiftCraftButton">Craft Gift</string>
+    <string name="GiftCraftButtonFailed">Craft New Gift</string>
+    <string name="GiftCraftButtonEmpty">Tap + to add your first gift</string>
+    <string name="GiftCraftSuccessChance">**%s** Success Chance</string>
+    <string name="GiftCraftProgressTitle">Crafting</string>
+    <string name="GiftCraftProgressText">If crafting fails, all selected gifts\nwill be consumed.</string>
+    <string name="GiftCraftProgressSuccessChance">%s success chance</string>
+    <string name="GiftCraftFailedTitle">Crafting Failed</string>
+    <string name="GiftCraftFailedText_one">The crafting attempt was unsuccessful.\n**%d** gift was lost.</string>
+    <string name="GiftCraftFailedText_other">The crafting attempt was unsuccessful.\n**%d** gifts were lost.</string>
+    <string name="GiftCraftTextEmpty1">Add up to **4** gifts to craft new</string>
+    <string name="GiftCraftTextEmpty2">**%s** gift.\n\nIf crafting fails, all selected gifts\nwill be **lost**.</string>
+    <string name="GiftCraftText1">Add up to **4** gifts to craft new</string>
+    <string name="GiftCraftText2">**%1$s #%2$s**.\n\nIf crafting fails, all selected gifts\nwill be **lost**.</string>
+    <string name="GiftCraftSelectTitle">Select Gift</string>
+    <string name="GiftCraftSelectYour">Your Gifts</string>
+    <string name="GiftCraftSelectYourEmpty">You don\'t have other gifts\nfrom this collection.</string>
+    <string name="GiftCraftSelectResale">Suitable for crafting from resale</string>
+    <string name="GiftCraftSelect_one">You need to add up to **%d gift** from\nthe same collection for crafting.</string>
+    <string name="GiftCraftSelect_other">You need to add up to **%d gifts** from\nthe same collection for crafting.</string>
+    <string name="GiftCraftInfoTitle">Gift Crafting</string>
+    <string name="GiftCraftInfoText">Turn your gifts into rare, epic\nand legendary versions.</string>
+    <string name="GiftCraftInfoFeature1Title">Get Rare Models</string>
+    <string name="GiftCraftInfoFeature1Text">Select up to 4 gifts to craft a new exclusive model.</string>
+    <string name="GiftCraftInfoFeature2Title">Maximize Chances</string>
+    <string name="GiftCraftInfoFeature2Text">Combine more gifts to increase your odds of success.</string>
+    <string name="GiftCraftInfoFeature3Title">Affect the Result</string>
+    <string name="GiftCraftInfoFeature3Text">Use gifts with the same attribute to boost its chance.</string>
+    <string name="GiftCraftInfoButton">Start Crafting</string>
+    <string name="GiftCraftLaterTitle">Try Later</string>
+    <string name="GiftCraftLaterText">You will be able to craft this gift on %s.</string>
+    <string name="GiftCrafted">crafted</string>
+    <string name="GiftCraft">Craft</string>
+    <string name="GiftCraftUnavailableTitle">Crafting Unavailable</string>
+    <string name="GiftCraftUnavailableText">These gifts currently can\'t be crafted.</string>
+    <string name="GiftCraftUnavailableTextTime">This gift will become available for crafting on **%s**.</string>
+    <string name="GiftCraftSymbolChance_one">**%1$d%%** chance the crafted gift will have **%2$s** symbol.</string>
+    <string name="GiftCraftSymbolChance_other">**%1$d%%** chance the crafted gift will have **%2$s** symbol.</string>
+    <string name="GiftCraftBackdropChance_one">**%1$d%%** chance the crafted gift will have **%2$s** background.</string>
+    <string name="GiftCraftBackdropChance_other">**%1$d%%** chance the crafted gift will have **%2$s** background.</string>
+    <string name="GiftOnSale">On sale for %s</string>
+
+    <string name="LeaveGroupTitle">Leave Group?</string>
+    <string name="LeaveChannelTitle">Leave Channel?</string>
+    <string name="LeaveGroupNewOwnerText">If you leave, **%1$s** will become the new owner of **%2$s** in **1 week**.</string>
+    <string name="LeaveChannelNewOwnerText">If you leave, **%1$s** will become the new owner of **%2$s** in **1 week**.</string>
+    <string name="AppointNewOwner">Appoint Another Owner</string>
+    <string name="LeaveGroupAndAppoint">Appoint %s and Leave Group</string>
+    <string name="LeaveChannelAndAppoint">Appoint %s and Leave Channel</string>
+    <string name="GroupAdmins">Group admins</string>
+    <string name="GroupMembers2">Group members</string>
+    <string name="ChannelAdmins">Channel admins</string>
+    <string name="ChannelSubscribers2">Channel subscribers</string>
+    <string name="MembersSearch">Search people</string>
 </resources>

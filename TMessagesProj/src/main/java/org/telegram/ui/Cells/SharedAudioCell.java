@@ -42,10 +42,10 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.EnableTopicsActivity;
 import org.telegram.ui.FilteredSearchView;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
@@ -764,7 +764,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         static { setup(new Factory()); }
 
         @Override
-        public SharedAudioCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public SharedAudioCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             final SharedAudioCell cell = new SharedAudioCell(context, resourcesProvider);
             cell.setPadding(dp(12), 0, dp(12), 0);
             return cell;

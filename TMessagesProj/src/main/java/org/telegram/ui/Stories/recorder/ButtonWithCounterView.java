@@ -51,9 +51,17 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
     public final View rippleView;
     private boolean filled;
+    public boolean useWrapContent;
+    private boolean neutral;
+    private boolean customBackgroundColor;
+    private int backgroundColor;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, true, resourcesProvider);
+    }
+
+    public void setUseWrapContent(boolean useWrapContent) {
+        this.useWrapContent = useWrapContent;
     }
 
     public ButtonWithCounterView setRound() {
@@ -61,10 +69,18 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         return this;
     }
 
+    public ButtonWithCounterView setNeutral() {
+        this.neutral = true;
+        setFilled(true);
+        setColor(Theme.getColor(Theme.key_buttonNeutral, resourcesProvider));
+        updateColors();
+        return this;
+    }
+
     public void setRoundRadius(int radiusDp) {
         this.radiusDp = radiusDp;
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
         } else {
             setBackground(null);
         }
@@ -75,7 +91,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         if (this.filled == filled) return;
         this.filled = filled;
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
             text.setTypeface(AndroidUtilities.bold());
         } else {
             setBackground(null);
@@ -96,11 +112,11 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            setBackground(Theme.createRoundRectDrawable(dp(8), backgroundColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
         }
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        paint.setColor(backgroundColor);
 
         text = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
         text.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -147,7 +163,8 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     public void setColor(int color) {
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), color));
+            customBackgroundColor = true;
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor = color));
         } else {
             text.setTextColor(color);
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, .10f), radiusDp, radiusDp));
@@ -160,14 +177,18 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     }
 
     public void updateColors() {
-        text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
+        if (!customBackgroundColor) {
+            backgroundColor = Theme.getColor(neutral ? Theme.key_buttonNeutral : Theme.key_featuredStickers_addButton, resourcesProvider);
+        }
+        text.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
         if (filled) {
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), radiusDp, radiusDp));
         } else {
             rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
         }
-        subText.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
-        countText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        subText.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
+        countText.setTextColor(backgroundColor);
+        paint.setColor(backgroundColor);
     }
 
     public void setCounterColor(int color) {
@@ -187,9 +208,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         countFilled = filled;
         countText.setTextSize(dp(countFilled ? 12 : 14));
         countText.setTextColor(
-                countFilled ?
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) :
-                text.getTextColor()
+            countFilled ?
+            backgroundColor :
+            text.getTextColor()
         );
     }
 
@@ -373,7 +394,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void withCounterIcon() {
         withCounterIcon = true;
         counterDrawable = ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_button).mutate();
-        counterDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        counterDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.SRC_IN));
     }
 
     public void setShowZero(boolean showZero) {
@@ -576,6 +597,14 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
                 canvas.restore();
             }
         }
+
+        if (useWrapContent) {
+            int wrapWidth = getWrapWidth();
+            if (lastWrapWidth != wrapWidth) {
+                lastWrapWidth = wrapWidth;
+                requestLayout();
+            }
+        }
     }
 
     @Override
@@ -606,9 +635,25 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         this.minWidth = px;
     }
 
+    private int lastWrapWidth;
+    private int getWrapWidth() {
+        float countAlpha = countAlphaAnimated.set(this.countAlpha);
+        float lightningWidth = withCounterIcon ? AndroidUtilities.dp(12) : 0;
+        float textWidth = text.getCurrentWidth();
+        float width = textWidth + lightningWidth + calculateCounterWidth((dp(5.66f + 5 + 5) + countText.getCurrentWidth()), countAlpha);
+
+        return getPaddingLeft() + (int) width + getPaddingRight();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (wrapWidth) {
+        if (useWrapContent) {
+            lastWrapWidth = getWrapWidth();
+            super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(lastWrapWidth, MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
+            if (rippleView != null) {
+                rippleView.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            }
+        } else if (wrapWidth) {
             super.onMeasure(MeasureSpec.makeMeasureSpec((int) Math.min(Math.max(getPaddingLeft() + text.getCurrentWidth() + getPaddingRight(), minWidth), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

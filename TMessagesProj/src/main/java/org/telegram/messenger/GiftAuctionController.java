@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import static org.telegram.ui.Stars.StarsController.findAttribute;
+
 import android.text.TextUtils;
 import android.util.LongSparseArray;
 
@@ -158,10 +160,9 @@ public class GiftAuctionController extends BaseController {
 
     private final LongSparseArray<Boolean> upgrades = new LongSparseArray<>();
 
-    private void requestAuctionUpgrades(long giftId, Utilities.Callback<ArrayList<TL_stars.StarGiftAttribute>> callback) {
-        TL_stars.getStarGiftUpgradeAttributes req = new TL_stars.getStarGiftUpgradeAttributes();
+    public void requestAuctionUpgrades(long giftId, Utilities.Callback<ArrayList<TL_stars.StarGiftAttribute>> callback) {
+        final TL_stars.getStarGiftUpgradeAttributes req = new TL_stars.getStarGiftUpgradeAttributes();
         req.gift_id = giftId;
-
         getConnectionsManager().sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
             if (res != null) {
                 callback.run(res.attributes);
@@ -169,6 +170,29 @@ public class GiftAuctionController extends BaseController {
                 callback.run(null);
             }
         });
+    }
+
+    public static ArrayList<TL_stars.StarGiftAttribute> filterAttributes(ArrayList<TL_stars.StarGiftAttribute> attrs, boolean crafting) {
+        final ArrayList<TL_stars.StarGiftAttribute> result = new ArrayList<TL_stars.StarGiftAttribute>();
+        for (TL_stars.StarGiftAttribute attr : attrs) {
+            final boolean remove;
+            if (attr.rarity instanceof TL_stars.TL_starGiftAttributeRarity) {
+                remove = crafting && attr instanceof TL_stars.starGiftAttributeModel;
+            } else {
+                remove = !crafting;
+            }
+            if (!remove)
+                result.add(attr);
+        }
+        return result;
+    }
+
+    public static boolean hasAllAttributes(ArrayList<TL_stars.StarGiftAttribute> attrs) {
+        return (
+            findAttribute(attrs, TL_stars.starGiftAttributeModel.class) != null &&
+            findAttribute(attrs, TL_stars.starGiftAttributePattern.class) != null &&
+            findAttribute(attrs, TL_stars.starGiftAttributeBackdrop.class) != null
+        );
     }
 
 

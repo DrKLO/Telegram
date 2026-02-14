@@ -66,6 +66,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.QRCodeBottomSheet;
+import org.telegram.ui.Components.SectionsScrollView;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -258,6 +259,8 @@ public class ProxySettingsActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
+//        linearLayout2 = new SectionsScrollView.SectionsLinearLayout(context);
+//        scrollView = new SectionsScrollView(context, linearLayout2, resourceProvider);
         scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
         AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));

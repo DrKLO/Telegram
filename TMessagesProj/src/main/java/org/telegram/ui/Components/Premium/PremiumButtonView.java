@@ -20,7 +20,9 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BadWayToMakeButtonRound;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CircularProgressDrawable;
@@ -29,6 +31,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Loadable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 public class PremiumButtonView extends FrameLayout implements Loadable {
@@ -115,6 +118,8 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
         linearLayout.addView(iconView, LayoutHelper.createLinear(24, 24, 0, Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
         addView(buttonLayout);
+        BadWayToMakeButtonRound.round(this);
+        ScaleStateListAnimator.apply(this, 0.02f, 1.2f);
 
         if (createOverlayTextView) {
             overlayTextView = new AnimatedTextView(context, true, true, true) {

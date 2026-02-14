@@ -1994,9 +1994,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     private boolean videoError;
 
-    private static final int MODE_LIVE = -1;
-    private static final int MODE_PHOTO = 0;
-    private static final int MODE_VIDEO = 1;
+    public static final int MODE_LIVE = -1;
+    public static final int MODE_PHOTO = 0;
+    public static final int MODE_VIDEO = 1;
+
     private int mode = MODE_PHOTO;
     private boolean takingPhoto = false;
     private boolean takingVideo = false;
@@ -4649,6 +4650,21 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
         });
         containerViewBackAnimator.start();
+    }
+
+    public StoryRecorder setMode(int mode) {
+        if (this.mode == mode)
+            return this;
+        this.mode = mode;
+        if (modeSwitcherView != null) {
+            modeSwitcherView.switchMode(mode);
+        }
+        showVideoTimer(mode == MODE_VIDEO, true);
+        if (collageListView != null) {
+            collageListView.setVisible(false, true);
+        }
+        updateActionBarButtons(false);
+        return this;
     }
 
     private void openThemeSheet() {

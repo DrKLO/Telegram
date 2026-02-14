@@ -173,7 +173,7 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
             static { setup(new Factory()); }
 
             @Override
-            public FeatureCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public FeatureCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new FeatureCell(context, 0, resourcesProvider);
             }
 

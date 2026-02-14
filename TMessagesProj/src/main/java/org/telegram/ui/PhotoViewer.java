@@ -7161,7 +7161,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoAvatarTooltip.setTextColor(0xff8c8c8c);
         containerView.addView(videoAvatarTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 8, 0, 0));
 
-        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.msg_input_send_mini, resourcesProvider) {
+        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.send_plane_24, resourcesProvider) {
             @Override
             public boolean isOpen() {
                 return true;
@@ -7183,7 +7183,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return getThemedColor(Theme.key_chat_editMediaButton);
             }
         };
-        pickerViewSendButton.setCircleSize(dp(48));
+        pickerViewSendButton.setCircleSize(dp(52), dp(38));
+        pickerViewSendButton.newCounterPos = true;
         containerView.addView(pickerViewSendButton, LayoutHelper.createFrame(120, 120, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 14, 2.33f));
         pickerViewSendButton.setContentDescription(getString("Send", R.string.Send));
         ScaleStateListAnimator.apply(pickerViewSendButton);
@@ -16708,8 +16709,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (pickerViewSendButton != null) {
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) pickerViewSendButton.getLayoutParams();
             if (type == 4 || type == 5) {
-                pickerViewSendButton.setResourceId(R.drawable.msg_input_send_mini);
-//                pickerViewSendButton.setImageResource(R.drawable.msg_input_send_mini);
+                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
+//                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
                 layoutParams2.bottomMargin = dp(7.33f);
             } else if (type == SELECT_TYPE_AVATAR || type == SELECT_TYPE_WALLPAPER || type == SELECT_TYPE_QR || type == SELECT_TYPE_STICKER) {
 //                pickerViewSendButton.setImageResource(R.drawable.floating_check);
@@ -16717,8 +16718,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 pickerViewSendButton.setPadding(0, dp(1), 0, 0);
                 layoutParams2.bottomMargin = dp(7.33f);
             } else {
-//                pickerViewSendButton.setImageResource(R.drawable.msg_input_send_mini);
-                pickerViewSendButton.setResourceId(R.drawable.msg_input_send_mini);
+//                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
+                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
                 layoutParams2.bottomMargin = dp(2.33f);
             }
             pickerViewSendButton.setLayoutParams(layoutParams2);

@@ -196,7 +196,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
                 buttonId == BUTTON_ATTACH ? 300 : 280
             );
 
-            int size = 58, iconSize = 48;
+            int size = 56, iconSize = 48;
             if (buttonId == BUTTON_ATTACH) {
                 size = 50;
                 iconSize = 32;

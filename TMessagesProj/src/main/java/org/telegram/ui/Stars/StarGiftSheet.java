@@ -5,16 +5,17 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.formatDuration;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.AndroidUtilities.randomOf;
+import static org.telegram.messenger.AndroidUtilities.replaceArrows;
 import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.messenger.MessagesController.findUpdates;
 import static org.telegram.ui.Stars.StarsController.findAttribute;
 import static org.telegram.ui.Stars.StarsController.findAttributes;
 import static org.telegram.ui.Stars.StarsController.showNoSupportDialog;
-import static org.telegram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
 import static org.telegram.ui.Stars.StarsIntroActivity.addAvailabilityRow;
 import static org.telegram.ui.Stars.StarsIntroActivity.replaceStars;
 import static org.telegram.ui.Stars.StarsIntroActivity.replaceStarsWithPlain;
@@ -23,6 +24,7 @@ import static org.telegram.ui.bots.AffiliateProgramFragment.percents;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
@@ -32,18 +34,24 @@ import android.graphics.BitmapShader;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.CornerPathEffect;
+import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.OvalShape;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
@@ -54,12 +62,17 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.view.ViewPropertyAnimator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -81,6 +94,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -124,6 +138,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CompatDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.HorizontalRoundTabsLayout;
 import org.telegram.ui.Components.ItemOptions;
@@ -131,6 +146,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingSpan;
+import org.telegram.ui.Components.PostsSearchContainer;
 import org.telegram.ui.Components.Premium.LimitPreviewView;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -143,6 +159,7 @@ import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TableView;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TextHelper;
+import org.telegram.ui.Components.ThanosEffect;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.DialogsActivity;
@@ -154,6 +171,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.StatisticActivity;
+import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -164,10 +182,15 @@ import org.telegram.ui.TwoStepVerificationSetupActivity;
 import org.telegram.ui.bots.AffiliateProgramFragment;
 import org.telegram.ui.bots.BotWebViewSheet;
 
+import java.lang.reflect.GenericArrayType;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 public class StarGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
@@ -209,6 +232,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     private final TextView wearSubtitle;
     private final AffiliateProgramFragment.FeatureCell[] wearFeatureCells;
 
+    private final LinearLayout craftLayout;
+    private final AffiliateProgramFragment.FeatureCell[] craftFeatureCells;
+
     private boolean myProfile;
     private TL_stars.SavedStarGift savedStarGift;
     private StarsController.IGiftsList giftsList;
@@ -247,6 +273,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         this.dialogId = dialogId;
         topPadding = Math.max(0.05f, (float) dp(82) / (AndroidUtilities.displaySize.y + AndroidUtilities.statusBarHeight));
 
+        occupyNavigationBar = true;
         containerView = new FrameLayout(context) {
             @Override
             public void setTranslationY(float translationY) {
@@ -413,15 +440,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         upgradeFeatureCells = new AffiliateProgramFragment.FeatureCell[3];
         upgradeFeatureCells[0] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.Gift2UpgradeFeature1Text));
+        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.GiftsFeature1Text));
         upgradeLayout.addView(upgradeFeatureCells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         upgradeFeatureCells[1] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), getString(R.string.Gift2UpgradeFeature2Text));
+        upgradeFeatureCells[1].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.GiftsFeature2Text));
         upgradeLayout.addView(upgradeFeatureCells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         upgradeFeatureCells[2] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.Gift2UpgradeFeature3Text));
+        upgradeFeatureCells[2].set(R.drawable.menu_wear, getString(R.string.GiftsFeature3Title), getString(R.string.GiftsFeature3Text));
         upgradeLayout.addView(upgradeFeatureCells[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         checkboxSeparator = new View(context);
@@ -446,43 +473,70 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         upgradeLayout.addView(checkboxLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 4));
         ScaleStateListAnimator.apply(checkboxLayout, 0.025f, 1.5f);
 
-        wearLayout = new LinearLayout(context);
-        wearLayout.setOrientation(LinearLayout.VERTICAL);
-        wearLayout.setPadding(dp(4) + backgroundPaddingLeft, dp(20), dp(4) + backgroundPaddingLeft, dp(12 + 48 + 6));
-        container.addView(wearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+        {
+            wearLayout = new LinearLayout(context);
+            wearLayout.setOrientation(LinearLayout.VERTICAL);
+            wearLayout.setPadding(dp(4) + backgroundPaddingLeft, dp(20), dp(4) + backgroundPaddingLeft, dp(12 + 48 + 6));
+            container.addView(wearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL_HORIZONTAL | Gravity.TOP));
 
-        wearTitle = new TextView(context);
-        wearTitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        wearTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        wearTitle.setGravity(Gravity.CENTER);
-        wearTitle.setTypeface(AndroidUtilities.bold());
-        wearLayout.addView(wearTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 20, 0, 20, 0));
+            wearTitle = new TextView(context);
+            wearTitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            wearTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            wearTitle.setGravity(Gravity.CENTER);
+            wearTitle.setTypeface(AndroidUtilities.bold());
+            wearLayout.addView(wearTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 20, 0, 20, 0));
 
-        wearSubtitle = new TextView(context);
-        wearSubtitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        wearSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        wearSubtitle.setGravity(Gravity.CENTER);
-        wearSubtitle.setText(LocaleController.getString(R.string.Gift2WearSubtitle));
-        wearLayout.addView(wearSubtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 20, 6, 20, 24));
+            wearSubtitle = new TextView(context);
+            wearSubtitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            wearSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            wearSubtitle.setGravity(Gravity.CENTER);
+            wearSubtitle.setText(LocaleController.getString(R.string.Gift2WearSubtitle));
+            wearLayout.addView(wearSubtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 20, 6, 20, 24));
 
-        wearFeatureCells = new AffiliateProgramFragment.FeatureCell[3];
-        wearFeatureCells[0] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        wearFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2WearFeature1Title), getString(R.string.Gift2WearFeature1Text));
-        wearLayout.addView(wearFeatureCells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            wearFeatureCells = new AffiliateProgramFragment.FeatureCell[3];
+            wearFeatureCells[0] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            wearFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2WearFeature1Title), getString(R.string.Gift2WearFeature1Text));
+            wearLayout.addView(wearFeatureCells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        wearFeatureCells[1] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        wearFeatureCells[1].set(R.drawable.menu_feature_cover, getString(R.string.Gift2WearFeature2Title), getString(R.string.Gift2WearFeature2Text));
-        wearLayout.addView(wearFeatureCells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            wearFeatureCells[1] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            wearFeatureCells[1].set(R.drawable.menu_feature_cover, getString(R.string.Gift2WearFeature2Title), getString(R.string.Gift2WearFeature2Text));
+            wearLayout.addView(wearFeatureCells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        wearFeatureCells[2] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
-        wearFeatureCells[2].set(R.drawable.menu_verification, getString(R.string.Gift2WearFeature3Title), getString(R.string.Gift2WearFeature3Text));
-        wearLayout.addView(wearFeatureCells[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            wearFeatureCells[2] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            wearFeatureCells[2].set(R.drawable.menu_verification, getString(R.string.Gift2WearFeature3Title), getString(R.string.Gift2WearFeature3Text));
+            wearLayout.addView(wearFeatureCells[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        {
+            craftLayout = new LinearLayout(context);
+            craftLayout.setOrientation(LinearLayout.VERTICAL);
+            craftLayout.setPadding(dp(4) + backgroundPaddingLeft, dp(10), dp(4) + backgroundPaddingLeft, dp(20 + 12 + 48 + 12));
+            container.addView(craftLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+
+            craftFeatureCells = new AffiliateProgramFragment.FeatureCell[3];
+            craftFeatureCells[0] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            craftFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.GiftCraftInfoFeature1Title), getString(R.string.GiftCraftInfoFeature1Text));
+            craftLayout.addView(craftFeatureCells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            craftFeatureCells[1] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            craftFeatureCells[1].set(R.drawable.menu_random, getString(R.string.GiftCraftInfoFeature2Title), getString(R.string.GiftCraftInfoFeature2Text));
+            craftLayout.addView(craftFeatureCells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            craftFeatureCells[2] = new AffiliateProgramFragment.FeatureCell(context, resourcesProvider);
+            craftFeatureCells[2].set(R.drawable.menu_feature_affect, getString(R.string.GiftCraftInfoFeature3Title), getString(R.string.GiftCraftInfoFeature3Text));
+            craftLayout.addView(craftFeatureCells[2], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
 
         infoLayout.setAlpha(1.0f);
         upgradeLayout.setAlpha(0.0f);
         wearLayout.setAlpha(0.0f);
+        craftLayout.setAlpha(0.0f);
 
-        topView = new TopView(context, resourcesProvider, this::onBackPressed, this::onMenuPressed, this::onTransferClick, this::onWearPressed, this::onSharePressed, this::onResellPressed, this::onUpdatePriceClick);
+        topView = new TopView(context, resourcesProvider, this::onBackPressed, this::onMenuPressed, v -> openCrafting(true), this::onTransferClick, this::onWearPressed, this::onSharePressed, this::onResellPressed, this::onUpdatePriceClick);
+        topView.craftTopView.helpButton.setOnClickListener(v -> {
+            if (v.getAlpha() < 1) return;
+            openCraftInfo();
+        });
         topView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
         container.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP));
         layoutManager.setReverseLayout(reverseLayout = true);
@@ -495,7 +549,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         buttonShadow.setAlpha(0.0f);
         buttonContainer.addView(buttonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
 
-        button = new ButtonWithCounterView(context, resourcesProvider);
+        button = new ButtonWithCounterView(context, resourcesProvider).setRound();
         button.setText(getString(R.string.OK), false);
         button.setSubText(null, false);
         final FrameLayout.LayoutParams buttonLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 0, 12, 0, 12);
@@ -667,7 +721,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 return;
             }
         }
-        StarGiftSheet sheet = new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider, container.getRootView());
+        StarGiftSheet sheet = new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider, container.getRootView()) {
+            @Override
+            public int getBottomInset() {
+                return StarGiftSheet.this.getBottomInset();
+            }
+        };
         if (gift instanceof TL_stars.SavedStarGift) {
             sheet.set((TL_stars.SavedStarGift) gift, giftsList);
         } else if (gift instanceof TL_stars.TL_starGiftUnique) {
@@ -778,6 +837,137 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         }
     }
 
+    private void openCrafting(boolean clear) {
+        int can_craft_at = 0;
+        if (messageObject != null) {
+            if (messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                can_craft_at = ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).can_craft_at;
+            }
+        } else if (savedStarGift != null) {
+            can_craft_at = savedStarGift.can_craft_at;
+        }
+        final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        if (can_craft_at > now) {
+            new AlertDialog.Builder(getContext(), resourcesProvider)
+                .setTitle(getString(R.string.GiftCraftLaterTitle))
+                .setMessage(formatString(R.string.GiftCraftLaterText, LocaleController.formatDateTime(can_craft_at, true)))
+                .setPositiveButton(getString(R.string.OK), null)
+                .show();
+            return;
+        }
+        final TL_stars.TL_starGiftUnique giftUnique = getUniqueGift();
+        if (clear) {
+            topView.craftTopView.setup(currentAccount, giftUnique.gift_id, giftUnique.getDocument(), giftUnique.title);
+            topView.craftTopView.selectGift(getUniqueGift());
+        }
+        topView.craftTopView.setOnCraft((gifts, whenDone, onError) -> {
+            if (giftsToCraft != null) {
+                giftsToCraft.detach();
+                giftsToCraft = null;
+            }
+//            if (true) {
+//                AndroidUtilities.runOnUIThread(() -> {
+//                    whenDone.run(null, null);
+//                }, 250);
+//                return;
+//            }
+            final TL_stars.craftStarGift req = new TL_stars.craftStarGift();
+            for (TL_stars.StarGift gift : gifts) {
+                final TL_stars.TL_inputSavedStarGiftSlug i = new TL_stars.TL_inputSavedStarGiftSlug();
+                i.slug = gift.slug;
+                req.stargift.add(i);
+            }
+            ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                if (res != null) {
+                    MessageObject messageObject = null;
+                    for (TLRPC.TL_updateNewMessage upd : findUpdates(res, TLRPC.TL_updateNewMessage.class)) {
+                        if (upd.message != null && upd.message.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                            messageObject = new MessageObject(currentAccount, upd.message, false, false);
+                            break;
+                        }
+                    }
+                    MessagesController.getInstance(currentAccount).processUpdates(res, false);
+                    final Runnable invalidateLists = () -> {
+                        StarsController.getInstance(currentAccount).invalidateBalance();
+                        StarsController.getInstance(currentAccount).invalidateProfileGifts(UserConfig.getInstance(currentAccount).getClientUserId());
+                    };
+                    if (messageObject != null) {
+                        final MessageObject finalMessageObject = messageObject;
+                        final TL_stars.StarGift gift = ((TLRPC.TL_messageActionStarGiftUnique) finalMessageObject.messageOwner.action).gift;
+                        whenDone.run(gift, messageObject != null ? () -> {
+                            set(finalMessageObject);
+                            switchPage(PAGE_INFO, true);
+
+                            if (fireworksOverlay != null) {
+                                fireworksOverlay.start(true);
+                            }
+
+                            invalidateLists.run();
+                        } : null);
+                    } else {
+                        whenDone.run(null, null);
+                        invalidateLists.run();
+                    }
+                } else if (err != null) {
+                    if ("STARGIFT_CRAFT_UNAVAILABLE".equalsIgnoreCase(err.text)) {
+                        new AlertDialog.Builder(getContext(), new DarkThemeResourceProvider())
+                            .setTitle(getString(R.string.GiftCraftUnavailableTitle))
+                            .setMessage(AndroidUtilities.replaceTags(getString(R.string.GiftCraftUnavailableText)))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
+                    } else if (err.text != null && err.text.startsWith("STARGIFT_CRAFT_TOO_EARLY_")) {
+                        final long until = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + Long.parseLong(err.text.substring("STARGIFT_CRAFT_TOO_EARLY_".length()));
+                        new AlertDialog.Builder(getContext(), new DarkThemeResourceProvider())
+                            .setTitle(getString(R.string.GiftCraftUnavailableTitle))
+                            .setMessage(AndroidUtilities.replaceTags(formatString(R.string.GiftCraftUnavailableTextTime, LocaleController.formatDateTime(until, true))))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
+                    } else {
+                        getBulletinFactory().showForError(err);
+                    }
+                    onError.run();
+                }
+            });
+        });
+        if (giftsToCraft == null) {
+            giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, giftUnique.gift_id);
+            giftsToCraft.attach();
+        }
+        topView.craftTopView.setOnAddGift(onGift -> {
+            if (giftsToCraft == null) {
+                giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, giftUnique.gift_id);
+                giftsToCraft.attach();
+            }
+            final HashSet<Long> ids = new HashSet<>();
+            for (int i = 0; i < topView.craftTopView.gifts.length; ++i) {
+                final CraftTopView.SelectGiftView giftView = topView.craftTopView.gifts[i];
+                if (giftView.getGift() != null) {
+                    ids.add(giftView.getGift().id);
+                }
+            }
+            new ResaleGiftsFragment.SelectGiftSheet(getContext(), giftUnique.title, giftsToCraft)
+                .without(ids)
+                .setActionText(AndroidUtilities.replaceTags(formatPluralString("GiftCraftSelect", 4 - ids.size())))
+                .setOnSelect(gift -> {
+                    onGift.run(gift);
+                })
+                .show();
+        });
+        topView.craftTopView.setOnClose(() -> {
+            onBackPressed();
+        });
+        switchPage(PAGE_CRAFTING, true);
+    }
+
+    private void openCraftInfo() {
+        button.setText(getString(R.string.GiftCraftInfoButton), true);
+        button.setSubText(null, true);
+        button.setOnClickListener(v2 -> openCrafting(false));
+        topView.setText(PAGE_CRAFT, getString(R.string.GiftCraftInfoTitle), getString(R.string.GiftCraftInfoText), null, null);
+        switchPage(PAGE_CRAFT, true);
+    }
+
+    private ResaleGiftsFragment.SelectGiftSheet.State giftsToCraft;
     private void onMenuPressed(View btn) {
         final String link = getLink();
         final TL_stars.TL_starGiftUnique giftUnique = getUniqueGift();
@@ -808,6 +998,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         .createSimpleBulletin(R.raw.ic_unpin, getString(R.string.Gift2Unpinned))
                         .show();
                 }
+            })
+            .addIf(canCraft(), R.drawable.outline_craft, getString(R.string.GiftCraft), () -> {
+                openCrafting(true);
             })
             .addIf(getUniqueGift() != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(getUniqueGift().owner_id)) && getUniqueGift().resell_amount != null, R.drawable.menu_edit_price, getString(R.string.Gift2ChangePrice), () -> {
                 onUpdatePriceClick(null);
@@ -1454,7 +1647,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             super.onLayout(changed, left, top, right, bottom);
             if (adapter != null) {
-                adapter.setHeights(topView.getFinalHeight(), getBottomView().getMeasuredHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0));
+                adapter.setHeights(
+                    topView.getFinalHeight(),
+                    getBottomHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0)
+                );
             }
             onSwitchedPage();
         }
@@ -1471,6 +1667,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             infoLayout.setTranslationY(top + topView.getRealHeight());
             upgradeLayout.setTranslationY(top + topView.getRealHeight());
             wearLayout.setTranslationY(top + topView.getRealHeight());
+            craftLayout.setTranslationY(top + topView.getRealHeight());
             if (topBulletinContainer != null) {
                 topBulletinContainer.setTranslationY(getTranslationY() - height() - AndroidUtilities.navigationBarHeight);
             }
@@ -1491,6 +1688,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             h += currentPage.at(PAGE_INFO) * infoLayout.getMeasuredHeight();
             h += currentPage.at(PAGE_UPGRADE) * upgradeLayout.getMeasuredHeight();
             h += currentPage.at(PAGE_WEAR) * wearLayout.getMeasuredHeight();
+            h += currentPage.at(PAGE_CRAFT) * craftLayout.getMeasuredHeight();
             return h;
         }
 
@@ -1511,6 +1709,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     break;
                 }
             }
+            top += getBottomInset() * currentPage.at(PAGE_CRAFTING);
             if (lastTop != null && currentPage != null && currentPage.progress < 1) {
                 return lerp(lastTop, top, currentPage.progress);
             }
@@ -1519,6 +1718,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            final int bottomInset = getBottomInset();
+            setPadding(0, 0, 0, bottomInset);
+            topView.craftTopView.setPadding(0, 0, 0, bottomInset);
             final int height = MeasureSpec.getSize(heightMeasureSpec);
             contentHeight = height;
             final int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -1527,14 +1729,17 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (child instanceof HintView2) {
                     child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(100), MeasureSpec.EXACTLY));
                 } else if (child == recyclerListView) {
-                    child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+                    child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height - bottomInset, MeasureSpec.EXACTLY));
                 } else {
                     child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(9999, MeasureSpec.AT_MOST));
                 }
             }
             setMeasuredDimension(width, height);
             if (adapter != null) {
-                adapter.setHeights(topView.getFinalHeight(), getBottomView().getMeasuredHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0));
+                adapter.setHeights(
+                    topView.getFinalHeight(),
+                    getBottomHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0)
+                );
             }
         }
     }
@@ -1728,19 +1933,21 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private final Theme.ResourcesProvider resourcesProvider;
         public final FrameLayout imageLayout;
         private final StickersRollView imagesRollView;
-        private final BackupImageView[] imageView = new BackupImageView[3];
+        private final BackupImageView[] imageView = new BackupImageView[5];
         private final TL_stars.starGiftAttributeModel[] imageViewAttributes = new TL_stars.starGiftAttributeModel[3];
         private int currentImageIndex = 0;
 
-        private final LinearLayout[] layout = new LinearLayout[3];
-        private final FrameLayout.LayoutParams[] layoutLayoutParams = new FrameLayout.LayoutParams[3];
+        private final LinearLayout[] layout = new LinearLayout[5];
+        private final FrameLayout.LayoutParams[] layoutLayoutParams = new FrameLayout.LayoutParams[5];
 
-        private final LinkSpanDrawable.LinksTextView[] titleView = new LinkSpanDrawable.LinksTextView[3];
+        private final GiftSheet.Ribbon ribbon;
+        private final LinkSpanDrawable.LinksTextView[] titleView = new LinkSpanDrawable.LinksTextView[5];
         private final LinkSpanDrawable.LinksTextView releasedView;
         private final TextView collectionReleasedView;
         private int collectionReleasedViewColor;
-        private final LinkSpanDrawable.LinksTextView[] subtitleView = new LinkSpanDrawable.LinksTextView[3];
-        private final LinearLayout.LayoutParams[] subtitleViewLayoutParams = new LinearLayout.LayoutParams[3];
+        private final FrameLayout subtitleContainer;
+        private final LinkSpanDrawable.LinksTextView[] subtitleView = new LinkSpanDrawable.LinksTextView[5];
+        private final LinearLayout.LayoutParams[] subtitleViewLayoutParams = new LinearLayout.LayoutParams[5];
         private final LinearLayout buttonsLayout;
         private int buttonsBackgroundColor;
         public final Button[] buttons;
@@ -1748,10 +1955,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private FrameLayout userLayout;
         private BackupImageView avatarView;
 
+        private CraftTopView craftTopView;
+
         private boolean hasResellPrice;
         private final TextView resellPriceView;
         private final ImageView closeView;
-        private final ImageView optionsView;
+        private final ImageView craftView;
+        public final ImageView optionsView;
 
         public static class Button extends FrameLayout {
 
@@ -1787,7 +1997,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private View.OnClickListener onShareClick;
         private View.OnClickListener onResellClick;
         private View.OnClickListener onUpdatePriceClick;
-        public TopView(Context context, Theme.ResourcesProvider resourcesProvider, Runnable dismiss, View.OnClickListener onMenuClick, View.OnClickListener onTransferClick, View.OnClickListener onWearClick, View.OnClickListener onShareClick, View.OnClickListener onResellClick, View.OnClickListener onUpdatePriceClick) {
+        public TopView(Context context, Theme.ResourcesProvider resourcesProvider, Runnable dismiss, OnClickListener onMenuClick, OnClickListener onCraftClick, OnClickListener onTransferClick, OnClickListener onWearClick, OnClickListener onShareClick, OnClickListener onResellClick, OnClickListener onUpdatePriceClick) {
             super(context);
             this.resourcesProvider = resourcesProvider;
             this.onShareClick = onShareClick;
@@ -1797,7 +2007,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             setWillNotDraw(false);
 
             imageLayout = new FrameLayout(context);
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < imageView.length; ++i) {
                 imageView[i] = new BackupImageView(context);
                 imageView[i].setLayerNum(4 | 6656);
                 if (i > 0) {
@@ -1829,6 +2039,18 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             collectionReleasedView.setLinkTextColor(0xFFFFFFFF);
             collectionReleasedView.setPadding(dp(7), 0, dp(7), 0);
 
+            resellPriceView = new TextView(context);
+            resellPriceView.setPadding(dp(8), 0, dp(8), 0);
+            resellPriceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            resellPriceView.setTextColor(0xFFFFFFFF);
+            resellPriceView.setTypeface(AndroidUtilities.bold());
+            resellPriceView.setAlpha(0.f);
+            resellPriceView.setScaleX(0.4f);
+            resellPriceView.setScaleY(0.4f);
+            resellPriceView.setVisibility(View.GONE);
+            resellPriceView.setGravity(Gravity.CENTER);
+            ScaleStateListAnimator.apply(resellPriceView);
+
             buttonsLayout = new LinearLayout(context);
             buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
             buttons = new Button[3];
@@ -1853,12 +2075,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 buttonsLayout.addView(buttons[i], LayoutHelper.createLinear(0, 56, 1, Gravity.FILL, 0, 0, i != buttons.length - 1 ? 11 : 0, 0));
             }
 
-            for (int i = 0; i < 3; ++i) {
+            subtitleContainer = new FrameLayout(context);
+            for (int i = 0; i < layout.length; ++i) {
                 layout[i] = new LinearLayout(context);
                 layout[i].setOrientation(LinearLayout.VERTICAL);
-                addView(layout[i], layoutLayoutParams[i] = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL, 16, i == 2 ? 32 : 8 + 160 + 2, 16, 0));
 
-                if (i == 2) {
+                if (i == PAGE_WEAR) {
                     userLayout = new FrameLayout(context);
                     layout[i].addView(userLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 144, Gravity.FILL));
 
@@ -1886,34 +2108,55 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     subtitleView[i].setEllipsize(TextUtils.TruncateAt.END);
                     userLayout.addView(subtitleView[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 122, 16, 0));
 
+                } else if (i == PAGE_CRAFTING) {
+                    craftTopView = new CraftTopView(context, resourcesProvider);
+                    layout[i].addView(craftTopView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    addView(layout[i], layoutLayoutParams[i] = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL, 0, 0, 0, 0));
+                    continue;
                 } else {
-
                     titleView[i] = new LinkSpanDrawable.LinksTextView(context);
-                    titleView[i].setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                    titleView[i].setTextColor(i == PAGE_CRAFT ? 0xFFFFFFFF : Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
                     titleView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                     titleView[i].setTypeface(AndroidUtilities.bold());
                     titleView[i].setGravity(Gravity.CENTER);
-                    layout[i].addView(titleView[i], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 0));
+                    layout[i].addView(titleView[i], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, i == PAGE_CRAFT ? 10 : 0, 24, 0));
 
                     if (i == 0) {
                         layout[i].addView(releasedView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 4, 0, 4));
                         layout[i].addView(collectionReleasedView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 19.33f, Gravity.CENTER, 0, 6, 0, 2));
                     }
 
-                    subtitleView[i] = new LinkSpanDrawable.LinksTextView(context);
-                    subtitleView[i].setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-                    subtitleView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    subtitleView[i].setGravity(Gravity.CENTER);
-                    subtitleView[i].setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-                    subtitleView[i].setLineSpacing(dp(2), 1f);
-                    subtitleView[i].setDisablePaddingsOffsetY(true);
-                    layout[i].addView(subtitleView[i], subtitleViewLayoutParams[i] = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 0));
-                    subtitleViewLayoutParams[i].topMargin = dp(i == 1 ? 7.33f : (backdrop[0] == null ? 9 : 5.66f));
+                    if (i == PAGE_INFO) {
+                        subtitleView[i] = new LinkSpanDrawable.LinksTextView(context);
+                        subtitleView[i].setTextColor(i == PAGE_CRAFT ? Theme.multAlpha(0xFFFFFFFF, .75f) : Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                        subtitleView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        subtitleView[i].setGravity(Gravity.CENTER);
+                        subtitleView[i].setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+                        subtitleView[i].setLineSpacing(dp(2), 1f);
+                        subtitleView[i].setDisablePaddingsOffsetY(true);
+
+                        subtitleContainer.addView(subtitleView[i], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                        subtitleContainer.addView(resellPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 20.33f, Gravity.CENTER));
+
+                        layout[i].addView(subtitleContainer, subtitleViewLayoutParams[i] = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, i == PAGE_CRAFT ? 6 : 0));
+                    } else {
+                        subtitleView[i] = new LinkSpanDrawable.LinksTextView(context);
+                        subtitleView[i].setTextColor(i == PAGE_CRAFT ? Theme.multAlpha(0xFFFFFFFF, .75f) : Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                        subtitleView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        subtitleView[i].setGravity(Gravity.CENTER);
+                        subtitleView[i].setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+                        subtitleView[i].setLineSpacing(dp(2), 1f);
+                        subtitleView[i].setDisablePaddingsOffsetY(true);
+                        layout[i].addView(subtitleView[i], subtitleViewLayoutParams[i] = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, i == PAGE_CRAFT ? 6 : 0));
+                    }
+                    subtitleViewLayoutParams[i].topMargin = dp(i == PAGE_CRAFT ? 6 : i == 1 ? 7.33f : (backdrop[0] == null ? 9 : 5.66f));
                 }
 
-                if (i == 0) {
+                if (i == PAGE_INFO) {
                     layout[i].addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 0, 15, 0, 0));
                 }
+
+                addView(layout[i], layoutLayoutParams[i] = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL, 16, i == 2 ? 32 : 8 + 160 + 2, 16, 0));
             }
             addView(imageLayout, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 8, 0, 0));
 
@@ -1927,17 +2170,18 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             addView(closeView, LayoutHelper.createFrame(28, 28, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
             closeView.setOnClickListener(v -> dismiss.run());
             closeView.setVisibility(View.GONE);
+//            addView(resellPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 24, Gravity.LEFT | Gravity.TOP, 12, 14, 0, 0));
 
-            resellPriceView = new TextView(context);
-            resellPriceView.setPadding(dp(9), 0, dp(9), 0);
-            resellPriceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            resellPriceView.setTextColor(0xFFFFFFFF);
-            resellPriceView.setTypeface(AndroidUtilities.bold());
-            resellPriceView.setAlpha(0.f);
-            resellPriceView.setVisibility(View.GONE);
-            resellPriceView.setGravity(Gravity.CENTER);
-            ScaleStateListAnimator.apply(resellPriceView);
-            addView(resellPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 24, Gravity.LEFT | Gravity.TOP, 12, 14, 0, 0));
+            craftView = new ImageView(context);
+            craftView.setImageResource(R.drawable.filled_forge);
+            craftView.setScaleType(ImageView.ScaleType.CENTER);
+            craftView.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_CIRCLE_20DP));
+            ScaleStateListAnimator.apply(craftView);
+            if (onCraftClick != null) {
+                addView(craftView, LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.RIGHT, 0, 5, 5 + 42, 0));
+                craftView.setOnClickListener(onCraftClick);
+            }
+            craftView.setVisibility(View.GONE);
 
             optionsView = new ImageView(context);
             optionsView.setImageResource(R.drawable.media_more);
@@ -1947,6 +2191,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             addView(optionsView, LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.RIGHT, 0, 5, 5, 0));
             optionsView.setOnClickListener(onMenuClick);
             optionsView.setVisibility(View.GONE);
+
+            ribbon = new GiftSheet.Ribbon(context);
+            ribbon.setText(getString(R.string.GiftCrafted), true);
+            ribbon.drawable.setParticles(true);
+            ribbon.drawable.setLeft(true);
+            ribbon.setScaleX(1.2f);
+            ribbon.setScaleY(1.2f);
+            addView(ribbon, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+            ribbon.setVisibility(View.GONE);
         }
 
         public void setText(int page, CharSequence title, CharSequence subtitle, CharSequence releasedSubtitle, CharSequence released) {
@@ -1955,15 +2208,27 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 collectionReleasedView.setText(releasedSubtitle);
                 collectionReleasedView.setVisibility(View.VISIBLE);
                 releasedView.setVisibility(View.GONE);
-                subtitleView[page].setVisibility(View.GONE);
+                if (page == PAGE_INFO) {
+                    subtitleContainer.setVisibility(View.GONE);
+                } else {
+                    subtitleView[page].setVisibility(View.GONE);
+                }
             } else if (page == 0 && !TextUtils.isEmpty(released)) {
                 releasedView.setText(released);
                 releasedView.setVisibility(View.VISIBLE);
                 collectionReleasedView.setVisibility(View.GONE);
-                subtitleView[page].setVisibility(View.GONE);
+                if (page == PAGE_INFO) {
+                    subtitleContainer.setVisibility(View.GONE);
+                } else {
+                    subtitleView[page].setVisibility(View.GONE);
+                }
             } else {
                 subtitleView[page].setText(subtitle);
-                subtitleView[page].setVisibility(TextUtils.isEmpty(subtitle) ? View.GONE : View.VISIBLE);
+                if (page == PAGE_INFO) {
+                    subtitleContainer.setVisibility(TextUtils.isEmpty(subtitle) ? View.GONE : View.VISIBLE);
+                } else {
+                    subtitleView[page].setVisibility(TextUtils.isEmpty(subtitle) ? View.GONE : View.VISIBLE);
+                }
                 releasedView.setVisibility(View.GONE);
                 collectionReleasedView.setVisibility(View.GONE);
             }
@@ -1983,7 +2248,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 resellPriceView.setAlpha(lerp(false, hasResellPrice, p.at(PAGE_INFO)));
                 resellPriceView.setScaleX(lerp(0.4f, hasResellPrice ? 1.0f : 0.4f, p.at(PAGE_INFO)));
                 resellPriceView.setScaleY(lerp(0.4f, hasResellPrice ? 1.0f : 0.4f, p.at(PAGE_INFO)));
-                resellPriceView.setVisibility(hasResellPrice && p.to == PAGE_INFO ? View.VISIBLE : View.GONE);
+                resellPriceView.setVisibility(hasResellPrice && p.to == PAGE_INFO ? View.VISIBLE : View.INVISIBLE);
             }
             final int black = Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider);
             for (int i = 0; i < 2; ++i) {
@@ -2007,11 +2272,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 subtitleViewLayoutParams[i].topMargin = dp(i == 1 ? 7.33f : (backdrop[0] == null ? 9 : 5.66f));
                 if (changed) {
                     layout[i].setLayoutParams(layoutLayoutParams[i]);
-                    subtitleView[i].setLayoutParams(subtitleViewLayoutParams[i]);
+                    if (i == PAGE_INFO) {
+                        subtitleContainer.setLayoutParams(subtitleViewLayoutParams[i]);
+                    } else {
+                        subtitleView[i].setLayoutParams(subtitleViewLayoutParams[i]);
+                    }
                 }
             }
             subtitleView[2].setTextColor(backdrop[0] == null ? black : backdrop[0].text_color | 0xFF000000);
-            imageView[0].setAlpha(currentPage.at(PAGE_INFO, PAGE_WEAR));
+            imageView[0].setAlpha(Math.max(currentPage.at(PAGE_INFO, PAGE_WEAR), currentPage.at(PAGE_CRAFT)));
             imageView[1].setAlpha(p.at(1) * (1.0f - toggleBackdrop));
             imageView[2].setAlpha(p.at(1) * toggleBackdrop);
             imageLayout.setScaleX(lerp(1.0f, wearImageScale, p.at(PAGE_WEAR)));
@@ -2019,6 +2288,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             imageLayout.setTranslationX(wearImageTx * p.at(PAGE_WEAR));
             imageLayout.setTranslationY(dp(16) * p.at(PAGE_UPGRADE) + wearImageTy * p.at(PAGE_WEAR));
             layout[2].setTranslationY(p.from != PAGE_WEAR || p.to != PAGE_WEAR ? -(layout[p.from == PAGE_WEAR ? p.to : p.from].getMeasuredHeight() - layout[2].getMeasuredHeight()) * (1.0f - p.at(PAGE_WEAR)) : 0);
+            ribbon.setVisibility(hasRibbon && currentPage.contains(PAGE_INFO) ? View.VISIBLE : View.GONE);
+            ribbon.setAlpha(currentPage.at(PAGE_INFO));
+            craftTopView.setVisibility(p.at(PAGE_CRAFTING) > 0 ? View.VISIBLE : View.GONE);
+            craftTopView.setAlpha(p.at(PAGE_CRAFTING));
             invalidate();
         }
 
@@ -2043,6 +2316,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private BagRandomizer<TL_stars.starGiftAttributePattern> patterns;
         private BagRandomizer<TL_stars.starGiftAttributeBackdrop> backdrops;
 
+        private boolean hasRibbon;
         private boolean hasLink;
         public void setGift(TL_stars.StarGift gift, boolean isOwner, boolean isHost, boolean worn, boolean hasLink, boolean rolling) {
             hasResellPrice = false;
@@ -2059,16 +2333,22 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (gift.resell_amount != null) {
                     hasResellPrice = true;
 
-                    AmountUtils.Amount price = gift.getResellAmount(gift.resale_ton_only ? AmountUtils.Currency.TON : AmountUtils.Currency.STARS);
-                    resellPriceView.setText(StarsIntroActivity.replaceStars(
+                    final AmountUtils.Amount price = gift.getResellAmount(gift.resale_ton_only ? AmountUtils.Currency.TON : AmountUtils.Currency.STARS);
+                    resellPriceView.setText(LocaleController.formatSpannable(R.string.GiftOnSale, StarsIntroActivity.replaceStars(
                         price.currency == AmountUtils.Currency.TON,
-                        "⭐️ " + StarsIntroActivity.formatStarsAmount(price.toTl(), 1, ','))
-                    );
+                        "⭐️ " + StarsIntroActivity.formatStarsAmount(price.toTl(), 1, ',')),
+                        0.9f
+                    ));
 
                     final int backgroundColor = ColorUtils.blendARGB(backdrop[0].edge_color | 0xFF000000, backdrop[0].pattern_color | 0xFF000000, .25f);
                     resellPriceView.setBackground(Theme.createRoundRectDrawable(dp(12), backgroundColor));
                     if (isMine(UserConfig.selectedAccount, DialogObject.getPeerDialogId(gift.owner_id))) {
-                        resellPriceView.setOnClickListener(onUpdatePriceClick);
+                        resellPriceView.setOnClickListener(view -> {
+                            if (resellPriceView.getVisibility() != View.VISIBLE) return;
+                            if (onUpdatePriceClick != null) {
+                                onUpdatePriceClick.onClick(view);
+                            }
+                        });
                         ScaleStateListAnimator.apply(resellPriceView);
                     } else {
                         resellPriceView.setOnClickListener(null);
@@ -2099,7 +2379,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     buttons[2].set(R.drawable.filled_share, getString(R.string.Gift2ActionShare), false);
                     buttons[2].setOnClickListener(onShareClick);
                 }
-
+                hasRibbon = gift.crafted;
+                ribbon.drawable.setBackdrop(backdrop[page], false, true);
             } else {
                 backdrop[page] = null;
                 setPattern(page, null, false);
@@ -2141,16 +2422,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         public void setResellPrice(AmountUtils.Amount price) {
             hasResellPrice = !price.isZero();
             if (hasResellPrice) {
-                resellPriceView.setText(StarsIntroActivity.replaceStars(
+                resellPriceView.setText(LocaleController.formatSpannable(R.string.GiftOnSale, StarsIntroActivity.replaceStars(
                     price.currency == AmountUtils.Currency.TON,
-                    "⭐️ " + StarsIntroActivity.formatStarsAmount(price.toTl(), 1, ','))
-                );
+                    "⭐️ " + StarsIntroActivity.formatStarsAmount(price.toTl(), 1, ','),
+                    0.9f
+                )));
 
                 final int backgroundColor = ColorUtils.blendARGB(backdrop[0].edge_color | 0xFF000000, backdrop[0].pattern_color | 0xFF000000, .25f);
                 resellPriceView.setBackground(Theme.createRoundRectDrawable(dp(12), backgroundColor));
                 resellPriceView.setVisibility(View.VISIBLE);
-                resellPriceView.setScaleX(0.4f);
-                resellPriceView.setScaleY(0.4f);
                 resellPriceViewInProgress = true;
                 resellPriceView.animate()
                     .scaleX(1.0f)
@@ -2165,6 +2445,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         }
                     })
                     .start();
+                subtitleView[PAGE_INFO]
+                    .animate()
+                    .alpha(0.0f)
+                    .setDuration(420)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .start();
             } else {
                 resellPriceView.animate()
                     .scaleX(0.4f)
@@ -2175,7 +2461,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     .setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            resellPriceView.setVisibility(View.GONE);
+                            resellPriceView.setVisibility(View.INVISIBLE);
                         }
                     })
                     .setListener(new AnimatorListenerAdapter() {
@@ -2184,6 +2470,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                             resellPriceViewInProgress = false;
                         }
                     })
+                    .start();
+                subtitleView[PAGE_INFO]
+                    .animate()
+                    .alpha(1.0f)
+                    .setDuration(420)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                     .start();
             }
             if (hasResellPrice) {
@@ -2482,7 +2774,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final float cx = getWidth() / 2.0f;
             final float cy = lerp(dp(8), dp(24), currentPage.at(PAGE_UPGRADE)) + dp(160 / 2);
 
-            final float infoBackdrop = currentPage.at(PAGE_INFO, PAGE_WEAR);
+            final float infoBackdrop = currentPage.at(PAGE_INFO, PAGE_WEAR, PAGE_CRAFT);
             if (infoBackdrop > 0 && backdrop[0] != null) {
                 if (profileBackgroundGradient == null || currentPage.at(PAGE_WEAR) < 1) {
                     backgroundPaint[0].setAlpha((int) (0xFF * infoBackdrop));
@@ -2519,11 +2811,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             if (infoBackdrop > 0 && backdrop[0] != null) {
                 final int centerPatternColor = patternColors[patternColors.length / 2];
-                if (currentPage.at(PAGE_INFO) > 0) {
+                final float pattern0Alpha = currentPage.at(PAGE_INFO, PAGE_CRAFT);
+                if (pattern0Alpha > 0) {
                     canvas.save();
                     canvas.translate(cx, cy);
                     pattern[0].setColor(centerPatternColor);
-                    StarGiftPatterns.drawPattern(canvas, pattern[0], getWidth(), height, currentPage.at(PAGE_INFO), 1.0f);
+                    StarGiftPatterns.drawPattern(canvas, pattern[0], getWidth(), height, pattern0Alpha, 1.0f);
                     canvas.restore();
                 }
                 if (currentPage.at(PAGE_WEAR) > 0) {
@@ -2650,7 +2943,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             float h = 0;
             h += (dp(backdrop[0] != null ? 24 : 10) + dp(160) + layout[0].getMeasuredHeight()) * currentPage.at(PAGE_INFO);
             h += (dp(backdrop[1] != null ? 24 : 10) + dp(160) + layout[1].getMeasuredHeight()) * currentPage.at(PAGE_UPGRADE);
-            h += (dp(64) + layout[2].getMeasuredHeight()) * currentPage.at(PAGE_WEAR);
+            h += (dp(64) + layout[PAGE_WEAR].getMeasuredHeight()) * currentPage.at(PAGE_WEAR);
+            h += (dp(backdrop[0] != null ? 24 : 10) + dp(160) + layout[PAGE_CRAFT].getMeasuredHeight()) * currentPage.at(PAGE_CRAFT);
+            h += (craftTopView.getMeasuredHeight() > 0 ? craftTopView.getMeasuredHeight() : dp(550)) * currentPage.at(PAGE_CRAFTING);
             return h;
         }
 
@@ -2663,6 +2958,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
             if (currentPage.to(PAGE_WEAR)) {
                 return dp(64) + layout[2].getMeasuredHeight();
+            }
+            if (currentPage.to(PAGE_CRAFT)) {
+                return dp(160) + layout[PAGE_CRAFT].getMeasuredHeight();
+            }
+            if (currentPage.to(PAGE_CRAFTING)) {
+                return (craftTopView.getMeasuredHeight() > 0 ? craftTopView.getMeasuredHeight() : dp(550));
             }
             return 0;
         }
@@ -2684,6 +2985,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     public static final int PAGE_INFO = 0;
     public static final int PAGE_UPGRADE = 1;
     public static final int PAGE_WEAR = 2;
+    public static final int PAGE_CRAFT = 3;
+    public static final int PAGE_CRAFTING = 4;
 
     private Float lastTop;
     private PageTransition currentPage = new PageTransition(PAGE_INFO, PAGE_INFO, 1.0f);
@@ -2705,7 +3008,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             lastTop = container.top();
         }
         currentPage = new PageTransition(currentPage == null ? PAGE_INFO : currentPage.to, page, 0.0f);
-        adapter.setHeights(topView.getFinalHeight(), getBottomView().getMeasuredHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0));
+        adapter.setHeights(topView.getFinalHeight(), getBottomHeight() + (currentPage.to(PAGE_UPGRADE) && underButtonContainer.getVisibility() == View.VISIBLE ? underButtonContainer.getMeasuredHeight() : 0));
         if (currentPage.to == PAGE_INFO && roller != null) {
             roller.stopPreload();
         }
@@ -2713,6 +3016,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             infoLayout.setVisibility(currentPage.contains(PAGE_INFO) ? View.VISIBLE : View.GONE);
             upgradeLayout.setVisibility(currentPage.contains(PAGE_UPGRADE) ? View.VISIBLE : View.GONE);
             wearLayout.setVisibility(currentPage.contains(PAGE_WEAR) ? View.VISIBLE : View.GONE);
+            craftLayout.setVisibility(currentPage.contains(PAGE_CRAFT) ? View.VISIBLE : View.GONE);
             switchingPagesAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
             switchingPagesAnimator.addUpdateListener(a -> {
                 currentPage.setProgress((float) a.getAnimatedValue());
@@ -2725,6 +3029,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     infoLayout.setVisibility(page == PAGE_INFO ? View.VISIBLE : View.GONE);
                     upgradeLayout.setVisibility(page == PAGE_UPGRADE ? View.VISIBLE : View.GONE);
                     wearLayout.setVisibility(page == PAGE_WEAR ? View.VISIBLE : View.GONE);
+                    craftLayout.setVisibility(page == PAGE_CRAFT ? View.VISIBLE : View.GONE);
                     updateUnderButtonContainer();
                     switchingPagesAnimator = null;
                     if (done != null) {
@@ -2742,6 +3047,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             infoLayout.setVisibility(page == PAGE_INFO ? View.VISIBLE : View.GONE);
             upgradeLayout.setVisibility(page == PAGE_UPGRADE ? View.VISIBLE : View.GONE);
             wearLayout.setVisibility(page == PAGE_WEAR ? View.VISIBLE : View.GONE);
+            craftLayout.setVisibility(page == PAGE_CRAFT ? View.VISIBLE : View.GONE);
             updateUnderButtonContainer();
             if (done != null) {
                 done.run();
@@ -2766,21 +3072,27 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         }
     }
 
-    private View getBottomView() {
-        if (currentPage.to(PAGE_UPGRADE)) return upgradeLayout;
-        if (currentPage.to(PAGE_WEAR)) return wearLayout;
-        return infoLayout;
+    private int getBottomHeight() {
+        if (currentPage.to(PAGE_UPGRADE)) return upgradeLayout.getMeasuredHeight();
+        if (currentPage.to(PAGE_WEAR)) return wearLayout.getMeasuredHeight();
+        if (currentPage.to(PAGE_CRAFT)) return craftLayout.getMeasuredHeight();
+        if (currentPage.to(PAGE_CRAFTING)) return 0;
+        return infoLayout.getMeasuredHeight();
     }
 
     private void onSwitchedPage() {
         infoLayout.setAlpha(currentPage.at(PAGE_INFO));
         upgradeLayout.setAlpha(currentPage.at(PAGE_UPGRADE));
         wearLayout.setAlpha(currentPage.at(PAGE_WEAR));
+        craftLayout.setAlpha(currentPage.at(PAGE_CRAFT));
+        buttonContainer.setAlpha(1.0f - currentPage.at(PAGE_CRAFTING));
         topView.onSwitchPage(currentPage);
+        topView.craftView.setVisibility(currentPage.is(PAGE_INFO) && showCraft() ? View.VISIBLE : View.GONE);
         final float actionAlpha = Utilities.clamp01(AndroidUtilities.ilerp(container.top() - actionView.getHeight(), 0, dp(32)));
         actionView.setAlpha(currentPage.at(PAGE_INFO) * actionAlpha);
         container.updateTranslations();
         container.invalidate();
+        buttonContainer.setVisibility(currentPage.is(PAGE_CRAFTING) ? View.GONE : View.VISIBLE);
         updateUnderButtonContainer();
     }
 
@@ -2834,7 +3146,34 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             name = getString(R.string.Gift2AttributeBackdrop);
         } else return;
 
-        tableView.addRow(name, attr.name, percents(attr.rarity_permille), null);
+        final Integer[] color = new Integer[1];
+        final CharSequence rarity = getRarityName(attr.rarity, color);
+        tableView.addRow(name, attr.name, rarity, null, color[0]);
+    }
+
+    public static CharSequence getRarityName(TL_stars.StarGiftAttributeRarity rarity) {
+        return getRarityName(rarity, null);
+    }
+    public static CharSequence getRarityName(TL_stars.StarGiftAttributeRarity rarity, Integer[] color) {
+        if (rarity instanceof TL_stars.TL_starGiftAttributeRarityUncommon) {
+            if (color != null) color[0] = 0xFF40A920;
+            return getString(R.string.GiftRarityUncommon);
+        } else if (rarity instanceof TL_stars.TL_starGiftAttributeRarityRare) {
+            if (color != null) color[0] = 0xFF11AABE;
+            return getString(R.string.GiftRarityRare);
+        } else if (rarity instanceof TL_stars.TL_starGiftAttributeRarityEpic) {
+            if (color != null) color[0] = 0xFF955CDB;
+            return getString(R.string.GiftRarityEpic);
+        } else if (rarity instanceof TL_stars.TL_starGiftAttributeRarityLegendary) {
+            if (color != null) color[0] = 0xFFBF7600;
+            return getString(R.string.GiftRarityLegendary);
+        } else if (rarity instanceof TL_stars.TL_starGiftAttributeRarity) {
+            final int permille = ((TL_stars.TL_starGiftAttributeRarity) rarity).permille;
+            if (permille <= 0)
+                return "<0.1%";
+            return percents(permille);
+        }
+        return "";
     }
 
     private void addAttributeRow(TL_stars.StarGiftAttribute attr) {
@@ -2871,8 +3210,32 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (index == 2) roller.modelText = textView;
             }
         } else {
+            final boolean[] loading = new boolean[1];
             final ButtonSpan.TextViewButtons[] textViewArr = new ButtonSpan.TextViewButtons[1];
-            final TableRow row = tableView.addRow(name, attr.name, percents(attr.rarity_permille), () -> showHint(LocaleController.formatString(R.string.Gift2RarityHint, percents(attr.rarity_permille)), textViewArr[0], false));
+            final TableRow row;
+            final Integer[] color = new Integer[1];
+            final CharSequence rarity = getRarityName(attr.rarity, color);
+            final Runnable onClick;
+            if (attr.rarity instanceof TL_stars.TL_starGiftAttributeRarity) {
+                onClick = () -> {
+                    if (loading[0]) {
+                        return;
+                    }
+                    loading[0] = true;
+                    final TL_stars.StarGift gift = getGift();
+                    GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(gift.gift_id, attrs -> {
+                        if (attrs != null) {
+                            new StarGiftPreviewSheet(getContext(), resourcesProvider, currentAccount, gift.title, attrs, false).show();
+                        } else {
+                            showHint(LocaleController.formatString(R.string.Gift2RarityHint, percents(attr.getRarityPermille())), textViewArr[0], false);
+                        }
+                        loading[0] = false;
+                    });
+                };
+            } else {
+                onClick = null;
+            }
+            row = tableView.addRow(name, attr.name, rarity, onClick, color[0]);
             textViewArr[0] = (ButtonSpan.TextViewButtons) ((TableView.TableRowContent) row.getChildAt(1)).getChildAt(0);
         }
     }
@@ -3313,7 +3676,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             public Sticker(View parentView, TL_stars.starGiftAttributeModel model) {
                 name = model.name;
-                rarity_permille = model.rarity_permille;
+                rarity_permille = model.getRarityPermille();
 
                 mine = true;
                 imageReceiver = new ImageReceiver(parentView);
@@ -3322,7 +3685,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             public Sticker(BackupImageView fromView, TL_stars.starGiftAttributeModel model) {
                 name = model.name;
-                rarity_permille = model.rarity_permille;
+                rarity_permille = model.getRarityPermille();
 
                 mine = false;
                 imageReceiver = fromView.getImageReceiver();
@@ -3348,7 +3711,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             public Symbol(TL_stars.starGiftAttributePattern pattern) {
                 name = pattern.name;
-                rarity_permille = pattern.rarity_permille;
+                rarity_permille = pattern.getRarityPermille();
 
                 attr = pattern;
             }
@@ -3365,7 +3728,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             public Background(TL_stars.starGiftAttributeBackdrop backdrop) {
                 this.name = backdrop.name;
-                this.rarity_permille = backdrop.rarity_permille;
+                this.rarity_permille = backdrop.getRarityPermille();
 
                 if (backdrop != null) {
                     backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -3704,7 +4067,17 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             roller = new Roller(topView);
         }
         topView.setGift(gift, isMineWithActions(currentAccount, owner_id), isMineWithActions(currentAccount, host_id), isWorn(currentAccount, getUniqueGift()), getLink() != null, rolling);
-        topView.setText(0, gift.title, gift.released_by == null ? LocaleController.formatPluralStringComma("Gift2CollectionNumber", gift.num) : null, releasedByUniqueText(gift.num, gift.released_by), null);
+
+        final TL_stars.starGiftAttributeModel modelAttribute = findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class);
+
+        final SpannableStringBuilder title = new SpannableStringBuilder();
+        title.append(gift.title);
+        title.append(" ");
+        int fromIndex = title.length();
+        title.append("#" + LocaleController.formatNumber(gift.num, ','));
+        title.setSpan(new RelativeSizeSpan(0.85f), fromIndex, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        title.setSpan(new EllipsizeSpanAnimator.TextAlphaSpan(0xBE), fromIndex, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        topView.setText(0, title, gift.released_by == null ? (modelAttribute != null ? modelAttribute.name : "") : null, releasedByUniqueText(gift.num, gift.released_by), null);
 
         ownerTextView = null;
         tableView.clear();
@@ -4368,6 +4741,45 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             return slugStarGift;
         }
         return null;
+    }
+
+    public boolean showCraft() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (gift == null || gift.owner_id == null) return false;
+        if (!isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) return false;
+        if (messageObject != null) {
+            if (messageObject.messageOwner == null) return false;
+            if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                return ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).can_craft_at > 0;
+            } else {
+                return false;
+            }
+        } else if (savedStarGift != null && savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
+            return savedStarGift.can_craft_at > 0;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean canCraft() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (gift == null || gift.owner_id == null) return false;
+        if (!isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) return false;
+        int can_craft_at;
+        if (messageObject != null) {
+            if (messageObject.messageOwner == null) return false;
+            if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+                can_craft_at = ((TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action).can_craft_at;
+            } else {
+                return false;
+            }
+        } else if (savedStarGift != null && savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
+            can_craft_at = savedStarGift.can_craft_at;
+        } else {
+            return false;
+        }
+        final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        return can_craft_at > 0 && now >= can_craft_at;
     }
 
     public StarGiftSheet set(MessageObject messageObject) {
@@ -5094,6 +5506,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public void dismiss() {
+        if (currentPage.is(PAGE_CRAFTING) && topView.craftTopView.crafting) {
+            return;
+        }
+        if (giftsToCraft != null) {
+            giftsToCraft.detach();
+            giftsToCraft = null;
+        }
         if (roller != null) {
             roller.detach();
         }
@@ -5130,9 +5549,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     progressDialog.dismiss();
                     BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                     if (lastFragment != null) {
-                        BulletinFactory.of(lastFragment)
-                            .createSimpleBulletin(R.raw.error, getString(R.string.UniqueGiftNotFound))
-                            .show();
+                        if (err != null && "STARGIFT_ALREADY_BURNED".equalsIgnoreCase(err.text)) {
+                            BulletinFactory.of(lastFragment)
+                                .createSimpleBulletin(R.raw.fire_on, getString(R.string.UniqueGiftNotFoundBurned))
+                                .show();
+                        } else {
+                            BulletinFactory.of(lastFragment)
+                                .createSimpleBulletin(R.raw.error, getString(R.string.UniqueGiftNotFound))
+                                .show();
+                        }
                     }
                 });
             });
@@ -5408,9 +5833,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             checkboxSeparator.setVisibility(View.VISIBLE);
         }
 
-        upgradeFeatureCells[0].set(R.drawable.menu_feature_unique,   getString(R.string.Gift2UpgradeFeature1Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature1Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature1Text));
-        upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature2Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature2Text));
-        upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature3Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature3Text));
+        if (prepaying) {
+            upgradeFeatureCells[0].set(R.drawable.menu_feature_unique,   getString(R.string.Gift2UpgradeFeature1Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature1Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature1Text));
+            upgradeFeatureCells[1].set(R.drawable.menu_feature_transfer, getString(R.string.Gift2UpgradeFeature2Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature2Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature2Text));
+            upgradeFeatureCells[2].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), prepaying ? formatString(R.string.Gift2PrepayUpgradeFeature3Text, DialogObject.getShortName(currentAccount, dialogId)) : getString(R.string.Gift2UpgradeFeature3Text));
+        } else {
+            upgradeFeatureCells[0].set(R.drawable.menu_feature_unique, getString(R.string.Gift2UpgradeFeature1Title), getString(R.string.GiftsFeature1Text));
+            upgradeFeatureCells[1].set(R.drawable.menu_feature_tradable, getString(R.string.Gift2UpgradeFeature3Title), getString(R.string.GiftsFeature2Text));
+            upgradeFeatureCells[2].set(R.drawable.menu_wear, getString(R.string.GiftsFeature3Title), getString(R.string.GiftsFeature3Text));
+        }
 
         AndroidUtilities.runOnUIThread(() -> {
             switchPage(PAGE_UPGRADE, true);
@@ -6197,6 +6628,18 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         lastFragment.showAsSheet(fragment, params);
     }
 
+    public static TL_stars.InputSavedStarGift getInputStarGift(long dialogId, TL_stars.SavedStarGift g) {
+        if (!TextUtils.isEmpty(g.gift.slug)) {
+            final TL_stars.TL_inputSavedStarGiftSlug inputSavedStarGiftSlug = new TL_stars.TL_inputSavedStarGiftSlug();
+            inputSavedStarGiftSlug.slug = g.gift.slug;
+            return inputSavedStarGiftSlug;
+        }
+        final TL_stars.TL_inputSavedStarGiftChat stargift = new TL_stars.TL_inputSavedStarGiftChat();
+        stargift.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(dialogId);
+        stargift.saved_id = g.saved_id;
+        return stargift;
+    }
+
     private TL_stars.InputSavedStarGift getInputStarGift() {
         if (dialogId < 0) {
             final TL_stars.TL_inputSavedStarGiftChat stargift = new TL_stars.TL_inputSavedStarGiftChat();
@@ -6446,7 +6889,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             if (form == null) return;
             final PaymentFormState initial = new PaymentFormState(currency, form);
 
-            new ResaleBuyTransferAlert(getContext(), resourcesProvider, gift, initial, currentAccount, to, getGiftName(), (state, progress) -> {
+            new ResaleBuyTransferAlert(getContext(), resourcesProvider, gift, initial, currentAccount, to, getGiftName(), false, (state, progress) -> {
                 progress.init();
                 StarsController.getInstance(currentAccount, state.currency).buyResellingGift(state.form, gift, to, (status, err) -> {
                     progress.end();
@@ -6463,6 +6906,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     @Override
     public void onBackPressed() {
+        if (currentPage.is(PAGE_CRAFTING) && topView != null && topView.craftTopView != null) {
+            if (topView.craftTopView.crafting) {
+                return;
+            }
+            if (topView.craftTopView.crafted) {
+                super.onBackPressed();
+                return;
+            }
+        }
         if (!onlyWearInfo && currentPage.to > 0 && !button.isLoading() && !isLearnMore) {
             if (messageObject != null) {
                 set(messageObject);
@@ -6475,6 +6927,30 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             return;
         }
         super.onBackPressed();
+    }
+
+    @Override
+    protected boolean canDismissWithSwipe() {
+        if (currentPage.is(PAGE_CRAFTING) && topView.craftTopView.crafting) {
+            return false;
+        }
+        return super.canDismissWithSwipe();
+    }
+
+    @Override
+    protected boolean canDismissWithTouchOutside() {
+        if (currentPage.is(PAGE_CRAFTING) && topView.craftTopView.crafting) {
+            return false;
+        }
+        return super.canDismissWithTouchOutside();
+    }
+
+    @Override
+    protected boolean canSwipeToBack(MotionEvent event) {
+        if (currentPage.is(PAGE_CRAFTING) && topView.craftTopView.crafting) {
+            return false;
+        }
+        return super.canSwipeToBack(event);
     }
 
     @Override
@@ -7136,6 +7612,16 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
             return Math.max(at(page1), at(page2));
         }
+        public float at(int page1, int page2, int page3) {
+            if (
+                contains(page1) && contains(page2) ||
+                contains(page2) && contains(page3) ||
+                contains(page3) && contains(page1)
+            ) {
+                return 1.0f;
+            }
+            return Math.max(at(page1), Math.max(at(page2), at(page3)));
+        }
 
         public boolean contains(int page) {
             return from == page || to == page;
@@ -7150,7 +7636,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.starUserGiftsLoaded) {
             StarsController.GiftsList notifiedList = (StarsController.GiftsList) args[1];
-            if (giftsList == notifiedList) {
+            if (giftsList == notifiedList && !(topView.craftTopView != null && topView.craftTopView.crafting)) {
                 updateViewPager();
             }
         }
@@ -7209,6 +7695,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             int currentAccount,
             long dialogId,
             String giftName,
+            boolean withTable,
             Utilities.Callback2<PaymentFormState, Browser.Progress> confirmed
         ) {
             this.context = context;
@@ -7282,6 +7769,18 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             textInfoView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             textInfoView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             topView.addView(textInfoView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 4, 24, 4));
+
+            if (withTable) {
+                final TableView tableView = new TableView(context, resourcesProvider);
+                addAttributeRow(tableView, findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class));
+                addAttributeRow(tableView, findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class));
+                addAttributeRow(tableView, findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class));
+                if (!TextUtils.isEmpty(gift.slug) && (gift.flags & 256) != 0) {
+                    final String roundedValue = BillingController.getInstance().formatCurrency(gift.value_amount, gift.value_currency, BillingController.getInstance().getCurrencyExp(gift.value_currency), true);
+                    tableView.addRow(getString(R.string.GiftValue2), "~" + roundedValue);
+                }
+                topView.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 23, 16, 23, 4));
+            }
 
             alertDialog = new AlertDialog.Builder(context, resourcesProvider)
                 .setView(frameView)
@@ -7680,6 +8179,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private final Paint bgPaint;
         private final Paint bgDarkerPaint;
         private StaticLayout layout;
+        private boolean fullRect;
+        private int px = dp(6), py = dp(2);
 
         public ActionView(Context context) {
             super(context);
@@ -7695,6 +8196,20 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             bgDarkerPaint.setPathEffect(new CornerPathEffect(dp(9.66f)));
 
             path = new LinkPath(true);
+        }
+
+        public void setFullRect(boolean b) {
+            this.fullRect = b;
+        }
+
+        public void setPadding(int x, int y) {
+            this.px = x;
+            this.py = y;
+        }
+
+        public void setRoundRadius(float r) {
+            bgPaint.setPathEffect(new CornerPathEffect(r));
+            bgDarkerPaint.setPathEffect(new CornerPathEffect(r));
         }
 
         private BitmapShader blurBitmapShader;
@@ -7781,7 +8296,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
                 if (selfId == fromId) {
                     set(AndroidUtilities.replaceTags(formatString(
-                        R.string.GiftSelfTopAction,
+                        action.craft || action.gift.crafted ? R.string.GiftSelfTopActionCrafted : R.string.GiftSelfTopAction,
                         LocaleController.formatDate(messageObject.messageOwner.date)
                     )));
                 } else {
@@ -7810,7 +8325,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             if (selfId == fromId) {
                 set(AndroidUtilities.replaceTags(formatString(
-                    R.string.GiftSelfTopAction,
+                    gift.gift.crafted ? R.string.GiftSelfTopActionCrafted : R.string.GiftSelfTopAction,
                     LocaleController.formatDate(gift.date)
                 )));
             } else {
@@ -7835,10 +8350,29 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final int width = fullWidth - dp(18);
             layout = new StaticLayout(text, paint, width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
             path.rewind();
-            path.setPadding(dp(6), dp(2));
-            path.setCurrentLayout(layout, 0, 0, 0);
-            layout.getSelectionPath(0, layout.getText().length(), path);
-            path.closeRects();
+            path.setPadding(px, py);
+            if (fullRect) {
+                path.setCurrentLayout(null, 0, 0, 0);
+                float top = Float.MIN_VALUE, bottom = Float.MAX_VALUE;
+                float left = layout.getWidth(), right = 0;
+                for (int i = 0; i < layout.getLineCount(); ++i) {
+                    left = Math.min(left, layout.getLineLeft(i));
+                    top = Math.min(top, layout.getLineTop(i));
+                    right = Math.max(right, layout.getLineRight(i));
+                    bottom = Math.max(bottom, layout.getLineBottom(i));
+                }
+                path.addRect(
+                    left,
+                    top,
+                    right,
+                    layout.getHeight(),
+                    Path.Direction.CW
+                );
+            } else {
+                path.setCurrentLayout(layout, 0, 0, 0);
+                layout.getSelectionPath(0, layout.getText().length(), path);
+                path.closeRects();
+            }
             invalidate();
         }
 
@@ -7864,7 +8398,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         view = view.getParent() instanceof View ? ((View) view.getParent()) : null;
                     }
                     blurInvertMatrix.invert(blurMatrix);
-                    blurMatrix.preTranslate(-dp(3), -dp(16));
+                    blurMatrix.preTranslate(-px / 2, -dp(16));
                     blurMatrix.preScale(12, 12);
                     blurBitmapShader.setLocalMatrix(blurMatrix);
                 }
@@ -7874,6 +8408,2214 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 layout.draw(canvas);
                 canvas.restore();
             }
+        }
+    }
+
+    public static class CraftTopView extends FrameLayout {
+
+        private final Theme.ResourcesProvider resourcesProvider;
+
+        private final SwitchGradientDrawable bg;
+        private final ImageView helpButton;
+        private final ImageView closeButton;
+        private final TextView titleView;
+
+        private final Face[] faces;
+        private final Face frontFace;
+        private final RaysView rays;
+        private final Cube3D cube;
+        private final SelectGiftView[] gifts;
+
+        private final SpoilersTextView textView;
+
+        private boolean attributesTwoLines;
+        private final LinearLayout attributesLayoutLine1;
+        private final LinearLayout attributesLayoutLine2;
+        private final AttributeView[] backdropAttributes;
+        private final AttributeView[] patternAttributes;
+
+        private final AnimatedEmojiSpan.TextViewEmojis variantsButton;
+
+        private final ButtonBackground buttonBackground;
+        private final LinearLayout button;
+        private final AnimatedTextView buttonTitle;
+        private final AnimatedTextView buttonSubtitle;
+
+        private final RLottieImageView craftingIconView;
+        private final TextView craftingTitleView;
+        private final TextView craftingSubtitleView;
+        private final TextView craftingChanceView;
+        private final TextView craftingFooterView;
+
+        private final TextView failedTitle;
+        private final TextView failedSubtitle;
+        private final LinearLayout failedGiftsLayout;
+        private GiftSheet.GiftCell[] failedGifts;
+
+        private final FrameLayout buttonsLayout;
+        private final FrameLayout precraftingLayout;
+        private final FrameLayout craftingLayout;
+        private final FrameLayout failedLayout;
+
+        private HintView2 currentHint;
+
+        private final int[] BACKGROUND_COLORS = new int[] {
+            0xFF1D3C4F, 0xFF0F192C,
+            0xFF53270A, 0xFF1F0B0B,
+            0xFF22535F, 0xFF0D1123
+        };
+        private final int[] COLORS = new int[] {
+            Theme.multAlpha(0xFFFFFFFF, 0.08f), Theme.multAlpha(0xFFFFFFFF, 0.08f),
+            0xFFFB8226, 0xFFC4432D,
+            0xFF31B74A, 0xFF3F8999
+        };
+
+        public CraftTopView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+
+            bg = new SwitchGradientDrawable(SwitchGradientDrawable.TYPE_RADIAL);
+            final Drawable bgIcon = context.getResources().getDrawable(R.drawable.filled_forge).mutate();
+            bgIcon.setColorFilter(new PorterDuffColorFilter(0xFF000000, PorterDuff.Mode.SRC_IN));
+            bg.setIcon(bgIcon);
+            setBackground(bg);
+
+            buttonsLayout = new FrameLayout(context);
+            addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+
+            helpButton = new ImageView(context);
+            helpButton.setImageResource(R.drawable.outline_question_mark);
+            helpButton.setBackground(new RoundRectStrokeDrawable(dp(24), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
+            buttonsLayout.addView(helpButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 14, 14, 14, 14));
+            helpButton.setOnClickListener(v -> {
+                if (buttonsLayout.getAlpha() < 1) return;
+                onClose.run();
+            });
+            ScaleStateListAnimator.apply(helpButton);
+
+            closeButton = new ImageView(context);
+            closeButton.setImageResource(R.drawable.msg_close);
+            closeButton.setBackground(new RoundRectStrokeDrawable(dp(24), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
+            buttonsLayout.addView(closeButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.RIGHT, 14, 14, 14, 14));
+            closeButton.setOnClickListener(v -> {
+                if (buttonsLayout.getAlpha() < 1) return;
+                onClose.run();
+            });
+            ScaleStateListAnimator.apply(closeButton);
+
+            titleView = new TextView(context);
+            titleView.setTypeface(AndroidUtilities.bold());
+            titleView.setGravity(Gravity.CENTER);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            titleView.setTextColor(0xFFFFFFFF);
+            titleView.setText(getString(R.string.GiftCraftTitle));
+            addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 20, 0, 0));
+
+            precraftingLayout = new FrameLayout(context);
+            addView(precraftingLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+            craftingLayout = new FrameLayout(context);
+            craftingLayout.setAlpha(0.0f);
+            addView(craftingLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+            failedLayout = new FrameLayout(context);
+            failedLayout.setAlpha(0.0f);
+            addView(failedLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+            textView = new SpoilersTextView(context);
+            textView.setGravity(Gravity.CENTER);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            textView.setTextColor(0xFFFFFFFF);
+            precraftingLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 244, 32, 18 + 48 + 18));
+
+            attributesLayoutLine1 = new LinearLayout(context);
+            final LayoutTransition lt1 = new LayoutTransition();
+            lt1.setDuration(LayoutTransition.APPEARING, 320);
+            lt1.setDuration(LayoutTransition.DISAPPEARING, 320);
+            lt1.setDuration(LayoutTransition.CHANGE_APPEARING, 320);
+            lt1.setDuration(LayoutTransition.CHANGE_DISAPPEARING, 320);
+            lt1.setDuration(LayoutTransition.CHANGING, 320);
+            lt1.setInterpolator(LayoutTransition.APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt1.setInterpolator(LayoutTransition.DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt1.setInterpolator(LayoutTransition.CHANGE_APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt1.setInterpolator(LayoutTransition.CHANGE_DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt1.setInterpolator(LayoutTransition.CHANGING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            attributesLayoutLine1.setLayoutTransition(lt1);
+            attributesLayoutLine1.setOrientation(LinearLayout.HORIZONTAL);
+            attributesLayoutLine1.setGravity(Gravity.CENTER);
+
+            attributesLayoutLine2 = new LinearLayout(context);
+            final LayoutTransition lt2 = new LayoutTransition();
+            lt2.setDuration(LayoutTransition.APPEARING, 320);
+            lt2.setDuration(LayoutTransition.DISAPPEARING, 320);
+            lt2.setDuration(LayoutTransition.CHANGE_APPEARING, 320);
+            lt2.setDuration(LayoutTransition.CHANGE_DISAPPEARING, 320);
+            lt2.setDuration(LayoutTransition.CHANGING, 320);
+            lt2.setInterpolator(LayoutTransition.APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt2.setInterpolator(LayoutTransition.DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt2.setInterpolator(LayoutTransition.CHANGE_APPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt2.setInterpolator(LayoutTransition.CHANGE_DISAPPEARING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            lt2.setInterpolator(LayoutTransition.CHANGING, CubicBezierInterpolator.EASE_OUT_QUINT);
+            attributesLayoutLine2.setLayoutTransition(lt2);
+            attributesLayoutLine2.setOrientation(LinearLayout.HORIZONTAL);
+            attributesLayoutLine2.setAlpha(0.0f);
+            attributesLayoutLine2.setGravity(Gravity.CENTER);
+
+            backdropAttributes = new AttributeView[4];
+            patternAttributes = new AttributeView[4];
+            for (int i = 0; i < 4; ++i) {
+                attributesLayoutLine1.addView(backdropAttributes[i] = new AttributeView(context), LayoutHelper.createLinear(48, 54, 0, 0, 0, 0));
+                backdropAttributes[i].setOnClickListener(v -> showHint((AttributeView) v));
+            }
+            for (int i = 0; i < 4; ++i) {
+                attributesLayoutLine1.addView(patternAttributes[i] = new AttributeView(context), LayoutHelper.createLinear(48, 54, 0, 0, 0, 0));
+                patternAttributes[i].setOnClickListener(v -> showHint((AttributeView) v));
+            }
+
+            gifts = new SelectGiftView[4];
+
+            faces = new Face[6];
+            for (int i = 0; i < 6; ++i) {
+                faces[i] = new Face(context, i == Cube3D.FACE_FRONT);
+            }
+            frontFace = faces[Cube3D.FACE_FRONT];
+
+            rays = new RaysView(context);
+            rays.setVisibility(View.GONE);
+            rays.setAlpha(0f);
+            addView(rays, LayoutHelper.createFrame(300, 300, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
+
+            cube = new Cube3D(context, faces);
+            addView(cube, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 300, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
+
+            variantsButton = new AnimatedEmojiSpan.TextViewEmojis(context);
+            variantsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            variantsButton.setTypeface(AndroidUtilities.bold());
+            variantsButton.setText(replaceArrows(getString(R.string.GiftCraftViewAllVariants), false, dp(1), dp(1)));
+            variantsButton.setPadding(dp(9), 0, dp(9), 0);
+            variantsButton.setGravity(Gravity.CENTER);
+            variantsButton.setTextColor(0xFFFFFFFF);
+            variantsButton.setAlpha(previewAttributes != null ? 1.0f : 0.25f);
+            variantsButton.setBackground(new RoundRectStrokeDrawable(dp(14), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
+            ScaleStateListAnimator.apply(variantsButton, .02f, 1.2f);
+            precraftingLayout.addView(variantsButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 27, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 424 - 12, 32, 18 + 48 + 18));
+            variantsButton.setOnClickListener(v -> {
+                if (variantsButton.getAlpha() < 1 || crafting || failed) return;
+                if (previewAttributes != null) {
+                    new StarGiftPreviewSheet(getContext(), resourcesProvider, currentAccount, collectionTitle, previewAttributes, true).show();
+                }
+            });
+            precraftingLayout.addView(attributesLayoutLine1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 54, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 352 - 12, 32, 18 + 48 + 18));
+            precraftingLayout.addView(attributesLayoutLine2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 54, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 32, 352 - 12 + 54, 32, 18 + 48 + 18));
+
+            button = new LinearLayout(context);
+            button.setOrientation(LinearLayout.VERTICAL);
+            button.setBackground(buttonBackground = new ButtonBackground());
+            buttonBackground.setColor(Theme.multAlpha(0xFFFFFFFF, 0.08f), Theme.multAlpha(0xFFFFFFFF, 0.08f));
+            ScaleStateListAnimator.apply(button, .02f, 1.2f);
+            addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 20, 0, 20, 18));
+            button.setOnClickListener(v -> {
+                if (getAlpha() < 1f) return;
+                if (crafting) return;
+                if (failed) {
+                    setup();
+                    return;
+                }
+                final ArrayList<TL_stars.StarGift> gifts = new ArrayList<>();
+                for (int i = 0; i < this.gifts.length; ++i) {
+                    if (this.gifts[i] != null && this.gifts[i].getGift() != null) {
+                        gifts.add(this.gifts[i].getGift());
+                    }
+                }
+                if (gifts.isEmpty() || onCraft == null) {
+                    AndroidUtilities.shakeViewSpring(button);
+                    return;
+                }
+                playAnimation();
+            });
+
+            buttonTitle = new AnimatedTextView(context);
+            buttonTitle.setTypeface(AndroidUtilities.bold());
+            buttonTitle.setGravity(Gravity.CENTER);
+            buttonTitle.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.75f));
+            buttonTitle.setText(getString(R.string.GiftCraftButton));
+            buttonTitle.setTextSize(dp(14));
+            button.addView(buttonTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.FILL_HORIZONTAL, 16, 7.33f, 16, 0));
+
+            buttonSubtitle = new AnimatedTextView(context);
+            buttonSubtitle.getDrawable().setHacks(true, true, false);
+            buttonSubtitle.setGravity(Gravity.CENTER);
+            buttonSubtitle.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.75f));
+            buttonSubtitle.setText(AndroidUtilities.replaceTags(formatString(R.string.GiftCraftSuccessChance, "0%")));
+            buttonSubtitle.setTextSize(dp(12));
+            button.addView(buttonSubtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 14, Gravity.TOP | Gravity.FILL_HORIZONTAL, 16, 2.66f, 16, 7.66f));
+
+            LinearLayout titleLayout = new LinearLayout(context);
+            titleLayout.setOrientation(LinearLayout.HORIZONTAL);
+            titleLayout.setGravity(Gravity.CENTER);
+
+            craftingIconView = new RLottieImageView(context);
+            craftingIconView.setAutoRepeat(true);
+            craftingIconView.setAnimation(R.raw.gift_crafting, 30, 30);
+            titleLayout.addView(craftingIconView, LayoutHelper.createLinear(30, 30, Gravity.CENTER, 0, 0, 4, 0));
+
+            craftingTitleView = new TextView(context);
+            craftingTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            craftingTitleView.setTextColor(0xFFFFFFFF);
+            craftingTitleView.setTypeface(AndroidUtilities.bold());
+            craftingTitleView.setGravity(Gravity.CENTER);
+            craftingTitleView.setText(getString(R.string.GiftCraftProgressTitle));
+            titleLayout.addView(craftingTitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 0));
+            craftingLayout.addView(titleLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 350, 0, 0));
+
+            craftingSubtitleView = new TextView(context);
+            craftingSubtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            craftingSubtitleView.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.50f));
+            craftingSubtitleView.setTypeface(AndroidUtilities.bold());
+            craftingSubtitleView.setGravity(Gravity.CENTER);
+            craftingLayout.addView(craftingSubtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 383, 0, 0));
+
+            craftingChanceView = new TextView(context);
+            craftingChanceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            craftingChanceView.setTextColor(0xFFFFFFFF);
+            craftingChanceView.setTypeface(AndroidUtilities.bold());
+            craftingChanceView.setGravity(Gravity.CENTER);
+            craftingChanceView.setPadding(dp(9), 0, dp(9), 0);
+            craftingChanceView.setBackground(new RoundRectStrokeDrawable(dp(14), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
+            craftingLayout.addView(craftingChanceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 27, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 50 + 24));
+
+            craftingFooterView = new TextView(context);
+            craftingFooterView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            craftingFooterView.setTextColor(Theme.multAlpha(0xFFFFFFFF, 0.50f));
+            craftingFooterView.setGravity(Gravity.CENTER);
+            craftingFooterView.setText(getString(R.string.GiftCraftProgressText));
+            craftingLayout.addView(craftingFooterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 42, 0, 42, 24));
+
+            failedTitle = new TextView(context);
+            failedTitle.setText(getString(R.string.GiftCraftFailedTitle));
+            failedTitle.setTextColor(0xFFF84A4A);
+            failedTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            failedTitle.setTypeface(AndroidUtilities.bold());
+            failedTitle.setGravity(Gravity.CENTER);
+            failedLayout.addView(failedTitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 32, 352, 32, 0));
+
+            failedSubtitle = new TextView(context);
+            failedSubtitle.setTextColor(0xFFFFBC9B);
+            failedSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            failedSubtitle.setGravity(Gravity.CENTER);
+            failedLayout.addView(failedSubtitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 32, 383, 32, 0));
+
+            failedGiftsLayout = new LinearLayout(context);
+            failedGiftsLayout.setOrientation(LinearLayout.HORIZONTAL);
+            failedLayout.addView(failedGiftsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 250, 0, 0));
+
+            failedGifts = null;
+
+            updateCounts();
+        }
+
+        public void showHint(AttributeView view) {
+            if (view.backdrop != null) {
+                showHint(view, AndroidUtilities.replaceTags(formatPluralString("GiftCraftBackdropChance", (int) Math.round(100 * view.progress), view.backdrop.name)));
+            } else if (view.pattern != null) {
+                showHint(view, AndroidUtilities.replaceTags(formatPluralString("GiftCraftSymbolChance", (int) Math.round(100 * view.progress), view.pattern.name)));
+            }
+        }
+
+        public void showHint(View view, CharSequence text) {
+            if (currentHint != null) {
+                currentHint.hide();
+                currentHint = null;
+            }
+
+            if (crafting || failed) return;
+
+            View parent = null;
+            if (view.getParent() instanceof View) {
+                parent = (View) view.getParent();
+            }
+
+            final float x = (parent != null ? parent.getX() : 0) + view.getX();
+            final float y = (parent != null ? parent.getY() : 0) + view.getY();
+
+            currentHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+            currentHint.setMultilineText(true);
+            currentHint.setText(text);
+            currentHint.setMaxWidthPx(HintView2.cutInFancyHalf(currentHint.getText(), currentHint.getTextPaint()));
+            currentHint.setTextAlign(Layout.Alignment.ALIGN_CENTER);
+            currentHint.setPadding(dp(2), 0, dp(2), 0);
+            addView(currentHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
+            currentHint.setTranslationY(y - dp(100));
+            currentHint.setJointPx(0, x + view.getWidth() / 2.0f - dp(2));
+            currentHint.show();
+        }
+
+        private int currentAccount;
+        private long giftId;
+        private TLRPC.Document document;
+        private String collectionTitle;
+        private ArrayList<TL_stars.StarGiftAttribute> previewAttributes;
+        public void setup() {
+            setup(currentAccount, giftId, document, collectionTitle);
+        }
+        public void setup(int currentAccount, long gift_id, TLRPC.Document document, String collection) {
+            this.currentAccount = currentAccount;
+            this.giftId = gift_id;
+            this.document = document;
+            this.collectionTitle = collection;
+            this.crafting = false;
+            this.failed = false;
+
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i] != null) {
+                    AndroidUtilities.removeFromParent(gifts[i]);
+                }
+            }
+            cube.reset();
+            setupGiftButtons();
+            updateCounts(false);
+
+            crafting = false;
+            precraftingLayout.animate().cancel();
+            precraftingLayout.setAlpha(1.0f);
+            button.animate().cancel();
+            button.setAlpha(1.0f);
+            craftingLayout.animate().cancel();
+            craftingLayout.setAlpha(0.0f);
+            failedLayout.animate().cancel();
+            failedLayout.setAlpha(0.0f);
+            buttonsLayout.animate().cancel();
+            buttonsLayout.setAlpha(1.0f);
+            variantsButton.setAlpha(attributesTwoLines ? 0.0f : previewAttributes != null ? 1.0f : 0.25f);
+            rays.setVisibility(View.GONE);
+            rays.setAlpha(0f);
+            buttonTitle.setText(getString(R.string.GiftCraftButton));
+            buttonTitle.setTranslationY(0);
+            buttonSubtitle.setAlpha(1.0f);
+
+            final long giftId = gift_id;
+            GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(gift_id, attrs -> {
+                if (giftId != gift_id) return;
+                previewAttributes = attrs;
+                variantsButton.animate()
+                    .alpha(attributesTwoLines ? 0.0f : previewAttributes != null ? 1.0f : 0.25f)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .setDuration(420)
+                    .start();
+
+                final ArrayList<TL_stars.starGiftAttributeModel> models = new ArrayList<>();
+                for (int i = 0; i < attrs.size(); ++i) {
+                    if (attrs.get(i) instanceof TL_stars.starGiftAttributeModel && !(attrs.get(i).rarity instanceof TL_stars.TL_starGiftAttributeRarity)) {
+                        models.add((TL_stars.starGiftAttributeModel) attrs.get(i));
+                        if (models.size() >= 3) break;
+                    }
+                }
+                final SpannableStringBuilder ssb = new SpannableStringBuilder();
+                for (TL_stars.starGiftAttributeModel model : models) {
+                    ssb.append("x");
+                    ssb.setSpan(new AnimatedEmojiSpan(model.document, variantsButton.getPaint().getFontMetricsInt()), ssb.length() - 1, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    ssb.append(" ");
+                }
+                if (ssb.length() > 0) {
+                    ssb.append(" ");
+                }
+                ssb.append(replaceArrows(getString(R.string.GiftCraftViewAllVariants), false, dp(1), dp(1)));
+                variantsButton.setText(ssb);
+            });
+        }
+
+        private void setupGiftButtons() {
+            addView(gifts[0] = new SelectGiftView(getContext()), LayoutHelper.createFrame(76, 76, Gravity.CENTER_HORIZONTAL | Gravity.TOP, -117, 74, 0, 0));
+            addView(gifts[1] = new SelectGiftView(getContext()), LayoutHelper.createFrame(76, 76, Gravity.CENTER_HORIZONTAL | Gravity.TOP, -117, 149, 0, 0));
+            addView(gifts[2] = new SelectGiftView(getContext()), LayoutHelper.createFrame(76, 76, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 117, 74, 0, 0));
+            addView(gifts[3] = new SelectGiftView(getContext()), LayoutHelper.createFrame(76, 76, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 117, 149, 0, 0));
+            for (int i = 0; i < gifts.length; ++i) {
+                ScaleStateListAnimator.apply(gifts[i]);
+                gifts[i].setClickable(true);
+                gifts[i].setOnClickListener(v -> {
+                    final SelectGiftView giftView = (SelectGiftView) v;
+                    if (giftView.getGift() != null) {
+                        giftView.setGift((TL_stars.StarGift) null, true);
+                        updateCounts();
+                    } else {
+                        onAddGift.run(gift -> {
+                            giftView.setGift(gift, true);
+                            updateCounts();
+                        });
+                    }
+                });
+            }
+        }
+
+        private Utilities.Callback3<ArrayList<TL_stars.StarGift>, Utilities.Callback2<TL_stars.StarGift, Runnable>, Runnable> onCraft;
+        private Utilities.Callback<Utilities.Callback<TL_stars.StarGift>> onAddGift;
+        private Runnable onClose;
+
+        public void setOnAddGift(Utilities.Callback<Utilities.Callback<TL_stars.StarGift>> onAddGift) {
+            this.onAddGift = onAddGift;
+        }
+
+        public void setOnCraft(Utilities.Callback3<ArrayList<TL_stars.StarGift>, Utilities.Callback2<TL_stars.StarGift, Runnable>, Runnable> onCraft) {
+            this.onCraft = onCraft;
+        }
+
+        public void setOnClose(Runnable onClose) {
+            this.onClose = onClose;
+        }
+
+        public boolean crafting;
+        public boolean crafted;
+        public boolean failed;
+        private TL_stars.StarGift craftedGift;
+        private Runnable openCraftedGift;
+        public void playAnimation() {
+            crafting = true;
+            failed = false;
+            openCraftedGift = null;
+            if (currentHint != null) {
+                currentHint.hide();
+                currentHint = null;
+            }
+
+            craftingSubtitleView.setText("");
+            craftingChanceView.setText(formatString(R.string.GiftCraftProgressSuccessChance, percents(getGiftsSuccessChance())));
+            for (int i = 0; i < this.gifts.length; ++i) {
+                if (this.gifts[i] != null) {
+                    this.gifts[i].setClickable(false);
+                    if (this.gifts[i].getGift() == null) {
+                        this.gifts[i].animate().alpha(0.0f).start();
+                    }
+                }
+            }
+            for (int i = 0; i < this.gifts.length; ++i) {
+                if (this.gifts[i] != null && this.gifts[i].getGift() != null) {
+                    final TL_stars.StarGift gift = this.gifts[i].getGift();
+                    craftingSubtitleView.setText(gift.title + " #" + LocaleController.formatNumber(gift.num, ','));
+                    break;
+                }
+            }
+
+            precraftingLayout.animate().alpha(0.0f).start();
+            button.animate().alpha(0.0f).start();
+            craftingLayout.animate().alpha(1.0f).start();
+            buttonsLayout.animate().alpha(0.25f).start();
+            craftingIconView.playAnimation();
+
+            final ArrayList<TL_stars.StarGift> gifts = new ArrayList<>();
+            for (int i = 0; i < this.gifts.length; ++i) {
+                if (this.gifts[i].getGift() != null) {
+                    gifts.add(this.gifts[i].getGift());
+                }
+            }
+            onCraft.run(gifts, (craftedGift, openCraftedGift) -> {
+                if (currentHint != null) {
+                    currentHint.hide();
+                    currentHint = null;
+                }
+                crafted = true;
+                failed = craftedGift == null;
+                this.craftedGift = craftedGift;
+                this.openCraftedGift = openCraftedGift;
+                int faceIndex = 0;
+                final Cube3D.AnimSequence animation = new Cube3D.AnimSequence(cube);
+                ArrayList<Integer> indices = new ArrayList<>();
+                for (int i = 0; i < this.gifts.length; ++i) {
+                    if (this.gifts[i] != null && this.gifts[i].getGift() != null)
+                        indices.add(i);
+                }
+                int endFace, endFaceRotation = 0;
+                int steerDuration = 80;
+                if (indices.size() == 1) {
+                    animation
+                        .put(this.gifts[indices.get(0)], Cube3D.FACE_FRONT, 32)
+                        .friction(false)
+                        .fling(26, -26)
+                        .delay(90)
+                        .friction(true)
+                        .delay(20);
+                    endFace = Cube3D.FACE_BACK;
+                    endFaceRotation = -90;
+                    steerDuration = 40;
+                } else {
+                    final int[] facesOrder = new int[] {
+                        Cube3D.FACE_FRONT,
+                        Cube3D.FACE_LEFT,
+                        Cube3D.FACE_DOWN,
+                        Cube3D.FACE_UP,
+                        Cube3D.FACE_BACK
+                    };
+                    if (this.gifts[0] != null && this.gifts[0].getGift() != null) {
+                        animation
+                            .put(this.gifts[0], facesOrder[faceIndex++], 32)
+                            .fling(25, -22);
+                    }
+                    if (this.gifts[1] != null && this.gifts[1].getGift() != null) {
+                        if (faceIndex > 0) animation.delay(42);
+                        animation
+                            .put(this.gifts[1], facesOrder[faceIndex++], 32)
+                            .fling(25, 31);
+                    }
+                    if (this.gifts[2] != null && this.gifts[2].getGift() != null) {
+                        if (faceIndex > 0) animation.delay(42);
+                        animation
+                            .put(this.gifts[2], facesOrder[faceIndex++], 32, 180)
+                            .fling(-36, -36);
+                    }
+                    if (this.gifts[3] != null && this.gifts[3].getGift() != null) {
+                        if (faceIndex > 0) animation.delay(42);
+                        animation
+                            .put(this.gifts[3], facesOrder[faceIndex++], 32)
+                            .fling(-31, 31);
+                    }
+                    animation.friction(false);
+                    animation.delay(40);
+                    animation.friction(true);
+                    animation.delay(40);
+
+                    endFace = facesOrder[faceIndex++];
+                    endFaceRotation = -90;
+                }
+                animation
+                    .run(() -> setupFinishFace(endFace, craftedGift))
+                    .steerTo(endFace, steerDuration, endFaceRotation)
+                    .start(() -> {
+                        crafting = false;
+                        if (craftedGift == null) {
+                            if (brokenGiftImage != null) {
+                                brokenGiftImage.playAnimation();
+                            }
+                            precraftingLayout.animate().alpha(0.0f).start();
+                            failedLayout.animate().alpha(1.0f).start();
+                            button.animate().alpha(1.0f).start();
+                            craftingLayout.animate().alpha(0.0f).start();
+                            buttonsLayout.animate().alpha(1.0f).start();
+
+                            failedSubtitle.setText(AndroidUtilities.replaceTags(formatPluralString("GiftCraftFailedText", gifts.size())));
+
+                            buttonTitle.setText(getString(R.string.GiftCraftButtonFailed));
+                            buttonTitle.setTranslationY(dp(6));
+                            buttonSubtitle.setAlpha(0.0f);
+
+                            if (failedGifts != null) {
+                                for (int i = 0; i < failedGifts.length; ++i) {
+                                    AndroidUtilities.removeFromParent(failedGifts[i]);
+                                }
+                                failedGifts = null;
+                            }
+
+                            failedGifts = new GiftSheet.GiftCell[gifts.size()];
+                            for (int i = 0; i < gifts.size(); ++i) {
+                                final TL_stars.StarGift gift = gifts.get(i);
+                                final GiftSheet.GiftCell cell = new GiftSheet.GiftCell(getContext(), currentAccount, resourcesProvider);
+
+                                cell.setStarsGift(gift, false, false, false, false, true);
+                                cell.chanceTextView.setVisibility(View.GONE);
+                                cell.setRibbonColor(0xFFD13A3A);
+                                cell.imageView.setLayoutParams(cell.imageViewLayoutParams = LayoutHelper.createFrame(42, 42, Gravity.CENTER));
+
+                                final boolean last = i + 1 >= gifts.size();
+                                failedGiftsLayout.addView(failedGifts[i] = cell, LayoutHelper.createLinear(74, 74, 0, Gravity.TOP | Gravity.LEFT, 0, 0, last ? 0 : 6, 0));
+                            }
+                        } else {
+                            AndroidUtilities.runOnUIThread(openCraftedGift);
+                        }
+                    });
+            }, () -> {
+                crafting = false;
+                openCraftedGift = null;
+                failed = false;
+
+                setup();
+            });
+        }
+
+        private RLottieImageView brokenGiftImage;
+        private void setupFinishFace(int face, TL_stars.StarGift gift) {
+            if (gift != null) {
+                final SelectGiftView giftView = new SelectGiftView(getContext());
+                giftView.setGift(gift, false);
+                giftView.setRotation(180);
+                cube.putView(face, giftView);
+
+                giftView.setScaleX(0.5f);
+                giftView.setScaleY(0.5f);
+                giftView.setAlpha(0.0f);
+                final ViewPropertyAnimator anim = giftView.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setDuration(520).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                anim.setUpdateListener(a -> {
+                    cube.invalidate();
+                });
+                anim.start();
+
+                cube.faces[face].setVisibility(View.GONE);
+
+                rays.setVisibility(View.VISIBLE);
+                rays.setAlpha(0f);
+                rays.animate().alpha(0.5f).setDuration(820).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
+            } else {
+                final FrameLayout view = new FrameLayout(getContext());
+
+                final RLottieImageView imageView = new RLottieImageView(getContext());
+                imageView.setAnimation(R.raw.gift_broken, 32, 32);
+                view.addView(imageView, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
+                imageView.setScaleX(0.5f);
+                imageView.setScaleY(0.5f);
+                imageView.setAlpha(0.0f);
+                imageView.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).start();
+                brokenGiftImage = imageView;
+
+                view.setBackground(new RoundRectStrokeDrawable(dp(12), Theme.multAlpha(0xFFFFFFFF, 0.075f)));
+                cube.faces[face].setVisibility(View.GONE);
+                view.setRotation(180);
+                cube.putView(face, view);
+
+                {
+                    final int i = 1;
+                    buttonBackground.setColor(COLORS[2 * i + 0], COLORS[2 * i + 1]);
+                    bg.setColors(BACKGROUND_COLORS[2 * i + 0], BACKGROUND_COLORS[2 * i + 1]);
+                    rays.setColor(COLORS[2 * i + 1], COLORS[2 * i + 0]);
+                }
+            }
+        }
+
+        private boolean hasMoreGiftsToFling() {
+            for (int i = 0; i < this.gifts.length; ++i) {
+                if (this.gifts[i] != null && this.gifts[i].getSavedGift() != null && this.gifts[i].getParent() == this) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void selectGift(TL_stars.StarGift gift) {
+            if (gift == null) return;
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i].getGift() == null) {
+                    gifts[i].setGift(gift, true);
+                    break;
+                }
+            }
+            updateCounts();
+        }
+
+        public void updateCounts() {
+            updateCounts(true);
+        }
+        private CharSequence plus;
+        public void updateCounts(boolean animated) {
+            final int count = getGiftsSelectedCount();
+            frontFace.setChance(getGiftsSuccessChance() / 10.0f, animated);
+            if (count <= 0) {
+                if (plus == null) {
+                    plus = new SpannableStringBuilder("+");
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_add_album);
+                    span.setScale(0.65f, 0.65f);
+                    ((SpannableStringBuilder) plus).setSpan(span, 0, plus.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                final SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.GiftCraftButtonEmpty));
+                AndroidUtilities.replaceMultipleCharSequence("+", ssb, plus);
+                buttonSubtitle.setText(ssb);
+            } else {
+                buttonSubtitle.setText(AndroidUtilities.replaceTags(formatString(R.string.GiftCraftSuccessChance, percents(getGiftsSuccessChance()))));
+            }
+
+            int i = count == 0 ? 0 : count < 4 ? 1 : 2;
+            buttonBackground.setColor(COLORS[2 * i + 0], COLORS[2 * i + 1]);
+            bg.setColors(BACKGROUND_COLORS[2 * i + 0], BACKGROUND_COLORS[2 * i + 1]);
+            rays.setColor(COLORS[2 * i + 1], COLORS[2 * i + 0]);
+
+            if (document != null) {
+                final TL_stars.StarGift firstGift = getFirstGift();
+                if (firstGift != null) {
+                    final SpannableString gift = new SpannableString("x");
+                    gift.setSpan(new AnimatedEmojiSpan(document, textView.getPaint().getFontMetricsInt()), 0, gift.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    textView.setText(TextUtils.concat(
+                        AndroidUtilities.replaceTags(getString(R.string.GiftCraftText1)), "\n",
+                        gift,
+                        " ",
+                        AndroidUtilities.replaceTags(formatString(R.string.GiftCraftText2, collectionTitle, LocaleController.formatNumber(firstGift.num, ',')))
+                    ));
+                } else {
+                    final SpannableString gift = new SpannableString("x");
+                    gift.setSpan(new AnimatedEmojiSpan(document, textView.getPaint().getFontMetricsInt()), 0, gift.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    textView.setText(TextUtils.concat(
+                        AndroidUtilities.replaceTags(getString(R.string.GiftCraftTextEmpty1)), "\n",
+                        gift,
+                        " ",
+                        AndroidUtilities.replaceTags(formatString(R.string.GiftCraftTextEmpty2, collectionTitle))
+                    ));
+                }
+            }
+
+            updateAttributeFreq();
+        }
+
+        private void removeFromParent(View child) {
+            if (child == null) return;
+            ViewParent p = child.getParent();
+            if (!(p instanceof ViewGroup)) return;
+            ViewGroup oldParent = (ViewGroup) p;
+
+            LayoutTransition lt = oldParent.getLayoutTransition();
+            boolean hadTransition = lt != null;
+
+            if (hadTransition) lt.disableTransitionType(LayoutTransition.DISAPPEARING);
+            oldParent.removeView(child);
+            if (hadTransition) lt.enableTransitionType(LayoutTransition.DISAPPEARING);
+
+            child.animate().cancel();
+            child.clearAnimation();
+            child.setTranslationX(0f);
+            child.setTranslationY(0f);
+            child.setTranslationZ(0f);
+            child.setAlpha(0f);
+            child.setScaleX(1f);
+            child.setScaleY(1f);
+            child.setRotation(0f);
+            child.setRotationX(0f);
+            child.setRotationY(0f);
+        }
+
+        private void updateAttributeFreq() {
+            final int[][] stargiftsCraftAttributesPermilles = MessagesController.getInstance(currentAccount).stargiftsCraftAttributesPermilles;
+            final HashMap<Integer, Integer> backdropFreq = new HashMap<>();
+            final HashMap<Long, Integer> patternFreq = new HashMap<>();
+            final ArrayList<AttributeView> attributes = new ArrayList<>();
+            int giftsCount = 0;
+            for (int j = 0; j < gifts.length; ++j) {
+                if (gifts[j] != null && gifts[j].getGift() != null) {
+                    giftsCount++;
+                    final TL_stars.StarGift gift = gifts[j].getGift();
+                    final TL_stars.starGiftAttributePattern pattern = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
+                    final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
+                    backdropFreq.put(backdrop.backdrop_id, backdropFreq.getOrDefault(backdrop.backdrop_id, 0) + 1);
+                    patternFreq.put(pattern.document.id, patternFreq.getOrDefault(pattern.document.id, 0) + 1);
+                }
+            }
+            if (backdropFreq.isEmpty()) {
+                int index = 0;
+                final AttributeView backdropAttr = backdropAttributes[index++];
+                backdropAttr.setBackdrop(null);
+                backdropAttr.setProgress(0, true);
+                attributes.add(backdropAttr);
+                for (int i = index; i < 4; ++i) {
+                    backdropAttributes[i].setVisibility(View.GONE);
+                }
+            } else {
+                int index = 0;
+                List<Map.Entry<Integer, Integer>> list = new ArrayList<>(backdropFreq.entrySet());
+                Collections.sort(list, Map.Entry.comparingByValue());
+                for (Map.Entry<Integer, Integer> entry : list) {
+                    final int backdrop_id = entry.getKey();
+                    final int freq = entry.getValue();
+                    TL_stars.starGiftAttributeBackdrop backdrop = null;
+                    for (int j = 0; j < gifts.length; ++j) {
+                        if (gifts[j] != null && gifts[j].getGift() != null) {
+                            final TL_stars.StarGift gift = gifts[j].getGift();
+                            final TL_stars.starGiftAttributeBackdrop b = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
+                            if (b.backdrop_id == backdrop_id) {
+                                backdrop = b;
+                                break;
+                            }
+                        }
+                    }
+                    if (backdrop != null) {
+                        final AttributeView backdropAttr = backdropAttributes[index++];
+                        backdropAttr.setBackdrop(backdrop);
+                        final int[] permilles = stargiftsCraftAttributesPermilles[Utilities.clamp(giftsCount - 1, stargiftsCraftAttributesPermilles.length - 1, 0)];
+                        final int permille = permilles[Utilities.clamp(freq - 1, permilles.length - 1, 0)];
+                        backdropAttr.setProgress(permille / 1000.0f, true);
+                        attributes.add(backdropAttr);
+                    }
+                }
+                for (int i = index; i < 4; ++i) {
+                    backdropAttributes[i].setVisibility(View.GONE);
+                }
+            }
+            if (patternFreq.isEmpty()) {
+                int index = 0;
+                final AttributeView patternAttr = patternAttributes[index++];
+                patternAttr.setIcon(null);
+                patternAttr.setProgress(0, true);
+                attributes.add(patternAttr);
+                for (int i = index; i < 4; ++i) {
+                    patternAttributes[i].setVisibility(View.GONE);
+                }
+            } else {
+                int index = 0;
+                List<Map.Entry<Long, Integer>> list = new ArrayList<>(patternFreq.entrySet());
+                Collections.sort(list, Map.Entry.comparingByValue());
+                for (Map.Entry<Long, Integer> entry : list) {
+                    final long pattern_id = entry.getKey();
+                    final int freq = entry.getValue();
+                    TL_stars.starGiftAttributePattern pattern = null;
+                    for (int j = 0; j < gifts.length; ++j) {
+                        if (gifts[j] != null && gifts[j].getGift() != null) {
+                            final TL_stars.StarGift gift = gifts[j].getGift();
+                            final TL_stars.starGiftAttributePattern p = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
+                            if (p != null && p.document.id == pattern_id) {
+                                pattern = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (pattern != null) {
+                        final AttributeView patternAttr = patternAttributes[index++];
+                        patternAttr.setIcon(pattern);
+                        final int[] permilles = stargiftsCraftAttributesPermilles[Utilities.clamp(giftsCount - 1, stargiftsCraftAttributesPermilles.length - 1, 0)];
+                        final int permille = permilles[Utilities.clamp(freq - 1, permilles.length - 1, 0)];
+                        patternAttr.setProgress(permille / 1000.0f, true);
+                        attributes.add(patternAttr);
+                    }
+                }
+                for (int i = index; i < 4; ++i) {
+                    patternAttributes[i].setVisibility(View.GONE);
+                }
+            }
+            attributesTwoLines = attributes.size() > 5;
+            for (int i = 0; i < attributes.size(); ++i) {
+                final AttributeView view = attributes.get(i);
+                final LinearLayout line = attributesTwoLines && i >= attributes.size() / 2.0f ? attributesLayoutLine2 : attributesLayoutLine1;
+                if (view.getParent() != line) {
+                    removeFromParent(view);
+                    line.addView(view, LayoutHelper.createLinear(48, 54, 0, 0, 0, 0));
+                }
+                view.setVisibility(View.VISIBLE);
+            }
+            attributesLayoutLine2.animate().alpha(attributesTwoLines ? 1.0f : 0.0f);
+            variantsButton.animate().alpha(attributesTwoLines ? 0.0f : previewAttributes != null ? 1.0f : 0.25f);
+        }
+
+        public int getGiftsSelectedCount() {
+            int count = 0;
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i] != null && gifts[i].getGift() != null) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        public int getGiftsSuccessChance() {
+            int chance = 0;
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i] != null && gifts[i].getGift() != null) {
+                    chance += gifts[i].getGift().craft_chance_permille;
+                }
+            }
+            return chance;
+        }
+
+        public TL_stars.StarGift getFirstGift() {
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i] != null && gifts[i].getGift() != null) {
+                    return gifts[i].getGift();
+                }
+            }
+            return null;
+        }
+
+        private final class SelectGiftView extends FrameLayout {
+
+            private final FrameLayout layout;
+            private final ImageView plus;
+            private final GiftSheet.CardBackground giftBackground;
+            private final FrameLayout giftLayout;
+            private final BackupImageView giftImage;
+
+            private final TextView chance;
+            private final FrameLayout closeLayout;
+            private final ImageView closeIcon;
+
+            public SelectGiftView(Context context) {
+                super(context);
+
+                layout = new FrameLayout(context);
+                addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 6, 6, 6, 6));
+
+                layout.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.multAlpha(0xFFBADFFF, .12f)));
+                layout.setForeground(new RoundRectStrokeDrawable(dp(18), 0));
+
+                plus = new ImageView(context);
+                plus.setImageResource(R.drawable.filled_add_album);
+                plus.setScaleX(1.25f);
+                plus.setScaleY(1.25f);
+                layout.addView(plus, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+
+                giftLayout = new FrameLayout(context);
+                giftLayout.setBackground(giftBackground = new GiftSheet.CardBackground(giftLayout, null, false));
+                giftBackground.setRoundRadius(dp(18));
+                giftBackground.setPadding(false);
+                layout.addView(giftLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+                giftLayout.setAlpha(0.0f);
+                giftLayout.setScaleX(0.6f);
+                giftLayout.setScaleY(0.6f);
+
+                giftImage = new BackupImageView(context);
+                giftLayout.addView(giftImage, LayoutHelper.createFrame(52, 52, Gravity.CENTER));
+
+                chance = new TextView(context);
+                chance.setPadding(dp(5), 0, dp(5), 0);
+                chance.setGravity(Gravity.CENTER);
+                chance.setTypeface(AndroidUtilities.bold());
+                chance.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
+                chance.setTextColor(0xFFFFFFFF);
+                chance.setAlpha(0.0f);
+                addView(chance, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 15.33f, Gravity.TOP | Gravity.LEFT, 2, 0, 2, 0));
+
+                closeLayout = new FrameLayout(context);
+                closeLayout.setAlpha(0.0f);
+                addView(closeLayout, LayoutHelper.createFrame(20, 20, Gravity.TOP | Gravity.RIGHT, 2, 0, 2, 0));
+
+                closeIcon = new ImageView(context);
+                closeIcon.setImageResource(R.drawable.msg_close);
+                closeIcon.setScaleType(ImageView.ScaleType.CENTER);
+                closeLayout.addView(closeIcon, LayoutHelper.createFrame(9, 9, Gravity.CENTER));
+
+                setGiftVisible(false, false);
+            }
+
+            public TL_stars.StarGift gift;
+            public TL_stars.SavedStarGift savedGift;
+            public TL_stars.SavedStarGift getSavedGift() {
+                return savedGift;
+            }
+            public TL_stars.StarGift getGift() {
+                if (gift != null) return gift;
+                if (savedGift != null) return savedGift.gift;
+                return null;
+            }
+
+            public void setGift(TL_stars.SavedStarGift gift, boolean animated) {
+                this.savedGift = gift;
+                if (gift != null) {
+                    final TL_stars.TL_starGiftUnique starGiftUnique = (TL_stars.TL_starGiftUnique) gift.gift;
+                    final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(starGiftUnique.attributes, TL_stars.starGiftAttributeBackdrop.class);
+                    final TL_stars.starGiftAttributePattern pattern = findAttribute(starGiftUnique.attributes, TL_stars.starGiftAttributePattern.class);
+                    final TL_stars.starGiftAttributeModel model = findAttribute(starGiftUnique.attributes, TL_stars.starGiftAttributeModel.class);
+                    giftBackground.setBackdrop(backdrop);
+                    giftBackground.setPattern(pattern);
+                    setGiftImage(giftImage.getImageReceiver(), model.document, 52);
+
+                    final int btnColor = Theme.adaptHSV(Theme.multAlpha(backdrop.edge_color | 0xFF000000, .88f), -0.05f, -.15f);
+                    chance.setText(percents(gift.gift.craft_chance_permille));
+                    chance.setBackground(new RoundRectStrokeDrawable(dp(10), btnColor));
+                    closeLayout.setBackground(new RoundRectStrokeDrawable(dp(10), btnColor));
+                }
+                setGiftVisible(gift != null, animated);
+            }
+
+            public void setGift(TL_stars.StarGift gift, boolean animated) {
+                this.gift = gift;
+                if (gift != null) {
+                    final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
+                    final TL_stars.starGiftAttributePattern pattern = findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class);
+                    final TL_stars.starGiftAttributeModel model = findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class);
+                    giftBackground.setBackdrop(backdrop);
+                    giftBackground.setPattern(pattern);
+                    setGiftImage(giftImage.getImageReceiver(), model.document, 52);
+
+                    final int btnColor = Theme.adaptHSV(Theme.multAlpha(backdrop.edge_color | 0xFF000000, .88f), -0.05f, -.15f);
+                    chance.setText(percents(gift.craft_chance_permille));
+                    chance.setBackground(new RoundRectStrokeDrawable(dp(10), btnColor));
+                    closeLayout.setBackground(new RoundRectStrokeDrawable(dp(10), btnColor));
+                }
+                setGiftVisible(gift != null, animated);
+            }
+
+            public void setHideButtons(float t) {
+                chance.setAlpha(1.0f - t);
+                closeLayout.setAlpha(1.0f - t);
+            }
+
+            public void setGiftVisible(boolean visible, boolean animated) {
+                giftLayout.animate().cancel();
+                chance.animate().cancel();
+                closeLayout.animate().cancel();
+                if (!animated) {
+                    giftLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+                    giftLayout.setScaleX(visible ? 1.0f : 0.6f);
+                    giftLayout.setScaleY(visible ? 1.0f : 0.6f);
+                    giftLayout.setAlpha(visible ? 1.0f : 0.0f);
+                    chance.setVisibility(visible ? View.VISIBLE : View.GONE);
+                    chance.setAlpha(visible ? 1.0f : 0.0f);
+                    closeLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+                    closeLayout.setAlpha(visible ? 1.0f : 0.0f);
+                } else {
+                    giftLayout.setVisibility(View.VISIBLE);
+                    giftLayout.animate()
+                        .scaleX(visible ? 1.0f : 0.6f)
+                        .scaleY(visible ? 1.0f : 0.6f)
+                        .alpha(visible ? 1.0f : 0.0f)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setDuration(420)
+                        .withEndAction(() -> { if (!visible) closeLayout.setVisibility(View.GONE); })
+                        .start();
+                    chance.setVisibility(View.VISIBLE);
+                    chance.animate()
+                        .alpha(visible ? 1.0f : 0.0f)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setDuration(420)
+                        .withEndAction(() -> { if (!visible) closeLayout.setVisibility(View.GONE); })
+                        .start();
+                    closeLayout.setVisibility(View.VISIBLE);
+                    closeLayout.animate()
+                        .alpha(visible ? 1.0f : 0.0f)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setDuration(420)
+                        .withEndAction(() -> { if (!visible) closeLayout.setVisibility(View.GONE); })
+                        .start();
+                }
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(
+                    MeasureSpec.makeMeasureSpec(dp(76), MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(dp(76), MeasureSpec.EXACTLY)
+                );
+            }
+        }
+
+        private static class Face extends FrameLayout {
+
+            private FrameLayout layout;
+            private BackupImageView image;
+            private AnimatedTextView counter;
+            private ProgressView progress;
+
+            public Face(Context context, boolean isFront) {
+                super(context);
+
+                layout = new FrameLayout(context);
+                layout.setBackground(new RoundRectStrokeDrawable(dp(24), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
+                addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 2, 2, 2, 2));
+
+                image = new BackupImageView(context);
+                image.setImageResource(R.drawable.large_forge);
+                image.setAlpha(isFront ? 1.0f : .45f);
+                layout.addView(image, LayoutHelper.createFrame(isFront ? 42 : 64, isFront ? 42 : 64, Gravity.CENTER));
+
+                if (isFront) {
+                    image.setTranslationX(dp(-4));
+
+                    progress = new ProgressView(context);
+                    progress.setRadius(dp(37));
+                    progress.setStrokeWidth(dpf2(4.66f));
+                    layout.addView(progress, LayoutHelper.createFrame(90, 90, Gravity.CENTER));
+
+                    counter = new AnimatedTextView(context);
+                    counter.getDrawable().setHacks(false, true, true);
+                    counter.setTypeface(AndroidUtilities.bold());
+                    counter.setTextColor(0xFFFFFFFF);
+                    counter.setTextSize(dp(14));
+                    counter.setGravity(Gravity.CENTER);
+                    counter.setText("0%");
+                    layout.addView(counter, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.TOP | Gravity.FILL_HORIZONTAL, 12, 80, 12, 0));
+                }
+            }
+
+            public void setChance(float percents, boolean animated) {
+                if (counter == null) return;
+                counter.setText(Math.round(percents) + "%", animated);
+                progress.setProgress(percents / 100.f, animated);
+            }
+        }
+        private static class ProgressView extends View {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final AnimatedFloat animatedProgress = new AnimatedFloat(this::invalidate, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final AnimatedFloat animatedProgressAlpha = new AnimatedFloat(this::invalidate, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private float progress;
+            private float radius;
+            public ProgressView(Context context) {
+                super(context);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeCap(Paint.Cap.ROUND);
+                paint.setStrokeJoin(Paint.Join.ROUND);
+            }
+            public void setProgress(float p, boolean animated) {
+                this.progress = p;
+                if (!animated) {
+                    animatedProgress.force(this.progress);
+                }
+                invalidate();
+            }
+            public void setRadius(float r) {
+                this.radius = r;
+            }
+            public void setStrokeWidth(float sw) {
+                paint.setStrokeWidth(sw);
+            }
+            @Override
+            protected void dispatchDraw(@NonNull Canvas canvas) {
+                final float progress = animatedProgress.set(this.progress);
+                final float alpha = animatedProgressAlpha.set(this.progress > 0);
+                final float cx = getWidth() / 2f, cy = getHeight() / 2f;
+                final float r = radius;
+
+                AndroidUtilities.rectTmp.set(cx - r, cy - r, cx + r, cy + r);
+                paint.setColor(Theme.multAlpha(0xFFFFFFFF, .25f));
+                canvas.drawArc(AndroidUtilities.rectTmp, 135, 270, false, paint);
+
+                if (alpha > 0) {
+                    paint.setColor(Theme.multAlpha(0xFFFFFFFF, alpha));
+                    canvas.drawArc(AndroidUtilities.rectTmp, 135, 270 * progress, false, paint);
+                }
+            }
+        }
+        private static class RaysView extends View {
+
+            private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            private RadialGradient[] gradient = new RadialGradient[2];
+            private Matrix gradientMatrix = new Matrix();
+            private AnimatedFloat swapGradient = new AnimatedFloat(1f, this, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private RadialGradient maskGradient = new RadialGradient(0, 0, 100, new int[] { 0, 0xFFFFFFFF, 0xFFFFFFFF, 0 }, new float[] { 0.15f, 0.35f, 0.65f, 0.88f }, Shader.TileMode.CLAMP);
+
+            private final Path path = new Path();
+
+            public RaysView(Context context) {
+                super(context);
+
+                maskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+            }
+
+            private int leftColor, rightColor;
+            public void setColor(int leftColor, int rightColor) {
+                if (this.leftColor == leftColor && this.rightColor == rightColor) return;
+                gradient[0] = gradient[1];
+                gradient[1] = new RadialGradient(0, 0, 100, new int [] {this.leftColor = leftColor, this.rightColor = rightColor}, new float[] {0, 1}, Shader.TileMode.CLAMP);
+                swapGradient.force(0);
+                invalidate();
+            }
+
+            @Override
+            protected void onDraw(@NonNull Canvas canvas) {
+                final float swapGradient = this.swapGradient.set(1f);
+                final float rotation = ((System.currentTimeMillis() % 15_000L) / 15_000.0f) * 360;
+                if (getAlpha() > 0) invalidate();
+
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setStrokeWidth(dp(2));
+
+                path.rewind();
+                final int raysCount = 6;
+                final float angleStep = 25;
+
+                final float cx = getWidth() / 2.0f;
+                final float cy = getHeight() / 2.0f;
+                final float r = Math.min(getWidth(), getHeight()) / 2.0f;
+
+                for (int i = 0; i < raysCount; ++i) {
+                    final float angleCenter = 360f / raysCount * i + angleStep / 2.0f + rotation;
+
+                    path.moveTo(cx, cy);
+                    path.lineTo(
+                        cx + (float) Math.cos((angleCenter - angleStep / 2.0f) / 180f * Math.PI) * r,
+                        cy + (float) Math.sin((angleCenter - angleStep / 2.0f) / 180f * Math.PI) * r
+                    );
+                    path.lineTo(
+                        cx + (float) Math.cos((angleCenter + angleStep / 2.0f) / 180f * Math.PI) * r,
+                        cy + (float) Math.sin((angleCenter + angleStep / 2.0f) / 180f * Math.PI) * r
+                    );
+                    path.lineTo(cx, cy);
+                }
+
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+
+                for (int i = 0; i < gradient.length; ++i) {
+                    if (gradient[i] == null) continue;
+                    final float alpha = (float) Math.pow(1.0f - Math.abs(i - swapGradient), 0.5);
+                    if (alpha <= 0) continue;
+
+                    gradientMatrix.reset();
+                    gradientMatrix.postScale(r / 100, r / 100);
+                    gradientMatrix.postTranslate(cx, cy);
+                    gradient[i].setLocalMatrix(gradientMatrix);
+                    fillPaint.setShader(gradient[i]);
+                    fillPaint.setAlpha((int) (0xFF * alpha * 0.3f));
+                    strokePaint.setShader(gradient[i]);
+                    strokePaint.setAlpha((int) (0xFF * alpha));
+
+                    canvas.drawPath(path, fillPaint);
+                    canvas.drawPath(path, strokePaint);
+                }
+
+                gradientMatrix.reset();
+                gradientMatrix.postScale(r / 100f, r / 100f);
+                gradientMatrix.postTranslate(cx, cy);
+                maskGradient.setLocalMatrix(gradientMatrix);
+                maskPaint.setShader(maskGradient);
+                canvas.drawRect(0, 0, getWidth(), getHeight(), maskPaint);
+                canvas.restore();
+            }
+        }
+        private static class Cube3D extends FrameLayout {
+            public static final int FACE_LEFT = 0;
+            public static final int FACE_RIGHT = 1;
+            public static final int FACE_DOWN = 2;
+            public static final int FACE_UP = 3;
+            public static final int FACE_BACK = 4;
+            public static final int FACE_FRONT = 5;
+
+            private View[] faces;
+            private final Matrix cameraMatrix = new Matrix();
+            private final float[] rotationMatrix = new float[16];
+            private float vx = 0, vy = 0;
+            private final float friction = 0.96f;
+            private boolean frictionEnabled = true;
+
+            private final float[][] faceNormals = {
+                    {-1, 0, 0, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
+                    {0, -1, 0, 0}, {0, 0, -1, 0}, {0, 0, 1, 0},
+            };
+            private final float[] transformedNormal = new float[4];
+            private final float[] faceDepths = new float[6];
+            private final Integer[] drawOrder = {0, 1, 2, 3, 4, 5};
+
+            private final HashSet<Integer> usedFaces = new HashSet<>();
+            private final HashMap<Integer, Integer> index2face = new HashMap<>();
+            private final HashMap<Integer, RectF> index2Position = new HashMap<>();
+
+            private final float[] faceRotations = new float[6];
+
+            private float pullingT;
+            private int pullingIndex = -1;
+            private ValueAnimator pulling;
+
+            private AnimSequence sequence;
+
+            public Cube3D(Context context, View[] faces) {
+                super(context);
+                setClipToOutline(false);
+                setClipToPadding(false);
+                android.opengl.Matrix.setIdentityM(rotationMatrix, 0);
+
+                this.faces = faces;
+                for (int i = 0; i < faces.length; ++i) {
+                    addView(faces[i], LayoutHelper.createFrame(108, 108, Gravity.CENTER));
+                }
+            }
+
+            public int putView(int face, View view) {
+                if (face == -1) face = FACE_FRONT;
+
+                AndroidUtilities.removeFromParent(view);
+                final int index = getChildCount();
+                addView(view, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
+
+                usedFaces.add(face);
+                index2face.put(index, face);
+
+                return face;
+            }
+
+            public static class AnimSequence {
+                private final Cube3D cube;
+                private final ArrayList<Cmd> commands = new ArrayList<>();
+                private int currentIndex = 0;
+                private Runnable onComplete;
+                private boolean cancelled = false;
+
+                private int framesRemaining;
+                private int totalFrames;
+                private float[] startMatrix = new float[16];
+                private float[] targetMatrix = new float[16];
+                private float startVx, startVy;
+
+                private boolean waitingForPull = false;
+
+                public AnimSequence(Cube3D cube) {
+                    this.cube = cube;
+                }
+
+                public AnimSequence run(Runnable r) {
+                    commands.add(new Cmd(CmdType.RUN, 0, 0, 0, -1, 0, null, r));
+                    return this;
+                }
+
+                public AnimSequence fling(float x, float y) {
+                    commands.add(new Cmd(CmdType.FLING, x, y, 0, -1, 0, null, null));
+                    return this;
+                }
+
+                public AnimSequence delay(int frames) {
+                    commands.add(new Cmd(CmdType.DELAY, 0, 0, frames, -1, 0, null, null));
+                    return this;
+                }
+
+                public AnimSequence steerTo(int face, int frames) {
+                    return steerTo(face, frames, 0);
+                }
+
+                public AnimSequence steerTo(int face, int frames, float rotation) {
+                    commands.add(new Cmd(CmdType.STEER, 0, 0, frames, face, rotation, null, null));
+                    return this;
+                }
+
+                public AnimSequence put(View view, int face, int frames) {
+                    return put(view, face, frames, 0);
+                }
+
+                public AnimSequence put(View view, int face, int frames, float rotation) {
+                    commands.add(new Cmd(CmdType.PUT, 0, 0, frames, face, rotation, view, null));
+                    return this;
+                }
+
+                public AnimSequence friction(boolean enable) {
+                    commands.add(new Cmd(CmdType.FRICTION, enable ? 1 : -1, 0, 0, -1, 0, null, null));
+                    return this;
+                }
+
+                public void start(Runnable onComplete) {
+                    this.onComplete = onComplete;
+                    this.cancelled = false;
+                    this.currentIndex = 0;
+                    this.waitingForPull = false;
+
+                    for (Cmd cmd : commands) {
+                        if (cmd.face >= 0 && cmd.face < 6 && cmd.rotation != 0) {
+                            cube.faceRotations[cmd.face] = cmd.rotation;
+                        }
+                    }
+
+                    cube.sequence = this;
+                    executeNext();
+                }
+
+                public void cancel() {
+                    cancelled = true;
+                    waitingForPull = false;
+                    cube.sequence = null;
+                }
+
+                void onPullComplete() {
+                    if (waitingForPull) {
+                        waitingForPull = false;
+                        executeNext();
+                    }
+                }
+
+                private void executeNext() {
+                    if (cancelled || currentIndex >= commands.size()) {
+                        cube.sequence = null;
+                        if (!cancelled && onComplete != null) {
+                            onComplete.run();
+                        }
+                        return;
+                    }
+
+                    Cmd cmd = commands.get(currentIndex);
+                    currentIndex++;
+
+                    switch (cmd.type) {
+                        case RUN:
+                            if (cmd.runnable != null) {
+                                cmd.runnable.run();
+                            }
+                            executeNext();
+                            break;
+
+                        case FLING:
+                            cube.fling(cmd.x, cmd.y);
+                            framesRemaining = 1;
+                            totalFrames = 1;
+                            break;
+
+                        case FRICTION:
+                            cube.frictionEnabled = cmd.x > 0;
+                            executeNext();
+                            break;
+
+                        case DELAY:
+                            framesRemaining = cmd.frames;
+                            totalFrames = cmd.frames;
+                            break;
+
+                        case STEER:
+                            System.arraycopy(cube.rotationMatrix, 0, startMatrix, 0, 16);
+                            targetMatrix = cube.createFaceMatrix(cmd.face, cmd.rotation);
+                            totalFrames = cmd.frames;
+                            framesRemaining = cmd.frames;
+                            startVx = cube.vx;
+                            startVy = cube.vy;
+                            break;
+
+                        case PUT:
+                            waitingForPull = true;
+                            cube.doPull(cmd.view, cmd.face, cmd.frames);
+                            break;
+                    }
+                }
+
+                void tick() {
+                    if (cancelled || currentIndex == 0) return;
+
+                    if (waitingForPull) {
+                        cube.applyPhysics();
+                        return;
+                    }
+
+                    Cmd cmd = commands.get(currentIndex - 1);
+
+                    switch (cmd.type) {
+                        case FLING:
+                        case DELAY:
+                            cube.applyPhysics();
+                            framesRemaining--;
+                            if (framesRemaining <= 0) {
+                                executeNext();
+                            }
+                            break;
+
+                        case STEER:
+                            float t = easeOutCubic(1f - (float) framesRemaining / totalFrames);
+
+                            float velDecay = 1f - t;
+                            if (Math.abs(startVx * velDecay) > 0.0001f || Math.abs(startVy * velDecay) > 0.0001f) {
+                                float[] delta = new float[16];
+                                cube.axisAngleToMatrix(1, 0, 0, startVx * velDecay * cube.friction, delta);
+                                cube.multiplyMatrix(delta, startMatrix, startMatrix);
+                                cube.axisAngleToMatrix(0, 1, 0, startVy * velDecay * cube.friction, delta);
+                                cube.multiplyMatrix(delta, startMatrix, startMatrix);
+                            }
+
+                            cube.lerpMatrix(startMatrix, targetMatrix, t, cube.rotationMatrix);
+
+                            framesRemaining--;
+                            if (framesRemaining <= 0) {
+                                System.arraycopy(targetMatrix, 0, cube.rotationMatrix, 0, 16);
+                                cube.vx = 0;
+                                cube.vy = 0;
+                                executeNext();
+                            }
+                            break;
+                    }
+                }
+
+                private float easeOutCubic(float t) {
+                    return 1f - (float) Math.pow(1 - t, 3);
+                }
+
+                private enum CmdType { RUN, FLING, DELAY, STEER, PUT, FRICTION }
+
+                private static class Cmd {
+                    final CmdType type;
+                    final float x, y;
+                    final int frames;
+                    final int face;
+                    final float rotation;
+                    final View view;
+                    final Runnable runnable;
+
+                    Cmd(CmdType type, float x, float y, int frames, int face, float rotation, View view, Runnable runnable) {
+                        this.type = type;
+                        this.x = x;
+                        this.y = y;
+                        this.frames = frames;
+                        this.face = face;
+                        this.rotation = rotation;
+                        this.view = view;
+                        this.runnable = runnable;
+                    }
+                }
+            }
+
+            public void fling(float forceX, float forceY) {
+                vx += forceY * 0.01f;
+                vy += forceX * 0.01f;
+            }
+
+            public void reset() {
+                if (sequence != null) {
+                    sequence.cancel();
+                    sequence = null;
+                }
+                if (pulling != null) {
+                    pulling.cancel();
+                    pulling = null;
+                }
+                pullingIndex = -1;
+                pullingT = 0;
+
+                usedFaces.clear();
+                index2face.clear();
+                index2Position.clear();
+
+                // Reset face rotations
+                for (int i = 0; i < 6; i++) {
+                    faceRotations[i] = 0;
+                }
+
+                removeAllViews();
+                for (int i = 0; i < faces.length; ++i) {
+                    faces[i].setAlpha(1.0f);
+                    faces[i].setVisibility(View.VISIBLE);
+                    addView(faces[i], LayoutHelper.createFrame(108, 108, Gravity.CENTER));
+                }
+
+                android.opengl.Matrix.setIdentityM(rotationMatrix, 0);
+                vx = vy = 0;
+                frictionEnabled = true;
+            }
+
+            public int getClosestFace() {
+                int closestFace = -1;
+                float closestFaceDepth = Float.NEGATIVE_INFINITY;
+                for (int i = 0; i < 6; i++) {
+                    if (usedFaces.contains(i)) continue;
+                    android.opengl.Matrix.multiplyMV(transformedNormal, 0, rotationMatrix, 0, faceNormals[i], 0);
+                    float depth = transformedNormal[2];
+                    if (depth > closestFaceDepth) {
+                        closestFace = i;
+                        closestFaceDepth = depth;
+                    }
+                }
+                return closestFace;
+            }
+
+            private void doPull(View view, int face, int durationFrames) {
+                if (pulling != null) {
+                    pulling.cancel();
+                    pulling = null;
+                }
+
+                RectF pos = new RectF();
+                pos.left = view.getX() - getX();
+                pos.top = view.getY() - getY();
+                pos.right = pos.left + view.getWidth();
+                pos.bottom = pos.top + view.getHeight();
+
+                AndroidUtilities.removeFromParent(view);
+                int index = getChildCount();
+                addView(view, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
+
+                usedFaces.add(face);
+                index2face.put(index, face);
+                index2Position.put(index, pos);
+
+                pullingIndex = index;
+                pullingT = 0.0f;
+
+                long durationMs = durationFrames * 16L;
+
+                pulling = ValueAnimator.ofFloat(0f, 1f);
+                pulling.addUpdateListener(a -> {
+                    pullingT = (float) a.getAnimatedValue();
+                    if (pullingT >= 0.8f && sequence != null && sequence.waitingForPull) {
+                        sequence.onPullComplete();
+                    }
+                    invalidate();
+                });
+                pulling.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        pullingT = 1.0f;
+                        pullingIndex = -1;
+                        if (sequence != null && sequence.waitingForPull) {
+                            sequence.onPullComplete();
+                        }
+                        pulling = null;
+                    }
+                });
+                pulling.setDuration(durationMs);
+                pulling.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                pulling.start();
+            }
+
+            public void pullFace(SelectGiftView view, float force, long delay, Runnable whenDone) {
+                if (pulling != null) {
+                    pulling.end();
+                    pulling = null;
+                }
+
+                RectF pos = new RectF();
+                pos.left = view.getX() - getX();
+                pos.top = view.getY() - getY();
+                pos.right = pos.left + view.getWidth();
+                pos.bottom = pos.top + view.getHeight();
+
+                float fx = pos.centerX() - (getWidth() / 2.0f);
+                float fy = pos.centerY() - (getHeight() / 2.0f);
+                float l = (float) Math.sqrt(fx * fx + fy * fy);
+                fx /= l; fy /= l;
+                fx *= force;
+                fy *= force;
+                final float flingX = -fx, flingY = fy;
+
+                AndroidUtilities.removeFromParent(view);
+                int index = getChildCount();
+                addView(view, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
+                int face = getClosestFace();
+                if (face == -1) face = FACE_FRONT;
+                usedFaces.add(face);
+                index2face.put(index, face);
+                index2Position.put(index, pos);
+
+                pullingIndex = index;
+                pullingT = 0.0f;
+
+                final boolean[] didDone = new boolean[1];
+                pulling = ValueAnimator.ofFloat(0f, 1f);
+                pulling.addUpdateListener(a -> {
+                    pullingT = (float) a.getAnimatedValue();
+                });
+                pulling.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        pullingT = 1.0f;
+                        pullingIndex = -1;
+                        fling(flingX, flingY);
+                        if (!didDone[0]) {
+                            didDone[0] = true;
+                            AndroidUtilities.runOnUIThread(whenDone, delay);
+                        }
+                    }
+                });
+                pulling.setDuration(520);
+                pulling.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                pulling.start();
+            }
+
+            private float[] createFaceMatrix(int face, float rotation) {
+                float[] m = new float[16];
+                android.opengl.Matrix.setIdentityM(m, 0);
+                if (rotation != 0) {
+                    android.opengl.Matrix.rotateM(m, 0, -rotation, 0, 0, 1);
+                }
+                switch (face) {
+                    case FACE_FRONT: break;
+                    case FACE_BACK: android.opengl.Matrix.rotateM(m, 0, 180, 0, 1, 0); break;
+                    case FACE_LEFT: android.opengl.Matrix.rotateM(m, 0, 90, 0, 1, 0); break;
+                    case FACE_RIGHT: android.opengl.Matrix.rotateM(m, 0, -90, 0, 1, 0); break;
+                    case FACE_UP: android.opengl.Matrix.rotateM(m, 0, -90, 1, 0, 0); break;
+                    case FACE_DOWN: android.opengl.Matrix.rotateM(m, 0, 90, 1, 0, 0); break;
+                }
+                return m;
+            }
+
+            private void axisAngleToMatrix(float ax, float ay, float az, float angle, float[] m) {
+                float c = (float) Math.cos(angle);
+                float s = (float) Math.sin(angle);
+                float t = 1 - c;
+
+                m[0] = t*ax*ax + c;      m[4] = t*ax*ay - s*az;  m[8]  = t*ax*az + s*ay;  m[12] = 0;
+                m[1] = t*ax*ay + s*az;   m[5] = t*ay*ay + c;     m[9]  = t*ay*az - s*ax;  m[13] = 0;
+                m[2] = t*ax*az - s*ay;   m[6] = t*ay*az + s*ax;  m[10] = t*az*az + c;     m[14] = 0;
+                m[3] = 0;                m[7] = 0;               m[11] = 0;               m[15] = 1;
+            }
+
+            private void multiplyMatrix(float[] a, float[] b, float[] result) {
+                float[] temp = new float[16];
+                android.opengl.Matrix.multiplyMM(temp, 0, a, 0, b, 0);
+                System.arraycopy(temp, 0, result, 0, 16);
+            }
+
+            private void lerpMatrix(float[] a, float[] b, float t, float[] out) {
+                for (int i = 0; i < 16; i++) {
+                    out[i] = a[i] + (b[i] - a[i]) * t;
+                }
+                orthonormalize(out);
+            }
+
+            private void orthonormalize(float[] m) {
+                float[] x = {m[0], m[1], m[2]};
+                float[] y = {m[4], m[5], m[6]};
+                float[] z = new float[3];
+
+                normalize(x);
+                cross(x, y, z);
+                normalize(z);
+                cross(z, x, y);
+
+                m[0] = x[0]; m[1] = x[1]; m[2] = x[2];
+                m[4] = y[0]; m[5] = y[1]; m[6] = y[2];
+                m[8] = z[0]; m[9] = z[1]; m[10] = z[2];
+            }
+
+            private void normalize(float[] v) {
+                float l = (float) Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+                if (l > 0) { v[0] /= l; v[1] /= l; v[2] /= l; }
+            }
+
+            private void cross(float[] a, float[] b, float[] out) {
+                out[0] = a[1]*b[2] - a[2]*b[1];
+                out[1] = a[2]*b[0] - a[0]*b[2];
+                out[2] = a[0]*b[1] - a[1]*b[0];
+            }
+
+            private void getFaceBasis(int face, float[] center, float[] right, float[] up) {
+                System.arraycopy(faceNormals[face], 0, center, 0, 4);
+                switch (face) {
+                    case FACE_FRONT:  right[0]= 1; right[1]= 0; right[2]= 0; up[0]= 0; up[1]=-1; up[2]= 0; break;
+                    case FACE_BACK:   right[0]=-1; right[1]= 0; right[2]= 0; up[0]= 0; up[1]=-1; up[2]= 0; break;
+                    case FACE_LEFT:   right[0]= 0; right[1]= 0; right[2]= 1; up[0]= 0; up[1]=-1; up[2]= 0; break;
+                    case FACE_RIGHT:  right[0]= 0; right[1]= 0; right[2]=-1; up[0]= 0; up[1]=-1; up[2]= 0; break;
+                    case FACE_UP:     right[0]= 1; right[1]= 0; right[2]= 0; up[0]= 0; up[1]= 0; up[2]=-1; break;
+                    case FACE_DOWN:   right[0]= 1; right[1]= 0; right[2]= 0; up[0]= 0; up[1]= 0; up[2]= 1; break;
+                }
+                right[3] = 0;
+                up[3] = 0;
+            }
+
+            private void applyPhysics() {
+                if (Math.abs(vx) > 0.0001f || Math.abs(vy) > 0.0001f) {
+                    float[] delta = new float[16];
+                    axisAngleToMatrix(1, 0, 0, vx, delta);
+                    multiplyMatrix(delta, rotationMatrix, rotationMatrix);
+                    axisAngleToMatrix(0, 1, 0, vy, delta);
+                    multiplyMatrix(delta, rotationMatrix, rotationMatrix);
+                    if (frictionEnabled) {
+                        vx *= friction;
+                        vy *= friction;
+                    }
+                }
+            }
+
+            private final Runnable updateRunnable = () -> update();
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                AndroidUtilities.runOnUIThread(updateRunnable, 16);
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                AndroidUtilities.cancelRunOnUIThread(updateRunnable);
+            }
+
+            private void update() {
+                boolean updated = false;
+
+                if (sequence != null) {
+                    sequence.tick();
+                    updated = true;
+                } else if (Math.abs(vx) > 0.0001f || Math.abs(vy) > 0.0001f) {
+                    applyPhysics();
+                    updated = true;
+                }
+
+                if (pulling != null) {
+                    updated = true;
+                }
+
+                if (updated) {
+                    for (int i = 0; i < 6; i++) {
+                        android.opengl.Matrix.multiplyMV(transformedNormal, 0, rotationMatrix, 0, faceNormals[i], 0);
+                        faceDepths[i] = transformedNormal[2];
+                    }
+                    Arrays.sort(drawOrder, (a, b) -> Float.compare(faceDepths[a], faceDepths[b]));
+                    invalidate();
+                }
+
+                if (isAttachedToWindow()) {
+                    AndroidUtilities.runOnUIThread(updateRunnable, 16);
+                }
+            }
+
+            @Override
+            protected int getChildDrawingOrder(int childCount, int drawingPosition) {
+                if (drawingPosition < 6 && drawingPosition < drawOrder.length) {
+                    return drawOrder[drawingPosition];
+                }
+                return drawingPosition;
+            }
+
+            @Override
+            protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+                boolean pulled = false;
+                boolean isPulling = false;
+                RectF position = null;
+                int faceIndex = indexOfChild(child);
+
+                if (faceIndex >= 6) {
+                    pulled = true;
+                    isPulling = pullingIndex == faceIndex;
+                    position = index2Position.get(faceIndex);
+                    Integer face = index2face.get(faceIndex);
+                    if (face != null) {
+                        faceIndex = face;
+                    }
+
+                    if (child instanceof SelectGiftView) {
+                        ((SelectGiftView) child).setHideButtons(isPulling ? pullingT : 1.0f);
+                        if (!isPulling || pullingT >= 1) {
+                            faces[faceIndex].setVisibility(View.GONE);
+                        }
+                    }
+                }
+
+                android.opengl.Matrix.multiplyMV(transformedNormal, 0, rotationMatrix, 0, faceNormals[faceIndex], 0);
+
+                if (transformedNormal[2] < 0.001f) {
+                    return false;
+                }
+                child.setAlpha(Math.min(1f, transformedNormal[2] / 0.3f));
+
+                float childHalfSize = child.getWidth() / 2f;
+                float pad = pulled && child instanceof SelectGiftView ? dp(-6) + (isPulling ? pullingT : 1.0f) * dp(2) : 0;
+                float halfSize = dp(108) / 2f;
+                float cx = getWidth() / 2f;
+                float cy = getHeight() / 2f;
+
+                float[] faceCenter = new float[4];
+                float[] faceRight = new float[4];
+                float[] faceUp = new float[4];
+
+                getFaceBasis(faceIndex, faceCenter, faceRight, faceUp);
+
+                float rotation = faceRotations[faceIndex];
+                if (rotation != 0) {
+                    float rad = (float) Math.toRadians(rotation);
+                    float cos = (float) Math.cos(rad);
+                    float sin = (float) Math.sin(rad);
+                    float newRightX = faceRight[0] * cos + faceUp[0] * sin;
+                    float newRightY = faceRight[1] * cos + faceUp[1] * sin;
+                    float newRightZ = faceRight[2] * cos + faceUp[2] * sin;
+                    float newUpX = -faceRight[0] * sin + faceUp[0] * cos;
+                    float newUpY = -faceRight[1] * sin + faceUp[1] * cos;
+                    float newUpZ = -faceRight[2] * sin + faceUp[2] * cos;
+                    faceRight[0] = newRightX; faceRight[1] = newRightY; faceRight[2] = newRightZ;
+                    faceUp[0] = newUpX; faceUp[1] = newUpY; faceUp[2] = newUpZ;
+                }
+
+                float[] tc = new float[4], tr = new float[4], tu = new float[4];
+                android.opengl.Matrix.multiplyMV(tc, 0, rotationMatrix, 0, faceCenter, 0);
+                android.opengl.Matrix.multiplyMV(tr, 0, rotationMatrix, 0, faceRight, 0);
+                android.opengl.Matrix.multiplyMV(tu, 0, rotationMatrix, 0, faceUp, 0);
+
+                float cameraDistance = 64f * halfSize;
+
+                float[][] corners3D = new float[4][3];
+                for (int i = 0; i < 4; i++) {
+                    float rx = (i == 1 || i == 2) ? 1 : -1;
+                    float uy = (i == 0 || i == 1) ? 1 : -1;
+                    corners3D[i][0] = (tc[0] + tr[0] * rx + tu[0] * uy) * halfSize;
+                    corners3D[i][1] = (tc[1] + tr[1] * rx + tu[1] * uy) * halfSize;
+                    corners3D[i][2] = (tc[2] + tr[2] * rx + tu[2] * uy) * halfSize;
+                }
+
+                float[] dst = new float[8];
+                for (int i = 0; i < 4; i++) {
+                    float z = corners3D[i][2];
+                    float scale = cameraDistance / (cameraDistance - z);
+                    dst[i * 2]     = cx + corners3D[i][0] * scale;
+                    dst[i * 2 + 1] = cy + corners3D[i][1] * scale;
+                }
+
+                float[] src = new float[] {
+                        cx - childHalfSize - pad, cy - childHalfSize - pad,
+                        cx + childHalfSize + pad, cy - childHalfSize - pad,
+                        cx + childHalfSize + pad, cy + childHalfSize + pad,
+                        cx - childHalfSize - pad, cy + childHalfSize + pad
+                };
+
+                if (isPulling && position != null) {
+                    AndroidUtilities.lerp(new float[] {
+                            position.left, position.top,
+                            position.right, position.top,
+                            position.right, position.bottom,
+                            position.left, position.bottom
+                    }, dst, pullingT, dst);
+                }
+
+                cameraMatrix.reset();
+                cameraMatrix.setPolyToPoly(src, 0, dst, 0, 4);
+
+                canvas.save();
+                canvas.concat(cameraMatrix);
+                boolean result = super.drawChild(canvas, child, drawingTime);
+                canvas.restore();
+
+                return result;
+            }
+        }
+        private static class AttributeView extends FrameLayout {
+
+            private final BackupImageView imageView;
+            private final ProgressView progressView;
+            private final AnimatedTextView textView;
+
+            public TL_stars.starGiftAttributeBackdrop backdrop;
+            public TL_stars.starGiftAttributePattern pattern;
+            public float progress;
+
+            public AttributeView(Context context) {
+                super(context);
+
+                imageView = new BackupImageView(context);
+                imageView.setRoundRadius(dp(13));
+                addView(imageView, LayoutHelper.createFrame(26, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 11.33f, 0, 0));
+
+                progressView = new ProgressView(context);
+                progressView.setRadius(dp(18));
+                progressView.setStrokeWidth(dp(3));
+                addView(progressView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0.66f, 0, 0));
+
+                textView = new AnimatedTextView(context);
+                textView.setTypeface(AndroidUtilities.bold());
+                textView.setGravity(Gravity.CENTER);
+                textView.setTextSize(dp(12));
+                textView.setTextColor(0xFFFFFFFF);
+                addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 14, Gravity.TOP, 0, 39, 0, 0));
+
+                setProgress(0, false);
+
+                ScaleStateListAnimator.apply(this);
+            }
+
+            public void setBackdrop(TL_stars.starGiftAttributeBackdrop backdrop) {
+                this.backdrop = backdrop;
+                this.pattern = null;
+
+                imageView.setScaleX(1.0f);
+                imageView.setScaleY(1.0f);
+                if (backdrop != null) {
+                    imageView.setAlpha(1f);
+                    final OvalShape ovalShape = new OvalShape();
+                    ovalShape.resize(dp(26), dp(26));
+                    final ShapeDrawable defaultDrawable = new ShapeDrawable(ovalShape);
+                    defaultDrawable.setIntrinsicWidth(dp(26));
+                    defaultDrawable.setIntrinsicHeight(dp(26));
+                    defaultDrawable.getPaint().setShader(
+                        new RadialGradient(dp(13), dp(13), dp(13), new int[] {
+                            backdrop.center_color | 0xFF000000,
+                            backdrop.edge_color | 0xFF000000
+                        }, new float[] { 0, 1 }, Shader.TileMode.CLAMP)
+                    );
+                    imageView.setImageDrawable(defaultDrawable);
+                } else {
+                    imageView.setAlpha(1f);
+                    imageView.setImageDrawable(Theme.createCircleDrawable(dp(26), Theme.multAlpha(0xFFFFFFFF, 0.25f)));
+                }
+            }
+
+            public void setIcon(TL_stars.starGiftAttributePattern pattern) {
+                this.backdrop = null;
+                this.pattern = pattern;
+
+                if (pattern == null) {
+                    imageView.setAlpha(0.25f);
+                    imageView.setScaleX(0.75f);
+                    imageView.setScaleY(0.75f);
+                    imageView.setTranslationY(0);
+                    imageView.setAnimatedEmojiDrawable(null);
+                    imageView.setImageResource(R.drawable.mini_roll);
+                } else {
+                    imageView.setAlpha(1.0f);
+                    imageView.setScaleX(0.95f);
+                    imageView.setScaleY(0.95f);
+                    imageView.setTranslationY(dp(2));
+                    final AnimatedEmojiDrawable drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_EMOJI_STATUS, pattern.document);
+                    drawable.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+                    imageView.setAnimatedEmojiDrawable(drawable);
+                }
+            }
+
+            public void setProgress(float p, boolean animated) {
+                this.progress = p;
+                this.progressView.setProgress(p, animated);
+                textView.setText(Math.round(p * 100) + "%", animated);
+            }
+        }
+        private static class SwitchGradientDrawable extends Drawable {
+            public static final int TYPE_LINEAR = 0;
+            public static final int TYPE_RADIAL = 1;
+
+            private final int type;
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private Shader[] gradient = new Shader[2];
+            private Matrix gradientMatrix = new Matrix();
+            private AnimatedFloat swapGradient = new AnimatedFloat(1f, this::invalidateSelf, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final RectF rect = new RectF();
+            private Drawable icon;
+
+            private float r = 0;
+
+            public SwitchGradientDrawable(int type) {
+                this.type = type;
+            }
+            private int color1, color2;
+            public void setColors(int color1, int color2) {
+                if (this.color1 == color1 && this.color2 == color2) return;
+                gradient[0] = gradient[1];
+                if (type == TYPE_LINEAR) {
+                    gradient[1] = new LinearGradient(0, 0, 100, 0, new int [] {this.color1 = color1, this.color2 = color2}, new float[] {0, 1}, Shader.TileMode.CLAMP);
+                } else {
+                    gradient[1] = new RadialGradient(0, 0, dp(340), new int[] {this.color1 = color1, this.color2 = color2}, new float[] {0, 1}, Shader.TileMode.CLAMP);
+                }
+                swapGradient.force(0);
+                invalidateSelf();
+            }
+            public void setIcon(Drawable icon) {
+                this.icon = icon;
+            }
+
+            public void setRoundRadius(float r) {
+                this.r = r;
+            }
+
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                rect.set(getBounds());
+                rect.right = rect.left + rect.width();
+                final float swapGradient = this.swapGradient.set(1f);
+                for (int i = 0; i < gradient.length; ++i) {
+                    if (gradient[i] == null) continue;
+                    final float alpha = (float) Math.pow(1.0f - Math.abs(i - swapGradient), 0.25);
+                    if (alpha <= 0) continue;
+
+                    gradientMatrix.reset();
+                    if (type == TYPE_RADIAL) {
+                        gradientMatrix.postTranslate(rect.centerX(), dp(145));
+                    } else {
+                        gradientMatrix.postScale(getBounds().width() / 100f, 1f);
+                    }
+                    gradient[i].setLocalMatrix(gradientMatrix);
+                    paint.setShader(gradient[i]);
+                    paint.setAlpha((int) (0xFF * alpha));
+                    canvas.drawRoundRect(rect, r, r, paint);
+                }
+
+                if (icon != null) {
+                    canvas.save();
+                    canvas.translate(rect.centerX(), dp(145));
+                    StarGiftPatterns.drawPattern(
+                        canvas,
+                        StarGiftPatterns.TYPE_DEFAULT,
+                        icon,
+                        rect.width(), dp(145 * 2),
+                        2.0f,
+                        1.0f
+                    );
+                    canvas.restore();
+                }
+            }
+
+            @Override
+            public void setAlpha(int alpha) {}
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+        }
+        private static class ButtonBackground extends Drawable {
+            private final Paint paintStrokeTop = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint paintStrokeBottom = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+            private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private LinearGradient[] gradient = new LinearGradient[2];
+            private Matrix gradientMatrix = new Matrix();
+            private AnimatedFloat swapGradient = new AnimatedFloat(1f, this::invalidateSelf, 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final Path clipPath = new Path();
+
+            private StarsReactionsSheet.Particles particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 45);
+
+            public ButtonBackground() {
+                paintStrokeTop.setStyle(Paint.Style.STROKE);
+                paintStrokeTop.setColor(0x06FFFFFF);
+                paintStrokeTop.setStrokeWidth(dpf2(1));
+                paintStrokeBottom.setStyle(Paint.Style.STROKE);
+                paintStrokeBottom.setColor(0x11FFFFFF);
+                paintStrokeBottom.setStrokeWidth(dpf2(2 / 3f));
+            }
+            private int leftColor, rightColor;
+            public void setColor(int leftColor, int rightColor) {
+                if (this.leftColor == leftColor && this.rightColor == rightColor) return;
+                gradient[0] = gradient[1];
+                gradient[1] = new LinearGradient(0, 0, 100, 0, new int [] {this.leftColor = leftColor, this.rightColor = rightColor}, new float[] {0, 1}, Shader.TileMode.CLAMP);
+                swapGradient.force(0);
+                invalidateSelf();
+            }
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                AndroidUtilities.rectTmp.set(getBounds());
+                final float r = dp(24);
+
+                final float swapGradient = this.swapGradient.set(1f);
+                for (int i = 0; i < gradient.length; ++i) {
+                    if (gradient[i] == null) continue;
+                    final float alpha = (float) Math.pow(1.0f - Math.abs(i - swapGradient), 0.5);
+                    if (alpha <= 0) continue;
+
+                    gradientMatrix.reset();
+                    gradientMatrix.postScale(AndroidUtilities.rectTmp.width() / 100, 1f);
+                    gradient[i].setLocalMatrix(gradientMatrix);
+                    backgroundPaint.setShader(gradient[i]);
+                    backgroundPaint.setAlpha((int) (0xFF * alpha));
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, backgroundPaint);
+                }
+
+                clipPath.rewind();
+                clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(clipPath);
+                particles.setBounds(AndroidUtilities.rectTmp);
+                particles.setSpeed(30f);
+                particles.process();
+                particles.draw(canvas, Theme.multAlpha(0xFFFFFFFF, 0.60f));
+                invalidateSelf();
+                canvas.restore();
+
+                AndroidUtilities.drawStroke(canvas, AndroidUtilities.rectTmp, r);
+            }
+            @Override
+            public void setAlpha(int alpha) {}
+            @Override
+            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() {
+                return PixelFormat.TRANSPARENT;
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                heightMeasureSpec
+            );
+        }
+    }
+
+    public static final class RoundRectStrokeDrawable extends Drawable {
+        private float radius;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        public RoundRectStrokeDrawable(float r, int color) {
+            radius = r;
+            paint.setColor(color);
+        }
+
+        public void setColor(int color) {
+            paint.setColor(color);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            AndroidUtilities.rectTmp.set(getBounds());
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
+            AndroidUtilities.drawStroke(canvas, AndroidUtilities.rectTmp, radius);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
         }
     }
 }

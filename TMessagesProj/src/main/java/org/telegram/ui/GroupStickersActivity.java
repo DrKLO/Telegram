@@ -155,7 +155,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        searchItem = menu.addItem(0, R.drawable.ic_ab_search);
+        searchItem = menu.addItem(0, R.drawable.outline_header_search);
         searchItem.setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {}

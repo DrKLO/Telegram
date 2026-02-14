@@ -99,11 +99,11 @@ public class CacheChart extends View {
     private LinearGradient completeGradient, completeTextGradient;
     private Matrix completeGradientMatrix, completeTextGradientMatrix;
 
-    private AnimatedTextView.AnimatedTextDrawable topText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
-    private AnimatedTextView.AnimatedTextDrawable bottomText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
+    private final AnimatedTextView.AnimatedTextDrawable topText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
+    private final AnimatedTextView.AnimatedTextDrawable bottomText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
 
-    private AnimatedTextView.AnimatedTextDrawable topCompleteText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
-    private AnimatedTextView.AnimatedTextDrawable bottomCompleteText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
+    private final AnimatedTextView.AnimatedTextDrawable topCompleteText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
+    private final AnimatedTextView.AnimatedTextDrawable bottomCompleteText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
 
     private StarParticlesView.Drawable completeDrawable;
 
@@ -388,23 +388,27 @@ public class CacheChart extends View {
         completePaintStroke.setStrokeJoin(Paint.Join.ROUND);
 
         topText.setAnimationProperties(.2f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
+        topText.setScaleProperty(.6f);
         topText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         topText.setTypeface(AndroidUtilities.bold());
         topText.setTextSize(AndroidUtilities.dp(32));
         topText.setGravity(Gravity.CENTER);
 
         bottomText.setAnimationProperties(.6f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
+        bottomText.setScaleProperty(.6f);
         bottomText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         bottomText.setTextSize(AndroidUtilities.dp(12));
         bottomText.setGravity(Gravity.CENTER);
 
         topCompleteText.setAnimationProperties(.2f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
+        topCompleteText.setScaleProperty(.6f);
         topCompleteText.getPaint().setShader(completeTextGradient);
         topCompleteText.setTypeface(AndroidUtilities.bold());
         topCompleteText.setTextSize(AndroidUtilities.dp(32));
         topCompleteText.setGravity(Gravity.CENTER);
 
         bottomCompleteText.setAnimationProperties(.6f, 0, 450, CubicBezierInterpolator.EASE_OUT_QUINT);
+        bottomCompleteText.setScaleProperty(.6f);
         bottomCompleteText.getPaint().setShader(completeTextGradient);
         bottomCompleteText.setTypeface(AndroidUtilities.bold());
         bottomCompleteText.setTextSize(AndroidUtilities.dp(12));

@@ -373,6 +373,7 @@ public class NotificationCenter {
     public static final int botForumDraftUpdate = totalEvents++;
     public static final int botForumDraftDelete = totalEvents++;
     public static final int tlSchemeParseException = totalEvents++;
+    public static final int callTabsVisibleToggled = totalEvents++;
 
     public static boolean alreadyLogged;
 
@@ -690,6 +691,14 @@ public class NotificationCenter {
                 }
                 addAfterBroadcast.clear();
             }
+        }
+    }
+
+    public void updateObserver(boolean add, NotificationCenterDelegate observer, int id) {
+        if (add) {
+            addObserver(observer, id);
+        } else {
+            removeObserver(observer, id);
         }
     }
 

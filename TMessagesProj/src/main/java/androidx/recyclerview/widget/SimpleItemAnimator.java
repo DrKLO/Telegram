@@ -87,7 +87,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
     }
 
     @Override
-    public boolean animateDisappearance(@NonNull RecyclerView.ViewHolder viewHolder,
+    public boolean animateDisappearance(RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
             @NonNull ItemHolderInfo preLayoutInfo, @Nullable ItemHolderInfo postLayoutInfo) {
         int oldLeft = preLayoutInfo.left;
         int oldTop = preLayoutInfo.top;
@@ -106,8 +106,25 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
             if (DEBUG) {
                 Log.d(TAG, "REMOVED: " + viewHolder + " with view " + disappearingItemView);
             }
+            final int notRemovedPositionBelow = getLastNotRemovedPosition(recyclerView, viewHolder.mOldOldPosition);
+            viewHolder.mOldCompoundPosition = notRemovedPositionBelow * 1000 + (viewHolder.mOldOldPosition - notRemovedPositionBelow);
             return animateRemove(viewHolder, preLayoutInfo);
         }
+    }
+
+    private int getLastNotRemovedPosition(RecyclerView recyclerView, int belowOldPosition) {
+        if (recyclerView == null || belowOldPosition == RecyclerView.NO_POSITION) return RecyclerView.NO_POSITION;
+        int bestPosition = RecyclerView.NO_POSITION;
+        for (int i = 0; i < recyclerView.getChildCount(); ++i) {
+            final View child = recyclerView.getChildAt(i);
+            if (child == null) continue;
+            final RecyclerView.ViewHolder viewHolder = recyclerView.getChildViewHolder(child);
+            if (viewHolder == null) continue;
+            if (!viewHolder.isRemoved() && viewHolder.mOldOldPosition >= 0 && viewHolder.mOldOldPosition < belowOldPosition && viewHolder.mOldOldPosition > bestPosition) {
+                bestPosition = viewHolder.mOldOldPosition;
+            }
+        }
+        return bestPosition;
     }
 
 

@@ -47,6 +47,7 @@ public class StoriesIntro extends FrameLayout {
     public StoriesIntro(Context context, View parentView) {
         super(context);
         ImageView backgroundImageView = new ImageView(context);
+        backgroundImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         addView(backgroundImageView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
         View scrim = new View(context);
         scrim.setBackgroundColor(0x64000000); // 40%

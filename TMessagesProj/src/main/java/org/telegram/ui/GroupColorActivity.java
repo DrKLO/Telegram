@@ -69,6 +69,7 @@ public class GroupColorActivity extends ChannelColorActivity {
     protected void updateRows() {
         rowsCount = 0;
         profilePreviewRow = rowsCount++;
+        emptyRow = rowsCount++;
         profileColorGridRow = rowsCount++;
         profileEmojiRow = rowsCount++;
         if (selectedProfileEmoji != 0 || selectedProfileColor >= 0) {
@@ -167,7 +168,7 @@ public class GroupColorActivity extends ChannelColorActivity {
     @Override
     public View createView(Context context) {
         View view = super.createView(context);
-        updateColors();
+        updateColors(false);
 
         actionBar.setAddToContainer(false);
         actionBar.setTitle("");
@@ -256,6 +257,8 @@ public class GroupColorActivity extends ChannelColorActivity {
                 }
             }
         });
+
+        listView.setSections(true);
     }
 
     protected void openBoostDialog(int type) {
@@ -289,17 +292,18 @@ public class GroupColorActivity extends ChannelColorActivity {
     }
 
     @Override
-    public void updateColors() {
-        super.updateColors();
+    public void updateColors(boolean onlyActionBar) {
+        super.updateColors(onlyActionBar);
         actionBar.setBackgroundColor(Color.TRANSPARENT);
         Drawable shadowDrawable = Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         Drawable background = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
         CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
         combinedDrawable.setFullsize(true);
         buttonContainer.setBackground(combinedDrawable);
-        if (profilePreview != null) {
+        if (profilePreview != null && !onlyActionBar) {
             profilePreview.backgroundView.setColor(currentAccount, selectedProfileColor, false);
             profilePreview.profileView.setColor(selectedProfileColor, false);
+            profilePreview.updateColors();
         }
     }
 

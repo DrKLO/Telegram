@@ -129,7 +129,7 @@ public class StarGiftPatterns {
             sz *= scale;
             pattern.setBounds((int) (dp(cx) - dp(sz) / 2.0f), (int) (dp(cy) - dp(sz) / 2.0f), (int) (dp(cx) + dp(sz) / 2.0f), (int) (dp(cy) + dp(sz) / 2.0f));
 
-            pattern.setAlpha((int) (0xFF * alpha * thisAlpha));
+            pattern.setAlpha((int) Utilities.clamp(0xFF * alpha * thisAlpha, 0xFF, 0));
             pattern.draw(canvas);
         }
     }

@@ -471,6 +471,23 @@ public sealed class TlGen_InputMedia : TlGen_Object {
     }
   }
 
+  public data class TL_inputMediaStakeDice(
+    public val game_hash: String,
+    public val ton_amount: Long,
+    public val client_seed: List<Byte>,
+  ) : TlGen_InputMedia() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeString(game_hash)
+      stream.writeInt64(ton_amount)
+      stream.writeByteArray(client_seed.toByteArray())
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xF3A9244AU
+    }
+  }
+
   public data class TL_inputMediaUploadedDocument_layer197(
     public val nosound_video: Boolean,
     public val force_file: Boolean,

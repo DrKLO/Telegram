@@ -33,7 +33,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
@@ -58,6 +57,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -82,7 +82,6 @@ import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
@@ -101,7 +100,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.ChannelAdminLogActivity;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -123,7 +121,6 @@ import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SuggestBirthdayActionLayout;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.TopicSeparator;
@@ -285,6 +282,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     private URLSpan pressedLink;
     private SpoilerEffect spoilerPressed;
     private boolean textPressed;
+    private boolean actionPressed;
     private boolean isSpoilerRevealing;
     private int currentAccount = UserConfig.selectedAccount;
     private ImageReceiver imageReceiver;
@@ -800,7 +798,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                             BotButton botButton = new BotButton(this::invalidateOutbounds);
                             botButton.buttonCustom = (BotInlineKeyboard.ButtonCustom) inlineButton;
 
-                            final int iconRes = inlineButton.getIcon();
+                            final int iconRes = inlineButton.getIconRes();
                             if (iconRes != 0) {
                                 botButton.iconDrawable = getResources().getDrawable(iconRes);
                                 botButton.iconDrawable.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
@@ -1174,7 +1172,28 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         MessageObject messageObject = currentMessageObject;
+
+        float x = lastTouchX = event.getX() - sideMenuWidth / 2f;
+        float y = lastTouchY = event.getY() + getPaddingTop();
+        boolean result = false;
+
         if (messageObject == null) {
+            if (onActionClick != null) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (x >= backgroundLeft && x <= backgroundRight) {
+                        actionPressed = true;
+                        result = true;
+                    }
+                } else if (actionPressed) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        onActionClick.onClick(this);
+                        actionPressed = false;
+                    } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        actionPressed = false;
+                    }
+                }
+            }
+            if (result) return true;
             return super.onTouchEvent(event);
         }
 
@@ -1194,10 +1213,6 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             return true;
         }
 
-        float x = lastTouchX = event.getX() - sideMenuWidth / 2f;
-        float y = lastTouchY = event.getY() + getPaddingTop();
-
-        boolean result = false;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (delegate != null) {
                 if ((messageObject.type == MessageObject.TYPE_ACTION_PHOTO || isButtonLayout(messageObject)) && imageReceiver.isInsideImage(x, y)) {
@@ -1236,7 +1251,21 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             if (event.getAction() != MotionEvent.ACTION_MOVE) {
                 cancelCheckLongPress();
             }
-            if (textPressed) {
+            if (actionPressed) {
+                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!(x >= backgroundLeft && x <= backgroundRight)) {
+                        actionPressed = false;
+                        result = false;
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (onActionClick != null) {
+                        onActionClick.onClick(this);
+                    }
+                    actionPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    actionPressed = false;
+                }
+            } else if (textPressed) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_UP:
                         rippleView.setPressed(textPressed = false);
@@ -1469,6 +1498,11 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return false;
     }
 
+    private OnClickListener onActionClick;
+    public void setOnActionClickListener(@Nullable OnClickListener l) {
+        this.onActionClick = l;
+    }
+
     private boolean isGiftCode() {
         return currentMessageObject != null && currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionGiftCode;
     }
@@ -1506,6 +1540,15 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 .set(currentMessageObject)
                 .show();
         } else if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique) {
+            final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) currentMessageObject.messageOwner.action;
+            if (action.gift.burned) {
+                final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                if (lastFragment == null) return;
+                BulletinFactory.of(lastFragment)
+                    .createSimpleBulletin(R.raw.fire_on, getString(R.string.UniqueGiftNotFoundBurned))
+                    .show();
+                return;
+            }
             new StarGiftSheet(getContext(), currentAccount, currentMessageObject.getDialogId(), themeDelegate)
                 .set(currentMessageObject)
                 .show();
@@ -2495,7 +2538,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             if (giftPremiumTextCollapsed) {
                 int index = giftPremiumText.layout.getLineEnd(2) - 1;
-                giftPremiumText.setText(text.subSequence(0, index), giftTextPaint, textWidth);
+                giftPremiumText.setText(index >= 0 ? text.subSequence(0, index) : text, giftTextPaint, textWidth);
             }
         }
         if (button != null) {
@@ -2515,7 +2558,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             if (giftRibbonPath == null) {
                 giftRibbonPath = new Path();
-                GiftSheet.RibbonDrawable.fillRibbonPath(giftRibbonPath, 1.35f);
+                GiftSheet.RibbonDrawable.fillRibbonPath(giftRibbonPath, 1.35f, false);
             }
             giftRibbonText = new Text(ribbon, ribbonTextDp, AndroidUtilities.bold());
             giftRibbonText.ellipsize(dp(62));

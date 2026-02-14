@@ -396,7 +396,6 @@
     <string name="Languages_other">%1$d لغةٍ</string>
     <string name="ChooseLanguages">اختيار اللغات</string>
     <string name="TranslateMessagesInfo1">سيظهر زر «الترجمة» عند الضغط مرة واحدة على رسالة نصيّة.</string>
-    <string name="TranslateMessagesInfo2">قد تتمكن Google من الوصول إلى نص الرسائل التي ترجمتها.</string>
     <string name="Language">اللغة</string>
     <string name="LanguageCustom">مخصص</string>
     <string name="LanguageTitle">تغييرُ اللغة؟</string>

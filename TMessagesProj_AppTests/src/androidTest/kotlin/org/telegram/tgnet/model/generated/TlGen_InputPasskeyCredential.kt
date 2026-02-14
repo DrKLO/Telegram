@@ -23,4 +23,17 @@ public sealed class TlGen_InputPasskeyCredential : TlGen_Object {
       public const val MAGIC: UInt = 0x3C27B78FU
     }
   }
+
+  public data class TL_inputPasskeyCredentialFirebasePNV(
+    public val pnv_token: String,
+  ) : TlGen_InputPasskeyCredential() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeString(pnv_token)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x5B1CCB28U
+    }
+  }
 }

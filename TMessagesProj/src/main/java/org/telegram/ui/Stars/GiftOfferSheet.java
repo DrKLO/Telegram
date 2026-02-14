@@ -160,11 +160,18 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
 
         final AmountUtils.Amount minOfferStars = AmountUtils.Amount.fromDecimal(giftUnique.offer_min_stars, AmountUtils.Currency.STARS);
         final AmountUtils.Amount maxOfferStars = AmountUtils.Amount.fromDecimal(Math.max(
-            minOfferStars.asDecimal() * 2, config.starsSuggestedPostAmountMax.get()), AmountUtils.Currency.STARS);
+            minOfferStars.asDecimal() * 2,
+            config.starsStarGiftResaleAmountMax.get()
+        ), AmountUtils.Currency.STARS);
 
-        final AmountUtils.Amount minOfferTon = minOfferStars.convertTo(AmountUtils.Currency.TON).round(2);
+        final AmountUtils.Amount minOfferTon = AmountUtils.Amount.fromNano(Math.max(
+            minOfferStars.convertTo(AmountUtils.Currency.TON).round(2).asNano(),
+            config.tonStarGiftResaleAmountMin.get()
+        ), AmountUtils.Currency.TON);
         final AmountUtils.Amount maxOfferTon = AmountUtils.Amount.fromNano(Math.max(
-            minOfferTon.asNano() * 2, config.tonSuggestedPostAmountMax.get()), AmountUtils.Currency.TON);
+            minOfferTon.asNano() * 2,
+            config.tonStarGiftResaleAmountMax.get()
+        ), AmountUtils.Currency.TON);
 
         inputAmountLimits.set(minOfferStars, maxOfferStars);
         inputAmountLimits.set(minOfferTon, maxOfferTon);

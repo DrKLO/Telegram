@@ -26,7 +26,6 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
@@ -65,6 +64,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.GradientClip;
+import org.telegram.ui.TopicCreateFragment;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -81,8 +81,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     private final BaseFragment fragment;
     private final boolean canShowProgress;
 
-    private final BlurredFrameLayout topTabsContainer;
-    private final View topTabsShadowView;
+    private final FrameLayout topTabsContainer;
     private final UniversalRecyclerView topTabs;
     private final @Nullable VerticalTabView botCreateTopicButtonVertical;
     private final @Nullable HorizontalTabView botCreateTopicButtonHorizontal;
@@ -96,7 +95,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     private long lastSelectedTopicId;
     private long animateFromSelectedTopicId;
 
-    public TopicsTabsView(Context context, BaseFragment fragment, SizeNotifierFrameLayout sizeNotifierFrameLayout, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider) {
+    public TopicsTabsView(Context context, BaseFragment fragment, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider) {
         super(context);
 
         this.fragment = fragment;
@@ -105,19 +104,15 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         this.resourcesProvider = resourcesProvider;
 
         mono = ChatObject.isMonoForum(MessagesController.getInstance(currentAccount).getChat(-dialogId));
-        bot = UserObject.isBotForum(MessagesController.getInstance(currentAccount).getUser(dialogId));
+        bot = UserObject.isBotForumWithEditableTopics(MessagesController.getInstance(currentAccount).getUser(dialogId));
         canShowProgress = !UserConfig.getInstance(currentAccount).getPreferences().getBoolean("topics_end_reached_" + -dialogId, false);
 
         setClipChildren(true);
         setClipToPadding(true);
         setWillNotDraw(false);
 
-        topTabsShadowView = new View(context);
-        topTabsShadowView.setBackgroundResource(R.drawable.header_shadow);
-        addView(topTabsShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 48, 0, 0));
-        topTabsContainer = new BlurredFrameLayout(context, sizeNotifierFrameLayout);
-        topTabsContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-        addView(topTabsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+        topTabsContainer = new FrameLayout(context);
+        addView(topTabsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 7, 7, 7, 7));
 
         sideTabsContainer = new FrameLayout(context);
         addView(sideTabsContainer, LayoutHelper.createFrame(64, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.FILL_VERTICAL, 7, 7, 7, 7));
@@ -147,6 +142,8 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     View child = getChildAt(i);
                     if (child instanceof HorizontalTabView) {
                         HorizontalTabView tab = (HorizontalTabView) child;
+                        if (tab.isAdd)
+                            continue;
                         if (tab.getTopicId() == currentTopicId) {
                             selectedTab = tab;
                         }
@@ -409,6 +406,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     (int) (getMeasuredHeight() - sideMenuBackgroundMarginBottom));
             sideMenuBackgroundDrawable.draw(canvas);
         }
+        if (topTabsContainer.getVisibility() == VISIBLE) {
+            topMenuBackgroundDrawable.setBounds(
+                    0, (int) topTabsContainer.getTranslationY(),
+                    getMeasuredWidth(), (int) (topTabsContainer.getTranslationY() + dp(48 + 7 + 7)));
+            topMenuBackgroundDrawable.draw(canvas);
+        }
 
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), getHeight());
@@ -419,21 +422,20 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     @Override
     protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
-        final boolean needClip = child == sideTabsContainer;
-        if (needClip) {
-            canvas.save();
-            if (child == sideTabsContainer) {
-                canvas.clipPath(sideMenuBackgroundDrawable.getPath());
-            }
+        canvas.save();
+        if (child == sideTabsContainer) {
+            canvas.clipPath(sideMenuBackgroundDrawable.getPath());
+        }
+        if (child == topTabsContainer) {
+            canvas.clipPath(topMenuBackgroundDrawable.getPath());
         }
         final boolean result = super.drawChild(canvas, child, drawingTime);
-        if (needClip) {
-            canvas.restore();
-        }
+        canvas.restore();
         return result;
     }
 
     private BlurredBackgroundDrawable sideMenuBackgroundDrawable;
+    private BlurredBackgroundDrawable topMenuBackgroundDrawable;
     private float sideMenuBackgroundMarginBottom;
     private float sideMenuBackgroundMarginTop;
 
@@ -442,6 +444,14 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         this.sideMenuBackgroundDrawable.setRadius(dp(16));
         this.sideMenuBackgroundDrawable.setPadding(dp(7));
     }
+
+    public void setTopMenuBackgroundDrawable(BlurredBackgroundDrawable sideMenuBackgroundDrawable) {
+        this.topMenuBackgroundDrawable = sideMenuBackgroundDrawable;
+        this.topMenuBackgroundDrawable.setRadius(dp(16));
+        this.topMenuBackgroundDrawable.setPadding(dp(7));
+    }
+
+
 
     public void setSideMenuBackgroundMarginBottom(float margin) {
         sideMenuBackgroundMarginBottom = margin;
@@ -485,12 +495,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     public float sidemenuT = 0.0f;
     public boolean sidemenuAnimating;
     public void updateSidemenuPosition() {
-        topTabsContainer.setTranslationY(-dp(48) * sidemenuT);
+        topTabsContainer.setTranslationY(-dp(48 + 7) * sidemenuT);
         topTabsContainer.setAlpha(lerp(1.0f, 0.85f, sidemenuT));
         topTabsContainer.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
-        topTabsShadowView.setTranslationY(-dp(48 + 3) * sidemenuT);
-        topTabsShadowView.setAlpha(1.0f - sidemenuT);
-        topTabsShadowView.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
 
         sideTabsContainer.setTranslationX(-dp(64 + 7 + 7) * (1.0f - sidemenuT));
         sideTabsContainer.setVisibility(sidemenuT <= 0.0f ? View.GONE : View.VISIBLE);
@@ -644,6 +651,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     private void fillVerticalTabs(ArrayList<UItem> items, UniversalAdapter adapter) {
         final TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        final TLRPC.User currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
         final TopicsController controller = MessagesController.getInstance(currentAccount).getTopicsController();
         final ArrayList<TLRPC.TL_forumTopic> topics = controller.getTopics(-dialogId);
         if (!bot) {
@@ -672,13 +680,14 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             items.add(VerticalTabView.Factory.asLoading(-3));
             items.add(VerticalTabView.Factory.asLoading(-4));
         }
-        if (!bot && !mono && ChatObject.canCreateTopic(currentChat)) {
+        if (!bot && !mono && (currentChat != null && ChatObject.canCreateTopic(currentChat) || UserObject.isBotForumWithEditableTopics(currentUser))) {
             items.add(VerticalTabView.Factory.asAdd(false));
         }
     }
 
     private void fillHorizontalTabs(ArrayList<UItem> items, UniversalAdapter adapter) {
         final TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+        final TLRPC.User currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
         final TopicsController controller = MessagesController.getInstance(currentAccount).getTopicsController();
         final ArrayList<TLRPC.TL_forumTopic> topics = controller.getTopics(-dialogId);
         if (!bot) {
@@ -707,7 +716,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             items.add(HorizontalTabView.Factory.asLoading(-3));
             items.add(HorizontalTabView.Factory.asLoading(-4));
         }
-        if (!bot && !mono && ChatObject.canCreateTopic(currentChat)) {
+        if (!bot && !mono && (currentChat != null && ChatObject.canCreateTopic(currentChat) || UserObject.isBotForumWithEditableTopics(currentUser))) {
             items.add(HorizontalTabView.Factory.asAdd());
         }
     }
@@ -827,7 +836,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     });
                 }
             } else {
-                if (ChatObject.canManageTopics(currentChat) || UserObject.isBotForum(currentUser)) {
+                if (ChatObject.canManageTopics(currentChat) || UserObject.isBotForumWithEditableTopics(currentUser)) {
                     options.add(
                             topic.pinned ? R.drawable.msg_unpin : R.drawable.msg_pin,
                             getString(topic.pinned ? R.string.DialogUnpin : R.string.DialogPin),
@@ -851,6 +860,13 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                                 }
                         );
                     }
+                }
+
+                if (ChatObject.canManageTopics(currentChat) || UserObject.isBotForumWithEditableTopics(currentUser)) {
+                    options.add(R.drawable.outline_profile_edit_24, getString(R.string.EditTopic), () -> {
+                        options.dismiss();
+                        fragment.presentFragment(TopicCreateFragment.create(-dialogId, topic.id));
+                    });
                 }
 
                 final ItemOptions muteOptions = ChatNotificationsPopupWrapper.addAsItemOptions(fragment, options, dialogId, topic.id);
@@ -1107,7 +1123,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 counterBackgroundColorKey = Theme.key_dialogReactionMentionBackground;
                 if (reactionString == null) {
                     final SpannableStringBuilder sb = new SpannableStringBuilder("❤️");
-                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.reactionchatslist);
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_like_filled);
                     span.setScale(0.8f, 0.8f);
                     span.spaceScaleX = 0.5f;
                     span.translate(-dp(3), 0);
@@ -1119,7 +1135,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 counterBackgroundColorKey = muted ? Theme.key_chats_unreadCounterMuted : Theme.key_chats_unreadCounter;
                 if (mentionString == null) {
                     final SpannableStringBuilder sb = new SpannableStringBuilder("@");
-                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mentionchatslist);
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_mention_filled_16);
                     span.setScale(0.8f, 0.8f);
                     span.spaceScaleX = 0.5f;
                     span.translate(-dp(3), 0);
@@ -1383,7 +1399,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             static { setup(new Factory()); }
 
             @Override
-            public VerticalTabView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public VerticalTabView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new VerticalTabView(context, currentAccount, resourcesProvider);
             }
 
@@ -1767,7 +1783,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 counterBackgroundColorKey = Theme.key_dialogReactionMentionBackground;
                 if (reactionString == null) {
                     final SpannableStringBuilder sb = new SpannableStringBuilder("❤️");
-                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.reactionchatslist);
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_like_filled);
                     span.setScale(0.8f, 0.8f);
                     span.spaceScaleX = 0.5f;
                     span.translate(-dp(3), 0);
@@ -1779,7 +1795,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 counterBackgroundColorKey = muted ? Theme.key_chats_unreadCounterMuted : Theme.key_chats_unreadCounter;
                 if (mentionString == null) {
                     final SpannableStringBuilder sb = new SpannableStringBuilder("@");
-                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mentionchatslist);
+                    final ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_mention_filled_16);
                     span.setScale(0.8f, 0.8f);
                     span.spaceScaleX = 0.5f;
                     span.translate(-dp(3), 0);
@@ -1850,7 +1866,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             static { setup(new Factory()); }
 
             @Override
-            public HorizontalTabView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public HorizontalTabView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new HorizontalTabView(context, currentAccount, resourcesProvider);
             }
 

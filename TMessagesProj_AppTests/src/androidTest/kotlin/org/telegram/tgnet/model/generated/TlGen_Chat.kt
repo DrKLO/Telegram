@@ -93,6 +93,7 @@ public sealed class TlGen_Chat : TlGen_Object {
   public data class TL_channelForbidden(
     public val broadcast: Boolean,
     public val megagroup: Boolean,
+    public val monoforum: Boolean,
     public val id: Long,
     public val access_hash: Long,
     public val title: String,
@@ -103,6 +104,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         var result = 0U
         if (broadcast) result = result or 32U
         if (megagroup) result = result or 256U
+        if (monoforum) result = result or 1024U
         if (until_date != null) result = result or 65536U
         return result
       }

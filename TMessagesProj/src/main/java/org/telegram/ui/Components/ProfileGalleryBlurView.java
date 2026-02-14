@@ -437,7 +437,7 @@ public class ProfileGalleryBlurView extends View {
                     drawOpeningRenderNode(avatarImageView, canvas, width, height, fraction, alpha);
                 }
                 return;
-            } else if (avatarImageView == null) {
+            } else if (avatarImageView == null && !AndroidUtilities.makingGlobalBlurBitmap) {
                 usingRenderNode = false;
                 setLayerType(View.LAYER_TYPE_SOFTWARE, paints[0]);
                 setLayerType(View.LAYER_TYPE_SOFTWARE, paints[1]);

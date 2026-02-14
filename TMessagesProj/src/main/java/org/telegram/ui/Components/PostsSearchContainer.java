@@ -58,7 +58,7 @@ public class PostsSearchContainer extends FrameLayout {
 
     private final BaseFragment fragment;
     private final int currentAccount;
-    private final UniversalRecyclerView listView;
+    public final UniversalRecyclerView listView;
 
     private TLRPC.SearchPostsFlood flood;
 
@@ -140,7 +140,7 @@ public class PostsSearchContainer extends FrameLayout {
         emptyTextView.setEllipsize(TextUtils.TruncateAt.END);
         emptyView.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 0));
 
-        emptyButton = new ButtonWithCounterView(context, null);
+        emptyButton = new ButtonWithCounterView(context, null).setRound();
         emptyView.addView(emptyButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.FILL_HORIZONTAL, 0, 19, 0, 0));
 
         emptyUnderButtonTextView = new TextView(context);

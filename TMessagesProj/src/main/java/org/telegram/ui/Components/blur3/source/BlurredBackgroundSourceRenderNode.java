@@ -10,6 +10,8 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
+import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
 
@@ -21,12 +23,39 @@ import me.vkryl.core.reference.ReferenceList;
 public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSource {
     private final BlurredBackgroundSource fallbackSource;
     private final RenderNode renderNode;
+    private RenderNodeWithHash renderNodeWithHash;
+
+    private DownscaleScrollableNoiseSuppressor scrollableNoiseSuppressor;
+    private int scrollableNoiseSuppressorIndex;
+    public BlurredBackgroundSource underSource;
 
     public BlurredBackgroundSourceRenderNode(BlurredBackgroundSource fallbackSource) {
         this.fallbackSource = fallbackSource;
 
         renderNode = new RenderNode(null);
-        renderNode.setClipToBounds(true);
+    }
+
+    public void setupRenderer(RenderNodeWithHash.Renderer renderer) {
+        if (renderNodeWithHash == null) {
+            renderNodeWithHash = new RenderNodeWithHash(renderNode, renderer);
+        }
+    }
+
+    public void updateDisplayListIfNeeded() {
+        renderNodeWithHash.updateDisplayListIfNeeded();
+    }
+
+    public void setSize(int width, int height) {
+        renderNode.setPosition(0, 0, width, height);
+    }
+
+    public void setScrollableNoiseSuppressor(DownscaleScrollableNoiseSuppressor scrollableNoiseSuppressor, int index) {
+        this.scrollableNoiseSuppressor = scrollableNoiseSuppressor;
+        this.scrollableNoiseSuppressorIndex = index;
+    }
+
+    public void setUnderSource(BlurredBackgroundSource underSource) {
+        this.underSource = underSource;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.S)
@@ -74,7 +103,9 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     @Override
     public void draw(Canvas canvas, float left, float top, float right, float bottom) {
         if (!canvas.isHardwareAccelerated()) {
-            fallbackSource.draw(canvas, left, top, right, bottom);
+            if (fallbackSource != null) {
+                fallbackSource.draw(canvas, left, top, right, bottom);
+            }
             return;
         }
 
@@ -84,7 +115,15 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
 
         canvas.save();
         canvas.clipRect(left, top, right, bottom);
-        canvas.drawRenderNode(renderNode);
+        if (underSource != null) {
+            underSource.draw(canvas, left, top, right, bottom);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableNoiseSuppressor != null) {
+            scrollableNoiseSuppressor.drawInline(canvas, scrollableNoiseSuppressorIndex);
+        } else {
+            canvas.drawRenderNode(renderNode);
+        }
+
         canvas.restore();
     }
 
@@ -125,6 +164,12 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
     public void dispatchOnDrawablesRelativePositionChange() {
         if (onDrawablesRelativePositionChangeListener != null) {
             onDrawablesRelativePositionChangeListener.run();
+        }
+    }
+
+    public void invalidateDisplayListForDrawables() {
+        for (BlurredBackgroundDrawableRenderNode d : drawables) {
+            d.invalidateDisplayList();
         }
     }
 

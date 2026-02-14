@@ -20,8 +20,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -30,7 +28,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
@@ -1847,7 +1844,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             static { setup(new Factory()); }
 
             @Override
-            public LiveCommentView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public LiveCommentView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 LiveCommentView view = new LiveCommentView(context, currentAccount, false);
                 view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return view;
@@ -2006,7 +2003,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             static { setup(new Factory()); }
 
             @Override
-            public LiveTopSenderView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public LiveTopSenderView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new LiveTopSenderView(context);
             }
 

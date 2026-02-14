@@ -570,11 +570,11 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.LEFT, 20, 4.66f, 0, 0));
+            addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.LEFT, 20, 2 + 9.46f, 0, 0));
 
             textLayout = new LinearLayout(context);
             textLayout.setOrientation(LinearLayout.VERTICAL);
-            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 64, compact ? 2 : 3, 24, compact ? 4 : 5 + 7.66f));
+            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 64, compact ? 2 : 2 + 7.8f, 24, compact ? 4 : 2 + 7.8f));
 
             titleView = new TextView(context);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -602,7 +602,7 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
             static { setup(new Factory()); }
 
             @Override
-            public FeatureCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public FeatureCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new FeatureCell(context, resourcesProvider);
             }
 
@@ -729,7 +729,7 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
             static { setup(new Factory()); }
 
             @Override
-            public ColorfulTextCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public ColorfulTextCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new ColorfulTextCell(context, resourcesProvider);
             }
 
@@ -761,5 +761,16 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
         } else {
             return String.format(Locale.US, "%.1f%%", f);
         }
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, dp(10 + 48 + 10 + 16) + bottom);
+        listView.setClipToPadding(false);
     }
 }

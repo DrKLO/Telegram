@@ -41,6 +41,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -152,30 +153,32 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ButtonSpan;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
+import org.telegram.ui.Components.TableView;
+import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.PeerStoriesView;
 import org.telegram.ui.Stories.StoryMediaAreasView;
+import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
 
@@ -223,7 +226,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
@@ -240,6 +242,7 @@ public class AndroidUtilities {
     public final static int REPLACING_TAG_TYPE_UNDERLINE = 4;
 
     public final static String TYPEFACE_ROBOTO_MEDIUM = "fonts/rmedium.ttf";
+    public final static String TYPEFACE_ROBOTO_EXTRA_BOLD = "fonts/rextrabold.ttf";
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
     public final static String TYPEFACE_ROBOTO_MONO = "fonts/rmono.ttf";
     public final static String TYPEFACE_MERRIWEATHER_BOLD = "fonts/mw_bold.ttf";
@@ -318,6 +321,9 @@ public class AndroidUtilities {
     public static Pattern REMOVE_MULTIPLE_DIACRITICS = null;
     public static Pattern REMOVE_RTL = null;
     private static Pattern singleTagPatter = null;
+
+    public static final Paint strokeTop = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public static final Paint strokeBottom = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public static String removeDiacritics(String str) {
         if (str == null) return null;
@@ -570,7 +576,7 @@ public class AndroidUtilities {
             index = startIndex;
         }
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
-        if (runnable != null && index >= 0) {
+        if (/*runnable != null &&*/ index >= 0) {
             if (type == REPLACING_TAG_TYPE_LINK_NBSP) {
                 spannableStringBuilder.replace(index, index + len, AndroidUtilities.replaceMultipleCharSequence(" ", spannableStringBuilder.subSequence(index, index + len), " "));
             }
@@ -698,6 +704,52 @@ public class AndroidUtilities {
                     public void updateDrawState(@NonNull TextPaint ds) {
                         super.updateDrawState(ds);
                         ds.setUnderlineText(false);
+                        ds.setColor(color);
+                    }
+
+                    @Override
+                    public void onClick(@NonNull View view) {
+                        if (onClick != null) {
+                            onClick.run();
+                        }
+                    }
+                }, index, index + len, 0);
+            } else {
+                spannableStringBuilder.setSpan(new CharacterStyle() {
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        ds.setUnderlineText(false);
+                        ds.setColor(color);
+                    }
+                }, index, index + len, 0);
+            }
+        }
+        return spannableStringBuilder;
+    }
+
+    public static SpannableStringBuilder replaceSingleLinkBold(String str, int color) {
+        return replaceSingleLinkBold(str, color, null);
+    }
+
+    public static SpannableStringBuilder replaceSingleLinkBold(String str, int color, Runnable onClick) {
+        int startIndex = str.indexOf("**");
+        int endIndex = str.indexOf("**", startIndex + 1);
+        str = str.replace("**", "");
+        int index = -1;
+        int len = 0;
+        if (startIndex >= 0 && endIndex >= 0 && endIndex - startIndex > 2) {
+            len = endIndex - startIndex - 2;
+            index = startIndex;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        if (index >= 0) {
+            if (onClick != null) {
+                spannableStringBuilder.setSpan(new ClickableSpan() {
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                        ds.setTypeface(AndroidUtilities.bold());
                         ds.setColor(color);
                     }
 
@@ -1022,6 +1074,34 @@ public class AndroidUtilities {
             countDownLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static Bitmap getBitmapFromWindow(Window window) {
+        if (window == null || window.getDecorView() == null) {
+            return null;
+        }
+
+        final Bitmap bitmap = Bitmap.createBitmap(window.getDecorView().getWidth(), window.getDecorView().getHeight(), Bitmap.Config.ARGB_8888);
+        final boolean[] success = new boolean[] { false };
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        PixelCopy.request(window, bitmap, copyResult -> {
+            success[0] = copyResult == PixelCopy.SUCCESS;
+            countDownLatch.countDown();
+        }, Utilities.searchQueue.getHandler());
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        if (success[0]) {
+            return bitmap;
+        } else {
+            bitmap.recycle();
+            return null;
         }
     }
 
@@ -2311,7 +2391,10 @@ public class AndroidUtilities {
                     Typeface t;
                     if (Build.VERSION.SDK_INT >= 26) {
                         Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                        if (assetPath.contains("medium")) {
+                        if (assetPath.contains("rextrabold")) {
+                            builder.setWeight(800);
+                        }
+                        if (assetPath.contains("medium") || assetPath.contains("rbold")) {
                             builder.setWeight(700);
                         }
                         if (assetPath.contains("italic")) {
@@ -2488,20 +2571,18 @@ public class AndroidUtilities {
 
     public static ArrayList<File> getDataDirs() {
         ArrayList<File> result = null;
-        if (Build.VERSION.SDK_INT >= 19) {
-            File[] dirs = ApplicationLoader.applicationContext.getExternalFilesDirs(null);
-            if (dirs != null) {
-                for (int a = 0; a < dirs.length; a++) {
-                    if (dirs[a] == null) {
-                        continue;
-                    }
-                    String path = dirs[a].getAbsolutePath();
-
-                    if (result == null) {
-                        result = new ArrayList<>();
-                    }
-                    result.add(dirs[a]);
+        File[] dirs = ApplicationLoader.applicationContext.getExternalFilesDirs(null);
+        if (dirs != null) {
+            for (int a = 0; a < dirs.length; a++) {
+                if (dirs[a] == null) {
+                    continue;
                 }
+                String path = dirs[a].getAbsolutePath();
+
+                if (result == null) {
+                    result = new ArrayList<>();
+                }
+                result.add(dirs[a]);
             }
         }
         if (result == null) {
@@ -2516,29 +2597,27 @@ public class AndroidUtilities {
     public static ArrayList<File> getRootDirs() {
         HashSet<String> pathes = new HashSet<>();
         ArrayList<File> result = null;
-        if (Build.VERSION.SDK_INT >= 19) {
-            File[] dirs = ApplicationLoader.applicationContext.getExternalFilesDirs(null);
-            if (dirs != null) {
-                for (int a = 0; a < dirs.length; a++) {
-                    if (dirs[a] == null) {
-                        continue;
+        File[] dirs = ApplicationLoader.applicationContext.getExternalFilesDirs(null);
+        if (dirs != null) {
+            for (int a = 0; a < dirs.length; a++) {
+                if (dirs[a] == null) {
+                    continue;
+                }
+                String path = dirs[a].getAbsolutePath();
+                int idx = path.indexOf("/Android");
+                if (idx >= 0) {
+                    if (result == null) {
+                        result = new ArrayList<>();
                     }
-                    String path = dirs[a].getAbsolutePath();
-                    int idx = path.indexOf("/Android");
-                    if (idx >= 0) {
-                        if (result == null) {
-                            result = new ArrayList<>();
+                    File file = new File(path.substring(0, idx));
+                    for (int i = 0; i < result.size(); i++) {
+                        if (result.get(i).getPath().equals(file.getPath())) {
+                            continue;
                         }
-                        File file = new File(path.substring(0, idx));
-                        for (int i = 0; i < result.size(); i++) {
-                            if (result.get(i).getPath().equals(file.getPath())) {
-                                continue;
-                            }
-                        }
-                        if (file != null && !pathes.contains(file.getAbsolutePath())) {
-                            pathes.add(file.getAbsolutePath());
-                            result.add(file);
-                        }
+                    }
+                    if (file != null && !pathes.contains(file.getAbsolutePath())) {
+                        pathes.add(file.getAbsolutePath());
+                        result.add(file);
                     }
                 }
             }
@@ -2690,13 +2769,11 @@ public class AndroidUtilities {
                     display.getSize(displaySize);
                     screenRefreshRate = display.getRefreshRate();
                     screenMaxRefreshRate = screenRefreshRate;
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                        float[] rates = display.getSupportedRefreshRates();
-                        if (rates != null) {
-                            for (int i = 0; i < rates.length; ++i) {
-                                if (rates[i] > screenMaxRefreshRate) {
-                                    screenMaxRefreshRate = rates[i];
-                                }
+                    float[] rates = display.getSupportedRefreshRates();
+                    if (rates != null) {
+                        for (int i = 0; i < rates.length; ++i) {
+                            if (rates[i] > screenMaxRefreshRate) {
+                                screenMaxRefreshRate = rates[i];
                             }
                         }
                     }
@@ -2740,12 +2817,15 @@ public class AndroidUtilities {
     }
 
     public static void setPreferredMaxRefreshRate(Window window) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        setPreferredMaxRefreshRate(window, screenMaxRefreshRate);
+    }
+
+    public static void setPreferredMaxRefreshRate(Window window, float rate) {
         if (window == null) return;
         final WindowManager wm = window.getWindowManager();
         if (wm == null) return;
         WindowManager.LayoutParams params = window.getAttributes();
-        params.preferredRefreshRate = screenMaxRefreshRate;
+        params.preferredRefreshRate = rate;
         try {
             wm.updateViewLayout(window.getDecorView(), params);
         } catch (Exception e) {
@@ -2754,7 +2834,6 @@ public class AndroidUtilities {
     }
 
     public static void setPreferredMaxRefreshRate(WindowManager wm, View windowView, WindowManager.LayoutParams params) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
         if (wm == null) return;
         if (Math.abs(params.preferredRefreshRate - screenMaxRefreshRate) > 0.2) {
             params.preferredRefreshRate = screenMaxRefreshRate;
@@ -3034,7 +3113,7 @@ public class AndroidUtilities {
     private static Field mStableInsetsField;
 
     public static int getViewInset(View view) {
-        if (view == null || Build.VERSION.SDK_INT < 21 || view.getHeight() == AndroidUtilities.displaySize.y || view.getHeight() == AndroidUtilities.displaySize.y - statusBarHeight) {
+        if (view == null || view.getHeight() == AndroidUtilities.displaySize.y || view.getHeight() == AndroidUtilities.displaySize.y - statusBarHeight) {
             return 0;
         }
         try {
@@ -3066,18 +3145,7 @@ public class AndroidUtilities {
         Point size = new Point();
         try {
             WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                windowManager.getDefaultDisplay().getRealSize(size);
-            } else {
-                try {
-                    Method mGetRawW = Display.class.getMethod("getRawWidth");
-                    Method mGetRawH = Display.class.getMethod("getRawHeight");
-                    size.set((Integer) mGetRawW.invoke(windowManager.getDefaultDisplay()), (Integer) mGetRawH.invoke(windowManager.getDefaultDisplay()));
-                } catch (Exception e) {
-                    size.set(windowManager.getDefaultDisplay().getWidth(), windowManager.getDefaultDisplay().getHeight());
-                    FileLog.e(e);
-                }
-            }
+            windowManager.getDefaultDisplay().getRealSize(size);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -3135,31 +3203,29 @@ public class AndroidUtilities {
     }
 
     public static void setViewPagerEdgeEffectColor(ViewPager viewPager, int color) {
-        if (Build.VERSION.SDK_INT >= 21) {
-            try {
-                Field field = ViewPager.class.getDeclaredField("mLeftEdge");
-                field.setAccessible(true);
-                EdgeEffect mLeftEdge = (EdgeEffect) field.get(viewPager);
-                if (mLeftEdge != null) {
-                    mLeftEdge.setColor(color);
-                }
-
-                field = ViewPager.class.getDeclaredField("mRightEdge");
-                field.setAccessible(true);
-                EdgeEffect mRightEdge = (EdgeEffect) field.get(viewPager);
-                if (mRightEdge != null) {
-                    mRightEdge.setColor(color);
-                }
-            } catch (Exception ignore) {
-
+        try {
+            Field field = ViewPager.class.getDeclaredField("mLeftEdge");
+            field.setAccessible(true);
+            EdgeEffect mLeftEdge = (EdgeEffect) field.get(viewPager);
+            if (mLeftEdge != null) {
+                mLeftEdge.setColor(color);
             }
+
+            field = ViewPager.class.getDeclaredField("mRightEdge");
+            field.setAccessible(true);
+            EdgeEffect mRightEdge = (EdgeEffect) field.get(viewPager);
+            if (mRightEdge != null) {
+                mRightEdge.setColor(color);
+            }
+        } catch (Exception ignore) {
+
         }
     }
 
     public static void setScrollViewEdgeEffectColor(HorizontalScrollView scrollView, int color) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             scrollView.setEdgeEffectColor(color);
-        } else if (Build.VERSION.SDK_INT >= 21) {
+        } else {
             try {
                 Field field = HorizontalScrollView.class.getDeclaredField("mEdgeGlowLeft");
                 field.setAccessible(true);
@@ -3184,7 +3250,7 @@ public class AndroidUtilities {
         if (Build.VERSION.SDK_INT >= 29) {
             scrollView.setTopEdgeEffectColor(color);
             scrollView.setBottomEdgeEffectColor(color);
-        } else if (Build.VERSION.SDK_INT >= 21) {
+        } else {
             try {
                 Field field = ScrollView.class.getDeclaredField("mEdgeGlowTop");
                 field.setAccessible(true);
@@ -3205,9 +3271,8 @@ public class AndroidUtilities {
         }
     }
 
-    @SuppressLint("NewApi")
     public static void clearDrawableAnimation(View view) {
-        if (Build.VERSION.SDK_INT < 21 || view == null) {
+        if (view == null) {
             return;
         }
         Drawable drawable;
@@ -3597,11 +3662,9 @@ public class AndroidUtilities {
         return storageDir;
     }
 
-    @SuppressLint("NewApi")
     public static String getPath(final Uri uri) {
         try {
-            final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
-            if (isKitKat && DocumentsContract.isDocumentUri(ApplicationLoader.applicationContext, uri)) {
+            if (DocumentsContract.isDocumentUri(ApplicationLoader.applicationContext, uri)) {
                 if (isExternalStorageDocument(uri)) {
                     final String docId = DocumentsContract.getDocumentId(uri);
                     final String[] split = docId.split(":");
@@ -3773,11 +3836,7 @@ public class AndroidUtilities {
     }
 
     public static boolean isAirplaneModeOn() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            return Settings.System.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
-        } else {
-            return Settings.Global.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-        }
+        return Settings.Global.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
     }
 
     public static File generateVideoPath() {
@@ -4401,6 +4460,13 @@ public class AndroidUtilities {
         return rights == null || Math.abs(rights.until_date - System.currentTimeMillis() / 1000) > 5 * 365 * 24 * 60 * 60;
     }
 
+    public static void setRectR(RectF rect, float cx, float cy, float r) {
+        rect.set(cx - r, cy - r, cx + r, cy + r);
+    }
+    public static void setRectD(RectF rect, float cx, float cy, float d) {
+        rect.set(cx - d / 2f, cy - d / 2f, cx + d / 2f, cy + d / 2f);
+    }
+
     public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, int invert, boolean translate) {
         float tx, sx;
         float ty, sy;
@@ -4488,7 +4554,14 @@ public class AndroidUtilities {
         return accessibilityManager.isEnabled() && accessibilityManager.isTouchExplorationEnabled();
     }
 
-    public static boolean handleProxyIntent(Activity activity, Intent intent) {
+    public static boolean isProxyLink(Uri data) {
+        final Activity activity = AndroidUtilities.getActivity();
+        if (activity == null) return false;
+        final Intent intent = new Intent(Intent.ACTION_VIEW, data);
+        return handleProxyIntent(activity, intent, false);
+    }
+
+    public static boolean handleProxyIntent(Activity activity, Intent intent, boolean invoked) {
         if (intent == null) {
             return false;
         }
@@ -4548,7 +4621,7 @@ public class AndroidUtilities {
                     if (secret == null) {
                         secret = "";
                     }
-                    showProxyAlert(activity, address, port, user, password, secret);
+                    if (invoked) showProxyAlert(activity, address, port, user, password, secret);
                     return true;
                 }
             }
@@ -4586,116 +4659,94 @@ public class AndroidUtilities {
     }
 
     public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password, final String secret) {
-        BottomSheet.Builder builder = new BottomSheet.Builder(activity);
-        final Runnable dismissRunnable = builder.getDismissRunnable();
-
+        final BottomSheet.Builder builder = new BottomSheet.Builder(activity);
         builder.setApplyTopPadding(false);
         builder.setApplyBottomPadding(false);
-        LinearLayout linearLayout = new LinearLayout(activity);
-        builder.setCustomView(linearLayout);
+        final Runnable dismiss = builder.getDismissRunnable();
+
+        final LinearLayout linearLayout = new LinearLayout(activity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        if (!TextUtils.isEmpty(secret)) {
-            TextView titleTextView = new TextView(activity);
-            titleTextView.setText(getString(R.string.UseProxyTelegramInfo2));
-            titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
-            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-            linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 8, 17, 8));
+        builder.setCustomView(linearLayout);
 
-            View lineView = new View(activity);
-            lineView.setBackgroundColor(Theme.getColor(Theme.key_divider));
-            linearLayout.addView(lineView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        final TextView headerView = TextHelper.makeTextView(activity, 20, Theme.key_dialogTextBlack, true);
+        headerView.setText(getString(R.string.UseProxyTitle));
+        linearLayout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 22, 18, 22, 0));
+
+        final TableView tableView = new TableView(activity, null);
+        linearLayout.addView(tableView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 14, 18, 14, 0));
+
+        if (!TextUtils.isEmpty(address)) {
+            tableView.addRow(getString(R.string.UseProxyAddress), address);
         }
-        for (int a = 0; a < 6; a++) {
-            String text = null;
-            String detail = null;
-            if (a == 0) {
-                text = address;
-                detail = getString("UseProxyAddress", R.string.UseProxyAddress);
-            } else if (a == 1) {
-                text = "" + port;
-                detail = getString("UseProxyPort", R.string.UseProxyPort);
-            } else if (a == 2) {
-                text = secret;
-                detail = getString("UseProxySecret", R.string.UseProxySecret);
-            } else if (a == 3) {
-                text = user;
-                detail = getString("UseProxyUsername", R.string.UseProxyUsername);
-            } else if (a == 4) {
-                text = password;
-                detail = getString("UseProxyPassword", R.string.UseProxyPassword);
-            } else if (a == 5) {
-                text = getString(R.string.ProxyBottomSheetChecking);
-                detail = getString(R.string.ProxyStatus);
-            }
-            if (TextUtils.isEmpty(text)) {
-                continue;
-            }
-            AtomicReference<EllipsizeSpanAnimator> ellRef = new AtomicReference<>();
-            TextDetailSettingsCell cell = new TextDetailSettingsCell(activity) {
-                @Override
-                protected void onAttachedToWindow() {
-                    super.onAttachedToWindow();
-                    if (ellRef.get() != null) {
-                        ellRef.get().onAttachedToWindow();
-                    }
-                }
+        if (!TextUtils.isEmpty(port)) {
+            tableView.addRow(getString(R.string.UseProxyPort), port);
+        }
+        if (!TextUtils.isEmpty(secret)) {
+            tableView.addRow(getString(R.string.UseProxySecret), secret);
+        }
+        if (!TextUtils.isEmpty(user)) {
+            tableView.addRow(getString(R.string.UseProxyUsername), user);
+        }
+        if (!TextUtils.isEmpty(password)) {
+            tableView.addRow(getString(R.string.UseProxyPassword), user);
+        }
+        final ButtonSpan.TextViewButtons[] statusTextView = new ButtonSpan.TextViewButtons[1];
+        tableView.addRow(getString(R.string.ProxyStatus), "", statusTextView);
+        ((View) statusTextView[0].getParent()).setPadding(0, 0, 0, 0);
+        statusTextView[0].setDisablePaddingsOffsetY(true);
+        statusTextView[0].setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
+        final boolean[] checking = new boolean[1];
+        statusTextView[0].setText(replaceSingleLink(getString(R.string.ProxyBottomSheetCheckStatus), Theme.getColor(Theme.key_chat_messageLinkIn), () -> {
+            if (checking[0]) return;
 
-                @Override
-                protected void onDetachedFromWindow() {
-                    super.onDetachedFromWindow();
-                    if (ellRef.get() != null) {
-                        ellRef.get().onDetachedFromWindow();
-                    }
-                }
-            };
-            if (a == 5) {
-                SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(text);
-                EllipsizeSpanAnimator ellipsizeAnimator = new EllipsizeSpanAnimator(cell);
-                ellipsizeAnimator.addView(cell);
-                SpannableString ell = new SpannableString("...");
-                ellipsizeAnimator.wrap(ell, 0);
-                spannableStringBuilder.append(ell);
-                ellRef.set(ellipsizeAnimator);
+            final Runnable check = () -> {
+                if (checking[0]) return;
 
-                cell.setTextAndValue(spannableStringBuilder, detail, true);
-            } else {
-                cell.setTextAndValue(text, detail, true);
-            }
-            cell.getTextView().setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-            cell.getValueTextView().setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
-            linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            if (a == 5) {
+                checking[0] = true;
+                statusTextView[0].setText(getString(R.string.ProxyBottomSheetChecking) + "...");
+                statusTextView[0].clear();
                 try {
                     ConnectionsManager.getInstance(UserConfig.selectedAccount).checkProxy(address, Integer.parseInt(port), user, password, secret, time -> AndroidUtilities.runOnUIThread(() -> {
                         if (time == -1) {
-                            cell.getTextView().setText(getString(R.string.Unavailable));
-                            cell.getTextView().setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                            statusTextView[0].setText(getString(R.string.Unavailable));
+                            statusTextView[0].setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                         } else {
-                            cell.getTextView().setText(getString(R.string.Available) + ", " + LocaleController.formatString(R.string.Ping, time));
-                            cell.getTextView().setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
+                            statusTextView[0].setText(LocaleController.formatString(R.string.Ping2, time));
+                            statusTextView[0].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
                         }
                     }));
                 } catch (NumberFormatException ignored) {
-                    cell.getTextView().setText(getString(R.string.Unavailable));
-                    cell.getTextView().setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    statusTextView[0].setText(getString(R.string.Unavailable));
+                    statusTextView[0].setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                 }
+            };
+
+            final SharedPreferences pref = MessagesController.getGlobalMainSettings();
+            if (pref.getBoolean("proxycheckstatusip", false)) {
+                check.run();
+            } else {
+                new AlertDialog.Builder(activity)
+                    .setTitle(getString(R.string.ProxyBottomSheetCheckWarning))
+                    .setMessage(getString(R.string.ProxyBottomSheetCheckWarningText))
+                    .setPositiveButton(getString(R.string.Proceed), (di, w) -> {
+                        pref.edit().putBoolean("proxycheckstatusip", true).apply();
+                        check.run();
+                    })
+                    .setNegativeButton(getString(R.string.Cancel), null)
+                    .show();
             }
+        }));
+        if (!TextUtils.isEmpty(secret)) {
+            final TableView.TableRowFullContent tableRow = tableView.addFullRow(getString(R.string.UseProxyTelegramInfo2));
+            tableRow.setFilled(true);
+            final SpoilersTextView textView = (SpoilersTextView) tableRow.getChildAt(0);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+            textView.setGravity(Gravity.CENTER);
         }
 
-        PickerBottomLayout pickerBottomLayout = new PickerBottomLayout(activity, false);
-        pickerBottomLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
-        linearLayout.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
-        pickerBottomLayout.cancelButton.setPadding(dp(18), 0, dp(18), 0);
-        pickerBottomLayout.cancelButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
-        pickerBottomLayout.cancelButton.setText(getString(R.string.Cancel).toUpperCase());
-        pickerBottomLayout.cancelButton.setOnClickListener(view -> dismissRunnable.run());
-        pickerBottomLayout.doneButtonTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
-        pickerBottomLayout.doneButton.setPadding(dp(18), 0, dp(18), 0);
-        pickerBottomLayout.doneButtonBadgeTextView.setVisibility(View.GONE);
-        pickerBottomLayout.doneButtonTextView.setText(getString(R.string.ConnectingConnectProxy).toUpperCase());
-        pickerBottomLayout.doneButton.setOnClickListener(v -> {
+        final ButtonWithCounterView buttonView = new ButtonWithCounterView(activity, null).setRound();
+        buttonView.setText(getString(R.string.ConnectingConnectProxy));
+        buttonView.setOnClickListener(v -> {
             SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
             editor.putBoolean("proxy_enabled", true);
             editor.putString("proxy_ip", address);
@@ -4745,8 +4796,10 @@ public class AndroidUtilities {
             } else {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_SUCCESS, getString(R.string.ProxyAddedSuccess));
             }
-            dismissRunnable.run();
+            dismiss.run();
         });
+        linearLayout.addView(buttonView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 14, 18, 14, 14));
+
         builder.show();
     }
 
@@ -5053,6 +5106,23 @@ public class AndroidUtilities {
 
     public static float lerp(boolean a, boolean b, float f) {
         return (a ? 1.0f : 0.0f) + f * ((b ? 1.0f : 0.0f) - (a ? 1.0f : 0.0f));
+    }
+
+    public static float lerp3(float atMinusOne, float atZero, float atPlusOne, float t) {
+        if (t < 0) return lerp(atZero, atMinusOne, -t);
+        return lerp(atZero, atPlusOne, t);
+    }
+    public static int lerpColor(int a, int b, float t) {
+        return Color.argb(
+            lerp(Color.alpha(a), Color.alpha(b), t),
+            lerp(Color.red(a),   Color.red(b),   t),
+            lerp(Color.green(a), Color.green(b), t),
+            lerp(Color.blue(a),  Color.blue(b),  t)
+        );
+    }
+    public static int lerpColor3(int atMinusOne, int atZero, int atPlusOne, float t) {
+        if (t < 0) return lerpColor(atZero, atMinusOne, -t);
+        return lerpColor(atZero, atPlusOne, t);
     }
 
     public static double lerp(double a, double b, float f) {
@@ -6513,73 +6583,6 @@ public class AndroidUtilities {
         });
     }
 
-    public static boolean isWebAppLink(String url) {
-        if (url == null) return false;
-        try {
-            Uri uri = Uri.parse(url);
-            final String scheme = uri.getScheme();
-            if (scheme == null) return false;
-            final String path = uri.getPath();
-            if (path == null) return false;
-            switch (scheme) {
-                case "http":
-                case "https": {
-                    if (path.isEmpty()) return false;
-                    String host = uri.getHost().toLowerCase();
-                    Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
-                    boolean isPrefix = prefixMatcher.find();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
-                        ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
-                        if (segments.size() > 0 && segments.get(0).equals("s")) {
-                            segments.remove(0);
-                        }
-                        if (segments.size() > 0) {
-                            if (segments.size() >= 3 && "s".equals(segments.get(1))) {
-                                return false;
-                            } else if (segments.size() > 1) {
-                                final String segment0 = segments.get(0);
-                                if (TextUtils.isEmpty(segment0)) return false;
-                                switch (segment0) {
-                                    case "joinchat":
-                                    case "login":
-                                    case "addstickers":
-                                    case "addemoji":
-                                    case "msg":
-                                    case "share":
-                                    case "confirmphone":
-                                    case "setlanguage":
-                                    case "addtheme":
-                                    case "boost":
-                                    case "c":
-                                    case "contact":
-                                    case "folder":
-                                    case "addlist":
-                                        return false;
-                                }
-                                final String segment1 = segments.get(1);
-                                if (TextUtils.isEmpty(segment1)) return false;
-                                if (segment1.matches("^\\d+$")) return false;
-                                return true;
-                            } else if (segments.size() == 1) {
-                                return !TextUtils.isEmpty(uri.getQueryParameter("startapp"));
-                            }
-                        }
-                    }
-                    break;
-                }
-                case "tg": {
-                    if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                        return !TextUtils.isEmpty(uri.getQueryParameter("appname"));
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
-    }
-
     public static CharSequence removeSpans(CharSequence text, Class spanClass) {
         if (!(text instanceof Spannable)) return text;
         final Spannable spannable = (Spannable) text;
@@ -6624,11 +6627,7 @@ public class AndroidUtilities {
 
     public static boolean isInAirplaneMode(Context context) {
         try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                return Settings.System.getInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
-            } else {
-                return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-            }
+            return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
         } catch (Exception ignore) {
             return false;
         }
@@ -6690,9 +6689,13 @@ public class AndroidUtilities {
 
 
     public static void printStackTrace(String tag) {
+        if (!BuildConfig.DEBUG_PRIVATE_VERSION) {
+            return;
+        }
+
         final String t = "[" + tag + "]";
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for (int a = 0; a < elements.length; a++) {
+        for (int a = 3, N = Math.min(elements.length, 8); a < N; a++) {
             FileLog.d(t + " " + elements[a]);
         }
         FileLog.d(t);
@@ -6714,8 +6717,27 @@ public class AndroidUtilities {
     }
 
     public static float getNavigationBarThirdButtonsFactor(int height) {
-        return MathUtils.clamp(((float) height - dp(24)) / dp(24), 0f, 1f);
+        return Utilities.clamp01(((float) height - dp(32)) / dp(16));
     }
+
+    public static float getNavigationBarThirdButtonsFactor(float min, float max, int height) {
+        return lerp(min, max, getNavigationBarThirdButtonsFactor(height));
+    }
+
+    private static final Paint navbarProtactionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    public static void drawNavigationBarProtection(Canvas canvas, View view, int color, int navigationBarHeight) {
+        drawNavigationBarProtection(canvas, view, color, navigationBarHeight, 1);
+    }
+
+    public static void drawNavigationBarProtection(Canvas canvas, View view, int color, int navigationBarHeight, float alpha) {
+        navbarProtactionPaint.setColor(Theme.multAlpha(color, alpha * AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 0.75f, navigationBarHeight)));
+        // bug? : view.getY() is unnecessary
+        canvas.drawRect(
+                0, view.getY() + view.getMeasuredHeight() - navigationBarHeight,
+                view.getMeasuredWidth(), view.getY() + view.getMeasuredHeight(), navbarProtactionPaint);
+    }
+
 
 
 
@@ -6775,4 +6797,59 @@ public class AndroidUtilities {
             window.setNavigationBarContrastEnforced(false);
         }
     }
+
+    public static void drawStroke(Canvas canvas, RectF rect, float radius) {
+        drawStroke(canvas, rect, radius, 1.0F);
+    }
+    public static void drawStroke(Canvas canvas, RectF rect, float radius, float alpha) {
+        if (alpha <= 0) return;
+
+        radius = Math.min(radius, Math.min(rect.width(), rect.height()) / 2f);
+
+        {
+            final float stroke = dpf2(1);
+            final float strokeHalf = stroke / 2;
+            final float r = Math.max(0, radius - stroke);
+            strokeTop.setStyle(Paint.Style.STROKE);
+            strokeTop.setStrokeWidth(stroke);
+            strokeTop.setColor(Theme.multAlpha(0x21FFFFFF, alpha));
+            canvas.save();
+            if (canvas.clipRect(rect.left - strokeHalf, rect.top, rect.right + strokeHalf, MathUtils.clamp(rect.top + r, rect.top, rect.bottom))) {
+                canvas.drawRoundRect(
+                    rect.left,
+                    rect.top + strokeHalf,
+                    rect.right,
+                    rect.bottom + strokeHalf,
+                    r, r,
+                    strokeTop
+                );
+            }
+            canvas.restore();
+        }
+
+        {
+            final float stroke = dpf2(2 / 3f);
+            final float strokeHalf = stroke / 2;
+            final float r = Math.max(0, radius - stroke);
+            strokeBottom.setStyle(Paint.Style.STROKE);
+            strokeBottom.setStrokeWidth(stroke);
+            strokeBottom.setColor(Theme.multAlpha(0x16FFFFFF, alpha));
+            canvas.save();
+            if (canvas.clipRect(rect.left - strokeHalf, MathUtils.clamp(rect.bottom - r, rect.top, rect.bottom), rect.right + strokeHalf, rect.bottom)) {
+                canvas.drawRoundRect(
+                    rect.left,
+                    rect.top - strokeHalf,
+                    rect.right,
+                    rect.bottom - strokeHalf,
+                    r, r,
+                    strokeBottom
+                );
+            }
+            canvas.restore();
+        }
+    }
+
+    public static long pack(int a, int b) { return ((long) a << 32) | (b & 0xFFFFFFFFL); }
+    public static int unpackA(long packed) { return (int) (packed >> 32); }
+    public static int unpackB(long packed) { return (int) packed; }
 }

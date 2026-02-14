@@ -2641,9 +2641,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         MessagesController.getInstance(currentAccount).getStoriesController().stopAllPollers();
         if (ATTACH_TO_FRAGMENT) {
             lockOrientation(false);
-            if (fragment != null) {
-                fragment.removeSheet(this);
-            }
+        }
+        if (fragment != null) {
+            fragment.removeSheet(this);
         }
 
         globalInstances.remove(this);

@@ -57,6 +57,8 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public Utilities.Callback<Integer> intCallback;
 
     public View.OnClickListener clickCallback;
+    public View.OnClickListener clickCallback2;
+    public Utilities.Callback<View> bind;
 
     public Object object;
     public Object object2;
@@ -80,11 +82,31 @@ public class UItem extends AdapterWithDiffUtils.Item {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
         i.id = id;
         i.view = view;
+        i.intValue = LayoutHelper.MATCH_PARENT;
         return i;
     }
     public static UItem asCustom(View view) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
         i.view = view;
+        i.intValue = LayoutHelper.MATCH_PARENT;
+        return i;
+    }
+    public static UItem asCustomShadow(View view) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM_SHADOW, false);
+        i.view = view;
+        i.intValue = LayoutHelper.MATCH_PARENT;
+        return i;
+    }
+    public static UItem asCustom(View view, int heightDp) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM, false);
+        i.view = view;
+        i.intValue = heightDp;
+        return i;
+    }
+    public static UItem asCustomShadow(View view, int heightDp) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CUSTOM_SHADOW, false);
+        i.view = view;
+        i.intValue = heightDp;
         return i;
     }
 
@@ -95,14 +117,26 @@ public class UItem extends AdapterWithDiffUtils.Item {
     }
 
     public static UItem asFullscreenCustom(View view, int minusHeight) {
+        return asFullscreenCustom(view, minusHeight, false);
+    }
+
+    public static UItem asFullscreenCustom(View view, int minusHeight, boolean minusPadding) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_FULLSCREEN_CUSTOM, false);
         i.view = view;
         i.intValue = minusHeight;
+        i.flags = minusPadding ? 1 : 0;
         return i;
     }
 
     public static UItem asHeader(CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_HEADER, false);
+        i.text = text;
+        return i;
+    }
+
+    public static UItem asHeader(int id, CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_HEADER, false);
+        i.id = id;
         i.text = text;
         return i;
     }
@@ -372,6 +406,21 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public static UItem asSpace(int tag, int height) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
+        item.id = tag;
+        item.intValue = height;
+        return item;
+    }
+
+    public static UItem asSpace(int tag, int height, int bg) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
+        item.id = tag;
+        item.intValue = height;
+        item.iconResId = bg;
+        return item;
+    }
+
     public static UItem asRoundCheckbox(CharSequence text) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_ROUND_CHECKBOX, false);
         item.text = text;
@@ -451,7 +500,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     }
 
     public UItem withOpenButton(Utilities.Callback<TLRPC.User> onOpenButton) {
-        this.checked = true;
+        this.locked = true;
         this.object2 = onOpenButton;
         return this;
     }
@@ -482,6 +531,31 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return item;
     }
 
+    public static UItem asSettingsCell(int id, int icon, CharSequence text) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_TEXT_SETTINGS, false);
+        item.id = id;
+        item.iconResId = icon;
+        item.text = text;
+        return item;
+    }
+
+    public static UItem asSettingsCell(int id, CharSequence text, CharSequence value) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_TEXT_SETTINGS, false);
+        item.id = id;
+        item.text = text;
+        item.subtext = value;
+        return item;
+    }
+
+    public static UItem asSettingsCell(int id, int icon, CharSequence text, CharSequence value) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_TEXT_SETTINGS, false);
+        item.id = id;
+        item.iconResId = icon;
+        item.text = text;
+        item.subtext = value;
+        return item;
+    }
+
 
     public UItem withUsername(boolean value) {
         withUsername = value;
@@ -495,6 +569,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public UItem setClickCallback(View.OnClickListener clickCallback) {
         this.clickCallback = clickCallback;
+        return this;
+    }
+
+    public UItem setClickCallback2(View.OnClickListener clickCallback) {
+        this.clickCallback2 = clickCallback;
         return this;
     }
 
@@ -553,6 +632,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public UItem setReordering(boolean reordering) {
         this.reordering = reordering;
+        return this;
+    }
+
+    public UItem onBind(Utilities.Callback<View> bind) {
+        this.bind = bind;
         return this;
     }
 
@@ -674,7 +758,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             if (context == null) return;
             if (cache == null) cache = new ArrayList<>();
             for (int i = 0; i < cache.size() - count; ++i) {
-                cache.add(createView(context, currentAccount, classGuid, resourcesProvider));
+                cache.add(createView(context, null, currentAccount, classGuid, resourcesProvider));
             }
         }
 
@@ -685,7 +769,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
             return null;
         }
 
-        public V createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public V createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             return null;
         }
 
@@ -693,7 +777,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
         }
 
-        public void attachedView(View view, UItem item) {
+        public void attachedView(RecyclerListView listView, View view, UItem item) {
 
         }
 

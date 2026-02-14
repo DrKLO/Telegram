@@ -93,7 +93,7 @@ public class StarRatingView extends View {
         drawable.setBounds(0, 0, dp(24), dp(24));
         drawable.setOuterColor(colors.backgroundColor);
         drawable.setInnerColor(colors.fillingColor);
-        drawable.setTextColor(colors.fillingTextColor);
+        drawable.setTextColor(colors.backgroundColor | 0xFF000000);
         drawable.draw(canvas);
 
         canvas.restore();
@@ -143,8 +143,6 @@ public class StarRatingView extends View {
 
         public int backgroundColor = 0xFF000000;
         public int fillingColor = 0xFFFFFFFF;
-        public int backgroundTextColor = 0xFFFFFFFF;
-        public int fillingTextColor = 0xFF000000;
         private float parentExpanded;
 
         public void update(MessagesController.PeerColor peerColor) {
@@ -154,22 +152,21 @@ public class StarRatingView extends View {
                 return;
             }
 
-            int color1 = peerColor.getBgColor1(Theme.isCurrentThemeDark());
-            int color2 = peerColor.getBgColor2(Theme.isCurrentThemeDark());
-            int textColor = AndroidUtilities.computePerceivedBrightness(backgroundColor) > .721f ? Color.BLACK : Color.WHITE;
+            final int color1 = peerColor.getBgColor1(Theme.isCurrentThemeDark());
+            final int color2 = peerColor.getBgColor2(Theme.isCurrentThemeDark());
+            backgroundColor = getTabsViewBackgroundColor(resourcesProvider, color2, color1);
+            fillingColor = AndroidUtilities.computePerceivedBrightness(backgroundColor) > .721f ? Color.BLACK : Color.WHITE;
 
-            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(resourcesProvider, color2, color1, parentExpanded);
-            backgroundTextColor = fillingColor = ColorUtils.blendARGB(textColor, Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider), parentExpanded);
-            fillingTextColor |= 0xFF000000;
+            backgroundColor = ColorUtils.blendARGB(backgroundColor, 0x24000000, parentExpanded);
+            fillingColor = ColorUtils.blendARGB(fillingColor, 0xFFFFFFFF, parentExpanded);
         }
 
         public void reset() {
-            int color1 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
-            int color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            backgroundColor = Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider);
+            fillingColor = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
 
-            backgroundColor = fillingTextColor = getTabsViewBackgroundColor(resourcesProvider, color2, color1, parentExpanded);
-            backgroundTextColor = fillingColor = Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider);
-            fillingTextColor |= 0xFF000000;
+            backgroundColor = ColorUtils.blendARGB(backgroundColor, 0x24000000, parentExpanded);
+            fillingColor = ColorUtils.blendARGB(fillingColor, 0xFFFFFFFF, parentExpanded);
         }
 
         public void setParentExpanded(float parentExpanded) {
@@ -178,12 +175,12 @@ public class StarRatingView extends View {
         }
     }
 
-    public static int getTabsViewBackgroundColor(Theme.ResourcesProvider resourcesProvider, int color1, int color2, float parentExpanded) {
-        return (ColorUtils.blendARGB(0x24000000,
-            AndroidUtilities.computePerceivedBrightness(ColorUtils.blendARGB(color1, color2, .75f)) > .721f ?
-                Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider) :
-                Theme.adaptHSV(ColorUtils.blendARGB(color1, color2, .75f), +.08f, -.08f),
-            1f - parentExpanded
-        ));
+    public static int getTabsViewBackgroundColor(Theme.ResourcesProvider resourcesProvider, int color1, int color2) {
+        final int bgColor = ColorUtils.blendARGB(color1, color2, .75f);
+        final boolean bgColorIsLight = AndroidUtilities.computePerceivedBrightness(bgColor) > .721f;
+
+        return bgColorIsLight ?
+            Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider) :
+            Theme.adaptHSV(bgColor, +.08f, -.08f);
     }
 }

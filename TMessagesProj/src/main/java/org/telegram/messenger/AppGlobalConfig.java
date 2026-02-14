@@ -53,6 +53,9 @@ public class AppGlobalConfig {
 
     public final ConfigBoolean settingsDisplayPasskeys = ofBoolean("settings_display_passkeys", BuildVars.DEBUG_VERSION ? true : false);
 
+    public final ConfigBoolean disableBlurInLightTheme = ofBoolean("android_disable_blur_in_light_theme", false);
+    public final ConfigBoolean disableBlurInDarkTheme = ofBoolean("android_disable_blur_in_dark_theme", false);
+
     /* * */
 
     public boolean apply(SharedPreferences.Editor editor, TLRPC.TL_jsonObject object) {

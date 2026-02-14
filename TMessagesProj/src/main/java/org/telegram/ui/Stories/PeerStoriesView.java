@@ -6500,8 +6500,13 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     public boolean checkReactionEvent(MotionEvent ev) {
         if (likesReactionLayout != null) {
             View view = likesReactionLayout;
-            float xOffset = getX();
-            float yOffset = getY() + ((View) getParent()).getY();
+            float xOffset = 0, yOffset = 0;
+            View rview = this;
+            while (rview != null && rview.getParent() instanceof View) {
+                xOffset += rview.getX();
+                yOffset += rview.getY();
+                rview = (View) rview.getParent();
+            }
             if (likesReactionLayout.getReactionsWindow() != null && likesReactionLayout.getReactionsWindow().windowView != null) {
                 ev.offsetLocation(-xOffset, -yOffset - likesReactionLayout.getReactionsWindow().windowView.getTranslationY());
                 likesReactionLayout.getReactionsWindow().windowView.dispatchTouchEvent(ev);

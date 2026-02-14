@@ -471,7 +471,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
             static { setup(new Factory()); }
 
             @Override
-            public StoriesView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public StoriesView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new StoriesView(context, resourcesProvider);
             }
 

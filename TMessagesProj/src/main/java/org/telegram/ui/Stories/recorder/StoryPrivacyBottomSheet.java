@@ -625,10 +625,12 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             button = new ButtonWithCounterView(context, resourcesProvider);
             button.setOnClickListener(this::onButton1Click);
+            button.setRound();
             buttonContainer.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
 
             button2 = new ButtonWithCounterView(context, false, resourcesProvider);
             button2.setOnClickListener(this::onButton2Click);
+            button2.setRound();
             buttonContainer.addView(button2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 8, 0, 0));
 
             underKeyboardView = new View(context);
@@ -3451,7 +3453,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
         }
     }
 
-    public class SearchUsersCell extends ScrollView {
+    public static class SearchUsersCell extends ScrollView {
 
         private final Theme.ResourcesProvider resourcesProvider;
 
@@ -3477,11 +3479,6 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
 
             spansContainer = new SpansContainer(context);
             addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-//            spansContainer.setOnClickListener(v -> {
-//                editText.clearFocus();
-//                editText.requestFocus();
-//                AndroidUtilities.showKeyboard(editText);
-//            });
 
             editText = new EditTextBoldCursor(context) {
                 @Override
@@ -3523,15 +3520,9 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             hintTextWidth = (int) editText.getPaint().measureText(getString(R.string.Search));
             editText.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                }
-
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
                 @Override
                 public void afterTextChanged(Editable s) {
                     if (ignoreTextChange) {
@@ -3542,33 +3533,6 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                     }
                 }
             });
-//            editText.setOnKeyListener(new OnKeyListener() {
-//                boolean wasEmpty;
-//                @Override
-//                public boolean onKey(View v, int keyCode, KeyEvent event) {
-//                    if (keyCode == KeyEvent.KEYCODE_DEL) {
-//                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-//                            wasEmpty = editText.length() == 0;
-//                        } else if (event.getAction() == KeyEvent.ACTION_UP && wasEmpty) {
-//                            if (!allSpans.isEmpty()) {
-//                                GroupCreateSpan lastSpan = allSpans.get(allSpans.size() - 1);
-//                                if (lastSpan == null) {
-//                                    return false;
-//                                }
-//                                View[] viewPages = viewPager.getViewPages();
-//                                if (viewPages[0] instanceof Page) {
-//                                    ((Page) viewPages[0]).onClick(lastSpan);
-//                                }
-//                                if (viewPages[1] instanceof Page) {
-//                                    ((Page) viewPages[1]).onClick(lastSpan);
-//                                }
-//                                return true;
-//                            }
-//                        }
-//                    }
-//                    return false;
-//                }
-//            });
         }
 
         @Override
@@ -3618,14 +3582,6 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             canvas.restore();
 
             canvas.restore();
-        }
-
-        @Override
-        public boolean dispatchTouchEvent(MotionEvent ev) {
-//            if (!AndroidUtilities.findClickableView(this, ev.getX(), ev.getY())) {
-//                return false;
-//            }
-            return super.dispatchTouchEvent(ev);
         }
 
         public void setText(CharSequence text) {

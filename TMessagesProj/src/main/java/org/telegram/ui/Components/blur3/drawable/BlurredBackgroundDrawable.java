@@ -29,6 +29,7 @@ import androidx.core.math.MathUtils;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
@@ -42,6 +43,10 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     public BlurredBackgroundDrawable() {
         boundProps.strokeWidthTop = dpf2(1);
         boundProps.strokeWidthBottom = dpf2(2 / 3f);
+
+        shadowLayerRadius = dpf2(1);
+        shadowLayerDx = 0;
+        shadowLayerDy = dpf2(1 / 3f);
     }
 
     protected float sourceOffsetX;
@@ -53,6 +58,18 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
             this.sourceOffsetY = sourceOffsetY;
             onSourceOffsetChange(sourceOffsetX, sourceOffsetY);
         }
+    }
+
+    public float getSourceOffsetX() {
+        return sourceOffsetX;
+    }
+
+    public float getSourceOffsetY() {
+        return sourceOffsetY;
+    }
+
+    public void setClipToOutline(boolean clipToOutline) {
+
     }
 
     public void setPadding(int padding) {
@@ -154,6 +171,12 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     public void setColorProvider(BlurredBackgroundColorProvider colorProvider) {
         this.colorProvider = colorProvider;
         updateColors();
+
+        if (colorProvider instanceof BlurredBackgroundProvider) {
+            BlurredBackgroundProvider provider = (BlurredBackgroundProvider) colorProvider;
+            setStrokeWidth(provider.getStrokeWidthTop(), provider.getStrokeWidthBottom());
+            setShadowParams(provider.getShadowRadius(), provider.getShadowDx(), provider.getShadowDy());
+        }
     }
 
     @CallSuper
@@ -283,7 +306,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         final boolean radiiAreSame = radiiAreSame(radii);
 
         if (radiiAreSame) {
-            outline.setRoundRect(rect, radii[0]);
+            outline.setRoundRect(rect, Math.min(radii[0], Math.min(rect.width(), rect.height()) / 2f));
         } else {
             if (tmpPath == null) {
                 tmpPath = new Path();
@@ -333,8 +356,12 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
 
 
 
-    public static void drawStroke(Canvas canvas, float left, float top, float right, float bottom,
-                                     float[] radii, float strokeWidth, boolean isTop, Paint paint) {
+    public static void drawStroke(
+        Canvas canvas,
+        float left, float top, float right, float bottom,
+        float[] radii, float strokeWidth, boolean isTop,
+        Paint paint
+    ) {
 
         final boolean radiiAreSame = isTop ?
             radii[0] == radii[1] && radii[1] == radii[2] && radii[2] == radii[3]:
@@ -385,7 +412,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         final float strokeHalf = strokeWidth / 2f;
         canvas.save();
         if (isTop) {
-            if (canvas.clipRect(left - strokeHalf, top, right + strokeHalf, MathUtils.clamp(top + radii, top, bottom))) {
+            if (canvas.clipRect(left - strokeHalf, top, right + strokeHalf, MathUtils.clamp(top + radii * 2, top, bottom))) {
                 canvas.drawRoundRect(
                     left - strokeHalf,
                     top + strokeHalf,
@@ -396,7 +423,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
                 );
             }
         } else {
-            if (canvas.clipRect(left - strokeHalf, MathUtils.clamp(bottom - radii, top, bottom), right + strokeHalf, bottom)) {
+            if (canvas.clipRect(left - strokeHalf, MathUtils.clamp(bottom - radii * 2, top, bottom), right + strokeHalf, bottom)) {
                 canvas.drawRoundRect(
                     left - strokeHalf,
                     top - strokeHalf,
@@ -415,6 +442,21 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         inAppKeyboardOptimization = true;
     }
 
+
+    protected float shadowLayerRadius;
+    protected float shadowLayerDx;
+    protected float shadowLayerDy;
+
+    public void setShadowParams(float radius, float dx, float dy) {
+        shadowLayerRadius = radius;
+        shadowLayerDx = dx;
+        shadowLayerDy = dy;
+    }
+
+    public void setStrokeWidth(float strokeWidthTop, float strokeWidthBottom) {
+        boundProps.strokeWidthTop = strokeWidthTop;
+        boundProps.strokeWidthBottom = strokeWidthBottom;
+    }
 
 
 
@@ -454,7 +496,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
     private void drawSourceColor(Canvas canvas, BlurredBackgroundSourceColor source) {
         final int backgroundColor = Theme.multAlpha(ColorUtils.compositeColors(this.backgroundColor, source.getColor()), alpha / 255f);
         if (Color.alpha(shadowColor) > 0 && alpha == 255) {
-            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            shadowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadowColor);
             boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
         }
 
@@ -479,7 +521,7 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         }
 
         if (Color.alpha(shadowColor) > 0 && alpha == 255) {
-            shadowPaint.setShadowLayer(dpf2(1), 0f, dpf2(1 / 3f), shadowColor);
+            shadowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadowColor);
             boundProps.drawShadows(canvas, shadowPaint, inAppKeyboardOptimization);
         }
 
