@@ -1,6 +1,20 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+// Load local.properties
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+}
+
+// Make properties available as variables
+ext.RELEASE_KEY_PASSWORD = localProperties.getProperty('RELEASE_KEY_PASSWORD', 'android')
+ext.RELEASE_KEY_ALIAS = localProperties.getProperty('RELEASE_KEY_ALIAS', 'androidkey')
+ext.RELEASE_STORE_PASSWORD = localProperties.getProperty('RELEASE_STORE_PASSWORD', 'android')
+
 repositories {
     mavenCentral()
     google()

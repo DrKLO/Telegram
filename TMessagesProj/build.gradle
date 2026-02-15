@@ -223,7 +223,8 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+// Library module doesn't need google-services plugin (only app modules do)
+// apply plugin: 'com.google.gms.google-services'
 
 task checkVisibility {
     doFirst {

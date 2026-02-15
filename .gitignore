@@ -20,3 +20,9 @@ TMessagesProj_AppHuawei/afat/
 # Sensitive credentials
 google-services.json
 TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+
+# Keystore files (signing keys - NEVER commit!)
+*.keystore
+*.jks
+TMessagesProj/config/*.keystore
+TMessagesProj/config/*.jks
