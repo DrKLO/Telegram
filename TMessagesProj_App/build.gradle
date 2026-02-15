@@ -188,7 +188,7 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    namespace 'com.rbnkv.foldogram.regular'
+    namespace 'org.telegram.messenger.regular'
 
     lintOptions {
         checkReleaseBuilds false
