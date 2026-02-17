@@ -12460,8 +12460,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     public void onAnimationUpdate(@NonNull ValueAnimator animation) {
                         float progress = (float) animation.getAnimatedValue();
                         progressToDialogStoriesCell = progress;
-                        logoAnimatedTranslationX = AndroidUtilities.lerp(fromLogoX, toLogoX, interpolator.getInterpolation(progress));
-                        subtitleAnimatedTranslationX = AndroidUtilities.lerp(fromSubtitleX, toLogoX, interpolator.getInterpolation(progress));
+                        float interpolatedProgress = interpolator.getInterpolation(progress);
+                        dialogStoriesCell.setAppearanceProgress(interpolatedProgress);
+                        logoAnimatedTranslationX = AndroidUtilities.lerp(fromLogoX, toLogoX, interpolatedProgress);
+                        subtitleAnimatedTranslationX = AndroidUtilities.lerp(fromSubtitleX, toLogoX, interpolatedProgress);
                         if (actionBar != null) {
                             if (actionBar.getTitlesContainer() != null) {
                                 actionBar.getTitlesContainer().setTranslationX(logoAnimatedTranslationX);

@@ -156,7 +156,18 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private StoriesUtilities.EnsureStoryFileLoadedObject globalCancelable;
     private float menuItemsOffset;
 
+    private float appearanceProgress = 1f;
+
     private final Interpolator interpolator = new DecelerateInterpolator(5f);
+
+    public void setAppearanceProgress(float progress) {
+        if (appearanceProgress != progress) {
+            appearanceProgress = progress;
+            if (currentState == COLLAPSED_STATE) {
+                invalidate();
+            }
+        }
+    }
 
     public DialogStoriesCell(@NonNull Context context, BaseFragment fragment, int currentAccount, int type) {
         super(context);
@@ -535,6 +546,16 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         recyclerListView.setTranslationY(bottomY);
         listViewMini.setTranslationY(bottomY);
         listViewMini.setTranslationX(menuItemsOffset);
+
+        if (currentState == COLLAPSED_STATE && listViewMini.getChildCount() > 0) {
+            View firstMini = listViewMini.getChildAt(0);
+            int firstLeft = firstMini.getLeft();
+            for (int i = 0; i < listViewMini.getChildCount(); i++) {
+                View child = listViewMini.getChildAt(i);
+                float offset = (1f - appearanceProgress) * (firstLeft - child.getLeft());
+                child.setTranslationX(offset);
+            }
+        }
 
         for (int i = 0; i < viewsDrawInParent.size(); i++) {
             viewsDrawInParent.get(i).drawInParent = false;
