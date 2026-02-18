@@ -158,7 +158,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
 
     private float appearanceProgress = 1f;
 
-    private final Interpolator interpolator = new DecelerateInterpolator(5f);
+    private final Interpolator interpolator = new DecelerateInterpolator(3f);
 
     public void setAppearanceProgress(float progress) {
         if (appearanceProgress != progress) {

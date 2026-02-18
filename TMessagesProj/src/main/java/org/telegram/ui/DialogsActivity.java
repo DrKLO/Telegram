@@ -1657,6 +1657,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                         });
                         float finalP = p;
+                        float finalTo = to;
                         storiesProgressAnimator.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationStart(Animator animation) {
@@ -1683,6 +1684,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 storiesProgressAnimator = null;
+                                if (dialogStoriesCell != null) {
+                                    dialogStoriesCell.setProgressToCollapse(finalTo);
+                                }
+                                if (viewPages != null && viewPages.length > 0) {
+                                    viewPages[0].scroller.cancel();
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        if (viewPages != null && viewPages.length > 0) {
+                                            checkAutoscrollToStories(viewPages[0]);
+                                        }
+                                    });
+                                }
                                 invalidateScrollY = true;
                             }
                         });
@@ -1821,9 +1833,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else if (p > STORIES_K) {
                 float storiesRightEdge = dialogStoriesCell.getStoriesMiniRight();
                 logoAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(20), 0, p);
-                subtitleAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(30), 0, p);
+                subtitleAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(50), 0, p);
             } else {
-                logoAnimatedTranslationX = -scrollYOffset;
+                logoAnimatedTranslationX = -scrollYOffset * 1.5f;
                 subtitleAnimatedTranslationX = -scrollYOffset * 1.5f;
 
             }
