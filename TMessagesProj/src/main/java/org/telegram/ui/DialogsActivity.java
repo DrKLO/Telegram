@@ -1657,6 +1657,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                         });
                         float finalP = p;
+                        float finalTo = to;
                         storiesProgressAnimator.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationStart(Animator animation) {
@@ -1683,11 +1684,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 storiesProgressAnimator = null;
+                                if (dialogStoriesCell != null) {
+                                    dialogStoriesCell.setProgressToCollapse(finalTo);
+                                }
+                                if (viewPages != null && viewPages.length > 0) {
+                                    viewPages[0].scroller.cancel();
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        if (viewPages != null && viewPages.length > 0) {
+                                            checkAutoscrollToStories(viewPages[0]);
+                                        }
+                                    });
+                                }
                                 invalidateScrollY = true;
                             }
                         });
                         storiesProgressAnimator.setInterpolator(null);
-                        storiesProgressAnimator.setDuration(150);
+                        storiesProgressAnimator.setDuration(200);
                         storiesProgressAnimator.start();
                     } else {
                         float targetScrollY = storiesCollapsed ? -dp(DialogStoriesCell.HEIGHT_IN_DP) : 0;
@@ -1810,7 +1822,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             });
             logoAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-            logoAnimator.setDuration(250);
+            logoAnimator.setDuration(200);
             logoAnimator.start();
         }
 
@@ -1820,11 +1832,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 subtitleAnimatedTranslationX = 0f;
             } else if (p > STORIES_K) {
                 float storiesRightEdge = dialogStoriesCell.getStoriesMiniRight();
-                logoAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(20), 0, p);
-                subtitleAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(30), 0, p);
+                logoAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(40), 0, p);
+                subtitleAnimatedTranslationX = storiesRightEdge + dp(20) + AndroidUtilities.lerp(dp(50), 0, p);
             } else {
-                logoAnimatedTranslationX = -scrollYOffset;
-                subtitleAnimatedTranslationX = -scrollYOffset * 1.5f;
+                logoAnimatedTranslationX = -scrollYOffset * 2f;
+                subtitleAnimatedTranslationX = -scrollYOffset * 2f;
 
             }
             if (actionBar.getTitlesContainer() != null) {

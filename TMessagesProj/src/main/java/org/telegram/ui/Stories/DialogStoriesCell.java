@@ -3,7 +3,6 @@ package org.telegram.ui.Stories;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -21,8 +20,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ClickableSpan;
 import android.view.Gravity;
@@ -157,8 +154,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     private float menuItemsOffset;
 
     private float appearanceProgress = 1f;
-
-    private final Interpolator interpolator = new DecelerateInterpolator(5f);
 
     public void setAppearanceProgress(float progress) {
         if (appearanceProgress != progress) {
@@ -665,7 +660,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     }
                     translationX = dstCellX;
                 } else {
-                    translationX = AndroidUtilities.lerp(0, toX - cell.getLeft(), interpolator.getInterpolation(collapsedProgress));
+                    translationX = AndroidUtilities.lerp(0, toX - cell.getLeft(), CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(collapsedProgress));
                 }
                 final float collapsedFactor = MathUtils.clamp((collapsedProgress - 0.2f) / 0.1f, 0, 1);
                 float translationY;
