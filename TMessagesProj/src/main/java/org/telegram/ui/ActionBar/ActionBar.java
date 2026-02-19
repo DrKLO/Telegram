@@ -1596,21 +1596,21 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
             titleTextView[1] = titleTextView[0];
             titleTextView[0] = tmp;
             titleTextView[0].setAlpha(0);
-            titleTextView[0].setTranslationY(-dp(20));
+            titleTextView[0].setScaleY(0.7f);
+            titleTextView[0].setScaleX(0.7f);
+            titleTextView[0].setTranslationX(-dp(20));
             titleTextView[0].animate()
                     .alpha(1f)
-                    .translationY(0)
-                    .setDuration(220).start();
+                    .scaleY(1f).scaleX(1f)
+                    .translationX(0)
+                    .setDuration(250).start();
             ViewPropertyAnimator animator = titleTextView[1].animate()
-                    .alpha(0);
-            if (subtitleTextView == null) {
-                animator.translationY(dp(20));
-            } else {
-                animator.scaleY(0.7f).scaleX(0.7f);
-            }
+                    .alpha(0)
+                    .translationX(-dp(20))
+                    .scaleY(0.7f).scaleX(0.7f);
             requestLayout();
             centerScale = true;
-            animator.setDuration(220).setListener(new AnimatorListenerAdapter() {
+            animator.setDuration(200).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (titleTextView[1] != null && titleTextView[1].getParent() != null) {
