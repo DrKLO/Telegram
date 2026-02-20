@@ -490,8 +490,12 @@ public class Camera2Session {
             captureRequestBuilder.set(CaptureRequest.FLASH_MODE, flashing ? (recordingVideo ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_SINGLE) : CaptureRequest.FLASH_MODE_OFF);
 
             if (recordingVideo) {
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
+                Range<Integer> targetFpsRange = selectOptimalFpsRange();
+                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, targetFpsRange);
                 captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
+                
+                isStabilizationAvailable(captureRequestBuilder);
+                isAutoFocusAvailable(captureRequestBuilder);
             }
 
             if (sensorSize != null && Math.abs(currentZoom - 1f) >= 0.01f) {
@@ -513,6 +517,71 @@ public class Camera2Session {
         } catch (Exception e) {
             FileLog.e("Camera2Sessions setRepeatingRequest error in updateCaptureRequest", e);
         }
+    }
+
+    private Range<Integer> selectOptimalFpsRange() {
+        Range<Integer>[] fpsRange = cameraCharacteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+        Range<Integer> optimalRange = new Range<>(30, 30);
+
+        assert fpsRange != null;
+        for (Range<Integer> range : fpsRange) {
+            if (range.getLower() <= 30 && range.getUpper() >= 30) {
+                optimalRange = range;
+                break;
+            }
+        }
+
+        FileLog.d("Camera2Session selected FPS range: " + optimalRange);
+        return optimalRange;
+    }
+
+    private void isStabilizationAvailable(CaptureRequest.Builder builder) {
+        if (setModeIfAvailable(
+                CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION,
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON,
+                builder,
+                CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE)) {
+            builder.set(
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+            FileLog.d("Camera2Sessions use OpticalImageStabilization");
+        } else if (setModeIfAvailable(
+                CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON,
+                builder,
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE)) {
+            builder.set(
+                    CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
+                    CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
+            FileLog.d("Camera2Sessions use ElectronicImageStabilization");
+        } else {
+            FileLog.d("Camera2Sessions stabilization is not available");
+        }
+    }
+
+    private void isAutoFocusAvailable(CaptureRequest.Builder builder) {
+        if (setModeIfAvailable(
+                CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO,
+                builder,
+                CaptureRequest.CONTROL_AF_MODE)) {
+            FileLog.d("Camera2Sessions use continuous AF");
+        } else {
+            FileLog.d("Camera2Sessions AF is not available");
+        }
+    }
+
+    private boolean setModeIfAvailable(
+            CameraCharacteristics.Key<int[]> key,
+            int desiredMode,
+            CaptureRequest.Builder builder,
+            CaptureRequest.Key<Integer> requestKey) {
+        int[] availableModes = cameraCharacteristics.get(key);
+        if (availableModes != null && Arrays.stream(availableModes).anyMatch(mode -> mode == desiredMode)) {
+            builder.set(requestKey, desiredMode);
+            return true;
+        }
+        return false;
     }
 
     public boolean takePicture(final File file, Utilities.Callback<Integer> whenDone) {
