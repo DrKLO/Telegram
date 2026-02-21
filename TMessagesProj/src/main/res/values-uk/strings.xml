@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">SpaceGram</string>
+    <string name="AppNameBeta">SpaceGram beta</string>
     <string name="LanguageName">Українська</string>
     <string name="English">Англійська</string>
     <string name="LanguageNameInEnglish">Ukrainian</string>

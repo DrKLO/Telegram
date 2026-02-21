@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">تيليجرام</string>
-    <string name="AppNameBeta">(Beta) تيليجرام</string>
+    <string name="AppName">SpaceGram</string>
+    <string name="AppNameBeta">SpaceGram beta</string>
     <string name="LanguageName">العربية</string>
     <string name="English">الإنجليزية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
