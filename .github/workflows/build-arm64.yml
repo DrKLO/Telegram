@@ -1,0 +1,90 @@
+name: Build arm64-v8a Release
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'TMessagesProj/**'
+      - 'TMessagesProj_AppStandalone/**'
+      - '.github/workflows/build-arm64.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Dummy Keystore
+        run: |
+          mkdir -p TMessagesProj/config
+          # Generate a dummy debug keystore to satisfy the build system
+          keytool -genkey -v -keystore TMessagesProj/config/release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000 -storepass "telegram" -keypass "telegram" -dname "CN=DrKLO, OU=Telegram, O=Telegram, L=London, ST=London, C=UK"
+
+      - name: Setup Dummy google-services.json
+        run: |
+          # Create a basic google-services.json to prevent the GMS plugin from failing the build
+          echo '{
+            "project_info": {
+              "project_number": "123456789012",
+              "firebase_url": "https://dummy.firebaseio.com",
+              "project_id": "dummy-project",
+              "storage_bucket": "dummy-project.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:123456789012:android:abcdef0123456789",
+                  "android_client_info": {
+                    "package_name": "org.telegram.messenger.web"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "dummy-api-key"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }' > TMessagesProj/google-services.json
+
+      - name: Modify local.properties
+        run: |
+          # Telegram build script relies on local.properties keys for some configurations
+          echo "RELEASE_STORE_PASSWORD=telegram" >> local.properties
+          echo "RELEASE_KEY_ALIAS=release" >> local.properties
+          echo "RELEASE_KEY_PASSWORD=telegram" >> local.properties
+          echo "BETA_URL=\"\"" >> local.properties
+          echo "APP_CENTER_HASH_PRIVATE=\"\"" >> local.properties
+          echo "APP_CENTER_HASH_PUBLIC=\"\"" >> local.properties
+          echo "APP_CENTER_HASH_HARDCORE=\"\"" >> local.properties
+
+      - name: Trim ABIs to arm64-v8a Only
+        run: |
+          # Modify the build.gradle to only compile the arm64-v8a ABI and save compilation time.
+          # The Telegram standalone uses the 'afat' flavor for all ABIs.
+          sed -i 's/"armeabi-v7a", "arm64-v8a", "x86", "x86_64"/"arm64-v8a"/g' TMessagesProj_AppStandalone/build.gradle
+          sed -i 's/"armeabi-v7a", "arm64-v8a", "x86", "x86_64"/"arm64-v8a"/g' TMessagesProj_App/build.gradle
+
+      - name: Build Standalone Release APK
+        run: ./gradlew assembleAfatStandaloneRelease
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Telegram-arm64-v8a-Standalone
+          path: TMessagesProj_AppStandalone/build/outputs/apk/afat/standaloneRelease/*.apk
