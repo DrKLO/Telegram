@@ -76,6 +76,8 @@ jobs:
             ],
             "configuration_version": "1"
           }' > TMessagesProj/google-services.json
+          cp TMessagesProj/google-services.json TMessagesProj_App/google-services.json
+          cp TMessagesProj/google-services.json TMessagesProj_AppStandalone/google-services.json
 
       - name: Modify local.properties
         run: |
