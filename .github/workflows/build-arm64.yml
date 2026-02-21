@@ -27,7 +27,7 @@ jobs:
           mkdir -p TMessagesProj/config
           rm -f TMessagesProj/config/release.keystore
           # Generate a dummy debug keystore to satisfy the build system
-          keytool -genkey -v -keystore TMessagesProj/config/release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000 -storepass "telegram" -keypass "telegram" -dname "CN=DrKLO, OU=Telegram, O=Telegram, L=London, ST=London, C=UK"
+          keytool -genkey -v -keystore TMessagesProj/config/release.keystore -alias androidkey -keyalg RSA -keysize 2048 -validity 10000 -storepass "android" -keypass "android" -dname "CN=DrKLO, OU=Telegram, O=Telegram, L=London, ST=London, C=UK"
 
       - name: Setup Dummy google-services.json
         run: |
@@ -82,9 +82,9 @@ jobs:
       - name: Modify local.properties
         run: |
           # Telegram build script relies on local.properties keys for some configurations
-          echo "RELEASE_STORE_PASSWORD=telegram" >> local.properties
-          echo "RELEASE_KEY_ALIAS=release" >> local.properties
-          echo "RELEASE_KEY_PASSWORD=telegram" >> local.properties
+          echo "RELEASE_STORE_PASSWORD=android" >> local.properties
+          echo "RELEASE_KEY_ALIAS=androidkey" >> local.properties
+          echo "RELEASE_KEY_PASSWORD=android" >> local.properties
           echo "BETA_URL=\"\"" >> local.properties
           echo "APP_CENTER_HASH_PRIVATE=\"\"" >> local.properties
           echo "APP_CENTER_HASH_PUBLIC=\"\"" >> local.properties
