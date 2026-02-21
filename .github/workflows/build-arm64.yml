@@ -82,10 +82,10 @@ jobs:
           sed -i 's/"armeabi-v7a", "arm64-v8a", "x86", "x86_64"/"arm64-v8a"/g' TMessagesProj_App/build.gradle
 
       - name: Build Standalone Release APK
-        run: ./gradlew assembleAfatStandaloneRelease
+        run: ./gradlew assembleAfatStandalone
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Telegram-arm64-v8a-Standalone
-          path: TMessagesProj_AppStandalone/build/outputs/apk/afat/standaloneRelease/*.apk
+          path: TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk
