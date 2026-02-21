@@ -1,5 +1,5 @@
 import os
-from PIL import Image
+from PIL import Image  # type: ignore
 
 # Define the source image and the target directory for Android resources
 SOURCE_IMAGE = "app_icon.png"
@@ -13,6 +13,18 @@ ICON_SIZES = {
     "mipmap-xxhdpi": 144,
     "mipmap-xxxhdpi": 192
 }
+
+# The names required by the Play Store version and Standalone version
+ICON_NAMES = [
+    "ic_launcher.png",
+    "ic_launcher_round.png",
+    "ic_launcher_sa.png",
+    "icon_2_launcher_sa.png",
+    "icon_3_launcher_sa.png",
+    "icon_4_launcher_sa.png",
+    "icon_5_launcher_sa.png",
+    "icon_6_launcher_sa.png"
+]
 
 def generate_icons():
     if not os.path.exists(SOURCE_IMAGE):
@@ -31,21 +43,19 @@ def generate_icons():
     for folder, size in ICON_SIZES.items():
         target_dir = os.path.join(RES_DIR, folder)
         
-        # Create directory if it doesn't exist (though it should in Telegram source)
+        # Create directory if it doesn't exist
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
 
         # Resize image using high-quality downsampling
         resized_img = img.resize((size, size), Image.Resampling.LANCZOS)
         
-        # Save both normal and round versions (for modern Android support)
-        launcher_path = os.path.join(target_dir, "ic_launcher.png")
-        round_launcher_path = os.path.join(target_dir, "ic_launcher_round.png")
+        # Save all the required icon names
+        for icon_name in ICON_NAMES:
+            path = os.path.join(target_dir, icon_name)
+            resized_img.save(path, format="PNG")
         
-        resized_img.save(launcher_path, format="PNG")
-        resized_img.save(round_launcher_path, format="PNG")
-        
-        print(f"Generated {size}x{size} icons in {folder}")
+        print(f"Generated {size}x{size} icons in {folder} (including Standalone aliases)")
 
 if __name__ == "__main__":
     generate_icons()

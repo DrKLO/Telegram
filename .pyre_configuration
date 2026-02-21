@@ -1,0 +1,11 @@
+{
+  "source_directories": [
+    "."
+  ],
+  "site_roots": [
+    "C:/Users/Rocket/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages"
+  ],
+  "search_path": [
+    "C:/Users/Rocket/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages"
+  ]
+}
