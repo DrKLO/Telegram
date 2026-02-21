@@ -25,6 +25,7 @@ jobs:
       - name: Setup Dummy Keystore
         run: |
           mkdir -p TMessagesProj/config
+          rm -f TMessagesProj/config/release.keystore
           # Generate a dummy debug keystore to satisfy the build system
           keytool -genkey -v -keystore TMessagesProj/config/release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000 -storepass "telegram" -keypass "telegram" -dname "CN=DrKLO, OU=Telegram, O=Telegram, L=London, ST=London, C=UK"
 
