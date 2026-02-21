@@ -44,20 +44,34 @@ jobs:
                 "client_info": {
                   "mobilesdk_app_id": "1:123456789012:android:abcdef0123456789",
                   "android_client_info": {
-                    "package_name": "org.telegram.messenger.web"
+                    "package_name": "org.spacegram.rocket"
                   }
                 },
                 "oauth_client": [],
-                "api_key": [
-                  {
-                    "current_key": "dummy-api-key"
+                "api_key": [{"current_key": "dummy-api-key"}],
+                "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+              },
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:123456789012:android:abcdef012345678a",
+                  "android_client_info": {
+                    "package_name": "org.spacegram.rocket.web"
                   }
-                ],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
+                },
+                "oauth_client": [],
+                "api_key": [{"current_key": "dummy-api-key"}],
+                "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+              },
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:123456789012:android:abcdef012345678b",
+                  "android_client_info": {
+                    "package_name": "org.telegram.messenger"
                   }
-                }
+                },
+                "oauth_client": [],
+                "api_key": [{"current_key": "dummy-api-key"}],
+                "services": {"appinvite_service": {"other_platform_oauth_client": []}}
               }
             ],
             "configuration_version": "1"
