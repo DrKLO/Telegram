@@ -2807,6 +2807,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
+                NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.hideBottomPanelChanged);
                 getNotificationCenter().addObserver(this, NotificationCenter.filterSettingsUpdated);
                 getNotificationCenter().addObserver(this, NotificationCenter.dialogFiltersUpdated);
                 getNotificationCenter().addObserver(this, NotificationCenter.dialogsUnreadCounterChanged);
@@ -2879,8 +2880,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         BirthdayController.getInstance(currentAccount).check();
-        additionNavigationBarHeight = hasMainTabs ? dp(MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-        additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        additionNavigationBarHeight = hasMainTabs && !SharedConfig.hideBottomPanel ? dp(MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !SharedConfig.hideBottomPanel ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
 
         return true;
     }
@@ -2977,6 +2978,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
+                NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.hideBottomPanelChanged);
                 getNotificationCenter().removeObserver(this, NotificationCenter.filterSettingsUpdated);
                 getNotificationCenter().removeObserver(this, NotificationCenter.dialogFiltersUpdated);
                 getNotificationCenter().removeObserver(this, NotificationCenter.dialogsUnreadCounterChanged);
@@ -10325,6 +10327,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (updateVisibleRows) {
                 updateVisibleRows(0);
             }
+        } else if (id == NotificationCenter.hideBottomPanelChanged) {
+            additionNavigationBarHeight = hasMainTabs && !SharedConfig.hideBottomPanel ? dp(MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+            additionFloatingButtonOffset = hasMainTabs && !SharedConfig.hideBottomPanel ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+            updateFloatingButtonOffset();
+            checkUi_chatListViewPaddingsBottom();
         } else if (id == NotificationCenter.openedChatChanged) {
             if (viewPages == null) {
                 return;
@@ -13141,6 +13148,54 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                 presentFragment(new ChatActivity(args));
             });
+            io.add(R.drawable.msg_addcontact, getString(R.string.NewMessageTitle), this::openWriteContacts);
+            io.add(R.drawable.outline_fab_story_24, getString(R.string.RecorderNewStory), this::openStoriesRecorder);
+            if (mainTabsActivityController != null) {
+                io.addGap();
+                io.add(R.drawable.msg_contacts, getString(R.string.MainTabsContacts), () -> {
+                    mainTabsActivityController.selectTab(MainTabsActivity.POSITION_CONTACTS);
+                });
+                io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
+                    mainTabsActivityController.selectTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS);
+                });
+                AvatarDrawable avatarDrawable = new AvatarDrawable();
+                avatarDrawable.setInfo(getUserConfig().getCurrentUser());
+                avatarDrawable.setRoundRadius(dp(11.33f));
+                io.add(new Drawable() {
+                    @Override
+                    public void draw(@NonNull Canvas canvas) {
+                        avatarDrawable.setBounds(getBounds());
+                        avatarDrawable.draw(canvas);
+                    }
+
+                    @Override
+                    public void setAlpha(int alpha) {
+                        avatarDrawable.setAlpha(alpha);
+                    }
+
+                    @Override
+                    public void setColorFilter(@Nullable ColorFilter colorFilter) {
+                        avatarDrawable.setColorFilter(colorFilter);
+                    }
+
+                    @Override
+                    public int getOpacity() {
+                        return avatarDrawable.getOpacity();
+                    }
+
+                    @Override
+                    public int getIntrinsicWidth() {
+                        return dp(24);
+                    }
+
+                    @Override
+                    public int getIntrinsicHeight() {
+                        return dp(24);
+                    }
+                }, getString(R.string.MainTabsProfile), () -> {
+                    mainTabsActivityController.selectTab(MainTabsActivity.POSITION_PROFILE);
+                });
+            }
             if (ApplicationLoader.applicationLoaderInstance != null) {
                 ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
             }
@@ -13167,11 +13222,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }, () -> BotWebViewSheet.deleteBot(currentAccount, attachMenuBot.bot_id, null));
                     }
                 }
-            }
-            if (getUserConfig().showCallsTab) {
-                io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
-                    presentFragment(new SettingsActivity());
-                });
             }
 
             if (proxyMenuSubItem != null) {
