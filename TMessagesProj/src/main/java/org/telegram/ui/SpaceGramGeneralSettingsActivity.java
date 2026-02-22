@@ -14,10 +14,11 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.Components.UItem;
 
 import java.util.ArrayList;
 
@@ -43,16 +44,10 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-        listView = new UniversalRecyclerView(this, new UniversalAdapter.FillItems() {
-            @Override
-            public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-                SpaceGramGeneralSettingsActivity.this.fillItems(items, adapter);
-            }
-        }, new UniversalAdapter.OnItemClick() {
-            @Override
-            public void onClick(UItem item, View view, int position, float x, float y) {
-                SpaceGramGeneralSettingsActivity.this.onClick(item, view, position, x, y);
-            }
+        listView = new UniversalRecyclerView(this, (items, adapter) -> {
+            fillItems(items, adapter);
+        }, (item, view, position, x, y) -> {
+            onClick(item, view, position, x, y);
         }, null);
 
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -64,13 +59,13 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
         items.add(UItem.asHeader(LocaleController.getString("SettingsSpaceGramTranslator", R.string.SettingsSpaceGramTranslator)));
         
         String styleName = SharedConfig.spaceGramTranslateStyle == 0 ? LocaleController.getString("TranslateStyleOnMessage", R.string.TranslateStyleOnMessage) : LocaleController.getString("TranslateStylePopup", R.string.TranslateStylePopup);
-        items.add(UItem.asDetailSettings(1, LocaleController.getString("SettingsSpaceGramTranslatorStyle", R.string.SettingsSpaceGramTranslatorStyle), styleName));
+        items.add(UItem.asSettingsCell(1, 0, LocaleController.getString("SettingsSpaceGramTranslatorStyle", R.string.SettingsSpaceGramTranslatorStyle), styleName));
         
         String providerName = SharedConfig.spaceGramTranslateProvider == 1 ? LocaleController.getString("TranslateProviderGoogle", R.string.TranslateProviderGoogle) : "Telegram";
-        items.add(UItem.asDetailSettings(2, LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider), providerName));
+        items.add(UItem.asSettingsCell(2, 0, LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider), providerName));
         
-        items.add(UItem.asDetailSettings(3, LocaleController.getString("SettingsSpaceGramTranslatorTargetLang", R.string.SettingsSpaceGramTranslatorTargetLang), SharedConfig.spaceGramTranslateTargetLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateTargetLang));
-        items.add(UItem.asDetailSettings(4, LocaleController.getString("SettingsSpaceGramTranslatorSkipLang", R.string.SettingsSpaceGramTranslatorSkipLang), SharedConfig.spaceGramTranslateSkipLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateSkipLang));
+        items.add(UItem.asSettingsCell(3, 0, LocaleController.getString("SettingsSpaceGramTranslatorTargetLang", R.string.SettingsSpaceGramTranslatorTargetLang), SharedConfig.spaceGramTranslateTargetLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateTargetLang));
+        items.add(UItem.asSettingsCell(4, 0, LocaleController.getString("SettingsSpaceGramTranslatorSkipLang", R.string.SettingsSpaceGramTranslatorSkipLang), SharedConfig.spaceGramTranslateSkipLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateSkipLang));
         
         items.add(UItem.asCheck(5, LocaleController.getString("SettingsSpaceGramAutoTranslate", R.string.SettingsSpaceGramAutoTranslate)).setChecked(SharedConfig.spaceGramAutoTranslate));
         
