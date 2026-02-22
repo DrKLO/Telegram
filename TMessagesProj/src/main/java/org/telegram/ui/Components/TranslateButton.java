@@ -53,6 +53,8 @@ import org.telegram.ui.RestrictedLanguagesSelectActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
+import org.spacegram.SpaceGramConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 
