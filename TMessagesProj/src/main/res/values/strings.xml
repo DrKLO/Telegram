@@ -8439,6 +8439,8 @@
     <string name="BrowserSettingsAddHint">Enter URL</string>
     <string name="InappBrowser">In-App Browser</string>
     <string name="InappBrowserInfo">Open external links within the app</string>
+    <string name="HideBottomPanel">Hide bottom panel</string>
+    <string name="HideBottomPanelInfo">Hides the main navigation panel</string>
     <string name="BrowserSettingsSearchEngine">Search Engine</string>
     <string name="BrowserSettingsSearchEngineInfo">Search Engine is used in address bar to open search and auto-complete.</string>
     <string name="BrowserExternalTitle">Open in Browser</string>

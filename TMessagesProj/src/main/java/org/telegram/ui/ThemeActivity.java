@@ -177,6 +177,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int nightThemeRow;
     @Keep
     private int browserRow;
+    private int hideBottomPanelRow;
     private int nightDisabledRow;
     private int nightScheduledRow;
     private int nightAutomaticRow;
@@ -681,6 +682,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             nightThemeRow = rowCount++;
             browserRow = rowCount++;
+            hideBottomPanelRow = rowCount++;
             liteModeRow = rowCount++;
             stickersRow = rowCount++;
             stickersSectionRow = rowCount++;
@@ -1406,6 +1408,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 } else {
                     presentFragment(new WebBrowserSettings(null));
                 }
+            } else if (position == hideBottomPanelRow) {
+                NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
+                SharedConfig.toggleHideBottomPanel();
+                checkCell.setChecked(SharedConfig.hideBottomPanel);
             } else if (position == nightDisabledRow) {
                 if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_NONE) {
                     return;
@@ -2635,6 +2641,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         checkCell.setTextAndValueAndIconAndCheck(getString("AutoNightTheme", R.string.AutoNightTheme), value, R.drawable.menu_night_mode_24, enabled, 0, false, true);
                     } else if (position == browserRow) {
                         checkCell.setTextAndValueAndIconAndCheck(getString(R.string.InappBrowser), getString(R.string.InappBrowserInfo), R.drawable.msg2_language, SharedConfig.inappBrowser, 0, false, true);
+                    } else if (position == hideBottomPanelRow) {
+                        checkCell.setTextAndValueAndIconAndCheck(getString("HideBottomPanel", R.string.HideBottomPanel), getString("HideBottomPanelInfo", R.string.HideBottomPanelInfo), R.drawable.msg_settings, SharedConfig.hideBottomPanel, 0, false, true);
                     }
                     break;
                 }
@@ -2752,7 +2760,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return TYPE_TEXT_SIZE;
             } else if (position == chatListRow) {
                 return TYPE_CHAT_LIST;
-            } else if (position == nightThemeRow || position == browserRow) {
+            } else if (position == nightThemeRow || position == browserRow || position == hideBottomPanelRow) {
                 return TYPE_NIGHT_THEME;
             } else if (position == themeListRow) {
                 return TYPE_THEME_LIST;

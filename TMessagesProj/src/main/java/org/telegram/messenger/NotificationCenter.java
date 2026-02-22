@@ -109,6 +109,7 @@ public class NotificationCenter {
     public static final int reloadHints = totalEvents++;
     public static final int reloadInlineHints = totalEvents++;
     public static final int reloadWebappsHints = totalEvents++;
+    public static final int hideBottomPanelChanged = totalEvents++;
     public static final int newDraftReceived = totalEvents++;
     public static final int recentDocumentsDidLoad = totalEvents++;
     public static final int needAddArchivedStickers = totalEvents++;
