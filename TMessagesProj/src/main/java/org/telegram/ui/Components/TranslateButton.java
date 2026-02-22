@@ -351,6 +351,49 @@ public class TranslateButton extends FrameLayout {
 
         popupLayout.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
+        ActionBarMenuSubItem providerButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
+        providerButton.setTextAndIcon(getString(R.string.SettingsSpaceGramTranslatorProvider), R.drawable.msg_customize);
+        providerButton.setSubtext(SpaceGramConfig.translateProvider == 0 ? "Telegram" : "Google");
+        providerButton.setItemHeight(56);
+        popupLayout.addView(providerButton);
+
+        LinearLayout providerSwipeBack = new LinearLayout(getContext());
+        providerSwipeBack.setOrientation(LinearLayout.VERTICAL);
+        final int providerSwipeBackIndex = popupLayout.addViewToSwipeBack(providerSwipeBack);
+
+        ActionBarMenuSubItem providerBackButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
+        providerBackButton.setTextAndIcon(getString(R.string.Back), R.drawable.ic_ab_back);
+        providerBackButton.setOnClickListener(e -> popupLayout.getSwipeBack().closeForeground());
+        providerSwipeBack.addView(providerBackButton);
+
+        ActionBarMenuSubItem telegramProvider = new ActionBarMenuSubItem(getContext(), 2, false, false, resourcesProvider);
+        telegramProvider.setText("Telegram");
+        telegramProvider.setChecked(SpaceGramConfig.translateProvider == 0);
+        telegramProvider.setOnClickListener(e -> {
+            SpaceGramConfig.translateProvider = 0;
+            SpaceGramConfig.saveConfig();
+            popupWindow.dismiss();
+            updateText();
+        });
+        providerSwipeBack.addView(telegramProvider);
+
+        ActionBarMenuSubItem googleProvider = new ActionBarMenuSubItem(getContext(), 2, false, false, resourcesProvider);
+        googleProvider.setText("Google");
+        googleProvider.setChecked(SpaceGramConfig.translateProvider != 0);
+        googleProvider.setOnClickListener(e -> {
+            SpaceGramConfig.translateProvider = 1;
+            SpaceGramConfig.saveConfig();
+            popupWindow.dismiss();
+            updateText();
+        });
+        providerSwipeBack.addView(googleProvider);
+
+        providerButton.setOnClickListener(e -> {
+            popupLayout.getSwipeBack().openForeground(providerSwipeBackIndex);
+        });
+
+        popupLayout.addView(new ActionBarPopupWindow.GapView(getContext(), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+
         final LinkSpanDrawable.LinksTextView cocoonButton = new LinkSpanDrawable.LinksTextView(getContext());
         cocoonButton.setPadding(dp(13), dp(8.33f), dp(13), dp(8.33f));
         cocoonButton.setDisablePaddingsOffsetY(true);
@@ -411,7 +454,7 @@ public class TranslateButton extends FrameLayout {
             }
             textView.setText(TextUtils.concat(translateIcon, " ", text));
         }
-        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation ? R.drawable.msg_mini_customize : R.drawable.msg_close);
+        menuView.setImageResource(UserConfig.getInstance(currentAccount).isPremium() || (chat != null && chat.autotranslation) || SpaceGramConfig.translateProvider != 0 ? R.drawable.msg_mini_customize : R.drawable.msg_close);
     }
 
     public static void showCocoonAlert(Context context, Theme.ResourcesProvider resourcesProvider) {

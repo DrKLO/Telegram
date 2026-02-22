@@ -76,8 +76,9 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
             SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         } else if (item.id == 2) {
-            // Only Google for now as choice
-            // SpaceGramConfig.translateProvider = 1;
+            SpaceGramConfig.translateProvider = (SpaceGramConfig.translateProvider + 1) % 2;
+            SpaceGramConfig.saveConfig();
+            listView.adapter.update(true);
         } else if (item.id == 3) {
             // Language selection - placeholder or reuse LanguageSelectActivity
             presentFragment(new LanguageSelectActivity());

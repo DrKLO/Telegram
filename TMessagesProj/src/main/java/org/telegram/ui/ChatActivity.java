@@ -28015,7 +28015,7 @@ public class ChatActivity extends BaseFragment implements
 
         boolean showRestartTopic = !isInPreviewMode() && forumTopic != null && forumTopic.closed && !forumTopic.hidden && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic);
         boolean showTranslate = (
-            getUserConfig().isPremium() || currentChat != null && currentChat.autotranslation ?
+            getUserConfig().isPremium() || (currentChat != null && currentChat.autotranslation) || SpaceGramConfig.translateProvider != 0 ?
                 getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) && !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) :
                 !getMessagesController().premiumFeaturesBlocked() && preferences.getInt("dialog_show_translate_count" + did, 5) <= 0
         ) || DEBUG_TOP_PANELS;
