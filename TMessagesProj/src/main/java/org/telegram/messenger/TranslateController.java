@@ -29,6 +29,8 @@ import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
+import org.spacegram.SpaceGramConfig;
+import org.spacegram.translator.SpaceGramTranslator;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.Bulletin;
@@ -216,7 +218,8 @@ public class TranslateController extends BaseController {
         if (!isDialogTranslatable(dialogId)) {
             return false;
         }
-        if (SharedConfig.spaceGramAutoTranslate && SharedConfig.spaceGramTranslateStyle == 0) {
+        if (SpaceGramConfig.autoTranslate && SpaceGramConfig.translateStyle == 0) {
+
             return true;
         }
         final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
@@ -630,7 +633,8 @@ public class TranslateController extends BaseController {
         }
 
         if (onScreen && isTranslatingDialog(dialogId)) {
-            if (SharedConfig.spaceGramTranslateStyle == 1) {
+            if (SpaceGramConfig.translateStyle == 1) {
+
                 // Style: Pop-up Dialogue, don't translate in-place
                 return;
             }
@@ -1057,15 +1061,15 @@ public class TranslateController extends BaseController {
                     }
                 }
 
-                final String method = getMessagesController().translationsAutoEnabled;
-                if (SharedConfig.spaceGramTranslateProvider == 1 || "alternative".equals(method) || "system".equals(method)) {
+                if (SpaceGramConfig.translateProvider != 0) {
                     final String toLanguage = pendingTranslation1.language;
                     for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
                         final int id = pendingTranslation1.messageIds.get(i);
                         final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
                         final String _text = pendingTranslation1.messageTexts.get(i).text;
                         final TLRPC.TL_textWithEntities sourceEntity = pendingTranslation1.messageTexts.get(i);
-                        TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                        
+                        SpaceGramTranslator.getInstance().translate(_text, null, toLanguage, (result, rateLimit) -> {
                             if (result != null) {
                                 final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
                                 resultWithEntities.text = result;
@@ -1077,7 +1081,8 @@ public class TranslateController extends BaseController {
                         });
                     }
                     return;
-                }/* else if ("system".equals(method)) {
+                }
+/* else if ("system".equals(method)) {
                     final String toLanguage = pendingTranslation1.language;
                     for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
                         final int id = pendingTranslation1.messageIds.get(i);

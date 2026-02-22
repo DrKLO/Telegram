@@ -1,20 +1,20 @@
-package org.telegram.ui;
+package org.spacegram.ui;
 
 import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import org.spacegram.SpaceGramConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+
 
 import java.util.ArrayList;
 
@@ -54,14 +54,15 @@ public class SpaceGramExperimentalSettingsActivity extends BaseFragment {
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(LocaleController.getString("SettingsSpaceGramNetwork", R.string.SettingsSpaceGramNetwork)));
         items.add(UItem.asButtonCheck(1, LocaleController.getString("SettingsSpaceGramNetworkSpeed", R.string.SettingsSpaceGramNetworkSpeed), LocaleController.getString("SettingsSpaceGramNetworkSpeedInfo", R.string.SettingsSpaceGramNetworkSpeedInfo))
-                .setChecked(SharedConfig.spaceGramNetworkSpeedMode == 1));
+                .setChecked(SpaceGramConfig.networkSpeedMode == 1));
         items.add(UItem.asShadow(null));
+
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == 1) {
-            SharedConfig.spaceGramNetworkSpeedMode = SharedConfig.spaceGramNetworkSpeedMode == 1 ? 0 : 1;
-            SharedConfig.saveConfig();
+            SpaceGramConfig.networkSpeedMode = SpaceGramConfig.networkSpeedMode == 1 ? 0 : 1;
+            SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         }
     }

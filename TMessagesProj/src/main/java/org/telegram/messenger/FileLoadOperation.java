@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.spacegram.SpaceGramConfig;
+
 import org.telegram.messenger.utils.ImmutableByteArrayOutputStream;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -286,7 +288,8 @@ public class FileLoadOperation {
     }
 
     private void updateParams() {
-        if (SharedConfig.spaceGramNetworkSpeedMode != 0) {
+        if (SpaceGramConfig.networkSpeedMode != 0) {
+
             downloadChunkSizeBig = 1024 * 1024;
             maxDownloadRequests = 16;
             maxDownloadRequestsBig = 16;

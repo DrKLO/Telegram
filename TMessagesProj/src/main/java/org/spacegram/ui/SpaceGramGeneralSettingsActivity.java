@@ -1,24 +1,21 @@
-package org.telegram.ui;
+package org.spacegram.ui;
 
 import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import org.spacegram.SpaceGramConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.Cells.TextDetailSettingsCell;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.ui.LanguageSelectActivity;
+
 
 import java.util.ArrayList;
 
@@ -58,28 +55,29 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(LocaleController.getString("SettingsSpaceGramTranslator", R.string.SettingsSpaceGramTranslator)));
         
-        String styleName = SharedConfig.spaceGramTranslateStyle == 0 ? LocaleController.getString("TranslateStyleOnMessage", R.string.TranslateStyleOnMessage) : LocaleController.getString("TranslateStylePopup", R.string.TranslateStylePopup);
+        String styleName = SpaceGramConfig.translateStyle == 0 ? LocaleController.getString("TranslateStyleOnMessage", R.string.TranslateStyleOnMessage) : LocaleController.getString("TranslateStylePopup", R.string.TranslateStylePopup);
         items.add(UItem.asSettingsCell(1, 0, LocaleController.getString("SettingsSpaceGramTranslatorStyle", R.string.SettingsSpaceGramTranslatorStyle), styleName));
         
-        String providerName = SharedConfig.spaceGramTranslateProvider == 1 ? LocaleController.getString("TranslateProviderGoogle", R.string.TranslateProviderGoogle) : "Telegram";
+        String providerName = SpaceGramConfig.translateProvider == 1 ? LocaleController.getString("TranslateProviderGoogle", R.string.TranslateProviderGoogle) : "Telegram";
         items.add(UItem.asSettingsCell(2, 0, LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider), providerName));
         
-        items.add(UItem.asSettingsCell(3, 0, LocaleController.getString("SettingsSpaceGramTranslatorTargetLang", R.string.SettingsSpaceGramTranslatorTargetLang), SharedConfig.spaceGramTranslateTargetLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateTargetLang));
-        items.add(UItem.asSettingsCell(4, 0, LocaleController.getString("SettingsSpaceGramTranslatorSkipLang", R.string.SettingsSpaceGramTranslatorSkipLang), SharedConfig.spaceGramTranslateSkipLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SharedConfig.spaceGramTranslateSkipLang));
+        items.add(UItem.asSettingsCell(3, 0, LocaleController.getString("SettingsSpaceGramTranslatorTargetLang", R.string.SettingsSpaceGramTranslatorTargetLang), SpaceGramConfig.translateTargetLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SpaceGramConfig.translateTargetLang));
+        items.add(UItem.asSettingsCell(4, 0, LocaleController.getString("SettingsSpaceGramTranslatorSkipLang", R.string.SettingsSpaceGramTranslatorSkipLang), SpaceGramConfig.translateSkipLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SpaceGramConfig.translateSkipLang));
         
-        items.add(UItem.asCheck(5, LocaleController.getString("SettingsSpaceGramAutoTranslate", R.string.SettingsSpaceGramAutoTranslate)).setChecked(SharedConfig.spaceGramAutoTranslate));
+        items.add(UItem.asCheck(5, LocaleController.getString("SettingsSpaceGramAutoTranslate", R.string.SettingsSpaceGramAutoTranslate)).setChecked(SpaceGramConfig.autoTranslate));
+
         
         items.add(UItem.asShadow(null));
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == 1) {
-            SharedConfig.spaceGramTranslateStyle = (SharedConfig.spaceGramTranslateStyle + 1) % 2;
-            SharedConfig.saveConfig();
+            SpaceGramConfig.translateStyle = (SpaceGramConfig.translateStyle + 1) % 2;
+            SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         } else if (item.id == 2) {
             // Only Google for now as choice
-            // SharedConfig.spaceGramTranslateProvider = 1;
+            // SpaceGramConfig.translateProvider = 1;
         } else if (item.id == 3) {
             // Language selection - placeholder or reuse LanguageSelectActivity
             presentFragment(new LanguageSelectActivity());
@@ -87,8 +85,8 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
             // Language selection - placeholder
             presentFragment(new LanguageSelectActivity());
         } else if (item.id == 5) {
-            SharedConfig.spaceGramAutoTranslate = !SharedConfig.spaceGramAutoTranslate;
-            SharedConfig.saveConfig();
+            SpaceGramConfig.autoTranslate = !SpaceGramConfig.autoTranslate;
+            SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         }
     }

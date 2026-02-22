@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import org.spacegram.SpaceGramConfig;
+
 import com.google.android.exoplayer2.util.Log;
 
 import java.util.ArrayList;
@@ -91,7 +93,8 @@ public class FileLoaderPriorityQueue {
         int lastPriority = 0;
         boolean pauseAllNextOperations = false;
         int max = type == TYPE_LARGE ? MessagesController.getInstance(currentAccount).largeQueueMaxActiveOperations : MessagesController.getInstance(currentAccount).smallQueueMaxActiveOperations;
-        if (SharedConfig.spaceGramNetworkSpeedMode != 0) {
+        if (SpaceGramConfig.networkSpeedMode != 0) {
+
             max *= 2;
         }
         tmpListOperations.clear();

@@ -350,12 +350,7 @@ public class SharedConfig {
     public static boolean multipleReactionsPromoShowed;
 
     public static boolean translateChats = true;
-    public static int spaceGramTranslateStyle = 0;
-    public static int spaceGramTranslateProvider = 1;
-    public static String spaceGramTranslateTargetLang = "";
-    public static String spaceGramTranslateSkipLang = "";
-    public static boolean spaceGramAutoTranslate = false;
-    public static int spaceGramNetworkSpeedMode = 0;
+
 
     public static boolean isFloatingDebugActive;
     public static LiteMode liteMode;
@@ -471,12 +466,8 @@ public class SharedConfig {
                 editor.putString("storageCacheDir", !TextUtils.isEmpty(storageCacheDir) ? storageCacheDir : "");
                 editor.putBoolean("proxyRotationEnabled", proxyRotationEnabled);
                 editor.putInt("proxyRotationTimeout", proxyRotationTimeout);
-                editor.putInt("spaceGramTranslateStyle", spaceGramTranslateStyle);
-                editor.putInt("spaceGramTranslateProvider", spaceGramTranslateProvider);
-                editor.putString("spaceGramTranslateTargetLang", spaceGramTranslateTargetLang != null ? spaceGramTranslateTargetLang : "");
-                editor.putString("spaceGramTranslateSkipLang", spaceGramTranslateSkipLang != null ? spaceGramTranslateSkipLang : "");
-                editor.putBoolean("spaceGramAutoTranslate", spaceGramAutoTranslate);
-                editor.putInt("spaceGramNetworkSpeedMode", spaceGramNetworkSpeedMode);
+                org.spacegram.SpaceGramConfig.saveConfig();
+
 
                 if (pendingAppUpdate != null) {
                     try {
@@ -544,12 +535,8 @@ public class SharedConfig {
             storageCacheDir = preferences.getString("storageCacheDir", null);
             proxyRotationEnabled = preferences.getBoolean("proxyRotationEnabled", false);
             proxyRotationTimeout = preferences.getInt("proxyRotationTimeout", ProxyRotationController.DEFAULT_TIMEOUT_INDEX);
-            spaceGramTranslateStyle = preferences.getInt("spaceGramTranslateStyle", 0);
-            spaceGramTranslateProvider = preferences.getInt("spaceGramTranslateProvider", 1);
-            spaceGramTranslateTargetLang = preferences.getString("spaceGramTranslateTargetLang", "");
-            spaceGramTranslateSkipLang = preferences.getString("spaceGramTranslateSkipLang", "");
-            spaceGramAutoTranslate = preferences.getBoolean("spaceGramAutoTranslate", false);
-            spaceGramNetworkSpeedMode = preferences.getInt("spaceGramNetworkSpeedMode", 0);
+            org.spacegram.SpaceGramConfig.loadConfig();
+
             String authKeyString = preferences.getString("pushAuthKey", null);
             if (!TextUtils.isEmpty(authKeyString)) {
                 pushAuthKey = Base64.decode(authKeyString, Base64.DEFAULT);

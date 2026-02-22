@@ -61,6 +61,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.spacegram.ui.SpaceGramSettingsActivity;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.AuthTokensHelper;
@@ -757,6 +758,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 100:
                 presentFragment(new SpaceGramSettingsActivity());
+
                 break;
             case 2:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
