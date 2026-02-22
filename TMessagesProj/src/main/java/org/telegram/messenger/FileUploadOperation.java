@@ -121,7 +121,11 @@ public class FileUploadOperation {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("start upload on slow network = " + slowNetwork);
             }
-            for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
+            int count = slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount;
+            if (SharedConfig.spaceGramNetworkSpeedMode) {
+                count *= 2;
+            }
+            for (int a = 0; a < count; a++) {
                 startUploadRequest();
             }
         });
@@ -158,7 +162,11 @@ public class FileUploadOperation {
                 cachedResults.clear();
 
                 operationGuid++;
-                for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
+                int count = slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount;
+                if (SharedConfig.spaceGramNetworkSpeedMode) {
+                    count *= 2;
+                }
+                for (int a = 0; a < count; a++) {
                     startUploadRequest();
                 }
             }
@@ -317,7 +325,11 @@ public class FileUploadOperation {
                     }
                     uploadChunkSize = chunkSize;
                 }
-                maxRequestsCount = Math.max(1, (slowNetwork ? maxUploadingSlowNetworkKBytes : maxUploadingKBytes) / uploadChunkSize);
+                int maxUploadKBytes = slowNetwork ? maxUploadingSlowNetworkKBytes : maxUploadingKBytes;
+                if (SharedConfig.spaceGramNetworkSpeedMode) {
+                    maxUploadKBytes *= 3;
+                }
+                maxRequestsCount = Math.max(1, maxUploadKBytes / uploadChunkSize);
 
                 if (isEncrypted) {
                     freeRequestIvs = new ArrayList<>(maxRequestsCount);

@@ -216,6 +216,9 @@ public class TranslateController extends BaseController {
         if (!isDialogTranslatable(dialogId)) {
             return false;
         }
+        if (SharedConfig.spaceGramAutoTranslate && SharedConfig.spaceGramTranslateStyle == 0) {
+            return true;
+        }
         final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
         return chat != null && chat.autotranslation;
     }
@@ -627,6 +630,10 @@ public class TranslateController extends BaseController {
         }
 
         if (onScreen && isTranslatingDialog(dialogId)) {
+            if (SharedConfig.spaceGramTranslateStyle == 1) {
+                // Style: Pop-up Dialogue, don't translate in-place
+                return;
+            }
             final MessageObject finalMessageObject = messageObject;
             if (finalMessageObject.messageOwner.summarizedOpen) {
                 if (finalMessageObject.messageOwner.translatedSummaryText == null || !language.equals(finalMessageObject.messageOwner.translatedSummaryLanguage)) {
@@ -1051,17 +1058,18 @@ public class TranslateController extends BaseController {
                 }
 
                 final String method = getMessagesController().translationsAutoEnabled;
-                if ("alternative".equals(method) || "system".equals(method)) {
+                if (SharedConfig.spaceGramTranslateProvider == 1 || "alternative".equals(method) || "system".equals(method)) {
                     final String toLanguage = pendingTranslation1.language;
                     for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
                         final int id = pendingTranslation1.messageIds.get(i);
                         final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
                         final String _text = pendingTranslation1.messageTexts.get(i).text;
+                        final TLRPC.TL_textWithEntities source = pendingTranslation1.messageTexts.get(i);
                         TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
                             if (result != null) {
                                 final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
                                 resultWithEntities.text = result;
-                                _callback.run(isTranscription, id, resultWithEntities, toLanguage);
+                                _callback.run(isTranscription, id, TranslateAlert2.preprocess(source, resultWithEntities), toLanguage);
                             } else {
                                 toggleTranslatingDialog(dialogId, false);
                                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
