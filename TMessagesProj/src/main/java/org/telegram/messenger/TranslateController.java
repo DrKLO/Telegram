@@ -1064,12 +1064,12 @@ public class TranslateController extends BaseController {
                         final int id = pendingTranslation1.messageIds.get(i);
                         final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
                         final String _text = pendingTranslation1.messageTexts.get(i).text;
-                        final TLRPC.TL_textWithEntities source = pendingTranslation1.messageTexts.get(i);
+                        final TLRPC.TL_textWithEntities sourceEntity = pendingTranslation1.messageTexts.get(i);
                         TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
                             if (result != null) {
                                 final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
                                 resultWithEntities.text = result;
-                                _callback.run(isTranscription, id, TranslateAlert2.preprocess(source, resultWithEntities), toLanguage);
+                                _callback.run(isTranscription, id, TranslateAlert2.preprocess(sourceEntity, resultWithEntities), toLanguage);
                             } else {
                                 toggleTranslatingDialog(dialogId, false);
                                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));

@@ -10419,6 +10419,7 @@
     <string name="SettingsSpaceGramSourceCode">Source Code</string>
     <string name="SettingsSpaceGramTranslateSpaceGram">Translate SpaceGram</string>
     <string name="SettingsSpaceGramDonate">Donate</string>
+    <string name="SettingsSpaceGramAbout">About</string>
     <string name="TranslateStyleOnMessage">On Message</string>
     <string name="TranslateStylePopup">Pop-up Dialogue</string>
     <string name="TranslateProviderGoogle">Google Translator</string>

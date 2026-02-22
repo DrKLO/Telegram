@@ -286,7 +286,7 @@ public class FileLoadOperation {
     }
 
     private void updateParams() {
-        if (SharedConfig.spaceGramNetworkSpeedMode) {
+        if (SharedConfig.spaceGramNetworkSpeedMode != 0) {
             downloadChunkSizeBig = 1024 * 1024;
             maxDownloadRequests = 16;
             maxDownloadRequestsBig = 16;
