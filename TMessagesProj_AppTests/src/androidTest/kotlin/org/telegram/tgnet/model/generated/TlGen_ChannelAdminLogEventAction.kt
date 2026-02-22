@@ -154,21 +154,6 @@ public sealed class TlGen_ChannelAdminLogEventAction : TlGen_Object {
     }
   }
 
-  public data class TL_channelAdminLogEventActionParticipantToggleBan(
-    public val prev_participant: TlGen_ChannelParticipant,
-    public val new_participant: TlGen_ChannelParticipant,
-  ) : TlGen_ChannelAdminLogEventAction() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      prev_participant.serializeToStream(stream)
-      new_participant.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xE6D83D7EU
-    }
-  }
-
   public data class TL_channelAdminLogEventActionParticipantToggleAdmin(
     public val prev_participant: TlGen_ChannelParticipant,
     public val new_participant: TlGen_ChannelParticipant,
@@ -731,6 +716,21 @@ public sealed class TlGen_ChannelAdminLogEventAction : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xC517F77EU
+    }
+  }
+
+  public data class TL_channelAdminLogEventActionParticipantToggleBan(
+    public val prev_participant: TlGen_ChannelParticipant,
+    public val new_participant: TlGen_ChannelParticipant,
+  ) : TlGen_ChannelAdminLogEventAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      prev_participant.serializeToStream(stream)
+      new_participant.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xE6D83D7EU
     }
   }
 }

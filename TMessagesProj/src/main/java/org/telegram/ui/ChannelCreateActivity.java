@@ -263,9 +263,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (nameTextView != null && nameTextView.isPopupShowing()) {
-            nameTextView.hidePopup(true);
+            if (invoked) nameTextView.hidePopup(true);
             return false;
         }
         return true;
@@ -634,7 +634,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     avatarOverlay.invalidate();
                 }
             };
-             avatarProgressView.setSize(AndroidUtilities.dp(30));
+            avatarProgressView.setSize(AndroidUtilities.dp(30));
             avatarProgressView.setProgressColor(0xffffffff);
             avatarProgressView.setNoProgress(false);
             frameLayout.addView(avatarProgressView, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));

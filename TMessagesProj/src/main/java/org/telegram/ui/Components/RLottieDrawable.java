@@ -726,6 +726,21 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         return true;
     }
 
+    public boolean isDiceRevealed() {
+        if (isDice == 1) {
+            return false;
+        }
+        if (isDice == 2) {
+            if (setLastFrame) return true;
+            float p = getProgress();
+            if (secondNativePtr != 0) {
+                p = currentFrame / (float) secondFramesCount;
+            }
+            return p > 0.95f;
+        }
+        return false;
+    }
+
     public RLottieDrawable(int rawRes, String name, int w, int h, boolean startDecode, int[] colorReplacement) {
         width = w;
         height = h;

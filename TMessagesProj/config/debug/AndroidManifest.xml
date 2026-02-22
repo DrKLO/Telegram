@@ -24,7 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/AppNameBeta"
         android:theme="@style/Theme.TMessages.Start"
-        android:hardwareAccelerated="@bool/useHardwareAcceleration"
+        android:hardwareAccelerated="true"
         android:largeHeap="true"
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"

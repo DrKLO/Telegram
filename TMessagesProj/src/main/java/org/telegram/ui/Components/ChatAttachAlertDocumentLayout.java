@@ -77,6 +77,7 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 import org.telegram.ui.FilteredSearchView;
 import org.telegram.ui.PhotoPickerActivity;
 
@@ -133,8 +134,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     private FlickerLoadingView loadingView;
 
     private boolean sendPressed;
-
-    private boolean ignoreLayout;
 
     private StickerEmptyView emptyView;
     private float additionalTranslationY;
@@ -229,7 +228,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         }
 
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
-        searchItem = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        searchItem = menu.addItem(search_button, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -317,7 +316,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         backgroundListView.setLayoutManager(backgroundLayoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(56), backgroundListView));
         backgroundListView.setClipToPadding(false);
         backgroundListView.setAdapter(backgroundListAdapter = new ListAdapter(context));
-        backgroundListView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(backgroundListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         backgroundListView.setVisibility(View.GONE);
 
@@ -340,6 +338,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
             }
         };
+        // listView.setSections();
+        iBlur3Capture = new ViewGroupPartRenderer(listView, alert.getContainerView(), listView::drawChild);
+        occupyNavigationBar = true;
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         listView.setVerticalScrollBarEnabled(false);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(56), listView) {
@@ -364,7 +365,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         });
         listView.setClipToPadding(false);
         listView.setAdapter(listAdapter);
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         searchAdapter = new SearchAdapter(context);
 
@@ -523,7 +523,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             searchAdapter.addSearchFilter(filtersView.getFilterAt(position));
         });
         filtersView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        addView(filtersView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+        addView(filtersView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
         filtersView.setTranslationY(-AndroidUtilities.dp(44));
         filtersView.setVisibility(INVISIBLE);
 
@@ -720,11 +720,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             }
             parentAlert.setAllowNestedScroll(true);
         }
-        if (listView.getPaddingTop() != padding) {
-            ignoreLayout = true;
-            listView.setPadding(0, padding, 0, AndroidUtilities.dp(48));
-            ignoreLayout = false;
-        }
+        listView.setPaddingWithoutRequestLayout(0, padding, 0, listPaddingBottom);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) filtersView.getLayoutParams();
         layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
     }
@@ -732,14 +728,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     @Override
     public int getButtonsHideOffset() {
         return AndroidUtilities.dp(62);
-    }
-
-    @Override
-    public void requestLayout() {
-        if (ignoreLayout) {
-            return;
-        }
-        super.requestLayout();
     }
 
     @Override
@@ -1467,7 +1455,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
                     combinedDrawable.setFullsize(true);
-                    view.setBackgroundDrawable(combinedDrawable);
+                    // view.setBackgroundDrawable(combinedDrawable);
                     break;
                 case 3:
                 default:

@@ -6,14 +6,6 @@ import org.telegram.tgnet.model.TlGen_Object
 import org.telegram.tgnet.model.TlGen_Vector
 
 public sealed class TlGen_PrivacyKey : TlGen_Object {
-  public data object TL_privacyKeyStatusTimestamp : TlGen_PrivacyKey() {
-    public const val MAGIC: UInt = 0xBC2EAB30U
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-    }
-  }
-
   public data object TL_privacyKeyChatInvite : TlGen_PrivacyKey() {
     public const val MAGIC: UInt = 0x500E6DFAU
 
@@ -112,6 +104,14 @@ public sealed class TlGen_PrivacyKey : TlGen_Object {
 
   public data object TL_privacyKeySavedMusic : TlGen_PrivacyKey() {
     public const val MAGIC: UInt = 0xFF7A571BU
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
+
+  public data object TL_privacyKeyStatusTimestamp : TlGen_PrivacyKey() {
+    public const val MAGIC: UInt = 0xBC2EAB30U
 
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())

@@ -1231,6 +1231,6 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             params.transitionFromLeft = true;
             params.allowNestedScroll = false;
             getBaseFragment().showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), params);
-        }, false, resourcesProvider).show();
+        }, false, false, resourcesProvider).show();
     }
 }

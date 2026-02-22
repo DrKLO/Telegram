@@ -321,18 +321,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                  }
             };
         }
-        recyclerListView = new RecyclerListView(context, resourcesProvider) {
-            @Override
-            protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                applyScrolledPosition();
-                super.onLayout(changed, l, t, r, b);
-            }
-
-            @Override
-            protected boolean canHighlightChildAt(View child, float x, float y) {
-                return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
-            }
-        };
+        recyclerListView = createRecyclerView(context);
         layoutManager = new LinearLayoutManager(context) {
             @Override
             public void scrollToPositionWithOffset(int position, int offset) {
@@ -444,6 +433,21 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     public boolean reverseLayout;
+
+    protected RecyclerListView createRecyclerView(Context context) {
+        return new RecyclerListView(context, resourcesProvider) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                applyScrolledPosition();
+                super.onLayout(changed, l, t, r, b);
+            }
+
+            @Override
+            protected boolean canHighlightChildAt(View child, float x, float y) {
+                return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
+            }
+        };
+    }
 
     private class PaddingView extends View {
 
@@ -616,6 +620,8 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
             if (showHandle && handleOffset) {
                 top -= dp(actionBarType == ActionBarType.SLIDING ? 8 : 16);
             }
+            lastTop = top;
+            onSheetTop(top);
 
             float handleAlpha = 1.0f;
             float progressToFullView = 0.0f;
@@ -684,6 +690,16 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
             onPreDraw(canvas, top, progressToFullView);
         }
+    }
+
+    @Override
+    protected void onContainerViewTranslation() {
+        onSheetTop(lastTop);
+    }
+
+    private float lastTop;
+    public void onSheetTop(float top) {
+
     }
 
     protected boolean shouldDrawBackground() {

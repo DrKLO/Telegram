@@ -4685,7 +4685,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void toggleTodo(long dialogId, int messageId, int taskId, boolean enable) {
+    public void toggleTodo(long dialogId, int messageId, int taskId, boolean enable, long send_as) {
         final long myself = getUserConfig().getClientUserId();
         final int date = getConnectionsManager().getCurrentTime();
         storageQueue.postRunnable(() -> {
@@ -4696,19 +4696,20 @@ public class MessagesStorage extends BaseController {
                 if (cursor.next()) {
                     NativeByteBuffer data = cursor.byteBufferValue(0);
                     if (data != null) {
-                        final TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        final TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), true);
                         message.readAttachPath(data, myself);
                         data.reuse();
+                        cursor.dispose();
+                        cursor = null;
 
                         if (message.media instanceof TLRPC.TL_messageMediaToDo) {
                             final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
-                            MessageObject.toggleTodo(currentAccount, dialogId, mediaTodo, taskId, enable, date);
-                            cursor.dispose();
-                            cursor = null;
+                            MessageObject.toggleTodo(currentAccount, send_as, mediaTodo, taskId, enable, date);
 
                             state = database.executeFast("UPDATE messages_v2 SET data = ? WHERE mid = ? AND uid = ?");
                             state.requery();
                             data = new NativeByteBuffer(message.getObjectSize());
+                            MessageObject.normalizeFlags(message);
                             message.serializeToStream(data);
                             state.bindByteBuffer(1, data);
                             state.bindInteger(2, messageId);
@@ -4744,7 +4745,7 @@ public class MessagesStorage extends BaseController {
 
                             if (message.media instanceof TLRPC.TL_messageMediaToDo) {
                                 final TLRPC.TL_messageMediaToDo mediaTodo = (TLRPC.TL_messageMediaToDo) message.media;
-                                MessageObject.toggleTodo(currentAccount, dialogId, mediaTodo, taskId, enable, date);
+                                MessageObject.toggleTodo(currentAccount, send_as, mediaTodo, taskId, enable, date);
                                 cursor.dispose();
                                 cursor = null;
 

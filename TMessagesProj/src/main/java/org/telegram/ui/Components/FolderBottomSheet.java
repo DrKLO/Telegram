@@ -22,9 +22,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
-import android.text.Layout;
 import android.text.SpannableStringBuilder;
-import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.Pair;
 import android.util.TypedValue;
@@ -66,6 +64,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.FilterCreateActivity;
 import org.telegram.ui.FiltersSetupActivity;
+import org.telegram.ui.MainTabsActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -503,7 +502,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                     BaseFragment lastFragment = null;
                     for (int i = fragments.size() - 1; i >= 0; --i) {
                         lastFragment = fragments.get(i);
-                        if (lastFragment instanceof DialogsActivity) {
+                        if (lastFragment instanceof DialogsActivity || lastFragment instanceof MainTabsActivity) {
                             break;
                         }
 
@@ -515,6 +514,9 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                         }
                     }
                     final BaseFragment fragment = lastFragment;
+                    if (lastFragment instanceof MainTabsActivity) {
+                        lastFragment = ((MainTabsActivity) lastFragment).getDialogsActivity();
+                    }
                     if (lastFragment instanceof DialogsActivity) {
                         DialogsActivity dialogsActivity = (DialogsActivity) lastFragment;
                         dialogsActivity.closeSearching();
@@ -1167,7 +1169,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
             titleTextView.setGravity(Gravity.CENTER);
             titleTextView.setLineSpacing(dp(-1), 1.0f);
             this.title = Emoji.replaceEmoji(new SpannableStringBuilder(title), titleTextView.getPaint().getFontMetricsInt(), false, 0.8f);
-            this.title = MessageObject.replaceAnimatedEmoji(this.title, titleEntities, titleTextView.getPaint().getFontMetricsInt(), false, 0.8f);
+            this.title = MessageObject.replaceAnimatedEmoji(this.title, titleEntities, titleTextView.getPaint().getFontMetricsInt(), false, 0.8f, 0);
             titleTextView.setText(getTitle());
             titleTextView.setCacheType(titleNoanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES);
             titleTextView.setEmojiColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));

@@ -1302,7 +1302,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 private boolean edit;
 
                 private void addViewStatistics(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, TL_stories.StoryItem storyItem) {
-                    if (isChannel) {
+                    if (isChannel && storyItem != null && !(storyItem.media instanceof TLRPC.TL_messageMediaVideoStream)) {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
                         if (chat != null) {
                             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
@@ -4839,18 +4839,18 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             stealthModeIsActive = false;
             chatActivityEnterView.setEnabled(true);
             chatActivityEnterView.setOverrideHint(StarsIntroActivity.replaceStars(LocaleController.formatString(R.string.TypeMessageForStars, LocaleController.formatNumber(starsPriceBlocked, ','))), animated);
-        } else if (stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
+        } else if (!currentStory.isLive && stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
             stealthModeIsActive = true;
             int time = stealthMode.active_until_date - ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             int minutes = time / 60;
             int seconds = time % 60;
-            String textToMeasure = LocaleController.formatString("StealthModeActiveHint", R.string.StealthModeActiveHintShort, String.format(Locale.US, "%02d:%02d", 99, 99));
+            String textToMeasure = LocaleController.formatString(R.string.StealthModeActiveHintShort, String.format(Locale.US, "%02d:%02d", 99, 99));
             int w = (int) chatActivityEnterView.getEditField().getPaint().measureText(textToMeasure);
             chatActivityEnterView.setEnabled(true);
             if (w * 1.2f >= chatActivityEnterView.getEditField().getMeasuredWidth()) {
-                chatActivityEnterView.setOverrideHint(LocaleController.formatString("StealthModeActiveHintShort", R.string.StealthModeActiveHintShort, ""), String.format(Locale.US, "%02d:%02d", minutes, seconds), animated);
+                chatActivityEnterView.setOverrideHint(LocaleController.formatString(R.string.StealthModeActiveHintShort, ""), String.format(Locale.US, "%02d:%02d", minutes, seconds), animated);
             } else {
-                chatActivityEnterView.setOverrideHint(LocaleController.formatString("StealthModeActiveHint", R.string.StealthModeActiveHint, String.format(Locale.US, "%02d:%02d", minutes, seconds)), animated);
+                chatActivityEnterView.setOverrideHint(LocaleController.formatString(R.string.StealthModeActiveHint, String.format(Locale.US, "%02d:%02d", minutes, seconds)), animated);
             }
             AndroidUtilities.runOnUIThread(updateStealthModeTimer, 1000);
         } else {
@@ -6500,8 +6500,13 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
     public boolean checkReactionEvent(MotionEvent ev) {
         if (likesReactionLayout != null) {
             View view = likesReactionLayout;
-            float xOffset = getX();
-            float yOffset = getY() + ((View) getParent()).getY();
+            float xOffset = 0, yOffset = 0;
+            View rview = this;
+            while (rview != null && rview.getParent() instanceof View) {
+                xOffset += rview.getX();
+                yOffset += rview.getY();
+                rview = (View) rview.getParent();
+            }
             if (likesReactionLayout.getReactionsWindow() != null && likesReactionLayout.getReactionsWindow().windowView != null) {
                 ev.offsetLocation(-xOffset, -yOffset - likesReactionLayout.getReactionsWindow().windowView.getTranslationY());
                 likesReactionLayout.getReactionsWindow().windowView.dispatchTouchEvent(ev);

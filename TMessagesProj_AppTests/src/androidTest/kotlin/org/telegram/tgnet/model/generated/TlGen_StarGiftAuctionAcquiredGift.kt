@@ -17,12 +17,14 @@ public sealed class TlGen_StarGiftAuctionAcquiredGift : TlGen_Object {
     public val round: Int,
     public val pos: Int,
     public val message: TlGen_TextWithEntities?,
+    public val gift_num: Int?,
   ) : TlGen_StarGiftAuctionAcquiredGift() {
     internal val flags: UInt
       get() {
         var result = 0U
         if (name_hidden) result = result or 1U
         if (message != null) result = result or 2U
+        if (gift_num != null) result = result or 4U
         return result
       }
 
@@ -35,10 +37,11 @@ public sealed class TlGen_StarGiftAuctionAcquiredGift : TlGen_Object {
       stream.writeInt32(round)
       stream.writeInt32(pos)
       message?.serializeToStream(stream)
+      gift_num?.let { stream.writeInt32(it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xAB60E20BU
+      public const val MAGIC: UInt = 0x42B00348U
     }
   }
 }

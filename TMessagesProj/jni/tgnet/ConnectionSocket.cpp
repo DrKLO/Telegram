@@ -251,11 +251,10 @@ public:
 
     };
 
-    static const TlsHello &getDefault(bool useLegacy) {
-        if (!useLegacy) {
-            static TlsHello result = [] {
-                TlsHello res;
-                res.ops = {
+    static const TlsHello &getDefault() {
+        static TlsHello result = [] {
+            TlsHello res;
+            res.ops = {
                     Op::string("\x16\x03\x01", 3),
                     Op::begin_scope(),
                     Op::string("\x01\x00", 2),
@@ -331,96 +330,6 @@ public:
                     Op::end_scope(),
                     Op::end_scope(),
                     Op::end_scope()
-                };
-                return res;
-            }();
-            return result;
-        }
-
-        static TlsHello result = [] {
-            TlsHello res;
-            res.ops = {
-                    Op::string("\x16\x03\x01\x02\x00\x01\x00\x01\xfc\x03\x03", 11),
-                    Op::zero(32),
-                    Op::string("\x20", 1),
-                    Op::random(32),
-                    Op::string("\x00\x20", 2),
-                    Op::grease(0),
-                    Op::string("\x13\x01\x13\x02\x13\x03\xc0\x2b\xc0\x2f\xc0\x2c\xc0\x30\xcc\xa9\xcc\xa8\xc0\x13\xc0\x14\x00\x9c\x00\x9d\x00\x2f\x00\x35\x01\x00\x01\x93", 34),
-                    Op::grease(2),
-                    Op::string("\x00\x00", 2),
-                    Op::permutation({
-                                            {
-                                                    Op::string("\x00\x00", 2),
-                                                    Op::begin_scope(),
-                                                    Op::begin_scope(),
-                                                    Op::string("\x00", 1),
-                                                    Op::begin_scope(),
-                                                    Op::domain(),
-                                                    Op::end_scope(),
-                                                    Op::end_scope(),
-                                                    Op::end_scope()
-                                            },
-                                            {
-                                                    Op::string(
-                                                            "\x00\x05\x00\x05\x01\x00\x00\x00\x00",
-                                                            9)
-                                            },
-                                            {
-                                                    Op::string("\x00\x0a\x00\x0a\x00\x08", 6),
-                                                    Op::grease(4),
-                                                    Op::string("\x00\x1d\x00\x17\x00\x18", 6)
-                                            },
-                                            {
-                                                    Op::string("\x00\x0b\x00\x02\x01\x00", 6),
-                                            },
-                                            {
-                                                    Op::string(
-                                                            "\x00\x0d\x00\x12\x00\x10\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01",
-                                                            22),
-                                            },
-                                            {
-                                                    Op::string(
-                                                            "\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08\x68\x74\x74\x70\x2f\x31\x2e\x31",
-                                                            18),
-                                            },
-                                            {
-                                                    Op::string("\x00\x12\x00\x00", 4)
-                                            },
-                                            {
-                                                    Op::string("\x00\x17\x00\x00", 4)
-                                            },
-                                            {
-                                                    Op::string("\x00\x1b\x00\x03\x02\x00\x02", 7)
-                                            },
-                                            {
-                                                    Op::string("\x00\x23\x00\x00", 4)
-                                            },
-                                            {
-                                                    Op::string("\x00\x2b\x00\x07\x06", 5),
-                                                    Op::grease(6),
-                                                    Op::string("\x03\x04\x03\x03", 4)
-                                            },
-                                            {
-                                                    Op::string("\x00\x2d\x00\x02\x01\x01", 6)
-                                            },
-                                            {
-                                                    Op::string("\x00\x33\x00\x2b\x00\x29", 6),
-                                                    Op::grease(4),
-                                                    Op::string("\x00\x01\x00\x00\x1d\x00\x20", 7),
-                                                    Op::K()
-                                            },
-                                            {
-                                                    Op::string("\x44\x69\x00\x05\x00\x03\x02\x68\x32",9),
-                                            },
-                                            {
-                                                    Op::string("\xff\x01\x00\x01\x00", 5),
-                                            }
-                    }),
-
-                    Op::grease(3),
-                    Op::string("\x00\x01\x00", 3),
-                    Op::P()
             };
             return res;
         }();
@@ -858,7 +767,6 @@ void ConnectionSocket::onEvent(uint32_t events) {
                             delete[] temp;
                             if (std::memcmp(tempBuffer->bytes + 64 * 1024, tempBuffer->bytes + 64 * 1024 + 32, 32) != 0) {
                                 tlsHashMismatch = true;
-                                tlsUseLegacy = true;
                                 closeSocket(1, -1);
                                 if (LOGS_ENABLED) DEBUG_E("connection(%p) TLS hash mismatch", this);
                                 return;
@@ -1012,7 +920,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                         lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
                         tlsHashMismatch = false;
                         proxyAuthState = 11;
-                        TlsHello hello = TlsHello::getDefault(tlsUseLegacy);
+                        TlsHello hello = TlsHello::getDefault();
                         hello.setDomain(currentSecretDomain);
                         uint32_t size = hello.writeToBuffer(tempBuffer->bytes);
                         uint32_t outLength;

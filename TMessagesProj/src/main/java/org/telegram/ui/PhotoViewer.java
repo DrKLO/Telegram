@@ -119,6 +119,8 @@ import android.widget.Scroller;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -4628,14 +4630,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             heightSize = AndroidUtilities.displaySize.y;
                         }
                         heightSize += AndroidUtilities.statusBarHeight;
-                    } else {
-                        int insetBottom = insets.bottom;
-                        if (insetBottom >= 0 && AndroidUtilities.statusBarHeight >= 0) {
-                            int newSize = heightSize - AndroidUtilities.statusBarHeight - insets.bottom;
-                            if (newSize > 0 && newSize < 4096) {
-                                AndroidUtilities.displaySize.y = newSize;
-                            }
-                        }
                     }
                 }
                 int bottomInsets = insets.bottom;
@@ -4840,58 +4834,56 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         shadowBlurer = new BlurringShader.StoryBlurDrawer(blurManager, containerView, BlurringShader.StoryBlurDrawer.BLUR_TYPE_SHADOW);
 
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        if (Build.VERSION.SDK_INT >= 21) {
-            containerView.setFitsSystemWindows(true);
-            containerView.setOnApplyWindowInsetsListener((v, newInsets) -> {
-                final Rect oldInsets = new Rect(insets);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    final Insets r = newInsets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
-                    insets.set(r.left, r.top, r.right, r.bottom);
-                } else {
-                    insets.set(
-                            newInsets.getStableInsetLeft(),
-                            newInsets.getStableInsetTop(),
-                            newInsets.getStableInsetRight(),
-                            newInsets.getStableInsetBottom()
-                    );
+        containerView.setFitsSystemWindows(true);
+        containerView.setOnApplyWindowInsetsListener((v, newInsets) -> {
+            final Rect oldInsets = new Rect(insets);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                final Insets r = newInsets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                insets.set(r.left, r.top, r.right, r.bottom);
+            } else {
+                insets.set(
+                        newInsets.getStableInsetLeft(),
+                        newInsets.getStableInsetTop(),
+                        newInsets.getStableInsetRight(),
+                        newInsets.getStableInsetBottom()
+                );
+            }
+            int newTopInset = insets.top;
+            if (parentActivity instanceof LaunchActivity && (newTopInset != 0 || AndroidUtilities.isInMultiwindow) && !inBubbleMode && AndroidUtilities.statusBarHeight != newTopInset) {
+                AndroidUtilities.statusBarHeight = newTopInset;
+                ((LaunchActivity) parentActivity).drawerLayoutContainer.requestLayout();
+            }
+            if (!oldInsets.equals(newInsets)) {
+                if (animationInProgress == 1 || animationInProgress == 3) {
+                    animatingImageView.setTranslationX(animatingImageView.getTranslationX() - getLeftInset());
+                    animationValues[0][2] = animatingImageView.getTranslationX();
                 }
-                int newTopInset = insets.top;
-                if (parentActivity instanceof LaunchActivity && (newTopInset != 0 || AndroidUtilities.isInMultiwindow) && !inBubbleMode && AndroidUtilities.statusBarHeight != newTopInset) {
-                    AndroidUtilities.statusBarHeight = newTopInset;
-                    ((LaunchActivity) parentActivity).drawerLayoutContainer.requestLayout();
+                if (windowView != null) {
+                    windowView.requestLayout();
                 }
-                if (!oldInsets.equals(newInsets)) {
-                    if (animationInProgress == 1 || animationInProgress == 3) {
-                        animatingImageView.setTranslationX(animatingImageView.getTranslationX() - getLeftInset());
-                        animationValues[0][2] = animatingImageView.getTranslationX();
-                    }
-                    if (windowView != null) {
-                        windowView.requestLayout();
-                    }
-                }
+            }
 
-                if (navigationBar != null) {
-                    navigationBarHeight = insets.bottom;
-                    ViewGroup.MarginLayoutParams navigationBarLayoutParams = (ViewGroup.MarginLayoutParams) navigationBar.getLayoutParams();
-                    navigationBarLayoutParams.height = navigationBarHeight;
-                    navigationBarLayoutParams.bottomMargin = -navigationBarHeight / 2;
-                    navigationBar.setLayoutParams(navigationBarLayoutParams);
+            if (navigationBar != null) {
+                navigationBarHeight = insets.bottom;
+                ViewGroup.MarginLayoutParams navigationBarLayoutParams = (ViewGroup.MarginLayoutParams) navigationBar.getLayoutParams();
+                navigationBarLayoutParams.height = navigationBarHeight;
+                navigationBarLayoutParams.bottomMargin = -navigationBarHeight / 2;
+                navigationBar.setLayoutParams(navigationBarLayoutParams);
+            }
+            containerView.setPadding(newInsets.getSystemWindowInsetLeft(), 0, newInsets.getSystemWindowInsetRight(), 0);
+            if (actionBar != null) {
+                AndroidUtilities.cancelRunOnUIThread(updateContainerFlagsRunnable);
+                if (isVisible && animationInProgress == 0) {
+                    AndroidUtilities.runOnUIThread(updateContainerFlagsRunnable, 200);
                 }
-                containerView.setPadding(newInsets.getSystemWindowInsetLeft(), 0, newInsets.getSystemWindowInsetRight(), 0);
-                if (actionBar != null) {
-                    AndroidUtilities.cancelRunOnUIThread(updateContainerFlagsRunnable);
-                    if (isVisible && animationInProgress == 0) {
-                        AndroidUtilities.runOnUIThread(updateContainerFlagsRunnable, 200);
-                    }
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    return WindowInsets.CONSUMED;
-                } else {
-                    return newInsets.consumeSystemWindowInsets();
-                }
-            });
-            containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                return WindowInsets.CONSUMED;
+            } else {
+                return newInsets.consumeSystemWindowInsets();
+            }
+        });
+        containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         windowLayoutParams = new WindowManager.LayoutParams();
         windowLayoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;
@@ -5195,7 +5187,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         final ArrayList<MessageObject> fmessages = new ArrayList<>();
                         fmessages.add(currentMessageObject);
                         final ChatActivity parentChatActivityFinal = parentChatActivity;
-                        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+                        fragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                             if (dids.size() > 1 || dids.get(0).dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || message != null) {
                                 for (int a = 0; a < dids.size(); a++) {
                                     long did = dids.get(a).dialogId;
@@ -7163,7 +7155,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoAvatarTooltip.setTextColor(0xff8c8c8c);
         containerView.addView(videoAvatarTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 8, 0, 0));
 
-        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.msg_input_send_mini, resourcesProvider) {
+        pickerViewSendButton = new ChatActivityEnterView.SendButton(parentActivity, R.drawable.send_plane_24, resourcesProvider) {
             @Override
             public boolean isOpen() {
                 return true;
@@ -7185,7 +7177,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return getThemedColor(Theme.key_chat_editMediaButton);
             }
         };
-        pickerViewSendButton.setCircleSize(dp(48));
+        pickerViewSendButton.setCircleSize(dp(52), dp(38));
+        pickerViewSendButton.newCounterPos = true;
         containerView.addView(pickerViewSendButton, LayoutHelper.createFrame(120, 120, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 14, 2.33f));
         pickerViewSendButton.setContentDescription(getString("Send", R.string.Send));
         ScaleStateListAnimator.apply(pickerViewSendButton);
@@ -16682,8 +16675,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (pickerViewSendButton != null) {
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) pickerViewSendButton.getLayoutParams();
             if (type == 4 || type == 5) {
-                pickerViewSendButton.setResourceId(R.drawable.msg_input_send_mini);
-//                pickerViewSendButton.setImageResource(R.drawable.msg_input_send_mini);
+                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
+//                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
                 layoutParams2.bottomMargin = dp(7.33f);
             } else if (type == SELECT_TYPE_AVATAR || type == SELECT_TYPE_WALLPAPER || type == SELECT_TYPE_QR || type == SELECT_TYPE_STICKER) {
 //                pickerViewSendButton.setImageResource(R.drawable.floating_check);
@@ -16691,8 +16684,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 pickerViewSendButton.setPadding(0, dp(1), 0, 0);
                 layoutParams2.bottomMargin = dp(7.33f);
             } else {
-//                pickerViewSendButton.setImageResource(R.drawable.msg_input_send_mini);
-                pickerViewSendButton.setResourceId(R.drawable.msg_input_send_mini);
+//                pickerViewSendButton.setImageResource(R.drawable.send_plane_24);
+                pickerViewSendButton.setResourceId(R.drawable.send_plane_24);
                 layoutParams2.bottomMargin = dp(2.33f);
             }
             pickerViewSendButton.setLayoutParams(layoutParams2);
@@ -16975,9 +16968,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
             windowLayoutParams.flags =
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                        WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
-                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
+                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
+                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
             if (chatActivity != null && chatActivity.getCurrentEncryptedChat() != null ||
                 avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isChatNoForwards(-avatarsDialogId) ||
                 messageObject != null && (MessagesController.getInstance(currentAccount).isChatNoForwards(messageObject.getChatId()) ||
@@ -16994,6 +16987,24 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             containerView.setFocusable(false);
             wm.addView(windowView, windowLayoutParams);
             onShowView();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                final OnBackInvokedDispatcher dispatcher = windowView.findOnBackInvokedDispatcher();
+                if (dispatcher != null) {
+                    dispatcher.registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                        () -> {
+                            if (parentActivity instanceof LaunchActivity) {
+                                ((LaunchActivity) parentActivity).onBackPressed();
+                            } else {
+                                if (isVisible()) {
+                                    closePhoto(true, false);
+                                }
+                            }
+                        }
+                    );
+                }
+            }
         } catch (Exception e) {
             FileLog.e(e);
             return false;
@@ -18371,6 +18382,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             height = containerView.getMeasuredHeight();
         } else {
             height = AndroidUtilities.displaySize.y;
+            height += AndroidUtilities.navigationBarHeight - insets.bottom;
             if ((mode == EDIT_MODE_NONE || mode == EDIT_MODE_STICKER_MASK || mode == EDIT_MODE_COVER) && sendPhotoType != SELECT_TYPE_AVATAR && isStatusBarVisible()) {
                 height += AndroidUtilities.statusBarHeight;
             }

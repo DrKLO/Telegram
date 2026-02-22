@@ -429,7 +429,6 @@
     <string name="Languages_other">언어 %1$d개</string>
     <string name="ChooseLanguages">언어 선택</string>
     <string name="TranslateMessagesInfo1">텍스트 메시지를 한번 탭 할 경우 \'번역\' 버튼이 나타나게 됩니다.</string>
-    <string name="TranslateMessagesInfo2">번역하는 메시지에 대해 구글이 접근을 할 수도 있습니다.</string>
     <string name="Language">언어</string>
     <string name="LanguageCustom">맞춤</string>
     <string name="LanguageTitle">언어를 바꿀까요?</string>

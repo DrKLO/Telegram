@@ -100,6 +100,8 @@ public class LiteModeSettingsActivity extends BaseFragment {
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context));
         listView.setAdapter(adapter = new Adapter());
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
@@ -272,7 +274,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
         items.add(Item.asSwitch(R.drawable.photo_star, LocaleController.getString(R.string.LiteOptionsParticles), LiteMode.FLAG_PARTICLES));
         items.add(Item.asInfo(""));
 
-        items.add(Item.asSwitch(LocaleController.getString("LiteSmoothTransitions"), SWITCH_TYPE_SMOOTH_TRANSITIONS));
+        items.add(Item.asSwitch(LocaleController.getString(R.string.LiteSmoothTransitions), SWITCH_TYPE_SMOOTH_TRANSITIONS));
         items.add(Item.asInfo(LocaleController.getString("LiteSmoothTransitionsInfo")));
 
         adapter.setItems(oldItems, items);
@@ -342,11 +344,9 @@ public class LiteModeSettingsActivity extends BaseFragment {
             View view = null;
             if (viewType == VIEW_TYPE_HEADER) {
                 view = new HeaderCell(context);
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             } else if (viewType == VIEW_TYPE_SLIDER) {
                 PowerSaverSlider powerSaverSlider = new PowerSaverSlider(context);
                 view = powerSaverSlider;
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             } else if (viewType == VIEW_TYPE_INFO) {
                 view = new TextInfoPrivacyCell(context) {
                     @Override
@@ -368,7 +368,6 @@ public class LiteModeSettingsActivity extends BaseFragment {
                 view = new SwitchCell(context);
             } else if (viewType == VIEW_TYPE_SWITCH2) {
                 view = new TextCell(context, 23, false, true, null);
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             }
             return new RecyclerListView.Holder(view);
         }
@@ -397,17 +396,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
                 }
                 textInfoPrivacyCell.setText(item.text);
                 textInfoPrivacyCell.setContentDescription(item.text);
-                boolean top = position > 0 && items.get(position - 1).viewType != VIEW_TYPE_INFO;
-                boolean bottom = position + 1 < items.size() && items.get(position + 1).viewType != VIEW_TYPE_INFO;
-                if (top && bottom) {
-                    textInfoPrivacyCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                } else if (top) {
-                    textInfoPrivacyCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
-                } else if (bottom) {
-                    textInfoPrivacyCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
-                } else {
-                    textInfoPrivacyCell.setBackground(null);
-                }
+                textInfoPrivacyCell.setBackground(null);
             } else if (viewType == VIEW_TYPE_SWITCH || viewType == VIEW_TYPE_CHECKBOX) {
                 final boolean divider = position + 1 < items.size() && items.get(position + 1).viewType != VIEW_TYPE_INFO;
                 SwitchCell switchCell = (SwitchCell) holder.itemView;
@@ -457,7 +446,6 @@ public class LiteModeSettingsActivity extends BaseFragment {
             super(context);
 
             setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
             imageView = new ImageView(context);
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
@@ -1069,5 +1057,15 @@ public class LiteModeSettingsActivity extends BaseFragment {
         LiteMode.savePreference();
         AnimatedEmojiDrawable.updateAll();
         Theme.reloadWallpaper(true);
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
     }
 }

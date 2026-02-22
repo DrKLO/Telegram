@@ -69,21 +69,21 @@ public class ShadowSectionCell extends View {
 
     private void updateBackground() {
         if (backgroundColor == 0) {
-            if (!top && !bottom) {
+//            if (!top && !bottom) {
                 setBackground(null);
-            } else {
-                setBackground(Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)));
-            }
+//            } else {
+//                setBackground(Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)));
+//            }
         } else {
-            if (!top && !bottom) {
+//            if (!top && !bottom) {
                 setBackgroundColor(backgroundColor);
-            } else {
-                Drawable shadowDrawable = Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
-                Drawable background = new ColorDrawable(backgroundColor);
-                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-                combinedDrawable.setFullsize(true);
-                setBackground(combinedDrawable);
-            }
+//            } else {
+//                Drawable shadowDrawable = Theme.getThemedDrawable(getContext(), getBackgroundResId(), Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
+//                Drawable background = new ColorDrawable(backgroundColor);
+//                CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
+//                combinedDrawable.setFullsize(true);
+//                setBackground(combinedDrawable);
+//            }
         }
     }
 

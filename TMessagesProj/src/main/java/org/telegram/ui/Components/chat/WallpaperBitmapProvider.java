@@ -93,7 +93,9 @@ public class WallpaperBitmapProvider {
         }
 
         final float scale = Math.max(bitmap.getWidth() / 90f, bitmap.getHeight() / 120f);
-        return Utilities.stackBlurBitmapWithScaleFactor(bitmap, scale);
+        final Bitmap result = Utilities.stackBlurBitmapWithScaleFactor(bitmap, scale);
+        result.setHasAlpha(false);
+        return result;
     }
 
     private static int averageBottomColor(Bitmap bitmap) {

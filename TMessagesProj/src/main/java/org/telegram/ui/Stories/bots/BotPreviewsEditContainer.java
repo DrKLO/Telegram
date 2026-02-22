@@ -1975,7 +1975,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
             public static class Factory extends UItem.UItemFactory<LanguageView> {
                 static { setup(new Factory()); }
                 @Override
-                public LanguageView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+                public LanguageView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                     return new LanguageView(context);
                 }
                 @Override

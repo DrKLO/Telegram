@@ -535,7 +535,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         public static class Factory extends UItem.UItemFactory<WebpagePreviewView> {
             static { setup(new Factory()); }
             @Override
-            public WebpagePreviewView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public WebpagePreviewView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new WebpagePreviewView(context);
             }
 

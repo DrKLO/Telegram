@@ -2199,66 +2199,71 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     }
 
     private void showAudioAlert(Utilities.Callback<MessageObject> onAudioSelected) {
-        final ChatAttachAlert[] audioAlert = new ChatAttachAlert[1];
-        ChatActivity chatActivity = new ChatActivity(null) {
-            @Override
-            public long getDialogId() {
-                return 0;
-            }
-
-            @Override
-            public Theme.ResourcesProvider getResourceProvider() {
-                return resourcesProvider;
-            }
-
-            @Override
-            public boolean isKeyboardVisible() {
-                return false;
-            }
-
-            @Override
-            public Activity getParentActivity() {
-                return AndroidUtilities.findActivity(PaintView.this.getContext());
-            }
-
-            @Override
-            public TLRPC.User getCurrentUser() {
-                return UserConfig.getInstance(currentAccount).getCurrentUser();
-            }
-
-            @Override
-            public boolean isLightStatusBar() {
-                return false;
-            }
-
-            @Override
-            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, int scheduledRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
-                if (audios.isEmpty()) {
-                    return;
-                }
-                MessageObject msg = audios.get(0);
-                if (msg == null) {
-                    return;
-                }
-                onAudioSelected.run(msg);
-                if (audioAlert[0] != null) {
-                    audioAlert[0].dismiss();
-                }
-            }
-        };
-        audioAlert[0] = new ChatAttachAlert(getContext(), chatActivity, false, true, false, resourcesProvider);
-        audioAlert[0].setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
-            @Override
-            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
-
-            }
-        });
-        audioAlert[0].setOnDismissListener(di -> {
+        final SelectAudioAlert sheet = new SelectAudioAlert(getContext(), onAudioSelected);
+        sheet.setOnDismissListener(() -> {
             onOpenCloseStickersAlert(false);
         });
-        audioAlert[0].setStoryAudioPicker();
-        audioAlert[0].init();
-        audioAlert[0].show();
+        sheet.show();
+//        final ChatAttachAlert[] audioAlert = new ChatAttachAlert[1];
+//        ChatActivity chatActivity = new ChatActivity(null) {
+//            @Override
+//            public long getDialogId() {
+//                return 0;
+//            }
+//
+//            @Override
+//            public Theme.ResourcesProvider getResourceProvider() {
+//                return resourcesProvider;
+//            }
+//
+//            @Override
+//            public boolean isKeyboardVisible() {
+//                return false;
+//            }
+//
+//            @Override
+//            public Activity getParentActivity() {
+//                return AndroidUtilities.findActivity(PaintView.this.getContext());
+//            }
+//
+//            @Override
+//            public TLRPC.User getCurrentUser() {
+//                return UserConfig.getInstance(currentAccount).getCurrentUser();
+//            }
+//
+//            @Override
+//            public boolean isLightStatusBar() {
+//                return false;
+//            }
+//
+//            @Override
+//            public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, int scheduledRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
+//                if (audios.isEmpty()) {
+//                    return;
+//                }
+//                MessageObject msg = audios.get(0);
+//                if (msg == null) {
+//                    return;
+//                }
+//                onAudioSelected.run(msg);
+//                if (audioAlert[0] != null) {
+//                    audioAlert[0].dismiss();
+//                }
+//            }
+//        };
+//        audioAlert[0] = new ChatAttachAlert(getContext(), chatActivity, false, true, false, resourcesProvider);
+//        audioAlert[0].setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
+//            @Override
+//            public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
+//
+//            }
+//        });
+//        audioAlert[0].setOnDismissListener(di -> {
+//            onOpenCloseStickersAlert(false);
+//        });
+//        audioAlert[0].setStoryAudioPicker();
+//        audioAlert[0].init();
+//        audioAlert[0].show();
     }
 
     protected void onAudioSelect(MessageObject document) {}
@@ -3069,7 +3074,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                     }
                     if (mediaEntity.mediaArea != null && mediaEntity.mediaArea.coordinates != null && radius > 0) {
                         mediaEntity.mediaArea.coordinates.flags |= 1;
-                        mediaEntity.mediaArea.coordinates.radius = (scaleX * radius / (float) entitiesView.getMeasuredWidth()) * 100;
+                        mediaEntity.mediaArea.coordinates.radius = (scaleX * radius / v.getWidth()) * 100;
                     }
                 }
                 if (drawThisEntity && (drawEntities || drawMessage && mediaEntity.type == VideoEditedInfo.MediaEntity.TYPE_MESSAGE) && bitmap != null) {

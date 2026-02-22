@@ -61,7 +61,7 @@ public class TimezoneSelector extends BaseFragment implements NotificationCenter
             }
         });
 
-        searchItem = actionBar.createMenu().addItem(search, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        searchItem = actionBar.createMenu().addItem(search, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;

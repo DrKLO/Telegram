@@ -346,4 +346,8 @@ public class UserObject {
     public static boolean isBotForum(TLRPC.User user) {
         return user != null && user.bot_forum_view;
     }
+
+    public static boolean isBotForumWithEditableTopics(TLRPC.User user) {
+        return user != null && user.bot_forum_view && user.bot_forum_can_manage_topics;
+    }
 }

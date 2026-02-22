@@ -155,8 +155,11 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
+        listView.setSections();
+        listView.adapter.setApplyBackground(false);
         listView.listenReorder(this::whenReordered);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView = contentView;
     }
@@ -849,5 +852,15 @@ public class QuickRepliesActivity extends BaseFragment implements NotificationCe
             arrowPath.lineTo(cx + (LocaleController.isRTL ? -1 : 1) * dpf2(5.33f), cy);
             arrowPath.lineTo(cx, cy + dpf2(5.66f));
         }
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
     }
 }

@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,14 +27,14 @@ public class LetterSectionCell extends FrameLayout {
 
     public LetterSectionCell(Context context) {
         super(context);
-        setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(54), AndroidUtilities.dp(64)));
+        setLayoutParams(new ViewGroup.LayoutParams(dp(12 + 64), dp(64)));
 
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         textView.setGravity(Gravity.CENTER);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 12, 0, 0, 0));
     }
 
     public void setLetter(String letter) {
@@ -40,6 +42,6 @@ public class LetterSectionCell extends FrameLayout {
     }
 
     public void setCellHeight(int height) {
-        setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(54), height));
+        setLayoutParams(new ViewGroup.LayoutParams(dp(54), height));
     }
 }

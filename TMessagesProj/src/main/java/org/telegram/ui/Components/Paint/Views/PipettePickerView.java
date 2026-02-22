@@ -165,8 +165,8 @@ public class PipettePickerView extends View {
 
         int bx = Math.round(positionX * bitmap.getWidth()), by = Math.round(positionY * bitmap.getHeight());
         mColor = bitmap.getPixel(
-                Utilities.clamp(bx, bitmap.getWidth(), 0),
-                Utilities.clamp(by, bitmap.getHeight(), 0)
+                Utilities.clamp(bx, bitmap.getWidth() - 1, 0),
+                Utilities.clamp(by, bitmap.getHeight() - 1, 0)
         );
         colorPaint.setColor(mColor);
 

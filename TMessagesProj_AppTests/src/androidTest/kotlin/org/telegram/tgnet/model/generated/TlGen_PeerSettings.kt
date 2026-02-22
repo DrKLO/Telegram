@@ -112,7 +112,7 @@ public sealed class TlGen_PeerSettings : TlGen_Object {
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x818426CDU
+      public const val MAGIC: UInt = 0x8182A02DU
     }
   }
 

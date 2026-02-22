@@ -10,32 +10,30 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 
+import androidx.annotation.NonNull;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
 
 public class ProxyDrawable extends Drawable {
 
-    private Drawable emptyDrawable;
-    private Drawable fullDrawable;
+    private final Drawable emptyDrawable;
+    private final Drawable fullDrawable;
 
-    private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private RectF cicleRect = new RectF();
+    private final Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF circleRect = new RectF();
     private int radOffset = 0;
     private long lastUpdateTime;
-    private int currentColorType;
 
     private float connectedAnimationProgress;
 
     private boolean connected;
     private boolean isEnabled;
 
-    private int colorKey = -1;
-
     public ProxyDrawable(Context context) {
         super();
-        emptyDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_off).mutate();
-        fullDrawable = context.getResources().getDrawable(R.drawable.msg2_proxy_on).mutate();
+        emptyDrawable = context.getResources().getDrawable(R.drawable.outline_shield_plain_24).mutate();
+        fullDrawable = context.getResources().getDrawable(R.drawable.outline_shield_check).mutate();
 
         outerPaint.setStyle(Paint.Style.STROKE);
         outerPaint.setStrokeWidth(AndroidUtilities.dp(1.66f));
@@ -54,7 +52,7 @@ public class ProxyDrawable extends Drawable {
     }
 
     @Override
-    public void draw(Canvas canvas) {
+    public void draw(@NonNull Canvas canvas) {
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
@@ -65,11 +63,9 @@ public class ProxyDrawable extends Drawable {
         } else if (!connected || connectedAnimationProgress != 1.0f) {
             setBounds(emptyDrawable);
             emptyDrawable.draw(canvas);
-
-            outerPaint.setColor(Theme.getColor(colorKey < 0 ? Theme.key_contextProgressOuter2 : colorKey));
             outerPaint.setAlpha((int) (255 * (1.0f - connectedAnimationProgress)));
 
-            radOffset += 360 * dt / 1000.0f;
+            radOffset += (int) (360 * dt / 1000.0f);
 
             int width = getBounds().width();
             int height = getBounds().height();
@@ -77,8 +73,8 @@ public class ProxyDrawable extends Drawable {
             int r = AndroidUtilities.dp(4);
             int x = width / 2 - r;
             int y = height / 2 - r;
-            cicleRect.set(x, y, x + r + r, y + r + r);
-            canvas.drawArc(cicleRect, -90 + radOffset, 90, false, outerPaint);
+            circleRect.set(x, y, x + r + r, y + r + r);
+            canvas.drawArc(circleRect, -90 + radOffset, 90, false, outerPaint);
             invalidateSelf();
         }
 
@@ -122,10 +118,7 @@ public class ProxyDrawable extends Drawable {
     public void setColorFilter(ColorFilter cf) {
         emptyDrawable.setColorFilter(cf);
         fullDrawable.setColorFilter(cf);
-    }
-
-    public void setColorKey(int colorKey) {
-        this.colorKey = colorKey;
+        outerPaint.setColorFilter(cf);
     }
 
     @Override

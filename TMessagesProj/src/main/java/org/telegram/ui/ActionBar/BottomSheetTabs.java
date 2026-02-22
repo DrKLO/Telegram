@@ -874,6 +874,7 @@ public class BottomSheetTabs extends FrameLayout {
         public boolean confirmDismiss;
 
         public boolean fullscreen;
+        public boolean fullscreenBlur;
         public boolean fullsize;
         public boolean needsContext;
 

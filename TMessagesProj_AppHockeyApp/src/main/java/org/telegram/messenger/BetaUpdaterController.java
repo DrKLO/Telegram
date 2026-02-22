@@ -3,14 +3,10 @@ package org.telegram.messenger;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
 import android.text.TextUtils;
-import android.util.Pair;
 
 import org.json.JSONObject;
-import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.web.HttpGetFileTask;
 import org.telegram.ui.web.HttpGetTask;
 

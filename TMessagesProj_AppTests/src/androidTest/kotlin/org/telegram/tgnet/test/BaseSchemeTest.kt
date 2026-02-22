@@ -11,6 +11,7 @@ import com.appmattus.kotlinfixture.decorator.nullability.nullabilityStrategy
 import com.appmattus.kotlinfixture.decorator.recursion.RecursionStrategy
 import com.appmattus.kotlinfixture.decorator.recursion.recursionStrategy
 import org.junit.BeforeClass
+import org.telegram.tgnet.ConnectionsManager
 import org.telegram.tgnet.InputSerializedData
 import org.telegram.tgnet.NativeByteBuffer
 import org.telegram.tgnet.TLObject
@@ -74,6 +75,34 @@ open class BaseSchemeTest {
         }
     }
 
+    protected fun test_TLdeserializeNative(
+        clazz: KClass<out TlGen_Object>,
+        test: ConnectionsManager.INativeTlTest,
+        builder: ((ConfigurationBuilder) -> Unit)
+    ) {
+        createConfigs(clazz, builder).forEachIndexed { index, config ->
+            @Suppress("DEPRECATION_ERROR")
+            val generated = fixture.create(clazz, config) as TlGen_Object
+
+            try {
+                buffer.reuse()
+                buffer = NativeByteBuffer(1024 * 1024)
+
+                generated.serializeToStream(buffer)
+                buffer.rewind()
+                val success = ConnectionsManager.testNativeTlScheme(buffer, test)
+                if (!success) {
+                    println(generated)
+                }
+
+                assert(success)
+            } catch (t: Throwable) {
+                println(generated.toString())
+                throw t
+            }
+        }
+    }
+
     class SafeRecursionStrategy(private val fixture: Fixture) : RecursionStrategy {
         override fun handleRecursion(type: KType, stack: Collection<KType>): Any? {
             if (type.isMarkedNullable) {
@@ -108,25 +137,35 @@ open class BaseSchemeTest {
     }
 
     private fun createConfigs(clazz: KClass<out TlGen_Object>): List<Configuration> {
+        return createConfigs(clazz, null)
+    }
+
+    private fun createConfigs(clazz: KClass<out TlGen_Object>, builder: ((ConfigurationBuilder) -> Unit)?): List<Configuration> {
         val nullableFields = clazz.memberProperties.filter { it.returnType.isMarkedNullable }
-        val neverNull = ConfigurationBuilder().apply {
-            recursionStrategy(safeRecursionStrategy)
-            nullabilityStrategy(NeverNullStrategy)
-        }.build()
+        val neverNull = ConfigurationBuilder().let {
+            it.recursionStrategy(safeRecursionStrategy)
+            it.nullabilityStrategy(NeverNullStrategy)
+            builder?.invoke(it)
+            it.build()
+        }
 
         if (nullableFields.isEmpty()) {
             return listOf(neverNull)
         }
 
-        val randomNull = ConfigurationBuilder().apply {
-            recursionStrategy(safeRecursionStrategy)
-            nullabilityStrategy(RandomlyNullStrategy)
-        }.build()
+        val randomNull = ConfigurationBuilder().let {
+            it.recursionStrategy(safeRecursionStrategy)
+            it.nullabilityStrategy(RandomlyNullStrategy)
+            builder?.invoke(it)
+            it.build()
+        }
 
-        val alwaysNull = ConfigurationBuilder().apply {
-            recursionStrategy(safeRecursionStrategy)
-            nullabilityStrategy(AlwaysNullStrategy)
-        }.build()
+        val alwaysNull = ConfigurationBuilder().let {
+            it.recursionStrategy(safeRecursionStrategy)
+            it.nullabilityStrategy(AlwaysNullStrategy)
+            builder?.invoke(it)
+            it.build()
+        }
 
         val result = mutableListOf(neverNull, alwaysNull)
 

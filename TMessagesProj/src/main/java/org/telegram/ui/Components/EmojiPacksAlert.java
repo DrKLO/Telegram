@@ -190,7 +190,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 layout.setButton(undoButton);
                 Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
             } else {
-                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.Undo), undoAction).show();
+                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.UndoNoCaps), undoAction).show();
             }
         }
 

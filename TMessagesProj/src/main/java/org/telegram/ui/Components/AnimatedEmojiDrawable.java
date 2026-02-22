@@ -39,6 +39,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.utils.FrameTickScheduler;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
@@ -875,6 +876,17 @@ public class AnimatedEmojiDrawable extends Drawable {
         updateAttachState();
     }
 
+    public void clear() {
+        if (holders != null) {
+            holders.clear();
+        }
+        if (views != null) {
+            views.clear();
+        }
+        preloading = false;
+        updateAttachState();
+    }
+
     public static int attachedCount = 0;
     public static ArrayList<AnimatedEmojiDrawable> attachedDrawable;
 
@@ -1108,6 +1120,11 @@ public class AnimatedEmojiDrawable extends Drawable {
             this.invalidateParent = invalidateParent;
         }
 
+        private Integer account;
+        public void setCurrentAccount(int account) {
+            this.account = account;
+        }
+
         public void setParentView(View parentView) {
             changeProgress.setParent(parentView);
             particlesAlpha.setParent(parentView);
@@ -1182,7 +1199,9 @@ public class AnimatedEmojiDrawable extends Drawable {
                 particles.setBounds(bounds);
                 particles.process();
                 particles.draw(canvas, Theme.multAlpha(lastColor == null ? 0xFFFFFFFF : lastColor, particlesAlpha));
-                invalidate();
+                FrameTickScheduler.subscribe(invalidateRunnable, 15);
+            } else {
+                FrameTickScheduler.unsubscribe(invalidateRunnable);
             }
             if (drawables[1] != null && progress < 1) {
                 drawables[1].setAlpha((int) (alpha * (1f - progress)));
@@ -1293,7 +1312,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     drawables[1] = null;
                 }
                 drawables[1] = drawables[0];
-                drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, documentId);
+                drawables[0] = AnimatedEmojiDrawable.make(account != null ? account : UserConfig.selectedAccount, cacheType, documentId);
                 if (attached) {
                     ((AnimatedEmojiDrawable) drawables[0]).addView(this);
                 }
@@ -1303,7 +1322,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                 if (attachedLocal) {
                     detach();
                 }
-                drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, documentId);
+                drawables[0] = AnimatedEmojiDrawable.make(account != null ? account : UserConfig.selectedAccount, cacheType, documentId);
                 if (attachedLocal) {
                     attach();
                 }
@@ -1343,7 +1362,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                 }
                 drawables[1] = drawables[0];
                 if (document != null) {
-                    drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, document);
+                    drawables[0] = AnimatedEmojiDrawable.make(account != null ? account : UserConfig.selectedAccount, cacheType, document);
                     if (attached) {
                         ((AnimatedEmojiDrawable) drawables[0]).addView(this);
                     }
@@ -1357,7 +1376,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                     detach();
                 }
                 if (document != null) {
-                    drawables[0] = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, cacheType, document);
+                    drawables[0] = AnimatedEmojiDrawable.make(account != null ? account : UserConfig.selectedAccount, cacheType, document);
                 } else {
                     drawables[0] = null;
                 }
@@ -1453,6 +1472,7 @@ public class AnimatedEmojiDrawable extends Drawable {
             return PixelFormat.TRANSPARENT;
         }
 
+        private final Runnable invalidateRunnable = this::invalidate;
         @Override
         public void invalidate() {
             if (parentView != null) {

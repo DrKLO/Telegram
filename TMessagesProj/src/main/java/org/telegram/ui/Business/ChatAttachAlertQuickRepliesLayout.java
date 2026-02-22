@@ -45,6 +45,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
@@ -62,8 +63,6 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
     private View shadow;
     private AnimatorSet shadowAnimation;
     private SearchField searchField;
-
-    private boolean ignoreLayout;
 
     public static class UserCell extends FrameLayout {
 
@@ -360,6 +359,8 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
 //                }
             }
         };
+        iBlur3Capture = new ViewGroupPartRenderer(listView, alert.getContainerView(), listView::drawChild);
+        occupyNavigationBar = true;
         NotificationCenter.getInstance(UserConfig.selectedAccount).listenGlobal(listView, NotificationCenter.emojiLoaded, args -> {
             AndroidUtilities.forEachViews(listView, view -> {
                 if (view instanceof QuickRepliesActivity.QuickReplyView) {
@@ -392,7 +393,6 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         listView.setClipToPadding(false);
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
         listView.setAdapter(listAdapter = new ShareAdapter(context));
         listView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
@@ -510,19 +510,8 @@ public class ChatAttachAlertQuickRepliesLayout extends ChatAttachAlert.AttachAle
             }
             parentAlert.setAllowNestedScroll(true);
         }
-        if (listView.getPaddingTop() != padding) {
-            ignoreLayout = true;
-            listView.setPadding(0, padding, 0, AndroidUtilities.dp(48));
-            ignoreLayout = false;
-        }
-    }
 
-    @Override
-    public void requestLayout() {
-        if (ignoreLayout) {
-            return;
-        }
-        super.requestLayout();
+        listView.setPaddingWithoutRequestLayout(0, padding, 0, listPaddingBottom);
     }
 
     private void runShadowAnimation(final boolean show) {

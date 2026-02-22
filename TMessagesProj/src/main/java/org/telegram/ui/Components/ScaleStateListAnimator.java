@@ -17,8 +17,6 @@ public class ScaleStateListAnimator {
             return;
         }
 
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
         AnimatorSet pressedAnimator = new AnimatorSet();
         pressedAnimator.playTogether(
                 ObjectAnimator.ofFloat(view, View.SCALE_X, 1f - scale),

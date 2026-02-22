@@ -11,6 +11,7 @@ import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -174,7 +175,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
         titleDrawable.setTextSize(dp(18));
         titleDrawable.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
         titleDrawable.setTypeface(AndroidUtilities.bold());
-        titleDrawable.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider));
+        titleDrawable.setTextColor(Color.WHITE/*Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider)*/);
         titleDrawable.setEllipsizeByGradient(true);
         titleDrawable.setCallback(this);
 

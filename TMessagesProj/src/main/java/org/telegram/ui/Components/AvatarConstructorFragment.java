@@ -495,6 +495,7 @@ public class AvatarConstructorFragment extends BaseFragment {
         colorPickerPreviewView.setVisibility(View.GONE);
 
         button = new ButtonWithCounterView(context, resourceProvider);
+        button.setRound();
         button.text.setHacks(false, true, false);
         if (imageUpdater.setForType == FOR_TYPE_CHANNEL) {
             buttonText = getString(R.string.SetChannelPhoto);
@@ -576,7 +577,7 @@ public class AvatarConstructorFragment extends BaseFragment {
             return;
         }
         if (wasChanged) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setMessage(getString(R.string.PhotoEditorDiscardAlert));
             builder.setTitle(getString(R.string.DiscardChanges));
             builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> finishFragment());
@@ -739,6 +740,24 @@ public class AvatarConstructorFragment extends BaseFragment {
         }
         backgroundSelectView.selectGradient(gradient);
         selectAnimatedEmojiDialog.setForUser(forUser = previewCell.forUser);
+    }
+
+    public void startFrom(long docId, boolean forUser) {
+        if (previewView == null) {
+            return;
+        }
+        AvatarConstructorFragment.BackgroundGradient gradient = new AvatarConstructorFragment.BackgroundGradient();
+        gradient.color1 = AvatarConstructorFragment.defaultColors[0][0];
+        gradient.color2 = AvatarConstructorFragment.defaultColors[0][1];
+        gradient.color3 = AvatarConstructorFragment.defaultColors[0][2];
+        gradient.color4 = AvatarConstructorFragment.defaultColors[0][3];
+
+        previewView.setGradient(gradient, false);
+        updateButton();
+        previewView.documentId = docId;
+        previewView.backupImageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW, currentAccount, docId));
+        backgroundSelectView.selectGradient(gradient);
+        selectAnimatedEmojiDialog.setForUser(this.forUser = forUser);
     }
 
     public void startFrom(TLRPC.VideoSize emojiMarkup) {
@@ -1577,9 +1596,21 @@ public class AvatarConstructorFragment extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
-        discardEditor();
-        return false;
+    public boolean onBackPressed(boolean invoked) {
+        if (wasChanged) {
+            if (invoked) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setMessage(getString(R.string.PhotoEditorDiscardAlert));
+                builder.setTitle(getString(R.string.DiscardChanges));
+                builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> finishFragment());
+                builder.setNegativeButton(getString(R.string.Cancel), null);
+                AlertDialog dialog = builder.create();
+                showDialog(dialog);
+                dialog.redPositive();
+            }
+            return false;
+        }
+        return super.onBackPressed(invoked);
     }
 
     public interface Delegate {

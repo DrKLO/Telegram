@@ -20,8 +20,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -30,7 +28,6 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
@@ -1847,7 +1844,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             static { setup(new Factory()); }
 
             @Override
-            public LiveCommentView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public LiveCommentView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 LiveCommentView view = new LiveCommentView(context, currentAccount, false);
                 view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return view;
@@ -1944,22 +1941,32 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(MeasureSpec.makeMeasureSpec(dp(100), MeasureSpec.AT_MOST), heightMeasureSpec);
-//                    setMeasuredDimension(
-//                        Math.min(MeasureSpec.getSize(widthMeasureSpec), dp(200)),
-//                        MeasureSpec.getSize(heightMeasureSpec)
-//                    );
+                }
+
+                private int width = -1;
+                @Override
+                public void setText(CharSequence text, BufferType type) {
+                    super.setText(text, type);
+                    width = -1;
                 }
 
                 private final GradientClip clip = new GradientClip();
                 @Override
                 protected void onDraw(@NonNull Canvas canvas) {
-                    canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
-                    super.onDraw(canvas);
-                    canvas.save();
-                    AndroidUtilities.rectTmp.set(getWidth() - dp(15), 0, getWidth(), getHeight());
-                    clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, 1.0f);
-                    canvas.restore();
-                    canvas.restore();
+                    if (width < 0) {
+                        width = getLayout() == null ? 0 : (int) getLayout().getLineWidth(0);
+                    }
+                    if (width > dp(100)) {
+                        canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+                        super.onDraw(canvas);
+                        canvas.save();
+                        AndroidUtilities.rectTmp.set(getWidth() - dp(15), 0, getWidth(), getHeight());
+                        clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, 1.0f);
+                        canvas.restore();
+                        canvas.restore();
+                    } else {
+                        super.onDraw(canvas);
+                    }
                 }
             };
             textView.setLines(1);
@@ -1996,7 +2003,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             static { setup(new Factory()); }
 
             @Override
-            public LiveTopSenderView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public LiveTopSenderView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new LiveTopSenderView(context);
             }
 

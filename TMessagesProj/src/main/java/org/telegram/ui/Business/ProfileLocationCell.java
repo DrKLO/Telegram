@@ -12,26 +12,27 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.FrameLayout;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LoadingDrawable;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.Locale;
 
@@ -66,14 +67,14 @@ public class ProfileLocationCell extends LinearLayout {
         textView1.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        addView(textView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 22, 10, LocaleController.isRTL ? 22 : 70, 4));
+        addView(textView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 18, 10, LocaleController.isRTL ? 18 : 70, 4));
 
         textView2 = new TextView(context);
         textView2.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         textView2.setText(LocaleController.getString(R.string.BusinessProfileLocation));
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        addView(textView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 22, 0, LocaleController.isRTL ? 22 : 70, 8));
+        addView(textView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 18, 0, LocaleController.isRTL ? 18 : 70, 8));
 
         setWillNotDraw(false);
     }
@@ -136,6 +137,29 @@ public class ProfileLocationCell extends LinearLayout {
             } catch (Exception e) {
                 FileLog.e(e);
             }
+        }
+    }
+
+
+    public static final class Factory extends UItem.UItemFactory<ProfileLocationCell> {
+        static { setup(new Factory()); }
+
+        @Override
+        public ProfileLocationCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new ProfileLocationCell(context, resourcesProvider);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+            view.setId(item.id);
+            ((ProfileLocationCell) view).set((TLRPC.TL_businessLocation) item.object, divider);
+        }
+
+        public static UItem of(int id, TLRPC.TL_businessLocation value) {
+            final UItem item = UItem.ofFactory(ProfileLocationCell.Factory.class);
+            item.id = id;
+            item.object = value;
+            return item;
         }
     }
 

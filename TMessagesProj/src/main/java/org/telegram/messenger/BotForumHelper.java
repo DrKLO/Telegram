@@ -155,7 +155,7 @@ public class BotForumHelper extends BaseController {
         }
 
         final TLRPC.User user = getMessagesController().getUser(dialogId);
-        if (!UserObject.isBotForum(user)) {
+        if (!UserObject.isBotForumWithEditableTopics(user)) {
             return true;
         }
 

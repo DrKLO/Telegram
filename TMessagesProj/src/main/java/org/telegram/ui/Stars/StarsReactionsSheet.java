@@ -1041,7 +1041,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         public boolean drawCounterImage = true;
         private final Drawable counterImage;
         private final AnimatedTextView.AnimatedTextDrawable counterText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
-        private final AnimatedTextView.AnimatedTextDrawable counterSubText = new AnimatedTextView.AnimatedTextDrawable();
+        private final AnimatedTextView.AnimatedTextDrawable counterSubText = new AnimatedTextView.AnimatedTextDrawable(false, true, true);
 
         private final ColoredImageSpan[] starRef = new ColoredImageSpan[1];
 
@@ -1398,6 +1398,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         public void setCounterSubText(@Nullable String text, boolean animated) {
             subTextVisible.setValue(!TextUtils.isEmpty(text), animated);
+            counterSubText.cancelAnimation();
             counterSubText.setText(text, animated);
         }
 
@@ -1598,10 +1599,11 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             this.speed = speed;
         }
 
+        private long lastInvalidateTime;
         private long lastTime;
-        public void process() {
+        public boolean process() {
             if (!LiteMode.isEnabled(LiteMode.FLAG_PARTICLES)) {
-                return;
+                return false;
             }
 
             final long now = System.currentTimeMillis();
@@ -1618,6 +1620,12 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 p.la = 4f * lifetime - 4f * lifetime * lifetime;
             }
             lastTime = now;
+
+            if (lastInvalidateTime == 0 || lastInvalidateTime - now >= 66) {
+                lastInvalidateTime = now;
+                return true;
+            }
+            return false;
         }
 
         public void generateGrid() {

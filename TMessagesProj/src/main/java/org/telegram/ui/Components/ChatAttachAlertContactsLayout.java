@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,8 +66,6 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
     private View shadow;
     private AnimatorSet shadowAnimation;
     private SearchField searchField;
-
-    private boolean ignoreLayout;
 
     private PhonebookShareAlertDelegate delegate;
 
@@ -414,6 +413,8 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
                 return y >= parentAlert.scrollOffsetY[0] + AndroidUtilities.dp(30) + (Build.VERSION.SDK_INT >= 21 && !parentAlert.inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
             }
         };
+        iBlur3Capture = new ViewGroupPartRenderer(listView, alert.getContainerView(), listView::drawChild);
+        occupyNavigationBar = true;
         listView.setClipToPadding(false);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(9), listView) {
             @Override
@@ -439,7 +440,6 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         listView.setClipToPadding(false);
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
         listView.setAdapter(listAdapter = new ShareAdapter(context));
         listView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
@@ -771,19 +771,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             }
             parentAlert.setAllowNestedScroll(true);
         }
-        if (listView.getPaddingTop() != padding) {
-            ignoreLayout = true;
-            listView.setPadding(0, padding, 0, AndroidUtilities.dp(48));
-            ignoreLayout = false;
-        }
-    }
-
-    @Override
-    public void requestLayout() {
-        if (ignoreLayout) {
-            return;
-        }
-        super.requestLayout();
+        listView.setPaddingWithoutRequestLayout(0, padding, 0, listPaddingBottom);
     }
 
     private void runShadowAnimation(final boolean show) {

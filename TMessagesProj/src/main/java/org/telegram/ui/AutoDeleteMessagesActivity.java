@@ -9,7 +9,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -29,6 +28,8 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Components.StickerImageView;
 
 import java.util.ArrayList;
@@ -85,17 +86,18 @@ public class AutoDeleteMessagesActivity extends BaseFragment implements Notifica
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        ScrollView scrollView = new ScrollView(getContext());
-        LinearLayout mainContainer = new LinearLayout(getContext());
+        LinearLayout mainContainer = new SectionsScrollView.SectionsLinearLayout(getContext());
+        SectionsScrollView scrollView = new SectionsScrollView(getContext(), mainContainer, resourceProvider);
         mainContainer.setOrientation(LinearLayout.VERTICAL);
         scrollView.addView(mainContainer);
         frameLayout.addView(scrollView);
-
+        actionBar.setAdaptiveBackground(scrollView);
 
         FrameLayout stickerHeaderCell = new FrameLayout(context);
         StickerImageView backupImageView = new StickerImageView(context, currentAccount);
         backupImageView.setStickerNum(10);
         stickerHeaderCell.addView(backupImageView, LayoutHelper.createFrame(130, 130, Gravity.CENTER));
+        stickerHeaderCell.setTag(RecyclerListView.TAG_NOT_SECTION);
 
         mainContainer.addView(stickerHeaderCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 170));
 
@@ -141,7 +143,7 @@ public class AutoDeleteMessagesActivity extends BaseFragment implements Notifica
 
         updateItems();
 
-        TextInfoPrivacyCell textInfoPrivacyCell = new TextInfoPrivacyCell(context);
+        TextInfoPrivacyCell textInfoPrivacyCell = new TextInfoPrivacyCell(context, 12, resourceProvider);
         CharSequence infoText = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.GlobalAutoDeleteInfo), new Runnable() {
             @Override
             public void run() {

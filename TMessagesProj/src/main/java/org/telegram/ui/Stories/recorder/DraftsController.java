@@ -550,9 +550,9 @@ public class DraftsController {
             entry.matrix.getValues(this.matrixValues);
             this.gradientTopColor = entry.gradientTopColor;
             this.gradientBottomColor = entry.gradientBottomColor;
-            CharSequence caption = entry.caption;
-            this.captionEntities = entry.captionEntitiesAllowed ? MediaDataController.getInstance(entry.currentAccount).getEntities(new CharSequence[]{caption}, true) : null;
-            this.caption = caption == null ? "" : caption.toString();
+            final CharSequence[] caption = new CharSequence[] { entry.caption };
+            this.captionEntities = entry.captionEntitiesAllowed ? MediaDataController.getInstance(entry.currentAccount).getEntities(caption, true) : null;
+            this.caption = caption[0] == null ? "" : caption[0].toString();
             this.privacyRules.addAll(entry.privacyRules);
             this.paintFilePath = entry.paintFile == null ? "" : entry.paintFile.toString();
             this.paintEntitiesFilePath = entry.paintEntitiesFile == null ? "" : entry.paintEntitiesFile.toString();
@@ -635,6 +635,7 @@ public class DraftsController {
                 }
                 caption = Emoji.replaceEmoji(caption, Theme.chat_msgTextPaint.getFontMetricsInt(), true);
                 MessageObject.addEntitiesToText(caption, captionEntities, true, false, true, false);
+                caption = MessageObject.replaceAnimatedEmoji(caption, captionEntities, Theme.chat_msgTextPaint.getFontMetricsInt());
                 entry.caption = caption;
             } else {
                 entry.caption = "";

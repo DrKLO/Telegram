@@ -840,15 +840,16 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
     }
 
     @Override
-    public boolean onBackPressed() {
-        if (closeSheet()) {
+    public boolean onBackPressed(boolean invoked) {
+        if (hasShownSheet()) {
+            if (invoked) closeSheet();
             return false;
         }
         if (sharedMediaLayout.isActionModeShown()) {
-            sharedMediaLayout.closeActionMode(false);
+            if (invoked) sharedMediaLayout.closeActionMode(false);
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     @Override

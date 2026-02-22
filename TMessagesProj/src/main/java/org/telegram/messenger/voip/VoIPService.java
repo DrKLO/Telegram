@@ -287,6 +287,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private TLRPC.InputGroupCall joinConference;
 	private TLRPC.GroupCall joinConferenceCall;
 	private long[] inviteUsers;
+	private Boolean muteOnStart;
 
 	private int remoteVideoState = Instance.VIDEO_STATE_INACTIVE;
 	private TLRPC.TL_dataJSON myParams;
@@ -774,6 +775,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			SerializedData buffer = new SerializedData(joinConferenceBytes);
 			joinConference = TLRPC.InputGroupCall.TLdeserialize(buffer, buffer.readInt32(true), true);
 		}
+		if (intent.hasExtra("mute_on_start")) {
+			muteOnStart = intent.getBooleanExtra("mute_on_start", false);
+		}
 		byte[]
 			joinConferenceCallBytes = intent.getByteArrayExtra("joinConferenceCall");
 		if (joinConferenceCallBytes != null) {
@@ -871,13 +875,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		VoIPGroupNotification.hide(this);
 
 		if (joinConference != null) {
-			if (!PermissionRequest.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+			final boolean mic = MessagesController.getGlobalMainSettings().getBoolean("callmiconstart", true);
+			if (!mic) {
 				micMute = true;
-				PermissionRequest.requestPermission(Manifest.permission.RECORD_AUDIO, granted -> {
-					if (sharedInstance == null) return;
-					if (!granted) return;
-					setMicMute(false, false, true);
-				});
+			} else {
+				if (!PermissionRequest.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+					micMute = true;
+					PermissionRequest.requestPermission(Manifest.permission.RECORD_AUDIO, granted -> {
+						if (sharedInstance == null) return;
+						if (!granted) return;
+						setMicMute(false, false, true);
+					});
+				}
 			}
 			startConferenceGroupCall(false, 0, null, false);
 			if (!isBtHeadsetConnected && !isHeadsetPlugged) {

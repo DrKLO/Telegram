@@ -31,9 +31,9 @@ public class ChatActivityBlurredRoundPageDownButton extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
     }
 
-    public void addButtonView(ChatActivityBlurredRoundButton button) {
+    public void addButtonView(ChatActivityBlurredRoundButton button, int size) {
         this.buttonView = button;
-        addView(button, LayoutHelper.createFrame(56, 56, Gravity.BOTTOM));
+        addView(button, LayoutHelper.createFrame(size, size, Gravity.BOTTOM));
         button.setIconPadding(dp(2));
     }
 
@@ -87,16 +87,15 @@ public class ChatActivityBlurredRoundPageDownButton extends FrameLayout {
     }
 
     public static ChatActivityBlurredRoundPageDownButton create(
-            Context context,
-            Theme.ResourcesProvider resourcesProvider,
-            BlurredBackgroundDrawableViewFactory factory,
-            BlurredBackgroundColorProvider colorProvider,
-            @DrawableRes int res
+        Context context,
+        int size, int iconSize,
+        Theme.ResourcesProvider resourcesProvider,
+        BlurredBackgroundDrawableViewFactory factory,
+        BlurredBackgroundColorProvider colorProvider,
+        @DrawableRes int res
     ) {
         ChatActivityBlurredRoundPageDownButton button = new ChatActivityBlurredRoundPageDownButton(context, resourcesProvider);
-        button.addButtonView(ChatActivityBlurredRoundButton.create(
-            context, factory, colorProvider, resourcesProvider, res
-        ));
+        button.addButtonView(ChatActivityBlurredRoundButton.create(context, factory, colorProvider, resourcesProvider, res, iconSize), size);
         ScaleStateListAnimator.apply(button, .13f, 2f);
 
         return button;

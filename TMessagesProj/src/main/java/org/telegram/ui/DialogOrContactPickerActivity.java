@@ -89,7 +89,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         args.putBoolean("resetDelegate", false);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_BLOCK);
         dialogsActivity = new DialogsActivity(args);
-        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             if (dids.isEmpty()) {
                 return true;
             }
@@ -138,7 +138,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         hasOwnBackground = true;
 
         ActionBarMenu menu = actionBar.createMenu();
-        searchItem = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        searchItem = menu.addItem(search_button, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 dialogsActivity.getActionBar().openSearchField("", false);

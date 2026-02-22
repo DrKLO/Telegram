@@ -324,22 +324,25 @@ public class TL_payments {
     }
 
     public static class TL_starGiftActiveAuctions extends StarGiftActiveAuctions {
-        public static final int constructor = 0x97F187D8;
+        public static final int constructor = 0xAEF6ABBC;
 
         public ArrayList<TL_stars.TL_StarGiftActiveAuctionState> auctions = new ArrayList<>();
         public ArrayList<TLRPC.User> users = new ArrayList<>();
+        public ArrayList<TLRPC.Chat> chats = new ArrayList<>();
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             Vector.serialize(stream, auctions);
             Vector.serialize(stream, users);
+            Vector.serialize(stream, chats);
         }
 
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             auctions = Vector.deserialize(stream, TL_stars.TL_StarGiftActiveAuctionState::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
         }
     }
 
@@ -372,13 +375,14 @@ public class TL_payments {
     }
 
     public static class TL_StarGiftAuctionState extends TLObject {
-        public static final int constructor = 0x0E98E474;
+        public static final int constructor = 0x6B39F4EC;
 
         public TL_stars.StarGift gift;
         public TL_stars.StarGiftAuctionState state;
         public TL_stars.TL_StarGiftAuctionUserState user_state;
         public int timeout;
         public ArrayList<TLRPC.User> users;
+        public ArrayList<TLRPC.Chat> chats;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
@@ -388,6 +392,7 @@ public class TL_payments {
             user_state.serializeToStream(stream);
             stream.writeInt32(timeout);
             Vector.serialize(stream, users);
+            Vector.serialize(stream, chats);
         }
 
         @Override
@@ -397,6 +402,7 @@ public class TL_payments {
             user_state = TL_stars.TL_StarGiftAuctionUserState.TLdeserialize(stream, stream.readInt32(exception), exception);
             timeout = stream.readInt32(exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
+            chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
         }
 
         public static TL_StarGiftAuctionState TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
@@ -453,6 +459,58 @@ public class TL_payments {
         @Override
         public StarGiftActiveAuctions deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
             return StarGiftActiveAuctions.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class TL_resolveStarGiftOffer extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0xe9ce781c;
+
+        public boolean decline;
+        public int offer_msg_id;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            int flags = 0;
+            flags = setFlag(flags, FLAG_0, decline);
+            stream.writeInt32(flags);
+            stream.writeInt32(offer_msg_id);
+        }
+
+        @Override
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class TL_sendStarGiftOffer extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0x8fb86b41;
+
+        public int flags;
+        public TLRPC.InputPeer peer;
+        public String slug;
+        public TL_stars.StarsAmount price;
+        public int duration;
+        public long random_id;
+        public long allow_paid_stars;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeString(slug);
+            price.serializeToStream(stream);
+            stream.writeInt32(duration);
+            stream.writeInt64(random_id);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt64(allow_paid_stars);
+            }
+        }
+
+        @Override
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
         }
     }
 }

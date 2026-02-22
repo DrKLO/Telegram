@@ -310,8 +310,15 @@ public class BotHelpCell extends View {
     private Drawable selectorDrawable;
     private int selectorDrawableRadius;
 
+    public int getSideMenuWidth() {
+        return 0;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
+        canvas.save();
+        canvas.translate(getSideMenuWidth() / 2f, 0);
+
         int x = (getWidth() - width) / 2;
         int y = photoHeight;
         y += AndroidUtilities.dp(2);
@@ -354,6 +361,7 @@ public class BotHelpCell extends View {
         if (textLayout != null) {
             textLayout.draw(canvas);
         }
+        canvas.restore();
         canvas.restore();
         wasDraw = true;
     }

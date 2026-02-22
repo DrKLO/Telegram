@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.ui.Cells.ChatMessageCell;
 
@@ -215,7 +214,7 @@ public class RecyclerAnimationScrollHelper {
                     int finalHeight = scrollDown ? oldH : recyclerView.getHeight() - oldT;
                     scrollLength = finalHeight + (scrollDown ? -top : bottom - recyclerView.getHeight());
                 }
-
+                final int paddingBottomStart = recyclerView.getPaddingBottom();
                 if (animator != null) {
                     animator.removeAllListeners();
                     animator.cancel();
@@ -238,11 +237,12 @@ public class RecyclerAnimationScrollHelper {
                         }
                     }
 
+                    final int additionalY = paddingBottomStart - recyclerView.getPaddingBottom();
                     size = incomingViews.size();
                     for (int i = 0; i < size; i++) {
                         View view = incomingViews.get(i);
                         if (scrollDown) {
-                            view.setTranslationY((scrollLength) * (1f - value));
+                            view.setTranslationY((scrollLength) * (1f - value) + additionalY);
                         } else {
                             view.setTranslationY(-(scrollLength) * (1f - value));
                         }

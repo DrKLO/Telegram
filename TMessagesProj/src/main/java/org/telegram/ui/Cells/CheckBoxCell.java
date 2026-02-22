@@ -460,6 +460,8 @@ public class CheckBoxCell extends FrameLayout {
             linksTextView.setMaxLines(0);
             linksTextView.setSingleLine(false);
             linksTextView.setEllipsize(null);
+            layoutParams1.gravity = Gravity.CENTER_VERTICAL | (layoutParams1.gravity & Gravity.HORIZONTAL_GRAVITY_MASK);
+            layoutParams1.topMargin = 0;
             if (currentType != TYPE_CHECK_BOX_URL) {
 //                layoutParams.height = LayoutParams.WRAP_CONTENT;
 //                layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
@@ -475,6 +477,7 @@ public class CheckBoxCell extends FrameLayout {
 
             layoutParams.height = LayoutParams.MATCH_PARENT;
             layoutParams.topMargin = 0;
+            layoutParams1.gravity = Gravity.TOP | (layoutParams1.gravity & Gravity.HORIZONTAL_GRAVITY_MASK);
             layoutParams1.topMargin = dp(15);
         }
         textView.setLayoutParams(layoutParams);

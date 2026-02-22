@@ -227,7 +227,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                     }
                 }
             };
-            fragment.setDelegate((fragment1, dids, _message, param, notify, scheduleDate, topicsFragment) -> {
+            fragment.setDelegate((fragment1, dids, _message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
                 ArrayList<Long> dialogIds = new ArrayList<>();
                 for (MessagesStorage.TopicKey key : dids) {
                     final long dialogId = key.dialogId;

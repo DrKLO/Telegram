@@ -184,14 +184,6 @@ public interface INavigationLayout {
         animateThemedValues(new ThemeAnimationSettings(theme, accentId, nightTheme, instant), onDone);
     }
 
-    /**
-     * @deprecated Deprecated in favor of {@link INavigationLayout#bringToFront(int)}
-     */
-    @Deprecated
-    default void showFragment(int i) {
-        bringToFront(i);
-    }
-
     default void bringToFront(int i) {
         BaseFragment fragment = getFragmentStack().get(i);
         removeFragmentFromStack(fragment);

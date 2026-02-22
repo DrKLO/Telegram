@@ -10,12 +10,9 @@ import android.content.Context;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.RelativeSizeSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.TableRow;
 
 import androidx.annotation.NonNull;
 
@@ -28,11 +25,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedArrowDrawable;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
-import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TableView;
@@ -148,9 +142,10 @@ public class AcquiredGiftsSheet extends BottomSheetWithRecyclerListView {
                 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             );
             ssb.append(' ');
-            ssb.append(formatString(R.string.Gift2AuctionsAcquiredRound, gift.round));
-            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
+            final int giftNum = gift.gift_num;
+            ssb.append(formatString(R.string.Gift2AuctionsAcquiredRound2, auction.gift.title, giftNum, gift.round));
+            ssb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             SpannableStringBuilder ssb1 = new SpannableStringBuilder();
             final CharSequence bid = "⭐️" + formatNumber(gift.bid_amount, ',');
@@ -171,7 +166,7 @@ public class AcquiredGiftsSheet extends BottomSheetWithRecyclerListView {
             static { setup(new Factory()); }
 
             @Override
-            public AcquiredGiftsCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public AcquiredGiftsCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 AcquiredGiftsCell cell = new AcquiredGiftsCell(context, resourcesProvider, currentAccount);
                 cell.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 return cell;

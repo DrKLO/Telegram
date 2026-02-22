@@ -13,7 +13,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.android.animator.VariableRect;
 
-public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInsetsInAppController {
+public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInsetsInAppController, WindowAnimatedInsetsProvider.Listener {
     private final FactorAnimator insetsAnimator;
     private final VariableFloat keyboardVisibility = new VariableFloat(0);
     private final VariableRect insetsMaxRect = new VariableRect();
@@ -60,19 +60,6 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
 
         onUpdateListener.run();
     }
-
-
-    private Insets rootAnimatedInsetsIme;
-
-    public void attach(View view) {
-
-    }
-
-
-
-
-
-
 
     private WindowInsetsCompat lastInsets;
 
@@ -156,16 +143,28 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
 
     @Override
     public float getAnimatedMaxBottomInset() {
+        if (animatedInsetsProvider != null) {
+            return Math.max(animatedImeInset, insetsMaxRect.getBottom());
+        }
+
         return insetsMaxRect.getBottom();
     }
 
     @Override
     public int getCurrentMaxBottomInset() {
+        if (animatedInsetsProvider != null) {
+            return Math.max(animatedImeInset, Math.max(getInsets(WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.systemBars()).bottom, inAppKeyboardHeight));
+        }
+
         return Math.max(getInsets(WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.systemBars()).bottom, inAppKeyboardHeight);
     }
 
     @Override
     public float getAnimatedImeBottomInset() {
+        if (animatedInsetsProvider != null) {
+            return Math.max(animatedImeInset, insetsImeRect.getBottom());
+        }
+
         return insetsImeRect.getBottom();
     }
 
@@ -223,5 +222,26 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
             AndroidUtilities.runOnUIThread(closeInAppKeyboard, 1000);
         }
 
+    }
+    
+    private @Nullable WindowAnimatedInsetsProvider animatedInsetsProvider;
+    private @Nullable View animatedInsetsProviderTarget;
+    private int animatedImeInset;
+
+    public void setupAnimatedInsetsProvider(WindowAnimatedInsetsProvider provider, View target) {
+        animatedInsetsProvider = provider;
+        animatedInsetsProviderTarget = target;
+        animatedInsetsProvider.subscribeToWindowInsetsAnimation(this);
+    }
+
+    @Override
+    public View getAnimatedInsetsTargetView() {
+        return animatedInsetsProviderTarget;
+    }
+
+    @Override
+    public void onAnimatedInsetsChanged(View view, WindowInsetsCompat insets) {
+        animatedImeInset = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+        onUpdateListener.run();
     }
 }

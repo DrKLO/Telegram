@@ -1,6 +1,7 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.formatDuration;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -38,16 +39,16 @@ import org.telegram.ui.Gifts.AuctionBidSheet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners {
+@SuppressLint("ViewConstructor")
+public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners {
     private final int currentAccount;
-
 
     private final AnimatedTextView titleTextView;
     private final AnimatedTextView messageTextView;
     private final CountDown timerView;
 
-    public ActiveGiftAuctionsHintCell(@NonNull Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout, int currentAccount) {
-        super(context, sizeNotifierFrameLayout);
+    public ActiveGiftAuctionsHintCell(@NonNull Context context, int currentAccount) {
+        super(context);
         this.currentAccount = currentAccount;
 
 
@@ -57,16 +58,17 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         titleTextView = new AnimatedTextView(context);
         titleTextView.setTextSize(dp(14));
         titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setTranslationY(-dp(1));
         layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 18));
 
         messageTextView = new AnimatedTextView(context);
         messageTextView.setTextSize(dp(13));
-        layout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17));
+        layout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17, 2, 0, 2, 0));
 
         timerView = new CountDown(context, currentAccount);
         timerView.updateTimer(299);
 
-        addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 0, 92, 0));
+        addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 14, 0, 90, 0));
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 11, 0));
 
         updateColors();
@@ -81,7 +83,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
     }
 
     public void updateColors() {
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        setBackground(Theme.getSelectorDrawable(false));
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         messageTextView.setTextColor(Theme.getColor(isOutbid ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteGrayText));
         invalidate();
@@ -112,13 +114,16 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         activeAuctions = new ArrayList<>(auctions);
 
         if (activeAuctions.size() == 1) {
-            int nextRoundAt = 0;
-            for (GiftAuctionController.Auction auction : auctions) {
+            GiftAuctionController.Auction auction = activeAuctions.get(0);
+            if (auction.isUpcoming()) {
+                timerView.start(auction.gift.auction_start_date);
+            } else {
+                int nextRoundAt = 0;
                 if (auction.auctionStateActive != null) {
                     nextRoundAt = Math.max(nextRoundAt, auction.auctionStateActive.next_round_at);
                 }
+                timerView.start(nextRoundAt);
             }
-            timerView.start(nextRoundAt);
         } else {
             timerView.stop();
             timerView.textView.setText(getString(R.string.Gift2AuctionPriceView), true);
@@ -136,9 +141,13 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         }
 
         boolean outbid = false;
+        boolean upcoming = false;
 
+        final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         for (int a = 0; a < count; a++) {
             final GiftAuctionController.Auction auction = activeAuctions.get(a);
+            upcoming |= auction.isUpcoming(currentTime);
+
             if (auction.giftDocumentId != 0) {
                 ssb.append("*");
                 ssb.setSpan(
@@ -150,14 +159,22 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
                 || status == GiftAuctionController.Auction.BidStatus.RETURNED;
         }
         ssb.append(' ');
-        ssb.append(count == 1 ?
-            getString(R.string.Gift2ActiveAuctionsActiveAuctionTitle):
-            formatString(R.string.Gift2ActiveAuctionsActiveAuctionsTitle, count));
+        if (upcoming) {
+            ssb.append(count == 1 ?
+                getString(R.string.Gift2ActiveAuctionsUpcomingAuctionTitle) :
+                formatString(R.string.Gift2ActiveAuctionsUpcomingAuctionsTitle, count));
+        } else {
+            ssb.append(count == 1 ?
+                getString(R.string.Gift2ActiveAuctionsActiveAuctionTitle) :
+                formatString(R.string.Gift2ActiveAuctionsActiveAuctionsTitle, count));
+        }
 
         titleTextView.setText(ssb, animated);
 
         isOutbid = false;
-        if (outbid) {
+        if (upcoming) {
+            messageTextView.setText(getString(R.string.Gift2ActiveAuctionsActiveStatusEarly));
+        } else if (outbid) {
             messageTextView.setText(getString(R.string.Gift2ActiveAuctionsActiveStatusOutbid));
             isOutbid = true;
         } else {
@@ -175,7 +192,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
                 } else if (myPlace == 3) {
                     str = getString(R.string.Gift2ActiveAuctionsActiveStatusWinning3Place);
                 } else {
-                    str = formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherPlace, myPlace);
+                    str = formatPlace(myPlace);
                 }
 
                 messageTextView.setText(formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOne, str));
@@ -184,6 +201,21 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
         updateColors();
     }
+
+    private static String formatPlace(int place) {
+        int lastTwo = place % 100;
+        if (lastTwo >= 11 && lastTwo <= 13) {
+            return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherTh, place);
+        }
+
+        switch (place % 10) {
+            case 1: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherSt, place);
+            case 2: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherNd, place);
+            case 3: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherRd, place);
+            default: return formatString(R.string.Gift2ActiveAuctionsActiveStatusWinningOtherTh, place);
+        }
+    }
+
 
     private boolean isOutbid;
 
@@ -245,7 +277,8 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
             if (value == 0) {
                 textView.setText(getString(R.string.Gift2AuctionPriceView));
             } else {
-                textView.setText(AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
+                textView.setText(value > 3600 ? formatDuration((int) value, false) :
+                    AndroidUtilities.formatDurationNoHours((int) value, false), isAttachedToWindow());
             }
         }
 
@@ -263,7 +296,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
         @Override
         protected void dispatchDraw(@NonNull Canvas canvas) {
-            final int l = getMeasuredWidth() - dp(8) - (int) textView.getCurrentWidth();
+            final int l = getMeasuredWidth() - dp(14) - (int) textView.getCurrentWidth();
 
             final int o = l - dp(30);
             canvas.save();

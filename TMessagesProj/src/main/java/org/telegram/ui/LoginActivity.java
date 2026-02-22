@@ -20,7 +20,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -35,9 +34,9 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -77,7 +76,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -137,6 +135,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.PasskeysController;
 import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SRPHelper;
@@ -161,15 +160,16 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.CustomPhoneKeyboardView;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.LoginOrView;
 import org.telegram.ui.Components.OutlineTextContainerView;
@@ -190,6 +190,7 @@ import org.telegram.ui.Components.TextViewSwitcher;
 import org.telegram.ui.Components.TransformableLoginButtonView;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.Stars.ExplainStarsSheet;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -342,9 +343,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private AnimatorSet[] showDoneAnimation = new AnimatorSet[2];
     private AnimatorSet doneItemAnimation;
     private TransformableLoginButtonView floatingButtonIcon;
-    private FrameLayout floatingButtonContainer;
+    private FragmentFloatingButton floatingButton;
     private VerticalPositionAutoAnimator floatingAutoAnimator;
-    private RadialProgressView floatingProgressView;
     private int progressRequestId;
     private boolean[] doneButtonVisible = new boolean[] {true, false};
 
@@ -547,7 +547,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (id == done_button) {
                     onDoneButtonPressed();
                 } else if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 }
@@ -561,16 +561,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                MarginLayoutParams marginLayoutParams = (MarginLayoutParams) floatingButtonContainer.getLayoutParams();
-                int keyboardOffset = isCustomKeyboardVisible() ? AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP) : 0;
+                MarginLayoutParams marginLayoutParams = (MarginLayoutParams) floatingButton.getLayoutParams();
+                int keyboardOffset = isCustomKeyboardVisible() ? AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP - 4) : 0;
                 if (isCustomKeyboardVisible() && measureKeyboardHeight() > AndroidUtilities.dp(20)) {
                     keyboardOffset -= measureKeyboardHeight();
                 }
                 if (Bulletin.getVisibleBulletin() != null && Bulletin.getVisibleBulletin().isShowing()) {
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                    marginLayoutParams.bottomMargin = dp(16) + Bulletin.getVisibleBulletin().getLayout().getMeasuredHeight() - dp(10) + keyboardOffset;
+                    marginLayoutParams.bottomMargin = dp(14) + Bulletin.getVisibleBulletin().getLayout().getMeasuredHeight() - dp(10) + keyboardOffset;
                 } else {
-                    marginLayoutParams.bottomMargin = dp(16) + keyboardOffset;
+                    marginLayoutParams.bottomMargin = dp(14) + keyboardOffset;
                 }
 
                 int statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
@@ -721,25 +721,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
         }
 
-        floatingButtonContainer = new FrameLayout(context);
-        floatingButtonContainer.setVisibility(doneButtonVisible[DONE_TYPE_FLOATING] ? View.VISIBLE : View.GONE);
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButtonIcon, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            floatingButtonContainer.setStateListAnimator(animator);
-            floatingButtonContainer.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                }
-            });
-        }
-        floatingAutoAnimator = VerticalPositionAutoAnimator.attach(floatingButtonContainer);
-        sizeNotifierFrameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 24, 16));
-//        ScaleStateListAnimator.apply(floatingButtonContainer, .1f, 1.4f);
-        floatingButtonContainer.setOnClickListener(view -> onDoneButtonPressed());
+        floatingButton = new FragmentFloatingButton(context, resourceProvider);
+        floatingButton.setButtonVisible(doneButtonVisible[DONE_TYPE_FLOATING], false);
+        floatingAutoAnimator = VerticalPositionAutoAnimator.attach(floatingButton);
+        sizeNotifierFrameLayout.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParamsBig());
+        floatingButton.setOnClickListener(view -> onDoneButtonPressed());
         floatingAutoAnimator.addUpdateListener((animation, value, velocity) -> {
             if (phoneNumberConfirmView != null) {
                 phoneNumberConfirmView.updateFabPosition();
@@ -749,7 +735,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         backButtonView = new ImageView(context);
         backButtonView.setImageResource(R.drawable.ic_ab_back);
         backButtonView.setOnClickListener(v -> {
-            if (onBackPressed()) {
+            if (onBackPressed(true)) {
                 finishFragment();
             }
         });
@@ -794,16 +780,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         floatingButtonIcon.setTransformType(TransformableLoginButtonView.TRANSFORM_OPEN_ARROW);
         floatingButtonIcon.setProgress(1f);
         floatingButtonIcon.setDrawBackground(false);
-        floatingButtonContainer.setContentDescription(getString("Done", R.string.Done));
-        floatingButtonContainer.addView(floatingButtonIcon, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
-
-        floatingProgressView = new RadialProgressView(context);
-        floatingProgressView.setSize(AndroidUtilities.dp(22));
-        floatingProgressView.setAlpha(0.0f);
-        floatingProgressView.setScaleX(0.1f);
-        floatingProgressView.setScaleY(0.1f);
-        floatingProgressView.setVisibility(View.INVISIBLE);
-        floatingButtonContainer.addView(floatingProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        floatingButton.setContentDescription(getString(R.string.Done));
+        floatingButton.addView(floatingButtonIcon, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
+        floatingButton.addAdditionalView(floatingButtonIcon);
 
         if (savedInstanceState != null) {
             restoringState = true;
@@ -1107,41 +1086,55 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (emailChangeIsSuggestion && currentViewNum == VIEW_ADD_EMAIL) {
             return false;
         }
 
         if (currentViewNum == VIEW_PHONE_INPUT || activityMode == MODE_CHANGE_LOGIN_EMAIL && currentViewNum == VIEW_ADD_EMAIL) {
-            for (int a = 0; a < views.length; a++) {
-                if (views[a] != null) {
-                    views[a].onDestroyActivity();
+            if (invoked) {
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] != null) {
+                        views[a].onDestroyActivity();
+                    }
                 }
+                clearCurrentState();
             }
-            clearCurrentState();
             return true;
         } else if (currentViewNum == VIEW_PASSWORD) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_PHONE_INPUT, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_PHONE_INPUT, true, null, true);
+            }
         } else if (currentViewNum == VIEW_RECOVER || currentViewNum == VIEW_RESET_WAIT) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_PASSWORD, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_PASSWORD, true, null, true);
+            }
         } else if ((currentViewNum >= VIEW_CODE_MESSAGE && currentViewNum <= VIEW_CODE_CALL) || currentViewNum == AUTH_TYPE_MISSED_CALL || currentViewNum == AUTH_TYPE_FRAGMENT_SMS) {
-            if (views[currentViewNum].onBackPressed(false)) {
+            if (invoked && views[currentViewNum].onBackPressed(false)) {
                 setPage(VIEW_PHONE_INPUT, true, null, true);
             }
         } else if (currentViewNum == VIEW_REGISTER) {
-            ((LoginActivityRegisterView) views[currentViewNum]).wrongNumber.callOnClick();
+            if (invoked) {
+                ((LoginActivityRegisterView) views[currentViewNum]).wrongNumber.callOnClick();
+            }
         } else if (currentViewNum == VIEW_NEW_PASSWORD_STAGE_1) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_RECOVER, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_RECOVER, true, null, true);
+            }
         } else if (currentViewNum == VIEW_NEW_PASSWORD_STAGE_2) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_NEW_PASSWORD_STAGE_1, true, null, true);
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_NEW_PASSWORD_STAGE_1, true, null, true);
+            }
         } else if (currentViewNum == VIEW_CODE_EMAIL_SETUP) {
-            views[currentViewNum].onBackPressed(true);
-            setPage(VIEW_ADD_EMAIL, true, null, true);
-        } else {
+            if (invoked) {
+                views[currentViewNum].onBackPressed(true);
+                setPage(VIEW_ADD_EMAIL, true, null, true);
+            }
+        } else if (invoked) {
             if (views[currentViewNum].onBackPressed(true)) {
                 setPage(VIEW_PHONE_INPUT, true, null, true);
             }
@@ -1296,50 +1289,19 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         doneButtonVisible[currentDoneType] = show;
         if (animated) {
             showDoneAnimation[currentDoneType] = new AnimatorSet();
-            if (show) {
-                if (floating) {
-                    if (floatingButtonContainer.getVisibility() != View.VISIBLE) {
-                        floatingAutoAnimator.setOffsetY(AndroidUtilities.dpf2(70f));
-                        floatingButtonContainer.setVisibility(View.VISIBLE);
-                    }
-                    ValueAnimator offsetAnimator = ValueAnimator.ofFloat(floatingAutoAnimator.getOffsetY(), 0);
-                    offsetAnimator.addUpdateListener(animation -> {
-                        float val = (Float) animation.getAnimatedValue();
-                        floatingAutoAnimator.setOffsetY(val);
-                        floatingButtonContainer.setAlpha(1f - (val / AndroidUtilities.dpf2(70f)));
-                    });
-                    showDoneAnimation[currentDoneType].play(offsetAnimator);
-                }
-            } else {
-                if (floating) {
-                    ValueAnimator offsetAnimator = ValueAnimator.ofFloat(floatingAutoAnimator.getOffsetY(), AndroidUtilities.dpf2(70f));
-                    offsetAnimator.addUpdateListener(animation -> {
-                        float val = (Float) animation.getAnimatedValue();
-                        floatingAutoAnimator.setOffsetY(val);
-                        floatingButtonContainer.setAlpha(1f - (val / AndroidUtilities.dpf2(70f)));
-                    });
-                    showDoneAnimation[currentDoneType].play(offsetAnimator);
-                }
+            if (floating) {
+                floatingButton.setButtonVisible(show, animated);
             }
             showDoneAnimation[currentDoneType].addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (showDoneAnimation[floating ? 0 : 1] != null && showDoneAnimation[floating ? 0 : 1].equals(animation)) {
                         if (!show) {
-                            if (floating) {
-                                floatingButtonContainer.setVisibility(View.GONE);
-                            }
-
                             if (floating && floatingButtonIcon.getAlpha() != 1f) {
                                 floatingButtonIcon.setAlpha(1f);
                                 floatingButtonIcon.setScaleX(1f);
                                 floatingButtonIcon.setScaleY(1f);
                                 floatingButtonIcon.setVisibility(View.VISIBLE);
-                                floatingButtonContainer.setEnabled(true);
-                                floatingProgressView.setAlpha(0f);
-                                floatingProgressView.setScaleX(0.1f);
-                                floatingProgressView.setScaleY(0.1f);
-                                floatingProgressView.setVisibility(View.INVISIBLE);
                             }
                         }
                     }
@@ -1370,16 +1332,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             showDoneAnimation[currentDoneType].setInterpolator(interpolator);
             showDoneAnimation[currentDoneType].start();
         } else {
-            if (show) {
-                if (floating) {
-                    floatingButtonContainer.setVisibility(View.VISIBLE);
-                    floatingAutoAnimator.setOffsetY(0f);
-                }
-            } else {
-                if (floating) {
-                    floatingButtonContainer.setVisibility(View.GONE);
-                    floatingAutoAnimator.setOffsetY(AndroidUtilities.dpf2(70f));
-                }
+            if (floating) {
+                floatingButton.setButtonVisible(show, animated);
             }
         }
     }
@@ -1448,6 +1402,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             doneItemAnimation.cancel();
         }
 
+        if (floating) {
+            floatingButton.setProgressVisible(show, animated);
+            return;
+        }
+
         if (animated) {
             doneItemAnimation = new AnimatorSet();
             ValueAnimator animator = ValueAnimator.ofFloat(show ? 0 : 1, show ? 1 : 0);
@@ -1455,28 +1414,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public void onAnimationStart(Animator animation) {
                     if (show) {
-                        if (floating) {
-                            floatingButtonIcon.setVisibility(View.VISIBLE);
-                            floatingProgressView.setVisibility(View.VISIBLE);
-                            floatingButtonContainer.setEnabled(false);
-                        } else {
-                            radialProgressView.setVisibility(View.VISIBLE);
-                        }
+                        radialProgressView.setVisibility(View.VISIBLE);
                     }
                 }
 
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    if (floating) {
-                        if (!show) {
-                            floatingProgressView.setVisibility(View.INVISIBLE);
-                            floatingButtonIcon.setVisibility(View.VISIBLE);
-                            floatingButtonContainer.setEnabled(true);
-                        } else {
-                            floatingButtonIcon.setVisibility(View.INVISIBLE);
-                            floatingProgressView.setVisibility(View.VISIBLE);
-                        }
-                    } else if (!show) {
+                    if (!show) {
                         radialProgressView.setVisibility(View.INVISIBLE);
                     }
 
@@ -1487,63 +1431,26 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
             animator.addUpdateListener(animation -> {
                 float val = (float) animation.getAnimatedValue();
-
-                if (floating) {
-                    float scale = 0.1f + 0.9f * (1f - val);
-                    floatingButtonIcon.setScaleX(scale);
-                    floatingButtonIcon.setScaleY(scale);
-                    floatingButtonIcon.setAlpha(1f - val);
-
-                    scale = 0.1f + 0.9f * val;
-                    floatingProgressView.setScaleX(scale);
-                    floatingProgressView.setScaleY(scale);
-                    floatingProgressView.setAlpha(val);
-                } else {
-                    float scale = 0.1f + 0.9f * val;
-                    radialProgressView.setScaleX(scale);
-                    radialProgressView.setScaleY(scale);
-                    radialProgressView.setAlpha(val);
-                }
+                float scale = 0.1f + 0.9f * val;
+                radialProgressView.setScaleX(scale);
+                radialProgressView.setScaleY(scale);
+                radialProgressView.setAlpha(val);
             });
             doneItemAnimation.playTogether(animator);
             doneItemAnimation.setDuration(150);
             doneItemAnimation.start();
         } else {
             if (show) {
-                if (floating) {
-                    floatingProgressView.setVisibility(View.VISIBLE);
-                    floatingButtonIcon.setVisibility(View.INVISIBLE);
-                    floatingButtonContainer.setEnabled(false);
-                    floatingButtonIcon.setScaleX(0.1f);
-                    floatingButtonIcon.setScaleY(0.1f);
-                    floatingButtonIcon.setAlpha(0.0f);
-                    floatingProgressView.setScaleX(1.0f);
-                    floatingProgressView.setScaleY(1.0f);
-                    floatingProgressView.setAlpha(1.0f);
-                } else {
-                    radialProgressView.setVisibility(View.VISIBLE);
-                    radialProgressView.setScaleX(1.0f);
-                    radialProgressView.setScaleY(1.0f);
-                    radialProgressView.setAlpha(1.0f);
-                }
+                radialProgressView.setVisibility(View.VISIBLE);
+                radialProgressView.setScaleX(1.0f);
+                radialProgressView.setScaleY(1.0f);
+                radialProgressView.setAlpha(1.0f);
             } else {
                 radialProgressView.setTag(null);
-                if (floating) {
-                    floatingProgressView.setVisibility(View.INVISIBLE);
-                    floatingButtonIcon.setVisibility(View.VISIBLE);
-                    floatingButtonContainer.setEnabled(true);
-                    floatingProgressView.setScaleX(0.1f);
-                    floatingProgressView.setScaleY(0.1f);
-                    floatingProgressView.setAlpha(0.0f);
-                    floatingButtonIcon.setScaleX(1.0f);
-                    floatingButtonIcon.setScaleY(1.0f);
-                    floatingButtonIcon.setAlpha(1.0f);
-                } else {
-                    radialProgressView.setVisibility(View.INVISIBLE);
-                    radialProgressView.setScaleX(0.1f);
-                    radialProgressView.setScaleY(0.1f);
-                    radialProgressView.setAlpha(0.0f);
-                }
+                radialProgressView.setVisibility(View.INVISIBLE);
+                radialProgressView.setScaleX(0.1f);
+                radialProgressView.setScaleY(0.1f);
+                radialProgressView.setAlpha(0.0f);
             }
         }
     }
@@ -1694,15 +1601,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (newAccount) {
                 newAccount = false;
                 pendingSwitchingAccount = true;
-                ((LaunchActivity) getParentActivity()).switchToAccount(currentAccount, false, obj -> {
+                ((LaunchActivity) getParentActivity()).switchToAccount(currentAccount, true, obj -> {
                     Bundle args = new Bundle();
                     args.putBoolean("afterSignup", afterSignup);
-                    return new DialogsActivity(args);
+                    MainTabsActivity mainTabsActivity = new MainTabsActivity();
+                    mainTabsActivity.prepareDialogsActivity(args);
+                    return mainTabsActivity;
                 });
                 pendingSwitchingAccount = false;
                 finishFragment();
             } else {
-
                 if (afterSignup && showSetPasswordConfirm) {
                     TwoStepVerificationSetupActivity twoStepVerification = new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null);
                     twoStepVerification.setBlockingAlert(otherwiseRelogin);
@@ -1711,8 +1619,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 } else {
                     Bundle args = new Bundle();
                     args.putBoolean("afterSignup", afterSignup);
-                    DialogsActivity dialogsActivity = new DialogsActivity(args);
-                    presentFragment(dialogsActivity, true);
+                    MainTabsActivity mainTabsActivity = new MainTabsActivity();
+                    mainTabsActivity.prepareDialogsActivity(args);
+                    presentFragment(mainTabsActivity, true);
                 }
 
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
@@ -2047,7 +1956,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private OutlineTextContainerView countryOutlineView;
         private OutlineTextContainerView phoneOutlineView;
         private TextView plusTextView;
-        private TextView subtitleView;
+        private LinkSpanDrawable.LinksTextView subtitleView;
         private View codeDividerView;
         private ImageView chevronRight;
         private CheckBoxCell syncContactsBox;
@@ -2132,7 +2041,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
             });
 
-            subtitleView = new TextView(context);
+            subtitleView = new LinkSpanDrawable.LinksTextView(context);
             subtitleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneHelp : R.string.StartText));
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setGravity(Gravity.CENTER);
@@ -2220,9 +2129,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             codeField.setBackground(null);
 //            codeField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                codeField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
-            }
+            codeField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
             codeField.setContentDescription(getString(R.string.LoginAccessibilityCountryCode));
             linearLayout.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 0, 0));
             codeField.addTextChangedListener(new TextWatcher() {
@@ -2415,9 +2322,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             phoneField.setBackground(null);
 //            phoneField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                phoneField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
-            }
+            phoneField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
             phoneField.setContentDescription(getString(R.string.PhoneNumber));
             linearLayout.addView(phoneField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36));
             phoneField.addTextChangedListener(new TextWatcher() {
@@ -2534,7 +2439,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneField.setOnEditorActionListener((textView, i, keyEvent) -> {
                 if (i == EditorInfo.IME_ACTION_NEXT) {
                     if (phoneNumberConfirmView != null) {
-                        phoneNumberConfirmView.popupFabContainer.callOnClick();
+                        phoneNumberConfirmView.fabButton.callOnClick();
                         return true;
                     }
                     onNextPressed(null);
@@ -2547,7 +2452,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (newAccount && activityMode == MODE_LOGIN) {
                 syncContactsBox = new CheckBoxCell(context, 2);
                 syncContactsBox.setText(getString("SyncContacts", R.string.SyncContacts), "", syncContacts, false);
-                addView(syncContactsBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? Build.VERSION.SDK_INT >= 21 ? 56 : 60 : 0), 0));
+                addView(syncContactsBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
                 bottomMargin -= 24;
                 syncContactsBox.setOnClickListener(v -> {
                     if (getParentActivity() == null) {
@@ -2568,7 +2473,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (allowTestBackend && activityMode == MODE_LOGIN) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
                 testBackendCheckBox.setText(getString(R.string.DebugTestBackend), "", testBackend = getConnectionsManager().isTestBackend(), false);
-                addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? Build.VERSION.SDK_INT >= 21 ? 56 : 60 : 0), 0));
+                addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
                 bottomMargin -= 24;
                 testBackendCheckBox.setOnClickListener(v -> {
                     if (getParentActivity() == null) {
@@ -2585,6 +2490,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     loadCountries();
                 });
             }
+
             if (bottomMargin > 0 && !AndroidUtilities.isSmallScreen()) {
                 Space bottomSpacer = new Space(context);
                 bottomSpacer.setMinimumHeight(AndroidUtilities.dp(bottomMargin));
@@ -2760,6 +2666,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         public void updateColors() {
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
             for (int i = 0; i < countryButton.getChildCount(); i++) {
                 TextView textView = (TextView) countryButton.getChildAt(i);
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -2964,7 +2871,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     return;
                 }
 
-                phoneNumberConfirmView = new PhoneNumberConfirmView(fragmentView.getContext(), (ViewGroup) fragmentView, floatingButtonContainer, phoneNumber, new PhoneNumberConfirmView.IConfirmDialogCallback() {
+                phoneNumberConfirmView = new PhoneNumberConfirmView(fragmentView.getContext(), (ViewGroup) fragmentView, floatingButton, phoneNumber, new PhoneNumberConfirmView.IConfirmDialogCallback() {
                     @Override
                     public void onFabPressed(PhoneNumberConfirmView confirmView, TransformableLoginButtonView fab) {
                         onConfirm(confirmView);
@@ -3052,7 +2959,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             confirmView.dismiss();
                             AndroidUtilities.runOnUIThread(()-> {
                                 onNextPressed(code);
-                                floatingProgressView.sync(confirmView.floatingProgressView);
+                                floatingButton.progressView.sync(confirmView.fabButton.progressView);
                             }, 150);
                         });
                     }
@@ -3150,7 +3057,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             builder.setMessage(getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn));
                             builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> {
                                 if (UserConfig.selectedAccount != num) {
-                                    ((LaunchActivity) getParentActivity()).switchToAccount(num, false);
+                                    ((LaunchActivity) getParentActivity()).switchToAccount(num, true);
                                 }
                                 finishFragment();
                             });
@@ -3479,7 +3386,87 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         }
                     }
                 }
+                if (activityMode == MODE_LOGIN) {
+                    requestPasskey(false);
+                }
             }, SHOW_DELAY);
+        }
+
+        @Override
+        public void onDestroyActivity() {
+            super.onDestroyActivity();
+            if (cancelRequestingPasskey != null) {
+                cancelRequestingPasskey.run();
+                cancelRequestingPasskey = null;
+            }
+        }
+
+        private boolean requestedPasskey = false;
+        private boolean requestingPasskey = false;
+        private Runnable cancelRequestingPasskey;
+        private void requestPasskey(boolean clickedButton) {
+            if (activityMode != MODE_LOGIN) return;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !BuildVars.SUPPORTS_PASSKEYS) return;
+            if (requestingPasskey || !clickedButton && requestedPasskey) return;
+
+            requestingPasskey = true;
+            requestedPasskey = true;
+            cancelRequestingPasskey = PasskeysController.login(getContext(), currentAccount, clickedButton, (userId, authObject, err) -> {
+                cancelRequestingPasskey = null;
+                requestingPasskey = false;
+                if (err != null && ("EMPTY".equals(err) || "CANCELLED".equals(err))) {
+                    if (subtitleView != null && "CANCELLED".equals(err)) {
+                        subtitleView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.StartTextPasskey), () -> {
+                            requestPasskey(true);
+                        }), true));
+                    }
+                    return;
+                }
+                if (userId != 0 && getParentActivity() instanceof LaunchActivity) {
+                    for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                        UserConfig userConfig = UserConfig.getInstance(a);
+                        if (!userConfig.isClientActivated()) {
+                            continue;
+                        }
+                        if (userConfig.getClientUserId() == userId && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
+                            if (UserConfig.selectedAccount != a) {
+                                ((LaunchActivity) getParentActivity()).switchToAccount(a, true);
+                            }
+                            finishFragment();
+                            needHideProgress(false);
+                            return;
+                        }
+                    }
+                }
+                if (err != null && err.contains("SESSION_PASSWORD_NEEDED")) {
+                    final TL_account.getPassword req2 = new TL_account.getPassword();
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                        nextPressed = false;
+                        showDoneButton(false, true);
+                        if (error1 == null) {
+                            final TL_account.Password password = (TL_account.Password) response1;
+                            if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
+                                AlertsCreator.showUpdateAppAlert(getParentActivity(), getString("UpdateAppAlert", R.string.UpdateAppAlert), true);
+                                return;
+                            }
+                            final Bundle bundle = new Bundle();
+                            final SerializedData data = new SerializedData(password.getObjectSize());
+                            password.serializeToStream(data);
+                            bundle.putString("password", Utilities.bytesToHex(data.toByteArray()));
+                            setPage(VIEW_PASSWORD, true, bundle, false);
+                        } else {
+                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), error1.text);
+                        }
+                    }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                } else if (err != null) {
+                    if (BuildVars.DEBUG_VERSION)
+                        BulletinFactory.of(LoginActivity.this).showForError(err);
+                    return;
+                }
+                if (authObject instanceof TLRPC.TL_auth_authorization) {
+                    onAuthSuccess((TLRPC.TL_auth_authorization) authObject);
+                }
+            });
         }
 
         @Override
@@ -4223,9 +4210,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             if (codeFieldContainer != null && codeFieldContainer.codeField != null) {
                 for (CodeNumberField f : codeFieldContainer.codeField) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
-                    }
+                    f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
                 }
             }
         }
@@ -4363,9 +4348,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             codeFieldContainer.setNumbersCount(length, currentType);
             for (CodeNumberField f : codeFieldContainer.codeField) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
-                }
+                f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
                 f.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -5318,9 +5301,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             if (isRippleEnabled() && event.getAction() == MotionEvent.ACTION_DOWN) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    rippleDrawable.setHotspot(event.getX(), event.getY());
-                }
+                rippleDrawable.setHotspot(event.getX(), event.getY());
                 rippleDrawable.setState(new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed});
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_UP) {
                 rippleDrawable.setState(new int[]{});
@@ -5414,7 +5395,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             cancelButton.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
             FrameLayout bottomContainer = new FrameLayout(context);
-            bottomContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.BOTTOM, 0, 0, 0, 32));
+            bottomContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 32));
             addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
             VerticalPositionAutoAnimator.attach(cancelButton);
 
@@ -5935,7 +5916,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             titleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 16, 32, 0));
 
-            subtitleView = new TextView(context);
+            subtitleView = new LinkSpanDrawable.LinksTextView(context);
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setGravity(Gravity.CENTER);
             subtitleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
@@ -6041,6 +6022,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         public void updateColors() {
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
             emailField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             signInWithGoogleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
             loginOrView.updateColors();
@@ -7499,7 +7481,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             cancelButton.setText(getString(R.string.YourEmailSkip));
 
             FrameLayout bottomContainer = new FrameLayout(context);
-            bottomContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.BOTTOM, 0, 0, 0, 32));
+            bottomContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 32));
             addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
             VerticalPositionAutoAnimator.attach(cancelButton);
 
@@ -8045,7 +8027,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.isSmallScreen() ? 13 : 14);
             privacyView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             privacyView.setGravity(Gravity.CENTER_VERTICAL);
-            privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 56 : 60, Gravity.LEFT | Gravity.BOTTOM, 14, 0, 70, 32));
+            privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 14, 0, 70, 32));
             VerticalPositionAutoAnimator.attach(privacyView);
 
             String str = getString("TermsOfServiceLogin", R.string.TermsOfServiceLogin);
@@ -8369,9 +8351,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     public LoginActivity setIntroView(View intro, TextView startButton) {
-        introView = intro;
-        startMessagingButton = startButton;
-        isAnimatingIntro = true;
+        //introView = intro;
+        //startMessagingButton = startButton;
+        //isAnimatingIntro = true;
         return this;
     }
 
@@ -8399,15 +8381,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             transformButton.setTranslationX(fromX);
             transformButton.setTranslationY(fromY);
 
-            int toX = getParentLayout().getView().getWidth() - floatingButtonIcon.getLayoutParams().width - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).rightMargin - getParentLayout().getView().getPaddingLeft() - getParentLayout().getView().getPaddingRight(),
-                    toY = getParentLayout().getView().getHeight() - floatingButtonIcon.getLayoutParams().height - ((ViewGroup.MarginLayoutParams)floatingButtonContainer.getLayoutParams()).bottomMargin -
+            int toX = getParentLayout().getView().getWidth() - floatingButtonIcon.getLayoutParams().width - dp(20) - getParentLayout().getView().getPaddingLeft() - getParentLayout().getView().getPaddingRight(),
+                    toY = getParentLayout().getView().getHeight() - floatingButtonIcon.getLayoutParams().height - dp(14) -
                             (isCustomKeyboardVisible() ? AndroidUtilities.dp(CustomPhoneKeyboardView.KEYBOARD_HEIGHT_DP) : 0) - getParentLayout().getView().getPaddingTop() - getParentLayout().getView().getPaddingBottom();
 
             ValueAnimator animator = ValueAnimator.ofFloat(0, 1);
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animation) {
-                    floatingButtonContainer.setVisibility(View.INVISIBLE);
+                    floatingButton.setButtonVisible(false, false);
                     keyboardLinearLayout.setAlpha(0);
                     fragmentView.setBackgroundColor(Color.TRANSPARENT);
                     startMessagingButton.setVisibility(View.INVISIBLE);
@@ -8421,7 +8403,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     keyboardLinearLayout.setAlpha(1);
                     startMessagingButton.setVisibility(View.VISIBLE);
                     fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    floatingButtonContainer.setVisibility(View.VISIBLE);
+                    floatingButton.setButtonVisible(true, false);
 
                     FrameLayout frameLayout = (FrameLayout) fragmentView;
                     frameLayout.removeView(transformButton);
@@ -8446,7 +8428,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 slideViewsContainer.setTranslationY(AndroidUtilities.dp(20) * inverted);
                 if (!isCustomKeyboardForceDisabled()) {
                     keyboardView.setTranslationY(keyboardView.getLayoutParams().height * inverted);
-                    floatingButtonContainer.setTranslationY(keyboardView.getLayoutParams().height * inverted);
+                    floatingButton.setTranslationY(keyboardView.getLayoutParams().height * inverted);
                 }
 
                 introView.setTranslationY(-AndroidUtilities.dp(20) * val);
@@ -8476,30 +8458,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private void updateColors() {
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
-        Context context = getParentActivity();
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-            drawable = combinedDrawable;
-        }
-        floatingButtonContainer.setBackground(drawable);
-
         backButtonView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
 
         proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        proxyDrawable.setColorKey(Theme.key_windowBackgroundWhiteBlackText);
         proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
 
         radialProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionBackground));
 
+        floatingButton.updateColors();
         floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
         floatingButtonIcon.setBackgroundColor(Theme.getColor(Theme.key_chats_actionBackground));
-
-        floatingProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon));
 
         for (SlideView slideView : views) {
             slideView.updateColors();
@@ -8574,8 +8543,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private View blurredView;
         private View dimmView;
         private TransformableLoginButtonView fabTransform;
-        private RadialProgressView floatingProgressView;
-        private FrameLayout popupFabContainer;
+        private FragmentFloatingButton fabButton;
 
         private TextView confirmMessageView;
         private TextView numberView;
@@ -8606,19 +8574,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             fabTransform.setTransformType(TransformableLoginButtonView.TRANSFORM_ARROW_CHECK);
             fabTransform.setDrawBackground(false);
 
-            popupFabContainer = new FrameLayout(context);
-            popupFabContainer.addView(fabTransform, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            popupFabContainer.setOnClickListener(v -> callback.onFabPressed(this, fabTransform));
 
-            floatingProgressView = new RadialProgressView(context);
-            floatingProgressView.setSize(AndroidUtilities.dp(22));
-            floatingProgressView.setAlpha(0.0f);
-            floatingProgressView.setScaleX(0.1f);
-            floatingProgressView.setScaleY(0.1f);
-            popupFabContainer.addView(floatingProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-            popupFabContainer.setContentDescription(getString(R.string.Done));
-            addView(popupFabContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60));
+            fabButton = new FragmentFloatingButton(context, null);
+            fabButton.addView(fabTransform, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
+            fabButton.addAdditionalView(fabTransform);
+            fabButton.setOnClickListener(v -> callback.onFabPressed(this, fabTransform));
+            fabButton.setContentDescription(getString(R.string.Done));
+            addView(fabButton, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.LEFT));
 
             popupLayout = new FrameLayout(context);
 
@@ -8664,14 +8626,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             updateColors();
         }
 
+        private final PointF pointF = new PointF();
         private void updateFabPosition() {
-            int[] loc = new int[2];
-            fragmentView.getLocationInWindow(loc);
-            int fragmentX = loc[0], fragmentY = loc[1];
-
-            fabContainer.getLocationInWindow(loc);
-            popupFabContainer.setTranslationX(loc[0] - fragmentX);
-            popupFabContainer.setTranslationY(loc[1] - fragmentY);
+            ViewPositionWatcher.computeCoordinatesInParent(fabContainer, fragmentView, pointF);
+            fabButton.setTranslationX(pointF.x);
+            fabButton.setTranslationY(pointF.y);
             requestLayout();
         }
 
@@ -8683,8 +8642,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             numberView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             editTextView.setTextColor(Theme.getColor(Theme.key_changephoneinfo_image2));
             confirmTextView.setTextColor(Theme.getColor(Theme.key_changephoneinfo_image2));
-            popupFabContainer.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground)));
-            floatingProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon));
+            fabButton.updateColors();
         }
 
         @Override
@@ -8692,15 +8650,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             super.onLayout(changed, left, top, right, bottom);
 
             int height = popupLayout.getMeasuredHeight();
-            int popupBottom = (int) (popupFabContainer.getTranslationY() - AndroidUtilities.dp(32));
+            int popupBottom = (int) (fabButton.getTranslationY() - AndroidUtilities.dp(32));
             popupLayout.layout(popupLayout.getLeft(), popupBottom - height, popupLayout.getRight(), popupBottom);
         }
 
         private void show() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                ObjectAnimator.ofFloat(fabContainer, View.TRANSLATION_Z, fabContainer.getTranslationZ(), 0).setDuration(150).start();
-            }
-
             ValueAnimator anim = ValueAnimator.ofFloat(0, 1).setDuration(250);
             anim.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -8727,7 +8681,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (AndroidUtilities.isAccessibilityTouchExplorationEnabled()) {
-                        popupFabContainer.requestFocus();
+                        fabButton.requestFocus();
                     }
                 }
             });
@@ -8747,28 +8701,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         private void animateProgress(Runnable callback) {
-            ValueAnimator animator = ValueAnimator.ofFloat(0, 1);
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    callback.run();
-                }
-            });
-            animator.addUpdateListener(animation -> {
-                float val = (float) animation.getAnimatedValue();
-
-                float scale = 0.1f + 0.9f * (1f - val);
-                fabTransform.setScaleX(scale);
-                fabTransform.setScaleY(scale);
-                fabTransform.setAlpha(1f - val);
-
-                scale = 0.1f + 0.9f * val;
-                floatingProgressView.setScaleX(scale);
-                floatingProgressView.setScaleY(scale);
-                floatingProgressView.setAlpha(val);
-            });
-            animator.setDuration(150);
-            animator.start();
+            fabButton.setProgressVisible(true, true);
+            AndroidUtilities.runOnUIThread(callback, 400);
         }
 
         private void dismiss() {
@@ -8783,10 +8717,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 public void onAnimationEnd(Animator animation) {
                     if (getParent() instanceof ViewGroup) {
                         ((ViewGroup) getParent()).removeView(PhoneNumberConfirmView.this);
-                    }
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        ObjectAnimator.ofFloat(fabContainer, View.TRANSLATION_Z, 0, AndroidUtilities.dp(2)).setDuration(150).start();
                     }
                     fabContainer.setVisibility(VISIBLE);
                 }
@@ -9220,7 +9150,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 //            cancelButton.setText(getString(R.string.YourEmailSkip));
 
             FrameLayout bottomContainer = new FrameLayout(context);
-            bottomContainer.addView(timeText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.BOTTOM, 6, 0, 60, 28));
+            bottomContainer.addView(timeText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 6, 0, 60, 28));
             addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM));
             VerticalPositionAutoAnimator.attach(timeText);
 
@@ -9892,15 +9822,15 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             textView.setGravity(Gravity.CENTER);
             topView.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 16, 152, 16, 0));
 
-            cells[0] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET);
+            cells[0] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET, resourceProvider);
             cells[0].set(R.drawable.menu_high_price, getString(R.string.SMSFee1Title), getString(R.string.SMSFee1Text));
             addView(cells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 6));
 
-            cells[1] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET);
+            cells[1] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET, resourceProvider);
             cells[1].set(R.drawable.menu_feature_code, getString(R.string.SMSFee2Title), getString(R.string.SMSFee2Text));
             addView(cells[1], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 6));
 
-            cells[2] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET);
+            cells[2] = new ExplainStarsSheet.FeatureCell(context, ExplainStarsSheet.FeatureCell.STYLE_SHEET, resourceProvider);
             cells[2].set(R.drawable.menu_feature_hands, AndroidUtilities.replaceArrows(replaceSingleTag(getString(R.string.SMSFee3Title), () -> {
                 final PremiumPreviewFragment fragment = new PremiumPreviewFragment("sms");
                 fragment.setCurrentAccount(currentAccount);

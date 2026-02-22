@@ -359,7 +359,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (checkDiscard()) {
+                    if (checkDiscard(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -993,15 +993,15 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (emojiViewVisible) {
-            hideEmojiPopup(true);
+            if (invoked) hideEmojiPopup(true);
             return false;
         }
-        return checkDiscard();
+        return checkDiscard(invoked);
     }
 
-    private boolean checkDiscard() {
+    private boolean checkDiscard(boolean invoked) {
         boolean allowDiscard = true;
         if (editing instanceof TLRPC.TL_messageMediaToDo) {
             final TLRPC.TL_messageMediaToDo media = (TLRPC.TL_messageMediaToDo) editing;
@@ -1034,8 +1034,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 }
             }
         }
-        if (!allowDiscard) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        if (invoked && !allowDiscard) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(getString(todo ? R.string.CancelTodoAlertTitle : R.string.CancelPollAlertTitle));
             builder.setMessage(getString(todo ? R.string.CancelTodoAlertText : R.string.CancelPollAlertText));
             builder.setPositiveButton(getString(R.string.PassportDiscard), (dialogInterface, i) -> finishFragment());

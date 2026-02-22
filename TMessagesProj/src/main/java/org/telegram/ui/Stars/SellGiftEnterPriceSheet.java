@@ -171,11 +171,12 @@ public class SellGiftEnterPriceSheet extends BottomSheet {
         footerLayout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(footerLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
-        buttonView = new ButtonWithCounterView(context, resourcesProvider);
+        buttonView = new ButtonWithCounterView(context, resourcesProvider).setRound();
         buttonView.setOnClickListener(v -> {
             if (!buttonView.isEnabled() || buttonView.isLoading()) {
                 return;
             }
+            AndroidUtilities.hideKeyboard(starsCountEditField);
             buttonView.setLoading(true);
             callback.run(inputAmount);
         });

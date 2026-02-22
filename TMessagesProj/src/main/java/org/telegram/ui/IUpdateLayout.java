@@ -8,7 +8,7 @@ import androidx.annotation.Keep;
 @Keep
 public abstract class IUpdateLayout {
     @Keep
-    public IUpdateLayout(Activity activity, ViewGroup sideMenu, ViewGroup sideMenuContainer) {}
+    public IUpdateLayout(Activity activity, ViewGroup sideMenuContainer) {}
     @Keep
     public void updateFileProgress(Object[] args) {}
     @Keep

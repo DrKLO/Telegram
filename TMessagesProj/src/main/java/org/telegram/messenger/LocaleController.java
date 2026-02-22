@@ -221,6 +221,19 @@ public class LocaleController {
         return chatDate;
     }
 
+    private volatile FastDateFormat chatDateShort;
+    public FastDateFormat getChatDateShort() {
+        if (chatDateShort == null) {
+            synchronized (this) {
+                if (chatDateShort == null) {
+                    final Locale locale = currentLocale == null ? Locale.getDefault() : currentLocale;
+                    chatDateShort = createFormatter(locale, getStringInternal("chatDateShort", R.string.chatDateShort), "d MMM");
+                }
+            }
+        }
+        return chatDateShort;
+    }
+
     private volatile FastDateFormat chatFullDate;
     public FastDateFormat getChatFullDate() {
         if (chatFullDate == null) {
@@ -2037,6 +2050,25 @@ public class LocaleController {
         }
     }
 
+    public static String formatShortDuration(int duration) {
+        final int hours = duration / 3600;
+        final int minutes = duration / 60 % 60;
+        final int seconds = duration % 60;
+        final StringBuilder stringBuilder = new StringBuilder();
+        if (hours > 0) {
+            if (stringBuilder.length() > 0) stringBuilder.append(":");
+            stringBuilder.append(hours > 10 ? "" : "0");
+            stringBuilder.append(hours);
+        }
+        if (stringBuilder.length() > 0) stringBuilder.append(":");
+        stringBuilder.append(minutes > 10 ? "" : "0");
+        stringBuilder.append(minutes);
+        if (stringBuilder.length() > 0) stringBuilder.append(":");
+        stringBuilder.append(seconds > 10 ? "" : "0");
+        stringBuilder.append(seconds);
+        return stringBuilder.toString();
+    }
+
     public void onDeviceConfigurationChange(Configuration newConfig) {
         if (changingConfiguration) {
             return;
@@ -2296,6 +2328,17 @@ public class LocaleController {
         return "LOC_ERR";
     }
 
+    public static String formatShortDuration2(int time) {
+        final int minutes = time / 60;
+        final int hours = time / 3600;
+
+        if (hours > 0) {
+            return LocaleController.formatPluralString("ShortHoursAgo", hours) + " " + LocaleController.formatPluralString("ShortMinutesAgo", minutes % 60);
+        }
+
+        return LocaleController.formatPluralString("ShortMinutesAgo", minutes);
+    }
+
     public static String formatShortDate(long date) {
         try {
             date *= 1000;
@@ -2425,7 +2468,7 @@ public class LocaleController {
             } else if (dateDay + 1 == day && year == dateYear) {
                 return LocaleController.formatString(R.string.YesterdayAtFormatted, getInstance().getFormatterDay().format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
-                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
+                return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatDateShort().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             } else {
                 return LocaleController.formatString(R.string.formatDateAtTime, getInstance().getChatFullDate().format(new Date(date)), getInstance().getFormatterDay().format(new Date(date)));
             }

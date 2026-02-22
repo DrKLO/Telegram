@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.ActionBar.Theme.multAlpha;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -13,10 +14,12 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.RenderNode;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -27,8 +30,10 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ProfileActivity;
@@ -36,6 +41,8 @@ import org.telegram.ui.ProfileActivity;
 public class ProfileMusicView extends View {
 
     private final Theme.ResourcesProvider resourcesProvider;
+    private final PorterDuffColorFilter filterColorWhite = new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
+    private final PorterDuffColorFilter filterColorBlack = new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
 
     private Text author, title;
     private final Paint iconPaint = new Paint();
@@ -43,16 +50,20 @@ public class ProfileMusicView extends View {
     private final Path arrowPath = new Path();
     private final Drawable icon;
 
+    private final RectF rect = new RectF();
+    private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path clipPath = new Path();
+
+    private final ButtonBounce bounce = new ButtonBounce(this);
+
     public ProfileMusicView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
         icon = context.getResources().getDrawable(R.drawable.files_music).mutate();
-        icon.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
 
-        iconPaint.setColor(0xFFFFFFFF);
         arrowPaint.setStyle(Paint.Style.STROKE);
-        arrowPaint.setColor(Theme.multAlpha(0xFFFFFFFF, 0.85f));
         arrowPaint.setStrokeCap(Paint.Cap.ROUND);
         arrowPaint.setStrokeJoin(Paint.Join.ROUND);
         arrowPath.moveTo(0, -dpf2(3.33f));
@@ -71,29 +82,55 @@ public class ProfileMusicView extends View {
                 MeasureSpec.EXACTLY
             ),
             MeasureSpec.makeMeasureSpec(
-                dp(22),
+                dp(37),
                 MeasureSpec.EXACTLY
             )
         );
     }
 
+    private int textColor = Color.WHITE;
+    private float parentExpanded;
+    private int backgroundColor;
+    private boolean withShadows;
+
     public void setColor(MessagesController.PeerColor peerColor) {
         int color1, color2;
         if (peerColor == null) {
-            if (!Theme.isCurrentThemeDark()) {
-                setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
-                return;
-            }
-            color1 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
-            color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
+            color1 = color2 = Theme.getColor(Theme.key_actionBarDefault, resourcesProvider);
         } else {
             color1 = peerColor.getBgColor1(Theme.isCurrentThemeDark());
             color2 = peerColor.getBgColor2(Theme.isCurrentThemeDark());
         }
-        setBackgroundColor(
-            Theme.adaptHSV(ColorUtils.blendARGB(color1, color2, .25f), +.02f, -.08f)
-        );
+
+        if (peerColor == null) {
+            backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
+            withShadows = true;
+        } else {
+            backgroundColor = Theme.adaptHSV(ColorUtils.blendARGB(color1, color2, .15f), +.04f, -.09f);
+            withShadows = false;
+        }
+        backgroundPaint.setColor(backgroundColor);
+        checkTextColor();
     }
+
+    private void checkTextColor() {
+        final boolean useBlackText = parentExpanded < 0.8f && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.85f;
+        textColor = useBlackText ? Color.BLACK : Color.WHITE;
+        icon.setColorFilter(useBlackText ? filterColorBlack : filterColorWhite);
+        iconPaint.setColor(textColor);
+        arrowPaint.setColor(Theme.multAlpha(textColor, 0.85f));
+        invalidate();
+    }
+
+    public void setParentExpanded(float expanded) {
+        if (parentExpanded != expanded) {
+            parentExpanded = expanded;
+            checkTextColor();
+            invalidate();
+        }
+    }
+
+
 
     public void setMusicDocument(TLRPC.Document document) {
         CharSequence author = getAuthor(document);
@@ -101,7 +138,7 @@ public class ProfileMusicView extends View {
         if (TextUtils.isEmpty(author)) {
             if (TextUtils.isEmpty(title)) {
                 author = getString(R.string.AudioUnknownArtist);
-                title = getString(R.string.AudioUnknownTitle);
+                title = " - " + getString(R.string.AudioUnknownTitle);
             } else {
                 author = "";
             }
@@ -179,19 +216,42 @@ public class ProfileMusicView extends View {
         invalidate();
     }
 
-    private final long start = System.currentTimeMillis();
+    private float currentHeight;
+
+    public void updatePosition(float y, float newHeight) {
+        currentHeight = newHeight;
+        setTranslationY(y - dp(12));
+        invalidate();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        final float alpha = Utilities.clamp01((currentHeight) / dp(21));
+        if (alpha <= 0) return false;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            bounce.setPressed(rect.contains(event.getX(), event.getY()));
+        } else if (event.getAction() == MotionEvent.ACTION_MOVE && bounce.isPressed()) {
+            if (!rect.contains(event.getX(), event.getY())) {
+                bounce.setPressed(false);
+            }
+        } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            bounce.setPressed(false);
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            if (bounce.isPressed()) {
+                performClick();
+            }
+            bounce.setPressed(false);
+        }
+        return bounce.isPressed();
+    }
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         if (this.author == null || this.title == null) return;
 
-        if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
-            canvas.save();
-            canvas.translate(0f, renderNodeTranslateY);
-            canvas.scale(renderNodeScale, renderNodeScale);
-            canvas.drawRenderNode(renderNode);
-            canvas.restore();
-        }
+        final float alpha = Utilities.clamp01((currentHeight) / dp(21));
+        final float scale = bounce.getScale(0.02f);
+        if (alpha <= 0) return;
 
         final int padding = dp(12);
         final int maxWidth = getWidth() - padding * 2;
@@ -200,33 +260,65 @@ public class ProfileMusicView extends View {
         this.title.ellipsize(maxWidth - this.author.getWidth() - dp(35));
 
         final float width = dp(16.6f) + this.author.getWidth() + this.title.getWidth() + dp(8);
+        final float containerWidth = dp(16) + width;
 
         canvas.save();
+        canvas.scale(scale, scale, getWidth() / 2f, getHeight() / 2f);
+
+        rect.set(
+            (getWidth() - containerWidth) / 2f,
+            dp(10),
+            (getWidth() + containerWidth) / 2f,
+            dp(10) + dp(17) * alpha
+        );
+        if (withShadows && SharedConfig.shadowsInSections) {
+            backgroundPaint.setShadowLayer(dpf2(2), 0, dpf2(0.33f), multAlpha(0x0a000000, alpha));
+            strokePaint.setShadowLayer(dpf2(0.33f), 0, 0, multAlpha(0x0c000000, alpha));
+            strokePaint.setColor(0);
+        } else {
+            backgroundPaint.setShadowLayer(0, 0, 0, 0);
+        }
+        int wasAlpha = backgroundPaint.getAlpha();
+        backgroundPaint.setAlpha((int) (wasAlpha * alpha));
+        if (withShadows && SharedConfig.shadowsInSections) {
+            canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, strokePaint);
+        }
+        canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);
+        backgroundPaint.setAlpha(wasAlpha);
+
+        clipPath.rewind();
+        clipPath.addRoundRect(rect, rect.height() / 2f, rect.height() / 2f, Path.Direction.CW);
+
+        canvas.save();
+        canvas.clipPath(clipPath);
+        if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated()) {
+            canvas.save();
+            canvas.translate(0f, renderNodeTranslateY);
+            canvas.scale(renderNodeScale, renderNodeScale);
+            canvas.drawRenderNode(renderNode);
+            canvas.restore();
+        }
+
         canvas.translate((getWidth() - width) / 2f, 0);
 
-        final long now = System.currentTimeMillis();
+//        final long now = System.currentTimeMillis();
         final float cy = getHeight() / 2f, hh = dp(6), w = dp(2);
 
-        final int iconSz = dp(14);
+        final int iconSz = dp(13);
         icon.setBounds(0, (int) cy - iconSz / 2, iconSz, (int) cy + iconSz / 2);
         icon.draw(canvas);
-//        final float h1 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 50) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
-//        final float h2 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 250) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
-//        final float h3 = lerp(0.1f, 1.0f, (float) Math.sin((now - start - 400) % 600 / 600f * Math.PI) / 2.0f + 0.5f);
-//        invalidate();
-//        canvas.drawRoundRect(0, cy - hh * h1, w, cy + hh * h1, w, w, iconPaint);
-//        canvas.drawRoundRect(dp(4), cy - hh * h2, dp(4) + w, cy + hh * h2, w, w, iconPaint);
-//        canvas.drawRoundRect(dp(8), cy - hh * h3, dp(8) + w, cy + hh * h3, w, w, iconPaint);
 
         canvas.translate(dp(16.6f), 0);
-        this.author.draw(canvas, 0, cy, 0xFFFFFFFF, 1.0f);
+        this.author.draw(canvas, 0, cy, textColor, alpha);
         canvas.translate(this.author.getWidth(), 0);
-        this.title.draw(canvas, 0, cy, 0xFFFFFFFF, 0.85f);
+        this.title.draw(canvas, 0, cy, textColor, 0.85f * alpha);
         canvas.translate(this.title.getWidth(), 0);
 
         arrowPaint.setStrokeWidth(dpf2(1.16f));
-        canvas.translate(dpf2(3.8f), cy);
+        canvas.translate(dpf2(4.8f), cy);
         canvas.drawPath(arrowPath, arrowPaint);
+
+        canvas.restore();
 
         canvas.restore();
     }

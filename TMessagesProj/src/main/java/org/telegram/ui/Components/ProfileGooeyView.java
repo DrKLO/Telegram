@@ -9,9 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -31,22 +29,13 @@ import androidx.annotation.RequiresApi;
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.NotchInfoUtils;
-import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ProfileActivity;
-
-import java.util.Arrays;
 
 public class ProfileGooeyView extends FrameLayout {
     private static final float AVATAR_SIZE_DP = 100;
     private static final float BLACK_KING_BAR = 32;
-
-    private final Paint fadeToTop = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint fadeToBottom = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private final Paint blackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
@@ -56,23 +45,18 @@ public class ProfileGooeyView extends FrameLayout {
     private float blurIntensity;
     private boolean enabled;
 
-    private final boolean isSamsung;
-
     @Nullable
     public NotchInfoUtils.NotchInfo notchInfo;
 
     public ProfileGooeyView(Context context) {
         super(context);
 
-        isSamsung = Build.MANUFACTURER.equalsIgnoreCase("samsung");
         blackPaint.setColor(Color.BLACK);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE) {
             impl = new GPUImpl(SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH ? 1f : 1.5f);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH) {
-            impl = new CPUImpl();
         } else {
-            impl = new NoopImpl();
+            impl = new CPUImpl();
         }
         setIntensity(15f);
         setBlurIntensity(0f);
@@ -139,12 +123,6 @@ public class ProfileGooeyView extends FrameLayout {
         }
 
         impl.onSizeChanged(w, h);
-
-        fadeToTop.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-        fadeToTop.setShader(new LinearGradient(getWidth() / 2f, 0, getWidth() / 2f, dp(50), new int[] {0xFF000000, 0xFFFFFFFF}, new float[]{0.15f, 1f}, Shader.TileMode.CLAMP));
-
-        fadeToBottom.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-        fadeToBottom.setShader(new LinearGradient(getWidth() / 2f, 0, getWidth() / 2f, dp(50), new int[] {0xFFFFFFFF, 0xFF000000}, new float[]{0.25f, 1f}, Shader.TileMode.CLAMP));
     }
 
     @Override
@@ -161,140 +139,118 @@ public class ProfileGooeyView extends FrameLayout {
         }, canvas);
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        impl.release();
-    }
-
-    private final static class NoopImpl implements Impl {
-
-        @Override
-        public void setIntensity(float intensity) {}
-
-        @Override
-        public void setBlurIntensity(float intensity) {}
-
-        @Override
-        public void onSizeChanged(int w, int h) {}
-
-        @Override
-        public void draw(Drawer drawer, Canvas canvas) {
-            canvas.save();
-            canvas.translate(0, -dp(BLACK_KING_BAR));
-            drawer.draw(canvas);
-            canvas.restore();
-        }
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private final class CPUImpl implements Impl {
-        private Paint filter = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private Bitmap[] bitmaps = new Bitmap[2];
-        private Canvas[] bitmapCanvas = new Canvas[bitmaps.length];
-        private Paint bitmapPaint = new Paint(Paint.DITHER_FLAG | Paint.ANTI_ALIAS_FLAG);
+        private Bitmap bitmap;
+        private Canvas bitmapCanvas;
+        private final Paint bitmapPaint = new Paint();
+        private final Paint bitmapPaint2 = new Paint();
 
-        @Override
-        public void setIntensity(float intensity) {
-            filter.setColorFilter(new ColorMatrixColorFilter(new float[] {
-                1f, 0f, 0f, 0f, 0f,
-                0f, 1f, 0f, 0f, 0f,
-                0f, 0f, 1f, 0f, 0f,
-                0f, 0f, 0f, 4f * intensity, -125 * 4 * intensity
+        private int optimizedH;
+        private int optimizedW;
+
+        private int bitmapOrigW, bitmapOrigH;
+        private final float scaleConst = 6f;
+
+        {
+            bitmapPaint.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+            bitmapPaint.setFilterBitmap(true);
+            bitmapPaint2.setFlags(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+            bitmapPaint2.setFilterBitmap(true);
+            bitmapPaint2.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+            bitmapPaint.setColorFilter(new ColorMatrixColorFilter(new float[] {
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 60, -7500
             }));
         }
 
         @Override
-        public void setBlurIntensity(float intensity) {}
-
-        @Override
         public void onSizeChanged(int w, int h) {
-            for (Bitmap bm : bitmaps) {
-                if (bm != null) {
-                    bm.recycle();
-                }
+            if (bitmap != null) {
+                bitmap.recycle();
+                bitmap = null;
             }
-            bitmaps[0] = Bitmap.createBitmap(w, h + dp(BLACK_KING_BAR), Bitmap.Config.ARGB_8888);
-            bitmapCanvas[0] = new Canvas(bitmaps[0]);
 
-            bitmaps[1] = Bitmap.createBitmap(w / 4, h / 4, Bitmap.Config.ARGB_8888);
-            bitmapCanvas[1] = new Canvas(bitmaps[1]);
+            optimizedW = Math.min(dp(120), w);
+            optimizedH = Math.min(dp(220), h);
+
+            bitmapOrigW = optimizedW;
+            bitmapOrigH = optimizedH + dp(BLACK_KING_BAR);
+            bitmap = Bitmap.createBitmap((int) (bitmapOrigW / scaleConst), (int) (bitmapOrigH / scaleConst), Bitmap.Config.ARGB_8888);
+
+            bitmapCanvas = new Canvas(bitmap);
         }
 
         @Override
         public void draw(Drawer drawer, Canvas canvas) {
-            if (bitmaps[0] == null) return;
+            if (bitmap == null || bitmap.isRecycled()) return;
 
-            // Draw into buffers
-            for (int i = 0; i < 2; i++) {
-                bitmaps[i].eraseColor(0);
-            }
-            drawer.draw(bitmapCanvas[0]);
-
-            float scX = bitmaps[1].getWidth() / (float) bitmaps[0].getWidth(),
-                scY = bitmaps[1].getWidth() / (float) bitmaps[0].getWidth();
-            bitmapCanvas[1].save();
-            bitmapCanvas[1].scale(scX, scY);
-            bitmapCanvas[1].drawBitmap(bitmaps[0], 0, 0, null);
-            if (notchInfo != null) {
-                bitmapCanvas[1].translate(0, dp(BLACK_KING_BAR));
-                if (notchInfo.isLikelyCircle) {
-                    float rad = Math.min(notchInfo.bounds.width(), notchInfo.bounds.height()) / 2f;
-                    bitmapCanvas[1].drawCircle(notchInfo.bounds.centerX(), notchInfo.bounds.bottom - notchInfo.bounds.width() / 2f, rad, blackPaint);
-                } else if (notchInfo.isAccurate) {
-                    bitmapCanvas[1].drawPath(notchInfo.path, blackPaint);
-                } else {
-                    float rad = Math.max(notchInfo.bounds.width(), notchInfo.bounds.height()) / 2f;
-                    bitmapCanvas[1].drawRoundRect(notchInfo.bounds, rad, rad, blackPaint);
-                }
-            } else {
-                bitmapCanvas[1].drawRect(0, 0, getWidth(), dp(BLACK_KING_BAR), blackPaint);
-            }
-            bitmapCanvas[1].restore();
-
-            // Blur buffer
-            Utilities.stackBlurBitmap(bitmaps[1], (int) (intensity / 2));
+            final float v = (MathUtils.clamp(blurIntensity, 0.2f, 0.3f) - 0.2f) / (0.3f - 0.2f);
+            final int alpha = (int) ((1f - v) * 0xFF);
+            final float optimizedOffsetX = (getWidth() - optimizedW) / 2f;
 
             // Offset everything for black bar
-            canvas.translate(0, -dp(BLACK_KING_BAR));
             canvas.save();
+            canvas.translate(0, -dp(BLACK_KING_BAR));
 
-            // Filter alpha + fade, then draw
-            canvas.saveLayer(0, 0, getWidth(), getHeight(), null);
-            canvas.saveLayer(0, 0, getWidth(), getHeight(), filter);
-            canvas.scale(1f / scX, 1f / scY);
-            canvas.drawBitmap(bitmaps[1], 0, 0, bitmapPaint);
-            canvas.restore();
-            canvas.drawRect(0, 0, getWidth(), getHeight(), fadeToBottom);
-            canvas.restore();
+            if (alpha != 255) {
+                bitmap.eraseColor(0);
+
+                bitmapCanvas.save();
+                bitmapCanvas.scale((float) bitmap.getWidth() / bitmapOrigW, (float) bitmap.getHeight() / bitmapOrigH);
+                bitmapCanvas.translate(-optimizedOffsetX, 0);
+                drawer.draw(bitmapCanvas);
+                bitmapCanvas.restore();
+
+
+                bitmapCanvas.save();
+                bitmapCanvas.scale((float) bitmap.getWidth() / bitmapOrigW, (float) bitmap.getHeight() / bitmapOrigH);
+                if (notchInfo != null) {
+                    bitmapCanvas.save();
+                    bitmapCanvas.translate(-optimizedOffsetX, dp(BLACK_KING_BAR));
+                    if (notchInfo.isLikelyCircle) {
+                        float rad = Math.min(notchInfo.bounds.width(), notchInfo.bounds.height()) / 2f;
+                        bitmapCanvas.drawCircle(notchInfo.bounds.centerX(), notchInfo.bounds.bottom - notchInfo.bounds.width() / 2f, rad, blackPaint);
+                    } else if (notchInfo.isAccurate) {
+                        bitmapCanvas.drawPath(notchInfo.path, blackPaint);
+                    } else {
+                        float rad = Math.max(notchInfo.bounds.width(), notchInfo.bounds.height()) / 2f;
+                        bitmapCanvas.drawRoundRect(notchInfo.bounds, rad, rad, blackPaint);
+                    }
+                    bitmapCanvas.restore();
+                } else {
+                    bitmapCanvas.drawRect(0, 0, optimizedW, dp(BLACK_KING_BAR), blackPaint);
+                }
+                bitmapCanvas.restore();
+
+
+                // Blur buffer
+                Utilities.stackBlurBitmap(bitmap, (int) (intensity * 2 / scaleConst));
+
+                // Filter alpha + fade, then draw
+                canvas.save();
+                canvas.translate(optimizedOffsetX, 0);
+                canvas.saveLayer(0, 0, bitmapOrigW, bitmapOrigH, null);
+                canvas.scale((float) bitmapOrigW / bitmap.getWidth(), (float) bitmapOrigH / bitmap.getHeight());
+                canvas.drawBitmap(bitmap, 0, 0, bitmapPaint);
+                canvas.drawBitmap(bitmap, 0, 0, bitmapPaint2);
+                canvas.restore();
+                canvas.restore();
+            }
 
             // Fade, draw blurred
-            canvas.saveLayer(0, 0, getWidth(), getHeight(), null);
-            canvas.saveLayer(0, 0, getWidth(), getHeight(), filter);
-            float v = (MathUtils.clamp(blurIntensity, 0.22f, 0.24f) - 0.22f) / (0.24f - 0.22f);
-            bitmapPaint.setAlpha((int) (v * 0xFF));
-            canvas.scale(1f / scX,  1f / scY);
-            canvas.drawBitmap(bitmaps[1], 0, 0, bitmapPaint);
-            canvas.restore();
-            if (v != 1) {
-                bitmapPaint.setAlpha((int) ((1f - v) * 0xFF));
-                canvas.drawBitmap(bitmaps[0], 0, 0, bitmapPaint);
-            }
-            canvas.drawRect(0, 0, getWidth(), getHeight(), fadeToTop);
-            canvas.restore();
-
-            canvas.restore();
-        }
-
-        @Override
-        public void release() {
-            for (Bitmap bm : bitmaps) {
-                if (bm != null) {
-                    bm.recycle();
+            if (alpha != 0) {
+                if (alpha != 255) {
+                    canvas.saveLayerAlpha(optimizedOffsetX, 0, optimizedOffsetX + optimizedW, optimizedH, alpha);
+                }
+                drawer.draw(canvas);
+                if (alpha != 255) {
+                    canvas.restore();
                 }
             }
-            Arrays.fill(bitmaps, null);
-            Arrays.fill(bitmapCanvas, null);
+
+            canvas.restore();
         }
     }
 
@@ -305,7 +261,7 @@ public class ProfileGooeyView extends FrameLayout {
         private final RenderNode effectNotchNode = new RenderNode("effectNotch");
         private final RenderNode effectNode = new RenderNode("effect");
         private final RenderNode blurNode = new RenderNode("blur");
-        private float factorMult;
+        private final float factorMult;
 
         private final RectF whole = new RectF();
         private final RectF temp = new RectF();
@@ -340,14 +296,7 @@ public class ProfileGooeyView extends FrameLayout {
             blurNode.setRenderEffect(RenderEffect.createBlurEffect(blurIntensity * intensity / factorMult, blurIntensity * intensity / factorMult, Shader.TileMode.DECAL));
         }
 
-        @Override
-        public void onSizeChanged(int w, int h) {
-            int off = dp(BLACK_KING_BAR);
-            node.setPosition(0, 0, w, h + off);
-            effectNode.setPosition(0, 0, w, h + off);
-            effectNotchNode.setPosition(0, 0, w, h + off);
-            blurNode.setPosition(0, 0, w, h + off);
-        }
+        private final RectF wholeOptimized = new RectF();
 
         @Override
         public void draw(Drawer drawer, @NonNull Canvas canvas) {
@@ -356,10 +305,45 @@ public class ProfileGooeyView extends FrameLayout {
             }
             Canvas c;
 
+            whole.set(0, 0, getWidth(), getHeight());
+            if (getChildCount() > 0) {
+                final View child = getChildAt(0);
+                final float w = child.getWidth() * child.getScaleX();
+                final float h = child.getHeight() * child.getScaleY();
+                final float l = child.getX();
+                final float t = child.getY();
+
+                wholeOptimized.set(l, t, l + w, t + h);
+                if (notchInfo != null) {
+                    wholeOptimized.union(notchInfo.bounds);
+                }
+                wholeOptimized.inset(-dp(20), -dp(20));
+                wholeOptimized.intersect(whole);
+                wholeOptimized.top = 0;
+            } else {
+                wholeOptimized.set(whole);
+            }
+            wholeOptimized.bottom += dp(BLACK_KING_BAR);
+
+            final int width = (int) Math.ceil(wholeOptimized.width());
+            final int height = (int) Math.ceil(wholeOptimized.height());
+            final float left = wholeOptimized.left;
+            final float top = wholeOptimized.top;
+
+            node.setPosition(0, 0, width, height);
+            blurNode.setPosition(0, 0, width, height);
+            effectNode.setPosition(0, 0, width, height);
+            effectNotchNode.setPosition(0, 0, width, height);
+            wholeOptimized.set(0, 0, width, height);
+
+
+
+
             // Record everything into buffer
             c = node.beginRecording();
-            final float imageAlpha = 1f - ilerp(pullProgress, 0.5f, 1.0f);
-            whole.set(0, 0, getWidth(), getHeight());
+            c.translate(-left, -top);
+            final int imageAlphaNoClamp = (int) ((1f - ilerp(pullProgress, 0.5f, 1.0f)) * 255);
+            final int imageAlpha = MathUtils.clamp(imageAlphaNoClamp, 0, 255);
             drawer.draw(c);
             node.endRecording();
 
@@ -374,17 +358,17 @@ public class ProfileGooeyView extends FrameLayout {
             float gooScaleFactor = 2f + factorMult;
             c = effectNode.beginRecording();
             c.scale(1f / gooScaleFactor, 1f / gooScaleFactor, 0, 0);
-            if (imageAlpha < 1) {
-                c.saveLayer(whole, null);
+            if (imageAlpha < 255) {
+                c.saveLayer(wholeOptimized, null);
                 c.drawRenderNode(node);
-                c.drawRect(whole, blackNodePaint);
+                c.drawRect(wholeOptimized, blackNodePaint);
                 c.restore();
             }
             final float h = lerp(0, dp(7) * gooScaleFactor, 0, 0.5f, pullProgress);
             if (getChildCount() > 0) {
                 final View child = getChildAt(0);
-                final float cx = child.getX() + child.getWidth() * child.getScaleX() / 2.0f;
-                final float cy = child.getY() + child.getHeight() * child.getScaleY() / 2.0f + dp(BLACK_KING_BAR);
+                final float cx = child.getX() + child.getWidth() * child.getScaleX() / 2.0f - left;
+                final float cy = child.getY() + child.getHeight() * child.getScaleY() / 2.0f + dp(BLACK_KING_BAR) - top;
                 final float r = child.getWidth() / 2.0f * child.getScaleX();
 
                 path.rewind();
@@ -394,14 +378,21 @@ public class ProfileGooeyView extends FrameLayout {
                 path.close();
                 c.drawPath(path, blackPaint);
             }
-            c.saveLayerAlpha(whole, (int) (0xFF * imageAlpha));
-            c.drawRenderNode(node);
-            c.restore();
+            if (imageAlpha > 0) {
+                if (imageAlpha != 255) {
+                    c.saveLayerAlpha(wholeOptimized, imageAlpha);
+                }
+                c.drawRenderNode(node);
+                if (imageAlpha != 255) {
+                    c.restore();
+                }
+            }
             effectNode.endRecording();
 
             c = effectNotchNode.beginRecording();
             c.scale(1f / gooScaleFactor, 1f / gooScaleFactor, 0, 0);
             if (notchInfo != null) {
+                c.translate(-left, -top);
                 c.translate(0, dp(BLACK_KING_BAR));
                 if (notchInfo.isLikelyCircle) {
                     float rad = Math.min(notchInfo.bounds.width(), notchInfo.bounds.height()) / 2f;
@@ -429,74 +420,74 @@ public class ProfileGooeyView extends FrameLayout {
                     c.drawPath(path, blackPaint);
                 }
             } else {
-                c.drawRect(0, 0, getWidth(), dp(BLACK_KING_BAR), blackPaint);
+                c.drawRect(0, 0, width, dp(BLACK_KING_BAR), blackPaint);
 
                 path.rewind();
-                path.moveTo((getWidth() - h) / 2f, dp(BLACK_KING_BAR));
-                path.lineTo((getWidth()) / 2f, dp(BLACK_KING_BAR) + h);
-                path.lineTo((getWidth() + h) / 2f, dp(BLACK_KING_BAR));
+                path.moveTo((width - h) / 2f, dp(BLACK_KING_BAR));
+                path.lineTo((width) / 2f, dp(BLACK_KING_BAR) + h);
+                path.lineTo((width + h) / 2f, dp(BLACK_KING_BAR));
                 path.close();
                 c.drawPath(path, blackPaint);
             }
             effectNotchNode.endRecording();
 
             // Offset everything for black bar
-            canvas.translate(0, -dp(BLACK_KING_BAR));
             canvas.save();
+            canvas.translate(left, top - dp(BLACK_KING_BAR));
 
             if (notchInfo != null) {
-                canvas.clipRect(0, notchInfo.bounds.top, getWidth(), getHeight());
+                canvas.clipRect(0, notchInfo.bounds.top, width, height);
             }
 
             // Filter alpha + fade, then draw
-            canvas.saveLayer(0, 0, getWidth() * gooScaleFactor, getHeight() * gooScaleFactor, null);
-            canvas.saveLayer(0, 0, getWidth() * gooScaleFactor, getHeight() * gooScaleFactor, filter);
+            canvas.saveLayer(wholeOptimized, filter);
             canvas.scale(gooScaleFactor, gooScaleFactor);
             canvas.drawRenderNode(effectNotchNode);
             canvas.drawRenderNode(effectNode);
             canvas.restore();
-            canvas.drawRect(0, 0, getWidth(), getHeight(), fadeToTop);
-            canvas.restore();
 
             // Fade, draw blurred
-            canvas.saveLayer(0, 0, getWidth() * blurScaleFactor, getHeight() * blurScaleFactor, null);
-            final float blurImageAlpha = imageAlpha * 0.75f;
-            if (blurImageAlpha < 1) {
-                canvas.saveLayer(whole, null);
+            final int blurImageAlpha = MathUtils.clamp(imageAlphaNoClamp * 3 / 4, 0, 255);
+            if (blurImageAlpha < 255) {
+                canvas.saveLayer(wholeOptimized, null);
                 if (blurIntensity != 0) {
-                    canvas.saveLayer(0, 0, getWidth() * blurScaleFactor, getHeight() * blurScaleFactor, filter);
+                    canvas.saveLayer(wholeOptimized, filter);
                     canvas.scale(blurScaleFactor, blurScaleFactor);
                     canvas.drawRenderNode(blurNode);
                     canvas.restore();
                 } else {
                     canvas.drawRenderNode(node);
                 }
-                canvas.drawRect(whole, blackNodePaint);
+                canvas.drawRect(wholeOptimized, blackNodePaint);
                 canvas.restore();
             }
-            canvas.saveLayerAlpha(whole, (int) (0xFF * blurImageAlpha));
-            if (blurIntensity != 0) {
-                canvas.saveLayer(0, 0, getWidth() * blurScaleFactor, getHeight() * blurScaleFactor, filter);
-                canvas.scale(blurScaleFactor, blurScaleFactor);
-                canvas.drawRenderNode(blurNode);
-                canvas.restore();
-            } else {
-                canvas.drawRenderNode(node);
+
+            if (blurImageAlpha > 0) {
+                if (blurImageAlpha != 255) {
+                    canvas.saveLayerAlpha(wholeOptimized, blurImageAlpha);
+                }
+                if (blurIntensity != 0) {
+                    canvas.saveLayer(wholeOptimized, filter);
+                    canvas.scale(blurScaleFactor, blurScaleFactor);
+                    canvas.drawRenderNode(blurNode);
+                    canvas.restore();
+                } else {
+                    canvas.drawRenderNode(node);
+                }
+                if (blurImageAlpha != 255) {
+                    canvas.restore();
+                }
             }
-            canvas.restore();
-            canvas.drawRect(0, 0, getWidth(), getHeight(), fadeToBottom);
-            canvas.restore();
 
             canvas.restore();
         }
     }
 
     private interface Impl {
-        void setIntensity(float intensity);
-        void setBlurIntensity(float intensity);
-        void onSizeChanged(int w, int h);
+        default void setIntensity(float intensity) {}
+        default void setBlurIntensity(float intensity) {}
+        default void onSizeChanged(int w, int h) {}
         void draw(Drawer drawer, Canvas canvas);
-        default void release() {}
     }
 
     private interface Drawer {
