@@ -6659,40 +6659,49 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     protected void onDestroy() {
+        // Only tear down global singletons if this is the active instance and not
+        // a configuration change. A stale instance (e.g. from share intent or
+        // activity recreation) must not destroy UI used by the current instance.
+        final boolean allowGlobalTeardown = instance == this && !isChangingConfigurations();
+
         isActive = false;
         unregisterReceiver(batteryReceiver);
-        if (PhotoViewer.getPipInstance() != null) {
-            PhotoViewer.getPipInstance().destroyPhotoViewer();
-        }
-        if (PhotoViewer.hasInstance()) {
-            PhotoViewer.getInstance().destroyPhotoViewer();
-        }
-        if (SecretMediaViewer.hasInstance()) {
-            SecretMediaViewer.getInstance().destroyPhotoViewer();
-        }
-        if (ArticleViewer.hasInstance()) {
-            ArticleViewer.getInstance().destroyArticleViewer();
-        }
-        if (ContentPreviewViewer.hasInstance()) {
-            ContentPreviewViewer.getInstance().destroy();
-        }
-        if (GroupCallActivity.groupCallInstance != null) {
-            GroupCallActivity.groupCallInstance.dismissInternal();
+        if (allowGlobalTeardown) {
+            if (PhotoViewer.getPipInstance() != null) {
+                PhotoViewer.getPipInstance().destroyPhotoViewer();
+            }
+            if (PhotoViewer.hasInstance()) {
+                PhotoViewer.getInstance().destroyPhotoViewer();
+            }
+            if (SecretMediaViewer.hasInstance()) {
+                SecretMediaViewer.getInstance().destroyPhotoViewer();
+            }
+            if (ArticleViewer.hasInstance()) {
+                ArticleViewer.getInstance().destroyArticleViewer();
+            }
+            if (ContentPreviewViewer.hasInstance()) {
+                ContentPreviewViewer.getInstance().destroy();
+            }
+            if (GroupCallActivity.groupCallInstance != null) {
+                GroupCallActivity.groupCallInstance.dismissInternal();
+            }
         }
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
-        MediaController.getInstance().setBaseActivity(this, false);
-        MediaController.getInstance().setFeedbackView(feedbackView, false);
-        if (pipRoundVideoView != null) {
-            pipRoundVideoView.close(false);
-        }
-        Theme.destroyResources();
-        EmbedBottomSheet embedBottomSheet = EmbedBottomSheet.getInstance();
-        if (embedBottomSheet != null) {
-            embedBottomSheet.destroy();
-        }
-        ThemeEditorView editorView = ThemeEditorView.getInstance();
-        if (editorView != null) {
-            editorView.destroy();
+        if (allowGlobalTeardown) {
+            MediaController.getInstance().setBaseActivity(this, false);
+            MediaController.getInstance().setFeedbackView(feedbackView, false);
+            if (pipRoundVideoView != null) {
+                pipRoundVideoView.close(false);
+            }
+            Theme.destroyResources();
+            EmbedBottomSheet embedBottomSheet = EmbedBottomSheet.getInstance();
+            if (embedBottomSheet != null) {
+                embedBottomSheet.destroy();
+            }
+            ThemeEditorView editorView = ThemeEditorView.getInstance();
+            if (editorView != null) {
+                editorView.destroy();
+            }
         }
         try {
             for (int i = 0; i < visibleDialogs.size(); ++i) {
@@ -6718,11 +6727,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((OnBackAnimationCallback) onBackAnimationCallback);
             }
         } else if (Build.VERSION.SDK_INT >= 33) {
-            if (onBackAnimationCallback instanceof OnBackInvokedCallback) {
+            if (onBackInvokedCallback instanceof OnBackInvokedCallback) {
                 getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((OnBackInvokedCallback) onBackInvokedCallback);
             }
         }
-        clearFragments();
+        if (instance == this) {
+            clearFragments();
+        }
         super.onDestroy();
         onFinish();
         FloatingDebugController.onDestroy();
