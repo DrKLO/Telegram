@@ -94,29 +94,42 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
     }
 
     private void showProviderSelector() {
-        String[] providerNames = SpaceGramTranslator.getAllProviderNames();
-        int[] providerIds = SpaceGramTranslator.getAllProviderIds();
+        final String[] providerNames = SpaceGramTranslator.getAllProviderNames();
+        final int[] providerIds = SpaceGramTranslator.getAllProviderIds();
         
         // Find current provider index
-        int currentIndex = 0;
+        int currentIndex = -1;
         for (int i = 0; i < providerIds.length; i++) {
             if (providerIds[i] == SpaceGramConfig.translateProvider) {
                 currentIndex = i;
                 break;
             }
         }
+        final int selectedIndex = currentIndex;
         
+        // Create AlertDialog using Telegram's AlertDialog
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider));
-        builder.setSingleChoiceItems(providerNames, currentIndex, new DialogInterface.OnClickListener() {
+        
+        // Create items array with checkmarks
+        CharSequence[] items = new CharSequence[providerNames.length];
+        for (int i = 0; i < providerNames.length; i++) {
+            if (i == selectedIndex) {
+                items[i] = "✓ " + providerNames[i];
+            } else {
+                items[i] = providerNames[i];
+            }
+        }
+        
+        builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 SpaceGramConfig.translateProvider = providerIds[which];
                 SpaceGramConfig.saveConfig();
                 listView.adapter.update(true);
-                dialog.dismiss();
             }
         });
+        
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         showDialog(builder.create());
     }
