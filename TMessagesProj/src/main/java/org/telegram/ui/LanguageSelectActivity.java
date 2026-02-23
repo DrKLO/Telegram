@@ -52,7 +52,6 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TranslateAlert2;
 
@@ -217,7 +216,6 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     } else if (position == autoTranslationPosition) {
                         boolean value = !getChatValue();
                         if (value && !getUserConfig().isPremium()) {
-                            showDialog(new PremiumFeatureBottomSheet(LanguageSelectActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, false));
                             return;
                         }
                         getMessagesController().getTranslateController().setChatTranslateEnabled(value);
