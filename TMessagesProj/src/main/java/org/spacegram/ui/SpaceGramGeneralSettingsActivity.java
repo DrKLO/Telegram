@@ -1,6 +1,7 @@
 package org.spacegram.ui;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -107,11 +108,14 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
         
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider));
-        builder.setSingleChoiceItems(providerNames, currentIndex, (dialog, which) -> {
-            SpaceGramConfig.translateProvider = providerIds[which];
-            SpaceGramConfig.saveConfig();
-            listView.adapter.update(true);
-            dialog.dismiss();
+        builder.setSingleChoiceItems(providerNames, currentIndex, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                SpaceGramConfig.translateProvider = providerIds[which];
+                SpaceGramConfig.saveConfig();
+                listView.adapter.update(true);
+                dialog.dismiss();
+            }
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
         showDialog(builder.create());
