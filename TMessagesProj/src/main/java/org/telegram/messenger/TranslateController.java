@@ -92,19 +92,13 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isFeatureAvailable() {
-        return isChatTranslateEnabled() && (UserConfig.getInstance(currentAccount).isPremium() || SpaceGramConfig.translateProvider != 0);
+        // SpaceGram: Always available, no premium check
+        return isChatTranslateEnabled();
     }
 
     public boolean isFeatureAvailable(long dialogId) {
-        if (!isChatTranslateEnabled()) {
-            return false;
-        }
-        final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-        return (
-            UserConfig.getInstance(currentAccount).isPremium() ||
-            (chat != null && chat.autotranslation) ||
-            SpaceGramConfig.translateProvider != 0
-        );
+        // SpaceGram: Always available, no premium check
+        return isChatTranslateEnabled();
     }
 
     private Boolean chatTranslateEnabled;
