@@ -93,9 +93,8 @@ public class FileLoaderPriorityQueue {
         int lastPriority = 0;
         boolean pauseAllNextOperations = false;
         int max = type == TYPE_LARGE ? MessagesController.getInstance(currentAccount).largeQueueMaxActiveOperations : MessagesController.getInstance(currentAccount).smallQueueMaxActiveOperations;
-        if (SpaceGramConfig.networkSpeedMode != 0) {
-
-            max *= 2;
+        if (SpaceGramConfig.getDownloadBoostMultiplier() > 1) {
+            max *= SpaceGramConfig.getDownloadBoostMultiplier();
         }
         tmpListOperations.clear();
         for (int i = 0; i < allOperations.size(); i++) {

@@ -10407,7 +10407,12 @@
     <string name="SettingsSpaceGramExperimental">Experimental</string>
     <string name="SettingsSpaceGramNetwork">Network</string>
     <string name="SettingsSpaceGramNetworkSpeed">Speed Boost</string>
-    <string name="SettingsSpaceGramNetworkSpeedInfo">Increase concurrent download and upload connections</string>
+    <string name="SettingsSpaceGramDownloadSpeed">Download speed</string>
+    <string name="SettingsSpaceGramUploadSpeed">Upload speed</string>
+    <string name="SettingsSpaceGramSpeedModeNormal">Normal</string>
+    <string name="SettingsSpaceGramSpeedModeFast">Fast</string>
+    <string name="SettingsSpaceGramSpeedModeExtreme">Extreme</string>
+    <string name="SettingsSpaceGramNetworkSpeedInfo">Increase concurrent connections for download and upload. Normal keeps default behavior, Fast increases parallelism, Extreme maximizes it.</string>
     <string name="SettingsSpaceGramTranslator">Translator</string>
     <string name="SettingsSpaceGramTranslatorStyle">Style</string>
     <string name="SettingsSpaceGramTranslatorProvider">Provider</string>

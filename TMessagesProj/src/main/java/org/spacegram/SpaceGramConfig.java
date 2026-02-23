@@ -1,16 +1,10 @@
 package org.spacegram;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.SharedConfig;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class SpaceGramConfig {
 
@@ -22,6 +16,12 @@ public class SpaceGramConfig {
     public static String translateTargetLang = "";
     public static String translateSkipLang = "";
     public static boolean autoTranslate = false;
+
+    // 0 = normal, 1 = fast, 2 = extreme
+    public static int networkUploadSpeedMode = 0;
+    public static int networkDownloadSpeedMode = 0;
+
+    @Deprecated
     public static int networkSpeedMode = 0;
 
     static {
@@ -39,7 +39,19 @@ public class SpaceGramConfig {
             translateTargetLang = preferences.getString("translateTargetLang", "");
             translateSkipLang = preferences.getString("translateSkipLang", "");
             autoTranslate = preferences.getBoolean("autoTranslate", false);
-            networkSpeedMode = preferences.getInt("networkSpeedMode", 0);
+
+            networkUploadSpeedMode = clampSpeedMode(preferences.getInt("networkUploadSpeedMode", -1));
+            networkDownloadSpeedMode = clampSpeedMode(preferences.getInt("networkDownloadSpeedMode", -1));
+
+            // Backward compatibility with old unified setting.
+            networkSpeedMode = clampSpeedMode(preferences.getInt("networkSpeedMode", 0));
+            if (networkUploadSpeedMode < 0) {
+                networkUploadSpeedMode = networkSpeedMode;
+            }
+            if (networkDownloadSpeedMode < 0) {
+                networkDownloadSpeedMode = networkSpeedMode;
+            }
+
             configLoaded = true;
         }
     }
@@ -54,11 +66,42 @@ public class SpaceGramConfig {
                 editor.putString("translateTargetLang", translateTargetLang);
                 editor.putString("translateSkipLang", translateSkipLang);
                 editor.putBoolean("autoTranslate", autoTranslate);
+                editor.putInt("networkUploadSpeedMode", networkUploadSpeedMode);
+                editor.putInt("networkDownloadSpeedMode", networkDownloadSpeedMode);
+
+                // Keep legacy key updated with the strongest selected mode.
+                networkSpeedMode = Math.max(networkUploadSpeedMode, networkDownloadSpeedMode);
                 editor.putInt("networkSpeedMode", networkSpeedMode);
                 editor.apply();
             } catch (Exception e) {
                 FileLog.e(e);
             }
         }
+    }
+
+    public static int getUploadBoostMultiplier() {
+        return getBoostMultiplier(networkUploadSpeedMode);
+    }
+
+    public static int getDownloadBoostMultiplier() {
+        return getBoostMultiplier(networkDownloadSpeedMode);
+    }
+
+    private static int getBoostMultiplier(int mode) {
+        switch (clampSpeedMode(mode)) {
+            case 1:
+                return 2;
+            case 2:
+                return 3;
+            default:
+                return 1;
+        }
+    }
+
+    private static int clampSpeedMode(int mode) {
+        if (mode < 0) {
+            return -1;
+        }
+        return Math.max(0, Math.min(2, mode));
     }
 }

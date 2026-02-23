@@ -288,11 +288,11 @@ public class FileLoadOperation {
     }
 
     private void updateParams() {
-        if (SpaceGramConfig.networkSpeedMode != 0) {
-
-            downloadChunkSizeBig = 1024 * 1024;
-            maxDownloadRequests = 16;
-            maxDownloadRequestsBig = 16;
+        if (SpaceGramConfig.getDownloadBoostMultiplier() > 1) {
+            int multiplier = SpaceGramConfig.getDownloadBoostMultiplier();
+            downloadChunkSizeBig = 1024 * 512 * multiplier;
+            maxDownloadRequests = 8 * multiplier;
+            maxDownloadRequestsBig = 8 * multiplier;
         } else if ((preloadPrefixSize > 0 || MessagesController.getInstance(currentAccount).getfileExperimentalParams) && !forceSmallChunk) {
             downloadChunkSizeBig = 1024 * 512;
             maxDownloadRequests = 8;

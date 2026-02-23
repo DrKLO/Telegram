@@ -124,9 +124,8 @@ public class FileUploadOperation {
                 FileLog.d("start upload on slow network = " + slowNetwork);
             }
             int count = slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount;
-            if (SpaceGramConfig.networkSpeedMode != 0) {
-
-                count *= 2;
+            if (SpaceGramConfig.getUploadBoostMultiplier() > 1) {
+                count *= SpaceGramConfig.getUploadBoostMultiplier();
             }
             for (int a = 0; a < count; a++) {
                 startUploadRequest();
@@ -166,9 +165,8 @@ public class FileUploadOperation {
 
                 operationGuid++;
                 int count = slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount;
-                if (SpaceGramConfig.networkSpeedMode != 0) {
-
-                    count *= 2;
+                if (SpaceGramConfig.getUploadBoostMultiplier() > 1) {
+                    count *= SpaceGramConfig.getUploadBoostMultiplier();
                 }
                 for (int a = 0; a < count; a++) {
                     startUploadRequest();
@@ -330,9 +328,8 @@ public class FileUploadOperation {
                     uploadChunkSize = chunkSize;
                 }
                 int maxUploadKBytes = slowNetwork ? maxUploadingSlowNetworkKBytes : maxUploadingKBytes;
-                if (SpaceGramConfig.networkSpeedMode != 0) {
-
-                    maxUploadKBytes *= 3;
+                if (SpaceGramConfig.getUploadBoostMultiplier() > 1) {
+                    maxUploadKBytes *= SpaceGramConfig.getUploadBoostMultiplier();
                 }
                 maxRequestsCount = Math.max(1, maxUploadKBytes / uploadChunkSize);
 
