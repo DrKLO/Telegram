@@ -5,9 +5,11 @@ import android.view.View;
 import android.widget.FrameLayout;
 
 import org.spacegram.SpaceGramConfig;
+import org.spacegram.translator.SpaceGramTranslator;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -58,7 +60,7 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
         String styleName = SpaceGramConfig.translateStyle == 0 ? LocaleController.getString("TranslateStyleOnMessage", R.string.TranslateStyleOnMessage) : LocaleController.getString("TranslateStylePopup", R.string.TranslateStylePopup);
         items.add(UItem.asSettingsCell(1, 0, LocaleController.getString("SettingsSpaceGramTranslatorStyle", R.string.SettingsSpaceGramTranslatorStyle), styleName));
         
-        String providerName = SpaceGramConfig.translateProvider == 1 ? LocaleController.getString("TranslateProviderGoogle", R.string.TranslateProviderGoogle) : "Telegram";
+        String providerName = SpaceGramTranslator.getProviderName(SpaceGramConfig.translateProvider);
         items.add(UItem.asSettingsCell(2, 0, LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider), providerName));
         
         items.add(UItem.asSettingsCell(3, 0, LocaleController.getString("SettingsSpaceGramTranslatorTargetLang", R.string.SettingsSpaceGramTranslatorTargetLang), SpaceGramConfig.translateTargetLang.isEmpty() ? LocaleController.getCurrentLanguageName() : SpaceGramConfig.translateTargetLang));
@@ -76,9 +78,7 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
             SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         } else if (item.id == 2) {
-            SpaceGramConfig.translateProvider = (SpaceGramConfig.translateProvider + 1) % 2;
-            SpaceGramConfig.saveConfig();
-            listView.adapter.update(true);
+            showProviderSelector();
         } else if (item.id == 3) {
             // Language selection - placeholder or reuse LanguageSelectActivity
             presentFragment(new LanguageSelectActivity());
@@ -90,5 +90,30 @@ public class SpaceGramGeneralSettingsActivity extends BaseFragment {
             SpaceGramConfig.saveConfig();
             listView.adapter.update(true);
         }
+    }
+
+    private void showProviderSelector() {
+        String[] providerNames = SpaceGramTranslator.getAllProviderNames();
+        int[] providerIds = SpaceGramTranslator.getAllProviderIds();
+        
+        // Find current provider index
+        int currentIndex = 0;
+        for (int i = 0; i < providerIds.length; i++) {
+            if (providerIds[i] == SpaceGramConfig.translateProvider) {
+                currentIndex = i;
+                break;
+            }
+        }
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString("SettingsSpaceGramTranslatorProvider", R.string.SettingsSpaceGramTranslatorProvider));
+        builder.setSingleChoiceItems(providerNames, currentIndex, (dialog, which) -> {
+            SpaceGramConfig.translateProvider = providerIds[which];
+            SpaceGramConfig.saveConfig();
+            listView.adapter.update(true);
+            dialog.dismiss();
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        showDialog(builder.create());
     }
 }
