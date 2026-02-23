@@ -6698,7 +6698,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         isActive = false;
         unregisterReceiver(batteryReceiver);
-
         if (allowGlobalTeardown) {
             if (PhotoViewer.getPipInstance() != null) {
                 PhotoViewer.getPipInstance().destroyPhotoViewer();
