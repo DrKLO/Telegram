@@ -195,16 +195,14 @@ public class DrawerLayoutContainer extends FrameLayout {
             return;
         }
 
-        final Insets systemInsets = lastWindowInsetsCompat.getInsets(WindowInsetsCompat.Type.ime()
+        final Insets insets = lastWindowInsetsCompat.getInsets(WindowInsetsCompat.Type.ime()
             | WindowInsetsCompat.Type.systemBars());
-        final Insets cutoutInsets = lastWindowInsetsCompat.getInsets(WindowInsetsCompat.Type.displayCutout());
 
-        final int bottomInset = Math.max(systemInsets.bottom, cutoutInsets.bottom);
-        if (bottomInset > 0) {
+        if (insets.bottom > 0) {
             backgroundPaint.setColor(behindKeyboardColor);
             canvas.drawRect(
                 0,
-                getMeasuredHeight() - bottomInset,
+                getMeasuredHeight() - insets.bottom,
                 getMeasuredWidth(),
                 getMeasuredHeight(),
                 internalNavbarPaint
@@ -253,27 +251,23 @@ public class DrawerLayoutContainer extends FrameLayout {
         final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
         final Insets systemInsetsWithIme = insets.getInsets(WindowInsetsCompat.Type.ime()
                 | WindowInsetsCompat.Type.systemBars());
-        final Insets cutoutInsets = insets.getInsets(WindowInsetsCompat.Type.displayCutout());
-
-        final int leftInset = Math.max(systemInsetsWithIme.left, cutoutInsets.left);
-        final int rightInset = Math.max(systemInsetsWithIme.right, cutoutInsets.right);
 
         final boolean changed = lp.topMargin != 0 || lp.bottomMargin != 0
-                || lp.leftMargin != leftInset
-                || lp.rightMargin != rightInset;
+                || lp.leftMargin != systemInsetsWithIme.left
+                || lp.rightMargin != systemInsetsWithIme.right;
 
         if (changed) {
-            lp.leftMargin = leftInset;
+            lp.leftMargin = systemInsetsWithIme.left;
             lp.topMargin = 0;
-            lp.rightMargin = rightInset;
+            lp.rightMargin = systemInsetsWithIme.right;
             lp.bottomMargin = 0;
 
             child.requestLayout();
         }
 
         final WindowInsetsCompat consumed = insets.inset(
-                leftInset, lp.topMargin,
-                rightInset, lp.bottomMargin);
+                lp.leftMargin, lp.topMargin,
+                lp.rightMargin, lp.bottomMargin);
 
         ViewCompat.dispatchApplyWindowInsets(child, consumed);
     }
