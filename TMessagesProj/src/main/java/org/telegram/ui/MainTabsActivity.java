@@ -13,6 +13,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -233,6 +234,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         super.onPause();
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
+        if (accountSwitchHint != null) {
+            accountSwitchHint.hide();
+        }
     }
 
     @Override
@@ -449,6 +453,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         textView.setText(UserObject.getUserName(user));
+        textView.setMaxLines(2);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
         btn.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 13, 0, 14, 0));
 
         return btn;
@@ -896,10 +902,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 accountSwitchHint.setTranslationY(-navigationBarHeight + dp(4));
                 accountSwitchHint.setPadding(dp(7.33f), 0, dp(7.33f), 0);
                 accountSwitchHint.setMultilineText(false);
+                accountSwitchHint.setCloseButton(true);
                 accountSwitchHint.setText(getString(R.string.SwitchAccountHint));
                 accountSwitchHint.setJoint(1, -translate + 7.33f);
                 contentView.addView(accountSwitchHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
                 accountSwitchHint.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(accountSwitchHint));
+                accountSwitchHint.setDuration(8000);
                 accountSwitchHint.show();
             }, 1500);
 

@@ -44,6 +44,7 @@ import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -129,7 +130,6 @@ import org.telegram.ui.Business.ChatAttachAlertQuickRepliesLayout;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.Components.blur3.Blur3HashImpl;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
@@ -179,6 +179,7 @@ import me.vkryl.android.animator.ReplaceAnimator;
 public class ChatAttachAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, BottomSheet.BottomSheetDelegateInterface, FactorAnimator.Target {
 
     private static final int LAYOUT_TYPE_MUSIC = 3;
+    private static final int LAYOUT_TYPE_DOCUMENTS = 4;
     private static final int LAYOUT_TYPE_CONTACTS = 5;
     private static final int LAYOUT_TYPE_LOCATION = 6;
     private static final int LAYOUT_TYPE_POLL = 9;
@@ -417,18 +418,27 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
 
                     @Override
-                    public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
+                    public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
 
                     }
 
                     @Override
-                    public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
+                    public void onSetupMainButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
                         if (currentAttachLayout != webViewLayout || !webViewLayout.isBotButtonAvailable() && startCommand == null) {
                             return;
                         }
                         botMainButtonTextView.setClickable(isActive);
-                        botMainButtonTextView.setText(text);
+                        SpannableStringBuilder ssb = new SpannableStringBuilder();
+                        if (emojiId != 0) {
+                            ssb.append("* ");
+                            ssb.append(text);
+                            ssb.setSpan(new AnimatedEmojiSpan(emojiId, 1.4f, botMainButtonTextView.getPaint().getFontMetricsInt()), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            botMainButtonTextView.setText(ssb);
+                        } else {
+                            botMainButtonTextView.setText(text);
+                        }
                         botMainButtonTextView.setTextColor(textColor);
+                        botMainButtonTextView.setEmojiColor(textColor);
                         botMainButtonTextView.setBackground(BotWebViewContainer.getMainButtonRippleDrawable(color));
                         if (botButtonWasVisible != isVisible) {
                             botButtonWasVisible = isVisible;
@@ -1018,7 +1028,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private RadialProgressView botProgressView;
 
     private boolean botButtonWasVisible = false;
-    private TextView botMainButtonTextView;
+    private AnimatedTextView botMainButtonTextView;
     private float botMainButtonOffsetY;
 
     private int editType;
@@ -2313,7 +2323,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
             }, baseFragment instanceof ChatActivity ? (ChatActivity) baseFragment : null);
             if (isStickerMode) {
-                PhotoViewer.getInstance().enableStickerMode(null, true, customStickerHandler);
+                PhotoViewer.getInstance().enableStickerMode(null, null, true, customStickerHandler);
             }
         });
         optionsItem.setMenuYOffset(dp(-12));
@@ -2750,15 +2760,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             return false;
         });
 
-        botMainButtonTextView = new TextView(context);
+        botMainButtonTextView = new AnimatedTextView(context, true, false, true);
         botMainButtonTextView.setVisibility(View.GONE);
         botMainButtonTextView.setAlpha(0f);
-        botMainButtonTextView.setSingleLine();
         botMainButtonTextView.setGravity(Gravity.CENTER);
         botMainButtonTextView.setTypeface(AndroidUtilities.bold());
         int padding = dp(16);
         botMainButtonTextView.setPadding(padding, 0, padding, 0);
-        botMainButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        botMainButtonTextView.setTextSize(dp(14));
         botMainButtonTextView.setOnClickListener(v -> {
             if (selectedId < 0) {
                 ChatAttachAlertBotWebViewLayout webViewLayout = botAttachLayouts.get(-selectedId);
@@ -4153,7 +4162,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         } else if (layout == audioLayout) {
             newId = LAYOUT_TYPE_MUSIC;
         } else if (layout == documentLayout) {
-            newId = 4;
+            newId = LAYOUT_TYPE_DOCUMENTS;
         } else if (layout == contactsLayout) {
             newId = LAYOUT_TYPE_CONTACTS;
         } else if (layout == locationLayout) {
@@ -4398,7 +4407,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         float isGray = 0;
         for (ListAnimator.Entry<Long> entry : animatorCurrentVisibleLayout) {
             long id = entry.item;
-            if (id == LAYOUT_TYPE_MUSIC || id == LAYOUT_TYPE_CONTACTS || id == LAYOUT_TYPE_LOCATION || id == LAYOUT_TYPE_POLL || id == LAYOUT_TYPE_REPLIES || id == LAYOUT_TYPE_TODO) {
+            if (id == LAYOUT_TYPE_MUSIC || id == LAYOUT_TYPE_DOCUMENTS || id == LAYOUT_TYPE_CONTACTS || id == LAYOUT_TYPE_LOCATION || id == LAYOUT_TYPE_POLL || id == LAYOUT_TYPE_REPLIES || id == LAYOUT_TYPE_TODO) {
                 isGray += entry.getVisibility();
             }
         }

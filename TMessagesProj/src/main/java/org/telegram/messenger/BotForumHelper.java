@@ -58,11 +58,34 @@ public class BotForumHelper extends BaseController {
     public void onBotForumDraftUpdate(long userId, int topicId, long randomId, TLRPC.TL_textWithEntities text) {
         FileLog.d("[BotForum] onDraftNewDraft " + userId + " " + topicId + " " + randomId);
 
+        LongSparseArray<BotDraftMessage> drafts = botTextDraftsByRandomIds.get(userId, topicId);
+        long[] toRemove = null;
+        if (drafts != null && drafts.size() > 0) {
+            toRemove = new long[drafts.size()];
+            for (int a = 0, N = drafts.size(); a < N; a++) {
+                toRemove[a] = drafts.keyAt(a);
+            }
+        }
+
         BotDraftMessage draftMessage = botTextDraftsByRandomIds.get(userId, topicId, randomId);
         if (draftMessage == null) {
             draftMessage = new BotDraftMessage(userId, topicId, randomId, getUserConfig().getNewMessageId());
             botTextDraftsByRandomIds.put(userId, topicId, randomId, draftMessage);
         }
+
+        if (toRemove != null) {
+            for (long id: toRemove) {
+                if (id == randomId) {
+                    continue;
+                }
+                BotDraftMessage deletedMessage = drafts.get(id);
+                if (deletedMessage.selfDestruct != null) {
+                    AndroidUtilities.cancelRunOnUIThread(deletedMessage.selfDestruct);
+                }
+                onBotForumDraftTimeout(userId, topicId, id);
+            }
+        }
+
         final boolean isNew = draftMessage.messageObject == null;
         if (draftMessage.selfDestruct != null) {
             AndroidUtilities.cancelRunOnUIThread(draftMessage.selfDestruct);

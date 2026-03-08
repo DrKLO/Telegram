@@ -67,6 +67,10 @@ public class ShadowSectionCell extends View {
         }
     }
 
+    public void setSize(int size) {
+        this.size = size;
+    }
+
     private void updateBackground() {
         if (backgroundColor == 0) {
 //            if (!top && !bottom) {

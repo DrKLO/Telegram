@@ -9,9 +9,10 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
-public class SearchTabsAndFiltersLayout extends FrameLayout {
+public class SearchTabsAndFiltersLayout extends FrameLayout implements Theme.Colorable {
     private final Path clipPath = new Path();
     private BlurredBackgroundDrawable blurredBackgroundDrawable;
 
@@ -39,6 +40,7 @@ public class SearchTabsAndFiltersLayout extends FrameLayout {
         setBackground(blurredBackgroundDrawable = drawable);
     }
 
+    @Override
     public void updateColors() {
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();

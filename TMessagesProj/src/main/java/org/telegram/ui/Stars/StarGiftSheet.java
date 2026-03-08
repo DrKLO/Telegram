@@ -91,6 +91,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
@@ -881,6 +882,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             return;
         }
         final TL_stars.TL_starGiftUnique giftUnique = getUniqueGift();
+        if (giftUnique == null) return;
+        if (!TextUtils.isEmpty(giftUnique.gift_address)) {
+            new AlertDialog.Builder(getContext(), resourcesProvider)
+                .setTitle(getString(R.string.GiftCraftCantChooseFirstTitle))
+                .setMessage(getString(R.string.GiftCraftCantChooseFirst))
+                .setPositiveButton(getString(R.string.OK), null)
+                .show();
+            return;
+        }
         if (clear) {
             topView.craftTopView.setup(currentAccount, giftUnique.gift_id, giftUnique.getDocument(), giftUnique.title);
             if (canCraft()) {
@@ -966,7 +976,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, giftUnique.gift_id);
             giftsToCraft.attach();
         }
-        topView.craftTopView.setOnAddGift(onGift -> {
+        topView.craftTopView.setOnAddGift((onGift, first) -> {
             if (giftsToCraft == null) {
                 giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, giftUnique.gift_id);
                 giftsToCraft.attach();
@@ -980,6 +990,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
             new ResaleGiftsFragment.SelectGiftSheet(getContext(), giftUnique.title, giftsToCraft)
                 .without(ids)
+                .setWillBeFirst(first)
                 .setActionText(AndroidUtilities.replaceTags(formatPluralString("GiftCraftSelect", 4 - ids.size())))
                 .setOnSelect(gift -> {
                     onGift.run(gift);
@@ -4786,7 +4797,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     public boolean showCraft() {
         final TL_stars.TL_starGiftUnique gift = getUniqueGift();
-        if (gift == null || gift.owner_id == null) return false;
+        if (gift == null || gift.crafted) return false;
         if (!isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) return false;
         if (messageObject != null) {
             if (messageObject.messageOwner == null) return false;
@@ -4804,8 +4815,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
     public boolean canCraft() {
         final TL_stars.TL_starGiftUnique gift = getUniqueGift();
-        if (gift == null || gift.owner_id == null) return false;
-        if (gift.crafted) return false;
+        if (gift == null || gift.crafted) return false;
         if (!isMineWithActions(currentAccount, DialogObject.getPeerDialogId(gift.owner_id))) return false;
         int can_craft_at;
         if (messageObject != null) {
@@ -8870,24 +8880,55 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 gifts[i].setClickable(true);
                 gifts[i].setOnClickListener(v -> {
                     final SelectGiftView giftView = (SelectGiftView) v;
-                    if (giftView.getGift() != null) {
+                    if (giftView.getGift() != null && !giftView.isReplaceIcon) {
                         giftView.setGift((TL_stars.StarGift) null, true);
                         updateCounts();
                     } else {
+                        boolean isFirst = true;
+                        for (int j = 0; j < gifts.length; ++j) {
+                            if (gifts[j] == v) break;
+                            if (gifts[j] != null && gifts[j].getGift() != null) {
+                                isFirst = false;
+                                break;
+                            }
+                        }
                         onAddGift.run(gift -> {
                             giftView.setGift(gift, true);
                             updateCounts();
-                        });
+                        }, isFirst);
                     }
                 });
             }
         }
 
+        private void updateGiftButtonIcons() {
+            if (gifts == null) return;
+
+            boolean first = true;
+            for (int i = 0; i < gifts.length; ++i) {
+                if (gifts[i] != null && gifts[i].getGift() != null) {
+                    if (first) {
+                        TL_stars.StarGift nextGift = null;
+                        for (int j = i + 1; j < gifts.length; ++j) {
+                            if (gifts[j] != null && gifts[j].getGift() != null) {
+                                nextGift = gifts[j].getGift();
+                                break;
+                            }
+                        }
+                        gifts[i].setReplaceIcon(nextGift != null && !TextUtils.isEmpty(nextGift.gift_address));
+                    } else {
+                        gifts[i].setReplaceIcon(false);
+                    }
+                    first = false;
+                }
+            }
+        }
+
         private Utilities.Callback3<ArrayList<TL_stars.StarGift>, Utilities.Callback2<TL_stars.StarGift, Runnable>, Runnable> onCraft;
-        private Utilities.Callback<Utilities.Callback<TL_stars.StarGift>> onAddGift;
+        private Utilities.Callback2<Utilities.Callback<TL_stars.StarGift>, Boolean> onAddGift;
         private Runnable onClose;
 
-        public void setOnAddGift(Utilities.Callback<Utilities.Callback<TL_stars.StarGift>> onAddGift) {
+        public void setOnAddGift(Utilities.Callback2<Utilities.Callback<TL_stars.StarGift>, Boolean> onAddGift) {
             this.onAddGift = onAddGift;
         }
 
@@ -9186,6 +9227,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
 
             updateAttributeFreq();
+            updateGiftButtonIcons();
         }
 
         private void removeFromParent(View child) {
@@ -9408,7 +9450,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 closeIcon = new ImageView(context);
                 closeIcon.setImageResource(R.drawable.msg_close);
                 closeIcon.setScaleType(ImageView.ScaleType.CENTER);
-                closeLayout.addView(closeIcon, LayoutHelper.createFrame(9, 9, Gravity.CENTER));
+                closeLayout.addView(closeIcon, LayoutHelper.createFrame(12, 12, Gravity.CENTER));
 
                 setGiftVisible(false, false);
             }
@@ -9422,6 +9464,14 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (gift != null) return gift;
                 if (savedGift != null) return savedGift.gift;
                 return null;
+            }
+
+            public boolean isReplaceIcon;
+            public void setReplaceIcon(boolean replaceIcon) {
+                final float scale = replaceIcon ? 1 : 0.8f;
+                closeIcon.setScaleX(scale);
+                closeIcon.setScaleY(scale);
+                closeIcon.setImageResource((isReplaceIcon = replaceIcon) ? R.drawable.mini_replace2 : R.drawable.msg_close);
             }
 
             public void setGift(TL_stars.SavedStarGift gift, boolean animated) {

@@ -9,10 +9,12 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 
 import java.util.List;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.reference.ReferenceList;
 
 public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Callback {
@@ -30,7 +32,14 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
     public WindowInsetsCompat onProgress(
             @NonNull WindowInsetsCompat insets,
             @NonNull List<WindowInsetsAnimationCompat> runningAnimations) {
-        dispatchWindowInsetsAnimationChange(insets);
+        int typeMask = 0;
+        for (WindowInsetsAnimationCompat animation : runningAnimations) {
+            typeMask |= animation.getTypeMask();
+        }
+
+        if (BitwiseUtils.hasFlag(typeMask, WindowInsetsCompat.Type.ime())) {
+            dispatchWindowInsetsAnimationChange(insets);
+        }
         return insets;
     }
 
@@ -42,6 +51,9 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
 
     @Override
     public WindowInsetsAnimationCompat.@NonNull BoundsCompat onStart(@NonNull WindowInsetsAnimationCompat animation, WindowInsetsAnimationCompat.@NonNull BoundsCompat bounds) {
+        if (activeAnimationsCounter == 0) {
+            dispatchWindowInsetsAnimationStart();
+        }
         activeAnimationsCounter++;
         return super.onStart(animation, bounds);
     }
@@ -50,6 +62,9 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
     public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
         super.onEnd(animation);
         activeAnimationsCounter--;
+        if (activeAnimationsCounter == 0) {
+            dispatchWindowInsetsAnimationFinish();
+        }
     }
 
     private final ReferenceList<Listener> listeners =  new ReferenceList<>();
@@ -63,6 +78,19 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
     }
 
     private final PointF tmpPointF = new PointF();
+
+
+    private void dispatchWindowInsetsAnimationStart() {
+        for (Listener listener: listeners) {
+            listener.onAnimatedInsetsStarted();
+        }
+    }
+
+    private void dispatchWindowInsetsAnimationFinish() {
+        for (Listener listener: listeners) {
+            listener.onAnimatedInsetsFinished();
+        }
+    }
 
     private void dispatchWindowInsetsAnimationChange(WindowInsetsCompat insets) {
         for (Listener listener: listeners) {
@@ -87,6 +115,11 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
 
     public interface Listener {
         View getAnimatedInsetsTargetView();
+
+        default void onAnimatedInsetsStarted() {}
+
         void onAnimatedInsetsChanged(View view, WindowInsetsCompat insets);
+
+        default void onAnimatedInsetsFinished() {}
     }
 }

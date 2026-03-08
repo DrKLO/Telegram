@@ -145,7 +145,7 @@ public class ContentPreviewViewer {
 
         }
 
-        default void sendSticker() {
+        default void sendSticker(String emoji) {
         }
 
         default void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
@@ -183,6 +183,14 @@ public class ContentPreviewViewer {
 
         }
 
+        default boolean canAddCaption(TLRPC.Document document) {
+            return false;
+        }
+
+        default void addCaptionToGif(Object gif, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+
+        }
+
         default boolean canEditSticker() {
             return false;
         }
@@ -195,6 +203,9 @@ public class ContentPreviewViewer {
             return false;
         }
 
+        default boolean canSendSticker() {
+            return true;
+        }
         default boolean isSettingIntroSticker() {
             return false;
         }
@@ -321,7 +332,7 @@ public class ContentPreviewViewer {
             if (currentContentType == CONTENT_TYPE_CUSTOM_STIKER) {
                 flags |= ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK;
             }
-            ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert3, resourcesProvider, flags);
+            ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(containerView.getContext(), R.drawable.popup_fixed_alert4, resourcesProvider, flags);
             if (currentContentType == CONTENT_TYPE_CUSTOM_STIKER) {
                 ArrayList<CharSequence> items = new ArrayList<>();
                 final ArrayList<Integer> actions = new ArrayList<>();
@@ -333,9 +344,11 @@ public class ContentPreviewViewer {
                         icons.add(R.drawable.menu_sticker_add);
                         actions.add(0);
                     } else {
-                        items.add(LocaleController.getString(R.string.SendStickerPreview));
-                        icons.add(R.drawable.msg_send);
-                        actions.add(0);
+                        if (delegate.canSendSticker()) {
+                            items.add(LocaleController.getString(R.string.SendStickerPreview));
+                            icons.add(R.drawable.msg_send);
+                            actions.add(0);
+                        }
 
                         items.add(LocaleController.getString(R.string.AddToFavorites));
                         icons.add(R.drawable.msg_fave);
@@ -416,7 +429,7 @@ public class ContentPreviewViewer {
                                 if (delegate.isSettingIntroSticker()) {
                                     delegate.setIntroSticker(TextUtils.join("", selectedEmojis));
                                 } else {
-                                    delegate.sendSticker();
+                                    delegate.sendSticker(TextUtils.join("", selectedEmojis));
                                 }
                             }
                         }
@@ -535,12 +548,14 @@ public class ContentPreviewViewer {
                 if (currentStickerSet != null && currentDocument != null) {
                     final MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
                     TLRPC.TL_messages_stickerSet stickerSet = mediaDataController.getStickerSet(currentStickerSet, true);
-                    if (stickerSet != null && stickerSet.set.creator && !StickersAlert.DISABLE_STICKER_EDITOR) {
+                    if (stickerSet != null && /*stickerSet.set.creator && */!StickersAlert.DISABLE_STICKER_EDITOR) {
                         if (delegate != null && delegate.canEditSticker() && !stickerSet.set.emojis && !stickerSet.set.masks) {
                             items.add(LocaleController.getString(R.string.EditSticker));
                             icons.add(R.drawable.msg_edit);
                             actions.add(7);
                         }
+                    }
+                    if (stickerSet != null && stickerSet.set.creator && !StickersAlert.DISABLE_STICKER_EDITOR) {
                         if (delegate != null && delegate.canDeleteSticker(currentDocument)) {
                             items.add(LocaleController.getString(R.string.DeleteSticker));
                             icons.add(R.drawable.msg_delete);
@@ -821,6 +836,11 @@ public class ContentPreviewViewer {
                     icons.add(R.drawable.msg_autodelete);
                     actions.add(3);
                 }
+                if (currentDocument != null && delegate.canAddCaption(currentDocument)) {
+                    items.add(LocaleController.getString(R.string.AddACaption));
+                    icons.add(R.drawable.outline_caption_24);
+                    actions.add(11);
+                }
 
                 boolean canDelete;
                 if (currentDocument != null) {
@@ -869,6 +889,8 @@ public class ContentPreviewViewer {
                         Object parent = parentObject;
                         ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
                         AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, parent, notify, scheduleDate, scheduleRepeatPeriod), resourcesProvider);
+                    } else if (actions.get(which) == 11) {
+                        delegate.addCaptionToGif(currentDocument != null ? currentDocument : inlineResult, parentObject, true, 0, 0);
                     }
                     dismissPopupWindow();
                 };
@@ -942,7 +964,7 @@ public class ContentPreviewViewer {
             for (int i = 0; i < previewMenu.getItemsCount(); ++i) {
                 View child = previewMenu.getItemAt(i);
                 if (child instanceof ActionBarMenuSubItem) {
-                    ((ActionBarMenuSubItem) child).updateSelectorBackground(i == 0, i == previewMenu.getItemsCount() - 1, 8);
+                    ((ActionBarMenuSubItem) child).updateSelectorBackground(i == 0, i == previewMenu.getItemsCount() - 1, 12);
                 }
             }
         }

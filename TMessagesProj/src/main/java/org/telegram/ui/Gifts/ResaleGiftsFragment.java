@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -1962,6 +1963,16 @@ public class ResaleGiftsFragment extends BaseFragment {
                 if (item.object instanceof TL_stars.StarGift) {
                     final TL_stars.StarGift gift = (TL_stars.StarGift) item.object;
                     final boolean resale = item.red;
+
+                    if (!TextUtils.isEmpty(gift.gift_address) && willBeFirst) {
+                        new AlertDialog.Builder(getContext(), resourcesProvider)
+                            .setTitle(getString(R.string.GiftCraftCantChooseFirstTitle))
+                            .setMessage(getString(R.string.GiftCraftCantChooseFirst))
+                            .setPositiveButton(getString(R.string.OK), null)
+                            .show();
+                        return;
+                    }
+
                     if (resale && gift instanceof TL_stars.TL_starGiftUnique) {
                         buyGift((TL_stars.TL_starGiftUnique) item.object);
                         return;
@@ -2096,6 +2107,12 @@ public class ResaleGiftsFragment extends BaseFragment {
         public SelectGiftSheet without(HashSet<Long> ids) {
             without.addAll(ids);
             updateList(false);
+            return this;
+        }
+
+        private boolean willBeFirst;
+        public SelectGiftSheet setWillBeFirst(boolean willBeFirst) {
+            this.willBeFirst = willBeFirst;
             return this;
         }
 

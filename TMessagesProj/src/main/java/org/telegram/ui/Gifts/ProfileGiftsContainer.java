@@ -1171,7 +1171,16 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         });
         addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        tabsView = viewPager.createTabsView(true, 9);
+        tabsView = viewPager.createTabsView(true, 10);
+        tabsView.setColors(
+            Theme.key_profile_tabSelectedLine,
+            Theme.key_windowBackgroundWhiteBlackText,
+            Theme.key_profile_tabText,
+            Theme.key_profile_tabSelector,
+            Theme.key_actionBarDefault
+        );
+        tabsView.setPadding(dp(8), 0, dp(8), 0);
+        tabsView.setClipToPadding(false);
         tabsView.tabMarginDp = 12;
         tabsView.setPreTabClick((id, pos) -> {
             resetReordering();
@@ -1305,7 +1314,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         checkboxLayout.setPadding(dp(12), dp(8), dp(12), dp(8));
         checkboxLayout.setClipToPadding(false);
         checkboxLayout.setOrientation(LinearLayout.HORIZONTAL);
-        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
+        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 24, 24));
         checkbox = new CheckBox2(context, 24, resourcesProvider);
         checkbox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
         checkbox.setDrawUnchecked(true);
@@ -1322,7 +1331,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         checkboxLayout.setOnClickListener(v -> {
             checkbox.setChecked(!checkbox.isChecked(), true);
             final boolean willBeNotified = checkbox.isChecked();
-            BulletinFactory.of(bulletinContainer, resourcesProvider)
+            BulletinFactory.of(fragment)
                 .createSimpleBulletinDetail(willBeNotified ? R.raw.silent_unmute : R.raw.silent_mute, getString(willBeNotified ? R.string.Gift2ChannelNotifyChecked : R.string.Gift2ChannelNotifyNotChecked))
                 .show();
 
@@ -1337,7 +1346,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                 checkboxRequestId = -1;
                 if (err != null) {
-                    BulletinFactory.of(bulletinContainer, resourcesProvider).showForError(err);
+                    BulletinFactory.of(fragment).showForError(err);
                 }
             }));
         });
@@ -1430,8 +1439,11 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     public void updateTabsY() {
         if (tabsView == null) return;
         final float ty = Math.min(externalPaddingTop, getTabsHeight() - dp(42));
-        final float alpha = clamp01(ilerp(ty, -dp(42), 0));
+        final float alpha = clamp01(ilerp(ty - externalPaddingTop, -dp(42), 0));
+        final float scale = lerp(0.9f, 1.0f, alpha);
         tabsView.setTranslationY(ty);
+        tabsView.setScaleX(scale);
+        tabsView.setScaleY(scale);
         tabsView.setAlpha(alpha * hasTabs());
     }
 
@@ -1824,7 +1836,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public void updateColors() {
-        setBackgroundColor(backgroundColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+//        setBackgroundColor(backgroundColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
 //        tabsView.setBackgroundColor(backgroundColor);
         button.updateColors();
         button.setBackground(Theme.createRoundRectDrawable(dp(19), processColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider))));
@@ -1837,7 +1849,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             }
         }
         checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
+        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 24, 24));
     }
 
     public static class UnpinSheet extends BottomSheet {

@@ -112,7 +112,7 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
             return;
         }
 
-        if (source instanceof BlurredBackgroundSourceBitmap) {
+        if (source instanceof BlurredBackgroundSourceBitmap && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             // fast way - just draw gradient
 
             final BlurredBackgroundSourceBitmap s = (BlurredBackgroundSourceBitmap) source;

@@ -1745,6 +1745,7 @@ public class ItemOptions {
                     if (scrimView instanceof ScrimView) {
                         ((ScrimView) scrimView).drawScrim(canvas, dimProgress);
                     } else {
+                        canvas.translate(-scrimView.getScrollX(), -scrimView.getScrollY());
                         scrimView.draw(canvas);
                     }
                     canvas.restore();

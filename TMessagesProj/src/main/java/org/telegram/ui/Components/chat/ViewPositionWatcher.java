@@ -69,7 +69,7 @@ public final class ViewPositionWatcher implements
 
         computeRectInParent(view, parentView, tmpRect);
         t.last.set(tmpRect);
-        t.hasLast = true;
+        // t.hasLast = true;
 
         ensureListening();
     }

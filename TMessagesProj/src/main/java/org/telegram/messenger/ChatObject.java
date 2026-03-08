@@ -72,6 +72,7 @@ public class ChatObject {
     public static final int ACTION_SEND_GIFS = 23;
 
     public static final int ACTION_MANAGE_DIRECT = 24;
+    public static final int ACTION_MANAGE_TAGS = 25;
 
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
@@ -1806,6 +1807,9 @@ public class ChatObject {
                 case ACTION_MANAGE_DIRECT:
                     value = chat.admin_rights.manage_direct_messages;
                     break;
+                case ACTION_MANAGE_TAGS:
+                    value = chat.admin_rights.manage_ranks;
+                    break;
                 case ACTION_PIN:
                     value = chat.admin_rights.pin_messages;
                     break;
@@ -2010,12 +2014,26 @@ public class ChatObject {
         return canUserDoAction(chat, ACTION_ADD_ADMINS);
     }
 
+    public static boolean canManageTags(TLRPC.Chat chat) {
+        return canUserDoAction(chat, ACTION_MANAGE_TAGS);
+    }
+
+    public static boolean canManageMyTag(TLRPC.Chat chat) {
+        if (chat == null) return false;
+        if (chat.creator) return true;
+        if (chat.banned_rights == null) {
+            if (chat.default_banned_rights == null) return true;
+            return !chat.default_banned_rights.edit_rank;
+        }
+        return !chat.banned_rights.edit_rank;
+    }
+
     public static boolean canBlockUsers(TLRPC.Chat chat) {
-        return !false && canUserDoAction(chat, ACTION_BLOCK_USERS);
+        return canUserDoAction(chat, ACTION_BLOCK_USERS);
     }
 
     public static boolean canManageCalls(TLRPC.Chat chat) {
-        return !false && canUserDoAction(chat, ACTION_MANAGE_CALLS);
+        return canUserDoAction(chat, ACTION_MANAGE_CALLS);
     }
 
     public static boolean canSendStickers(TLRPC.Chat chat) {
@@ -2231,6 +2249,7 @@ public class ChatObject {
         currentBannedRights += bannedRights.send_audios ? 1 : 0;
         currentBannedRights += bannedRights.send_docs ? 1 : 0;
         currentBannedRights += bannedRights.send_plain ? 1 : 0;
+        currentBannedRights += bannedRights.edit_rank ? 1 : 0;
         currentBannedRights += bannedRights.until_date;
         return currentBannedRights;
     }

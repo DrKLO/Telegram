@@ -57,9 +57,10 @@ public class PhotoViewerCoverEditor extends FrameLayout {
 
         button = new ButtonWithCounterView(context, resourcesProvider);
         button.setText(getString(R.string.EditorSetCoverSave), false);
-        addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 10, 10, 10, 10));
+        button.setRound();
+        addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 16, 10, 16, 16));
 
-        openGalleryButton = new EditCoverButton(context, photoViewer, getString(R.string.EditorSetCoverGallery), true);
+        openGalleryButton = new EditCoverButton(context, getString(R.string.EditorSetCoverGallery), true);
         openGalleryButton.setOnClickListener(v -> {
             if (gallerySheet == null) {
                 gallerySheet = new GallerySheet(context, resourcesProvider, getString(R.string.VideoChooseCover), true, aspectRatio);

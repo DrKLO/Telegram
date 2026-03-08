@@ -220,8 +220,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_BUSINESS_CHAT_LINKS = 37;
     public final static int PREMIUM_FEATURE_MESSAGE_EFFECTS = 38;
     public final static int PREMIUM_FEATURE_TODO = 39;
-
     public final static int FEATURE_GIFTS = 40;
+    public final static int PREMIUM_FEATURE_SHARING_DISABLE = 41;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -315,6 +315,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_MESSAGE_PRIVACY;
             case "folder_tags":
                 return PREMIUM_FEATURE_FOLDER_TAGS;
+            case "pm_noforwards":
+                return PREMIUM_FEATURE_SHARING_DISABLE;
 
             case "business":
                 return PREMIUM_FEATURE_BUSINESS;
@@ -404,6 +406,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "message_privacy";
             case PREMIUM_FEATURE_FOLDER_TAGS:
                 return "folder_tags";
+            case PREMIUM_FEATURE_SHARING_DISABLE:
+                return "pm_noforwards";
 
             case PREMIUM_FEATURE_BUSINESS:
                 return "business";
@@ -511,15 +515,14 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         shadowDrawable.getPadding(padding);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
-        }
+        statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
 
         contentView = new FrameLayout(context) {
 
             int lastSize;
             boolean iconInterceptedTouch;
             boolean listInterceptedTouch;
+            boolean ignoreLayout;
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -562,11 +565,17 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 } else {
                     isLandscapeMode = false;
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
-                }
+                statusBarHeight = AndroidUtilities.isTablet() ? 0 : AndroidUtilities.statusBarHeight;
                 backgroundView.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
                 particlesView.getLayoutParams().height = backgroundView.getMeasuredHeight();
+                if (buttonContainer != null) {
+                    ignoreLayout = true;
+                    LayoutParams lp = (LayoutParams) buttonContainer.getLayoutParams();
+                    lp.height = dp(68) + AndroidUtilities.navigationBarHeight;
+                    buttonContainer.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight);
+                    ignoreLayout = false;
+                }
+
                 int buttonHeight = (buttonContainer == null || buttonContainer.getVisibility() == View.GONE ? 0 : dp(68));
                 layoutManager.setAdditionalHeight(buttonHeight + statusBarHeight - dp(16));
                 layoutManager.setMinimumLastViewHeight(buttonHeight);
@@ -575,6 +584,14 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 if (lastSize != size) {
                     updateBackgroundImage();
                 }
+            }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
             }
 
             @Override
@@ -696,12 +713,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return super.drawChild(canvas, child, drawingTime);
             }
         };
-        contentView.setFitsSystemWindows(true);
 
         listView = new RecyclerListView(context);
         listView.setSections(true);
         listView.setClipToPadding(false);
-        listView.setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), 0, 0);
+        listView.setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), 0, AndroidUtilities.navigationBarHeight);
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, dp(68) + statusBarHeight - dp(16), listView));
         layoutManager.setFixedLastItemHeight();
 
@@ -736,12 +752,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             }
         });
 
-        backgroundView = new BackgroundView(context) {
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return true;
-            }
-        };
+        backgroundView = new BackgroundView(context);
         particlesView = new StarParticlesView(context);
         particlesView.setClipWithGradient();
         if (type == FEATURES_BUSINESS) {
@@ -871,6 +882,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         actionBar.setBackground(null);
         actionBar.setCastShadows(false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAddToContainer(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -880,6 +892,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             }
         });
         actionBar.setForceSkipTouches(true);
+        contentView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
         updateColors();
         updateRows();
@@ -930,6 +943,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_BUSINESS, R.drawable.filled_premium_business, getString(R.string.TelegramBusiness), getString(R.string.PremiumPreviewBusinessDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_EFFECTS, R.drawable.menu_premium_effects, getString(R.string.PremiumPreviewEffects), getString(R.string.PremiumPreviewEffectsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TODO, R.drawable.msg_premium_icons, getString(R.string.PremiumPreviewTodo), getString(R.string.PremiumPreviewTodoDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SHARING_DISABLE, R.drawable.filled_sharing_off_24, getString(R.string.PremiumPreviewSharingDisable), getString(R.string.PremiumPreviewSharingDisableDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {
@@ -1875,6 +1889,11 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             totalTiersGradientHeight = yOffset;
         }
 
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent ev) {
+            return true;
+        }
+
         @SuppressLint("NotifyDataSetChanged")
         public void updatePremiumTiers() {
             subscriptionTiers.clear();
@@ -2461,5 +2480,10 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         };
         popup[0].showAsDropDown(cell, 0, yoff, Gravity.TOP | Gravity.RIGHT);
         popup[0].dimBehind();
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
     }
 }

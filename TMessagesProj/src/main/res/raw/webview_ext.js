@@ -51,13 +51,13 @@ if (!window.__tg__webview_set) {
             awaitingResponse = true;
             whiletouchstart = true;
             if (isImageViewer()) {
-                if (window.TelegramWebview) {
+                if (window.TelegramWebviewProxy) {
                     const allowScrollX = window.visualViewport && window.visualViewport.offsetLeft == 0 && !swipesDisabled('x');
                     const allowScrollY = window.visualViewport && window.visualViewport.offsetTop  == 0 && !swipesDisabled('y');
                     if (DEBUG) {
                         console.log('tgbrowser allowScroll sent after "touchstart": x=' + allowScrollX + ' y=' + allowScrollY + ' inside image viewer');
                     }
-                    window.TelegramWebview.post('allowScroll', JSON.stringify([ allowScrollX, allowScrollY ]));
+                    window.TelegramWebviewProxy.postEvent('allowScroll', JSON.stringify([ allowScrollX, allowScrollY ]));
                 }
                 awaitingResponse = false;
             }
@@ -71,13 +71,13 @@ if (!window.__tg__webview_set) {
             if (awaitingResponse) {
                 setTimeout(() => {
                     if (awaitingResponse) {
-                        if (window.TelegramWebview) {
+                        if (window.TelegramWebviewProxy) {
                             const allowScrollX = !prevented && (!window.visualViewport || window.visualViewport.offsetLeft == 0) && !mutatedWhileTouch && !swipesDisabled('x');
                             const allowScrollY = !prevented && (!window.visualViewport || window.visualViewport.offsetTop == 0)  && !mutatedWhileTouch && !swipesDisabled('y');
                             if (DEBUG) {
                                 console.log('tgbrowser allowScroll sent after "touchmove": x=' + allowScrollX + ' y=' + allowScrollY, { prevented, mutatedWhileTouch });
                             }
-                            window.TelegramWebview.post('allowScroll', JSON.stringify([ allowScrollX, allowScrollY ]));
+                            window.TelegramWebviewProxy.postEvent('allowScroll', JSON.stringify([ allowScrollX, allowScrollY ]));
                         }
                         prevented = false;
                         awaitingResponse = false;
@@ -97,11 +97,11 @@ if (!window.__tg__webview_set) {
                 console.log('tgbrowser scroll on' + e.target + ' scrollLeft=' + e.target.scrollLeft + ' scrollTop=' + e.target.scrollTop);
             }
             if (awaitingResponse) {
-                if (window.TelegramWebview) {
+                if (window.TelegramWebviewProxy) {
                     if (DEBUG) {
                         console.log('tgbrowser allowScroll sent after "scroll": x=' + allowScrollX + ' y=' + allowScrollY, { prevented, mutatedWhileTouch, scrollLeft: e.target.scrollLeft, scrollTop: e.target.scrollTop });
                     }
-                    window.TelegramWebview.post('allowScroll', JSON.stringify([allowScrollX, allowScrollY]));
+                    window.TelegramWebviewProxy.postEvent('allowScroll', JSON.stringify([allowScrollX, allowScrollY]));
                 }
                 awaitingResponse = false;
             }
@@ -182,18 +182,18 @@ if (!window.__tg__webview_set) {
                 __tg__metaColor("theme-background-color") ||
                 __tg__backgroundColor()
             ));
-            if (window.TelegramWebview) {
+            if (window.TelegramWebviewProxy) {
                 if (actionBarColor != __tg__lastActionBarColor) {
                     if (DEBUG) {
                         console.log('tgbrowser actionbar color', actionBarColor);
                     }
-                    window.TelegramWebview.post("actionBarColor", __tg__lastActionBarColor = actionBarColor);
+                    window.TelegramWebviewProxy.postEvent("actionBarColor", __tg__lastActionBarColor = actionBarColor);
                 }
                 if (navigationBarColor != __tg__lastNavigationBarColor) {
                     if (DEBUG) {
                         console.log('tgbrowser navbar color', navigationBarColor);
                     }
-                    window.TelegramWebview.post("navigationBarColor", __tg__lastNavigationBarColor = navigationBarColor);
+                    window.TelegramWebviewProxy.postEvent("navigationBarColor", __tg__lastNavigationBarColor = navigationBarColor);
                 }
             }
         };
@@ -226,11 +226,11 @@ setTimeout(function () {
         (document.querySelector('meta[property="og:site_name"]') || {}).content ||
         (document.querySelector('meta[property="og:title"]') || {}).content
     );
-    if (window.TelegramWebview && window.TelegramWebview.post) {
+    if (window.TelegramWebviewProxy && window.TelegramWebviewProxy.postEvent) {
         if (site_name) {
-            window.TelegramWebview.post('siteName', site_name);
+            window.TelegramWebviewProxy.postEvent('siteName', site_name);
         } else {
-            window.TelegramWebview.post('siteNameEmpty');
+            window.TelegramWebviewProxy.postEvent('siteNameEmpty');
         }
     }
     if (window.__tg__listenColors) {

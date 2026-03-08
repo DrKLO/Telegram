@@ -2,6 +2,7 @@ package org.telegram.ui.web;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.readRes;
+import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -128,6 +129,7 @@ import org.telegram.ui.Components.Paint.Views.LinkPreview;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.OAuthSheet;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -492,9 +494,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 }
                 if (webViewProxy == null) {
                     webViewProxy = new WebViewProxy(webView, this);
-                    webView.addJavascriptInterface(webViewProxy, "TelegramWebview");
+                    webView.addJavascriptInterface(webViewProxy, "TelegramWebviewProxy");
                 } else if (replaceWith == null) {
-                    webView.addJavascriptInterface(webViewProxy, "TelegramWebview");
+                    webView.addJavascriptInterface(webViewProxy, "TelegramWebviewProxy");
                 }
                 webViewProxy.setContainer(this);
             }
@@ -1146,7 +1148,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         notifyEvent("theme_changed", buildThemeParams());
     }
 
-    private void notifyEvent(String event, JSONObject eventData) {
+    public void notifyEvent(String event, JSONObject eventData) {
         d("notifyEvent " + event);
         evaluateJs("window.Telegram.WebView.receiveEvent('" + event + "', " + eventData + ");", false);
     }
@@ -1249,7 +1251,71 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 }
                 break;
             }
+            case "oauth_request": {
+                d("oauth_request " + data);
+                if (webView == null) return;
+                final String origin = getOriginHost();
+                if (TextUtils.isEmpty(origin)) return;
+                try {
+                    final JSONObject obj = new JSONObject(data);
+                    final String url = obj.optString("url");
+                    notifyEvent("oauth_supported", obj("version", 1));
+
+                    if (!TextUtils.isEmpty(url)) {
+                        final TLRPC.TL_messages_requestUrlAuth req = new TLRPC.TL_messages_requestUrlAuth();
+                        req.url = url;
+                        req.flags |= TLObject.FLAG_2;
+                        req.in_app_origin = origin;
+                        req.flags |= TLObject.FLAG_3;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (response != null) {
+                                if (response instanceof TLRPC.TL_urlAuthResultRequest) {
+                                    OAuthSheet.handle(false, currentAccount, req, (TLRPC.TL_urlAuthResultRequest) response, null, null, null, false, this);
+                                } else if (response instanceof TLRPC.TL_urlAuthResultAccepted) {
+                                    OAuthSheet.handle(false, currentAccount, req, (TLRPC.TL_urlAuthResultAccepted) response, null, null, null, false, this);
+                                } else if (response instanceof TLRPC.TL_urlAuthResultDefault) {
+                                    AlertsCreator.showOpenUrlAlert(getContext(), url, false, true, true, false, 0L, null, null);
+                                }
+                            } else if (error != null) {
+                                if ("URL_EXPIRED".equalsIgnoreCase(error.text)) {
+                                    BulletinFactory.of(this, resourcesProvider)
+                                        .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, origin), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                                        .show();
+                                } else {
+                                    BulletinFactory.of(this, resourcesProvider).showForError(error);
+                                }
+                            }
+                        }), ConnectionsManager.RequestFlagFailOnServerErrors);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                break;
+            }
         }
+    }
+
+    public String getOriginHost() {
+        if (webView == null) return null;
+        final String url = webView.getUrl();
+        if (url == null || url.isEmpty()) return null;
+        final Uri uri = Uri.parse(url);
+        final String scheme = uri.getScheme();
+        final String host = uri.getHost();
+        final int port = uri.getPort();
+        if (scheme == null || host == null) return null;
+        final StringBuilder origin = new StringBuilder();
+        origin.append(scheme);
+        origin.append("://");
+        origin.append(host);
+        if (port != 0 && !(
+            scheme.equalsIgnoreCase("http") && port == 80 ||
+            scheme.equalsIgnoreCase("https") && port == 443
+        )) {
+            origin.append(":");
+            origin.append(port);
+        }
+        return origin.toString();
     }
 
     private void onEventReceived(BotWebViewProxy proxy, String eventType, String eventData) {
@@ -1770,13 +1836,18 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     int textColor = info.has("text_color") ? Color.parseColor(info.optString("text_color")) : lastButtonTextColor;
                     boolean isProgressVisible = info.optBoolean("is_progress_visible", false) && isVisible;
                     boolean hasShineEffect = info.optBoolean("has_shine_effect", false) && isVisible;
+                    long emojiId = 0;
+                    try {
+                        emojiId = Long.parseLong(info.getString("icon_custom_emoji_id"));
+                    } catch (Throwable t) {}
+
 
                     lastButtonColor = color;
                     lastButtonTextColor = textColor;
                     lastButtonText = text;
                     buttonData = eventData;
 
-                    delegate.onSetupMainButton(isVisible, isActive, text, color, textColor, isProgressVisible, hasShineEffect);
+                    delegate.onSetupMainButton(isVisible, isActive, text, emojiId, color, textColor, isProgressVisible, hasShineEffect);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -1794,6 +1865,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     boolean hasShineEffect = info.optBoolean("has_shine_effect", false) && isVisible;
                     String position = info.has("position") ? info.optString("position") : lastSecondaryButtonPosition;
                     if (position == null) position = "left";
+                    long emojiId = 0;
+                    try {
+                        emojiId = Long.parseLong(info.getString("icon_custom_emoji_id"));
+                    } catch (Throwable t) {}
 
                     lastSecondaryButtonColor = color;
                     lastSecondaryButtonTextColor = textColor;
@@ -1801,7 +1876,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     lastSecondaryButtonPosition = position;
                     secondaryButtonData = eventData;
 
-                    delegate.onSetupSecondaryButton(isVisible, isActive, text, color, textColor, isProgressVisible, hasShineEffect, position);
+                    delegate.onSetupSecondaryButton(isVisible, isActive, text, emojiId, color, textColor, isProgressVisible, hasShineEffect, position);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -3078,7 +3153,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
         @Keep
         @JavascriptInterface
-        public void post(String type, String data) {
+        public void postEvent(String type, String data) {
             if (container == null) return;
             AndroidUtilities.runOnUIThread(() -> {
                 if (container == null) return;
@@ -3268,8 +3343,8 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         /**
          * Setups main button
          */
-        void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect);
-        void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position);
+        void onSetupMainButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect);
+        void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position);
 
         /**
          * Sets back button enabled and visible
@@ -5001,7 +5076,15 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         return Browser.replace(Uri.parse(url), "tonsite", null, tonsite_host, null);
     }
 
-    private static JSONObject obj(String key1, Object value) {
+    public static JSONObject obj() {
+        try {
+            return new JSONObject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static JSONObject obj(String key1, Object value) {
         try {
             JSONObject obj = new JSONObject();
             obj.put(key1, value);
@@ -5011,7 +5094,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
-    private static JSONObject obj(String key1, Object value, String key2, Object value2) {
+    public static JSONObject obj(String key1, Object value, String key2, Object value2) {
         try {
             JSONObject obj = new JSONObject();
             obj.put(key1, value);
@@ -5022,7 +5105,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
-    private static JSONObject obj(String key1, Object value, String key2, Object value2, String key3, Object value3) {
+    public static JSONObject obj(String key1, Object value, String key2, Object value2, String key3, Object value3) {
         try {
             JSONObject obj = new JSONObject();
             obj.put(key1, value);
@@ -5034,7 +5117,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
-    private static JSONObject obj(String key1, Object value, String key2, Object value2, String key3, Object value3, String key4, Object value4) {
+    public static JSONObject obj(String key1, Object value, String key2, Object value2, String key3, Object value3, String key4, Object value4) {
         try {
             JSONObject obj = new JSONObject();
             obj.put(key1, value);

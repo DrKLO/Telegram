@@ -113,6 +113,20 @@ public class BlurredBackgroundProviderImpl {
                 .build();
     }
 
+    public static BlurredBackgroundProvider photoViewer(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+                .setBackgroundColor((r, isDark) -> {
+                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                    final int colorBg = 0xFF000000;
+                    final int colorTarget = 0xFF1A1A1A;
+                    return 0; // solveSrcColor(colorBg, colorTarget, alpha);
+                })
+                .setStrokeColorTop(0x28FFFFFF, 0x28FFFFFF)
+                .setStrokeColorBottom(0x14FFFFFF, 0x14FFFFFF)
+                .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
+                .build();
+    }
+
     public static int solveSrcColor(int bgColor, int outColor, float alpha) {
         alpha = MathUtils.clamp(alpha, 0, 1);
 
