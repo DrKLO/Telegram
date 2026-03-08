@@ -307,6 +307,19 @@ public class LocaleController {
         return formatterMonthYear;
     }
 
+    private volatile FastDateFormat formatterMonthOnly;
+    public FastDateFormat getFormatterMonthOnly() {
+        if (formatterMonthOnly == null) {
+            synchronized (this) {
+                if (formatterMonthOnly == null) {
+                    final Locale locale = currentLocale == null ? Locale.getDefault() : currentLocale;
+                    formatterMonthOnly = createFormatter(locale, getStringInternal("formatterMonthOnly", R.string.formatterMonthOnly), "MMMM");
+                }
+            }
+        }
+        return formatterMonthOnly;
+    }
+
     private volatile FastDateFormat formatterGiveawayCard;
     public FastDateFormat getFormatterGiveawayCard() {
         if (formatterGiveawayCard == null) {
@@ -2695,6 +2708,7 @@ public class LocaleController {
         formatterGiveawayMonthDay = null;
         formatterGiveawayMonthDayYear = null;
         formatterMonthYear = null;
+        formatterMonthOnly = null;
         formatterDayMonth = null;
         formatterYear = null;
         formatterYearMax = null;

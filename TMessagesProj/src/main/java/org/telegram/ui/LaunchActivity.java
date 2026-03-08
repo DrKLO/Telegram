@@ -1122,6 +1122,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     mode = chatActivity.isShouldHaveLightNavigationBarIcons() ? 2 : 1;
                 }
 
+                if (getBottomSheetTabs() != null && getBottomSheetTabs().getHeight(false) > 0) {
+                    mode = 0;
+                }
+
                 if (actionBarLayout.getSheetFragment(false) != null) {
                     BaseFragment sheetFragment = actionBarLayout.getSheetFragment(false);
                     if (sheetFragment.sheetsStack != null) {

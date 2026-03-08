@@ -144,9 +144,10 @@ public class OAuthSheet {
         b.setCustomView(container);
 
         final ArrayList<Integer> accountNumbers = new ArrayList<>();
+        final boolean testBackend = ConnectionsManager.getInstance(currentAccount).isTestBackend();
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
+            if (UserConfig.getInstance(a).isClientActivated() && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
                 accountNumbers.add(a);
             }
         }

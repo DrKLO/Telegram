@@ -4828,7 +4828,7 @@ public class AlertsCreator {
             return null;
         }
 
-        ScheduleDatePickerColors datePickerColors = new ScheduleDatePickerColors();
+        ScheduleDatePickerColors datePickerColors = new ScheduleDatePickerColors(resourcesProvider);
 
         BottomSheet.Builder builder = new BottomSheet.Builder(context, false, resourcesProvider);
         builder.setApplyBottomPadding(false);
@@ -4862,23 +4862,7 @@ public class AlertsCreator {
             calendar.add(Calendar.MONTH, value - FMT_DATE_MONTH_PICKER_HALF_SIZE);
             final int year = calendar.get(Calendar.YEAR);
             if (year == currentYear) {
-                switch (value % 12) {
-                    case 0: return LocaleController.getString(R.string.January);
-                    case 1: return LocaleController.getString(R.string.February);
-                    case 2: return LocaleController.getString(R.string.March);
-                    case 3: return LocaleController.getString(R.string.April);
-                    case 4: return LocaleController.getString(R.string.May);
-                    case 5: return LocaleController.getString(R.string.June);
-                    case 6: return LocaleController.getString(R.string.July);
-                    case 7: return LocaleController.getString(R.string.August);
-                    case 8: return LocaleController.getString(R.string.September);
-                    case 9: return LocaleController.getString(R.string.October);
-                    case 10: return LocaleController.getString(R.string.November);
-                    case 11:
-                    default: {
-                        return LocaleController.getString(R.string.December);
-                    }
-                }
+                return LocaleController.getInstance().getFormatterMonthOnly().format(calendar.getTimeInMillis());
             } else {
                 return LocaleController.getInstance().getFormatterMonthYear().format(calendar.getTimeInMillis());
             }
@@ -5006,6 +4990,7 @@ public class AlertsCreator {
         final boolean[] canceled = {true};
 
         int[] flagArr = new int[1];
+        /*
         if (BuildConfig.DEBUG_PRIVATE_VERSION) {
             String[] flagsStr = {"relative", "short_time", "long_time", "short_date", "long_date", "day_of_week"};
             for (int a = 0; a < flagsStr.length; a++) {
@@ -5021,6 +5006,7 @@ public class AlertsCreator {
                 });
             }
         }
+        */
 
         buttonTextView.setPadding(dp(34), 0, dp(34), 0);
         buttonTextView.setRound();

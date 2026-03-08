@@ -127,6 +127,18 @@ public class BlurredBackgroundProviderImpl {
                 .build();
     }
 
+    public static BlurredBackgroundProvider premiumButton(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) ->
+                Theme.multAlpha(Theme.getColor(Theme.key_dialogBackground, r), 0.78f))
+            .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
+            .setStrokeColorBottom(0, 0x20FFFFFF)
+            .setShadowColor(0x30000000, 0x04FFFFFF)
+            .setShadowLayer(dpf2(12 / 3f), 0, dpf2(1 / 3f))
+            .setStrokeWidth(dpf2(0.67f), dpf2(0.67f))
+            .build();
+    }
+
     public static int solveSrcColor(int bgColor, int outColor, float alpha) {
         alpha = MathUtils.clamp(alpha, 0, 1);
 

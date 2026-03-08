@@ -116,6 +116,7 @@ android {
             ext {
                 abiVersionCode = 1
             }
+            buildConfigField "boolean", "BUNDLE", "true"
         }
         bundleAfat_SDK23 {
             ndk {
@@ -131,6 +132,7 @@ android {
             ext {
                 abiVersionCode = 2
             }
+            buildConfigField "boolean", "BUNDLE", "true"
         }
         afat {
             ndk {
@@ -148,6 +150,7 @@ android {
             ext {
                 abiVersionCode = 9
             }
+            buildConfigField "boolean", "BUNDLE", "false"
         }
     }
 

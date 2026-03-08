@@ -1,6 +1,8 @@
 package org.telegram.ui.Components.inset;
 
 import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -9,6 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.jspecify.annotations.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 
@@ -77,7 +80,9 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
         listeners.remove(listener);
     }
 
-    private final PointF tmpPointF = new PointF();
+    private static final PointF tmpPointF = new PointF();
+    private static final RectF tmpRectF = new RectF();
+    private static final Rect tmpRect = new Rect();
 
 
     private void dispatchWindowInsetsAnimationStart() {
@@ -95,22 +100,43 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
     private void dispatchWindowInsetsAnimationChange(WindowInsetsCompat insets) {
         for (Listener listener: listeners) {
             final View v = listener.getAnimatedInsetsTargetView();
-            if (v == null || !ViewPositionWatcher.computeCoordinatesInParent(v, root, tmpPointF)) {
-                continue;
+            final WindowInsetsCompat i = calculateWindowInsets(insets, v, root);
+            if (i != null) {
+                listener.onAnimatedInsetsChanged(v, i);
             }
-
-            final int left = (int) tmpPointF.x;
-            final int top = (int) tmpPointF.y;
-            final int right = root.getWidth() - (left + v.getWidth());
-            final int bottom = root.getHeight() - (top + v.getHeight());
-
-            listener.onAnimatedInsetsChanged(v, insets.inset(
-                Math.max(0, left),
-                Math.max(0, top),
-                Math.max(0, right),
-                Math.max(0, bottom)
-            ));
         }
+    }
+
+    @Nullable
+    public static WindowInsetsCompat calculateWindowInsets(View view) {
+        final WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(view);
+        final View rootView = view.getRootView();
+
+        return calculateWindowInsets(rootInsets, view, rootView);
+    }
+
+    @Nullable
+    public static WindowInsetsCompat calculateWindowInsets(WindowInsetsCompat rootInsets, View view, View rootView) {
+        if (view == null || rootView == null || !ViewPositionWatcher.computeRectInParent(view, rootView, tmpRectF)) {
+            return null;
+        }
+        tmpRectF.round(tmpRect);
+
+        final int left = tmpRect.left;
+        final int top = tmpRect.top;
+        final int right = rootView.getWidth() - tmpRect.right;
+        final int bottom = rootView.getHeight() - tmpRect.bottom;
+
+        if (left == 0 && top == 0 && right == 0 && bottom == 0) {
+            return rootInsets;
+        }
+
+        return rootInsets.inset(
+            Math.max(0, left),
+            Math.max(0, top),
+            Math.max(0, right),
+            Math.max(0, bottom)
+        );
     }
 
     public interface Listener {

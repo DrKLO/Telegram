@@ -178,6 +178,7 @@ import me.vkryl.android.animator.ReplaceAnimator;
 
 public class ChatAttachAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, BottomSheet.BottomSheetDelegateInterface, FactorAnimator.Target {
 
+    private static final int LAYOUT_TYPE_PHOTO = 1;
     private static final int LAYOUT_TYPE_MUSIC = 3;
     private static final int LAYOUT_TYPE_DOCUMENTS = 4;
     private static final int LAYOUT_TYPE_CONTACTS = 5;
@@ -190,6 +191,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private static final int ANIMATOR_ID_CAPTION_VISIBLE = 1;
     private static final int ANIMATOR_ID_ACTIONBAR_VISIBLE = 2;
     private static final int ANIMATOR_ID_CAPTION_NOT_EMPTY = 3;
+    private static final int ANIMATOR_ID_TOGGLE_CAPTION_SUPPORTED = 4;
 
     private final BoolAnimator animatorCaptionAbove = new BoolAnimator(ANIMATOR_ID_CAPTION_ABOVE, this,
         CubicBezierInterpolator.EASE_OUT_QUINT, 380L);
@@ -199,6 +201,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         CubicBezierInterpolator.EASE_OUT_QUINT, 380L);
     private final BoolAnimator animatorCaptionNotEmpty = new BoolAnimator(ANIMATOR_ID_CAPTION_NOT_EMPTY, this,
         CubicBezierInterpolator.EASE_OUT_QUINT, 380L);
+    private final BoolAnimator animatorToggleCaptionSupported = new BoolAnimator(ANIMATOR_ID_TOGGLE_CAPTION_SUPPORTED, this,
+        CubicBezierInterpolator.EASE_OUT_QUINT, 380L);
+
     private final ReplaceAnimator<Long> animatorCurrentVisibleLayout = new ReplaceAnimator<>(this::onCurrentLayoutAnimatorChanged,
         CubicBezierInterpolator.EASE_OUT_QUINT, 380L);
 
@@ -617,8 +622,18 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         } else if (id == ANIMATOR_ID_CAPTION_VISIBLE) {
             checkUi_bottomFade();
         } else if (id == ANIMATOR_ID_CAPTION_NOT_EMPTY) {
-            FragmentFloatingButton.setAnimatedVisibility(moveCaptionButton, factor);
+            checkUi_moveCaptionButtonVisibility();
+        } else if (id == ANIMATOR_ID_TOGGLE_CAPTION_SUPPORTED) {
+            checkUi_moveCaptionButtonVisibility();
         }
+    }
+
+    public void checkUi_moveCaptionButtonVisibility() {
+        final float factor1 = animatorCaptionNotEmpty.getFloatValue();
+        final float factor2 = animatorToggleCaptionSupported.getFloatValue();
+        final float factor = factor1 * factor2;
+
+        FragmentFloatingButton.setAnimatedVisibility(moveCaptionButton, factor);
     }
 
     public interface ChatAttachViewDelegate {
@@ -4158,7 +4173,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (layout == restrictedLayout) {
             newId = restrictedLayout.id;
         } else if (layout == photoLayout) {
-            newId = 1;
+            newId = LAYOUT_TYPE_PHOTO;
         } else if (layout == audioLayout) {
             newId = LAYOUT_TYPE_MUSIC;
         } else if (layout == documentLayout) {
@@ -4196,6 +4211,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             return;
         }
 
+        animatorToggleCaptionSupported.setValue(newId == LAYOUT_TYPE_PHOTO, animated);
         animatorCurrentVisibleLayout.replace(newId, animated);
 
         botButtonWasVisible = false;

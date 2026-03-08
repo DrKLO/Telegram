@@ -260,7 +260,9 @@ public class WindowInsetsStateHolder implements WindowInsetsProvider, WindowInse
         if (animatedInsetsProviderTarget != null) {
             animatedInsetsProviderTarget.postOnAnimation(() -> {
                 activeAnimations--;
-                setInsets(ViewCompat.getRootWindowInsets(animatedInsetsProviderTarget), false);
+                if (activeAnimations == 0) {
+                    setInsets(WindowAnimatedInsetsProvider.calculateWindowInsets(animatedInsetsProviderTarget), false);
+                }
             });
         }
     }

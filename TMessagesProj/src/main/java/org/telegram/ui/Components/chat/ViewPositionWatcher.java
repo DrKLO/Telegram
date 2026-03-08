@@ -191,7 +191,7 @@ public final class ViewPositionWatcher implements
      */
 
     public static boolean computeRectInParent(@NonNull View view,
-                                               @NonNull ViewGroup parentView,
+                                               @NonNull View parentView,
                                                @NonNull RectF out) {
         float left = 0f;
         float top = 0f;

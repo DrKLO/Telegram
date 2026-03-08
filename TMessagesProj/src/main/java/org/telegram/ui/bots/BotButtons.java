@@ -253,16 +253,7 @@ public class BotButtons extends FrameLayout {
     public void setSecondaryState(ButtonState newState, boolean animated) {
         final int wasHeight = getTotalHeight();
         this.state.secondary = newState;
-        buttons[1].textDrawable.cancelAnimation();
-        if (newState.emojiId != 0) {
-            SpannableStringBuilder ssb = new SpannableStringBuilder();
-            ssb.append("* ");
-            ssb.append(newState.text);
-            ssb.setSpan(new AnimatedEmojiSpan(newState.emojiId, 1.4f, buttons[1].textDrawable.getPaint().getFontMetricsInt()), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            buttons[1].textDrawable.setText(ssb, animated);
-        } else {
-            buttons[1].textDrawable.setText(newState.text, animated);
-        }
+        setText(buttons[1].textDrawable, newState, animated);
         invalidate();
         if (wasHeight != getTotalHeight() && whenResized != null) {
             if (wasHeight < getTotalHeight()) {
@@ -276,10 +267,8 @@ public class BotButtons extends FrameLayout {
     public void setState(ButtonsState newState, boolean animated) {
         final int wasHeight = getTotalHeight();
         this.state = newState;
-        buttons[0].textDrawable.cancelAnimation();
-        buttons[0].textDrawable.setText(newState.main.text, animated);
-        buttons[1].textDrawable.cancelAnimation();
-        buttons[1].textDrawable.setText(newState.secondary.text, animated);
+        setText(buttons[0].textDrawable, newState.main, animated);
+        setText(buttons[1].textDrawable, newState.secondary, animated);
         invalidate();
         if (wasHeight != getTotalHeight() && whenResized != null) {
             if (wasHeight < getTotalHeight()) {
@@ -289,6 +278,19 @@ public class BotButtons extends FrameLayout {
             }
         }
         setBackgroundColor(newState.backgroundColor, animated);
+    }
+
+    private static void setText(AnimatedTextView.AnimatedTextDrawable textDrawable, ButtonState state, boolean animated) {
+        textDrawable.cancelAnimation();
+        if (state.emojiId != 0) {
+            SpannableStringBuilder ssb = new SpannableStringBuilder();
+            ssb.append("* ");
+            ssb.append(state.text);
+            ssb.setSpan(new AnimatedEmojiSpan(state.emojiId, 1.4f, textDrawable.getPaint().getFontMetricsInt()), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            textDrawable.setText(ssb, animated);
+        } else {
+            textDrawable.setText(state.text, animated);
+        }
     }
 
     public void setBackgroundColor(int color, boolean animated) {

@@ -5721,9 +5721,6 @@ public class ChatActivity extends BaseFragment implements
                     }
                     for (int i = 0; i < count; i++) {
                         View child = chatListView.getChildAt(i);
-                        if (quickRejectChild(child, positionF)) {
-                            continue;
-                        }
                         if (child instanceof ChatMessageCell) {
                             ChatMessageCell cell = (ChatMessageCell) child;
                             if (child.getY() > chatListView.getHeight() || child.getY() + child.getHeight() < 0 || cell.getVisibility() == View.GONE) {
@@ -5836,9 +5833,6 @@ public class ChatActivity extends BaseFragment implements
                             canvas.restore();
                             for (int ii = 0; ii < count; ii++) {
                                 View child = chatListView.getChildAt(ii);
-                                if (quickRejectChild(child, positionF)) {
-                                    continue;
-                                }
                                 if (child instanceof ChatMessageCell && ((ChatMessageCell) child).getCurrentMessagesGroup() == group) {
                                     ChatMessageCell cell = ((ChatMessageCell) child);
                                     int left = cell.getLeft();
@@ -10579,7 +10573,9 @@ public class ChatActivity extends BaseFragment implements
             item.addSubItem(text_underline, stringBuilder);
         }
         item.addSubItem(text_link, LocaleController.getString(R.string.CreateLink));
-        item.addSubItem(text_date, LocaleController.getString(R.string.FormattedDate));
+        if (currentEncryptedChat == null) {
+            item.addSubItem(text_date, LocaleController.getString(R.string.FormattedDate));
+        }
         item.addSubItem(text_regular, LocaleController.getString(R.string.Regular));
 
         filledEditTextItemMenu = true;
@@ -23746,11 +23742,9 @@ public class ChatActivity extends BaseFragment implements
 
             final ArrayList<MessageObject> arr = new ArrayList<>(1);
             arr.add(arg.messageObject);
-            if (arg.isNew) {
+            replaceMessageObjects(arr, 0, true, true);
+            if (!arr.isEmpty()) {
                 processNewMessages(arr);
-
-            } else {
-                replaceMessageObjects(arr, 0, false);
             }
         } else if (id == NotificationCenter.botForumDraftDelete) {
             final BotForumHelper.BotForumTextDraftDeleteNotification arg = (BotForumHelper.BotForumTextDraftDeleteNotification) args[0];
@@ -25632,6 +25626,10 @@ public class ChatActivity extends BaseFragment implements
     private final BotForumHelper.BotDraftAnimationsPool botDraftAnimationsPool = new BotForumHelper.BotDraftAnimationsPool();
 
     private void replaceMessageObjects(ArrayList<MessageObject> messageObjects, int loadIndex, boolean remove) {
+        replaceMessageObjects(messageObjects, loadIndex, remove, false);
+    }
+
+    private void replaceMessageObjects(ArrayList<MessageObject> messageObjects, int loadIndex, boolean remove, boolean ignoreDateCheckBeforeRemove) {
         LongSparseArray<MessageObject.GroupedMessages> newGroups = null;
         for (int a = 0; a < messageObjects.size(); a++) {
             MessageObject messageObject = messageObjects.get(a);
@@ -25662,7 +25660,7 @@ public class ChatActivity extends BaseFragment implements
             if (loadIndex == 0 && repliesMessagesDict.indexOfKey(messageObject.getId()) >= 0) {
                 repliesMessagesDict.put(messageObject.getId(), messageObject);
             }
-            if (old == null || remove && old.messageOwner.date != messageObject.messageOwner.date || messageObject.scheduled && chatMode != MODE_SCHEDULED) {
+            if (old == null || remove && !ignoreDateCheckBeforeRemove && old.messageOwner.date != messageObject.messageOwner.date || messageObject.scheduled && chatMode != MODE_SCHEDULED) {
                 continue;
             }
             if (remove) {
@@ -26641,7 +26639,9 @@ public class ChatActivity extends BaseFragment implements
             menu.add(R.id.menu_groupbolditalic, R.id.menu_underline, order++, stringBuilder);
         }
         if (includeLinks) menu.add(R.id.menu_groupbolditalic, R.id.menu_link, order++, LocaleController.getString(R.string.CreateLink));
-        menu.add(R.id.menu_groupbolditalic, R.id.menu_date, order++, LocaleController.getString(R.string.FormattedDate));
+        if (encryptedChat == null) {
+            menu.add(R.id.menu_groupbolditalic, R.id.menu_date, order++, LocaleController.getString(R.string.FormattedDate));
+        }
         menu.add(R.id.menu_groupbolditalic, R.id.menu_regular, order++, LocaleController.getString(R.string.Regular));
     }
 

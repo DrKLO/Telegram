@@ -105,6 +105,9 @@ public class ItemOptions {
     public static ItemOptions makeOptions(@NonNull ViewGroup container, @Nullable Theme.ResourcesProvider resourcesProvider, @NonNull View scrimView, boolean swipeback, boolean shownFromBottom) {
         return new ItemOptions(container, resourcesProvider, scrimView, swipeback, shownFromBottom);
     }
+    public static ItemOptions makeOptions(@NonNull ViewGroup container, @Nullable Theme.ResourcesProvider resourcesProvider, @NonNull View scrimView, boolean swipeback, boolean shownFromBottom, boolean useScrollView) {
+        return new ItemOptions(container, resourcesProvider, scrimView, swipeback, shownFromBottom, useScrollView);
+    }
 
     private ViewGroup container;
     private ViewGroup pointContainer;
@@ -199,6 +202,10 @@ public class ItemOptions {
     }
 
     private ItemOptions(ViewGroup container, Theme.ResourcesProvider resourcesProvider, View scrimView, boolean swipeback, boolean shownFromBottom) {
+        this(container, resourcesProvider, scrimView, swipeback, shownFromBottom, false);
+    }
+
+    private ItemOptions(ViewGroup container, Theme.ResourcesProvider resourcesProvider, View scrimView, boolean swipeback, boolean shownFromBottom, boolean useScrollView) {
         if (container == null || container.getContext() == null) {
             return;
         }
@@ -210,6 +217,7 @@ public class ItemOptions {
         this.dimAlpha = AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)) > .705 ? 0x66 : 0x33;
         this.swipeback = swipeback;
         this.shownFromBottom = shownFromBottom;
+        this.useScrollView = useScrollView;
 
         init();
     }
