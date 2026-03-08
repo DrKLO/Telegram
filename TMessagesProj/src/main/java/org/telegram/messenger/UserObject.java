@@ -343,8 +343,18 @@ public class UserObject {
         );
     }
 
+    public static boolean isBotForum(int currentAccount, long userId) {
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userId);
+        return isBotForum(user);
+    }
+
     public static boolean isBotForum(TLRPC.User user) {
         return user != null && user.bot_forum_view;
+    }
+
+    public static boolean isBotForumWithEditableTopics(int currentAccount, long userId) {
+        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(userId);
+        return isBotForumWithEditableTopics(user);
     }
 
     public static boolean isBotForumWithEditableTopics(TLRPC.User user) {

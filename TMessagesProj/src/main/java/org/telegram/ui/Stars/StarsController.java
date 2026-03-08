@@ -3660,6 +3660,46 @@ public class StarsController {
             loading = false;
         }
 
+        public void processCrafting(ArrayList<TL_stars.StarGift> giftsToRemove, TL_stars.StarGift giftToAdd) {
+            if (giftsToRemove != null && !giftsToRemove.isEmpty()) {
+                boolean changed = false;
+                for (final TL_stars.StarGift gift : giftsToRemove) {
+                    for (int i = 0; i < gifts.size(); ++i) {
+                        final TL_stars.SavedStarGift savedGift = gifts.get(i);
+                        if (savedGift.gift != null && savedGift.gift.id == gift.id) {
+                            gifts.remove(i);
+                            totalCount = Math.max(0, totalCount - 1);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                if (changed) {
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starUserGiftsLoaded, dialogId, GiftsList.this);
+                }
+            }
+            if (giftToAdd != null) {
+                final TL_stars.getSavedStarGift req = new TL_stars.getSavedStarGift();
+                final TL_stars.TL_inputSavedStarGiftSlug input = new TL_stars.TL_inputSavedStarGiftSlug();
+                input.slug = giftToAdd.slug;
+                req.stargift.add(input);
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (res instanceof TL_stars.TL_payments_savedStarGifts) {
+                        final TL_stars.TL_payments_savedStarGifts r = (TL_stars.TL_payments_savedStarGifts) res;
+                        MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                        MessagesController.getInstance(currentAccount).putChats(r.chats, false);
+                        if (r.gifts.size() > 0) {
+                            final TL_stars.SavedStarGift savedGift = r.gifts.get(0);
+                            int index = 0;
+                            while (index < gifts.size() && gifts.get(index).pinned_to_top) index++;
+                            gifts.add(index, savedGift);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starUserGiftsLoaded, dialogId, GiftsList.this);
+                        }
+                    }
+                }));
+            }
+        }
+
         public int getCount() {
             return totalCount;
         }

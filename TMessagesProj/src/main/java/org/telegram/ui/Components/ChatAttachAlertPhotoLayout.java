@@ -1104,13 +1104,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         });
         gridView.addOnItemTouchListener(itemRangeSelector);
 
-        iBlur3Capture = new ViewGroupPartRenderer(gridView, alert.getContainerView(), gridView::drawChild) {
-            @Override
-            public void capture(Canvas canvas, RectF position) {
-                super.capture(canvas, position);
-                // cameraViewItemDecoration.onDraw(canvas, gridView, null);
-            }
-        };
+        iBlur3Capture = gridView;
+        iBlur3CaptureView = gridView;
         occupyNavigationBar = true;
 
         progressView = new EmptyTextProgressView(context, null, resourcesProvider);

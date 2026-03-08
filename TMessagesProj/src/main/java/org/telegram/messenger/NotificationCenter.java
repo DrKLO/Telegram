@@ -374,6 +374,7 @@ public class NotificationCenter {
     public static final int botForumDraftDelete = totalEvents++;
     public static final int tlSchemeParseException = totalEvents++;
     public static final int callTabsVisibleToggled = totalEvents++;
+    public static final int contactsPermissionBadgeCheck = totalEvents++;
 
     public static boolean alreadyLogged;
 

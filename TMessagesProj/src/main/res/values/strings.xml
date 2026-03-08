@@ -1306,6 +1306,7 @@
     <string name="NobodyLikesSpam3">Sorry, you are currently restricted from posting to public groups.</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
+    <string name="ShareSendToNewTopic">Send to new topic</string>
     <string name="ShareComment">Write a comment...</string>
     <string name="TapHereGifs">Tap here to access saved GIFs</string>
     <string name="TapHereEmoji">Tap %1$s to access more emoji.</string>
@@ -2387,6 +2388,7 @@
     <string name="TelegramFeatures">Telegram Features</string>
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>
     <string name="AddAccount">Add Account</string>
+    <string name="SwitchAccountHint">"Long tap to switch accounts"</string>
     <string name="SelectAccount">Select Account</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="PrivacyPolicy">Privacy Policy</string>
@@ -3672,6 +3674,7 @@
     <string name="Ban">Ban</string>
     <string name="Rename">Rename</string>
     <string name="Delete">Delete</string>
+    <string name="AddACaption">Add Caption</string>
     <string name="Start">Start</string>
     <string name="Forward">Forward</string>
     <string name="Retry">Retry</string>
@@ -9983,6 +9986,7 @@
     <string name="BotForumContinueChat">Continue last thread</string>
     <string name="BotForumAskForStartNewChatTitle">New Thread</string>
     <string name="BotForumAskForStartNewChat">Type any message to create a new thread.</string>
+    <string name="BotForumAskForStartNewChatForward">Forward here to create a new thread.</string>
     <string name="TypeMessageAskBot">Ask %1$s</string>
     <string name="AddNotes">Add Notes...</string>
     <string name="AddNotesInfo">Notes are only visible to you.</string>
@@ -10086,6 +10090,8 @@
     <string name="LiveStoryMessageEditStars">Edit Stars</string>
     <string name="LiveStoryMessageRemoveStars">Remove Stars</string>
     <string name="LiveStoryCommentsDisabled">Comments Disabled</string>
+    <string name="AddContactSync">Sync Contact to Phone</string>
+    <string name="AddContactQr">Add via QR Code</string>
 
     <string name="Gift2ActiveAuctionsActiveAuctionTitle">Active Auction</string>
     <string name="Gift2ActiveAuctionsActiveAuctionsTitle">%d Active Auctions</string>

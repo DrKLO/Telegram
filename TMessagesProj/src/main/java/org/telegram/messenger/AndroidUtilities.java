@@ -95,6 +95,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewPropertyAnimator;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -6701,6 +6702,40 @@ public class AndroidUtilities {
         FileLog.d(t);
     }
 
+    public static void printLayoutRequestedChain(View view) {
+        if (view == null) {
+            FileLog.d("LayoutCheck view == null");
+            return;
+        }
+
+        int level = 0;
+        View current = view;
+
+        while (current != null) {
+            ViewParent parent = current.getParent();
+
+            FileLog.d(
+                "LayoutCheck level=" + level +
+                ", view=" + current.getClass().getSimpleName() +
+                "@" + Integer.toHexString(System.identityHashCode(current)) +
+                ", isLayoutRequested=" + current.isLayoutRequested()
+            );
+            if (!(parent instanceof View)) {
+                if (parent != null) {
+                    FileLog.d(
+                        "LayoutCheck level=" + (level + 1) +
+                        ", parent=" + parent.getClass().getSimpleName() +
+                        " (not a View)"
+                    );
+                }
+                break;
+            }
+            current = (View) parent;
+            level++;
+        }
+        FileLog.d("LayoutCheck");
+    }
+
     public static void logFlagSecure() {
         if (!BuildConfig.DEBUG_VERSION) {
             return;
@@ -6852,4 +6887,21 @@ public class AndroidUtilities {
     public static long pack(int a, int b) { return ((long) a << 32) | (b & 0xFFFFFFFFL); }
     public static int unpackA(long packed) { return (int) (packed >> 32); }
     public static int unpackB(long packed) { return (int) packed; }
+
+    public static boolean isContextSafe(Context context) {
+        if (context == null) return false;
+        if (context instanceof Activity) {
+            final Activity activity = (Activity) context;
+            if (activity.isFinishing()) return false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                if (activity.isDestroyed()) return false;
+            }
+            return true;
+        }
+        if (context instanceof ContextWrapper) {
+            final Context baseContext = ((ContextWrapper) context).getBaseContext();
+            return isContextSafe(baseContext);
+        }
+        return true;
+    }
 }

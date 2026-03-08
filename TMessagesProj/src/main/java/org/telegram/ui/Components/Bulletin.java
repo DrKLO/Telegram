@@ -322,7 +322,7 @@ public class Bulletin {
                     if (showing) {
                         layout.onShow();
                         BaseFragment fragment = containerFragment;
-                        if (fragment instanceof ViewPagerActivity) {
+                        if (top && fragment instanceof ViewPagerActivity) {
                             fragment = ((ViewPagerActivity) fragment).getCurrentVisibleFragment();
                         }
                         currentDelegate = findDelegate(fragment, containerLayout);

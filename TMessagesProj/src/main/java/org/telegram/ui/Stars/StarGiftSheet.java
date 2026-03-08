@@ -914,13 +914,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         }
                     }
                     MessagesController.getInstance(currentAccount).processUpdates(res, false);
-                    final Runnable invalidateLists = () -> {
-                        StarsController.getInstance(currentAccount).invalidateBalance();
-                        StarsController.getInstance(currentAccount).invalidateProfileGifts(UserConfig.getInstance(currentAccount).getClientUserId());
-                    };
                     if (messageObject != null) {
                         final MessageObject finalMessageObject = messageObject;
-                        final TL_stars.StarGift gift = ((TLRPC.TL_messageActionStarGiftUnique) finalMessageObject.messageOwner.action).gift;
+                        final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) finalMessageObject.messageOwner.action;
+                        final TL_stars.StarGift gift = action.gift;
                         whenDone.run(gift, messageObject != null ? () -> {
                             nextButtonCrafting = true;
                             set(finalMessageObject);
@@ -930,11 +927,19 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                                 fireworksOverlay.start(true);
                             }
 
-                            invalidateLists.run();
+                            StarsController.getInstance(currentAccount).invalidateBalance();
+                            final StarsController.GiftsList profileGifts = StarsController.getInstance(currentAccount).getProfileGiftsList(UserConfig.getInstance(currentAccount).getClientUserId(), false);
+                            if (profileGifts != null) {
+                                profileGifts.processCrafting(gifts, gift);
+                            }
                         } : null);
                     } else {
                         whenDone.run(null, null);
-                        invalidateLists.run();
+                        StarsController.getInstance(currentAccount).invalidateBalance();
+                        final StarsController.GiftsList profileGifts = StarsController.getInstance(currentAccount).getProfileGiftsList(UserConfig.getInstance(currentAccount).getClientUserId(), false);
+                        if (profileGifts != null) {
+                            profileGifts.processCrafting(gifts, null);
+                        }
                     }
                 } else if (err != null) {
                     if ("STARGIFT_CRAFT_UNAVAILABLE".equalsIgnoreCase(err.text)) {
@@ -5477,19 +5482,24 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final TL_stars.saveStarGift req = new TL_stars.saveStarGift();
         final boolean unsave = req.unsave = saved;
         req.stargift = inputStarGift;
+        boolean updatedInList = false;
         if (savedStarGift != null) {
             final StarsController.GiftsCollections collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, false);
             if (collections != null) {
                 collections.updateGiftsUnsaved(savedStarGift, req.unsave);
+                updatedInList = true;
             }
         }
+        final boolean finalUpdatedInList = updatedInList;
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
             final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
             if (lastFragment == null) return;
             if (res instanceof TLRPC.TL_boolTrue) {
                 dismiss();
                 final long did = getDialogId();
-                StarsController.getInstance(currentAccount).invalidateProfileGifts(did);
+                if (!finalUpdatedInList) {
+                    StarsController.getInstance(currentAccount).invalidateProfileGifts(did);
+                }
                 if (did >= 0) {
                     BulletinFactory.of(lastFragment)
                         .createEmojiBulletin(
@@ -5519,6 +5529,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                         .show();
                 }
             } else if (err != null) {
+                if (finalUpdatedInList && savedStarGift != null) {
+                    final StarsController.GiftsCollections collections = StarsController.getInstance(currentAccount).getProfileGiftCollectionsList(dialogId, false);
+                    if (collections != null) {
+                        collections.updateGiftsUnsaved(savedStarGift, !req.unsave);
+                    }
+                }
                 getBulletinFactory().createErrorBulletin(formatString(R.string.UnknownErrorCode, err.text)).show(false);
             }
         }));

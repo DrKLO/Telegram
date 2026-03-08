@@ -3,6 +3,7 @@ package org.telegram.ui.Stories;
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.isContextSafe;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.animation.Animator;
@@ -374,7 +375,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         open(UserConfig.selectedAccount, context, storyItem, peerIds, position, storiesList, userStories, placeProvider, reversed);
     }
     public void open(int account, Context context, TL_stories.StoryItem storyItem, ArrayList<Long> peerIds, int position, StoriesController.StoriesList storiesList, TL_stories.PeerStories userStories, PlaceProvider placeProvider, boolean reversed) {
-        if (context == null) {
+        if (!isContextSafe(context)) {
             doOnAnimationReadyRunnables.clear();
             return;
         }
@@ -1818,7 +1819,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         if (!ATTACH_TO_FRAGMENT) {
             globalInstances.add(this);
         }
-        AndroidUtilities.hideKeyboard(fragment.getFragmentView());
+        if (fragment != null) {
+            AndroidUtilities.hideKeyboard(fragment.getFragmentView());
+        }
     }
 
     static int J = 0;

@@ -19,11 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 public class BotForumHelper extends BaseController {
 
-    public boolean isThinking(long userId, int topicId) {
-        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
-        return messages != null && messages.size() > 0;
-    }
-
     private MessageObject createDraftMessage(long userId, int topicId, long randomId, int messageId, TLRPC.TL_textWithEntities text) {
         TLRPC.Message message = new TLRPC.TL_message();
         message.dialog_id = userId;
@@ -100,6 +95,12 @@ public class BotForumHelper extends BaseController {
                 FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
                 return draftMessage.messageObject;
             }
+        }
+
+        if (messages.size() > 0) {
+            final BotDraftMessage draftMessage = messages.valueAt(0);
+            FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
+            return draftMessage.messageObject;
         }
 
         return null;

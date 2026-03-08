@@ -61,12 +61,17 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.ContactsActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.SettingsActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.recorder.HintView2;
 
@@ -157,10 +162,29 @@ public class ItemOptions {
 
     public boolean swipeback, shownFromBottom, useScrollView;
 
+    private static BaseFragment downFragment(BaseFragment fragment) {
+        if (
+            fragment instanceof ProfileActivity && ((ProfileActivity) fragment).hasMainTabs ||
+            fragment instanceof DialogsActivity && ((DialogsActivity) fragment).hasMainTabs ||
+            fragment instanceof ContactsActivity && ((ContactsActivity) fragment).hasMainTabs ||
+            fragment instanceof SettingsActivity && ((SettingsActivity) fragment).hasMainTabs
+        ) {
+            final INavigationLayout layout = fragment.getParentLayout();
+            if (layout != null) {
+                final BaseFragment lastFragment = layout.getSafeLastFragment();
+                if (lastFragment instanceof MainTabsActivity) {
+                    return lastFragment;
+                }
+            }
+        }
+        return fragment;
+    }
+
     private ItemOptions(BaseFragment fragment, View scrimView, boolean swipeback, boolean useScrollView, boolean shownFromBottom) {
         if (fragment.getContext() == null) {
             return;
         }
+        fragment = downFragment(fragment);
 
         this.fragment = fragment;
         this.resourcesProvider = fragment.getResourceProvider();
