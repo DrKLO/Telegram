@@ -437,10 +437,19 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                 return super.drawChild(canvas, child, drawingTime);
             }
 
+            private boolean ignoreLayout;
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int width = MeasureSpec.getSize(widthMeasureSpec);
                 int height = MeasureSpec.getSize(heightMeasureSpec);
+
+                if (bottomOverlayContainer != null) {
+                    ignoreLayout = true;
+                    bottomOverlayContainer.getLayoutParams().height = dp(51) + navigationBarHeight;
+                    bottomOverlayContainer.setPadding(0, 0, 0, navigationBarHeight);
+                    ignoreLayout = false;
+                }
 
                 int actionBarHeight = 0;
                 for (int i = 0; i < getChildCount(); i++) {
@@ -461,6 +470,14 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                     }
                 }
                 setMeasuredDimension(width, height);
+            }
+
+            @Override
+            public void requestLayout() {
+                if (ignoreLayout) {
+                    return;
+                }
+                super.requestLayout();
             }
 
             @Override
