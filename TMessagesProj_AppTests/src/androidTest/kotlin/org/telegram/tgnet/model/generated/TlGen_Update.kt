@@ -2288,4 +2288,23 @@ public sealed class TlGen_Update : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
     }
   }
+
+  public data class TL_updateChatParticipantRank(
+    public val chat_id: Long,
+    public val user_id: Long,
+    public val rank: String,
+    public val version: Int,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(chat_id)
+      stream.writeInt64(user_id)
+      stream.writeString(rank)
+      stream.writeInt32(version)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xBD8367B9U
+    }
+  }
 }

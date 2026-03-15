@@ -1038,10 +1038,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         subtitleIsThinkingBot = false;
         CharSequence printString = MessagesController.getInstance(currentAccount).getPrintingString(parentFragment.getDialogId(), parentFragment.getThreadId(), false);
         if (printString == null && UserObject.isBotForum(user)) {
-            if (BotForumHelper.getInstance(currentAccount).isThinking(user.id, (int) parentFragment.getTopicId())) {
-                printString = "thinking";
-                subtitleIsThinkingBot = true;
-            }
+            //if (BotForumHelper.getInstance(currentAccount).isThinking(user.id, (int) parentFragment.getTopicId())) {
+            //    printString = "thinking";
+            //    subtitleIsThinkingBot = true;
+            //}
         }
 
         if (printString != null) {

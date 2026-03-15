@@ -84,43 +84,17 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
     }
   }
 
-  public data class TL_channelParticipantBanned(
-    public val left: Boolean,
-    public val peer: TlGen_Peer,
-    public val kicked_by: Long,
-    public val date: Int,
-    public val banned_rights: TlGen_ChatBannedRights,
-  ) : TlGen_ChannelParticipant() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (left) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      peer.serializeToStream(stream)
-      stream.writeInt64(kicked_by)
-      stream.writeInt32(date)
-      banned_rights.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x6DF8014EU
-    }
-  }
-
   public data class TL_channelParticipant(
     public val user_id: Long,
     public val date: Int,
     public val subscription_until_date: Int?,
+    public val rank: String?,
   ) : TlGen_ChannelParticipant() {
     internal val flags: UInt
       get() {
         var result = 0U
         if (subscription_until_date != null) result = result or 1U
+        if (rank != null) result = result or 4U
         return result
       }
 
@@ -130,10 +104,11 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
       stream.writeInt64(user_id)
       stream.writeInt32(date)
       subscription_until_date?.let { stream.writeInt32(it) }
+      rank?.let { stream.writeString(it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xCB397619U
+      public const val MAGIC: UInt = 0x1BD54456U
     }
   }
 
@@ -143,12 +118,14 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
     public val inviter_id: Long,
     public val date: Int,
     public val subscription_until_date: Int?,
+    public val rank: String?,
   ) : TlGen_ChannelParticipant() {
     internal val flags: UInt
       get() {
         var result = 0U
         if (via_request) result = result or 1U
         if (subscription_until_date != null) result = result or 2U
+        if (rank != null) result = result or 4U
         return result
       }
 
@@ -159,10 +136,42 @@ public sealed class TlGen_ChannelParticipant : TlGen_Object {
       stream.writeInt64(inviter_id)
       stream.writeInt32(date)
       subscription_until_date?.let { stream.writeInt32(it) }
+      rank?.let { stream.writeString(it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x4F607BEFU
+      public const val MAGIC: UInt = 0xA9478A1AU
+    }
+  }
+
+  public data class TL_channelParticipantBanned(
+    public val left: Boolean,
+    public val peer: TlGen_Peer,
+    public val kicked_by: Long,
+    public val date: Int,
+    public val banned_rights: TlGen_ChatBannedRights,
+    public val rank: String?,
+  ) : TlGen_ChannelParticipant() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (left) result = result or 1U
+        if (rank != null) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      peer.serializeToStream(stream)
+      stream.writeInt64(kicked_by)
+      stream.writeInt32(date)
+      banned_rights.serializeToStream(stream)
+      rank?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xD5F0AD91U
     }
   }
 }

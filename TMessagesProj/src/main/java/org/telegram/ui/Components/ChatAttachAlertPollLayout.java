@@ -247,7 +247,8 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 return super.requestChildRectangleOnScreen(child, rectangle, immediate);
             }
         };
-        iBlur3Capture = new ViewGroupPartRenderer(listView, alert.getContainerView(), listView::drawChild);
+        iBlur3Capture = listView;
+        iBlur3CaptureView = listView;
         occupyNavigationBar = true;
         listView.setItemAnimator(itemAnimator = new DefaultItemAnimator() {
             @Override

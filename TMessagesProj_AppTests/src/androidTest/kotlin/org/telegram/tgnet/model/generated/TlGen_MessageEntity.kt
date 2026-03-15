@@ -344,6 +344,42 @@ public sealed class TlGen_MessageEntity : TlGen_Object {
     }
   }
 
+  public data class TL_messageEntityFormattedDate(
+    public val relative: Boolean,
+    public val short_time: Boolean,
+    public val long_time: Boolean,
+    public val short_date: Boolean,
+    public val long_date: Boolean,
+    public val day_of_week: Boolean,
+    public val offset: Int,
+    public val length: Int,
+    public val date: Int,
+  ) : TlGen_MessageEntity() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (relative) result = result or 1U
+        if (short_time) result = result or 2U
+        if (long_time) result = result or 4U
+        if (short_date) result = result or 8U
+        if (long_date) result = result or 16U
+        if (day_of_week) result = result or 32U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(offset)
+      stream.writeInt32(length)
+      stream.writeInt32(date)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x904AC7C7U
+    }
+  }
+
   public data class TL_messageEntityMentionName_layer132(
     public val offset: Int,
     public val length: Int,

@@ -46,9 +46,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.LongSparseArray;
@@ -143,6 +145,7 @@ import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.inset.InAppKeyboardInsetView;
 import org.telegram.ui.ContentPreviewViewer;
+import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 import org.telegram.ui.StickersActivity;
 
@@ -429,6 +432,14 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
+        default boolean canAddCaptionToGif(TLRPC.Document document) {
+            return false;
+        }
+
+        default void onGifSelectedForAddCaption(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+
+        }
+
         default void onTabOpened(int type) {
 
         }
@@ -621,6 +632,25 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         @Override
+        public boolean canEditSticker() {
+            return true;
+        }
+
+        @Override
+        public void editSticker(TLRPC.Document document) {
+            TLRPC.InputStickerSet newSet = null;
+            for (int a = 0; a < document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker && attribute.stickerset != null) {
+                    newSet = attribute.stickerset;
+                    break;
+                }
+            }
+            final TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(newSet, true);
+            StickersAlert.editSticker(fragment, stickerSet, document);
+        }
+
+        @Override
         public boolean canSchedule() {
             return delegate.canSchedule();
         }
@@ -644,6 +674,18 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 delegate.onGifSelected(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
             } else if (gifGridView.getAdapter() == gifSearchAdapter) {
                 delegate.onGifSelected(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
+            }
+        }
+
+        @Override
+        public boolean canAddCaption(TLRPC.Document document) {
+            return delegate.canAddCaptionToGif(document);
+        }
+
+        @Override
+        public void addCaptionToGif(Object gif, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+            if (gifGridView.getAdapter() == gifAdapter || gifGridView.getAdapter() == gifSearchAdapter) {
+                delegate.onGifSelectedForAddCaption(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
             }
         }
 

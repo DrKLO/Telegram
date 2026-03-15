@@ -29,6 +29,8 @@ public sealed class TlGen_UserFull : TlGen_Object {
     public val can_view_revenue: Boolean,
     public val bot_can_manage_emoji_status: Boolean,
     public val display_gifts_button: Boolean,
+    public val noforwards_my_enabled: Boolean,
+    public val noforwards_peer_enabled: Boolean,
     public val id: Long,
     public val about: String?,
     public val settings: TlGen_PeerSettings,
@@ -122,6 +124,8 @@ public sealed class TlGen_UserFull : TlGen_Object {
         if (main_tab != null) result = result or 1048576U
         if (saved_music != null) result = result or 2097152U
         if (note != null) result = result or 4194304U
+        if (noforwards_my_enabled) result = result or 8388608U
+        if (noforwards_peer_enabled) result = result or 16777216U
         return result
       }
 

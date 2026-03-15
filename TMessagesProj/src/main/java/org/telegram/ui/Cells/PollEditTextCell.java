@@ -30,6 +30,7 @@ import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
@@ -257,26 +258,40 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
         addView(textView2, LayoutHelper.createFrame(48, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 20 : 0, 17, LocaleController.isRTL ? 0 : 20, 0));
     }
 
+    private Integer right;
+    public void setTextRight(int r) {
+        this.right = r;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        if (deleteImageView != null) {
-            deleteImageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
-        }
-        if (emojiButton != null) {
-            emojiButton.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
-        }
-        if (moveImageView != null) {
-            moveImageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
-        }
-        if (textView2 != null) {
-            textView2.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
-        }
-        if (checkBox != null) {
-            checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        for (int i = 0; i < getChildCount(); ++i) {
+            final View child = getChildAt(i);
+            if (child == textView) continue;
+            if (child == deleteImageView) {
+                deleteImageView.measure(MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
+            } else if (child == emojiButton) {
+                emojiButton.measure(MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
+            } else if (child == moveImageView) {
+                moveImageView.measure(MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
+            } else if (child == textView2) {
+                textView2.measure(MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY));
+            } else if (child == checkBox) {
+                checkBox.measure(MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
+            } else {
+                final ViewGroup.LayoutParams lp = child.getLayoutParams();
+                if (lp != null) {
+                    child.measure(MeasureSpec.makeMeasureSpec(lp.width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.EXACTLY));
+                } else {
+                    child.measure(widthMeasureSpec, heightMeasureSpec);
+                }
+            }
         }
         int right;
-        if (textView2 == null) {
+        if (this.right != null) {
+            right = this.right;
+        } else if (textView2 == null) {
             right = 42;
         } else if (deleteImageView == null) {
             right = 70;
@@ -450,7 +465,7 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             emojiButton.setScaleY(value);
             emojiButton.setAlpha(Math.max(value, 0.80f));
             if (textView2 != null && deleteImageView == null && textView2.getVisibility() == View.VISIBLE) {
-                textView2.setTranslationY(AndroidUtilities.dp(26) * value);
+                textView2.setTranslationY(dp(26) * value);
             }
         });
         valueAnimator.addListener(new Animator.AnimatorListener() {
@@ -487,7 +502,7 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider && drawDivider()) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(moveImageView != null ? 63 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(moveImageView != null ? 63 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(LocaleController.isRTL ? 0 : dp(moveImageView != null ? 63 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(moveImageView != null ? 63 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

@@ -70,8 +70,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.core.BitwiseUtils;
 
 public class TopicsTabsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+    public static final int TOP_TABS_HEIGHT = 36;
 
     private final int currentAccount;
     private final long dialogId;
@@ -112,7 +114,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         setWillNotDraw(false);
 
         topTabsContainer = new FrameLayout(context);
-        addView(topTabsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 7, 7, 7, 7));
+        addView(topTabsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TOP_TABS_HEIGHT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 7, 7, 7, 7));
 
         sideTabsContainer = new FrameLayout(context);
         addView(sideTabsContainer, LayoutHelper.createFrame(64, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.FILL_VERTICAL, 7, 7, 7, 7));
@@ -153,13 +155,21 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     }
                 }
                 if (selectedTab != null) {
-                    lineRect.set(selectedTab.getX() + dp(6), getHeight() - dp(3), selectedTab.getX() + selectedTab.getWidth() - dp(6), selectedTab.getY() + getHeight() + dp(3));
+                    lineRect.set(
+                        selectedTab.getX() + dp(1),
+                        selectedTab.getY() + dp(4),
+                        selectedTab.getX() + selectedTab.getWidth() - dp(1),
+                        selectedTab.getY() + getHeight() - dp(4));
                     if (fromSelectedTab != null) {
-                        AndroidUtilities.rectTmp.set(fromSelectedTab.getX() + dp(6), getHeight() - dp(3), fromSelectedTab.getX() + fromSelectedTab.getWidth() - dp(6), fromSelectedTab.getY() + getHeight() + dp(3));
+                        AndroidUtilities.rectTmp.set(
+                            fromSelectedTab.getX() + dp(1),
+                            fromSelectedTab.getY() + dp(4),
+                            fromSelectedTab.getX() + fromSelectedTab.getWidth() - dp(1),
+                            fromSelectedTab.getY() + getHeight() - dp(4));
                         lerp(AndroidUtilities.rectTmp, lineRect, animateTab.set(1.0f), lineRect);
                     }
-                    linePaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-                    canvas.drawRoundRect(lineRect, dp(2), dp(2), linePaint);
+                    linePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 31));
+                    canvas.drawRoundRect(lineRect, dp(14), dp(14), linePaint);
                 }
                 if (clipAlpha > 0) {
                     canvas.save();
@@ -192,9 +202,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     }
                 }
                 if (r > l) {
-                    pinnedBackgroundPaint.setColor(Theme.getColor(Theme.key_chats_pinnedOverlay, resourcesProvider));
-                    AndroidUtilities.rectTmp.set(l, (getHeight() - dp(38)) / 2f, r, (getHeight() + dp(38)) / 2f);
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(6), dp(6), pinnedBackgroundPaint);
+                    pinnedBackgroundPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.06f));
+                    AndroidUtilities.rectTmp.set(l + dp(1), (getHeight() - dp(28)) / 2f, r - dp(1), (getHeight() + dp(28)) / 2f);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(14), dp(14), pinnedBackgroundPaint);
 
                     if (pinIcon == null) {
                         pinIcon = getContext().getResources().getDrawable(R.drawable.msg_limit_pin).mutate();
@@ -203,7 +213,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     if (pinIconColor != pinColor) {
                         pinIcon.setColorFilter(new PorterDuffColorFilter(pinIconColor = pinColor, PorterDuff.Mode.SRC_IN));
                     }
-                    pinIcon.setBounds((int) (l + dp(4)), (int) (AndroidUtilities.rectTmp.top + dp(2.66f)), (int) (l + dp(4 + 9.66f)), (int) (AndroidUtilities.rectTmp.top + dp(2.66f + 9.66f)));
+                    pinIcon.setBounds((int) (r + dp(-17)), (int) (AndroidUtilities.rectTmp.top + dp(10)), (int) (r + dp(-17 + 10)), (int) (AndroidUtilities.rectTmp.top + dp(10 + 10)));
                     pinIcon.draw(canvas);
                 }
             }
@@ -217,7 +227,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         topTabs.setWillNotDraw(false);
         topTabs.adapter.setApplyBackground(false);
         topTabs.makeHorizontal();
-        topTabsContainer.addView(topTabs, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, bot ? (48 + 48): 64, 0, 0, 0));
+        topTabsContainer.addView(topTabs, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, /*bot ? (72):*/ 41, 0, 0, 0));
         topTabs.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -229,12 +239,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
 
         if (bot) {
-            botCreateTopicButtonHorizontal = new HorizontalTabView(context, currentAccount, resourcesProvider);
-            botCreateTopicButtonHorizontal.setAll(true, false, currentTopicId == 0);
-            botCreateTopicButtonHorizontal.setOnClickListener(v -> {
-                onTopicSelected.run(0, false);
-            });
-            topTabsContainer.addView(botCreateTopicButtonHorizontal, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP, 36, 0, 0, 0));
+            botCreateTopicButtonHorizontal = null; // new HorizontalTabView(context, currentAccount, resourcesProvider);
+            //botCreateTopicButtonHorizontal.setAll(true, false, currentTopicId == 0);
+            //botCreateTopicButtonHorizontal.setOnClickListener(v -> {
+            //    onTopicSelected.run(0, false);
+            //});
+            //topTabsContainer.addView(botCreateTopicButtonHorizontal, LayoutHelper.createFrame(36, TOP_TABS_HEIGHT, Gravity.LEFT | Gravity.TOP, 36, 0, 0, 0));
 
 
             botCreateTopicButtonVertical = new VerticalTabView(context, currentAccount, resourcesProvider);
@@ -322,12 +332,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
         toggleButtonTop = createButton(context, R.drawable.menu_sidebar, this::onSideMenuButtonClick);
         toggleButtonSide = createButton(context, R.drawable.menu_sidebar, this::onSideMenuButtonClick);
-        topTabsContainer.addView(toggleButtonTop, LayoutHelper.createFrame(64, 48, Gravity.LEFT | Gravity.TOP));
+        topTabsContainer.addView(toggleButtonTop, LayoutHelper.createFrame(44, TOP_TABS_HEIGHT, Gravity.LEFT | Gravity.TOP));
         sideTabsContainer.addView(toggleButtonSide, LayoutHelper.createFrame(64, 48, Gravity.LEFT | Gravity.TOP));
 
         closeButtonTop = createButton(context, R.drawable.msg_select, this::onCloseButtonClick);
         closeButtonSide = createButton(context, R.drawable.msg_select, this::onCloseButtonClick);
-        topTabsContainer.addView(closeButtonTop, LayoutHelper.createFrame(64, 48, Gravity.LEFT | Gravity.TOP));
+        topTabsContainer.addView(closeButtonTop, LayoutHelper.createFrame(44, TOP_TABS_HEIGHT, Gravity.LEFT | Gravity.TOP));
         sideTabsContainer.addView(closeButtonSide, LayoutHelper.createFrame(64, 48, Gravity.LEFT | Gravity.TOP));
 
         MessagesController.getInstance(currentAccount).getTopicsController().loadTopics(-dialogId, false, TopicsController.LOAD_TYPE_HASH_CHECK);
@@ -409,7 +419,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         if (topTabsContainer.getVisibility() == VISIBLE) {
             topMenuBackgroundDrawable.setBounds(
                     0, (int) topTabsContainer.getTranslationY(),
-                    getMeasuredWidth(), (int) (topTabsContainer.getTranslationY() + dp(48 + 7 + 7)));
+                    getMeasuredWidth(), (int) (topTabsContainer.getTranslationY() + dp(TOP_TABS_HEIGHT + 7 + 7)));
             topMenuBackgroundDrawable.draw(canvas);
         }
 
@@ -447,7 +457,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     public void setTopMenuBackgroundDrawable(BlurredBackgroundDrawable sideMenuBackgroundDrawable) {
         this.topMenuBackgroundDrawable = sideMenuBackgroundDrawable;
-        this.topMenuBackgroundDrawable.setRadius(dp(16));
+        this.topMenuBackgroundDrawable.setRadius(dp(18));
         this.topMenuBackgroundDrawable.setPadding(dp(7));
     }
 
@@ -495,7 +505,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     public float sidemenuT = 0.0f;
     public boolean sidemenuAnimating;
     public void updateSidemenuPosition() {
-        topTabsContainer.setTranslationY(-dp(48 + 7) * sidemenuT);
+        topTabsContainer.setTranslationY(-dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
         topTabsContainer.setAlpha(lerp(1.0f, 0.85f, sidemenuT));
         topTabsContainer.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
 
@@ -506,7 +516,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             ColorUtils.blendARGB(
                 Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider),
                 Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                sidemenuT
+                1f - sidemenuT
             ),
             PorterDuff.Mode.SRC_IN
         ));
@@ -690,15 +700,16 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         final TLRPC.User currentUser = MessagesController.getInstance(currentAccount).getUser(dialogId);
         final TopicsController controller = MessagesController.getInstance(currentAccount).getTopicsController();
         final ArrayList<TLRPC.TL_forumTopic> topics = controller.getTopics(-dialogId);
-        if (!bot) {
-            items.add(HorizontalTabView.Factory.asAll(bot, mono).setChecked(currentTopicId == 0));
-        }
+        items.add(HorizontalTabView.Factory.asAll(bot, mono).setChecked(currentTopicId == 0));
         boolean reorder = false;
         if (topics != null) {
             for (TLRPC.TL_forumTopic topic : topics) {
                 if (bot && topic.id == 1) continue;
                 if (excludeTopics.contains(topic.id)) continue;
                 if (!topic.pinned && reorder) {
+                    if (!items.isEmpty()) {
+                        items.get(items.size() - 1).flags |= 8;
+                    }
                     adapter.reorderSectionEnd();
                     reorder = false;
                 } else if (topic.pinned && !reorder) {
@@ -907,7 +918,37 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 }
             }
             if (view instanceof HorizontalTabView) {
-                options.setScrimViewBackground(Theme.createRoundRectDrawable(dp(5), dp(5), 0, 0, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+                options.setScrimViewBackground(new Drawable() {
+                    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    private RectF bound = new RectF();
+
+                    {
+                        paint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+                    }
+
+                    @Override
+                    public void draw(@NonNull Canvas canvas) {
+                        bound.set(getBounds());
+                        float insetY = (bound.height() - dp(28)) / 2f;
+                        bound.inset(dp(1), insetY);
+                        canvas.drawRoundRect(bound, dp(14), dp(14), paint);
+                    }
+
+                    @Override
+                    public void setAlpha(int alpha) {
+                        paint.setAlpha(alpha);
+                    }
+
+                    @Override
+                    public void setColorFilter(@Nullable ColorFilter colorFilter) {
+
+                    }
+
+                    @Override
+                    public int getOpacity() {
+                        return PixelFormat.TRANSPARENT;
+                    }
+                });
                 options.translate(dp(16), 0);
             } else {
                 options.setScrimViewBackground(Theme.createRoundRectDrawable(0, dp(5), dp(5), 0, Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
@@ -1509,9 +1550,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             setClipToPadding(false);
 
             textView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.66f);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
             textView.setTypeface(AndroidUtilities.bold());
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 12, 0, 12, 0));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 11, 0, 11, 0));
             ScaleStateListAnimator.apply(textView);
 
             imageView = new ImageView(context);
@@ -1540,7 +1581,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     canvas.save();
                     canvas.scale(counterScale, counterScale, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8.33f), dp(8.33f), backgroundPaint.setByKey(counterBackgroundColorKey).blendTo(getTextColor(), selectT).multAlpha(counterAlpha));
-                    canvas.translate(0, -dp(1));
+                    // canvas.translate(0, -dp(1));
                     counterText.setBounds(AndroidUtilities.rectTmp);
                     counterText.setAlpha((int) (0xFF * counterAlpha));
                     counterText.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText, resourcesProvider));
@@ -1558,7 +1599,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     );
                 }
             };
-            addView(counterView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 4.66f, 0, 12, 0));
+            addView(counterView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 4.66f, 0, 11, 0));
             ScaleStateListAnimator.apply(counterView);
 
             updateTextColor();
@@ -1586,11 +1627,11 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             final int ix = (w - imageView.getMeasuredWidth()) / 2;
             final int iy = (h - imageView.getMeasuredHeight()) / 2;
             imageView.layout(ix, iy, ix + imageView.getMeasuredWidth(), iy + imageView.getMeasuredHeight());
-            textView.layout(dp(12), h / 2 - textView.getMeasuredHeight() / 2, dp(12) + textView.getMeasuredWidth(), h / 2 + textView.getMeasuredHeight() / 2);
+            textView.layout(dp(11), h / 2 - textView.getMeasuredHeight() / 2, dp(11) + textView.getMeasuredWidth(), h / 2 + textView.getMeasuredHeight() / 2);
             if (counterText.getAnimateToWidth() > 0) {
-                counterView.layout(w - dp(12) - counterView.getMeasuredWidth(), h / 2 - counterView.getMeasuredHeight() / 2, w - dp(12), h / 2 + counterView.getMeasuredHeight() / 2);
+                counterView.layout(w - dp(11) - counterView.getMeasuredWidth(), h / 2 - counterView.getMeasuredHeight() / 2, w - dp(11), h / 2 + counterView.getMeasuredHeight() / 2);
             } else {
-                counterView.layout(dp(12) + textView.getMeasuredWidth() + dp(4.66f), h / 2 - counterView.getMeasuredHeight() / 2, dp(12) + textView.getMeasuredWidth() + dp(4.66f) + counterView.getMeasuredWidth(), h / 2 + counterView.getMeasuredHeight() / 2);
+                counterView.layout(dp(11) + textView.getMeasuredWidth() + dp(4.66f), h / 2 - counterView.getMeasuredHeight() / 2, dp(11) + textView.getMeasuredWidth() + dp(4.66f) + counterView.getMeasuredWidth(), h / 2 + counterView.getMeasuredHeight() / 2);
             }
             if (counterViewX != 0 && counterView.getLeft() != counterViewX) {
                 counterView.setTranslationX(-counterView.getLeft() + counterViewX);
@@ -1848,9 +1889,11 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             counterAnimator.start();
         }
 
+        private int addW = 0;
+
         private int getMeasuringWidth() {
             final int counterWidth = (int) Math.max(dp(16.66f), counterText.getAnimateToWidth() + dp(10));
-            return (int) (dp(12) + textView.getMeasuredWidth() + (counterText.getAnimateToWidth() > 0 ? dp(4.66f) + counterWidth : 0) + dp(12));
+            return (int) (dp(11) + textView.getMeasuredWidth() + (counterText.getAnimateToWidth() > 0 ? dp(4.66f) + counterWidth : 0) + dp(11)) + addW;
         }
 
         @Override
@@ -1858,7 +1901,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             textView.measure(widthMeasureSpec, heightMeasureSpec);
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(getMeasuringWidth(), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(TOP_TABS_HEIGHT), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1888,6 +1931,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                         cell.set(item.dialogId, (TLRPC.TL_forumTopic) item.object, item.checked);
                     }
                 }
+                cell.addW = BitwiseUtils.hasFlag(item.flags, 8) ? dp(10) : 0;
                 cell.setReorder(listView != null && listView.isReorderAllowed() && cell.pinned);
             }
 
@@ -1897,7 +1941,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 item.longValue = 0;
                 item.object = null;
                 item.accent = monoforum;
-                item.flags = botforum ? 1 : 0;
+                // item.flags = botforum ? 1 : 0;
                 return item;
             }
 

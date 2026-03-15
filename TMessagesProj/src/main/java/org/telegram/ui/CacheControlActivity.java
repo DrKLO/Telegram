@@ -51,6 +51,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CacheByChatsController;
@@ -113,9 +114,11 @@ import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Storage.CacheModel;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -929,7 +932,9 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                     entry.delete();
 
                     p[0]++;
-                    onProgress.run(p[0] / (float) count);
+                    if (onProgress != null) {
+                        onProgress.run(p[0] / (float) count);
+                    }
                 }
             }
         }
@@ -994,6 +999,13 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             }
             if (type == -1) {
                 continue;
+            }
+            if (a == 7) {
+                try {
+                    cleanDirJava(ApplicationLoader.getFilesDirFixed("rasterized/wallpaper").getAbsolutePath(), 0, null, null);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
             }
             File file;
             if (a == 9) {

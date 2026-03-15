@@ -5,15 +5,18 @@ import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.web.BotWebViewContainer.obj;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.telephony.PhoneNumberUtils;
-import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -21,14 +24,21 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -47,21 +57,29 @@ import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TextHelper;
+import org.telegram.ui.Components.Text;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.bots.BotWebViewSheet;
+import org.telegram.ui.web.BotWebViewContainer;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class OAuthSheet {
 
+    private static BottomSheet showing;
+
     public static void handle(boolean external, int currentAccount, TLRPC.TL_messages_requestUrlAuth request, TLRPC.UrlAuthResult result) {
-        handle(external, currentAccount, request, result, null, null, false);
+        handle(external, currentAccount, request, result, null, null, null, false, null);
     }
 
-    public static void handle(boolean external, int currentAccount, TLRPC.TL_messages_requestUrlAuth request, TLRPC.UrlAuthResult result, String originUrl, TLRPC.UrlAuthResult prevResult, boolean sentPhoneNumber) {
+    public static void handle(boolean external, int currentAccount, TLRPC.TL_messages_requestUrlAuth request, TLRPC.UrlAuthResult result, String originUrl, TLRPC.UrlAuthResult prevResult, String matchCode, boolean sentPhoneNumber, BotWebViewContainer webView) {
         if (result instanceof TLRPC.TL_urlAuthResultAccepted) {
             final TLRPC.TL_urlAuthResultAccepted r = (TLRPC.TL_urlAuthResultAccepted) result;
+            if (webView != null) {
+                if (TextUtils.isEmpty(request.in_app_origin)) return;
+                if (!TextUtils.equals(webView.getOriginHost(), request.in_app_origin)) return;
+            }
             if (TextUtils.isEmpty(r.url)) {
                 String domain = null;
                 if (prevResult instanceof TLRPC.TL_urlAuthResultRequest) {
@@ -70,10 +88,12 @@ public class OAuthSheet {
                 if (!TextUtils.isEmpty(domain)) {
                     final boolean withoutPhoneNumber = prevResult instanceof TLRPC.TL_urlAuthResultRequest && ((TLRPC.TL_urlAuthResultRequest) prevResult).request_phone_number && !sentPhoneNumber;
                     getBulletinFactory()
-                        .createSimpleBulletin(R.raw.contact_check, getString(R.string.BotAuthLoggedInSuccessTitle), replaceSingleLinkBold(formatString(withoutPhoneNumber ? R.string.BotAuthLoggedInSuccessWithoutPhoneNumber : R.string.BotAuthLoggedInSuccess, domain), Theme.getColor(Theme.key_featuredStickers_addButton)))
+                        .createSimpleBulletin(R.raw.contact_check, getString(R.string.BotAuthLoggedInSuccessTitle), replaceSingleLinkBold(formatString(withoutPhoneNumber ? R.string.BotAuthLoggedInSuccessWithoutPhoneNumber : R.string.BotAuthLoggedInSuccess, domain), Theme.getColor(Theme.key_undo_cancelColor)))
                         .show();
                 }
-                if (external) {
+                if (webView != null) {
+                    webView.notifyEvent("oauth_result_confirmed", obj("result_url", null));
+                } else if (external) {
                     final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                     if (fragment == null) return;
                     final Context context = fragment.getContext();
@@ -86,14 +106,16 @@ public class OAuthSheet {
                         }
                     }, 800);
                 }
-                return;
+            } else if (webView != null) {
+                webView.notifyEvent("oauth_result_confirmed", obj("result_url", r.url));
             } else {
                 final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                 if (fragment == null) return;
                 Browser.openUrlInSystemBrowser(fragment.getContext(), r.url);
-                return;
             }
+            return;
         } else if (result instanceof TLRPC.TL_urlAuthResultDefault) {
+            if (webView != null) return;
             if (!TextUtils.isEmpty(request.url)) {
                 final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                 if (fragment == null) return;
@@ -115,15 +137,17 @@ public class OAuthSheet {
         final Context context = fragment.getContext();
         if (context == null) return;
 
+        final Theme.ResourcesProvider resourcesProvider = fragment.getResourceProvider();
         BottomSheet.Builder b = new BottomSheet.Builder(context, false, fragment.getResourceProvider());
 
         FrameLayout container = new FrameLayout(context);
         b.setCustomView(container);
 
         final ArrayList<Integer> accountNumbers = new ArrayList<>();
+        final boolean testBackend = ConnectionsManager.getInstance(currentAccount).isTestBackend();
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
+            if (UserConfig.getInstance(a).isClientActivated() && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
                 accountNumbers.add(a);
             }
         }
@@ -249,37 +273,6 @@ public class OAuthSheet {
             layout.addView(underTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 22, 5, 22, 20));
         }
 
-//        final TextCheckCell allowPhoneNumber;
-//        if (r.request_phone_number) {
-//            FrameLayout frameLayout = new FrameLayout(context);
-//            frameLayout.setBackground(Theme.createRoundRectDrawableShadowed(dp(16), fragment.getThemedColor(Theme.key_windowBackgroundWhite)));
-//            allowPhoneNumber = new TextCheckCell(context, fragment.getResourceProvider());
-//            allowPhoneNumber.setTextAndCheck(getString(R.string.BotAuthSharePhone), false, false);
-//            allowPhoneNumber.setBackground(Theme.createRadSelectorDrawable(0, fragment.getThemedColor(Theme.key_listSelector), 16, 16));
-//            allowPhoneNumber.setOnClickListener(v -> {
-//                allowPhoneNumber.setChecked(!allowPhoneNumber.isChecked());
-//                subtitleView.setText(AndroidUtilities.replaceTags(getString(
-//                    allowPhoneNumber.isChecked() ?
-//                        (bot ? R.string.BotAuthBotSubtitlePhone : R.string.BotAuthSiteSubtitlePhone) :
-//                        (bot ? R.string.BotAuthBotSubtitle : R.string.BotAuthSiteSubtitle)
-//                )));
-//            });
-//            frameLayout.addView(allowPhoneNumber, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-//            layout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 9, -3, 9, -3));
-//
-//            TextView underTextView = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundWhiteGrayText, false);
-//            underTextView.setText(formatString(R.string.BotAuthSharePhoneInfo, UserObject.getUserName(r.bot)));
-//            layout.addView(underTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 22, 6, 22, 20));
-//
-//            subtitleView.setText(AndroidUtilities.replaceTags(getString(
-//                allowPhoneNumber.isChecked() ?
-//                    (bot ? R.string.BotAuthBotSubtitlePhone : R.string.BotAuthSiteSubtitlePhone) :
-//                    (bot ? R.string.BotAuthBotSubtitle : R.string.BotAuthSiteSubtitle)
-//            )));
-//        } else {
-//            allowPhoneNumber = null;
-//        }
-
         final TextCheckCell allowMessages;
         if (r.request_write_access) {
             FrameLayout frameLayout = new FrameLayout(context);
@@ -300,34 +293,62 @@ public class OAuthSheet {
             allowMessages = null;
         }
 
-        LinearLayout buttonsLayout = new LinearLayout(context);
+        final LinearLayout buttonsLayout = new LinearLayout(context);
         buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-        ButtonWithCounterView cancel = new ButtonWithCounterView(context, fragment.getResourceProvider()).setRound().setNeutral();
-        cancel.setText(getString(R.string.Cancel));
+        final ButtonWithCounterView cancel = new ButtonWithCounterView(context, fragment.getResourceProvider()).setRound();//.setNeutral();
+        cancel.setColor(fragment.getThemedColor(Theme.key_text_RedRegular));
+        cancel.setText(getString(R.string.Decline));
         buttonsLayout.addView(cancel, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL, 0, 0, 5, 0));
 
-        ButtonWithCounterView login = new ButtonWithCounterView(context, fragment.getResourceProvider()).setRound();
+        final ButtonWithCounterView login = new ButtonWithCounterView(context, fragment.getResourceProvider()).setRound();
         login.setText(getString(R.string.BotAuthLogin));
         buttonsLayout.addView(login, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 1, Gravity.FILL, 5, 0, 0, 0));
 
         layout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 12, 12, 12, 8));
 
-        BottomSheet sheet = b.create();
+        final BottomSheet sheet = b.create();
         sheet.setBackgroundColor(fragment.getThemedColor(Theme.key_windowBackgroundGray));
-        sheet.show();
 
+        final String[] selectedMatchCode = new String[] { matchCode };
+        final Utilities.Callback<Integer> switchAccount = account -> {
+            if (selectedAccount[0] == account) return;
+
+            final AlertDialog progressDialog = new AlertDialog(ApplicationLoader.applicationContext, AlertDialog.ALERT_TYPE_SPINNER);
+            progressDialog.showDelayed(200);
+
+            ConnectionsManager.getInstance(account).sendRequestTyped(request, AndroidUtilities::runOnUIThread, (res, err) -> {
+                progressDialog.dismiss();
+                if (res != null) {
+                    sheet.dismiss();
+                    handle(external, account, request, res, originUrl, prevResult, selectedMatchCode[0], sentPhoneNumber, webView);
+                } else if (err != null) {
+                    if ("URL_EXPIRED".equalsIgnoreCase(err.text)) {
+                        sheet.dismiss();
+                        getBulletinFactory()
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .show();
+                    } else {
+                        BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider())
+                            .showForError(err);
+                    }
+                }
+            });
+        };
+        if (r.user_id_hint != 0 && UserConfig.getInstance(currentAccount).getClientUserId() != r.user_id_hint) {
+            for (int account : accountNumbers) {
+                if (UserConfig.getInstance(account).getClientUserId() == r.user_id_hint) {
+                    switchAccount.run(account);
+                    break;
+                }
+            }
+        }
         accountSelectorLayout.setOnClickListener(v -> {
             ItemOptions i = ItemOptions.makeOptions(sheet.container, sheet.getResourcesProvider(), accountSelectorInnerLayout);
             for (int account : accountNumbers) {
                 final TLRPC.User user = UserConfig.getInstance(account).getCurrentUser();
                 if (user == null) continue;
-                i.addAccount(account, selectedAccount[0] == account, () -> {
-                    selectedAccount[0] = account;
-
-                    accountAvatarDrawable.setInfo(user);
-                    accountImageView.setForUserOrChat(user, accountAvatarDrawable);
-                });
+                i.addAccount(account, selectedAccount[0] == account, () -> switchAccount.run(account));
             }
             i
                 .setDrawScrim(false)
@@ -337,10 +358,33 @@ public class OAuthSheet {
                 .translate(-dp(8), -dp(8))
                 .show();
         });
-        cancel.setOnClickListener(v -> sheet.dismiss());
+        final boolean[] processed = new boolean[1];
+        cancel.setOnClickListener(v -> {
+            if (request == null || TextUtils.isEmpty(request.url)) {
+                processed[0] = true;
+                sheet.dismiss();
+                return;
+            }
+
+            if (cancel.isLoading()) return;
+            cancel.setLoading(true);
+
+            if (webView != null) {
+                webView.notifyEvent("oauth_result_failed", obj());
+            }
+
+            final TLRPC.TL_messages_declineUrlAuth req = new TLRPC.TL_messages_declineUrlAuth();
+            req.url = request.url;
+            ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                processed[0] = true;
+                sheet.dismiss();
+            });
+        });
         final boolean[] allowPhoneNumber = new boolean[1];
+        final BottomSheet[] showingMatchCodes = new BottomSheet[1];
         final Runnable accept = () -> {
             if (login.isLoading()) return;
+            if (cancel.isLoading()) return;
 
             login.setLoading(true);
 
@@ -355,21 +399,41 @@ public class OAuthSheet {
                 req.flags |= TLObject.FLAG_2;
                 req.url = request.url;
             }
+            if (selectedMatchCode[0] != null) {
+                req.match_code = selectedMatchCode[0];
+            }
 
             req.write_allowed = allowMessages != null && allowMessages.isChecked();
             req.share_phone_number = allowPhoneNumber[0];
 
             ConnectionsManager.getInstance(selectedAccount[0]).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                processed[0] = true;
                 sheet.dismiss();
                 if (err != null) {
-                    BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider())
-                            .showForError(err);
-                    return;
+                    if ("URL_EXPIRED".equalsIgnoreCase(err.text)) {
+                        getBulletinFactory()
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .show();
+                    } else {
+                        getBulletinFactory().showForError(err);
+                    }
+                } else {
+                    handle(external, selectedAccount[0], request, res, originUrl, r, null, req.share_phone_number, webView);
                 }
-                handle(external, selectedAccount[0], request, res, originUrl, r, req.share_phone_number);
             });
         };
+        final Runnable beforeAccept = () -> {
+            if (!r.match_codes.isEmpty() && TextUtils.isEmpty(selectedMatchCode[0])) {
+                showMatchCodeSheet(context, currentAccount, r.match_codes, r.domain, code -> {
+                    selectedMatchCode[0] = code;
+                    accept.run();
+                }, true, () -> {}, fragment.getResourceProvider());
+            } else {
+                accept.run();
+            }
+        };
         login.setOnClickListener(v -> {
+            if (login.isLoading() || cancel.isLoading()) return;
             if (r.request_phone_number) {
                 final TLRPC.User selectedSelf = UserConfig.getInstance(selectedAccount[0]).getCurrentUser();
                 new AlertDialog.Builder(context, fragment.getResourceProvider())
@@ -377,18 +441,222 @@ public class OAuthSheet {
                     .setMessage(AndroidUtilities.replaceTags(formatString(R.string.BotAuthPhoneNumberText, bot ? UserObject.getUserName(r.bot) : r.domain, PhoneFormat.getInstance().format("+" + selectedSelf.phone).replaceAll(" ", " "))))
                     .setNegativeButton(getString(R.string.BotAuthPhoneNumberDeny), (di, w) -> {
                         allowPhoneNumber[0] = false;
-                        accept.run();
+                        beforeAccept.run();
                     })
                     .setPositiveButton(getString(R.string.BotAuthPhoneNumberAccept), (di, w) -> {
                         allowPhoneNumber[0] = true;
-                        accept.run();
+                        beforeAccept.run();
                     })
                     .makeRed(AlertDialog.BUTTON_NEGATIVE)
                     .show();
             } else {
-                accept.run();
+                beforeAccept.run();
             }
         });
+        sheet.setOnDismissListener(d -> {
+            showing = null;
+            if (showingMatchCodes[0] != null) {
+                showingMatchCodes[0].dismiss();
+                showingMatchCodes[0] = null;
+            }
+        });
+
+        if (showing != null) {
+            showing.dismiss();
+            showing = null;
+        }
+
+        if (!r.match_codes_first || r.match_codes.isEmpty() || !TextUtils.isEmpty(selectedMatchCode[0])) {
+            showing = sheet;
+            sheet.show();
+        } else {
+            showing = showMatchCodeSheet(context, currentAccount, r.match_codes, r.domain, code -> {
+                final AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
+                progressDialog.showDelayed(200);
+
+                final TLRPC.TL_messages_checkUrlAuthMatchCode req = new TLRPC.TL_messages_checkUrlAuthMatchCode();
+                req.match_code = selectedMatchCode[0] = code;
+                req.url = request.url;
+                ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                    progressDialog.dismiss();
+                    if (res instanceof TLRPC.TL_boolTrue) {
+                        showing = sheet;
+                        sheet.show();
+                    } else {
+                        if (showing != null) {
+                            showing.dismiss();
+                            showing = null;
+                        }
+                        getBulletinFactory()
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .show();
+                    }
+                });
+            }, false, () -> {
+                showing = null;
+                if (!processed[0]) {
+                    processed[0] = true;
+
+                    if (webView != null) {
+                        webView.notifyEvent("oauth_result_failed", obj());
+                    }
+
+                    if (request != null && !TextUtils.isEmpty(request.url)) {
+                        final TLRPC.TL_messages_declineUrlAuth req = new TLRPC.TL_messages_declineUrlAuth();
+                        req.url = request.url;
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                    }
+                }
+            }, fragment.getResourceProvider());
+        }
+    }
+
+    public static BottomSheet showMatchCodeSheet(
+        Context context,
+        int currentAccount,
+        ArrayList<String> match_codes,
+        String domain,
+        Utilities.Callback<String> onSelected,
+        boolean cancel,
+        Runnable onCancel,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        final BottomSheet[] sheet = new BottomSheet[1];
+        final BottomSheet.Builder b = new BottomSheet.Builder(context);
+
+        final LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        b.setCustomView(layout);
+
+        final TextView titleView = new TextView(context);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setGravity(Gravity.CENTER);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        layout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 25, 0, 19));
+
+        final LinearLayout buttonsLayout = new LinearLayout(context);
+        buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        buttonsLayout.setGravity(Gravity.CENTER);
+        buttonsLayout.setPadding(0, dp(19), 0, dp(19));
+        layout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+
+        int accountForEmoji = currentAccount;
+        if (ConnectionsManager.getInstance(accountForEmoji).isTestBackend()) {
+            for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+                if (UserConfig.getInstance(i).isClientActivated() && !ConnectionsManager.getInstance(i).isTestBackend()) {
+                    accountForEmoji = i;
+                    break;
+                }
+            }
+        }
+        boolean emojis = true;
+        final BackupImageView[] buttons = new BackupImageView[match_codes.size()];
+        for (int i = 0; i < match_codes.size(); ++i) {
+            final String code = match_codes.get(i);
+            final FrameLayout buttonLayout = new FrameLayout(context);
+            buttonLayout.setBackground(Theme.createCircleDrawable(dp(70), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.05f)));
+
+            Drawable thumb = Emoji.getEmojiBigDrawable(code);
+            if (thumb == null) {
+                final Text text = new Text(code, 30, AndroidUtilities.bold());
+                thumb = new Drawable() {
+                    @Override
+                    public void draw(@NonNull Canvas canvas) {
+                        text.draw(canvas, getBounds().centerX() - text.getCurrentWidth() / 2f, getBounds().centerY(), Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 1.0f);
+                    }
+                    @Override
+                    public int getOpacity() {
+                        return PixelFormat.TRANSPARENT;
+                    }
+                    @Override
+                    public void setAlpha(int alpha) {}
+                    @Override
+                    public void setColorFilter(@Nullable ColorFilter colorFilter) {}
+                };
+                emojis = false;
+            }
+            final BackupImageView buttonImage = buttons[i] = new BackupImageView(context);
+            buttonImage.getImageReceiver().setCurrentAccount(accountForEmoji);
+            buttonImage.setImage(null, null, null, null, thumb, null);
+            NotificationCenter.listenEmojiLoading(buttonImage);
+            buttonLayout.addView(buttonImage, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
+
+            buttonsLayout.addView(buttonLayout, LayoutHelper.createLinear(70, 70, Gravity.CENTER_VERTICAL, i == 0 ? 0 : 24, 0, 0, 0));
+            ScaleStateListAnimator.apply(buttonLayout);
+            buttonLayout.setOnClickListener(v -> {
+                if (sheet[0] != null) {
+                    sheet[0].dismiss();
+                    sheet[0] = null;
+                    onSelected.run(code);
+                }
+            });
+        }
+        final TLRPC.TL_inputStickerSetShortName inputStickerSetShortName = new TLRPC.TL_inputStickerSetShortName();
+        inputStickerSetShortName.short_name = "RestrictedEmoji";
+        MediaDataController.getInstance(accountForEmoji).getStickerSet(inputStickerSetShortName, null, false, set -> {
+            if (set == null || set.set == null) return;
+            for (int i = 0; i < match_codes.size(); ++i) {
+                final String code = match_codes.get(i);
+
+                TLRPC.Document document = null;
+                for (int k = 0; k < set.packs.size(); ++k) {
+                    if (!set.packs.get(k).documents.isEmpty() && TextUtils.equals(set.packs.get(k).emoticon, code)) {
+                        long documentId = set.packs.get(k).documents.get(0);
+                        for (int j = 0; j < set.documents.size(); ++j) {
+                            if (set.documents.get(j).id == documentId) {
+                                document = set.documents.get(j);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (document != null) {
+                    final int size = 40;
+                    final Drawable thumb = Emoji.getEmojiBigDrawable(code);
+                    final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, size);
+                    buttons[i].setImage(
+                        ImageLocation.getForDocument(document),
+                        size + "_" + size,
+                        ImageLocation.getForDocument(photoSize, document),
+                        size + "_" + size,
+                        thumb,
+                        null
+                    );
+                }
+            }
+        });
+
+        titleView.setText(getString(emojis ? R.string.BotAuthSelectEmoji : R.string.BotAuthSelectCode));
+
+        final TextView footerView = new TextView(context);
+        footerView.setGravity(Gravity.CENTER);
+        footerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        footerView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        footerView.setText(AndroidUtilities.replaceSingleLink(formatString(R.string.BotAuthLoginRequestFrom, domain), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        layout.addView(footerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 23, 0, 11));
+
+        final ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider).setRound();
+        if (cancel) {
+            button.setNeutral();
+            button.setText(getString(R.string.Cancel));
+        } else {
+            button.setColor(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
+            button.setText(getString(R.string.Decline));
+        }
+        layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 12, 12, 12, 12));
+        button.setOnClickListener(v -> {
+            if (button.isLoading()) return;
+            if (sheet[0] != null) {
+                sheet[0].dismiss();
+                sheet[0] = null;
+                onCancel.run();
+            }
+        });
+
+        return sheet[0] = b.show();
     }
 
     public static BulletinFactory getBulletinFactory() {

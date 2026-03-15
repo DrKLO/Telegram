@@ -428,7 +428,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
 
         if (featured.size() > 3) {
-            featured.removeAll(featured.subList(3, featured.size()));
+            featured = new ArrayList<>(featured.subList(0, 3));
             truncatedFeaturedStickers = true;
         }
         if (currentType == TYPE_EMOJIPACKS && !featured.isEmpty()) {

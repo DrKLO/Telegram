@@ -264,6 +264,14 @@ public class Bulletin {
         return this;
     }
 
+    public Bulletin wrapContent() {
+        if (layout.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            ((FrameLayout.LayoutParams) layout.getLayoutParams()).width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            ((FrameLayout.LayoutParams) layout.getLayoutParams()).gravity |= Gravity.CENTER_HORIZONTAL;
+        }
+        return this;
+    }
+
     public boolean setCanHideOnShow = true;
     public Bulletin show(boolean top) {
         if (!showing && containerLayout != null) {
@@ -322,7 +330,7 @@ public class Bulletin {
                     if (showing) {
                         layout.onShow();
                         BaseFragment fragment = containerFragment;
-                        if (fragment instanceof ViewPagerActivity) {
+                        if (top && fragment instanceof ViewPagerActivity) {
                             fragment = ((ViewPagerActivity) fragment).getCurrentVisibleFragment();
                         }
                         currentDelegate = findDelegate(fragment, containerLayout);

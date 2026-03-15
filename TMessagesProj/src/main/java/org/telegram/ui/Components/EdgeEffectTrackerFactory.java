@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
+import android.view.View;
 import android.widget.EdgeEffect;
 
 import androidx.annotation.NonNull;
@@ -36,10 +37,10 @@ public final class EdgeEffectTrackerFactory extends RecyclerView.EdgeEffectFacto
     @NonNull
     @Override
     protected EdgeEffect createEdgeEffect(
-            RecyclerView view,
+            @NonNull RecyclerView view,
             @RecyclerView.EdgeEffectFactory.EdgeDirection int direction
     ) {
-        final TrackingEdgeEffect edgeEffect = new TrackingEdgeEffect(view.getContext(), direction, this::onEdgeEffectVisibilityChange);
+        final TrackingEdgeEffect edgeEffect = new TrackingEdgeEffect(view, direction, this::onEdgeEffectVisibilityChange);
         edgeEffects[direction] = edgeEffect;
         return edgeEffect;
     }
@@ -58,13 +59,16 @@ public final class EdgeEffectTrackerFactory extends RecyclerView.EdgeEffectFacto
 
         private final @RecyclerView.EdgeEffectFactory.EdgeDirection int direction;
         private final OnEdgeEffectListener listener;
+        private final RecyclerView view;
+        private final Runnable mCheckEdgeVisibility = this::checkEdgeVisibility;
 
         TrackingEdgeEffect(
-                Context context,
+                @NonNull RecyclerView view,
                 @RecyclerView.EdgeEffectFactory.EdgeDirection int direction,
                 OnEdgeEffectListener listener
         ) {
-            super(context);
+            super(view.getContext());
+            this.view = view;
             this.direction = direction;
             this.listener = listener;
         }
@@ -133,7 +137,7 @@ public final class EdgeEffectTrackerFactory extends RecyclerView.EdgeEffectFacto
         @Override
         public boolean draw(Canvas canvas) {
             final boolean result = super.draw(canvas);
-            checkEdgeVisibility();
+            view.postOnAnimation(mCheckEdgeVisibility);
             return result;
         }
     }
