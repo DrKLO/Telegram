@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
@@ -108,6 +109,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     float crossfadeToColumnsCount;
     float highlightProgress;
     public boolean isFirst, isLast;
+    public boolean isTop;
 
     private Drawable gradientDrawable;
     private boolean gradientDrawableLoading;
@@ -487,12 +489,12 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
     private float getPadding() {
         if (crossfadeProgress != 0 && (crossfadeToColumnsCount == 9 || currentParentColumnsCount == 9)) {
             if (crossfadeToColumnsCount == 9) {
-                return dpf2(0.5f) * crossfadeProgress + dpf2(1) * (1f - crossfadeProgress);
+                return dpf2(1) * crossfadeProgress + dpf2(2) * (1f - crossfadeProgress);
             } else {
-                return dpf2(1f) * crossfadeProgress + dpf2(0.5f) * (1f - crossfadeProgress);
+                return dpf2(2) * crossfadeProgress + dpf2(1) * (1f - crossfadeProgress);
             }
         } else {
-            return currentParentColumnsCount == 9 ? dpf2(0.5f) : dpf2(1);
+            return currentParentColumnsCount == 9 ? dpf2(1) : dpf2(2);
         }
     }
 
@@ -506,12 +508,14 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
 
     private void drawImpl(Canvas canvas, boolean useFullSize, float sizeProgress, float receiverAlpha, float customsAlpha) {
         final float padding = getPadding() * sizeProgress;
-        final float leftpadding = isStory && isFirst ? 0 : padding;
-        final float rightpadding = isStory && isLast ? 0 : padding;
+        final float leftpadding = isFirst ? padding : 0;
+        final float rightpadding = padding;
+        final float toppadding = 0;
+        final float bottompadding = padding;
         final float reorderingF = animatedReordering.set(reordering);
 
         float imageWidth = (getMeasuredWidth() - leftpadding - rightpadding) * imageScale;
-        float imageHeight = (getMeasuredHeight() - padding * 2) * imageScale;
+        float imageHeight = (getMeasuredHeight() - toppadding - bottompadding) * imageScale;
 
         final ImageReceiver imageReceiver = useFullSize ? imageReceiverFullSize : this.imageReceiver;
         imageReceiver.setAlpha(receiverAlpha);
@@ -536,13 +540,13 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
         }
 
         if (imageAlpha != 1f) {
-            canvas.saveLayerAlpha(0, 0, leftpadding + rightpadding + imageWidth, padding * 2 + imageHeight, (int) (255 * imageAlpha), Canvas.ALL_SAVE_FLAG);
+            canvas.saveLayerAlpha(0, 0, leftpadding + rightpadding + imageWidth, toppadding + bottompadding + imageHeight, (int) (255 * imageAlpha), Canvas.ALL_SAVE_FLAG);
         } else {
             canvas.save();
         }
 
         if (((checkBoxBase != null && checkBoxBase.isChecked()) || PhotoViewer.isShowingImage(currentMessageObject)) && !check2) {
-            canvas.drawRect(leftpadding, padding, leftpadding + imageWidth - rightpadding, imageHeight, sharedResources.backgroundPaint);
+            canvas.drawRect(leftpadding, toppadding, leftpadding + imageWidth - rightpadding, toppadding + imageHeight - bottompadding, sharedResources.backgroundPaint);
         }
 
         if (isStory && currentParentColumnsCount == 1) {
@@ -576,8 +580,13 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             imageReceiver.setImageCoords(leftpadding + padPlus, padding + padPlus, imageWidth, imageHeight);
             blurImageReceiver.setImageCoords(leftpadding + padPlus, padding + padPlus, imageWidth, imageHeight);
         }
+        imageReceiver.setRoundRadius(
+            lerp(isFirst && isTop ? dp(18) : dp(1), dp(8), checkBoxProgress),
+            lerp(isLast  && isTop ? dp(18) : dp(1), dp(8), checkBoxProgress),
+            lerp(dp(1), dp(8), checkBoxProgress),
+            lerp(dp(1), dp(8), checkBoxProgress)
+        );
         if (check2) {
-            imageReceiver.setRoundRadius(AndroidUtilities.lerp(0, dp(8), checkBoxProgress));
             canvas.save();
             if (reorder || reordering) {
                 canvas.translate(imageReceiver.getCenterX(), imageReceiver.getCenterY());
@@ -591,7 +600,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             imageReceiver.draw(canvas);
             if (currentMessageObject != null && currentMessageObject.hasMediaSpoilers() && !currentMessageObject.isMediaSpoilersRevealedInSharedMedia) {
                 canvas.save();
-                canvas.clipRect(leftpadding, padding, leftpadding + imageWidth - rightpadding, padding + imageHeight);
+                canvas.clipRect(leftpadding, toppadding, leftpadding + imageWidth - rightpadding, toppadding + imageHeight - bottompadding);
 
                 if (spoilerRevealProgress != 0f) {
                     path.rewind();
@@ -648,7 +657,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                     final float cy = imageReceiver.getImageY() + imageReceiver.getImageHeight() / 2f;
                     final float w = text.getCurrentWidth() + dp(textPadding + textPadding);
                     final float h = dp(textHeight), r = h / 2f;
-                    float s = AndroidUtilities.lerp(.8f, 1f, 1f - spoilerRevealProgress);
+                    float s = lerp(.8f, 1f, 1f - spoilerRevealProgress);
                     AndroidUtilities.rectTmp.set(cx - w / 2f * s, cy - h / 2f * s, cx + w / 2f * s, cy + h / 2f * s);
 
                     rectPath.reset();
@@ -694,7 +703,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
                     imageReceiver.getCenterX() + r, imageReceiver.getCenterY() + r
             );
             final float a = (System.currentTimeMillis() % 1500L) / 1500f * 360f;
-            canvas.drawArc(AndroidUtilities.rectTmp, a, animatedProgress.set(AndroidUtilities.lerp(0.15f, 0.95f, currentMessageObject != null ? currentMessageObject.getProgress() : 0f)) * 360, false, progressPaint);
+            canvas.drawArc(AndroidUtilities.rectTmp, a, animatedProgress.set(lerp(0.15f, 0.95f, currentMessageObject != null ? currentMessageObject.getProgress() : 0f)) * 360, false, progressPaint);
             invalidate();
         }
 

@@ -338,8 +338,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
 
             }
         };
-        // listView.setSections();
-        iBlur3Capture = new ViewGroupPartRenderer(listView, alert.getContainerView(), listView::drawChild);
+        listView.setSections();
+        iBlur3Capture = listView;
+        iBlur3CaptureView = listView;
         occupyNavigationBar = true;
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         listView.setVerticalScrollBarEnabled(false);
@@ -678,7 +679,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         }
         View child = listView.getChildAt(0);
         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
-        int top = (int) child.getY() - AndroidUtilities.dp(8);
+        int top = (int) child.getY() - AndroidUtilities.dp(4) - AndroidUtilities.dp(8);
         int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 0 ? top : 0;
         if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
             newOffset = top;
@@ -1452,14 +1453,15 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     break;
                 case 2:
                     view = new ShadowSectionCell(mContext);
-                    Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
-                    combinedDrawable.setFullsize(true);
+                    // Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                    // CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
+                    // combinedDrawable.setFullsize(true);
                     // view.setBackgroundDrawable(combinedDrawable);
                     break;
                 case 3:
                 default:
                     view = new View(mContext);
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2140,6 +2142,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 case 3:
                 default:
                     view = new View(mContext);
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

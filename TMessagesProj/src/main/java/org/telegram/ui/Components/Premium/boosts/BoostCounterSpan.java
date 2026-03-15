@@ -27,7 +27,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 public class BoostCounterSpan extends ReplacementSpan {
     private final Drawable boostProfileBadge;
     private final Drawable boostProfileBadge2;
-    public boolean isRtl;
+    public boolean isRtl, margin;
 
     public static Pair<SpannableString, BoostCounterSpan> create(View parent, TextPaint paint, int count) {
         SpannableString spannableString = new SpannableString("d");
@@ -73,7 +73,7 @@ public class BoostCounterSpan extends ReplacementSpan {
     }
 
     public int getWidth() {
-        return (int) (dp(16) + countText.getWidth());
+        return (int) (dp(16 + (margin ? 8 : 0)) + countText.getWidth());
     }
 
     @Override
@@ -84,7 +84,7 @@ public class BoostCounterSpan extends ReplacementSpan {
             boostProfileBadge2.setColorFilter(new PorterDuffColorFilter(countText.getTextColor(), PorterDuff.Mode.MULTIPLY));
         }
         canvas.save();
-        canvas.translate(_x, -dp(0.2f));
+        canvas.translate(_x + (margin && !isRtl ? dp(8) : 0), -dp(0.2f));
         if (currentCount == 1) {
             canvas.translate(dp(1.5f), 0);
             boostProfileBadge.draw(canvas);

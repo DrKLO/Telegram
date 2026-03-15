@@ -14,6 +14,7 @@
 -keep class org.telegram.messenger.time.* { *; }
 -keep class org.telegram.messenger.video.* { *; }
 -keep class org.telegram.messenger.voip.* { *; }
+-keep class org.telegram.messenger.auto.* { *; }
 -keep class org.telegram.SQLite.** { *; }
 -keep class org.telegram.tgnet.ConnectionsManager { *; }
 -keep class org.telegram.tgnet.NativeByteBuffer { *; }

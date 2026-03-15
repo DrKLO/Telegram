@@ -1261,6 +1261,45 @@ public sealed class TlGen_MessageAction : TlGen_Object {
     }
   }
 
+  public data class TL_messageActionNoForwardsToggle(
+    public val prev_value: Boolean,
+    public val new_value: Boolean,
+  ) : TlGen_MessageAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeBool(prev_value)
+      stream.writeBool(new_value)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xBF7D6572U
+    }
+  }
+
+  public data class TL_messageActionNoForwardsRequest(
+    public val expired: Boolean,
+    public val prev_value: Boolean,
+    public val new_value: Boolean,
+  ) : TlGen_MessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (expired) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeBool(prev_value)
+      stream.writeBool(new_value)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3E2793BAU
+    }
+  }
+
   public data class TL_messageActionChatCreate_layer132(
     public val title: String,
     public val users: List<Int>,

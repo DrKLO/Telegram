@@ -936,14 +936,16 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             );
 
             this.tabs = new GlassTabView[]{
-                GlassTabView.createGiftTab(context, resourcesProvider, GlassTabView.TabAnimation.MODELS, R.string.GiftPreviewModels, () -> selectTab(0)),
-                GlassTabView.createGiftTab(context, resourcesProvider, GlassTabView.TabAnimation.COLORS, R.string.GiftPreviewBackdrops, () -> selectTab(1)),
-                GlassTabView.createGiftTab(context, resourcesProvider, GlassTabView.TabAnimation.SYMBOLS, R.string.GiftPreviewSymbols, () -> selectTab(2))
+                GlassTabView.createMainTab(context, resourcesProvider, GlassTabView.TabAnimation.MODELS, R.string.GiftPreviewModels),
+                GlassTabView.createMainTab(context, resourcesProvider, GlassTabView.TabAnimation.COLORS, R.string.GiftPreviewBackdrops),
+                GlassTabView.createMainTab(context, resourcesProvider, GlassTabView.TabAnimation.SYMBOLS, R.string.GiftPreviewSymbols)
             };
 
-            linearLayout.addView(tabs[0], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
-            linearLayout.addView(tabs[1], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
-            linearLayout.addView(tabs[2], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+            for (int a = 0; a < tabs.length; a++) {
+                final int finalA = a;
+                linearLayout.addView(tabs[a], LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+                tabs[a].setOnClickListener(v -> selectTab(finalA));
+            }
 
             tabs[0].setSelected(true, false);
         }

@@ -130,6 +130,7 @@ android {
             ext {
                 abiVersionCode = 1
             }
+            buildConfigField "boolean", "BUNDLE", "true"
         }
         bundleAfat_SDK23 {
             ndk {
@@ -145,6 +146,7 @@ android {
             ext {
                 abiVersionCode = 2
             }
+            buildConfigField "boolean", "BUNDLE", "true"
         }
         afat {
             ndk {
@@ -162,6 +164,7 @@ android {
             ext {
                 abiVersionCode = 9
             }
+            buildConfigField "boolean", "BUNDLE", "false"
         }
     }
 
@@ -206,6 +209,103 @@ android {
 
     lintOptions {
         checkReleaseBuilds false
+    }
+}
+
+// --- Generate google-services.json if missing ---
+task generateGoogleServices {
+    def outputFile = file("google-services.json")
+
+    outputs.file outputFile
+
+    onlyIf { !outputFile.exists() }
+
+    doLast {
+        def content = null
+
+        // Try base64-encoded env var (CI)
+        def envJson = System.getenv('GOOGLE_SERVICES_JSON')
+        if (envJson != null && !envJson.isEmpty()) {
+            content = new String(Base64.decoder.decode(envJson))
+            logger.lifecycle("Generated google-services.json from GOOGLE_SERVICES_JSON env var")
+        }
+
+        // Try path from local.properties
+        if (content == null) {
+            def propsFile = rootProject.file('local.properties')
+            if (propsFile.exists()) {
+                def props = new Properties()
+                props.load(new FileInputStream(propsFile))
+                def jsonPath = props.getProperty('google.services.json.path')
+                if (jsonPath != null && !jsonPath.isEmpty()) {
+                    def jsonFile = file(jsonPath)
+                    if (jsonFile.exists()) {
+                        content = jsonFile.text
+                        logger.lifecycle("Generated google-services.json from local.properties path")
+                    }
+                }
+            }
+        }
+
+        // Fallback: dummy config so the build compiles
+        if (content == null) {
+            content = '''{
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "dummy-project-id",
+    "storage_bucket": "dummy-project-id.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+        "android_client_info": {
+          "package_name": "''' + APP_PACKAGE + '''"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "dummy-api-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000001",
+        "android_client_info": {
+          "package_name": "''' + APP_PACKAGE + '''.beta"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "dummy-api-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}'''
+            logger.lifecycle("Generated dummy google-services.json (Firebase features will not work)")
+        }
+
+        outputFile.text = content
+    }
+}
+
+// Hook generateGoogleServices before Google Services plugin processes it
+afterEvaluate {
+    tasks.matching { it.name.startsWith('process') && it.name.endsWith('GoogleServices') }.configureEach {
+        dependsOn generateGoogleServices
     }
 }
 

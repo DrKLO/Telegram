@@ -29,6 +29,7 @@ public sealed class TlGen_ChatBannedRights : TlGen_Object {
     public val send_voices: Boolean,
     public val send_docs: Boolean,
     public val send_plain: Boolean,
+    public val edit_rank: Boolean,
     public val until_date: Int,
   ) : TlGen_ChatBannedRights() {
     internal val flags: UInt
@@ -54,6 +55,7 @@ public sealed class TlGen_ChatBannedRights : TlGen_Object {
         if (send_voices) result = result or 8388608U
         if (send_docs) result = result or 16777216U
         if (send_plain) result = result or 33554432U
+        if (edit_rank) result = result or 67108864U
         return result
       }
 

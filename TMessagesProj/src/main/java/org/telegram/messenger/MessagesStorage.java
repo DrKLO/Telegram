@@ -1531,6 +1531,62 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    public void updateRanksInLastMessages(long dialogId, long userId, String rank) {
+        storageQueue.postRunnable(() -> {
+            final ArrayList<Pair<Integer, TLRPC.Message>> messagesToUpdate = new ArrayList<>();
+            SQLiteCursor cursor = null;
+            SQLitePreparedStatement state = null;
+            try {
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, data FROM messages_v2 WHERE uid = %s ORDER BY date DESC LIMIT 20", dialogId));
+                while (cursor.next()) {
+                    final int messageId = cursor.intValue(0);
+                    final NativeByteBuffer data = cursor.byteBufferValue(1);
+                    final TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    if (message != null) {
+                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
+                    }
+                    if (DialogObject.getPeerDialogId(message.from_id) == userId) {
+                        message.flags2 |= TLObject.FLAG_12;
+                        message.from_rank = rank;
+                        messagesToUpdate.add(new Pair<>(messageId, message));
+                    }
+                }
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+                for (int i = 0; i < messagesToUpdate.size(); ++i) {
+                    final int messageId = messagesToUpdate.get(i).first;
+                    final TLRPC.Message message = messagesToUpdate.get(i).second;
+                    state = database.executeFast("UPDATE messages_v2 SET data = ? WHERE mid = ? AND uid = ?");
+                    state.requery();
+                    NativeByteBuffer data = new NativeByteBuffer(message.getObjectSize());
+                    MessageObject.normalizeFlags(message);
+                    message.serializeToStream(data);
+                    state.bindByteBuffer(1, data);
+                    state.bindInteger(2, messageId);
+                    state.bindLong(3, dialogId);
+                    state.step();
+                    state.dispose();
+                    state = null;
+                    data.reuse();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+            }
+            final boolean updated = messagesToUpdate.size() > 0;
+            if (updated) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updateInterfaces, 0);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.updatedChatRanks, -dialogId, userId, rank);
+                });
+            }
+        });
+    }
+
     public void saveTopics(long dialogId, List<TLRPC.TL_forumTopic> topics, boolean replace, boolean useQueue, int date) {
         if (useQueue) {
             storageQueue.postRunnable(() -> {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="automotive_hosts_allowlist" translatable="false">
+        <item>fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf,com.google.android.projection.gearhead</item>
+        <item>70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771,com.google.android.projection.gearhead</item>
+        <item>1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00,com.google.android.projection.gearhead</item>
+        <item>c241ffbc8e287c4e9a4ad19632ba1b1351ad361d5177b7d7b29859bd2b7fc631,com.google.android.apps.automotive.templates.host</item>
+        <item>dd66deaf312d8daec7adbe85a218ecc8c64f3b152f9b5998d5b29300c2623f61,com.google.android.apps.automotive.templates.host</item>
+        <item>50e603d333c6049a37bd751375d08f3bd0abebd33facd30bd17b64b89658b421,com.google.android.apps.automotive.templates.host</item>
+    </string-array>
+</resources>

@@ -547,24 +547,8 @@ public class ScrimOptions extends Dialog {
         bitmapPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
 
         cell.setupTextColors();
-        final TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(layout.getPaint().getColor());
-        paint.linkColor = layout.getPaint().linkColor;
-        paint.setTextSize(layout.getPaint().getTextSize());
-        paint.setTextAlign(layout.getPaint().getTextAlign());
-        paint.setTypeface(layout.getPaint().getTypeface());
-        paint.setLinearText(layout.getPaint().isLinearText());
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            paint.setLetterSpacing(layout.getPaint().getLetterSpacing());
-            paint.setFontFeatureSettings(layout.getPaint().getFontFeatureSettings());
-            paint.setElegantTextHeight(layout.getPaint().isElegantTextHeight());
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            paint.setFontVariationSettings(layout.getPaint().getFontVariationSettings());
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            paint.setEndHyphenEdit(layout.getPaint().getEndHyphenEdit());
-        }
+        final TextPaint paint = new TextPaint(layout.getPaint());
+        paint.set(layout.getPaint());
         CharSequence text = new SpannableStringBuilder(AnimatedEmojiSpan.cloneSpans(layout.getText(), -1, paint.getFontMetricsInt()));
         if (text instanceof Spannable) {
             Spannable spannable = (Spannable) text;
@@ -576,11 +560,6 @@ public class ScrimOptions extends Dialog {
             }
         }
         final StaticLayout finalLayout = MessageObject.makeStaticLayout(text, paint, layoutOriginalWidth, 1f, messageObject.totalAnimatedEmojiCount >= 4 ? -1 : 0, false);
-        final RectF offset = new RectF();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            offset.set(finalLayout.computeDrawingBoundingBox());
-        }
-
         final int[] pos = new int[2];
         cell.getLocationOnScreen(pos);
         final int[] pos2 = new int[2];
@@ -623,7 +602,6 @@ public class ScrimOptions extends Dialog {
                 }
                 canvas.clipPath(path);
 
-                canvas.translate(-offset.left, -offset.top / 2f);
                 finalLayout.draw(canvas);
 
                 canvas.restore();

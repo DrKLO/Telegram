@@ -125,7 +125,9 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -9765,6 +9767,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     public static CharSequence applyMessageEntities(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, Paint.FontMetricsInt fontMetricsInt) {
         CharSequence result;
         MediaDataController.sortEntities(entities);
+        text = FormattedDateSpan.restoreFormatedDateEntities(text);
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
         Object[] spansToRemove = stringBuilder.getSpans(0, stringBuilder.length(), Object.class);
         if (spansToRemove != null && spansToRemove.length > 0) {
@@ -9813,6 +9816,16 @@ public class ChatActivityEnterView extends FrameLayout implements
                         MediaDataController.addStyleToText(new TextStyleSpan(run), entity.offset, entity.offset + entity.length, stringBuilder, true);
                     } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
                         stringBuilder.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityFormattedDate) {
+                        TLRPC.TL_messageEntityFormattedDate entityFormattedDate = (TLRPC.TL_messageEntityFormattedDate) entity;
+                        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+                        run.flags |= TextStyleSpan.FLAG_STYLE_URL;
+                        run.start = entity.offset;
+                        run.end = entity.offset + entity.length;
+                        run.urlEntity = entity;
+                        stringBuilder.setSpan(new FormattedDateSpan(
+                            stringBuilder.subSequence(entity.offset, entity.offset + entity.length).toString(), run, entityFormattedDate
+                        ), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
                         TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
                         run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
@@ -11104,13 +11117,262 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             @Override
+            public boolean canAddCaptionToGif(TLRPC.Document document) {
+                return true;
+            }
+
+            @Override
+            public void onGifSelectedForAddCaption(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                PhotoViewer.getInstance().setParentActivity(parentFragment, parentFragment.themeDelegate);
+                File file = null;
+                if (gif instanceof TLRPC.Document) {
+                    file = FileLoader.getInstance(currentAccount).getPathToAttach((TLRPC.Document) gif);
+                }
+                if (file == null) {
+                    return;
+                }
+                File file2 = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), file.getName());
+                if (!file.exists()) {
+                    if (file2.exists()) {
+                        file = file2;
+                    } else {
+                        //TODO photo not downloaded yet
+                        return;
+                    }
+                }
+
+                final ArrayList<Object> photos = new ArrayList<>();
+                final MediaController.PhotoEntry entry = new MediaController.PhotoEntry(
+                    0, 0, 0,
+                    file.getAbsolutePath(),
+                    0, false,
+                    0, 0, 0
+                );
+                entry.caption = null;
+                entry.isVideo = true;
+                photos.add(entry);
+
+                PhotoViewer.getInstance().openPhotoForSelect(photos, 0, PhotoViewer.SELECT_TYPE_GIF, false, new PhotoViewer.PhotoViewerProvider() {
+                    @Override
+                    public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview, boolean closing) {
+                        return null;
+                    }
+
+                    @Override
+                    public ImageReceiver.BitmapHolder getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+                        return null;
+                    }
+
+                    @Override
+                    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+
+                    }
+
+                    @Override
+                    public void willHidePhotoViewer() {
+
+                    }
+
+                    @Override
+                    public boolean isPhotoChecked(int index) {
+                        return false;
+                    }
+
+                    @Override
+                    public int setPhotoChecked(int index, VideoEditedInfo videoEditedInfo) {
+                        return 0;
+                    }
+
+                    @Override
+                    public int setPhotoUnchecked(Object photoEntry) {
+                        return 0;
+                    }
+
+                    @Override
+                    public boolean cancelButtonPressed() {
+                        return false;
+                    }
+
+                    @Override
+                    public void needAddMorePhotos() {
+
+                    }
+
+                    @Override
+                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
+                        onGifSelected(view, gif, query, parent, notify, scheduleDate, scheduleRepeatPeriod, entry, isCaptionAbove);
+                    }
+
+                    @Override
+                    public void replaceButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
+
+                    }
+
+                    @Override
+                    public boolean canEdit(int index) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean canReplace(int index) {
+                        return false;
+                    }
+
+                    @Override
+                    public int getSelectedCount() {
+                        return 0;
+                    }
+
+                    @Override
+                    public void updatePhotoAtIndex(int index) {
+
+                    }
+
+                    @Override
+                    public boolean allowSendingSubmenu() {
+                        return true;
+                    }
+
+
+
+                    @Override
+                    public boolean scaleToFill() {
+                        return false;
+                    }
+
+                    @Override
+                    public ArrayList<Object> getSelectedPhotosOrder() {
+                        return null;
+                    }
+
+                    @Override
+                    public HashMap<Object, Object> getSelectedPhotos() {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean canScrollAway() {
+                        return false;
+                    }
+
+                    @Override
+                    public int getPhotoIndex(int index) {
+                        return 0;
+                    }
+
+                    @Override
+                    public void deleteImageAtIndex(int index) {
+
+                    }
+
+                    @Override
+                    public String getDeleteMessageString() {
+                        return "";
+                    }
+
+                    @Override
+                    public boolean canCaptureMorePhotos() {
+                        return false;
+                    }
+
+                    @Override
+                    public void openPhotoForEdit(String file, String thumb, boolean isVideo) {
+
+                    }
+
+                    @Override
+                    public int getTotalImageCount() {
+                        return 0;
+                    }
+
+                    @Override
+                    public boolean loadMore() {
+                        return false;
+                    }
+
+                    @Override
+                    public CharSequence getTitleFor(int index) {
+                        return null;
+                    }
+
+                    @Override
+                    public CharSequence getSubtitleFor(int index) {
+                        return null;
+                    }
+
+                    @Override
+                    public MessageObject getEditingMessageObject() {
+                        return null;
+                    }
+
+                    @Override
+                    public void onCaptionChanged(CharSequence caption) {
+
+                    }
+
+                    @Override
+                    public boolean closeKeyboard() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean validateGroupId(long groupId) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onApplyCaption(CharSequence caption) {
+
+                    }
+
+                    @Override
+                    public void onOpen() {
+                        PhotoViewer.getInstance().openKeyboard();
+                    }
+
+                    @Override
+                    public void onClose() {
+
+                    }
+
+
+
+                    private boolean isCaptionAbove;
+
+                    @Override
+                    public boolean allowCaption() {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean canMoveCaptionAbove() {
+                        return true;
+                    }
+
+                    @Override
+                    public void moveCaptionAbove(boolean above) {
+                        isCaptionAbove = above;
+                    }
+
+                    @Override
+                    public boolean isCaptionAbove() {
+                        return isCaptionAbove;
+                    }
+                }, parentFragment);
+            }
+
+            @Override
             public void onGifSelected(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                onGifSelected(view, gif, query, parent, notify, scheduleDate, scheduleRepeatPeriod, null, false);
+            }
+
+            public void onGifSelected(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod, MediaController.PhotoEntry entry, boolean invertMedia) {
                 if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
                     parentFragment.showQuoteMessageUpdate();
                     return;
                 }
                 if (isInScheduleMode() && scheduleDate == 0) {
-                    AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s, r) -> onGifSelected(view, gif, query, parent, n, s, r), resourcesProvider);
+                    AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s, r) -> onGifSelected(view, gif, query, parent, n, s, r, entry, invertMedia), resourcesProvider);
                 } else {
                     if (slowModeTimer > 0 && !isInScheduleMode()) {
                         if (delegate != null) {
@@ -11129,10 +11391,50 @@ public class ChatActivityEnterView extends FrameLayout implements
                             TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
                             if (gif instanceof TLRPC.Document) {
                                 TLRPC.Document document = (TLRPC.Document) gif;
-                                SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialog_id, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, scheduleRepeatPeriod, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
-                                MediaDataController.getInstance(currentAccount).addRecentGif(document, (int) (System.currentTimeMillis() / 1000), true);
-                                if (DialogObject.isEncryptedDialog(dialog_id)) {
-                                    accountInstance.getMessagesController().saveGif(parent, document);
+                                boolean applyEdit = false;
+
+                                final VideoEditedInfo videoEditedInfo = entry != null ? entry.editedInfo : null;
+                                if (videoEditedInfo != null && entry != null) {
+                                    videoEditedInfo.roundVideo = true;
+                                    applyEdit = videoEditedInfo.needConvert();
+                                    videoEditedInfo.roundVideo = false;
+                                    videoEditedInfo.muted = true;
+                                }
+                                if (applyEdit) {
+                                    ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
+                                    SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
+                                    if (!entry.isVideo && entry.imagePath != null) {
+                                        info.path = entry.imagePath;
+                                        if (entry.highQuality) {
+                                            info.originalPhotoEntry = entry.clone();
+                                        }
+                                    } else if (entry.path != null) {
+                                        info.path = entry.path;
+                                    }
+                                    info.thumbPath = entry.thumbPath;
+                                    info.coverPath = entry.coverPath;
+                                    info.coverPhoto = entry.coverPhoto;
+                                    info.isVideo = entry.isVideo;
+                                    info.caption = entry.caption != null ? entry.caption.toString() : null;
+                                    info.entities = entry.entities;
+                                    info.masks = entry.stickers;
+                                    info.ttl = entry.ttl;
+                                    info.videoEditedInfo = entry.editedInfo;
+                                    info.canDeleteAfter = entry.canDeleteAfter;
+                                    info.updateStickersOrder = SendMessagesHelper.checkUpdateStickersOrder(entry.caption);
+                                    info.hasMediaSpoilers = entry.hasSpoiler;
+                                    info.stars = entry.starsAmount;
+                                    info.highQuality = entry.highQuality;
+                                    photos.add(info);
+                                    entry.reset();
+
+                                    SendMessagesHelper.prepareSendingMedia(AccountInstance.getInstance(currentAccount), photos, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, false, false, editingMessageObject, notify, scheduleDate, scheduleRepeatPeriod, 0, false, null, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, effectId, invertMedia, stars, getSendMonoForumPeerId(),  getSendMessageSuggestionParams());
+                                } else {
+                                    SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialog_id, entry != null ? entry.caption : null, videoEditedInfo, replyingMessageObject, getThreadMessage(), storyItem, replyingQuote, null, notify, scheduleDate, scheduleRepeatPeriod, false, parent, parentFragment != null ? parentFragment.quickReplyShortcut : null, parentFragment != null ? parentFragment.getQuickReplyId() : 0, stars, getSendMonoForumPeerId(), getSendMessageSuggestionParams(), invertMedia);
+                                    MediaDataController.getInstance(currentAccount).addRecentGif(document, (int) (System.currentTimeMillis() / 1000), true);
+                                    if (DialogObject.isEncryptedDialog(dialog_id)) {
+                                        accountInstance.getMessagesController().saveGif(parent, document);
+                                    }
                                 }
                             } else if (gif instanceof TLRPC.BotInlineResult) {
                                 TLRPC.BotInlineResult result = (TLRPC.BotInlineResult) gif;
@@ -13863,6 +14165,14 @@ public class ChatActivityEnterView extends FrameLayout implements
                 final float r = Math.min(w, h) / 2.0f;
                 AndroidUtilities.rectTmp.set(right - w, cy - h / 2.0f, right, cy + h / 2.0f);
                 path.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CW);
+
+                if (blurredBackgroundDrawable != null) {
+                    AndroidUtilities.rectTmp.round(AndroidUtilities.rectTmp2);
+                    AndroidUtilities.rectTmp2.inset(-dp(7), -dp(7));
+                    blurredBackgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
+                    blurredBackgroundDrawable.draw(canvas);
+                }
+
                 if (!isNewDesignSendButton) {
                     canvas.drawPath(path, backgroundPaint);
                 }
@@ -13956,6 +14266,14 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             canvas.restoreToCount(saved);
             super.onDraw(canvas);
+        }
+
+        private BlurredBackgroundDrawable blurredBackgroundDrawable;
+
+        public void setBlurredBackgroundDrawable(BlurredBackgroundDrawable blurredBackgroundDrawable) {
+            this.blurredBackgroundDrawable = blurredBackgroundDrawable;
+            this.blurredBackgroundDrawable.setRadius(dp(22));
+            this.blurredBackgroundDrawable.setPadding(dp(4));
         }
 
         public boolean newCounterPos;

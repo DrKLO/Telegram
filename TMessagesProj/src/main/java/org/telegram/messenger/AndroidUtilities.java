@@ -57,6 +57,7 @@ import android.os.Environment;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.provider.CalendarContract;
 import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -95,6 +96,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewPropertyAnimator;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -118,6 +120,7 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
@@ -780,7 +783,11 @@ public class AndroidUtilities {
         return replaceArrows(text, link, translateX, translateY, 1.0f);
     }
     public static CharSequence replaceArrows(CharSequence text, boolean link, float translateX, float translateY, float scale) {
-        ColoredImageSpan span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
+        return replaceArrows(text, link, translateX, translateY, scale, R.drawable.msg_mini_forumarrow);
+    }
+
+    public static CharSequence replaceArrows(CharSequence text, boolean link, float translateX, float translateY, float scale, @DrawableRes int icon) {
+        ColoredImageSpan span = new ColoredImageSpan(icon, DynamicDrawableSpan.ALIGN_BOTTOM);
         span.setScale(scale * .88f, scale * .88f);
         span.translate(-translateX, translateY);
         span.spaceScaleX = .8f;
@@ -796,7 +803,7 @@ public class AndroidUtilities {
         rightArrow.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         text = AndroidUtilities.replaceMultipleCharSequence(">", text, rightArrow);
 
-        span = new ColoredImageSpan(R.drawable.msg_mini_forumarrow, DynamicDrawableSpan.ALIGN_BOTTOM);
+        span = new ColoredImageSpan(icon, DynamicDrawableSpan.ALIGN_BOTTOM);
         span.setScale(scale * .88f, scale * .88f);
         span.translate(translateX, translateY);
         span.rotate(180f);
@@ -6695,10 +6702,44 @@ public class AndroidUtilities {
 
         final String t = "[" + tag + "]";
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        for (int a = 3, N = Math.min(elements.length, 8); a < N; a++) {
+        for (int a = 3, N = Math.min(elements.length, 14); a < N; a++) {
             FileLog.d(t + " " + elements[a]);
         }
         FileLog.d(t);
+    }
+
+    public static void printLayoutRequestedChain(View view) {
+        if (view == null) {
+            FileLog.d("LayoutCheck view == null");
+            return;
+        }
+
+        int level = 0;
+        View current = view;
+
+        while (current != null) {
+            ViewParent parent = current.getParent();
+
+            FileLog.d(
+                "LayoutCheck level=" + level +
+                ", view=" + current.getClass().getSimpleName() +
+                "@" + Integer.toHexString(System.identityHashCode(current)) +
+                ", isLayoutRequested=" + current.isLayoutRequested()
+            );
+            if (!(parent instanceof View)) {
+                if (parent != null) {
+                    FileLog.d(
+                        "LayoutCheck level=" + (level + 1) +
+                        ", parent=" + parent.getClass().getSimpleName() +
+                        " (not a View)"
+                    );
+                }
+                break;
+            }
+            current = (View) parent;
+            level++;
+        }
+        FileLog.d("LayoutCheck");
     }
 
     public static void logFlagSecure() {
@@ -6852,4 +6893,86 @@ public class AndroidUtilities {
     public static long pack(int a, int b) { return ((long) a << 32) | (b & 0xFFFFFFFFL); }
     public static int unpackA(long packed) { return (int) (packed >> 32); }
     public static int unpackB(long packed) { return (int) packed; }
+
+    public static boolean isContextSafe(Context context) {
+        if (context == null) return false;
+        if (context instanceof Activity) {
+            final Activity activity = (Activity) context;
+            if (activity.isFinishing()) return false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                if (activity.isDestroyed()) return false;
+            }
+            return true;
+        }
+        if (context instanceof ContextWrapper) {
+            final Context baseContext = ((ContextWrapper) context).getBaseContext();
+            return isContextSafe(baseContext);
+        }
+        return true;
+    }
+
+
+    public static int applyColorMatrix(int argb, ColorMatrix matrix) {
+        float[] m = matrix.getArray();
+
+        int A = Color.alpha(argb);
+        int R = Color.red(argb);
+        int G = Color.green(argb);
+        int B = Color.blue(argb);
+
+        float r = m[0]  * R + m[1]  * G + m[2]  * B + m[3]  * A + m[4];
+        float g = m[5]  * R + m[6]  * G + m[7]  * B + m[8]  * A + m[9];
+        float b = m[10] * R + m[11] * G + m[12] * B + m[13] * A + m[14];
+        float a = m[15] * R + m[16] * G + m[17] * B + m[18] * A + m[19];
+
+        int R2 = MathUtils.clamp(Math.round(r), 0, 255);
+        int G2 = MathUtils.clamp(Math.round(g), 0, 255);
+        int B2 = MathUtils.clamp(Math.round(b), 0, 255);
+        int A2 = MathUtils.clamp(Math.round(a), 0, 255);
+
+        return Color.argb(A2, R2, G2, B2);
+    }
+
+    public static void createCalendarEvent(Activity activity, long timestampMillis,
+                                           String title, String description, boolean allDay) {
+        final long beginMillis, endMillis;
+        if (allDay) {
+            // normalize timestamp and set 1 day duration
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(timestampMillis);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+
+            beginMillis = calendar.getTimeInMillis();
+            endMillis = beginMillis + TimeUnit.DAYS.toMillis(1);
+        } else {
+            // set 10 minutes duration by default
+
+            beginMillis = timestampMillis;
+            endMillis = beginMillis + TimeUnit.MINUTES.toMillis(10);
+        }
+
+        final Intent intent = new Intent(Intent.ACTION_INSERT)
+            .setData(CalendarContract.Events.CONTENT_URI)
+            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginMillis)
+            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endMillis)
+            .putExtra(CalendarContract.Events.ALL_DAY, allDay);
+
+        if (!TextUtils.isEmpty(title)) {
+            intent.putExtra(CalendarContract.Events.TITLE, title);
+        }
+
+        if (!TextUtils.isEmpty(description)) {
+            intent.putExtra(CalendarContract.Events.DESCRIPTION, description);
+        }
+
+        try {
+            activity.startActivity(intent);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
 }

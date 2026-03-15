@@ -133,6 +133,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private native void stopRecord();
 
+    public int startOpusEncode(String path, int sampleRate) {
+        return startRecord(path, sampleRate);
+    }
+
+    public int writeOpusFrame(ByteBuffer frame, int len) {
+        return writeFrame(frame, len);
+    }
+
+    public void stopOpusEncode() {
+        stopRecord();
+    }
+
     public static native boolean cropOpusFile(String source, String destination, long startMs, long endMs);
 
     public static native boolean joinOpusFiles(String file1, String file2, String dest);

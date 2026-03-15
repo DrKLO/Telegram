@@ -59,9 +59,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.FilterCreateActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.Stories.bots.BotPreviewsEditContainer;
 import org.telegram.ui.Stories.recorder.DraftsController;
@@ -4463,6 +4466,12 @@ public class StoriesController {
                             .setMessage(getString(R.string.LiveStoryAlreadyStreaming))
                             .setPositiveButton(getString(R.string.OK), null)
                             .show();
+                    }
+                    consumer.accept(false);
+                } else if (err.text.equalsIgnoreCase("PREMIUM_ACCOUNT_REQUIRED")) {
+                    BaseFragment lastFragment = LaunchActivity.getLastFragment();
+                    if (showLimitsBottomSheet && lastFragment != null) {
+                        lastFragment.showDialog(new PremiumFeatureBottomSheet(lastFragment, PremiumPreviewFragment.PREMIUM_FEATURE_STORIES, true));
                     }
                     consumer.accept(false);
                 } else {

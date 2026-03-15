@@ -61,12 +61,17 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.ContactsActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.SettingsActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.recorder.HintView2;
 
@@ -99,6 +104,9 @@ public class ItemOptions {
     }
     public static ItemOptions makeOptions(@NonNull ViewGroup container, @Nullable Theme.ResourcesProvider resourcesProvider, @NonNull View scrimView, boolean swipeback, boolean shownFromBottom) {
         return new ItemOptions(container, resourcesProvider, scrimView, swipeback, shownFromBottom);
+    }
+    public static ItemOptions makeOptions(@NonNull ViewGroup container, @Nullable Theme.ResourcesProvider resourcesProvider, @NonNull View scrimView, boolean swipeback, boolean shownFromBottom, boolean useScrollView) {
+        return new ItemOptions(container, resourcesProvider, scrimView, swipeback, shownFromBottom, useScrollView);
     }
 
     private ViewGroup container;
@@ -157,10 +165,29 @@ public class ItemOptions {
 
     public boolean swipeback, shownFromBottom, useScrollView;
 
+    private static BaseFragment downFragment(BaseFragment fragment) {
+        if (
+            fragment instanceof ProfileActivity && ((ProfileActivity) fragment).hasMainTabs ||
+            fragment instanceof DialogsActivity && ((DialogsActivity) fragment).hasMainTabs ||
+            fragment instanceof ContactsActivity && ((ContactsActivity) fragment).hasMainTabs ||
+            fragment instanceof SettingsActivity && ((SettingsActivity) fragment).hasMainTabs
+        ) {
+            final INavigationLayout layout = fragment.getParentLayout();
+            if (layout != null) {
+                final BaseFragment lastFragment = layout.getSafeLastFragment();
+                if (lastFragment instanceof MainTabsActivity) {
+                    return lastFragment;
+                }
+            }
+        }
+        return fragment;
+    }
+
     private ItemOptions(BaseFragment fragment, View scrimView, boolean swipeback, boolean useScrollView, boolean shownFromBottom) {
         if (fragment.getContext() == null) {
             return;
         }
+        fragment = downFragment(fragment);
 
         this.fragment = fragment;
         this.resourcesProvider = fragment.getResourceProvider();
@@ -175,6 +202,10 @@ public class ItemOptions {
     }
 
     private ItemOptions(ViewGroup container, Theme.ResourcesProvider resourcesProvider, View scrimView, boolean swipeback, boolean shownFromBottom) {
+        this(container, resourcesProvider, scrimView, swipeback, shownFromBottom, false);
+    }
+
+    private ItemOptions(ViewGroup container, Theme.ResourcesProvider resourcesProvider, View scrimView, boolean swipeback, boolean shownFromBottom, boolean useScrollView) {
         if (container == null || container.getContext() == null) {
             return;
         }
@@ -186,6 +217,7 @@ public class ItemOptions {
         this.dimAlpha = AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)) > .705 ? 0x66 : 0x33;
         this.swipeback = swipeback;
         this.shownFromBottom = shownFromBottom;
+        this.useScrollView = useScrollView;
 
         init();
     }
@@ -1721,6 +1753,7 @@ public class ItemOptions {
                     if (scrimView instanceof ScrimView) {
                         ((ScrimView) scrimView).drawScrim(canvas, dimProgress);
                     } else {
+                        canvas.translate(-scrimView.getScrollX(), -scrimView.getScrollY());
                         scrimView.draw(canvas);
                     }
                     canvas.restore();

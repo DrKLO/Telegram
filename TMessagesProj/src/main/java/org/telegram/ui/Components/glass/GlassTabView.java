@@ -382,22 +382,6 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
     }
 
-    public static GlassTabView createGiftTab(Context context, Theme.ResourcesProvider resourcesProvider, TabAnimation tabAnimation, @StringRes int stringRes, Runnable onClick) {
-        GlassTabView tab = new GlassTabView(context);
-        tab.resourcesProvider = resourcesProvider;
-        tab.tabAnimation = tabAnimation;
-        tab.textView.setText(LocaleController.getString(stringRes));
-        tab.checkPlayAnimation(false);
-        tab.imageView.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 6, 0, 0));
-        tab.colorDefault = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 153);
-        tab.colorSelected = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 255);
-        tab.colorSelectedText = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 255);
-        tab.setOnClickListener(v -> onClick.run());
-        tab.updateColors();
-        ScaleStateListAnimator.apply(tab);
-        return tab;
-    }
-
     public static GlassTabView createMainTab(Context context, Theme.ResourcesProvider resourcesProvider, TabAnimation tabAnimation, @StringRes int stringRes) {
         GlassTabView tab = new GlassTabView(context);
         tab.resourcesProvider = resourcesProvider;

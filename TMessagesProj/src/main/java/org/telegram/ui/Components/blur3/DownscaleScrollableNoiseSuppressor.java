@@ -26,19 +26,20 @@ import java.util.List;
 @RequiresApi(api = Build.VERSION_CODES.S)
 public class DownscaleScrollableNoiseSuppressor {
     public final boolean isLiquidGlassEnabled;
-    public final boolean allowNoiseSuppress = false;
+    public final boolean allowNoiseSuppress;
     private final boolean simpleMode;
     private final int k;
 
     public DownscaleScrollableNoiseSuppressor() {
-        this(true);
+        this(true, false);
     }
 
-    public DownscaleScrollableNoiseSuppressor(boolean simple) {
+    public DownscaleScrollableNoiseSuppressor(boolean simple, boolean allowNoiseSuppress) {
         isLiquidGlassEnabled = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS);
         simpleMode = simple;
-        k = isLiquidGlassEnabled ? 1 : 8; // 1
+        k = isLiquidGlassEnabled || allowNoiseSuppress ? 1 : 8; // 1
 
+        this.allowNoiseSuppress = allowNoiseSuppress;
         resultRenderNodes = new RenderNode[isLiquidGlassEnabled || !simpleMode ? 2 : 1];
         for (int a = 0; a < resultRenderNodes.length; a++) {
             resultRenderNodes[a] = new RenderNode(null);
@@ -415,7 +416,7 @@ public class DownscaleScrollableNoiseSuppressor {
                 renderNodesForBlur.setPrimaryEffectBlur(dpf2(40 - 1.66f));
             } else if (simpleMode) {
                 renderNodesForBlur = new DownscaledRenderNode("blur", 0);
-                renderNodesForBlur.setScale(8, 8);
+                renderNodesForBlur.setScale(allowNoiseSuppress ? 16 : 8, allowNoiseSuppress ? 16 : 8);
                 renderNodesForBlur.setPrimaryEffectBlur(dpf2(40), RenderNodeEffects.getSaturationX2RenderEffect());
                 renderNodesForGlass = null;
             } else {

@@ -326,6 +326,7 @@
     <string name="Strike">Strikethrough</string>
     <string name="Underline">Underline</string>
     <string name="Regular">Regular</string>
+    <string name="FormattedDate">Date</string>
     <string name="ContactsPermissionAlert">**Telegram** needs access to your contacts so that you can connect with your friends across all your devices. Your contacts will be continuously synced with Telegram\'s heavily encrypted cloud servers.</string>
     <string name="ContactsPermissionAlertNotNow">Not now</string>
     <string name="ContactsPermissionAlertContinue">Continue</string>
@@ -636,6 +637,8 @@
     <string name="ChannelAntiSpamInfo2">You can manage anti-spam settings in %s</string>
     <string name="ChannelHideMembers">Hide Members</string>
     <string name="ChannelHideMembersInfo">Switch on to hide the list of members in this group. Admins will remain visible.</string>
+    <string name="ChannelMemberTags">Allow Member Tags</string>
+    <string name="ChannelMemberTagsInfo">Turn this on to let members of the group to add short tags next to their names.</string>
     <string name="ChannelAntiSpamFalsePositiveReported">Telegram moderators will review your report. Thank you!</string>
     <string name="ChannelMembersInfo">Only channel administrators can see this list.</string>
     <string name="ChannelLinkInfo">Anyone on Telegram will be able to join your channel by following this link.</string>
@@ -692,6 +695,7 @@
     <string name="EditAdmin">Admin Rights</string>
     <string name="EditAdminRank">Custom title</string>
     <string name="EditAdminRankInfo">A custom title that will be shown to all members instead of \'%1$s\'.</string>
+    <string name="EditMemberRankInfo">Add short tag next to %1$s’s name.</string>
     <string name="EditAdminWhatCanDo">What can this admin do?</string>
     <string name="EditAdminChangeChannelInfo">Change Channel Info</string>
     <string name="EditAdminChangeGroupInfo">Change Group Info</string>
@@ -731,6 +735,7 @@
     <string name="EditAdminAddUsers">Add Users</string>
     <string name="EditAdminAddUsersViaLink">Invite Users via Link</string>
     <string name="EditAdminPinMessages">Pin Messages</string>
+    <string name="EditAdminEditTags">Edit Member Tags</string>
     <string name="EditAdminPromotedBy">Promoted by %1$s</string>
     <string name="EditAdminCantEdit">You cannot edit the rights of this admin.</string>
     <string name="EditCantEditPermissions">You cannot edit this permission.</string>
@@ -750,6 +755,7 @@
     <string name="UserRestrictionsEmbedLinks">Embed Links</string>
     <string name="UserRestrictionsChangeInfo">Change Chat Info</string>
     <string name="UserRestrictionsPinMessages">Pin Messages</string>
+    <string name="UserRestrictionsEditTags">Edit Own Tags</string>
     <string name="UserRestrictionsInviteUsers">Add Users</string>
     <string name="UserRestrictionsNoRead">can\'t read</string>
     <string name="UserRestrictionsNoSend">can\'t send messages</string>
@@ -766,6 +772,7 @@
     <string name="UserRestrictionsNoEmbedLinks">no embed links</string>
     <string name="UserRestrictionsNoChangeInfo">can\'t change Info</string>
     <string name="UserRestrictionsNoPinMessages">no pins</string>
+    <string name="UserRestrictionsNoEditTags">no tags</string>
     <string name="UserRestrictionsNoInviteUsers">can\'t add users</string>
     <string name="UserRestrictionsDuration">Duration</string>
     <string name="UserRestrictionsUntilForever">Forever</string>
@@ -999,6 +1006,7 @@
     <string name="EventLogRestrictedChangeInfo">Change info</string>
     <string name="EventLogRestrictedInviteUsers">Add users</string>
     <string name="EventLogRestrictedPinMessages">Pin messages</string>
+    <string name="EventLogRestrictedEditRank">Edit Tags</string>
     <string name="EventLogRestrictedSendPolls">Send polls</string>
     <string name="EventLogRestrictedSendMessages">Send messages</string>
     <string name="EventLogRestrictedSendEmbed">Embed links</string>
@@ -1021,6 +1029,8 @@
     <string name="EventLogPromotedTitle">Title: %1$s</string>
     <string name="EventLogPromotedRemovedTitle">Title</string>
     <string name="EventLogPromotedPinMessages">Pin messages</string>
+    <string name="EventLogPromotedEditRanks">Edit tags</string>
+    <string name="EventLogPromotedManageTopics">Manage topics</string>
     <string name="EventLogPromotedManageDirect">Manage direct</string>
     <string name="EventLogFilterAll">All actions</string>
     <string name="EventLogFilterNewRestrictions">New exceptions</string>
@@ -1034,6 +1044,7 @@
     <string name="EventLogFilterPinnedMessages">Pinned messages</string>
     <string name="EventLogFilterLeavingMembers">Leaving members</string>
     <string name="EventLogFilterLeavingMembers2">Members left the Group</string>
+    <string name="EventLogFilterMembersRank">Members Tag Updates</string>
     <string name="EventLogFilterLeavingSubscribers2">Members left the Channel</string>
     <string name="EventLogFilterSectionMembers">Members And Admins</string>
     <string name="EventLogFilterSectionSubscribers">Subscribers And Admins</string>
@@ -1094,6 +1105,12 @@
     <string name="EventLogChangedWallpaperGroup">un1 changed group wallpaper</string>
     <string name="EventLogRemovedWallpaperGroup">un1 removed group wallpaper</string>
     <string name="EventLogEmojiNone">none</string>
+    <string name="EventLogRankSelfAdd">un1 set their tag to «%1$s»</string>
+    <string name="EventLogRankSelfEdit">un1 changed their tag from «%1$s» to «%2$s»</string>
+    <string name="EventLogRankSelfRemove">un1 removed their «%1$s» tag</string>
+    <string name="EventLogRankAdd">un1 set un2’s tag to «%1$s»</string>
+    <string name="EventLogRankEdit">un1 changed un2’s tag from «%1$s» to «%2$s»</string>
+    <string name="EventLogRankRemove">un1 removed un2’s «%1$s» tag</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -1306,6 +1323,7 @@
     <string name="NobodyLikesSpam3">Sorry, you are currently restricted from posting to public groups.</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
+    <string name="ShareSendToNewTopic">Send to new topic</string>
     <string name="ShareComment">Write a comment...</string>
     <string name="TapHereGifs">Tap here to access saved GIFs</string>
     <string name="TapHereEmoji">Tap %1$s to access more emoji.</string>
@@ -1481,6 +1499,8 @@
     <string name="AttachMediaVideoDeselected">Video deselected.</string>
     <string name="AttachMediaDragHint">Drag media to reorder</string>
     <string name="ChatAdmin">admin</string>
+    <string name="ChatTagAdmin">Admin</string>
+    <string name="ChatTagOwner">Owner</string>
     <string name="ApkRestricted">APK installation is restricted for this app. You can enable this in system settings.</string>
     <string name="UnreadMessages">Unread Messages</string>
     <string name="SearchStickersHint">Search sticker sets</string>
@@ -1899,7 +1919,7 @@
     <string name="SETTINGS">Settings</string>
     <string name="AddSubscriber">Add subscriber</string>
     <string name="AddMember">Add Member</string>
-    <string name="BanFromTheGroup">BAN FROM THE GROUP</string>
+    <string name="BanFromTheGroupNoCaps">Ban from the group</string>
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="DeleteAndExitButton">Delete and Leave Group</string>
     <string name="Notifications">Notifications</string>
@@ -2387,6 +2407,7 @@
     <string name="TelegramFeatures">Telegram Features</string>
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>
     <string name="AddAccount">Add Account</string>
+    <string name="SwitchAccountHint">"Long tap to switch accounts"</string>
     <string name="SelectAccount">Select Account</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="PrivacyPolicy">Privacy Policy</string>
@@ -3206,6 +3227,7 @@
     <string name="TapToDownload">Tap to download</string>
     <string name="OpenFile">OPEN FILE</string>
     <string name="ShowInChat">Show in chat</string>
+    <string name="CreateSticker">Create Sticker</string>
     <string name="StopDownload">Stop downloading</string>
     <string name="SaveToGallery">Save to gallery</string>
     <string name="Of">%1$d of %2$d</string>
@@ -3672,6 +3694,7 @@
     <string name="Ban">Ban</string>
     <string name="Rename">Rename</string>
     <string name="Delete">Delete</string>
+    <string name="AddACaption">Add Caption</string>
     <string name="Start">Start</string>
     <string name="Forward">Forward</string>
     <string name="Retry">Retry</string>
@@ -4992,6 +5015,7 @@
     <string name="formatterGiveawayMonthDay">MMMM dd</string>
     <string name="formatterGiveawayMonthDayYear">MMMM dd, yyyy</string>
     <string name="formatterMonthYear">MMM yyyy</string>
+    <string name="formatterMonthOnly">MMMM</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterBannedUntil12H">MMM dd yyyy, h:mm a</string>
@@ -5008,6 +5032,8 @@
     <string name="formatterWeekLong">EEEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
+    <string name="formatterDayWithSeconds24H">HH:mm:ss</string>
+    <string name="formatterDayWithSeconds12H">h:mm:ss a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <string name="formatDateSchedule">MMM d</string>
     <string name="formatDateScheduleYear">MMM d yyyy</string>
@@ -5160,6 +5186,9 @@
     <string name="UserAcceptedToGroupPushWithGroup">%2$s|%1$s was accepted into the group</string>
     <string name="ForwardsRestrictedInfoChannel">Сopying and forwarding is not allowed in this channel.</string>
     <string name="ForwardsRestrictedInfoGroup">Сopying and forwarding is not allowed in this group.</string>
+    <string name="ForwardsRestrictedInfoUser">Сopying and forwarding is not allowed for this user.</string>
+    <string name="ForwardsRestrictedInfoUserBecauseYou">You disabled copying and forwarding in this chat.</string>
+    <string name="ForwardsRestrictedInfoUserBecauseUser">**%s** disabled copying and forwarding in this chat.</string>
     <string name="ForwardsRestrictedInfoBot">Copying and forwarding is not allowed from this bot.</string>
     <string name="TopicContainsEmojiPackSingle">This topic contains **%s**</string>
     <string name="MessageContainsEmojiPackSingle">This message contains **%s**</string>
@@ -5670,6 +5699,8 @@
     <string name="PremiumPreviewFolderTagsDescription">Display folder names for each chat in the chat list.</string>
     <string name="PremiumPreviewBusinessEmojiStatus">Set Emoji Status</string>
     <string name="PremiumPreviewBusinessEmojiStatusDescription">Display the current status of your business next to your name.</string>
+    <string name="PremiumPreviewSharingDisable">Disable Sharing</string>
+    <string name="PremiumPreviewSharingDisableDescription">Disable screenshots, saving and forwarding messages in private chats.</string>
     <string name="MicrophoneForVoiceMessages">Microphone for voice messages</string>
     <string name="MicrophoneForVoiceMessagesBuiltIn">Built-In</string>
     <string name="MicrophoneForVoiceMessagesSco">Headset</string>
@@ -9985,6 +10016,7 @@
     <string name="BotForumContinueChat">Continue last thread</string>
     <string name="BotForumAskForStartNewChatTitle">New Thread</string>
     <string name="BotForumAskForStartNewChat">Type any message to create a new thread.</string>
+    <string name="BotForumAskForStartNewChatForward">Forward here to create a new thread.</string>
     <string name="TypeMessageAskBot">Ask %1$s</string>
     <string name="AddNotes">Add Notes...</string>
     <string name="AddNotesInfo">Notes are only visible to you.</string>
@@ -10088,6 +10120,8 @@
     <string name="LiveStoryMessageEditStars">Edit Stars</string>
     <string name="LiveStoryMessageRemoveStars">Remove Stars</string>
     <string name="LiveStoryCommentsDisabled">Comments Disabled</string>
+    <string name="AddContactSync">Sync Contact to Phone</string>
+    <string name="AddContactQr">Add via QR Code</string>
 
     <string name="Gift2ActiveAuctionsActiveAuctionTitle">Active Auction</string>
     <string name="Gift2ActiveAuctionsActiveAuctionsTitle">%d Active Auctions</string>
@@ -10204,8 +10238,8 @@
     <string name="GiftOfferTransferInfoTextSellTON">Do you want to sell **%3$s** to **%2$s** for **%1$s TON**?\n\nYou will receive **%4$s TON** after fees.</string>
     <string name="GiftOfferOfferedTextStarsOut">You offered **%1$s** **%2$s Stars** for **%3$s**.</string>
     <string name="GiftOfferOfferedTextTONOut">You offered **%1$s** **%2$s TON** for **%3$s**.</string>
-    <string name="GiftOfferOfferedTextStars">**%1$s** offered you **%2$s Stars** for **%3$s**.</string>
-    <string name="GiftOfferOfferedTextTON">**%1$s** offered you **%2$s TON** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextStars2">This user offered you **%2$s Stars** for **%3$s**.</string>
+    <string name="GiftOfferOfferedTextTON2">This user offered you **%2$s TON** for **%3$s**.</string>
     <string name="GiftOfferSentTitle">Gift offer sent</string>
     <string name="GiftOfferSentText">You have successfully sent offer **%1$s** for **%2$s**.</string>
     <string name="GiftOfferOfferedTextStarsRejectedOut">You rejected **%1$s\'s** offer to buy your **%3$s** for **%2$s Stars**.</string>
@@ -10330,6 +10364,14 @@
     <string name="BotAuthLoggedInSuccessTitle">Login successful</string>
     <string name="BotAuthLoggedInSuccess">You\'re now logged in to **%s**.</string>
     <string name="BotAuthLoggedInSuccessWithoutPhoneNumber">You\'re now logged in to **%s**, but you didn\'t grant access to your phone number.</string>
+    <string name="BotAuthNotificationTitle">Login Request</string>
+    <string name="BotAuthNotification">Login request for %1$s from %2$s</string>
+    <string name="BotAuthSelectEmoji">Tap the emoji shown\non your login screen</string>
+    <string name="BotAuthSelectCode">Tap the code shown\non your login screen</string>
+    <string name="BotAuthLoginRequestFrom">Login request from **%s**</string>
+    <string name="BotAuthLoggedInFailTitle">Login Failed</string>
+    <string name="BotAuthLoggedInFail">Please try logging in to **%s** again.</string>
+    <string name="BotAuthLoggedInFailNoDomain">Link has expired.</string>
 
     <string name="GalleryAccessAllowAccess">Allow Access to Photos</string>
     <string name="GalleryAccessAllowAccessTextNonPremium">Share an unlimited number of photos\nand videos of up to 2 GB each.</string>
@@ -10386,6 +10428,8 @@
     <string name="GiftCraftBackdropChance_one">**%1$d%%** chance the crafted gift will have **%2$s** background.</string>
     <string name="GiftCraftBackdropChance_other">**%1$d%%** chance the crafted gift will have **%2$s** background.</string>
     <string name="GiftOnSale">On sale for %s</string>
+    <string name="GiftCraftCantChooseFirstTitle">Can’t Choose First</string>
+    <string name="GiftCraftCantChooseFirst">This gift can’t be used as the first one in crafting, because it has been recorded on the blockchain.</string>
 
     <string name="LeaveGroupTitle">Leave Group?</string>
     <string name="LeaveChannelTitle">Leave Channel?</string>
@@ -10399,4 +10443,90 @@
     <string name="ChannelAdmins">Channel admins</string>
     <string name="ChannelSubscribers2">Channel subscribers</string>
     <string name="MembersSearch">Search people</string>
+
+    <string name="MemberTagTitle">Member Tag</string>
+    <string name="MemberTagSelfInfo">Share your role, title or how you’re known in this group. Your tag is visible to all members.</string>
+    <string name="MemberTagTheirInfo">Add a short tag next to %s’s name.</string>
+    <string name="MemberTagHintAdd">Add Member Tag</string>
+    <string name="MemberTagHintEdit">Edit Member Tag</string>
+    <string name="MemberTagButtonAdd">Add Tag</string>
+    <string name="MemberTagButtonEdit">Edit Tag</string>
+    <string name="MemberTagButtonRemove">Remove Tag</string>
+    <string name="AddMemberTag">Add Member Tag</string>
+    <string name="EditMemberTag">Edit Member Tag</string>
+    <string name="EditAdminTag">Edit Admin Tag</string>
+    <string name="TagInfoMemberTitle">Member Tag</string>
+    <string name="TagInfoAdminTitle">Admin Tag</string>
+    <string name="TagInfoOwnerTitle">Owner Tag</string>
+    <string name="TagInfoMemberText">This grey tag un1 is **%1$s’s** member tag.\n**%1$s** is a member of **%2$s**.</string>
+    <string name="TagInfoAdminText">This green tag un1 is **%1$s’s** admin tag.\n**%1$s** is an administrator of **%2$s**.</string>
+    <string name="TagInfoOwnerText">This purple tag un1 is **%1$s’s** owner tag.\n**%1$s** is the owner of **%2$s**.</string>
+    <string name="AddTag">Add Tag</string>
+    <string name="CantEditTagAdmins">Only admins can set member tags in this group.</string>
+    <string name="TagInfoButtonAddMyTag">Add My Tag</string>
+    <string name="TagInfoButtonEditMyTag">Edit My Tag</string>
+    <string name="TagInfoButtonAddTag">Add Tag</string>
+    <string name="TagInfoButtonEditTag">Edit Tag</string>
+    <string name="JoinedGroup">You joined the group.</string>
+    <string name="JoinedGroupAddTag">Add Tag</string>
+    <string name="TagAdded">Tag Added</string>
+    <string name="TagEdited">Tag Edited</string>
+
+    <string name="DisableSharingInfoHeader">Disable Sharing</string>
+    <string name="DisableSharingInfoButton">Disable Sharing</string>
+    <string name="DisableSharingInfoHeader1">No Screenshots</string>
+    <string name="DisableSharingInfoText1">Disable screenshots and screen\nrecordings in this chat.</string>
+    <string name="DisableSharingInfoHeader2">No Forwarding</string>
+    <string name="DisableSharingInfoText2">Disable message forwarding to other\nchats.</string>
+    <string name="DisableSharingInfoHeader3">No Saving</string>
+    <string name="DisableSharingInfoText3">Disable copying texts and saving photos\nand videos to gallery.</string>
+    <string name="DisableSharingToastDisabled">Sharing disabled for this chat</string>
+    <string name="DisableSharingToastEnabled">Sharing enabled for this chat</string>
+    <string name="DisableSharingToastDisabledPending">Sharing will disabled if **%s** approves it</string>
+    <string name="DisableSharingToastEnabledPending">Sharing will enabled if **%s** approves it</string>
+    <string name="DisableSharing">Disable Sharing</string>
+    <string name="EnableSharing">Enable Sharing</string>
+    <string name="DisableSharingActionYou">You disabled sharing in this chat</string>
+    <string name="EnableSharingActionYou">You enabled sharing in this chat</string>
+    <string name="DisableSharingActionOther">%s disabled sharing in this chat</string>
+    <string name="EnableSharingActionOther">%s enabled sharing in this chat</string>
+    <string name="DisableSharingActionStillDisabled">Sharing in this chat is still disabled</string>
+    <string name="DisableSharingActionStillEnabled">Sharing in this chat is still enabled</string>
+    <string name="DisableSharingOfferAccept">Accept</string>
+    <string name="DisableSharingOfferDecline">Reject</string>
+
+    <string name="SharingOfferEnableHeaderOther">**%s** would like to enable sharing in this chat, which includes:</string>
+    <string name="SharingOfferEnableHeaderYou">You suggest to enable sharing in this chat, which includes:</string>
+    <string name="SharingOfferEnable1">\> forwarding messages</string>
+    <string name="SharingOfferEnable2">\> saving photos and videos</string>
+    <string name="SharingOfferEnable3">\> copying messages</string>
+    <string name="SharingOfferEnable4">\> taking screenshots</string>
+
+    <string name="SharingOfferDisableHeaderShortOther">**%s** would like to disable sharing in this chat</string>
+    <string name="SharingOfferDisableHeaderShortYou">You suggest to disable sharing in this chat</string>
+    <string name="SharingOfferEnableHeaderShortOther">**%s** would like to enable sharing in this chat</string>
+    <string name="SharingOfferEnableHeaderShortYou">You suggest to enable sharing in this chat</string>
+
+    <string name="SharingOfferDisableHeaderOther">**%s** would like to disable sharing in this chat, which includes:</string>
+    <string name="SharingOfferDisableHeaderYou">You suggest to disable sharing in this chat, which includes:</string>
+    <string name="SharingOfferDisable1">\> no forwarding messages</string>
+    <string name="SharingOfferDisable2">\> no saving photos and videos</string>
+    <string name="SharingOfferDisable3">\> no copying messages</string>
+    <string name="SharingOfferDisable4">\> no screenshots</string>
+
+    <string name="SharingOfferDisableCancelTitle">Disable Sharing</string>
+    <string name="SharingOfferDisableCancelText">Are you sure you want to keep sharing disabled?</string>
+    <string name="SharingOfferDisableConfirmText">Are you sure you want to disable sharing?</string>
+    <string name="SharingOfferEnableCancelTitle">Enable Sharing</string>
+    <string name="SharingOfferEnableCancelText">Are you sure you want to keep sharing enabled?</string>
+    <string name="SharingOfferEnableConfirmText">Are you sure you want to enable sharing?</string>
+    <string name="SharingOfferCancelYes">Yes</string>
+
+    <string name="RelativeDateFormatterWeek2">%1$s, %2$s</string>
+    <string name="RelativeDateAddDate">Add Date</string>
+    <string name="RelativeDateMenuCopy">Copy Date</string>
+    <string name="RelativeDateMenuAddToACalendar">Add to Calendar</string>
+    <string name="RelativeDateMenuSetAReminder">Set a Reminder</string>
+    <string name="RelativeDateCopied">Date copied to clipboard</string>
+
 </resources>

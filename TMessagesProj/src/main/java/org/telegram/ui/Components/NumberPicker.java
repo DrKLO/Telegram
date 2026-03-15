@@ -223,9 +223,18 @@ public class NumberPicker extends LinearLayout {
 
             @Override
             public CharSequence getContentDescription(View host) {
+                if (contentDescriptionCallback != null) {
+                    return contentDescriptionCallback.run(mValue);
+                }
                 return NumberPicker.this.getContentDescription(mValue);
             }
         });
+    }
+
+    private Utilities.CallbackReturn<Integer, CharSequence> contentDescriptionCallback;
+
+    public void setContentDescriptionCallback(Utilities.CallbackReturn<Integer, CharSequence> contentDescriptionCallback) {
+        this.contentDescriptionCallback = contentDescriptionCallback;
     }
 
     protected CharSequence getContentDescription(int value) {
