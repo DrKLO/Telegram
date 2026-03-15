@@ -73,6 +73,14 @@ public class ApplicationLoader extends Application {
     public static boolean canDrawOverlays;
     public static volatile long mainInterfacePausedStageQueueTime;
 
+    public static boolean isAnyInteractiveInterfaceActive() {
+        return !mainInterfacePaused || !externalInterfacePaused;
+    }
+
+    public static boolean isUiCompletelyPaused() {
+        return mainInterfacePaused && externalInterfacePaused;
+    }
+
     private static PushListenerController.IPushListenerServiceProvider pushProvider;
     private static IMapsProvider mapsProvider;
     private static ILocationServiceProvider locationServiceProvider;

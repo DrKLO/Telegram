@@ -56,6 +56,9 @@ dependencies {
     implementation "androidx.credentials:credentials:1.6.0-alpha04"
     implementation "androidx.credentials:credentials-play-services-auth:1.6.0-alpha04"
 
+    implementation 'androidx.car.app:app:1.7.0'
+    implementation 'androidx.car.app:app-projected:1.7.0'
+
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
     constraints {
@@ -247,3 +250,57 @@ task checkVisibility {
 }
 
 preBuild.dependsOn checkVisibility
+
+// --- Generate BuildVars.java from template ---
+task generateBuildVars {
+    def templateFile = file("src/main/java/org/telegram/messenger/BuildVars.java.template")
+    def outputFile = file("src/main/java/org/telegram/messenger/BuildVars.java")
+
+    inputs.file templateFile
+    outputs.file outputFile
+
+    doLast {
+        if (!templateFile.exists()) {
+            throw new GradleException("BuildVars.java.template not found at ${templateFile.absolutePath}")
+        }
+
+        // Read from local.properties, then env vars, then dummy defaults
+        def propsFile = rootProject.file('local.properties')
+        def props = new Properties()
+        if (propsFile.exists()) {
+            props.load(new FileInputStream(propsFile))
+        }
+
+        def resolve = { String propName, String envName, String fallback ->
+            def val = props.getProperty(propName)
+            if (val != null && !val.isEmpty()) return val
+            val = System.getenv(envName)
+            if (val != null && !val.isEmpty()) return val
+            return fallback
+        }
+
+        def appId = resolve('telegram.app_id', 'TELEGRAM_APP_ID', '0')
+        def appHash = resolve('telegram.app_hash', 'TELEGRAM_APP_HASH', 'dummy_hash')
+        def safetynetKey = resolve('telegram.safetynet_key', 'TELEGRAM_SAFETYNET_KEY', '')
+        def playstoreUrl = resolve('telegram.playstore_url', 'TELEGRAM_PLAYSTORE_URL',
+                'https://play.google.com/store/apps/details?id=com.rbnkv.foldogram')
+        def huaweiStoreUrl = resolve('telegram.huawei_store_url', 'TELEGRAM_HUAWEI_STORE_URL',
+                'https://appgallery.huawei.com/app/C101184875')
+        def googleAuthClientId = resolve('telegram.google_auth_client_id', 'TELEGRAM_GOOGLE_AUTH_CLIENT_ID', '')
+        def huaweiAppId = resolve('telegram.huawei_app_id', 'TELEGRAM_HUAWEI_APP_ID', '101184875')
+
+        def content = templateFile.text
+        content = content.replace('%%APP_ID%%', appId)
+        content = content.replace('%%APP_HASH%%', appHash)
+        content = content.replace('%%SAFETYNET_KEY%%', safetynetKey)
+        content = content.replace('%%PLAYSTORE_APP_URL%%', playstoreUrl)
+        content = content.replace('%%HUAWEI_STORE_URL%%', huaweiStoreUrl)
+        content = content.replace('%%GOOGLE_AUTH_CLIENT_ID%%', googleAuthClientId)
+        content = content.replace('%%HUAWEI_APP_ID%%', huaweiAppId)
+
+        outputFile.text = content
+        logger.lifecycle("Generated BuildVars.java (APP_ID=${appId})")
+    }
+}
+
+preBuild.dependsOn generateBuildVars

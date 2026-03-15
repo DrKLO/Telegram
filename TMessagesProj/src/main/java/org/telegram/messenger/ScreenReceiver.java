@@ -22,13 +22,17 @@ public class ScreenReceiver extends BroadcastReceiver {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("screen off");
             }
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(true, true);
+            if (ApplicationLoader.isUiCompletelyPaused()) {
+                ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(true, true);
+            }
             ApplicationLoader.isScreenOn = false;
         } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("screen on");
             }
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(false, true);
+            if (ApplicationLoader.isAnyInteractiveInterfaceActive()) {
+                ConnectionsManager.getInstance(UserConfig.selectedAccount).setAppPaused(false, true);
+            }
             ApplicationLoader.isScreenOn = true;
         }
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.screenStateChanged);

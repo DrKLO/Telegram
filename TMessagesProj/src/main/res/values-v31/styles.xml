@@ -56,7 +56,7 @@
         <item name="android:calendarViewStyle">@style/Theme.TMessages.CalendarView</item>
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
 
@@ -82,7 +82,7 @@
         <item name="android:calendarViewStyle">@style/Theme.TMessages.CalendarView</item>
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
 

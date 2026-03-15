@@ -20803,7 +20803,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void sortDialogs(LongSparseArray<TLRPC.Chat> chatsDict) {
-        if (chatsDict == null && ApplicationLoader.mainInterfacePaused) {
+        if (chatsDict == null && ApplicationLoader.mainInterfacePaused && ApplicationLoader.externalInterfacePaused) {
             return;
         }
         dialogsServerOnly.clear();
