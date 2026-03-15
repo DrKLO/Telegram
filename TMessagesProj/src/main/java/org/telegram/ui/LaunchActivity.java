@@ -6885,12 +6885,57 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             // Re-check if the user updated their email from another client
             MessagesController.getInstance(currentAccount).checkPromoInfo(true);
         }
+        maybePromptSetDefaultTelegramLinks();
         //if (refreshRateController != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         //    refreshRateController.start();
         //}
     }
 
     public static Runnable whenResumed;
+
+    private void maybePromptSetDefaultTelegramLinks() {
+        if ("org.telegram.messenger".equals(getPackageName())) {
+            return;
+        }
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        if (preferences.getBoolean("asked_set_default_telegram_links", false)) {
+            return;
+        }
+        preferences.edit().putBoolean("asked_set_default_telegram_links", true).apply();
+        if (isDefaultTelegramLinksHandler()) {
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(LocaleController.getString(R.string.AppName));
+        builder.setMessage(LocaleController.getString(R.string.SetDefaultTelegramLinksPrompt));
+        builder.setPositiveButton(LocaleController.getString(R.string.Settings), (dialog, which) -> openDefaultLinksSettings());
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        if (!mainFragmentsStack.isEmpty()) {
+            mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(builder.create());
+        } else {
+            showAlertDialog(builder);
+        }
+    }
+
+    private boolean isDefaultTelegramLinksHandler() {
+        Intent checkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me"));
+        checkIntent.addCategory(Intent.CATEGORY_BROWSABLE);
+        android.content.ComponentName componentName = checkIntent.resolveActivity(getPackageManager());
+        return componentName != null && getPackageName().equals(componentName.getPackageName());
+    }
+
+    private void openDefaultLinksSettings() {
+        Intent intent = new Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
+        if (intent.resolveActivity(getPackageManager()) == null) {
+            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
+        }
+        try {
+            startActivity(intent);
+        } catch (Exception ignore) {
+        }
+    }
 
     private void invalidateTabletMode() {
         Boolean wasTablet = AndroidUtilities.getWasTablet();

@@ -2,6 +2,7 @@
 <resources>
     <string name="AppName">Foldogram</string>
     <string name="AppNameBeta">Foldogram Beta</string>
+    <string name="SetDefaultTelegramLinksPrompt">Set Foldogram as the default app for Telegram links (t.me, telegram.me)?</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
