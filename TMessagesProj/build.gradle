@@ -262,11 +262,15 @@ task generateBuildVars {
     def templateFile = file("src/main/java/org/telegram/messenger/BuildVars.java.template")
     def outputFile = file("src/main/java/org/telegram/messenger/BuildVars.java")
 
-    inputs.file templateFile
+    inputs.file(templateFile).optional()
     outputs.file outputFile
 
     doLast {
         if (!templateFile.exists()) {
+            if (outputFile.exists()) {
+                logger.lifecycle("BuildVars.java.template not found, using existing BuildVars.java")
+                return
+            }
             throw new GradleException("BuildVars.java.template not found at ${templateFile.absolutePath}")
         }
 

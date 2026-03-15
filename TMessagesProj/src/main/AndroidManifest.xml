@@ -527,15 +527,6 @@
             android:foregroundServiceType="mediaPlayback"
         />
         <service
-            android:name=".MusicBrowserService"
-            android:exported="true"
-            android:foregroundServiceType="mediaPlayback"
-        >
-            <intent-filter>
-                <action android:name="android.media.browse.MediaBrowserService"/>
-            </intent-filter>
-        </service>
-        <service
             android:name=".voip.TelegramConnectionService"
             android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
             android:exported="true"
