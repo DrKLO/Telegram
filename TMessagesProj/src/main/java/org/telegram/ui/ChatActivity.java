@@ -42820,8 +42820,8 @@ public class ChatActivity extends BaseFragment implements
             subOptions.addGap();
             subOptions.add(R.drawable.msg_addbot, getString(R.string.CreateNewContact), () -> {
                 options.dismiss();
-                NewContactBottomSheet sheet = new NewContactBottomSheet(this, getContext()).setInitialPhoneNumber(phone, false);
-                sheet.show();
+                NewContactActivity fragment = new NewContactActivity().setInitialPhoneNumber(phone, false);
+                presentFragment(fragment);
             });
             subOptions.add(R.drawable.menu_contact_existing, getString(R.string.AddToExistingContact), () -> addToContacts.run(false));
 

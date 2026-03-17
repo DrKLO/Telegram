@@ -204,7 +204,7 @@ public class LinkManager {
                 return true;
             }
             if ("contact".equalsIgnoreCase(second)) {
-                new NewContactBottomSheet(getLastFragment(), activity).show();
+                presentFragment(new NewContactActivity(), false);
                 return true;
             }
             if ("channel".equalsIgnoreCase(second)) {
@@ -240,7 +240,7 @@ public class LinkManager {
 
         if ("contacts".equalsIgnoreCase(first)) {
             if ("new".equalsIgnoreCase(second)) {
-                new NewContactBottomSheet(getLastFragment(), activity).show();
+                presentFragment(new NewContactActivity(), false);
                 return true;
             }
 

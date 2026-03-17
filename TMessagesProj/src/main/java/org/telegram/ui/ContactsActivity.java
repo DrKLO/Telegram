@@ -619,9 +619,9 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                             AccountFrozenAlert.show(currentAccount);
                             return;
                         }
-                        NewContactBottomSheet activity = new NewContactBottomSheet(ContactsActivity.this, getContext());
+                        NewContactActivity activity = new NewContactActivity();
                         activity.setInitialPhoneNumber(str, true);
-                        activity.show();
+                        presentFragment(activity);
                     }
                 } else if (object instanceof ContactsController.Contact) {
                     ContactsController.Contact contact = (ContactsController.Contact) object;
@@ -940,7 +940,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     AccountFrozenAlert.show(currentAccount);
                     return;
                 }
-                new NewContactBottomSheet(ContactsActivity.this, getContext()).show();
+                presentFragment(new NewContactActivity());
             });
 
             floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 44);

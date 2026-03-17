@@ -3181,7 +3181,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             } else if (!TextUtils.isEmpty(conferenceSlug)) {
                 GroupCallSheet.show(this, currentAccount, 0, conferenceSlug, progress);
             } else if (newContact) {
-                final NewContactBottomSheet fragment = new NewContactBottomSheet(actionBarLayout.getLastFragment(), this);
+                final NewContactActivity fragment = new NewContactActivity();
                 if (newContactName != null) {
                     final String[] names = newContactName.split(" ", 2);
                     fragment.setInitialName(names[0], names.length > 1 ? names[1] : null);
@@ -3189,8 +3189,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 if (newContactPhone != null) {
                     fragment.setInitialPhoneNumber(PhoneFormat.stripExceptNumbers(newContactPhone, true), false);
                 }
-                fragment.show();
-               // getActionBarLayout().presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true));
+                getActionBarLayout().presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true));
                 if (AndroidUtilities.isTablet()) {
                     actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
                     rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
@@ -3205,19 +3204,18 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 final BaseFragment lastFragment = actionBarLayout.getLastFragment();
                 if (lastFragment != null && lastFragment.getParentActivity() != null) {
                     final String finalNewContactName = newContactName;
-                    final String finalNewContactPhone = NewContactBottomSheet.getPhoneNumber(this, UserConfig.getInstance(currentAccount).getCurrentUser(), newContactPhone, false);
+                    final String finalNewContactPhone = NewContactActivity.getPhoneNumber(this, UserConfig.getInstance(currentAccount).getCurrentUser(), newContactPhone, false);
                     final AlertDialog newContactAlertDialog = new AlertDialog.Builder(lastFragment.getParentActivity())
                             .setTitle(LocaleController.getString(R.string.NewContactAlertTitle))
                             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("NewContactAlertMessage", R.string.NewContactAlertMessage, PhoneFormat.getInstance().format(finalNewContactPhone))))
                             .setPositiveButton(LocaleController.getString(R.string.NewContactAlertButton), (d, i) -> {
-                                final NewContactBottomSheet fragment = new NewContactBottomSheet(lastFragment, this);
+                                final NewContactActivity fragment = new NewContactActivity();
                                 fragment.setInitialPhoneNumber(finalNewContactPhone, false);
                                 if (finalNewContactName != null) {
                                     final String[] names = finalNewContactName.split(" ", 2);
                                     fragment.setInitialName(names[0], names.length > 1 ? names[1] : null);
                                 }
-                                fragment.show();
-                                //lastFragment.presentFragment(fragment);
+                                lastFragment.presentFragment(fragment);
                             })
                             .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
                             .create();

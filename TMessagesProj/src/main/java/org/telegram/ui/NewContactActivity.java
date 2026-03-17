@@ -23,7 +23,6 @@ import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -69,17 +68,14 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedPhoneNumberEditText;
 import org.telegram.ui.Components.BulletinFactory;
@@ -95,7 +91,6 @@ import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.io.BufferedReader;
@@ -108,7 +103,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-public class NewContactBottomSheet extends BottomSheet implements AdapterView.OnItemSelectedListener {
+public class NewContactActivity extends BaseFragment implements AdapterView.OnItemSelectedListener {
 
     private LinearLayout contentLayout;
     private ContextProgressView editDoneItemProgress;
@@ -135,8 +130,6 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     private String initialFirstName;
     private String initialLastName;
 
-    BaseFragment parentFragment;
-    int classGuid;
     private AnimatedPhoneNumberEditText codeField;
     private View codeDividerView;
     private AnimatedPhoneNumberEditText phoneField;
@@ -156,18 +149,19 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     private LinkSpanDrawable.LinksTextView accountTextView;
     private OutlineTextContainerView accountOutlineView;
 
-    public NewContactBottomSheet(BaseFragment parentFragment, Context context) {
-        super(context, true);
-        fixNavigationBar();
-        waitingKeyboard = true;
-        smoothKeyboardAnimationEnabled = true;
-        classGuid = ConnectionsManager.generateClassGuid();
-        this.parentFragment = parentFragment;
-        setCustomView(createView(getContext()));
-        setTitle(LocaleController.getString(R.string.NewContactTitle), true);
-    }
-
     public View createView(Context context) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString(R.string.NewContactTitle));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                }
+            }
+        });
+
         editDoneItemProgress = new ContextProgressView(context, 1);
         editDoneItemProgress.setVisibility(View.INVISIBLE);
 
@@ -190,7 +184,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             firstNameField.getEditText().setText(initialFirstName);
             initialFirstName = null;
         }
-        frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+        frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.LEFT | Gravity.TOP, 0, 10, 0, 0));
         firstNameField.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
                 lastNameField.requestFocus();
@@ -209,7 +203,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             lastNameField.getEditText().setText(initialLastName);
             initialLastName = null;
         }
-        frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.LEFT | Gravity.TOP, 0, 68, 0, 0));
+        frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
         lastNameField.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
                 codeField.requestFocus();
@@ -265,7 +259,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                     phoneField.setSelection(phoneField.length());
                 }
             });
-            parentFragment.showAsSheet(countrySelectActivity);
+            showAsSheet(countrySelectActivity);
         });
         countryContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(6), 0, Theme.getColor(Theme.key_listSelector)));
         countryContainer.addView(countryFlag, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
@@ -582,14 +576,14 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         phoneStatusView.setAlpha(0.0f);
         phoneOutlineView.addView(phoneStatusView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 12, 0));
 
-        checkBox = new CheckBox2(context, 21, resourcesProvider);
+        checkBox = new CheckBox2(context, 21, getResourceProvider());
         checkBox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
         checkBox.setDrawUnchecked(true);
         checkBox.setChecked(false, false);
         checkBox.setDrawBackgroundAsArc(10);
 
         checkTextView = new TextView(context);
-        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, getResourceProvider()));
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkTextView.setText(getString(R.string.AddContactSync));
 
@@ -605,10 +599,10 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         checkLayout.setTranslationY(dp(-21.33f));
         checkLayout.setPivotX(0);
         ScaleStateListAnimator.apply(checkLayout, .0125f, 1.2f);
-        checkLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
+        checkLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, getResourceProvider()), 6, 6));
         contentLayout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 5, 0, 0));
 
-//        accountTextView = TextHelper.makeLinkTextView(context, 15, Theme.key_windowBackgroundWhiteBlackText, false, resourcesProvider);
+//        accountTextView = TextHelper.makeLinkTextView(context, 15, Theme.key_windowBackgroundWhiteBlackText, false, getResourceProvider());
 //        accountTextView.setText("Phone");
 //        accountOutlineView = new OutlineTextContainerView(context);
 //        accountOutlineView.setText("Save To");
@@ -627,7 +621,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
 //                    items[i] = infos.get(i - 1).name + ": " + infos.get(i - 1).type;
 //                }
 //            }
-//            new AlertDialog.Builder(context, resourcesProvider)
+//            new AlertDialog.Builder(context, getResourceProvider())
 //                .setItems(items, (di, w) -> {
 //                    if (w == 0) {
 //                        account = null;
@@ -645,17 +639,17 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         contentLayout.addView(qrButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, -6));
 
         qrButtonSeparator = new View(context);
-        qrButtonSeparator.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        qrButtonSeparator.setBackgroundColor(Theme.getColor(Theme.key_divider, getResourceProvider()));
         qrButtonContainer.addView(qrButtonSeparator, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.TOP, 0, 6, 0, 0));
 
-        qrButton = new ButtonWithCounterView(context, false, resourcesProvider);
+        qrButton = new ButtonWithCounterView(context, false, getResourceProvider());
         SpannableStringBuilder qrButtonText = new SpannableStringBuilder("QR");
         qrButtonText.setSpan(new ColoredImageSpan(R.drawable.header_qr_24), 0, qrButtonText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         qrButtonText.append("  ");
         qrButtonText.append(getString(R.string.AddContactQr));
         qrButton.setText(qrButtonText, false);
         qrButton.setOnClickListener(v -> {
-            dismiss();
+            finishFragment();
             CameraScanActivity.showAsSheet(LaunchActivity.instance, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
                 @Override
                 public void didFindQr(String text) {
@@ -690,7 +684,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         notesField.setBackground(null);
         notesField.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         notesField.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        notesField.setHint("Notes");
+        notesField.setHint(LocaleController.getString(R.string.NotesOnlyVisibleToYou));
         qrButtonContainer.addView(notesField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.TOP, 0, 0, 0, 0));
         notesField.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -734,7 +728,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         Collections.sort(countriesArray, Comparator.comparing(o -> o.name));
 
         if (!TextUtils.isEmpty(initialPhoneNumber)) {
-            TLRPC.User user = parentFragment.getUserConfig().getCurrentUser();
+            TLRPC.User user = getUserConfig().getCurrentUser();
             if (initialPhoneNumber.startsWith("+")) {
                 codeField.setText(initialPhoneNumber.substring(1));
             } else if (initialPhoneNumberWithCountryCode || user == null || TextUtils.isEmpty(user.phone)) {
@@ -791,21 +785,23 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         doneButton.setGravity(Gravity.CENTER);
         doneButton.setLines(1);
         doneButton.setSingleLine(true);
-        doneButton.setText(LocaleController.getString(R.string.CreateContact));
-        doneButton.setTextColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
-        doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        doneButton.setText(LocaleController.getString(R.string.Create));
+        doneButton.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        doneButton.setPadding(dp(16), dp(6), dp(16), dp(6));
+        doneButton.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
         doneButton.setTypeface(AndroidUtilities.bold());
 
         progressView = new RadialProgressView(context);
         progressView.setSize(dp(20));
-        progressView.setProgressColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
-        doneButtonContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        progressView.setProgressColor(getThemedColor(Theme.key_featuredStickers_addButton));
+        doneButtonContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.END));
         doneButtonContainer.addView(progressView, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
-        contentLayout.addView(doneButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 16, 0, 16));
+        doneButtonContainer.setPadding(0, actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0, 0, 0);
+        actionBar.addView(doneButtonContainer, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
         AndroidUtilities.updateViewVisibilityAnimated(doneButton, true, 1f, false);
         AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, false);
-        doneButtonContainer.setBackground(Theme.AdaptiveRipple.filledRect(parentFragment.getThemedColor(Theme.key_featuredStickers_addButton), 6));
         doneButtonContainer.setOnClickListener(v -> doOnDone());
 
         plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -922,6 +918,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 .setDuration(420)
                 .start();
             underPhoneTextView.setText("");
+            doneButton.setText(LocaleController.getString(R.string.Create));
             updateBottomTranslation(true);
             return;
         }
@@ -936,10 +933,12 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             new CircularProgressDrawable(dp(30), dp(3), getThemedColor(Theme.key_dialogTextBlue))
         );
         underPhoneTextView.setText("");
+        doneButton.setText(LocaleController.getString(R.string.Create));
         updateBottomTranslation(true);
 
         final Utilities.Callback<TLRPC.User> onUser = user -> {
             if (user == null) {
+                doneButton.setText(LocaleController.getString(R.string.Create));
                 phoneStatusView.setImageDrawable(null);
                 underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is not on Telegram. **Invite >**", () -> {
                     final Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -952,8 +951,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon), PorterDuff.Mode.SRC_IN));
                 phoneStatusView.setImageDrawable(drawable);
                 if (user.contact) {
+                    doneButton.setText(LocaleController.getString(R.string.Save));
                     underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is already in your contacts. **View >**", () -> {
-                        dismiss();
+                        finishFragment();
 
                         final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                         if (lastFragment != null) {
@@ -961,6 +961,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                         }
                     }), true, dp(8f / 3f), dp(1)));
                 } else {
+                    doneButton.setText(LocaleController.getString(R.string.Create));
                     underPhoneTextView.setText("This phone number is on Telegram.");
                 }
             }
@@ -999,11 +1000,11 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     }
 
     private void doOnDone() {
-        if (donePressed || parentFragment == null || parentFragment.getParentActivity() == null) {
+        if (donePressed || getParentActivity() == null) {
             return;
         }
         if (firstNameField.getEditText().length() == 0) {
-            final Vibrator v = (Vibrator) parentFragment.getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+            final Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
                 v.vibrate(200);
             }
@@ -1011,7 +1012,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             return;
         }
         if (codeField.length() == 0) {
-            final Vibrator v = (Vibrator) parentFragment.getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+            final Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
                 v.vibrate(200);
             }
@@ -1019,7 +1020,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             return;
         }
         if (phoneField.length() == 0) {
-            final Vibrator v = (Vibrator) parentFragment.getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+            final Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
             if (v != null) {
                 v.vibrate(200);
             }
@@ -1066,18 +1067,18 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                 if (res != null) {
                     if (!res.users.isEmpty()) {
                         MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                        MessagesController.getInstance(currentAccount).openChatOrProfileWith(res.users.get(0), null, parentFragment, 1, false);
-                        dismiss();
+                        MessagesController.getInstance(currentAccount).openChatOrProfileWith(res.users.get(0), null, NewContactActivity.this, 1, false);
+                        finishFragment();
                     } else {
-                        if (parentFragment.getParentActivity() == null) {
+                        if (getParentActivity() == null) {
                             return;
                         }
                         showEditDoneProgress(false, true);
-                        AlertsCreator.createContactInviteDialog(parentFragment, inputPhoneContact.first_name, inputPhoneContact.last_name, inputPhoneContact.phone);
+                        AlertsCreator.createContactInviteDialog(NewContactActivity.this, inputPhoneContact.first_name, inputPhoneContact.last_name, inputPhoneContact.phone);
                     }
                 } else {
                     showEditDoneProgress(false, true);
-                    AlertsCreator.processError(currentAccount, error, parentFragment, req);
+                    AlertsCreator.processError(currentAccount, error, NewContactActivity.this, req);
                 }
             });
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -1089,13 +1090,13 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     }
 
     @Override
-    public void show() {
-        super.show();
-        firstNameField.getEditText().requestFocus();
-        firstNameField.getEditText().setSelection(firstNameField.getEditText().length());
-        AndroidUtilities.runOnUIThread(() -> {
-            AndroidUtilities.showKeyboard(firstNameField.getEditText());
-        }, 50);
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationEnd(isOpen, backward);
+        if (isOpen && firstNameField != null) {
+            firstNameField.getEditText().requestFocus();
+            firstNameField.getEditText().setSelection(firstNameField.getEditText().length());
+            AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(firstNameField.getEditText()), 50);
+        }
     }
 
     private void showEditDoneProgress(boolean show, boolean animated) {
@@ -1133,7 +1134,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         }
     }
 
-    public NewContactBottomSheet setInitialPhoneNumber(String value, boolean withCountryCode) {
+    public NewContactActivity setInitialPhoneNumber(String value, boolean withCountryCode) {
         initialPhoneNumber = value;
         initialPhoneNumberWithCountryCode = withCountryCode;
 
@@ -1314,11 +1315,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     }
 
     @Override
-    public void dismiss() {
-        super.dismiss();
-        AndroidUtilities.runOnUIThread(() -> {
-            AndroidUtilities.hideKeyboard(contentLayout);
-        }, 50);
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        AndroidUtilities.runOnUIThread(() -> AndroidUtilities.hideKeyboard(contentLayout), 50);
     }
 
     public static boolean saveContact(

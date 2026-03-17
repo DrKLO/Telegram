@@ -5909,6 +5909,7 @@
     <string name="UserCustomPhotoSeted">You will now always see this photo for **%s\'s** account.</string>
     <string name="NewContactTitle">New Contact</string>
     <string name="CreateContact">Create Contact</string>
+    <string name="NotesOnlyVisibleToYou">Add notes only visible to you</string>
     <string name="ActionSuggestPhoto">Suggested Photo</string>
     <string name="ActionSuggestVideo">Suggested Video</string>
     <string name="ActionSuggestPhotoFromYouDescription">You suggested %s to use this photo for their account</string>
