@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -32,6 +33,7 @@ import org.telegram.ui.Components.RLottieImageView;
 public class ActionBarMenuSubItem extends FrameLayout {
 
     public AnimatedEmojiSpan.TextViewEmojis textView;
+    public TextView valueTextView;
     public TextView subtextView;
     public RLottieImageView imageView;
     public boolean checkViewLeft;
@@ -97,6 +99,17 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
+        valueTextView = new TextView(context);
+        valueTextView.setLines(1);
+        valueTextView.setSingleLine(true);
+        valueTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+        valueTextView.setEllipsize(TextUtils.TruncateAt.END);
+        valueTextView.setTextColor(textColor);
+        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        valueTextView.setTypeface(AndroidUtilities.bold());
+        valueTextView.setVisibility(GONE);
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
+
         checkViewLeft = LocaleController.isRTL;
         makeCheckView(needCheck);
     }
@@ -124,6 +137,16 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (valueTextView.getVisibility() == VISIBLE) {
+            int availableWidth = Math.max(0, MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight());
+            valueTextView.measure(
+                MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST),
+                MeasureSpec.makeMeasureSpec(dp(itemHeight), MeasureSpec.AT_MOST)
+            );
+            textView.setMaxWidth(Math.max(0, availableWidth - valueTextView.getMeasuredWidth() - dp(8)));
+        } else {
+            textView.setMaxWidth(Integer.MAX_VALUE);
+        }
         super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight), View.MeasureSpec.EXACTLY));
         if (expandIfMultiline && textView.getLayout().getLineCount() > 1) {
             super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight + 8), View.MeasureSpec.EXACTLY));
@@ -204,6 +227,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setTextAndIcon(CharSequence text, int icon, Drawable iconDrawable) {
+        valueTextView.setVisibility(GONE);
         textView.setText(text);
         if (icon != 0 || iconDrawable != null || checkView != null) {
             if (iconDrawable != null) {
@@ -223,6 +247,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setTextAndIcon(CharSequence text, ImageLocation imageLocation, String imageFilter, Drawable thumb, Object parentObject) {
+        valueTextView.setVisibility(GONE);
         textView.setText(text);
         textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(43), 0, checkViewLeft ? dp(43) : (checkView != null ? dp(43) : 0), 0);
         if (backupImageView == null) {
@@ -257,6 +282,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     public void setTextColor(int textColor) {
         if (this.textColor != textColor) {
             textView.setTextColor(this.textColor = textColor);
+            valueTextView.setTextColor(this.textColor);
         }
     }
 
@@ -344,7 +370,42 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setText(CharSequence text) {
+        valueTextView.setVisibility(GONE);
         textView.setText(text);
+    }
+
+    public void setTextAndValueAndIcon(CharSequence text, CharSequence value, int icon, Drawable iconDrawable) {
+        textView.setText(text);
+        if (TextUtils.isEmpty(value)) {
+            valueTextView.setVisibility(GONE);
+        } else {
+            valueTextView.setVisibility(VISIBLE);
+            valueTextView.setText(value);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) valueTextView.getLayoutParams();
+            if (LocaleController.isRTL) {
+                layoutParams.leftMargin = checkView != null && !checkViewLeft ? dp(34) : 0;
+                layoutParams.rightMargin = 0;
+            } else {
+                layoutParams.rightMargin = checkView != null && !checkViewLeft ? dp(34) : 0;
+                layoutParams.leftMargin = 0;
+            }
+            valueTextView.setLayoutParams(layoutParams);
+        }
+        if (icon != 0 || iconDrawable != null || checkView != null) {
+            if (iconDrawable != null) {
+                iconResId = 0;
+                imageView.setImageDrawable(iconDrawable);
+            } else {
+                iconResId = icon;
+                imageView.setImageResource(icon);
+            }
+            imageView.setVisibility(VISIBLE);
+            textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(icon != 0 || iconDrawable != null ? 43 : 0), 0, checkViewLeft ? dp(icon != 0 || iconDrawable != null ? 43 : 0) : (checkView != null ? dp(43) : 0), 0);
+        } else {
+            iconResId = 0;
+            imageView.setVisibility(INVISIBLE);
+            textView.setPadding(0, 0, 0, 0);
+        }
     }
 
     public void setSubtextColor(int color) {

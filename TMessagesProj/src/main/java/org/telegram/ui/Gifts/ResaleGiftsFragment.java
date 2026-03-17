@@ -74,7 +74,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -1293,15 +1292,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             if (!TextUtils.isEmpty(query)) {
                 name = AndroidUtilities.highlightText(name, query, resourcesProvider);
             }
-            if (counter > 0) {
-                SpannableStringBuilder sb = new SpannableStringBuilder(name);
-                sb.append("  ");
-                final int fromIndex = sb.length();
-                sb.append(Integer.toString(counter));
-                sb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), fromIndex, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                name = sb;
-            }
-            setTextAndIcon(name, 0, emojiDrawable);
+            setTextAndValueAndIcon(name, counter > 0 ? Integer.toString(counter) : null, 0, emojiDrawable);
             setChecked(checked);
         }
 
@@ -1396,15 +1387,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             if (!TextUtils.isEmpty(query)) {
                 name = AndroidUtilities.highlightText(name, query, resourcesProvider);
             }
-            if (counter > 0) {
-                SpannableStringBuilder sb = new SpannableStringBuilder(name);
-                sb.append("  ");
-                final int fromIndex = sb.length();
-                sb.append(Integer.toString(counter));
-                sb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), fromIndex, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                name = sb;
-            }
-            setTextAndIcon(name, 0, emojiDrawable);
+            setTextAndValueAndIcon(name, counter > 0 ? Integer.toString(counter) : null, 0, emojiDrawable);
             setChecked(checked);
         }
 
@@ -1460,15 +1443,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             if (!TextUtils.isEmpty(query)) {
                 name = AndroidUtilities.highlightText(name, query, resourcesProvider);
             }
-            if (counter > 0) {
-                SpannableStringBuilder sb = new SpannableStringBuilder(name);
-                sb.append("  ");
-                final int fromIndex = sb.length();
-                sb.append(Integer.toString(counter));
-                sb.setSpan(new TypefaceSpan(AndroidUtilities.bold()), fromIndex, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                name = sb;
-            }
-            setTextAndIcon(name, 0, circle);
+            setTextAndValueAndIcon(name, counter > 0 ? Integer.toString(counter) : null, 0, circle);
             setChecked(checked);
         }
 
