@@ -4336,7 +4336,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         if (DialogObject.isChatDialog(dialog_id)) {
             TLRPC.Chat chat = accountInstance.getMessagesController().getChat(-dialog_id);
-            BulletinFactory.of(parentFragment).createSimpleBulletin(R.raw.passcode_lock_close, LocaleController.formatString("SendPlainTextRestrictionHint", R.string.SendPlainTextRestrictionHint, ChatObject.getAllowedSendString(chat)), 3).show();
+            BulletinFactory.of(parentFragment).createSimpleBulletin(R.raw.passcode_lock_close, LocaleController.formatString("SendPlainTextRestrictionHint", R.string.SendPlainTextRestrictionHint, ChatObject.getAllowedSendString(chat)), 4).show();
         }
     }
 
