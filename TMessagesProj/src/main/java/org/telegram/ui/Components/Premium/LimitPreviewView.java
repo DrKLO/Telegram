@@ -269,8 +269,8 @@ public class LimitPreviewView extends LinearLayout {
                         if (percent == 0) {
                             width1 = 0;
                             if (!animateArrowFadeIn && !animateArrowFadeOut) {
-                                premiumCount.setTextColor(isRatingNegative ? Color.WHITE : hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                                defaultText.setTextColor(hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                                premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                                defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                             }
                         } else if (percent < 1f) {
                             float leftWidth = isRatingNegative ? 0: defaultLayout.getMeasuredWidth() - dp(8);
@@ -278,8 +278,8 @@ public class LimitPreviewView extends LinearLayout {
                             float availableWidth = width - leftWidth - rightWidth;
                             width1 = (int) (leftWidth + availableWidth * percent);
                             if (!animateArrowFadeIn && !animateArrowFadeOut) {
-                                premiumCount.setTextColor(isRatingNegative ? Color.WHITE : hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                                defaultText.setTextColor(Color.WHITE);
+                                premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : hasDarkGradientProvider() ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                                defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
                             }
                         } else {
                             width1 = width;
@@ -642,8 +642,8 @@ public class LimitPreviewView extends LinearLayout {
         defaultCount.setVisibility(View.GONE);
         premiumText.setVisibility(View.GONE);
 
-        premiumCount.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        defaultText.setTextColor(Color.WHITE);
+        premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
         setIconValue(boosts.boosts, false);
         isBoostsStyle = true;
@@ -664,8 +664,8 @@ public class LimitPreviewView extends LinearLayout {
         defaultCount.setVisibility(View.GONE);
         premiumText.setVisibility(View.GONE);
 
-        premiumCount.setTextColor(isRatingNegative ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        defaultText.setTextColor(Color.WHITE);
+        premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
         setIconValue((int) current_stars, false);
         isBoostsStyle = true;
@@ -697,8 +697,8 @@ public class LimitPreviewView extends LinearLayout {
         defaultCount.setVisibility(View.GONE);
         premiumText.setVisibility(View.GONE);
 
-        premiumCount.setTextColor(isRatingNegative ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        defaultText.setTextColor(Color.WHITE);
+        premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
         setIconValue((int) rating.stars, (int) rating.next_level_stars, true, false);
         isBoostsStyle = true;
@@ -737,8 +737,8 @@ public class LimitPreviewView extends LinearLayout {
             limitsContainer.requestLayout();
             requestLayout();
 
-            premiumCount.setTextColor(isRatingNegative ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            defaultText.setTextColor(Color.WHITE);
+            premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
             setIconValue((int) to.stars, (int) to.next_level_stars, true, false);
         } else if (to.level > from.level) {
@@ -767,8 +767,9 @@ public class LimitPreviewView extends LinearLayout {
             limitsContainer.requestLayout();
             requestLayout();
 
-            premiumCount.setTextColor(isRatingNegative ? Color.WHITE: Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            defaultText.setTextColor(Color.WHITE);
+            premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
+
             defaultText.animate()
                 .alpha(0).scaleX(0.7f).scaleY(0.7f)
                 .setDuration(320)
@@ -831,8 +832,8 @@ public class LimitPreviewView extends LinearLayout {
                     .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                     .start();
 
-                premiumCount.setTextColor(isRatingNegative ? Color.WHITE: Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                defaultText.setTextColor(Color.WHITE);
+                premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
                 setIconValue((int) to.stars, (int) to.next_level_stars, true, false);
             }, 600);
@@ -872,8 +873,8 @@ public class LimitPreviewView extends LinearLayout {
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                 .start();
 
-            premiumCount.setTextColor(isRatingNegative ? Color.WHITE: Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            defaultText.setTextColor(Color.WHITE);
+            premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
             setIconValue((int) from.stars, (int) from.next_level_stars, true, false);
 
@@ -925,8 +926,8 @@ public class LimitPreviewView extends LinearLayout {
                     .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                     .start();
 
-                premiumCount.setTextColor(isRatingNegative ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-                defaultText.setTextColor(Color.WHITE);
+                premiumCount.setTextColor((isRatingNegative || drawFromRight) ? Color.WHITE : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                defaultText.setTextColor(drawFromRight ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider) : Color.WHITE);
 
                 setIconValue((int) to.stars, (int) to.next_level_stars, true, false);
             }, 600);
