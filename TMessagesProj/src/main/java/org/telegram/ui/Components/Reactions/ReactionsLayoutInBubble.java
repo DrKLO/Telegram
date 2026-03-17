@@ -1188,7 +1188,12 @@ public class ReactionsLayoutInBubble {
             }
             if (scrimProgress > 0.0f && !isTag && scrimPreviewCounterDrawable != null && avatarsDrawable == null) {
                 canvas.save();
-                canvas.translate(x + dp(hasName && !drawTagDot() ? 10 : (hasName ? 9 : 8)) + dp(20) + dp(animatedEmojiDrawable != null ? 5 : 2), y - dp(1));
+                float scrimCounterX = x + dp(hasName && !drawTagDot() ? 10 : (hasName ? 9 : 8)) + dp(20) + dp(animatedEmojiDrawable != null ? 5 : 2);
+                final float scrimCounterWidth = scrimPreviewCounterDrawable.getCurrentWidth();
+                if (scrimCounterWidth < dp(12)) {
+                    scrimCounterX += (dp(12) - scrimCounterWidth) / 2f;
+                }
+                canvas.translate(scrimCounterX, y - dp(1));
                 scrimPreviewCounterDrawable.setBounds(0, 0, width, height);
                 scrimPreviewCounterDrawable.draw(canvas);
                 scrimPreviewCounterDrawable.setAlpha((int) (0xFF * alpha));
