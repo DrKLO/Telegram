@@ -939,6 +939,7 @@ public class ContentPreviewViewer {
 
                 int y = (int) (moveY + Math.max(size / 2 + top + (stickerEmojiLayout != null ? AndroidUtilities.dp(40) : 0), (containerView.getHeight() - insets - keyboardHeight) / 2) + size / 2);
                 y += AndroidUtilities.dp(24) - moveY;
+                y += getGifPreviewOffsetY();
                 popupWindow.showAtLocation(containerView, 0, (int) ((containerView.getMeasuredWidth() - previewMenu.getMeasuredWidth()) / 2f), y);
 
                 try {
@@ -1573,6 +1574,10 @@ public class ContentPreviewViewer {
         keyboardHeight = height;
     }
 
+    private int getGifPreviewOffsetY() {
+        return currentContentType == CONTENT_TYPE_GIF && !isPhotoEditor && slideUpDrawable != null ? AndroidUtilities.dp(56) : 0;
+    }
+
     public void open(TLRPC.Document document, SendMessagesHelper.ImportingSticker sticker, String emojiPath, String query, TLRPC.BotInlineResult botInlineResult, int contentType, boolean isRecent, Object parent, Theme.ResourcesProvider resourcesProvider) {
         if (parentActivity == null || windowView == null) {
             return;
@@ -1882,7 +1887,7 @@ public class ContentPreviewViewer {
         if (drawEffect) {
             topOffset += AndroidUtilities.dp(40);
         }
-        canvas.translate(containerView.getWidth() / 2, moveY + topOffset);
+        canvas.translate(containerView.getWidth() / 2, moveY + topOffset + getGifPreviewOffsetY());
         float scale = 0.8f * showProgress / 0.8f;
         size = (int) (size * scale);
 
