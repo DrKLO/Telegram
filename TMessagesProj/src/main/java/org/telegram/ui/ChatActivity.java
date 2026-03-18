@@ -280,6 +280,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Delegates.ChatActivityMemberRequestsDelegate;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.Stars.BotStarsController;
 import org.telegram.ui.Stars.StarReactionsOverlay;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -2627,6 +2628,7 @@ public class ChatActivity extends BaseFragment implements
             if (ChatObject.isMonoForum(currentChat)) {
                 chatMode = MODE_SUGGESTIONS;
                 isSubscriberSuggestions = !ChatObject.canManageMonoForum(currentAccount, currentChat);
+                BotStarsController.getInstance(currentAccount).getBotStarsBalance(-currentChat.linked_monoforum_id);
             }
             dialog_id = -chatId;
             if (ChatObject.isChannel(currentChat)) {
@@ -3761,6 +3763,7 @@ public class ChatActivity extends BaseFragment implements
                         if (getContext() == null) return;
                         AlertsCreator.showAlertWithCheckbox(
                             getContext(),
+                            currentChat != null ? currentChat.linked_monoforum_id : -1L,
                             getString(R.string.RemoveMessageFeeTitle),
                             AndroidUtilities.replaceTags(formatString(ChatObject.isMonoForum(currentChat) ? R.string.RemoveMessageFeeMessageChannel : R.string.RemoveMessageFeeMessage, DialogObject.getShortName(user_id))),
                             revenue > 0 ? formatPluralStringComma("RemoveMessageFeeRefund", (int) (long) revenue) : null,
@@ -28543,6 +28546,7 @@ public class ChatActivity extends BaseFragment implements
                         if (getContext() == null) return;
                         AlertsCreator.showAlertWithCheckbox(
                             getContext(),
+                            currentChat != null ? currentChat.linked_monoforum_id : -1L,
                             getString(R.string.RemoveMessageFeeTitle),
                             AndroidUtilities.replaceTags(formatString(ChatObject.isMonoForum(currentChat) ? R.string.RemoveMessageFeeMessageChannel : R.string.RemoveMessageFeeMessage, DialogObject.getShortName(user_id))),
                             revenue > 0 ? formatPluralStringComma("RemoveMessageFeeRefund", (int) (long) revenue) : null,

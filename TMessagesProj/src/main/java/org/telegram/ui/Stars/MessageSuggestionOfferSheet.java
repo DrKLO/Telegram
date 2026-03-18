@@ -128,7 +128,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             AmountUtils.Currency.STARS);
 
         if (!isMonoForumAdmin) {
-            balanceCloud = new BalanceCloud(context, currentAccount, resourcesProvider);
+            balanceCloud = new BalanceCloud(context, currentAccount, MessagesController.getInstance(currentAccount).getChat(dialogId).linked_monoforum_id, resourcesProvider);
             balanceCloud.setScaleX(0.6f);
             balanceCloud.setScaleY(0.6f);
             balanceCloud.setAlpha(0.0f);

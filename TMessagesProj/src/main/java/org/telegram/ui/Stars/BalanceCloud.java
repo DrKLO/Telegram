@@ -26,6 +26,7 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 public class BalanceCloud extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount;
+    private long chatId = -1L;
     private final Theme.ResourcesProvider resourcesProvider;
 
     private final TextView textView1;
@@ -33,12 +34,17 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
     private AmountUtils.Currency currency;
 
     public BalanceCloud(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
-        this(context, currentAccount, AmountUtils.Currency.STARS, resourcesProvider);
+        this(context, currentAccount, -1L, AmountUtils.Currency.STARS, resourcesProvider);
     }
 
-    public BalanceCloud(Context context, int currentAccount, AmountUtils.Currency currency, Theme.ResourcesProvider resourcesProvider) {
+    public BalanceCloud(Context context, int currentAccount, long chatId, Theme.ResourcesProvider resourcesProvider) {
+        this(context, currentAccount, chatId, AmountUtils.Currency.STARS, resourcesProvider);
+    }
+
+    public BalanceCloud(Context context, int currentAccount, long chatId, AmountUtils.Currency currency, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.currentAccount = currentAccount;
+        this.chatId = chatId;
         this.resourcesProvider = resourcesProvider;
         this.currency = currency;
 
@@ -71,6 +77,11 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
 
     }
 
+    public void setChatId(long chatId) {
+        this.chatId = chatId;
+        updateBalance(true);
+    }
+
     private final ColoredImageSpan[] coloredImageSpansTon = new ColoredImageSpan[1];
 
     private void updateBalance(boolean animated) {
@@ -78,7 +89,14 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
         final AmountUtils.Amount balance = c.getBalanceAmount();
 
         if (currency == AmountUtils.Currency.STARS) {
-            textView1.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(R.string.Gift2MessageStarsInfo, LocaleController.formatNumber(balance.asDecimal(), ',')), .60f));
+            textView1.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(
+                    R.string.Gift2MessageStarsInfo,
+                    LocaleController.formatNumber(
+                            chatId == -1L ? balance.asDecimal() : (int) BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount, ',')
+                    ),
+                    .60f
+                    )
+            );
 
             textView2.setTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
             textView2.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
@@ -91,7 +109,7 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
 
             final StringBuilder sb = new StringBuilder(10);
             sb.append('~');
-            sb.append(BillingController.getInstance().formatCurrency((long) (balance.asDouble() * MessagesController.getInstance(currentAccount).config.tonUsdRate.get() * 100), "USD", 2));
+            sb.append(BillingController.getInstance().formatCurrency((long) ((chatId == -1L ? balance.asDouble() : (double) BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount) * MessagesController.getInstance(currentAccount).config.tonUsdRate.get() * 100), "USD", 2));
 
             textView2.setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider), Theme.getColor(Theme.key_undo_background, resourcesProvider), 0.33f));
             textView2.setLinkTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider), Theme.getColor(Theme.key_undo_background, resourcesProvider), 0.33f));

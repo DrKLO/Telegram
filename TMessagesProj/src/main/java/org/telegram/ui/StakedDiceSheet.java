@@ -85,7 +85,7 @@ public class StakedDiceSheet extends BottomSheetWithRecyclerListView {
         smoothKeyboardAnimationEnabled = true;
         smoothKeyboardByBottom = true;
 
-        balanceCloud = new BalanceCloud(context, currentAccount, AmountUtils.Currency.TON, resourcesProvider);
+        balanceCloud = new BalanceCloud(context, currentAccount, -1L, AmountUtils.Currency.TON, resourcesProvider);
         balanceCloud.setScaleX(0.6f);
         balanceCloud.setScaleY(0.6f);
         balanceCloud.setAlpha(0.0f);

@@ -2154,6 +2154,10 @@ public class AlertsCreator {
     }
 
     public static void showAlertWithCheckbox(Context context, CharSequence title, CharSequence message, CharSequence check, CharSequence button, Utilities.Callback<Boolean> onAction, Theme.ResourcesProvider resourcesProvider) {
+        showAlertWithCheckbox(context, -1L, title, message, check, button, onAction, resourcesProvider);
+    }
+
+    public static void showAlertWithCheckbox(Context context, long chatId, CharSequence title, CharSequence message, CharSequence check, CharSequence button, Utilities.Callback<Boolean> onAction, Theme.ResourcesProvider resourcesProvider) {
         if (context == null) {
             onAction.run(false);
             return;
@@ -2227,6 +2231,9 @@ public class AlertsCreator {
         AlertDialog d = builder.create();
         d.setShowStarsBalance(true);
         d.show();
+        if (d.getStarsBalanceCloud() != null) {
+            d.getStarsBalanceCloud().setChatId(chatId);
+        }
     }
 
     public static void createClearOrDeleteDialogAlert(BaseFragment fragment, boolean clear, TLRPC.Chat chat, TLRPC.User user, boolean secret, boolean canDeleteHistory, MessagesStorage.BooleanCallback onProcessRunnable) {
