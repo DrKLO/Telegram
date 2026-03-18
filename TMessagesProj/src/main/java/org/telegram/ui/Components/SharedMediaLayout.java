@@ -2625,12 +2625,20 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (mediaPages != null) {
                         for (MediaPage mp : mediaPages) {
                             if (mp != null && mp.listView != null) {
+                                int paddingTopOld = mp.listView.getPaddingTop();
+                                int paddingTop = getPagePaddingTop(mp.selectedType);
+                                mp.listView.hintPaddingTop = paddingTop;
                                 mp.listView.setPadding(
                                     mp.listView.getPaddingLeft(),
-                                    getPagePaddingTop(mp.selectedType),
+                                    paddingTop,
                                     mp.listView.getPaddingRight(),
                                     mp.listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView())
                                 );
+                                int paddingTopNew = mp.listView.getPaddingTop();
+                                int scroll = paddingTopOld - paddingTopNew;
+                                if (scroll != 0) {
+                                    mp.listView.scrollBy(0, scroll);
+                                }
                             }
                         }
                     }
