@@ -2019,6 +2019,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (t != topPadding || b != getPaddingBottom()) {
                 setTopGlowOffset(t);
                 setPadding(0, t, 0, b);
+                if (animationSupportListView != null && (animationSupportListView.getPaddingTop() != t || animationSupportListView.getPaddingBottom() != b)) {
+                    animationSupportListView.setPadding(getPaddingLeft(), t, getPaddingLeft(), b);
+                    animationSupportListView.requestLayout();
+                }
                 if (hasStories) {
                     parentPage.progressView.setPaddingTop(t - dp(DialogStoriesCell.HEIGHT_IN_DP));
                 } else {
