@@ -6755,7 +6755,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user.photo.dc_id != 0) {
                     user.photo.photo_big.dc_id = user.photo.dc_id;
                 }
-                PhotoViewer.getInstance().openPhoto(user.photo.photo_big, provider);
+                PhotoViewer.getInstance().openPhoto(user.photo.photo_big, provider, true);
             }
         } else if (chatId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
@@ -6770,7 +6770,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     videoLocation = null;
                 }
-                PhotoViewer.getInstance().openPhotoWithVideo(chat.photo.photo_big, videoLocation, provider);
+                PhotoViewer.getInstance().openPhotoWithVideo(chat.photo.photo_big, videoLocation, provider, true);
             }
         }
     }
