@@ -70,7 +70,6 @@ import android.text.style.DynamicDrawableSpan;
 import android.text.style.LeadingMarginSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -207,7 +206,6 @@ import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.VectorAvatarThumbDrawable;
 import org.telegram.ui.Components.VideoForwardDrawable;
-import org.telegram.ui.Components.WebPlayerView;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.GradientClip;
@@ -235,7 +233,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.animator.BoolAnimator;
@@ -6722,6 +6719,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 hasEmbed = hasLinkPreview && !TextUtils.isEmpty(webpage.embed_url) && !messageObject.isGif() && !"instagram".equalsIgnoreCase(siteName);
                 boolean slideshow = false;
                 String webpageType = webpage != null ? webpage.type : null;
+                if (hasLinkPreview && messageObject.isIncomingLinksBlocked() && !MessageObject.isInternalTelegramWebpageType(webpageType)) {
+                    hasLinkPreview = false;
+                    webpage = null;
+                    siteName = null;
+                    hasEmbed = false;
+                    drawInstantView = false;
+                    webpageType = null;
+                }
                 TLRPC.Document androidThemeDocument = null;
                 TL_stories.StoryItem storyItem = null;
                 TLRPC.ThemeSettings androidThemeSettings = null;

@@ -17,6 +17,7 @@ import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -6871,6 +6872,7 @@ public class MessageObject {
         if (linkDescription != null) {
             return;
         }
+        boolean blockIncomingLinks = shouldBlockIncomingLinks();
         boolean allowUsernames = false;
         int hashtagsType = 0;
         TLRPC.WebPage webpage = null;
@@ -6918,10 +6920,13 @@ public class MessageObject {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
+                if (blockIncomingLinks) {
+                    removeDisallowedParsedLinks(linkDescription);
+                }
             }
             linkDescription = Emoji.replaceEmoji(linkDescription, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             if (webPageDescriptionEntities != null) {
-                addEntitiesToText(linkDescription, webPageDescriptionEntities, isOut(), allowUsernames, false, !allowUsernames);
+                addEntitiesToText(linkDescription, webPageDescriptionEntities, isOut(), allowUsernames, false, !allowUsernames, ENTITIES_ALL, blockIncomingLinks);
                 replaceAnimatedEmoji(linkDescription, webPageDescriptionEntities, Theme.chat_msgTextPaint.getFontMetricsInt());
             }
             if (hashtagsType != 0) {
@@ -6929,6 +6934,9 @@ public class MessageObject {
                     linkDescription = new SpannableStringBuilder(linkDescription);
                 }
                 addUrlsByPattern(isOutOwner(), linkDescription, false, hashtagsType, 0, false);
+                if (blockIncomingLinks) {
+                    removeDisallowedParsedLinks(linkDescription);
+                }
             }
         }
     }
@@ -7029,6 +7037,7 @@ public class MessageObject {
             captionSummarized = false;
             captionTranslated = false;
         }
+        boolean blockIncomingLinks = shouldBlockIncomingLinks();
         if (!isMediaEmpty() && !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) && !TextUtils.isEmpty(text)) {
             caption = Emoji.replaceEmoji(text, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             caption = replaceAnimatedEmoji(caption, entities, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
@@ -7061,13 +7070,16 @@ public class MessageObject {
                     }
                 }
                 addUrlsByPattern(isOutOwner(), caption, true, 0, 0, true);
+                if (blockIncomingLinks) {
+                    removeDisallowedParsedLinks(caption);
+                }
             }
 
-            addEntitiesToText(caption, useManualParse);
+            addEntitiesToText(caption, false, useManualParse, blockIncomingLinks);
             caption = FormattedDateSpan.applyFormatedDateEntities(caption);
-            if (isVideo()) {
+            if (!blockIncomingLinks && isVideo()) {
                 addUrlsByPattern(isOutOwner(), caption, true, 3, (int) getDuration(), false);
-            } else if (isMusic() || isVoice()) {
+            } else if (!blockIncomingLinks && (isMusic() || isVoice())) {
                 addUrlsByPattern(isOutOwner(), caption, true, 4, (int) getDuration(), false);
             }
         }
@@ -7307,10 +7319,14 @@ public class MessageObject {
     }
 
     private boolean addEntitiesToText(CharSequence text, boolean useManualParse) {
-        return addEntitiesToText(text, false, useManualParse);
+        return addEntitiesToText(text, false, useManualParse, false);
     }
 
     public boolean addEntitiesToText(CharSequence text, boolean photoViewer, boolean useManualParse) {
+        return addEntitiesToText(text, photoViewer, useManualParse, false);
+    }
+
+    public boolean addEntitiesToText(CharSequence text, boolean photoViewer, boolean useManualParse, boolean disableLinks) {
         if (text == null) {
             return false;
         }
@@ -7320,9 +7336,9 @@ public class MessageObject {
             entityItalic.offset = 0;
             entityItalic.length = text.length();
             entities.add(entityItalic);
-            return addEntitiesToText(text, entities, isOutOwner(), true, photoViewer, useManualParse);
+            return addEntitiesToText(text, entities, isOutOwner(), true, photoViewer, useManualParse, ENTITIES_ALL, disableLinks);
         } else {
-            return addEntitiesToText(text, getEntities(), isOutOwner(), true, photoViewer, useManualParse);
+            return addEntitiesToText(text, getEntities(), isOutOwner(), true, photoViewer, useManualParse, ENTITIES_ALL, disableLinks);
         }
     }
 
@@ -7447,6 +7463,10 @@ public class MessageObject {
     }
 
     public static boolean addEntitiesToText(CharSequence text, ArrayList<TLRPC.MessageEntity> entities, boolean out, boolean usernames, boolean photoViewer, boolean useManualParse, int allowed) {
+        return addEntitiesToText(text, entities, out, usernames, photoViewer, useManualParse, allowed, false);
+    }
+
+    public static boolean addEntitiesToText(CharSequence text, ArrayList<TLRPC.MessageEntity> entities, boolean out, boolean usernames, boolean photoViewer, boolean useManualParse, int allowed, boolean disableLinks) {
         if (!(text instanceof Spannable)) {
             return false;
         }
@@ -7515,6 +7535,8 @@ public class MessageObject {
             }
 
             if (allowed == ENTITIES_ONLY_HASHTAGS && !(entity instanceof TLRPC.TL_messageEntityHashtag))
+                continue;
+            if (disableLinks && isLinkableEntity(entity) && !isInternalTelegramLinkEntity(entity, text))
                 continue;
 
             if (
@@ -7907,6 +7929,7 @@ public class MessageObject {
     private boolean applyEntities() {
         generateLinkDescription();
         spoilLoginCode();
+        boolean blockIncomingLinks = shouldBlockIncomingLinks();
 
         boolean hasEntities;
         if (messageOwner.send_state != MESSAGE_SEND_STATE_SENT) {
@@ -7931,10 +7954,13 @@ public class MessageObject {
 
         if (useManualParse) {
             addLinks(isOutOwner(), messageText, true, true);
-        } else {
+            if (blockIncomingLinks) {
+                removeDisallowedParsedLinks(messageText);
+            }
+        } else if (!blockIncomingLinks) {
             addPhoneLinks(messageText);
         }
-        if (isYouTubeVideo()) {
+        if (!blockIncomingLinks && isYouTubeVideo()) {
             addUrlsByPattern(isOutOwner(), messageText, false, 3, Integer.MAX_VALUE, false);
         } else {
             applyTimestampsHighlightForReplyMsg();
@@ -7943,7 +7969,137 @@ public class MessageObject {
         if (!(messageText instanceof Spannable)) {
             messageText = new SpannableStringBuilder(messageText);
         }
-        return addEntitiesToText(messageText, useManualParse);
+        return addEntitiesToText(messageText, false, useManualParse, blockIncomingLinks);
+    }
+
+    private boolean shouldBlockIncomingLinks() {
+        if (isOutOwner()) {
+            return false;
+        }
+        long dialogId = getDialogId();
+        if (dialogId == 0) {
+            return false;
+        }
+        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+        return preferences.getBoolean("dialog_bar_block" + dialogId, false);
+    }
+
+    public boolean isIncomingLinksBlocked() {
+        return shouldBlockIncomingLinks();
+    }
+
+    public static boolean isInternalTelegramWebpageType(String type) {
+        if (type == null) {
+            return false;
+        }
+        switch (type) {
+            case "telegram_channel_boost":
+            case "telegram_group_boost":
+            case "telegram_giftcode":
+            case "telegram_livestream":
+            case "telegram_voicechat":
+            case "telegram_videochat":
+            case "telegram_channel":
+            case "telegram_channel_direct":
+            case "telegram_user":
+            case "telegram_nft":
+            case "telegram_megagroup":
+            case "telegram_message":
+            case "telegram_community":
+            case "telegram_chatlist":
+            case "telegram_botapp":
+            case "telegram_theme":
+            case "telegram_story":
+            case "telegram_background":
+            case "telegram_auction":
+            case "telegram_stickerset":
+            case "telegram_collection":
+            case "telegram_call":
+            case "telegram_album":
+            case "telegram_story_album":
+            case "telegram_bot":
+            case "telegram_chat":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static boolean isInternalTelegramLinkEntity(TLRPC.MessageEntity entity, CharSequence text) {
+        if (entity instanceof TLRPC.TL_messageEntityMention ||
+            entity instanceof TLRPC.TL_messageEntityHashtag ||
+            entity instanceof TLRPC.TL_messageEntityBotCommand ||
+            entity instanceof TLRPC.TL_messageEntityMentionName ||
+            entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
+            return true;
+        }
+        String url = null;
+        if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
+            url = entity.url;
+        } else if (entity.offset >= 0 && entity.length > 0 && entity.offset + entity.length <= text.length()) {
+            url = TextUtils.substring(text, entity.offset, entity.offset + entity.length);
+        }
+        return isInternalTelegramUrl(url);
+    }
+
+    private static boolean isLinkableEntity(TLRPC.MessageEntity entity) {
+        return entity instanceof TLRPC.TL_messageEntityUrl
+            || entity instanceof TLRPC.TL_messageEntityTextUrl
+            || entity instanceof TLRPC.TL_messageEntityEmail
+            || entity instanceof TLRPC.TL_messageEntityPhone
+            || entity instanceof TLRPC.TL_messageEntityMention
+            || entity instanceof TLRPC.TL_messageEntityHashtag
+            || entity instanceof TLRPC.TL_messageEntityBotCommand
+            || entity instanceof TLRPC.TL_messageEntityCashtag
+            || entity instanceof TLRPC.TL_messageEntityMentionName
+            || entity instanceof TLRPC.TL_inputMessageEntityMentionName
+            || entity instanceof TLRPC.TL_messageEntityBankCard;
+    }
+
+    private static void removeDisallowedParsedLinks(CharSequence text) {
+        if (!(text instanceof Spannable)) {
+            return;
+        }
+        Spannable spannable = (Spannable) text;
+        URLSpan[] spans = spannable.getSpans(0, spannable.length(), URLSpan.class);
+        for (int i = 0; i < spans.length; i++) {
+            URLSpan span = spans[i];
+            if (span == null || isInternalTelegramUrl(span.getURL())) {
+                continue;
+            }
+            spannable.removeSpan(span);
+        }
+    }
+
+    private static boolean isInternalTelegramUrl(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return false;
+        }
+        String normalized = normalizePotentialInternalUrl(url);
+        if (normalized.contains("telegram_")) {
+            return true;
+        }
+        if (normalized.startsWith("tg:") || normalized.startsWith("tg://")) {
+            return true;
+        }
+        if (normalized.startsWith("https://t.me/") || normalized.startsWith("http://t.me/") ||
+            normalized.startsWith("t.me/") || normalized.startsWith("https://telegram.me/") ||
+            normalized.startsWith("http://telegram.me/") || normalized.startsWith("telegram.me/")) {
+            return true;
+        }
+        try {
+            return Browser.isInternalUrl(normalized, null);
+        } catch (Exception ignore) {
+            return false;
+        }
+    }
+
+    private static String normalizePotentialInternalUrl(String url) {
+        String normalized = url.trim().toLowerCase();
+        if (normalized.startsWith("@")) {
+            normalized = "https://t.me/" + normalized.substring(1);
+        }
+        return normalized;
     }
 
     public static StaticLayout makeStaticLayout(CharSequence text, TextPaint paint, int width, float lineSpacingMult, float lineSpacingAdd, boolean dontIncludePad) {
