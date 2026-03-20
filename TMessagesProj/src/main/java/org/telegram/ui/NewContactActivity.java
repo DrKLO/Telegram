@@ -796,9 +796,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         progressView.setSize(dp(20));
         progressView.setProgressColor(getThemedColor(Theme.key_featuredStickers_addButton));
         doneButtonContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.END));
-        doneButtonContainer.addView(progressView, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
+        doneButtonContainer.addView(progressView, LayoutHelper.createFrame(40, 40, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
         doneButtonContainer.setPadding(0, actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0, 0, 0);
-        actionBar.addView(doneButtonContainer, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
+        actionBar.addView(doneButtonContainer, LayoutHelper.createFrame(120, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
         AndroidUtilities.updateViewVisibilityAnimated(doneButton, true, 1f, false);
         AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, false);

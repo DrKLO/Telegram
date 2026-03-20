@@ -1300,7 +1300,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
             if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
-                width = dp(250);
+                width = dp(270);
             }
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
@@ -1395,7 +1395,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
             if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
-                width = dp(250);
+                width = dp(270);
             }
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
@@ -1451,7 +1451,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = MeasureSpec.getSize(widthMeasureSpec);
             if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
-                width = dp(250);
+                width = dp(270);
             }
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
