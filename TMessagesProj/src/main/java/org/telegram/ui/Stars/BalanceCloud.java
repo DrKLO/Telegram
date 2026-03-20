@@ -23,6 +23,9 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+
 public class BalanceCloud extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount;
@@ -90,7 +93,7 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
 
         if (currency == AmountUtils.Currency.STARS) {
             textView1.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(
-                    R.string.Gift2MessageStarsInfo,
+                    chatId == -1L ? R.string.Gift2MessageStarsInfo : R.string.Gift2MessageChannelStarsInfo,
                     LocaleController.formatNumber(
                             chatId == -1L ? balance.asDecimal() : (int) BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount, ',')
                     ),
@@ -103,8 +106,13 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
             textView2.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.Gift2MessageStarsInfoLink), () -> {
                 new StarsIntroActivity.StarsOptionsSheet(getContext(), resourcesProvider).show();
             }), true, dp(8f / 3f), dp(1)));
+            textView2.setVisibility(chatId == -1L ? VISIBLE : GONE);
         } else if (currency == AmountUtils.Currency.TON) {
-            textView1.setText(StarsIntroActivity.replaceStarsWithPlain(true, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.Gift2MessageStarsInfoTON, balance.asDecimalString())), .60f, coloredImageSpansTon));
+            textView1.setText(StarsIntroActivity.replaceStarsWithPlain(true, AndroidUtilities.replaceTags(
+                    chatId == -1L
+                            ? LocaleController.formatString(R.string.Gift2MessageStarsInfoTON, balance.asDecimalString())
+                            : LocaleController.formatString(R.string.Gift2MessageChannelStarsInfoTON, new BigDecimal(BotStarsController.getInstance(currentAccount).getBotStarsBalance(-chatId).amount).divide(BigDecimal.valueOf(1_000_000_000), MathContext.UNLIMITED).stripTrailingZeros().toPlainString())
+            ), .60f, coloredImageSpansTon));
             coloredImageSpansTon[0].setColorKey(Theme.key_undo_cancelColor);
 
             final StringBuilder sb = new StringBuilder(10);

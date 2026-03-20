@@ -8653,7 +8653,9 @@
     <string name="Gift2MessagePremiumInfo">Only %s will see your message.</string>
     <string name="Gift2MessageStars">Pay with ⭐️%d</string>
     <string name="Gift2MessageStarsInfo">Your balance is ⭐️%s</string>
+    <string name="Gift2MessageChannelStarsInfo">Your channel balance is ⭐️%s</string>
     <string name="Gift2MessageStarsInfoTON">Your balance is ⭐️**%s**</string>
+    <string name="Gift2MessageChannelStarsInfoTON">Your channel balance is ⭐️**%s**</string>
     <string name="Gift2MessageStarsInfoLink">**Get More Stars >**</string>
     <string name="TitleSetupProxy">set up proxy ></string>
     <string name="Gift2Hide">Hide My Name</string>
