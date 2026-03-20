@@ -515,13 +515,29 @@ public class Bulletin {
 
     public void updatePosition() {
         if (layout != null) {
+            syncBottomOffsetWithDelegate();
             layout.updatePosition();
         }
     }
 
     public static void updateCurrentPosition() {
         if (visibleBulletin != null && visibleBulletin.layout != null) {
+            visibleBulletin.syncBottomOffsetWithDelegate();
             visibleBulletin.layout.updatePosition();
+        }
+    }
+
+    private void syncBottomOffsetWithDelegate() {
+        if (layout == null || layout.top || currentDelegate == null || !currentDelegate.bottomOffsetAnimated()) {
+            return;
+        }
+        final int newOffset = currentDelegate.getBottomOffset(tag);
+        if (bottomOffsetSpring != null && bottomOffsetSpring.isRunning()) {
+            if (bottomOffsetSpring.getSpring() != null) {
+                bottomOffsetSpring.getSpring().setFinalPosition(newOffset);
+            }
+        } else {
+            lastBottomOffset = newOffset;
         }
     }
 

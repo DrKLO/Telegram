@@ -1,6 +1,5 @@
 package org.telegram.messenger.video;
 
-import static org.telegram.messenger.AndroidUtilities.checkAndroidTheme;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
@@ -16,10 +15,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.LruCache;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -32,10 +28,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.aspectj.lang.annotation.AdviceName;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -51,7 +46,6 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
@@ -62,20 +56,20 @@ import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.DarkBlueThemeResourcesProvider;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.RevenueSharingAdsInfoBottomSheet;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
 public class VideoAds {
+
+    public static final int BULLETIN_TAG_VIDEO_AD = 999;
 
     private final int currentAccount;
     private final long dialogId;
@@ -154,6 +148,10 @@ public class VideoAds {
     }
     public boolean isPopupShown() {
         return currentMenu != null && currentMenu.isShown() || premiumSheet != null && premiumSheet.isShown();
+    }
+
+    public boolean isBulletinShown() {
+        return bulletin != null;
     }
 
     private void init(BulletinFactory bulletinFactory) {
@@ -323,6 +321,7 @@ public class VideoAds {
         });
 
         final Bulletin thisBulletin = bulletin = bulletinFactory.create(layout, ad.max_display_duration * 1000);
+        bulletin.setTag(BULLETIN_TAG_VIDEO_AD);
         bulletin.setCanHide(bulletin.setCanHideOnShow = false);
         Runnable canHideCallback = () -> {
             if (bulletin != null && bulletin == thisBulletin) {

@@ -361,6 +361,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private ActionBar actionBar;
     private boolean isActionBarVisible = true;
+    private float bulletinCaptionOffset = 1.0f;
     private boolean isPhotosListViewVisible;
     private AnimatorSet actionBarAnimator;
     private PhotoViewerActionBarContainer actionBarContainer;
@@ -3307,6 +3308,36 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         if (groupedPhotosListView != null && groupedPhotosListView.hasPhotos() && (AndroidUtilities.isTablet() || containerView.getMeasuredHeight() > containerView.getMeasuredWidth())) {
                             offset += groupedPhotosListView.getHeight() * groupedPhotosListView.getAlpha();
+                        }
+                        if (tag == VideoAds.BULLETIN_TAG_VIDEO_AD && captionScrollView != null && captionContainer != null && captionTextViewSwitcher != null) {
+                            final int captionTopYInContainer = Math.round(
+                                captionScrollView.getTop()
+                                    + captionScrollView.getTranslationY()
+                                    + captionContainer.getTop()
+                                    - captionScrollView.getScrollY()
+                                    + captionTextViewSwitcher.getTranslationY()
+                            );
+                            if (captionTopYInContainer < containerView.getHeight()) {
+                                final int captionOffset = containerView.getHeight() - captionTopYInContainer;
+                                final int captionOffsetWithProgress = Math.round(captionOffset * bulletinCaptionOffset);
+                                if (captionOffsetWithProgress > offset) {
+                                    offset = captionOffsetWithProgress;
+                                }
+                            }
+                        }
+                        int topLimit = 0;
+                        if (actionBar != null && actionBar.getVisibility() == VISIBLE && actionBar.getAlpha() > 0f) {
+                            topLimit = Math.max(topLimit, Math.round(actionBar.getY() + actionBar.getHeight()));
+                        }
+                        final Bulletin currentBulletin = Bulletin.find(containerView);
+                        final Bulletin.Layout currentBulletinLayout = currentBulletin != null ? currentBulletin.getLayout() : null;
+                        final int bulletinHeight = currentBulletinLayout != null && currentBulletinLayout.getHeight() > 0 ? currentBulletinLayout.getHeight() : dp(56);
+                        int maxOffset = -1;
+                        if (tag == VideoAds.BULLETIN_TAG_VIDEO_AD && topLimit > 0) {
+                            maxOffset = Math.max(0, containerView.getHeight() - topLimit - bulletinHeight);
+                            if (offset > maxOffset) {
+                                offset = maxOffset;
+                            }
                         }
                     }
                     return offset;
@@ -13287,9 +13318,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 videoPlayerControlFrameLayout.setProgress(show ? 1.0f : 0.0f);
             }
             arrayList.add(ObjectAnimator.ofFloat(groupedPhotosListView, View.ALPHA, show ? 1.0f : 0.0f));
-            final ValueAnimator anim = ValueAnimator.ofFloat(0, 1);
-            anim.addUpdateListener(a -> Bulletin.updateCurrentPosition());
-            arrayList.add(anim);
+            final float targetBulletinCaptionOffset = show ? 1.0f : 0.0f;
+
+            final ValueAnimator bulletinCaptionOffsetAnimator = ValueAnimator.ofFloat(bulletinCaptionOffset, targetBulletinCaptionOffset);
+            bulletinCaptionOffsetAnimator.setDuration(50);
+            bulletinCaptionOffsetAnimator.addUpdateListener(a -> {
+                bulletinCaptionOffset = (float) a.getAnimatedValue();
+                Bulletin.updateCurrentPosition();
+            });
+            arrayList.add(bulletinCaptionOffsetAnimator);
             if (params.enableTranslationAnimation) {
                 arrayList.add(ObjectAnimator.ofFloat(groupedPhotosListView, View.TRANSLATION_Y, show ? 0 : offsetY));
             } else {
@@ -15903,6 +15940,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
 
                     @Override
+                    protected void onScrollUpdate() {
+                        if (isActionBarVisible) {
+                            Bulletin.updateCurrentPosition();
+                        }
+                    }
+
+                    @Override
                     public void invalidate() {
                         super.invalidate();
                         if (isActionBarVisible) {
@@ -15917,8 +15961,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 final int topMargin = (isStatusBarVisible() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
                                 final int captionTop = captionContainer.getTop() + (int) translationY - scrollY + topMargin - dp(12);
                                 final int enlargeIconTop = (int) fullscreenButton[0].getY();
+                                final int adOffset = ads != null && ads.isBulletinShown() ? dp(56) : 0;
                                 enalrgeIconVisible = captionTop > enlargeIconTop + dp(32);
-                                buttonVisible = captionTop > progressBottom;
+                                buttonVisible = captionTop > progressBottom + adOffset;
                             }
                             if (allowShowFullscreenButton) {
                                 if (fullscreenButton[0].getTag() != null && ((Integer) fullscreenButton[0].getTag()) == 3 && enalrgeIconVisible) {
