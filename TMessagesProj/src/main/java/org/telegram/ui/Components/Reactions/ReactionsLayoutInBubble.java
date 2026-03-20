@@ -888,6 +888,8 @@ public class ReactionsLayoutInBubble {
                 scrimPreviewCounterDrawable.setTextSize(dp(12));
                 scrimPreviewCounterDrawable.setCallback(supercallback);
                 scrimPreviewCounterDrawable.setTypeface(AndroidUtilities.bold());
+                scrimPreviewCounterDrawable.setIncludeFontPadding(false);
+                scrimPreviewCounterDrawable.centerY = false;
                 scrimPreviewCounterDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
                 scrimPreviewCounterDrawable.setScaleProperty(.35f);
             }
@@ -1193,7 +1195,8 @@ public class ReactionsLayoutInBubble {
                 if (scrimCounterWidth < dp(12)) {
                     scrimCounterX += (dp(12) - scrimCounterWidth) / 2f;
                 }
-                canvas.translate(scrimCounterX, y - dp(1));
+                final float scrimCounterY = y + (height - dp(23)) / 2f + dp(4);
+                canvas.translate(scrimCounterX, scrimCounterY);
                 scrimPreviewCounterDrawable.setBounds(0, 0, width, height);
                 scrimPreviewCounterDrawable.draw(canvas);
                 scrimPreviewCounterDrawable.setAlpha((int) (0xFF * alpha));
