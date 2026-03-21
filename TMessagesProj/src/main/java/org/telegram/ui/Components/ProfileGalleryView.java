@@ -685,6 +685,13 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         }
     }
 
+    public ImageLocation getCurrentImageLocation() {
+        if (getCurrentItemView() != null && getCurrentItemView().getImageReceiver() != null) {
+            return getCurrentItemView().getImageReceiver().getImageLocation();
+        }
+        return null;
+    }
+
     public View getItemViewAt(int index) {
         if (adapter != null && adapter.objects.size() > index && index >= 0) {
             Item i = adapter.objects.get(index);
@@ -775,6 +782,28 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
     public int getRealPosition() {
         return adapter.getRealPosition(getCurrentItem());
+    }
+
+    public int getAdapterPositionForPhotoIndex(int photoIndex) {
+        int extra = adapter != null ? adapter.getExtraCount() : 0;
+        return extra + (hasActiveVideo ? 1 : 0) + photoIndex;
+    }
+
+    public int findPhotoIndexByLocation(ImageLocation location) {
+        if (location == null) return -1;
+        for (int i = 0; i < imagesLocations.size(); i++) {
+            ImageLocation loc = imagesLocations.get(i);
+            if (loc == null) continue;
+            if (loc.location != null && location.location != null
+                    && loc.location.local_id == location.location.local_id
+                    && loc.location.volume_id == location.location.volume_id) {
+                return i;
+            }
+            if (loc.photoId != 0 && loc.photoId == location.photoId) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public TLRPC.Photo getPhoto(int index) {

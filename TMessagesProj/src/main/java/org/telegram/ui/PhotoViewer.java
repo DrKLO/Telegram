@@ -2912,7 +2912,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         default boolean canLoadMoreAvatars() {
             return true;
         }
-        default void onReleasePlayerBeforeClose(int currentIndex) {};
+        default void onReleasePlayerBeforeClose(int currentIndex) {}
+        default void onPhotoIndexChanged(int index, ImageLocation imageLocation) {}
         default long getDialogId() { return 0; }
 
         default boolean forceAllInGroup() {
@@ -15596,6 +15597,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             currentFileLocation = imagesArrLocations.get(index);
             currentFileLocationVideo = imagesArrLocationsVideo.get(index);
             menuItem.setSubItemShown(gallery_menu_create_sticker, false);
+            if (placeProvider != null) {
+                placeProvider.onPhotoIndexChanged(index, currentFileLocation);
+            }
         } else if (!imagesArrLocals.isEmpty()) {
             if (index < 0 || index >= imagesArrLocals.size()) {
                 closePhoto(false, false);
@@ -17644,7 +17648,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     backgroundDrawable.drawRunnable = () -> {
                         disableShowCheck = false;
-                        object.imageReceiver.setVisible(false, true);
+                        if (!object.fadeIn) {
+                            object.imageReceiver.setVisible(false, true);
+                        }
                     };
                     if (parentChatActivity != null && parentChatActivity.getFragmentView() != null) {
                         UndoView undoView = parentChatActivity.getUndoView();

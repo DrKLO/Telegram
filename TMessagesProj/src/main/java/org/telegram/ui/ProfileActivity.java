@@ -763,52 +763,95 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return null;
             }
 
-            if (avatarContainer.getScaleX() > 0.96f && closing) {
+            if (avatarContainer.getScaleX() > 0.96f && (closing || !needPreview)) {
                 return null;
             }
 
-            TLRPC.FileLocation photoBig = null;
-            if (userId != 0) {
-                TLRPC.User user = getMessagesController().getUser(userId);
-                if (user != null && user.photo != null && user.photo.photo_big != null) {
-                    photoBig = user.photo.photo_big;
+            BackupImageView imageView = null;
+            if (avatarsViewPager != null && avatarsViewPager.hasImages()) {
+                ImageLocation galleryImg = avatarsViewPager.getCurrentImageLocation();
+                if (galleryImg != null && galleryImg.location != null
+                        && galleryImg.location.local_id == fileLocation.local_id
+                        && galleryImg.location.volume_id == fileLocation.volume_id
+                        && galleryImg.dc_id == fileLocation.dc_id) {
+                    imageView = avatarsViewPager.getCurrentItemView();
                 }
-            } else if (chatId != 0) {
-                TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                if (chat != null && chat.photo != null && chat.photo.photo_big != null) {
-                    photoBig = chat.photo.photo_big;
+            }
+            if (imageView == null) {
+                TLRPC.FileLocation photoBig = null;
+                if (userId != 0) {
+                    TLRPC.User user = getMessagesController().getUser(userId);
+                    if (user != null && user.photo != null && user.photo.photo_big != null) {
+                        photoBig = user.photo.photo_big;
+                    }
+                } else if (chatId != 0) {
+                    TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                    if (chat != null && chat.photo != null && chat.photo.photo_big != null) {
+                        photoBig = chat.photo.photo_big;
+                    }
                 }
+                if (photoBig != null && photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
+                    imageView = avatarImage;
+                }
+            }
+            if (imageView == null) {
+                return null;
             }
 
-            if (photoBig != null && photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
-                int[] coords = new int[2];
-                avatarImage.getLocationInWindow(coords);
-                PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
-                object.viewX = coords[0];
-                object.viewY = coords[1];
-                object.parentView = avatarImage;
-                object.imageReceiver = avatarImage.getImageReceiver();
-                if (userId != 0) {
-                    object.dialogId = userId;
-                } else if (chatId != 0) {
-                    object.dialogId = -chatId;
-                }
-                object.thumb = object.imageReceiver.getBitmapSafe();
-                if (object.thumb == null) {
-                    return null;
-                }
-                object.size = -1;
-                object.radius = avatarImage.getImageReceiver().getRoundRadius(true);
-                object.scale = avatarContainer.getScaleX();
-                object.canEdit = userId == getUserConfig().clientUserId;
-                object.fadeIn = avatarContainer.getScaleX() > 0.96f;
-                return object;
+            int[] coords = new int[2];
+            avatarContainer.getLocationInWindow(coords);
+            PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
+            object.viewX = coords[0];
+            object.viewY = coords[1];
+            object.parentView = avatarContainer;
+            object.imageReceiver = imageView.getImageReceiver();
+            if (userId != 0) {
+                object.dialogId = userId;
+            } else if (chatId != 0) {
+                object.dialogId = -chatId;
             }
-            return null;
+            object.thumb = object.imageReceiver.getBitmapSafe();
+            if (object.thumb == null) {
+                return null;
+            }
+            object.size = -1;
+            object.radius = imageView.getImageReceiver().getRoundRadius(true);
+            object.scale = imageView.getScaleX();
+            object.canEdit = userId == getUserConfig().clientUserId;
+            object.fadeIn = avatarContainer.getScaleX() > 0.96f;
+            return object;
+        }
+
+        @Override
+        public void onPhotoIndexChanged(int index, ImageLocation imageLocation) {
+            if (avatarsViewPager == null || imageLocation == null) return;
+            int pagerIndex = avatarsViewPager.findPhotoIndexByLocation(imageLocation);
+            if (pagerIndex < 0) {
+                return;
+            }
+            avatarsViewPager.setCurrentItem(
+                avatarsViewPager.getAdapterPositionForPhotoIndex(pagerIndex), false
+            );
+        }
+
+        @Override
+        public void onPreClose() {
+            if (avatarsViewPager != null) {
+                BackupImageView cur = avatarsViewPager.getCurrentItemView();
+                if (cur != null) {
+                    cur.getImageReceiver().setVisible(true, true);
+                }
+            }
         }
 
         @Override
         public void willHidePhotoViewer() {
+            if (avatarsViewPager != null) {
+                BackupImageView cur = avatarsViewPager.getCurrentItemView();
+                if (cur != null) {
+                    cur.getImageReceiver().setVisible(true, true);
+                }
+            }
             avatarImage.getImageReceiver().setVisible(true, true);
         }
 
@@ -6747,6 +6790,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void openAvatar(boolean ignoreDragging) {
         if (listView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !ignoreDragging) {
             return;
+        }
+        if (avatarsViewPager != null && avatarsViewPager.hasImages()) {
+            ImageLocation realImageLoc = avatarsViewPager.getCurrentImageLocation();
+            if (realImageLoc != null && realImageLoc.location != null) {
+                PhotoViewer.getInstance().setParentActivity(ProfileActivity.this);
+                TLRPC.FileLocation fileLoc = realImageLoc.location;
+                if (realImageLoc.dc_id != 0) {
+                    fileLoc.dc_id = realImageLoc.dc_id;
+                }
+                PhotoViewer.getInstance().openPhoto(fileLoc, realImageLoc, provider);
+                return;
+            }
         }
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
