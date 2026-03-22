@@ -2276,6 +2276,33 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     mediaPage.emptyView.showProgress(storiesList != null && (storiesList.isLoading() || hasInternet() && storiesList.getCount() > 0));
                 }
             }
+
+            @Override
+            public void notifyItemRangeChanged(int positionStart, int itemCount) {
+                super.notifyItemRangeChanged(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingStoriesAdapter.notifyItemRangeChanged(positionStart, itemCount);
+                }
+            }
+
+            @Override
+            public void notifyItemRangeInserted(int positionStart, int itemCount) {
+                super.notifyItemRangeInserted(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingStoriesAdapter.notifyItemRangeInserted(positionStart, itemCount);
+                }
+            }
+
+            @Override
+            public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+                super.notifyItemRangeRemoved(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingStoriesAdapter.notifyItemRangeRemoved(positionStart, itemCount);
+                }
+            }
         };
         storiesReorder = new ItemTouchHelper(new ItemTouchHelper.Callback() {
             private RecyclerListView listView;
@@ -2363,6 +2390,33 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
                 if (mediaPage != null) {
                     mediaPage.emptyView.showProgress(storiesList != null && (storiesList.isLoading() || hasInternet() && storiesList.getCount() > 0));
+                }
+            }
+
+            @Override
+            public void notifyItemRangeChanged(int positionStart, int itemCount) {
+                super.notifyItemRangeChanged(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_ARCHIVED_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingArchivedStoriesAdapter.notifyItemRangeChanged(positionStart, itemCount);
+                }
+            }
+
+            @Override
+            public void notifyItemRangeInserted(int positionStart, int itemCount) {
+                super.notifyItemRangeInserted(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_ARCHIVED_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingArchivedStoriesAdapter.notifyItemRangeInserted(positionStart, itemCount);
+                }
+            }
+
+            @Override
+            public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+                super.notifyItemRangeRemoved(positionStart, itemCount);
+                MediaPage mediaPage = getMediaPage(TAB_ARCHIVED_STORIES);
+                if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                    animationSupportingArchivedStoriesAdapter.notifyItemRangeRemoved(positionStart, itemCount);
                 }
             }
         };
@@ -6253,7 +6307,33 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 updateFastScrollVisibility(page, true);
             }
             if (page != null) {
-                AndroidUtilities.notifyDataSetChanged(page.listView);
+                StoriesAdapter typedStoriesAdapter = storyAlbums_getStoriesAdapterByTabType(page.selectedType);
+                if (typedStoriesAdapter != null && typedStoriesAdapter.storiesList == list && args.length > 1 && args[1] instanceof StoriesController.StoriesListUpdate) {
+                    StoriesController.StoriesListUpdate u = (StoriesController.StoriesListUpdate) args[1];
+                    if (u.fullRefresh) {
+                        AndroidUtilities.notifyDataSetChanged(page.listView);
+                    } else {
+                        int upload = typedStoriesAdapter.uploadingStoriesSize();
+                        if (u.changeCount > 0) {
+                            typedStoriesAdapter.notifyItemRangeChanged(upload + u.relativeChangeStart, u.changeCount);
+                        }
+                        if (u.insertCount > 0) {
+                            typedStoriesAdapter.notifyItemRangeInserted(upload + u.relativeInsertStart, u.insertCount);
+                        }
+                        if (u.removeCount > 0) {
+                            typedStoriesAdapter.notifyItemRangeRemoved(upload + u.relativeRemoveStart, u.removeCount);
+                        }
+                        typedStoriesAdapter.checkColumns();
+                    }
+                } else {
+                    AndroidUtilities.notifyDataSetChanged(page.listView);
+                }
+                if (isAnyStoryPageType(page.selectedType)) {
+                    StoriesAdapter sa = storyAlbums_getStoriesAdapterByTabType(page.selectedType);
+                    if (sa != null) {
+                        page.emptyView.showProgress(sa.storiesList != null && (sa.storiesList.isLoading() || hasInternet() && sa.storiesList.getCount() > 0));
+                    }
+                }
                 if (page.listView.getLayoutManager() instanceof LinearLayoutManager) {
                     checkLoadMoreScroll(page, page.listView, (LinearLayoutManager) page.listView.getLayoutManager());
                 }
@@ -9940,6 +10020,34 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             return true;
         }
 
+        public int uploadingStoriesSize() {
+            return uploadingStories.size();
+        }
+
+        @Override
+        public void notifyItemRangeChanged(int positionStart, int itemCount) {
+            super.notifyItemRangeChanged(positionStart, itemCount);
+            if (supportingAdapter != null) {
+                supportingAdapter.notifyItemRangeChanged(positionStart, itemCount);
+            }
+        }
+
+        @Override
+        public void notifyItemRangeInserted(int positionStart, int itemCount) {
+            super.notifyItemRangeInserted(positionStart, itemCount);
+            if (supportingAdapter != null) {
+                supportingAdapter.notifyItemRangeInserted(positionStart, itemCount);
+            }
+        }
+
+        @Override
+        public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+            super.notifyItemRangeRemoved(positionStart, itemCount);
+            if (supportingAdapter != null) {
+                supportingAdapter.notifyItemRangeRemoved(positionStart, itemCount);
+            }
+        }
+
         @Override
         public void notifyDataSetChanged() {
             if (storiesList != null && isBot()) {
@@ -11793,6 +11901,33 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                     if (mediaPage != null) {
                         mediaPage.emptyView.showProgress(storiesList != null && (storiesList.isLoading() || hasInternet() && storiesList.getCount() > 0));
+                    }
+                }
+
+                @Override
+                public void notifyItemRangeChanged(int positionStart, int itemCount) {
+                    super.notifyItemRangeChanged(positionStart, itemCount);
+                    MediaPage mediaPage = getMediaPage(tabType);
+                    if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                        adapterSupport.notifyItemRangeChanged(positionStart, itemCount);
+                    }
+                }
+
+                @Override
+                public void notifyItemRangeInserted(int positionStart, int itemCount) {
+                    super.notifyItemRangeInserted(positionStart, itemCount);
+                    MediaPage mediaPage = getMediaPage(tabType);
+                    if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                        adapterSupport.notifyItemRangeInserted(positionStart, itemCount);
+                    }
+                }
+
+                @Override
+                public void notifyItemRangeRemoved(int positionStart, int itemCount) {
+                    super.notifyItemRangeRemoved(positionStart, itemCount);
+                    MediaPage mediaPage = getMediaPage(tabType);
+                    if (mediaPage != null && mediaPage.animationSupportingListView.getVisibility() == View.VISIBLE) {
+                        adapterSupport.notifyItemRangeRemoved(positionStart, itemCount);
                     }
                 }
             };

@@ -2824,8 +2824,9 @@ public class StoriesController {
                     messageObjects.add(msg);
                 }
 
-                AndroidUtilities.cancelRunOnUIThread(super.notify);
-                AndroidUtilities.runOnUIThread(super.notify);
+                markStoriesListUpdateFull();
+                AndroidUtilities.cancelRunOnUIThread(super.storiesListNotifyRunnable);
+                AndroidUtilities.runOnUIThread(super.storiesListNotifyRunnable);
 
                 if (callback != null) {
                     AndroidUtilities.runOnUIThread(callback);
@@ -2894,8 +2895,9 @@ public class StoriesController {
         }
 
         public void notifyUpdate() {
-            AndroidUtilities.cancelRunOnUIThread(super.notify);
-            AndroidUtilities.runOnUIThread(super.notify);
+            markStoriesListUpdateFull();
+            AndroidUtilities.cancelRunOnUIThread(super.storiesListNotifyRunnable);
+            AndroidUtilities.runOnUIThread(super.storiesListNotifyRunnable);
         }
 
         public void reload(Runnable callback) {
@@ -3013,8 +3015,9 @@ public class StoriesController {
             }
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
 
-            AndroidUtilities.cancelRunOnUIThread(super.notify);
-            AndroidUtilities.runOnUIThread(super.notify);
+            markStoriesListUpdateFull();
+            AndroidUtilities.cancelRunOnUIThread(super.storiesListNotifyRunnable);
+            AndroidUtilities.runOnUIThread(super.storiesListNotifyRunnable);
         }
 
         public void delete(TLRPC.MessageMedia media) {
@@ -3104,8 +3107,9 @@ public class StoriesController {
                         } else {
                             this.count = 0;
                             last_offset = "";
-                            AndroidUtilities.cancelRunOnUIThread(super.notify);
-                            AndroidUtilities.runOnUIThread(super.notify);
+                            markStoriesListUpdateFull();
+                            AndroidUtilities.cancelRunOnUIThread(super.storiesListNotifyRunnable);
+                            AndroidUtilities.runOnUIThread(super.storiesListNotifyRunnable);
                         }
                     });
                     return true;
@@ -3141,8 +3145,9 @@ public class StoriesController {
                     last_offset = messageObjects.size() >= r.count || r.stories.isEmpty() ? null : r.next_offset;
                     this.loading = false;
 
-                    AndroidUtilities.cancelRunOnUIThread(super.notify);
-                    AndroidUtilities.runOnUIThread(super.notify);
+                    markStoriesListUpdateFull();
+                    AndroidUtilities.cancelRunOnUIThread(super.storiesListNotifyRunnable);
+                    AndroidUtilities.runOnUIThread(super.storiesListNotifyRunnable);
                 }
             }));
 
@@ -3173,6 +3178,77 @@ public class StoriesController {
         public MessageObject findMessageObject(int id) {
             if (id < 0 || id >= messageObjects.size()) return null;
             return messageObjects.get(id);
+        }
+    }
+
+    public static class StoriesListUpdate {
+        public static final StoriesListUpdate FULL = new StoriesListUpdate(true, 0, 0, 0, 0, 0, 0);
+        public final boolean fullRefresh;
+        public final int relativeChangeStart;
+        public final int changeCount;
+        public final int relativeInsertStart;
+        public final int insertCount;
+        public final int relativeRemoveStart;
+        public final int removeCount;
+
+        private StoriesListUpdate(boolean fullRefresh, int relativeChangeStart, int changeCount, int relativeInsertStart, int insertCount, int relativeRemoveStart, int removeCount) {
+            this.fullRefresh = fullRefresh;
+            this.relativeChangeStart = relativeChangeStart;
+            this.changeCount = changeCount;
+            this.relativeInsertStart = relativeInsertStart;
+            this.insertCount = insertCount;
+            this.relativeRemoveStart = relativeRemoveStart;
+            this.removeCount = removeCount;
+        }
+
+        public static StoriesListUpdate computeContiguousRemoval(ArrayList<Integer> oldIds, ArrayList<Integer> newIds) {
+            if (oldIds == null || newIds == null) {
+                return FULL;
+            }
+            int oldLen = oldIds.size();
+            int newLen = newIds.size();
+            int removed = oldLen - newLen;
+            if (removed <= 0) {
+                return FULL;
+            }
+            int prefix = 0;
+            while (prefix < newLen && prefix < oldLen && Objects.equals(oldIds.get(prefix), newIds.get(prefix))) {
+                prefix++;
+            }
+            int suffix = 0;
+            while (suffix < oldLen - prefix && suffix < newLen - prefix &&
+                    Objects.equals(oldIds.get(oldLen - 1 - suffix), newIds.get(newLen - 1 - suffix))) {
+                suffix++;
+            }
+            if (prefix + removed + suffix != oldLen) {
+                return FULL;
+            }
+            return new StoriesListUpdate(false, 0, 0, 0, 0, prefix, removed);
+        }
+
+        public static StoriesListUpdate computeAfterFill(int oldMsgSize, int oldGetCount, ArrayList<Integer> oldPrefixIds, ArrayList<MessageObject> newMessageObjects, int newGetCount) {
+            int newMsgSize = newMessageObjects.size();
+            if (newMsgSize < oldMsgSize) {
+                ArrayList<Integer> newIds = new ArrayList<>(newMsgSize);
+                for (int i = 0; i < newMsgSize; i++) {
+                    newIds.add(newMessageObjects.get(i).getId());
+                }
+                return computeContiguousRemoval(oldPrefixIds, newIds);
+            }
+            if (newGetCount < oldGetCount) {
+                return FULL;
+            }
+            if (oldPrefixIds.size() != oldMsgSize) {
+                return FULL;
+            }
+            for (int i = 0; i < oldMsgSize; i++) {
+                if (newMessageObjects.get(i).getId() != oldPrefixIds.get(i)) {
+                    return FULL;
+                }
+            }
+            int changeCount = Math.max(0, Math.min(oldGetCount, newMsgSize) - oldMsgSize);
+            int insertCount = newGetCount - oldGetCount;
+            return new StoriesListUpdate(false, oldMsgSize, changeCount, oldGetCount, insertCount, 0, 0);
         }
     }
 
@@ -3243,19 +3319,34 @@ public class StoriesController {
 
         private final ArrayList<MessageObject> tempArr = new ArrayList<>();
 
-        private final Runnable notify = () -> {
-            NotificationCenter.getInstance(StoriesList.this.currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, StoriesList.this);
+        private StoriesListUpdate pendingStoriesListUpdate;
+
+        protected void markStoriesListUpdateFull() {
+            pendingStoriesListUpdate = StoriesListUpdate.FULL;
+        }
+
+        protected final Runnable storiesListNotifyRunnable = () -> {
+            StoriesListUpdate u = pendingStoriesListUpdate != null ? pendingStoriesListUpdate : StoriesListUpdate.FULL;
+            pendingStoriesListUpdate = null;
+            NotificationCenter.getInstance(StoriesList.this.currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, StoriesList.this, u);
         };
 
         public void fill(boolean notify) {
             fill(this.messageObjects, showPhotos, showVideos);
             if (notify) {
-                AndroidUtilities.cancelRunOnUIThread(this.notify);
-                AndroidUtilities.runOnUIThread(this.notify);
+                AndroidUtilities.cancelRunOnUIThread(this.storiesListNotifyRunnable);
+                AndroidUtilities.runOnUIThread(this.storiesListNotifyRunnable);
             }
         }
 
         public void fill(ArrayList<MessageObject> arrayList, boolean showPhotos, boolean showVideos) {
+            int oldMsgSize = arrayList.size();
+            int oldGetCount = getCount();
+            ArrayList<Integer> oldPrefixIds = new ArrayList<>(oldMsgSize);
+            for (int i = 0; i < oldMsgSize; i++) {
+                MessageObject mo = arrayList.get(i);
+                oldPrefixIds.add(mo != null ? mo.getId() : 0);
+            }
             tempArr.clear();
             if (type == TYPE_PINNED && albumId <= 0) {
                 for (int id : pinnedIds) {
@@ -3293,6 +3384,7 @@ public class StoriesController {
             }
             arrayList.clear();
             arrayList.addAll(tempArr);
+            pendingStoriesListUpdate = StoriesListUpdate.computeAfterFill(oldMsgSize, oldGetCount, oldPrefixIds, arrayList, getCount());
         }
 
         private boolean filter(MessageObject msg, boolean photos, boolean videos) {
@@ -3446,7 +3538,9 @@ public class StoriesController {
                         toLoad = null;
                     }
 
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, StoriesList.this);
+                    StoriesListUpdate u = pendingStoriesListUpdate != null ? pendingStoriesListUpdate : StoriesListUpdate.FULL;
+                    pendingStoriesListUpdate = null;
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, StoriesList.this, u);
                 });
             });
         }
