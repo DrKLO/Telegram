@@ -3078,7 +3078,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             public void closeSearchField(boolean closeKeyboard) {
                 fragmentSearchField.editText.getText().clear();
-                if (closeKeyboard) {
+                if (closeKeyboard && fragmentSearchField.editText.isFocused()) {
                     AndroidUtilities.hideKeyboard(fragmentSearchField.editText);
                 }
                 fragmentSearchField.editText.clearFocus();
