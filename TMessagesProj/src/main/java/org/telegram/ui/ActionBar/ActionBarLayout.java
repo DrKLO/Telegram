@@ -888,27 +888,74 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         return innerTranslationX;
     }
 
+    /**
+     * Force-resets all animation state flags to unblock navigation.
+     * Called when animation state may have become stale (e.g., after pause/resume cycle,
+     * or when animation has been running longer than expected).
+     */
+    private void forceResetAnimationState() {
+        if (animationRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(animationRunnable);
+            animationRunnable = null;
+        }
+        if (waitingForKeyboardCloseRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
+            waitingForKeyboardCloseRunnable = null;
+        }
+        if (transitionAnimationInProgress) {
+            if (currentAnimation != null) {
+                currentAnimation.cancel();
+                currentAnimation = null;
+            }
+            // Do NOT call onCloseAnimationEnd()/onOpenAnimationEnd() here.
+            // Those callbacks modify the fragment stack (remove/add fragments),
+            // which must not happen during lifecycle events like onPause/onResume.
+            // Just discard the callbacks and reset the flags.
+            onCloseAnimationEndRunnable = null;
+            onOpenAnimationEndRunnable = null;
+            transitionAnimationInProgress = false;
+            transitionAnimationPreviewMode = false;
+            transitionAnimationStartTime = 0;
+            layoutToIgnore = null;
+            newFragment = null;
+            oldFragment = null;
+        }
+        if (animationInProgress) {
+            if (backAnimator != null) {
+                backAnimator.cancel();
+                backAnimator = null;
+            }
+            animationInProgress = false;
+        }
+        if (predictiveInput || predictiveBackInProgress) {
+            predictiveInput = false;
+            predictiveBackInProgress = false;
+            predictiveBackHasProgress = false;
+        }
+        startedTracking = false;
+        if (containerView != null) {
+            containerView.setTranslationX(0);
+            containerView.setAlpha(1.0f);
+            containerView.setLayerType(LAYER_TYPE_NONE, null);
+        }
+        if (containerViewBack != null) {
+            containerViewBack.setTranslationX(0);
+            containerViewBack.setVisibility(View.INVISIBLE);
+        }
+        setInnerTranslationX(0);
+    }
+
+    public void resetNavigationStateIfNeeded() {
+        boolean animationStuck = transitionAnimationInProgress || animationInProgress
+                || predictiveInput || predictiveBackInProgress || startedTracking;
+        if (animationStuck) {
+            forceResetAnimationState();
+        }
+    }
+
     @Override
     public void onResume() {
-//        if (transitionAnimationInProgress) {
-//            if (currentAnimation != null) {
-//                currentAnimation.cancel();
-//                currentAnimation = null;
-//            }
-//            if (animationRunnable != null) {
-//                AndroidUtilities.cancelRunOnUIThread(animationRunnable);
-//                animationRunnable = null;
-//            }
-//            if (waitingForKeyboardCloseRunnable != null) {
-//                AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
-//                waitingForKeyboardCloseRunnable = null;
-//            }
-//            if (onCloseAnimationEndRunnable != null) {
-//                onCloseAnimationEnd();
-//            } else if (onOpenAnimationEndRunnable != null) {
-//                onOpenAnimationEnd();
-//            }
-//        }
+        resetNavigationStateIfNeeded();
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onResume();

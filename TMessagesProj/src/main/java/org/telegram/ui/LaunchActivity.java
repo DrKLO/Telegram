@@ -1387,6 +1387,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         AndroidUtilities.resetTabletFlag();
         invalidateTabletMode();
         checkLayout();
+        actionBarLayout.resetNavigationStateIfNeeded();
+        if (AndroidUtilities.isTablet()) {
+            if (rightActionBarLayout != null) {
+                rightActionBarLayout.resetNavigationStateIfNeeded();
+            }
+            if (layersActionBarLayout != null) {
+                layersActionBarLayout.resetNavigationStateIfNeeded();
+            }
+        }
     }
 
     private void showUpdateActivity(int account, TLRPC.TL_help_appUpdate update, boolean check) {
@@ -8134,18 +8143,22 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         if (AndroidUtilities.isTablet()) {
             if (layersActionBarLayout != null && layersActionBarLayout.getView().getVisibility() == View.VISIBLE) {
+                layersActionBarLayout.resetNavigationStateIfNeeded();
                 layersActionBarLayout.onBackPressed();
             } else {
                 if (rightActionBarLayout != null && rightActionBarLayout.getView().getVisibility() == View.VISIBLE && !rightActionBarLayout.getFragmentStack().isEmpty()) {
-                    BaseFragment lastFragment = rightActionBarLayout.getFragmentStack().get(rightActionBarLayout.getFragmentStack().size() - 1);
-                    if (lastFragment.onBackPressed(true)) {
-                        lastFragment.finishFragment();
-                    }
+                    rightActionBarLayout.resetNavigationStateIfNeeded();
+                    rightActionBarLayout.onBackPressed();
+                } else if (actionBarLayout.getFragmentStack().isEmpty()) {
+                    onFinish();
+                    finish();
                 } else {
+                    actionBarLayout.resetNavigationStateIfNeeded();
                     actionBarLayout.onBackPressed();
                 }
             }
         } else {
+            actionBarLayout.resetNavigationStateIfNeeded();
             actionBarLayout.onBackPressed();
         }
     }
