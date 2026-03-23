@@ -682,6 +682,36 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private String[] getRequestedAndroidPermissionsForWebResources(String[] resources) {
+        ArrayList<String> permissions = new ArrayList<>();
+        for (String resource : resources) {
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
+                if (!permissions.contains(Manifest.permission.RECORD_AUDIO)) {
+                    permissions.add(Manifest.permission.RECORD_AUDIO);
+                }
+            } else if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
+                if (!permissions.contains(Manifest.permission.CAMERA)) {
+                    permissions.add(Manifest.permission.CAMERA);
+                }
+            }
+        }
+        return permissions.toArray(new String[0]);
+    }
+
+    private boolean canReuseGrantedWebPermissions(String[] permissions) {
+        if (!hasUserPermissions) {
+            return false;
+        }
+        if (permissions.length == 0) {
+            return false;
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        return checkPermissions(permissions);
+    }
+
     public boolean isPageLoaded() {
         return isPageLoaded;
     }
@@ -4405,6 +4435,11 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                     final String name = bot ? UserObject.getUserName(botWebViewContainer.botUser) : AndroidUtilities.getHostAuthority(getUrl());
                     String[] resources = request.getResources();
+                    String[] androidPermissions = botWebViewContainer.getRequestedAndroidPermissionsForWebResources(resources);
+                    if (botWebViewContainer.canReuseGrantedWebPermissions(androidPermissions)) {
+                        request.grant(resources);
+                        return;
+                    }
                     if (resources.length == 1) {
                         String resource = resources[0];
 
