@@ -29409,7 +29409,10 @@ public class ChatActivity extends BaseFragment implements
                     if (avatarContainer != null) {
                         avatarContainer.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
-                    return fixLayoutInternal();
+                    // This listener is used as a one-shot layout refresh hook. Returning false on
+                    // tablet/window transitions can trap the whole activity in cancelAndRedraw.
+                    fixLayoutInternal();
+                    return true;
                 }
             });
         }

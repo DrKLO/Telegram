@@ -1300,6 +1300,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
             tabletFullSize = false;
+            if (actionBarLayout.getFragmentStack().isEmpty()) {
+                if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
+                    actionBarLayout.addFragmentToStack(getClientNotActivatedFragment(), INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+                } else {
+                    // Notification/floating-window opens can hand us a ChatActivity-only stack.
+                    // Split tablet mode needs a stable root fragment on the left pane.
+                    actionBarLayout.addFragmentToStack(new MainTabsActivity(), INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+                }
+            }
             List<BaseFragment> fragmentStack = actionBarLayout.getFragmentStack();
             if (fragmentStack.size() >= 2) {
                 for (int a = 1; a < fragmentStack.size(); a++) {
