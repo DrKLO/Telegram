@@ -911,7 +911,13 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             // Those callbacks modify the fragment stack (remove/add fragments),
             // which must not happen during lifecycle events like onPause/onResume.
             // Just discard the callbacks and reset the flags.
+            if (onCloseAnimationEndRunnable != null && BuildVars.LOGS_ENABLED) {
+                FileLog.w("forceResetAnimationState: dropping onCloseAnimationEndRunnable");
+            }
             onCloseAnimationEndRunnable = null;
+            if (onOpenAnimationEndRunnable != null && BuildVars.LOGS_ENABLED) {
+                FileLog.w("forceResetAnimationState: dropping onOpenAnimationEndRunnable");
+            }
             onOpenAnimationEndRunnable = null;
             transitionAnimationInProgress = false;
             transitionAnimationPreviewMode = false;
@@ -948,9 +954,14 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     public void resetNavigationStateIfNeeded() {
         boolean animationStuck = transitionAnimationInProgress || animationInProgress
                 || predictiveInput || predictiveBackInProgress || startedTracking;
-        if (animationStuck) {
-            forceResetAnimationState();
+        if (!animationStuck) {
+            return;
         }
+        long now = System.currentTimeMillis();
+        if (transitionAnimationStartTime > 0 && now - transitionAnimationStartTime < 400) {
+            return;
+        }
+        forceResetAnimationState();
     }
 
     @Override

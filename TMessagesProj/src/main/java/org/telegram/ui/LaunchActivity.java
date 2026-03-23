@@ -333,6 +333,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private boolean passcodeSaveIntentIsRestore;
 
     private boolean tabletFullSize;
+    // Give foldable window/config changes one short settle pass before rechecking layout.
+    private static final int FOLDABLE_RECHECK_DELAY = 300;
     private final Runnable deferredFoldableLayoutCheck = () -> reconcileNavigationForCurrentWindowState(true);
 
     private String loadingThemeFileName;
@@ -1323,7 +1325,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();
-                    chatFragment.setParentLayout(null);
+                    chatFragment.resetFragment();
                     fragmentStack.remove(chatFragment);
                     rightActionBarLayout.addFragmentToStack(chatFragment);
                     a--;
@@ -1347,7 +1349,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();
-                    chatFragment.setParentLayout(null);
+                    chatFragment.resetFragment();
                     fragmentStack.remove(chatFragment);
                     actionBarLayout.addFragmentToStack(chatFragment);
                     a--;
@@ -1370,7 +1372,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             return;
         }
         AndroidUtilities.cancelRunOnUIThread(deferredFoldableLayoutCheck);
-        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, 220);
+        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, FOLDABLE_RECHECK_DELAY);
     }
 
     private void syncCurrentMultiwindowState() {
@@ -7007,7 +7009,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         pipActivityHandler.onConfigurationChanged(newConfig);
         reconcileNavigationForCurrentWindowState(false);
         AndroidUtilities.cancelRunOnUIThread(deferredFoldableLayoutCheck);
-        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, 300);
+        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, FOLDABLE_RECHECK_DELAY);
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.onConfigurationChanged();
@@ -8146,7 +8148,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 layersActionBarLayout.resetNavigationStateIfNeeded();
                 layersActionBarLayout.onBackPressed();
             } else {
-                if (rightActionBarLayout != null && rightActionBarLayout.getView().getVisibility() == View.VISIBLE && !rightActionBarLayout.getFragmentStack().isEmpty()) {
+                if (!tabletFullSize && rightActionBarLayout != null && rightActionBarLayout.getView().getVisibility() == View.VISIBLE && !rightActionBarLayout.getFragmentStack().isEmpty()) {
                     rightActionBarLayout.resetNavigationStateIfNeeded();
                     rightActionBarLayout.onBackPressed();
                 } else if (actionBarLayout.getFragmentStack().isEmpty()) {
