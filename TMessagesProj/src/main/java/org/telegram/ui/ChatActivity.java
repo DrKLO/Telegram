@@ -7016,6 +7016,8 @@ public class ChatActivity extends BaseFragment implements
         sideControlsButtonsLayout.setOnLongClickListener(this::onSideControlButtonOnLongClick);
         contentView.addView(sideControlsButtonsLayout, LayoutHelper.createFrame(57, 300, Gravity.RIGHT | Gravity.BOTTOM));
 
+        contentView.addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
         updateMessageListAccessibilityVisibility();
         mentionContainer = new MentionsContainerView(context, dialog_id, threadMessageId, ChatActivity.this, themeDelegate) {
 
@@ -7912,8 +7914,6 @@ public class ChatActivity extends BaseFragment implements
             chatActivityEnterView.setBotInfo(botInfo, false);
         }
         // contentView.addView(chatActivityEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
-
-        contentView.addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
         chatActivityEnterView.setViewParentForEmoji(chatInputInAppContainer);
 
@@ -12357,6 +12357,7 @@ public class ChatActivity extends BaseFragment implements
                     onEditTextDialogClose(false, false);
                 }
             };
+            chatAttachAlert.allowLivePhotos = true;
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
                 @Override
                 public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, boolean forceDocument, long payStars) {
@@ -29035,6 +29036,17 @@ public class ChatActivity extends BaseFragment implements
             public boolean allowLayoutChanges() {
                 return false;
             }
+
+            @Override
+            public void onShow(Bulletin bulletin) {
+                bulletin.getLayout().setCustomBackground(glassBackgroundDrawableFactory
+                    // fake multiwindow flag because bulleting parent is not child of fragment
+                    // todo: fix?
+                    .create(bulletin.getLayout(), true)
+                    .setColorProvider(BlurredBackgroundProviderImpl.bulletin(themeDelegate))
+                    .setRadius(dp(16))
+                );
+            }
         });
 
         checkActionBarMenu(false);
@@ -45436,11 +45448,12 @@ public class ChatActivity extends BaseFragment implements
     private int getMergedVisibleBlurredPositions(List<RectF> positions) {
         final int positionsCount = getVisibleBlurredPositions(glassDrawablesPositions);
         final int mergedPositionsCount = RectFMergeBounding.mergeOverlapping(glassDrawablesPositions, positionsCount, positions);
+        final int maxX = contentView.getMeasuredWidth();
         for (int a = 0; a < mergedPositionsCount; a++) {
             final RectF position = positions.get(a);
-            position.left = Math.max(0, position.left);
+            position.left = androidx.core.math.MathUtils.clamp(position.left, 0, maxX);
             position.top = Math.max(chatListView.getY(), position.top);
-            position.right = Math.min(contentView.getMeasuredWidth(), position.right);
+            position.right = androidx.core.math.MathUtils.clamp(position.right, 0, maxX);
             position.bottom = Math.min(chatListView.getY() + chatListView.getMeasuredHeight(), position.bottom);
             /*if (drawDebug) {
                 ((Canvas) null).drawRect(position, Theme.DEBUG_GREEN_STROKE);

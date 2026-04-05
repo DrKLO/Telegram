@@ -284,6 +284,16 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     }
 
     public void update(boolean animated) {
+        if (listView != null && listView.isComputingLayout()) {
+            listView.post(() -> updateInternal(animated));
+        } else {
+            updateInternal(animated);
+        }
+    }
+
+    private void updateInternal(boolean animated) {
+        if (listView != null && listView.isComputingLayout())
+            return;
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
@@ -293,23 +303,10 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         if (fillItems != null) {
             fillItems.run(items, this);
             updateReorderSections();
-            if (listView != null && listView.isComputingLayout()) {
-                listView.post(() -> {
-                    if (listView.isComputingLayout()) {
-                        return;
-                    }
-                    if (animated) {
-                        setItems(oldItems, items);
-                    } else {
-                        notifyDataSetChanged();
-                    }
-                });
+            if (animated) {
+                setItems(oldItems, items);
             } else {
-                if (animated) {
-                    setItems(oldItems, items);
-                } else {
-                    notifyDataSetChanged();
-                }
+                notifyDataSetChanged();
             }
         }
     }

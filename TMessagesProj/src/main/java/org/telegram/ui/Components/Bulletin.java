@@ -127,7 +127,7 @@ public class Bulletin {
         } else if (fragment instanceof DialogsActivity) {
             contentLayout.setWideScreenParams(ViewGroup.LayoutParams.MATCH_PARENT, Gravity.NO_GRAVITY);
         }
-        return new Bulletin(fragment, fragment.getLayoutContainer(), contentLayout, duration);
+        return new Bulletin(fragment, fragment.getBulletinLayoutContainer(), contentLayout, duration);
     }
 
     public static Bulletin find(@NonNull FrameLayout containerLayout) {
@@ -803,7 +803,15 @@ public class Bulletin {
         }
 
         public void setBackground(int color, int rounding) {
-            background = Theme.createRoundRectDrawable(dp(rounding), color);
+            if (!hasCustomBackground) {
+                background = Theme.createRoundRectDrawable(dp(rounding), color);
+            }
+        }
+
+        private boolean hasCustomBackground;
+        public void setCustomBackground(Drawable drawable) {
+            background = drawable;
+            hasCustomBackground = true;
         }
 
         public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {

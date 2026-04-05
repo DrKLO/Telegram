@@ -711,7 +711,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public long tonStakeddiceStakeAmountMax;
     public long[] tonStakediceStakeSuggestedAmounts;
     public int[][] stargiftsCraftAttributesPermilles;
-    public Set<String> aiComposeStyles = new HashSet<>();
+    public String aiComposeStyles;
     public boolean aiEditorAvailable() {
         return aiComposeStyles != null && !aiComposeStyles.isEmpty();
     }
@@ -1737,7 +1737,9 @@ public class MessagesController extends BaseController implements NotificationCe
         starsPaidPostAmountMax = mainPreferences.getLong("starsPaidPostAmountMax", 10_000);
         botPreviewMediasMax = mainPreferences.getInt("botPreviewMediasMax", 10);
         webAppAllowedProtocols = mainPreferences.getStringSet("webAppAllowedProtocols", new HashSet<>(Arrays.asList("http", "https")));
-        aiComposeStyles = mainPreferences.getStringSet("aiComposeStyles2", new HashSet<>());
+        Set<String> oldStyles = mainPreferences.getStringSet("aiComposeStyles2", new HashSet<>());
+        aiComposeStyles = mainPreferences.getString("aiComposeStyles3", oldStyles != null ? TextUtils.join(";;;", oldStyles) : null);
+        if (aiComposeStyles != null && aiComposeStyles.length() <= 0) aiComposeStyles = null;
         ignoreRestrictionReasons = mainPreferences.getStringSet("ignoreRestrictionReasons", new HashSet<>(Arrays.asList()));
         tonProxyAddress = mainPreferences.getString("tonProxyAddress", "magic.org");
         weatherSearchUsername = mainPreferences.getString("weatherSearchUsername", "izweatherbot");
@@ -4575,7 +4577,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     break;
                 }
                 case "ai_compose_styles": {
-                    HashSet<String> newStyles = new HashSet<>();
+                    String newStyles = "";
                     if (value.value instanceof TLRPC.TL_jsonArray) {
                         final TLRPC.TL_jsonArray array = (TLRPC.TL_jsonArray) value.value;
                         for (int i = 0; i < array.value.size(); ++i) {
@@ -4590,14 +4592,17 @@ public class MessagesController extends BaseController implements NotificationCe
                                     final String name  = ((TLRPC.TL_jsonString) innerArray.value.get(0)).value;
                                     final String emoji_id   = ((TLRPC.TL_jsonString) innerArray.value.get(1)).value;
                                     final String title = ((TLRPC.TL_jsonString) innerArray.value.get(2)).value;
-                                    newStyles.add(name + "|" + emoji_id + "|" + title);
+                                    if (newStyles.length() > 0) newStyles += ";;;";
+                                    newStyles += name + "|" + emoji_id + "|" + title;
                                 }
                             }
                         }
                     }
-                    if (!aiComposeStyles.equals(newStyles)) {
+                    if (newStyles.length() <= 0)
+                        newStyles = null;
+                    if (!TextUtils.equals(aiComposeStyles, newStyles)) {
                         aiComposeStyles = newStyles;
-                        editor.putStringSet("aiComposeStyles2", aiComposeStyles);
+                        editor.putString("aiComposeStyles3", aiComposeStyles);
                         changed = true;
                     }
                     break;
@@ -5578,6 +5583,7 @@ public class MessagesController extends BaseController implements NotificationCe
         freezeAppealUrl = "t.me/spambot";
         verifyAgeBotUsername = null;
         verifyAgeCountry = "GB";
+        aiComposeStyles = null;
         ignoreRestrictionReasons = new HashSet<String>();
         mainPreferences.edit()
             .remove("starsLocked")

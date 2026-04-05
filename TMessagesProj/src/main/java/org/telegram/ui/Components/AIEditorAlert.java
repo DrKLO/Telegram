@@ -121,10 +121,11 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView {
     public AIEditorAlert(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, null, false, false, false, false, ActionBarType.SLIDING, resourcesProvider);
 
-        final Set<String> styles = MessagesController.getInstance(currentAccount).aiComposeStyles;
-        tones = new String[styles.size()];
-        toneTitles = new String[styles.size()];
-        toneDocumentId = new Long[styles.size()];
+        final String stylesString = MessagesController.getInstance(currentAccount).aiComposeStyles;
+        final String[] styles = stylesString.split(";;;");
+        tones = new String[styles.length];
+        toneTitles = new String[styles.length];
+        toneDocumentId = new Long[styles.length];
         int styleIndex = 0;
         for (String style : styles) {
             final String[] p = style.split("\\|");

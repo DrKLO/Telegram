@@ -347,7 +347,7 @@ public class PollContentDrawable extends Drawable implements DownloadController.
         if (mediaWidth == 0) {
             return dp(100);
         }
-        return Math.min(Math.round(mediaHeight * (float) (width / mediaWidth)), isExplanation ? (width * 4 / 5) : (width * 5 / 4));
+        return Math.min(Math.round(mediaHeight * ((float) width / mediaWidth)), isExplanation ? (width * 4 / 5) : (width * 5 / 4));
     }
 
     public void checkColors(boolean isOut) {

@@ -209,8 +209,16 @@ public class RecentVotersCell extends FrameLayout {
                 ));
             }
 
-            if (!completed && !votes.isEmpty()) {
-                items.add(FlickerFactory.of());
+            if (!completed) {
+                if (votes.isEmpty()) {
+                    items.add(FlickerFactory2.of());
+                    items.add(FlickerFactory2.of());
+                    items.add(FlickerFactory2.of());
+                    items.add(FlickerFactory2.of());
+                    items.add(FlickerFactory2.of());
+                } else {
+                    items.add(FlickerFactory.of());
+                }
             }
         }
     }
@@ -230,6 +238,21 @@ public class RecentVotersCell extends FrameLayout {
         }
     }
 
+    public static class FlickerFactory2 extends UItem.UItemFactory<FlickerLoadingView> {
+        static { setup(new FlickerFactory2()); }
+
+        public FlickerLoadingView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            FlickerLoadingView v = new FlickerLoadingView(context);
+            v.setViewType(FlickerLoadingView.REACTED_TYPE);
+            v.setMinimumHeight(dp(48));
+            return v;
+        }
+
+        public static UItem of() {
+            return UItem.ofFactory(FlickerFactory2.class);
+        }
+    }
+
     public static class Factory extends UItem.UItemFactory<MessageSeenView.UserCell> {
         static { setup(new Factory()); }
 
@@ -245,7 +268,7 @@ public class RecentVotersCell extends FrameLayout {
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             final TLObject row = (TLObject) item.object;
             final MessageSeenView.UserCell cell = (MessageSeenView.UserCell) view;
-            cell.setUser(row, item.intValue);
+            cell.setUser(row, item.intValue, true);
             cell.setOnClickListener(item.clickCallback);
         }
 

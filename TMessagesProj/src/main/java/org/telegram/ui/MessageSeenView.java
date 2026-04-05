@@ -357,7 +357,7 @@ public class MessageSeenView extends FrameLayout {
         TLObject object;
 
         private static MessageSeenCheckDrawable seenDrawable = new MessageSeenCheckDrawable(R.drawable.msg_mini_checks, Theme.key_windowBackgroundWhiteGrayText);
-        private static MessageSeenCheckDrawable votedDrawable = new MessageSeenCheckDrawable(R.drawable.msg_check_s, Theme.key_windowBackgroundWhiteGrayText);
+        private static MessageSeenCheckDrawable votedDrawable = new MessageSeenCheckDrawable(R.drawable.mini_checklist_done_outline, Theme.key_windowBackgroundWhiteGrayText);
 
         public UserCell(Context context) {
             super(context);
@@ -399,6 +399,10 @@ public class MessageSeenView extends FrameLayout {
         }
 
         public void setUser(TLObject object, int date) {
+            setUser(object, date, false);
+        }
+
+        public void setUser(TLObject object, int date, boolean isVote) {
             this.object = object;
             updateStatus(false);
 
@@ -413,7 +417,7 @@ public class MessageSeenView extends FrameLayout {
                 readView.setVisibility(GONE);
                 nameView.setTranslationY(AndroidUtilities.dp(9));
             } else {
-                readView.setText(TextUtils.concat(seenDrawable.getSpanned(getContext(), null), LocaleController.formatSeenDate(date)));
+                readView.setText(TextUtils.concat((isVote ? votedDrawable : seenDrawable).getSpanned(getContext(), null), LocaleController.formatSeenDate(date)));
                 readView.setVisibility(VISIBLE);
                 nameView.setTranslationY(0);
             }

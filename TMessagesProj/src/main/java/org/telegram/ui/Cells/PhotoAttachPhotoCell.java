@@ -67,7 +67,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stars.StarsIntroActivity;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
 
@@ -80,6 +79,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private FrameLayout videoInfoContainer;
     private AnimatorSet animatorSet;
     private boolean isLast;
+    private boolean allowLivePhotos;
     private boolean pressed;
     private static Rect rect = new Rect();
     private PhotoAttachPhotoCellDelegate delegate;
@@ -215,7 +215,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     invalidate();
                 }
 
-                if (photoEntry != null && photoEntry.isLivePhoto) {
+                if (photoEntry != null && photoEntry.isLivePhoto && allowLivePhotos) {
                     Drawable icon;
                     if (photoEntry.discardLivePhoto) {
                         if (livePhotoIconOff == null) {
@@ -497,10 +497,11 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return videoInfoContainer;
     }
 
-    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean selectedMultiple, boolean needCheckShow, boolean last) {
+    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean selectedMultiple, boolean needCheckShow, boolean last, boolean allowLivePhotos) {
         pressed = false;
         photoEntry = entry;
         isLast = last;
+        this.allowLivePhotos = allowLivePhotos;
         if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
             imageView.setOrientation(0, true);
             videoInfoContainer.setVisibility(VISIBLE);

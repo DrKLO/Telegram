@@ -2767,6 +2767,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                             info.thumbPath = photoEntry.thumbPath;
                             info.coverPath = photoEntry.coverPath;
                             info.videoEditedInfo = photoEntry.editedInfo;
+                            info.isLivePhoto = photoEntry.isLivePhoto;
+                            info.livePhotoVideoOffset = photoEntry.livePhotoVideoOffset;
+                            info.discardLivePhoto = true;
                             info.isVideo = photoEntry.isVideo;
                             info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
                             info.entities = photoEntry.entities;

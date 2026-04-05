@@ -360,6 +360,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean muteVideo;
 
     private boolean isUnalivePhoto() {
+        if (placeProvider != null && !placeProvider.allowLivePhotos())
+            return true;
         if (currentIndex < 0 || currentIndex >= imagesArrLocals.size()) return false;
         Object obj = imagesArrLocals.get(currentIndex);
         if (obj instanceof MediaController.PhotoEntry) {
@@ -2985,6 +2987,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         default void onPollAttachDelete() {
 
+        }
+
+        default boolean allowLivePhotos() {
+            return false;
         }
     }
 
@@ -12358,7 +12364,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         arrayList.add(ObjectAnimator.ofFloat(muteButton, View.ALPHA, 1));
                     }
                     if (livePhotoButton.getTag() != null) {
-                        livePhotoButton.setVisibility(sendPhotoTypeIsGif || !centerImageIsLivePhoto ? View.GONE : View.VISIBLE);
+                        livePhotoButton.setVisibility(sendPhotoTypeIsGif || !centerImageIsLivePhoto || (placeProvider != null && !placeProvider.allowLivePhotos()) ? View.GONE : View.VISIBLE);
                         arrayList.add(ObjectAnimator.ofFloat(muteButton, View.ALPHA, 1));
                     }
                     if (editCoverButton.getTag() != null) {
@@ -15077,7 +15083,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 mirrorItem.setVisibility(View.GONE);
                                 mirrorItem.setTag(null);
                                 AndroidUtilities.updateViewVisibilityAnimated(muteButton, !sendPhotoTypeIsGif && !isLivePhoto, 1f, animated);
-                                AndroidUtilities.updateViewVisibilityAnimated(livePhotoButton, !sendPhotoTypeIsGif && isLivePhoto, 1f, animated);
+                                AndroidUtilities.updateViewVisibilityAnimated(livePhotoButton, !sendPhotoTypeIsGif && isLivePhoto && (placeProvider == null || placeProvider.allowLivePhotos()), 1f, animated);
                                 if (isLivePhoto) {
                                     livePhotoButton.setValue(!isUnalivePhoto(), true);
                                 }
@@ -16023,7 +16029,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         if (isVideo && videoPath != null) {
             isStreaming = false;
-            preparePlayer(null, videoPath, sendPhotoType == SELECT_TYPE_AVATAR || isLivePhoto && !isUnalivePhoto(), false, editState.savedFilterState, isLivePhoto, livePhotoVideoOffset);
+            preparePlayer(null, videoPath, sendPhotoType == SELECT_TYPE_AVATAR && (!isLivePhoto || !isUnalivePhoto()) || isLivePhoto && !isUnalivePhoto(), false, editState.savedFilterState, isLivePhoto, livePhotoVideoOffset);
         }
 
         if (!imagesArrLocals.isEmpty()) {
@@ -19867,7 +19873,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             alpha = 1.0f - alpha;
             translateX = maxX;
         }
-        boolean drawTextureView = videoSizeSet && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE; // && !(centerImageIsLivePhoto && (videoPlayer != null && videoPlayer.getCurrentPosition() <= 0 || isUnalivePhoto()));
+        boolean drawTextureView = videoSizeSet && aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE;
         boolean drawCenterImage = false;
         float livePhotoVideoAlpha = 1.0f;
         if (centerImageIsLivePhoto && !isUnalivePhoto() && videoPlayer != null) {
@@ -19950,7 +19956,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     width *= scale;
                     height *= scale;
                     centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-                    if (isCurrentVideo && !centerImageIsLivePhoto) {
+                    if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto())) {
                         centerImage.draw(canvas);
                         centerImageTransformLocked = true;
                     } else {

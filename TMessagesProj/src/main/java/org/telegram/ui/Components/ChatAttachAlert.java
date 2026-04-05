@@ -965,6 +965,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     public final BaseFragment baseFragment;
     public boolean inBubbleMode;
     private MessageSendPreview messageSendPreview;
+    public boolean allowLivePhotos = false;
 
     private ChatAttachAlertPhotoLayout photoLayout;
     private ChatAttachAlertContactsLayout contactsLayout;
@@ -5665,7 +5666,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private void updateMotionItem(boolean animated) {
         if (photoLayout == null || motionIcon == null) return;
-        final boolean show = menuShowed && currentAttachLayout == photoLayout && photoLayout.hasLivePhotos();
+        final boolean show = menuShowed && allowLivePhotos && currentAttachLayout == photoLayout && photoLayout.hasLivePhotos();
         motionIcon.setDisabled(!photoLayout.areLivePhotosEnabled(), animated);
         if (animated && menuShowed) {
             motionItem.setVisibility(View.VISIBLE);

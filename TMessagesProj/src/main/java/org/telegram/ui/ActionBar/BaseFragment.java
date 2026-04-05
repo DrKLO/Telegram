@@ -608,6 +608,10 @@ public abstract class BaseFragment {
         return null;
     }
 
+    public FrameLayout getBulletinLayoutContainer() {
+        return getLayoutContainer();
+    }
+
     public boolean presentFragmentAsPreview(BaseFragment fragment) {
         return allowPresentFragment() && parentLayout != null && parentLayout.presentFragmentAsPreview(fragment);
     }
