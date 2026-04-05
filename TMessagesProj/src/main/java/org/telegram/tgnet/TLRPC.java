@@ -4359,19 +4359,7 @@ public class TLRPC {
                 total_voters = stream.readInt32(exception);
             }
             if (hasFlag(flags, FLAG_3)) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TL_peerUser user = new TL_peerUser();
-                    user.user_id = (long) stream.readInt32(exception);
-                    recent_voters.add(user);
-                }
+                recent_voters = VectorLegacy.deserialize_IntUserIdAsPeer(stream, exception);
             }
         }
 
@@ -4386,12 +4374,7 @@ public class TLRPC {
                 stream.writeInt32(total_voters);
             }
             if (hasFlag(flags, FLAG_3)) {
-                stream.writeInt32(0x1cb5c415);
-                int count = recent_voters.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    stream.writeInt32((int) (long) recent_voters.get(a).user_id);
-                }
+                VectorLegacy.serialize_PeerAsIntUserId(stream, recent_voters);
             }
         }
     }
@@ -4409,24 +4392,10 @@ public class TLRPC {
                 total_voters = stream.readInt32(exception);
             }
             if (hasFlag(flags, FLAG_3)) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TL_peerUser user = new TL_peerUser();
-                    user.user_id = (long) stream.readInt32(exception);
-                    recent_voters.add(user);
-                }
+                recent_voters = VectorLegacy.deserialize_IntUserIdAsPeer(stream, exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 solution = stream.readString(exception);
-            }
-            if (hasFlag(flags, FLAG_4)) {
                 solution_entities = Vector.deserialize(stream, MessageEntity::TLdeserialize, exception);
             }
         }
@@ -4442,17 +4411,10 @@ public class TLRPC {
                 stream.writeInt32(total_voters);
             }
             if (hasFlag(flags, FLAG_3)) {
-                stream.writeInt32(0x1cb5c415);
-                int count = recent_voters.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    stream.writeInt32((int) (long) recent_voters.get(a).user_id);
-                }
+                VectorLegacy.serialize_PeerAsIntUserId(stream, recent_voters);
             }
             if (hasFlag(flags, FLAG_4)) {
                 stream.writeString(solution);
-            }
-            if (hasFlag(flags, FLAG_4)) {
                 Vector.serialize(stream, solution_entities);
             }
         }
@@ -4570,24 +4532,10 @@ public class TLRPC {
                 total_voters = stream.readInt32(exception);
             }
             if (hasFlag(flags, FLAG_3)) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    TL_peerUser user = new TL_peerUser();
-                    user.user_id = stream.readInt64(exception);
-                    recent_voters.add(user);
-                }
+                recent_voters = VectorLegacy.deserialize_LongUserIdAsPeer(stream, exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 solution = stream.readString(exception);
-            }
-            if (hasFlag(flags, FLAG_4)) {
                 solution_entities = Vector.deserialize(stream, MessageEntity::TLdeserialize, exception);
             }
         }
@@ -4603,17 +4551,10 @@ public class TLRPC {
                 stream.writeInt32(total_voters);
             }
             if (hasFlag(flags, FLAG_3)) {
-                stream.writeInt32(0x1cb5c415);
-                int count = recent_voters.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    stream.writeInt64(recent_voters.get(a).user_id);
-                }
+                VectorLegacy.serialize_PeerAsLongUserId(stream, recent_voters);
             }
             if (hasFlag(flags, FLAG_4)) {
                 stream.writeString(solution);
-            }
-            if (hasFlag(flags, FLAG_4)) {
                 Vector.serialize(stream, solution_entities);
             }
         }
@@ -18390,7 +18331,7 @@ public class TLRPC {
         }
     }
 
-        public static class TL_codeSettings extends TLObject {
+    public static class TL_codeSettings extends TLObject {
         public static final int constructor = 0xad253d78;
 
         public int flags;
@@ -18418,21 +18359,7 @@ public class TLRPC {
             allow_firebase = hasFlag(flags, FLAG_7);
             unknown_number = hasFlag(flags, FLAG_9);
             if (hasFlag(flags, FLAG_6)) {
-                int magic = stream.readInt32(exception);
-                if (magic != 0x1cb5c415) {
-                    if (exception) {
-                        throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                    }
-                    return;
-                }
-                int count = stream.readInt32(exception);
-                for (int a = 0; a < count; a++) {
-                    byte[] object = stream.readByteArray(exception);
-                    if (object == null) {
-                        return;
-                    }
-                    logout_tokens.add(object);
-                }
+                logout_tokens = Vector.deserializeByteArray(stream, exception);
             }
             if (hasFlag(flags, FLAG_8)) {
                 token = stream.readString(exception);
@@ -18450,12 +18377,7 @@ public class TLRPC {
             flags = setFlag(flags, FLAG_9, unknown_number);
             stream.writeInt32(flags);
             if (hasFlag(flags, FLAG_6)) {
-                stream.writeInt32(0x1cb5c415);
-                int count = logout_tokens.size();
-                stream.writeInt32(count);
-                for (int a = 0; a < count; a++) {
-                    stream.writeByteArray(logout_tokens.get(a));
-                }
+                Vector.serializeByteArray(stream, logout_tokens);
             }
             if (hasFlag(flags, FLAG_8)) {
                 stream.writeString(token);
@@ -21199,29 +21121,14 @@ public class TLRPC {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             type = SecureValueType.TLdeserialize(stream, stream.readInt32(exception), exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                file_hash.add(stream.readByteArray(exception));
-            }
+            file_hash = Vector.deserializeByteArray(stream, exception);
             text = stream.readString(exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             type.serializeToStream(stream);
-            stream.writeInt32(0x1cb5c415);
-            int count = file_hash.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeByteArray(file_hash.get(a));
-            }
+            Vector.serializeByteArray(stream, file_hash);
             stream.writeString(text);
         }
     }
@@ -21322,29 +21229,14 @@ public class TLRPC {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             type = SecureValueType.TLdeserialize(stream, stream.readInt32(exception), exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                file_hash.add(stream.readByteArray(exception));
-            }
+            file_hash = Vector.deserializeByteArray(stream, exception);
             text = stream.readString(exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             type.serializeToStream(stream);
-            stream.writeInt32(0x1cb5c415);
-            int count = file_hash.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeByteArray(file_hash.get(a));
-            }
+            Vector.serializeByteArray(stream, file_hash);
             stream.writeString(text);
         }
     }
@@ -26212,28 +26104,13 @@ public class TLRPC {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             title = stream.readString(exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                users.add((long) stream.readInt32(exception));
-            }
+            users = VectorLegacy.deserialize_IntAsLong(stream, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeString(title);
-            stream.writeInt32(0x1cb5c415);
-            int count = users.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeInt32((int) (long) users.get(a));
-            }
+            VectorLegacy.serialize_LongAsInt(stream, users);
         }
     }
 
@@ -26585,27 +26462,12 @@ public class TLRPC {
         public static final int constructor = 0x488a7337;
 
         public void readParams(InputSerializedData stream, boolean exception) {
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                users.add((long) stream.readInt32(exception));
-            }
+            users = VectorLegacy.deserialize_IntAsLong(stream, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            stream.writeInt32(0x1cb5c415);
-            int count = users.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeInt32((int) (long) users.get(a));
-            }
+            VectorLegacy.serialize_LongAsInt(stream, users);
         }
     }
 
@@ -26635,28 +26497,13 @@ public class TLRPC {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             call = InputGroupCall.TLdeserialize(stream, stream.readInt32(exception), exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                users.add((long) stream.readInt32(exception));
-            }
+            users = VectorLegacy.deserialize_IntAsLong(stream, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             call.serializeToStream(stream);
-            stream.writeInt32(0x1cb5c415);
-            int count = users.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeInt32((int) (long) users.get(a));
-            }
+            VectorLegacy.serialize_LongAsInt(stream, users);
         }
     }
 
@@ -32492,29 +32339,14 @@ public class TLRPC {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             peer = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            int magic = stream.readInt32(exception);
-            if (magic != 0x1cb5c415) {
-                if (exception) {
-                    throw new RuntimeException(String.format("wrong Vector magic, got %x", magic));
-                }
-                return;
-            }
-            int count = stream.readInt32(exception);
-            for (int a = 0; a < count; a++) {
-                options.add(stream.readByteArray(exception));
-            }
+            options = Vector.deserializeByteArray(stream, exception);
             date = stream.readInt32(exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             peer.serializeToStream(stream);
-            stream.writeInt32(0x1cb5c415);
-            int count = options.size();
-            stream.writeInt32(count);
-            for (int a = 0; a < count; a++) {
-                stream.writeByteArray(options.get(a));
-            }
+            Vector.serializeByteArray(stream, options);
             stream.writeInt32(date);
         }
     }

@@ -168,6 +168,10 @@ public class Vector<T extends TLObject> extends TLObject {
         serialize(stream, stream::writeByteArray, objects);
     }
 
+    public static boolean validateSize(int count, int bytesPerItem, int remaining) {
+        return (count >= 0) && (bytesPerItem > 0) && (((long) count) * bytesPerItem <= remaining);
+    }
+
     private static <T> ArrayList<T> deserialize(InputSerializedData stream, Utilities.CallbackReturn<Boolean, T> read, boolean exception) {
         final int magic = stream.readInt32(exception);
         if (magic != Vector.constructor) {
@@ -175,7 +179,11 @@ public class Vector<T extends TLObject> extends TLObject {
             return new ArrayList<>();
         }
         final int size = stream.readInt32(exception);
-        final ArrayList<T> result = new ArrayList<>(Math.min(size, 16384));
+        if (!validateSize(size, 1, stream.remaining())) {
+            TLParseException.doThrowOrLog(stream, "VectorWrongSize", magic, exception);
+            return new ArrayList<>();
+        }
+        final ArrayList<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; ++i) {
             result.add(read.run(exception));
         }
@@ -201,28 +209,10 @@ public class Vector<T extends TLObject> extends TLObject {
         }
 
         final int size = stream.readInt32(exception);
-        if (size < 0) {
+        if (!validateSize(size, 4, stream.remaining())) {
             TLParseException.doThrowOrLog(stream, "VectorWrongSize", magic, exception);
             return new ArrayList<>();
         }
-
-        if (size > 16384) {
-            // do not trust vector size
-            final ArrayList<T> result = new ArrayList<>(128);
-            for (int i = 0; i < size; ++i) {
-                final int constructor = stream.readInt32(exception);
-                T o = deserializer.deserialize(stream, constructor, exception);
-                if (o != null) {
-                    result.add(o);
-                } else {
-                    TLParseException.doThrowOrLog(stream, "VectorWrongContent", constructor, exception);
-                    return new ArrayList<>();
-                }
-            }
-
-            return result;
-        }
-
 
         final ArrayList<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; ++i) {

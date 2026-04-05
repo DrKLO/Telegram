@@ -2777,19 +2777,20 @@ public class ChatActivityEnterView extends FrameLayout implements
         aiButton.setOnClickListener(v -> {
             if (messageEditText == null) return;
             MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
+            final long dialogId = parentFragment != null ? parentFragment.getDialogId() : dialog_id;
             new AIEditorAlert(getContext(), resourcesProvider)
                 .setText(messageEditText.getText())
                 .setOnUse(text -> {
                     messageEditText.setText(text);
                     messageEditText.setSelection(text.length(), text.length());
                 })
-                .setOnSend(parentFragment.getDialogId(), editingMessageObject != null, (text, scheduleDate, scheduleRepeatPeriod, notify) -> {
+                .setOnSend(dialogId, editingMessageObject != null, (text, scheduleDate, scheduleRepeatPeriod, notify) -> {
                     messageEditText.setText(text);
                     if (editingMessageObject != null) {
                         doneEditingMessage();
                     } else {
                         if (isInScheduleMode() && scheduleDate == 0) {
-                            AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), new AlertsCreator.ScheduleDatePickerDelegate() {
+                            AlertsCreator.createScheduleDatePickerDialog(parentActivity, dialogId, new AlertsCreator.ScheduleDatePickerDelegate() {
                                 @Override
                                 public void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
                                     final boolean shownDialog = sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);

@@ -8,6 +8,7 @@ import static org.telegram.ui.Components.TranslateAlert2.languageName;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -792,10 +793,13 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
             if (needDivider) {
                 TextView textView = collapsed ? this.shortTextView : this.textView;
+                Paint dividerPaint = Theme.getThemePaint(Theme.key_paint_divider, resourcesProvider);
+                if (dividerPaint == null)
+                    dividerPaint = Theme.dividerPaint;
                 if (LocaleController.isRTL) {
-                    canvas.drawRect(0, getMeasuredHeight() - 1, textView.getRight(), getMeasuredHeight(), Theme.dividerPaint);
+                    canvas.drawRect(0, getMeasuredHeight() - 1, textView.getRight(), getMeasuredHeight(), dividerPaint);
                 } else {
-                    canvas.drawRect(textView.getLeft(), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight(), Theme.dividerPaint);
+                    canvas.drawRect(textView.getLeft(), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight(), dividerPaint);
                 }
             }
         }

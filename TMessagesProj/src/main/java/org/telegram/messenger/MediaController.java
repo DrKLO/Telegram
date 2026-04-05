@@ -184,6 +184,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             MediaStore.Images.Media.SIZE,
             MediaStore.Images.ImageColumns.XMP
     };
+    private static final String[] projectionPhotos2 = {
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.BUCKET_ID,
+            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Images.Media.DATA,
+            Build.VERSION.SDK_INT > 28 ? MediaStore.Images.Media.DATE_MODIFIED : MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.ORIENTATION,
+            MediaStore.Images.Media.WIDTH,
+            MediaStore.Images.Media.HEIGHT,
+            MediaStore.Images.Media.SIZE
+    };
 
     private static final String[] projectionVideo = {
             MediaStore.Video.Media._ID,
@@ -5813,7 +5824,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         context.checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED
                     )
                 ) {
-                    cursor = MediaStore.Images.Media.query(context.getContentResolver(), MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projectionPhotos, null, null, (Build.VERSION.SDK_INT > 28 ? MediaStore.Images.Media.DATE_MODIFIED : MediaStore.Images.Media.DATE_TAKEN) + " DESC");
+                    try {
+                        cursor = MediaStore.Images.Media.query(context.getContentResolver(), MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projectionPhotos, null, null, (Build.VERSION.SDK_INT > 28 ? MediaStore.Images.Media.DATE_MODIFIED : MediaStore.Images.Media.DATE_TAKEN) + " DESC");
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        cursor = MediaStore.Images.Media.query(context.getContentResolver(), MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projectionPhotos2, null, null, (Build.VERSION.SDK_INT > 28 ? MediaStore.Images.Media.DATE_MODIFIED : MediaStore.Images.Media.DATE_TAKEN) + " DESC");
+                    }
                     if (cursor != null) {
                         int imageIdColumn = cursor.getColumnIndex(MediaStore.Images.Media._ID);
                         int bucketIdColumn = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_ID);
@@ -5824,7 +5840,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         int widthColumn = cursor.getColumnIndex(MediaStore.Images.Media.WIDTH);
                         int heightColumn = cursor.getColumnIndex(MediaStore.Images.Media.HEIGHT);
                         int sizeColumn = cursor.getColumnIndex(MediaStore.Images.Media.SIZE);
-                        final int xmpColumn = cursor.getColumnIndex(MediaStore.Images.Media.XMP);
+                        int xmpColumn;
+                        try {
+                            xmpColumn = cursor.getColumnIndex(MediaStore.Images.Media.XMP);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                            xmpColumn = -1;
+                        }
 
                         while (cursor.moveToNext()) {
                             String path = cursor.getString(dataColumn);
@@ -5841,9 +5863,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             int height = cursor.getInt(heightColumn);
                             long size = cursor.getLong(sizeColumn);
                             MotionPhotoDescription motionPhoto = null;
-                            try {
-                                motionPhoto = XmpMotionPhotoDescriptionParser.parse(new String(cursor.getBlob(xmpColumn)));
-                            } catch (Exception e) {}
+                            if (xmpColumn >= 0) {
+                                try {
+                                    motionPhoto = XmpMotionPhotoDescriptionParser.parse(new String(cursor.getBlob(xmpColumn)));
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            }
 
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation, 0, false, width, height, size);
                             if (motionPhoto != null) {
