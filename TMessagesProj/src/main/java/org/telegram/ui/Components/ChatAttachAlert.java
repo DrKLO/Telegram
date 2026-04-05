@@ -6085,7 +6085,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
 
     private boolean shownAiButton;
-    private void showAiButton(boolean show) {
+    private void showAiButton(boolean show_) {
+        final boolean show = show_ && (baseFragment instanceof ChatActivity && !((ChatActivity) baseFragment).isSecretChat());
+
         if (shownAiButton == show) return;
         shownAiButton = show;
         aiButton.setVisibility(View.VISIBLE);

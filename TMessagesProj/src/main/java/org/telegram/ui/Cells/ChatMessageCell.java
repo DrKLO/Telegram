@@ -14640,7 +14640,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         updateReactionLayoutPosition();
         if (shouldDrawCaptionLayout() && !currentMessageObject.preview) {
             drawCaptionLayout(canvas, false, 1f);
-            drawCommentLayout(canvas, 1f);
+            // drawCommentLayout(canvas, 1f); // not needed because it is already called by drawCaptionLayout
             drawReactionsLayout(canvas, 1f, null);
         }
 
