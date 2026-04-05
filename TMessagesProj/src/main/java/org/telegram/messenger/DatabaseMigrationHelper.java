@@ -1604,6 +1604,18 @@ public class DatabaseMigrationHelper {
             version = 168;
         }
 
+        if (version == 168) {
+            database.executeFast("ALTER TABLE dialogs ADD COLUMN unread_poll_votes INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 169").stepThis().dispose();
+            version = 169;
+        }
+
+        if (version == 169) {
+            database.executeFast("ALTER TABLE topics ADD COLUMN unread_poll_votes INTEGER default 0").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 170").stepThis().dispose();
+            version = 170;
+        }
+
         return version;
     }
 
@@ -1631,7 +1643,7 @@ public class DatabaseMigrationHelper {
         FileLog.d("start recover database");
 
         try {
-           time = System.currentTimeMillis();
+            time = System.currentTimeMillis();
 
             newDatabase = new SQLiteDatabase(cacheFile.getPath());
             newDatabase.executeFast("PRAGMA secure_delete = ON").stepThis().dispose();

@@ -7787,7 +7787,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             frameView.addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             if (!isTonOnly) {
-                currencyTabsView = new HorizontalRoundTabsLayout(context);
+                currencyTabsView = new HorizontalRoundTabsLayout(context, resourcesProvider);
                 ArrayList<CharSequence> tabs = new ArrayList<>();
                 tabs.add(getString(R.string.Gift2BuyInStars));
                 tabs.add(getString(R.string.Gift2BuyInTON));

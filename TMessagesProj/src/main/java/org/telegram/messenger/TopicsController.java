@@ -646,7 +646,7 @@ public class TopicsController extends BaseController {
         return null;
     }
 
-    private final static int[] countsTmp = new int[4];
+    private final static int[] countsTmp = new int[5];
 
     public int[] getForumUnreadCount(long chatId) {
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
@@ -660,6 +660,7 @@ public class TopicsController extends BaseController {
                 if (!getMessagesController().isDialogMuted(-chatId, topic.id)) {
                     countsTmp[3] += topic.unread_count;
                 }
+                countsTmp[4] += topic.unread_poll_votes_count;
 
             }
         }
@@ -936,10 +937,36 @@ public class TopicsController extends BaseController {
         return totalCount;
     }
 
+    public int updatePollVotesUnread(long dialogId, long topicId, int count, boolean increment) {
+        TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
+        int totalCount = -1;
+        if (topic != null) {
+            if (increment) {
+                topic.unread_poll_votes_count += count;
+                if (topic.unread_poll_votes_count < 0) {
+                    topic.unread_poll_votes_count = 0;
+                }
+            } else {
+                topic.unread_poll_votes_count = count;
+            }
+            totalCount = topic.unread_poll_votes_count;
+            sortTopics(-dialogId, true);
+        }
+        return totalCount;
+    }
+
     public void markAllReactionsAsRead(long chatId, long topicId) {
         TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
         if (topic != null && topic.unread_reactions_count > 0) {
             topic.unread_reactions_count = 0;
+            sortTopics(chatId);
+        }
+    }
+
+    public void markAllPollVotesAsRead(long chatId, long topicId) {
+        TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
+        if (topic != null && topic.unread_poll_votes_count > 0) {
+            topic.unread_poll_votes_count = 0;
             sortTopics(chatId);
         }
     }
@@ -953,6 +980,20 @@ public class TopicsController extends BaseController {
                     continue;
                 }
                 topic.unread_reactions_count = 0;
+            }
+            sortTopics(chatId);
+        }
+    }
+
+    public void markAllPollVotesAsRead(long chatId) {
+        ArrayList<TLRPC.TL_forumTopic> topics = getTopics(chatId);
+        if (topics != null) {
+            for (int i = 0; i < topics.size(); ++i) {
+                TLRPC.TL_forumTopic topic = topics.get(i);
+                if (topic == null) {
+                    continue;
+                }
+                topic.unread_poll_votes_count = 0;
             }
             sortTopics(chatId);
         }

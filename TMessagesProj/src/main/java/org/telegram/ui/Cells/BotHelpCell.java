@@ -8,11 +8,16 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -28,6 +33,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -42,11 +48,16 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatEditActivity;
+import org.telegram.ui.Components.ClipRoundedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.Objects;
 
@@ -54,6 +65,7 @@ public class BotHelpCell extends View {
 
     private StaticLayout textLayout;
     private String oldText;
+    private String oldManagerBotName;
 
     private String currentPhotoKey;
 
@@ -67,13 +79,14 @@ public class BotHelpCell extends View {
     private LinkSpanDrawable.LinkCollector links = new LinkSpanDrawable.LinkCollector(this);
 
     private BotHelpCellDelegate delegate;
-    private Theme.ResourcesProvider resourcesProvider;
+    private final int currentAccount;
+    private final Theme.ResourcesProvider resourcesProvider;
 
     private int photoHeight;
     private ImageReceiver imageReceiver;
     private boolean isPhotoVisible;
     private boolean isTextVisible;
-    private int imagePadding = AndroidUtilities.dp(4);
+    private int imagePadding = dp(4);
 
     private boolean animating;
 
@@ -81,8 +94,10 @@ public class BotHelpCell extends View {
         void didPressUrl(String url);
     }
 
-    public BotHelpCell(Context context, Theme.ResourcesProvider resourcesProvider) {
+    public BotHelpCell(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+
+        this.currentAccount = currentAccount;
         this.resourcesProvider = resourcesProvider;
 
         imageReceiver = new ImageReceiver(this);
@@ -107,25 +122,37 @@ public class BotHelpCell extends View {
     }
 
     public void setText(boolean bot, String text) {
-        setText(bot, text, null, null);
+        setText(bot, 0, text, null, null, null);
     }
 
-    public void setText(boolean bot, String text, TLObject imageOrAnimation, TL_bots.BotInfo botInfo) {
+    public void setText(boolean bot, long botId, String text, TLObject imageOrAnimation, TL_bots.BotInfo botInfo, String managerBotName) {
         boolean photoVisible = imageOrAnimation != null;
         boolean textVisible = !TextUtils.isEmpty(text);
-        if ((text == null || text.length() == 0) && !photoVisible) {
+        if ((text == null || text.length() == 0) && TextUtils.isEmpty(managerBotName) && !photoVisible) {
             setVisibility(GONE);
             return;
         }
         if (text == null) {
             text = "";
         }
-        if (text != null && text.equals(oldText) && isPhotoVisible == photoVisible) {
+        if (text != null && text.equals(oldText) && TextUtils.equals(oldManagerBotName, managerBotName) && isPhotoVisible == photoVisible) {
             return;
         }
-        isPhotoVisible = photoVisible;
-        isTextVisible = textVisible;
-        if (isPhotoVisible) {
+        final boolean setup = TextUtils.isEmpty(text) && imageOrAnimation == null && !TextUtils.isEmpty(managerBotName) && botId != 0;
+        isPhotoVisible = photoVisible || setup;
+        isTextVisible = textVisible || setup;
+        if (setup) {
+            if (!Objects.equals(currentPhotoKey, "setup")) {
+                currentPhotoKey = "setup";
+                imageReceiver.setImageBitmap(new ClipRoundedDrawable(getContext().getResources().getDrawable(R.drawable.setup_bot_header).mutate()));
+
+                int topRadius = dp(SharedConfig.bubbleRadius) - dp(2), bottomRadius = dp(4);
+                if (!isTextVisible) {
+                    bottomRadius = topRadius;
+                }
+                imageReceiver.setRoundRadius(topRadius, topRadius, bottomRadius, bottomRadius);
+            }
+        } else if (isPhotoVisible) {
             String photoKey = FileRefController.getKeyForParentObject(botInfo);
             if (!Objects.equals(currentPhotoKey, photoKey)) {
                 currentPhotoKey = photoKey;
@@ -146,7 +173,7 @@ public class BotHelpCell extends View {
                     imageReceiver.setImage(ImageLocation.getForDocument(doc), ImageLoader.AUTOPLAY_FILTER, ImageLocation.getForDocument(MessageObject.getDocumentVideoThumb(doc), doc), null, ImageLocation.getForDocument(photoThumb, doc), "86_86_b", strippedThumb, doc.size, "mp4", botInfo, 0);
                 }
 
-                int topRadius = AndroidUtilities.dp(SharedConfig.bubbleRadius) - AndroidUtilities.dp(2), bottomRadius = AndroidUtilities.dp(4);
+                int topRadius = dp(SharedConfig.bubbleRadius) - dp(2), bottomRadius = dp(4);
                 if (!isTextVisible) {
                     bottomRadius = topRadius;
                 }
@@ -154,6 +181,7 @@ public class BotHelpCell extends View {
             }
         }
         oldText = AndroidUtilities.getSafeString(text);
+        oldManagerBotName = managerBotName;
         setVisibility(VISIBLE);
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
@@ -164,26 +192,32 @@ public class BotHelpCell extends View {
         if (isTextVisible) {
             String[] lines = text.split("\n");
             SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
-            String help = LocaleController.getString(R.string.BotInfoTitle);
-            if (bot) {
-                stringBuilder.append(help);
-                stringBuilder.append("\n\n");
-            }
-            for (int a = 0; a < lines.length; a++) {
-                stringBuilder.append(lines[a].trim());
-                if (a != lines.length - 1) {
-                    stringBuilder.append("\n");
+            if (setup) {
+                stringBuilder.append(AndroidUtilities.replaceTags(
+                    formatString(R.string.ManagedBotChatInfo, DialogObject.getName(currentAccount, botId), managerBotName)
+                ));
+            } else {
+                String help = getString(R.string.BotInfoTitle);
+                if (bot) {
+                    stringBuilder.append(help);
+                    stringBuilder.append("\n\n");
                 }
-            }
-            MessageObject.addLinks(false, stringBuilder);
-            if (bot) {
-                stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                for (int a = 0; a < lines.length; a++) {
+                    stringBuilder.append(lines[a].trim());
+                    if (a != lines.length - 1) {
+                        stringBuilder.append("\n");
+                    }
+                }
+                MessageObject.addLinks(false, stringBuilder);
+                if (bot) {
+                    stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.bold()), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
             Emoji.replaceEmoji(stringBuilder, Theme.chat_msgTextPaint.getFontMetricsInt(), false);
             try {
-                textLayout = new StaticLayout(stringBuilder, Theme.chat_msgTextPaint, maxWidth - (isPhotoVisible ? AndroidUtilities.dp(5) : 0), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(stringBuilder, Theme.chat_msgTextPaint, maxWidth - (isPhotoVisible ? dp(5) : 0), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 width = 0;
-                height = textLayout.getHeight() + AndroidUtilities.dp(4 + 18);
+                height = textLayout.getHeight() + dp(4 + 18);
                 int count = textLayout.getLineCount();
                 for (int a = 0; a < count; a++) {
                     width = (int) Math.ceil(Math.max(width, textLayout.getLineWidth(a) + textLayout.getLineLeft(a)));
@@ -197,10 +231,10 @@ public class BotHelpCell extends View {
         } else if (isPhotoVisible) {
             width = maxWidth;
         }
-        width += AndroidUtilities.dp(4 + 18);
+        width += dp(4 + 18);
 
         if (isPhotoVisible) {
-            height += (photoHeight = (int) (width * 0.5625)) + AndroidUtilities.dp(4); // 16:9
+            height += (photoHeight = (int) (width * 0.5625)) + dp(4); // 16:9
         }
     }
 
@@ -304,7 +338,7 @@ public class BotHelpCell extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), height + AndroidUtilities.dp(8));
+        setMeasuredDimension(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), height + dp(8));
     }
 
     private Drawable selectorDrawable;
@@ -321,7 +355,7 @@ public class BotHelpCell extends View {
 
         int x = (getWidth() - width) / 2;
         int y = photoHeight;
-        y += AndroidUtilities.dp(2);
+        y += dp(2);
         Drawable shadowDrawable = Theme.chat_msgInMediaDrawable.getShadowDrawable();
         if (shadowDrawable != null) {
             shadowDrawable.setBounds(x, y, width + x, height + y);
@@ -344,7 +378,7 @@ public class BotHelpCell extends View {
                 selectorDrawableRadius = SharedConfig.bubbleRadius;
                 Theme.setMaskDrawableRad(selectorDrawable, selectorDrawableRadius, selectorDrawableRadius);
             }
-            selectorDrawable.setBounds(x + AndroidUtilities.dp(2), AndroidUtilities.dp(2), width + x - AndroidUtilities.dp(2), height - AndroidUtilities.dp(2));
+            selectorDrawable.setBounds(x + dp(2), dp(2), width + x - dp(2), height - dp(2));
             selectorDrawable.draw(canvas);
         }
 
@@ -354,7 +388,7 @@ public class BotHelpCell extends View {
         Theme.chat_msgTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextIn));
         Theme.chat_msgTextPaint.linkColor = getThemedColor(Theme.key_chat_messageLinkIn);
         canvas.save();
-        canvas.translate(textX = AndroidUtilities.dp(isPhotoVisible ? 14 : 11) + x, textY = AndroidUtilities.dp(11) + y);
+        canvas.translate(textX = dp(isPhotoVisible ? 14 : 11) + x, textY = dp(11) + y);
         if (links.draw(canvas)) {
             invalidate();
         }

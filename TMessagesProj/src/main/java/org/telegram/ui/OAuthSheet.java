@@ -83,7 +83,11 @@ public class OAuthSheet {
             if (TextUtils.isEmpty(r.url)) {
                 String domain = null;
                 if (prevResult instanceof TLRPC.TL_urlAuthResultRequest) {
-                    domain = ((TLRPC.TL_urlAuthResultRequest) prevResult).domain;
+                    final TLRPC.TL_urlAuthResultRequest req = (TLRPC.TL_urlAuthResultRequest) prevResult;
+                    if (req.is_app)
+                        domain = !TextUtils.isEmpty(req.verified_app_name) ? req.verified_app_name : getString(R.string.UnverifiedApp);
+                    else
+                        domain = req.domain;
                 }
                 if (!TextUtils.isEmpty(domain)) {
                     final boolean withoutPhoneNumber = prevResult instanceof TLRPC.TL_urlAuthResultRequest && ((TLRPC.TL_urlAuthResultRequest) prevResult).request_phone_number && !sentPhoneNumber;
@@ -163,6 +167,7 @@ public class OAuthSheet {
         });
 
         final boolean bot = request.peer != null;
+        final boolean is_app = r.is_app;
 
         final FrameLayout accountSelectorLayout = new FrameLayout(context);
         final FrameLayout accountSelectorInnerLayout = new FrameLayout(context);
@@ -202,14 +207,20 @@ public class OAuthSheet {
         imageView.setForUserOrChat(r.bot, avatarDrawable);
         layout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 21, 0, 16));
 
+        final String domain;
+        if (r.is_app)
+            domain = !TextUtils.isEmpty(r.verified_app_name) ? r.verified_app_name : getString(R.string.UnverifiedApp);
+        else
+            domain = r.domain;
+
         final TextView titleView = TextHelper.makeTextView(context, 20, Theme.key_dialogTextBlack, true);
         titleView.setGravity(Gravity.CENTER);
-        titleView.setText(AndroidUtilities.replaceSingleLink(formatString(R.string.BotAuthTitle, r.domain), fragment.getThemedColor(Theme.key_featuredStickers_addButton)));
+        titleView.setText(AndroidUtilities.replaceSingleLink(formatString(R.string.BotAuthTitle, domain), fragment.getThemedColor(Theme.key_featuredStickers_addButton)));
         layout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 0, 32, 9.66f));
 
         final TextView subtitleView = TextHelper.makeTextView(context, 14, Theme.key_dialogTextBlack, false);
         subtitleView.setGravity(Gravity.CENTER);
-        subtitleView.setText(AndroidUtilities.replaceTags(getString(bot ? R.string.BotAuthBotSubtitle : R.string.BotAuthSiteSubtitle)));
+        subtitleView.setText(AndroidUtilities.replaceTags(getString(is_app ? R.string.BotAuthAppSubtitle : bot ? R.string.BotAuthBotSubtitle : R.string.BotAuthSiteSubtitle)));
         layout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 0, 32, 24));
 
         if (!TextUtils.isEmpty(r.platform) || !TextUtils.isEmpty(r.browser) || !TextUtils.isEmpty(r.region) || !TextUtils.isEmpty(r.ip)) {
@@ -326,7 +337,7 @@ public class OAuthSheet {
                     if ("URL_EXPIRED".equalsIgnoreCase(err.text)) {
                         sheet.dismiss();
                         getBulletinFactory()
-                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
                             .show();
                     } else {
                         BulletinFactory.of(sheet.topBulletinContainer, sheet.getResourcesProvider())
@@ -412,7 +423,7 @@ public class OAuthSheet {
                 if (err != null) {
                     if ("URL_EXPIRED".equalsIgnoreCase(err.text)) {
                         getBulletinFactory()
-                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
                             .show();
                     } else {
                         getBulletinFactory().showForError(err);
@@ -438,7 +449,7 @@ public class OAuthSheet {
                 final TLRPC.User selectedSelf = UserConfig.getInstance(selectedAccount[0]).getCurrentUser();
                 new AlertDialog.Builder(context, fragment.getResourceProvider())
                     .setTitle(getString(R.string.BotAuthPhoneNumber))
-                    .setMessage(AndroidUtilities.replaceTags(formatString(R.string.BotAuthPhoneNumberText, bot ? UserObject.getUserName(r.bot) : r.domain, PhoneFormat.getInstance().format("+" + selectedSelf.phone).replaceAll(" ", " "))))
+                    .setMessage(AndroidUtilities.replaceTags(formatString(R.string.BotAuthPhoneNumberText, bot && !is_app ? UserObject.getUserName(r.bot) : domain, PhoneFormat.getInstance().format("+" + selectedSelf.phone).replaceAll(" ", " "))))
                     .setNegativeButton(getString(R.string.BotAuthPhoneNumberDeny), (di, w) -> {
                         allowPhoneNumber[0] = false;
                         beforeAccept.run();
@@ -470,7 +481,7 @@ public class OAuthSheet {
             showing = sheet;
             sheet.show();
         } else {
-            showing = showMatchCodeSheet(context, currentAccount, r.match_codes, r.domain, code -> {
+            showing = showMatchCodeSheet(context, currentAccount, r.match_codes, domain, code -> {
                 final AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
                 progressDialog.showDelayed(200);
 
@@ -488,7 +499,7 @@ public class OAuthSheet {
                             showing = null;
                         }
                         getBulletinFactory()
-                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(r.domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, r.domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
+                            .createSimpleBulletin(R.raw.error, getString(R.string.BotAuthLoggedInFailTitle), TextUtils.isEmpty(domain) ? getString(R.string.BotAuthLoggedInFailNoDomain) : replaceSingleLinkBold(formatString(R.string.BotAuthLoggedInFail, domain), Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider)))
                             .show();
                     }
                 });

@@ -3543,7 +3543,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                 sections.add(new SectionsDrawer.Section(from, to, child.getAlpha()));
             }
             SectionsDrawer.draw(sections, sectionRadius, (from, to, topRoundRadius, bottomRoundRadius, alpha) -> {
-                AndroidUtilities.rectTmp.set(sectionsItemDecoration.padding, from, getWidth() - sectionsItemDecoration.padding, to);
+                AndroidUtilities.rectTmp.set(getPaddingLeft() + sectionsItemDecoration.padding, from, getWidth() - sectionsItemDecoration.padding - getPaddingRight(), to);
                 drawSectionBackground.run(canvas, AndroidUtilities.rectTmp, topRoundRadius, bottomRoundRadius, alpha);
             });
             sections.clear();

@@ -629,13 +629,10 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         if (album == null) {
             return new ArrayList<>();
         }
-        if (!onlyPhotos) {
-            return album.photos;
-        }
         ArrayList<MediaController.PhotoEntry> photos = new ArrayList<>();
         for (int i = 0; i < album.photos.size(); ++i) {
             MediaController.PhotoEntry entry = album.photos.get(i);
-            if (!entry.isVideo) {
+            if ((!onlyPhotos || !entry.isVideo) && !entry.isLivePhoto) {
                 photos.add(entry);
             }
         }

@@ -664,6 +664,24 @@ public class LocaleController {
         languages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Українська";
+        localeInfo.nameEnglish = "Ukrainian";
+        localeInfo.shortName = localeInfo.pluralLangCode = "uk";
+        localeInfo.pathToFile = null;
+        localeInfo.builtIn = true;
+        languages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Русский";
+        localeInfo.nameEnglish = "Russian";
+        localeInfo.shortName = localeInfo.pluralLangCode = "ru";
+        localeInfo.pathToFile = null;
+        localeInfo.builtIn = true;
+        languages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
         if (remoteLanguages.isEmpty()) {
             AndroidUtilities.runOnUIThread(() -> loadRemoteLanguages(UserConfig.selectedAccount));
@@ -2091,14 +2109,14 @@ public class LocaleController {
         final StringBuilder stringBuilder = new StringBuilder();
         if (hours > 0) {
             if (stringBuilder.length() > 0) stringBuilder.append(":");
-            stringBuilder.append(hours > 10 ? "" : "0");
+            stringBuilder.append(hours >= 10? "" : "0");
             stringBuilder.append(hours);
         }
         if (stringBuilder.length() > 0) stringBuilder.append(":");
-        stringBuilder.append(minutes > 10 ? "" : "0");
+        stringBuilder.append(minutes >= 10 ? "" : "0");
         stringBuilder.append(minutes);
         if (stringBuilder.length() > 0) stringBuilder.append(":");
-        stringBuilder.append(seconds > 10 ? "" : "0");
+        stringBuilder.append(seconds >= 10 ? "" : "0");
         stringBuilder.append(seconds);
         return stringBuilder.toString();
     }
@@ -2366,6 +2384,14 @@ public class LocaleController {
             FileLog.e(e);
         }
         return "LOC_ERR";
+    }
+
+    public static String formatPollEndTime(int seconds, boolean resultsHidden) {
+        final String s = seconds < 86400 ?
+                formatShortDuration(seconds) :
+            formatPluralString("Days", seconds / 86400);
+
+        return formatString(resultsHidden ? R.string.PollResultsIn : R.string.PollEndsIn, s);
     }
 
     public static String formatShortDuration2(int time) {

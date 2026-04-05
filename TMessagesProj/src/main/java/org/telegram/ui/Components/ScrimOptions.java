@@ -12,7 +12,6 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -86,6 +85,7 @@ public class ScrimOptions extends Dialog {
     private ChatMessageCell scrimCell;
     private boolean isGroup;
     private Drawable scrimDrawable;
+    private Drawable scrimDrawableBackground;
     private float scrimDrawableTx1, scrimDrawableTy1;
     private float scrimDrawableTx2, scrimDrawableTy2;
     private float scrimDrawableSw = 1f, scrimDrawableSh = 1f;
@@ -119,6 +119,10 @@ public class ScrimOptions extends Dialog {
                         -scrimDrawableTx2 + scrimDrawable.getBounds().left + scrimDrawable.getBounds().width() / 2f * scrimDrawableSw,
                         -scrimDrawableTy2 + scrimDrawable.getBounds().top + scrimDrawable.getBounds().height() / 2f * scrimDrawableSh
                     );
+                    if (scrimDrawableBackground != null) {
+                        scrimDrawableBackground.setAlpha((int) (0xFF * openProgress));
+                        scrimDrawableBackground.draw(canvas);
+                    }
                     scrimDrawable.draw(canvas);
                     canvas.restore();
                 }
@@ -175,6 +179,21 @@ public class ScrimOptions extends Dialog {
         optionsContainer = new FrameLayout(context);
         optionsContainer.addView(optionsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         containerView.addView(optionsContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+    }
+
+    private boolean optionsAtCenter;
+
+    public void setOptionsAtCenter() {
+        ((FrameLayout.LayoutParams) optionsContainer.getLayoutParams()).gravity = Gravity.CENTER_HORIZONTAL;
+        optionsAtCenter = true;
+    }
+
+    public FrameLayout getWindowView() {
+        return windowView;
+    }
+
+    public FrameLayout getContainerView() {
+        return containerView;
     }
 
     public boolean isShowing() {
@@ -370,24 +389,29 @@ public class ScrimOptions extends Dialog {
 
             boolean right = false;
             boolean bottom = false;
-            if (boundsRight - optionsContainer.getMeasuredWidth() < dp(8)) {
-                optionsView.setPivotX(dp(6));
-                optionsContainer.setX(Math.min(containerView.getWidth() - optionsContainer.getWidth(), boundsLeft - dp(10)) - containerView.getX());
-            } else {
-                right = true;
-                optionsView.setPivotX(optionsView.getMeasuredWidth() - dp(6));
-                optionsContainer.setX(Math.max(dp(8), boundsRight + dp(4) - optionsContainer.getMeasuredWidth()) - containerView.getX());
+            if (!optionsAtCenter) {
+                if (boundsRight - optionsContainer.getMeasuredWidth() < dp(8)) {
+                    optionsView.setPivotX(dp(6));
+                    optionsContainer.setX(Math.min(containerView.getWidth() - optionsContainer.getWidth(), boundsLeft - dp(10)) - containerView.getX());
+                } else {
+                    right = true;
+                    optionsView.setPivotX(optionsView.getMeasuredWidth() - dp(6));
+                    optionsContainer.setX(Math.max(dp(8), boundsRight + dp(4) - optionsContainer.getMeasuredWidth()) - containerView.getX());
+                }
+                scrimDrawableTx1 = right ? optionsContainer.getX() + optionsContainer.getWidth() - dp(6) - boundsRight : optionsContainer.getX() + dp(10) - boundsLeft;
+                scrimDrawableTy1 = 0f;
             }
-            scrimDrawableTx1 = right ? optionsContainer.getX() + optionsContainer.getWidth() - dp(6) - boundsRight : optionsContainer.getX() + dp(10) - boundsLeft;
-            scrimDrawableTy1 = 0f;
 
-            if (boundsBottom + optionsContainer.getMeasuredHeight() > windowView.getMeasuredHeight() - dp(16)) {
+
+            final float bb = boundsBottom + (scrimDrawableBackground != null ? dp(21) : 0);
+
+            if (bb + optionsContainer.getMeasuredHeight() > windowView.getMeasuredHeight() - dp(16)) {
                 bottom = true;
                 optionsView.setPivotY(optionsView.getMeasuredHeight() - dp(6));
                 optionsContainer.setY(boundsTop - dp(4) - optionsContainer.getMeasuredHeight() - containerView.getY());
             } else {
                 optionsView.setPivotY(dp(6));
-                optionsContainer.setY(Math.min(windowView.getHeight() - optionsContainer.getMeasuredHeight() - dp(16), boundsBottom) - containerView.getY());
+                optionsContainer.setY(Math.min(windowView.getHeight() - optionsContainer.getMeasuredHeight() - dp(16), bb) - containerView.getY());
             }
             options.setSwipebackGravity(right, bottom);
         }
@@ -397,7 +421,35 @@ public class ScrimOptions extends Dialog {
 
     }
 
+
+
+    public void setScrimDrawable(Drawable drawable, int width, int height) {
+        scrimDrawableBackground = iBlur3Factory.create()
+            .setColorProvider(BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider))
+            .setPadding(dp(8))
+            .setHasPadding(true)
+            .setRadius(dp(16));
+        scrimDrawable = drawable;
+
+        final int displayWidth = AndroidUtilities.displaySize.x;
+        final int displayHeight = AndroidUtilities.displaySize.y;
+
+        final int x = (displayWidth - width) / 2;
+        final int y = (displayHeight - height) / 2;
+
+        scrimDrawableBackground.setBounds(
+            x - dp(8),
+            y - dp(8),
+            x + width + dp(8),
+            y + height + dp(8));
+        scrimDrawable.setBounds(x, y, x + width, y + height);
+    }
+
     public void setScrim(ChatMessageCell cell, CharacterStyle link, CharSequence replaceText) {
+        setScrim(cell, link, replaceText, false);
+    }
+
+    public void setScrim(ChatMessageCell cell, CharacterStyle link, CharSequence replaceText, boolean explanation) {
         if (cell == null) return;
 
         scrimCell = cell;
@@ -412,7 +464,15 @@ public class ScrimOptions extends Dialog {
 
         MessageObject messageObject = cell.getMessageObject();
         ArrayList<MessageObject.TextLayoutBlock> textblocks = null;
-        if (cell.getCaptionLayout() != null) {
+
+        final boolean withExplanation = cell.getExplanationLayout() != null && messageObject.expandedExplanation;
+
+        if (withExplanation && explanation) {
+            x = cell.getExplanationX();
+            y = cell.getExplanationY();
+            textblocks = cell.getExplanationLayout().textLayoutBlocks;
+            rtloffset = cell.getExplanationLayout().textXOffset;
+        } else if (cell.getCaptionLayout() != null) {
             x = cell.getCaptionX();
             y = cell.getCaptionY();
             textblocks = cell.getCaptionLayout().textLayoutBlocks;
@@ -517,6 +577,11 @@ public class ScrimOptions extends Dialog {
                     layoutOriginalWidth = textlayout.getWidth();
                 }
             }
+        }
+
+        if (layout == null && withExplanation && !explanation) {
+            setScrim(cell, link, replaceText, true);
+            return;
         }
 
         if (layout == null) return;

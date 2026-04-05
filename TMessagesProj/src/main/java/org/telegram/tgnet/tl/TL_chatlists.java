@@ -69,7 +69,7 @@ public class TL_chatlists {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            revoked = (flags & 1) != 0;
+            revoked = hasFlag(flags, 1);
             title = stream.readString(exception);
             url = stream.readString(exception);
             peers = Vector.deserialize(stream, TLRPC.Peer::TLdeserialize, exception);
@@ -170,7 +170,7 @@ public class TL_chatlists {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            title_noanimate = (flags & 2) != 0;
+            title_noanimate = hasFlag(flags, 2);
             title = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             if ((flags & 1) > 0) {
                 emoticon = stream.readString(exception);
@@ -300,14 +300,14 @@ public class TL_chatlists {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = revoked ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, revoked);
             stream.writeInt32(flags);
             chatlist.serializeToStream(stream);
             stream.writeString(slug);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(title);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 Vector.serialize(stream, peers);
             }
         }

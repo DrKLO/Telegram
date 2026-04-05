@@ -781,6 +781,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private final int currentAccount;
         private final TextView headerTextView;
         private final AnimatedTextView amountTextView;
+        private boolean withTon;
 
         public StarsBalanceView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -804,9 +805,11 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             amountTextView = new AnimatedTextView(context) {
                 @Override
                 protected void dispatchDraw(Canvas canvas) {
-                    int x = (int) (getMeasuredWidth() - getDrawable().getCurrentWidth() - dp(20));
-                    starDrawable.setBounds(x, (getMeasuredHeight() - dp(17)) / 2, x + dp(17), (getMeasuredHeight() + dp(17)) / 2);
-                    starDrawable.draw(canvas);
+                    if (!withTon) {
+                        int x = (int) (getMeasuredWidth() - getDrawable().getCurrentWidth() - dp(20));
+                        starDrawable.setBounds(x, (getMeasuredHeight() - dp(17)) / 2, x + dp(17), (getMeasuredHeight() + dp(17)) / 2);
+                        starDrawable.draw(canvas);
+                    }
                     super.dispatchDraw(canvas);
                 }
             };
@@ -822,6 +825,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             updateBalance(false);
 
             setPadding(dp(15), dp(4), dp(15), dp(4));
+        }
+
+        public void withTon() {
+            this.withTon = true;
         }
 
         public void setDialogId(long dialogId) {
@@ -860,15 +867,25 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private SpannableString loadingString;
         public long lastBalance = -1;
 
+        private final ColoredImageSpan[] ref = new ColoredImageSpan[1];
+        private final ColoredImageSpan[] refTon = new ColoredImageSpan[1];
+
         public void updateBalance(boolean animated) {
             StarsController c = StarsController.getInstance(currentAccount);
+            StarsController tc = withTon ? StarsController.getTonInstance(currentAccount) : null;
 
+            AmountUtils.Amount tonAmount = AmountUtils.Amount.fromNano(0, AmountUtils.Currency.TON);
             amountTextView.cancelAnimation();
             boolean loading;
             long balance;
             if (dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
                 loading = !c.balanceAvailable();
                 balance = c.getBalance().amount;
+
+                if (tc != null) {
+                    loading |= !tc.balanceAvailable();
+                    tonAmount = tc.getBalanceAmount();
+                }
             } else {
                 TLRPC.TL_payments_starsRevenueStats stats = BotStarsController.getInstance(currentAccount).getStarsRevenueStats(dialogId);
                 loading = stats == null || stats.status == null;
@@ -885,7 +902,21 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 amountTextView.setText(loadingString, animated);
                 lastBalance = -1;
             } else {
-                amountTextView.setText(LocaleController.formatNumber(balance, ' '));
+                if (withTon) {
+                    SpannableStringBuilder ssb = new SpannableStringBuilder();
+                    if (!tonAmount.isZero()) {
+                        ssb.append(replaceStarsWithPlain(true, "⭐️" + tonAmount.asFormatString(), 0.62f, refTon));
+                        if (refTon[0] != null) {
+                            refTon[0].setColorKey(Theme.key_telegram_color_text);
+                        }
+                        ssb.append("  ");
+                    }
+                    ssb.append(replaceStarsWithPlain("⭐️" + LocaleController.formatNumber(balance, ' '), 0.62f, ref));
+                    amountTextView.setText(ssb);
+                } else {
+                    amountTextView.setText(LocaleController.formatNumber(balance, ' '));
+                }
+
                 lastBalance = balance;
             }
         }

@@ -233,6 +233,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_TODO = 39;
     public final static int FEATURE_GIFTS = 40;
     public final static int PREMIUM_FEATURE_SHARING_DISABLE = 41;
+    public final static int PREMIUM_FEATURE_AI_EDITOR = 42;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -328,6 +329,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_FOLDER_TAGS;
             case "pm_noforwards":
                 return PREMIUM_FEATURE_SHARING_DISABLE;
+            case "ai_compose":
+                return PREMIUM_FEATURE_AI_EDITOR;
 
             case "business":
                 return PREMIUM_FEATURE_BUSINESS;
@@ -419,6 +422,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "folder_tags";
             case PREMIUM_FEATURE_SHARING_DISABLE:
                 return "pm_noforwards";
+            case PREMIUM_FEATURE_AI_EDITOR:
+                return "ai_compose";
 
             case PREMIUM_FEATURE_BUSINESS:
                 return "business";
@@ -1015,6 +1020,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_MESSAGE_EFFECTS, R.drawable.menu_premium_effects, getString(R.string.PremiumPreviewEffects), getString(R.string.PremiumPreviewEffectsDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_TODO, R.drawable.msg_premium_icons, getString(R.string.PremiumPreviewTodo), getString(R.string.PremiumPreviewTodoDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SHARING_DISABLE, R.drawable.filled_sharing_off2_24, getString(R.string.PremiumPreviewSharingDisable), getString(R.string.PremiumPreviewSharingDisableDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_AI_EDITOR, R.drawable.premium_ai_editor, getString(R.string.PremiumPreviewAIEditor), getString(R.string.PremiumPreviewAIEditorDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {

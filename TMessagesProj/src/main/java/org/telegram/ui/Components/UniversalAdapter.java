@@ -172,18 +172,20 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             return position >= start && position <= end;
         }
     }
+    public int itemsOffset = 0;
     private final ArrayList<Section> whiteSections = new ArrayList<>();
     private final ArrayList<Section> reorderSections = new ArrayList<>();
     private Section currentWhiteSection, currentReorderSection;
     public void whiteSectionStart() {
         currentWhiteSection = new Section();
-        currentWhiteSection.start = items.size();
+        currentWhiteSection.start = itemsOffset + items.size();
         currentWhiteSection.end = -1;
         whiteSections.add(currentWhiteSection);
     }
     public void whiteSectionEnd() {
         if (currentWhiteSection != null) {
-            currentWhiteSection.end = Math.max(0, items.size() - 1);
+            currentWhiteSection.end = Math.max(0, itemsOffset + items.size() - 1);
+            currentWhiteSection = null;
         }
     }
 
@@ -285,6 +287,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
+        currentWhiteSection = null;
         whiteSections.clear();
         reorderSections.clear();
         if (fillItems != null) {
@@ -439,6 +442,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
                     }
                 };
+                if (viewType == VIEW_TYPE_CUSTOM_SHADOW) {
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
+                }
                 break;
             case VIEW_TYPE_FULLY_CUSTOM:
                 view = new FrameLayout(context) {
@@ -503,7 +509,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 view = new ChannelMonetizationLayout.ProceedOverviewCell(context, resourcesProvider);
                 break;
             case VIEW_TYPE_SPACE:
-                view = new View(context);
+                view = new SpaceView(context);
                 break;
             case VIEW_TYPE_BUSINESS_LINK:
                 view = new BusinessLinksActivity.BusinessLinkView(context, resourcesProvider);
@@ -892,7 +898,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     holder.itemView.setBackgroundColor(item.iconResId);
                 }
                 holder.itemView.setId(item.id);
-                holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, item.intValue));
+                ((SpaceView) holder.itemView).setHeight(item.intValue);
                 break;
             case VIEW_TYPE_BUSINESS_LINK:
                 BusinessLinksActivity.BusinessLinkView businessLinkView = (BusinessLinksActivity.BusinessLinkView) holder.itemView;
@@ -1193,6 +1199,29 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
 
         public void setMinusPadding(boolean minusPadding) {
             this.minusPadding = minusPadding;
+        }
+    }
+
+    public static class SpaceView extends View {
+
+        private int height;
+        public SpaceView(Context context) {
+            super(context);
+            setTag(RecyclerListView.TAG_NOT_SECTION);
+        }
+
+        public void setHeight(int height) {
+            if (this.height == height) return;
+            this.height = height;
+            requestLayout();
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+            );
         }
     }
 }

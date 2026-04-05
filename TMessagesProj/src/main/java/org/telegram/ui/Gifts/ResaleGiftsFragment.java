@@ -39,7 +39,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -62,11 +61,13 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -78,18 +79,27 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class ResaleGiftsFragment extends BaseFragment {
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
+
+public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.Target {
+    private static final int ANIMATOR_ID_CLEAR_FILTERS_BUTTON_VISIBLE = 0;
+
+            private final BoolAnimator animatorClearFiltersButtonVisible = new BoolAnimator(
+        ANIMATOR_ID_CLEAR_FILTERS_BUTTON_VISIBLE, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
 
     private final long dialogId;
     private final long gift_id;
@@ -115,6 +125,7 @@ public class ResaleGiftsFragment extends BaseFragment {
     private View filtersDivider;
     private UniversalRecyclerView listView;
     private FrameLayout clearFiltersContainer;
+    private FrameLayout onlyStarsContainer;
     private TextView clearFiltersButton;
     private LargeEmptyView emptyView;
     private boolean emptyViewVisible;
@@ -130,6 +141,10 @@ public class ResaleGiftsFragment extends BaseFragment {
 
     @Override
     public View createView(Context context) {
+        iBlur3SourceColor = new BlurredBackgroundSourceColor();
+        iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        iBlur3Factory = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
+
         actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
         backDrawable.setAnimationTime(240);
         actionBar.setCastShadows(false);
@@ -177,6 +192,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         this.fragmentView = fragmentView;
 
         StarsIntroActivity.StarsBalanceView balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount, resourceProvider);
+        balanceView.withTon();
         ScaleStateListAnimator.apply(balanceView);
         balanceView.setOnClickListener(v -> {
             if (balanceView.lastBalance <= 0) return;
@@ -239,8 +255,59 @@ public class ResaleGiftsFragment extends BaseFragment {
         filtersDivider.setAlpha(0.0f);
         fragmentView.addView(filtersDivider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2.0f / AndroidUtilities.density, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
+
+        final LinearLayout checkboxLayout = new LinearLayout(context);
+        checkboxLayout.setPadding(dp(4), 0, dp(15), 0);
+        checkboxLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        final CheckBox2 checkbox = new CheckBox2(context, 24, resourceProvider);
+        checkbox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
+        checkbox.setDrawUnchecked(true);
+        checkbox.setChecked(false, false);
+        checkbox.setDrawBackgroundAsArc(10);
+        checkbox.setTranslationX(dp(4));
+        checkbox.setScaleX(0.8f);
+        checkbox.setScaleY(0.8f);
+        checkboxLayout.addView(checkbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL));
+
+        final TextView checkboxTextView = new TextView(context);
+        checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourceProvider));
+        checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        checkboxTextView.setText(LocaleController.getString(R.string.GiftResaleStarsOnly));
+        checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
+        checkboxLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(18), 0, Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f))));
+
+
+        onlyStarsContainer = new FrameLayout(context);
+        onlyStarsContainer.setPadding(dp(8), dp(8), dp(8), dp(8));
+        onlyStarsContainer.setBackground(iBlur3Factory.create(onlyStarsContainer)
+            .setColorProvider(BlurredBackgroundProviderImpl.shadow(resourceProvider))
+            .setPadding(dp(8))
+            .setRadius(dp(18)));
+        onlyStarsContainer.setOnClickListener(v -> {
+            if (list != null) {
+                list.starsOnly = !list.starsOnly;
+                checkbox.setChecked(list.starsOnly, true);
+                list.reload();
+            }
+        });
+        onlyStarsContainer.addView(checkboxLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        ScaleStateListAnimator.apply(onlyStarsContainer, 0.04f, 1.5f);
+        fragmentView.addView(onlyStarsContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36 + 8 + 8, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, AndroidUtilities.navigationBarHeight / AndroidUtilities.density));
+
+        StarsController tc = StarsController.getTonInstance(currentAccount);
+        if (tc.balanceAvailable() && !tc.getBalanceAmount().isZero()) {
+            onlyStarsContainer.setVisibility(View.GONE);
+        }
+
+
         clearFiltersContainer = new FrameLayout(context);
-        fragmentView.addView(clearFiltersContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 49, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
+        clearFiltersContainer.setPadding(dp(8), dp(8), dp(8), dp(8));
+        clearFiltersContainer.setBackground(iBlur3Factory.create(clearFiltersContainer)
+            .setColorProvider(BlurredBackgroundProviderImpl.shadow(resourceProvider))
+            .setPadding(dp(8))
+            .setRadius(dp(22)));
+        fragmentView.addView(clearFiltersContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44 + 8 + 8, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, AndroidUtilities.navigationBarHeight / AndroidUtilities.density));
 
         clearFiltersButton = new TextView(context);
         SpannableStringBuilder sb = new SpannableStringBuilder("x");
@@ -249,20 +316,18 @@ public class ResaleGiftsFragment extends BaseFragment {
         clearFiltersButton.setText(sb);
         clearFiltersButton.setTextColor(getThemedColor(Theme.key_featuredStickers_addButton));
         clearFiltersButton.setTypeface(AndroidUtilities.bold());
-        clearFiltersButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(0, getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f))));
+        clearFiltersButton.setPadding(dp(20), 0, dp(20), 0);
+        clearFiltersButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(22), 0, Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f))));
         clearFiltersButton.setGravity(Gravity.CENTER);
-        clearFiltersButton.setOnClickListener(v -> {
+        clearFiltersContainer.setOnClickListener(v -> {
             list.notSelectedBackdropAttributes.clear();
             list.notSelectedModelAttributes.clear();
             list.notSelectedPatternAttributes.clear();
             list.reload();
         });
-        clearFiltersContainer.addView(clearFiltersButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-        View clearFiltersDivider = new View(context);
-        clearFiltersDivider.setBackgroundColor(getThemedColor(Theme.key_divider));
-        clearFiltersContainer.addView(clearFiltersDivider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
-        setClearFiltersShown(false, false);
-
+        clearFiltersContainer.addView(clearFiltersButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        clearFiltersContainer.setVisibility(View.GONE);
+        ScaleStateListAnimator.apply(clearFiltersContainer, 0.05f, 1.5f);
 
 
         sortButton = new Filter(context, resourceProvider);
@@ -279,6 +344,21 @@ public class ResaleGiftsFragment extends BaseFragment {
                 })
                 .add(R.drawable.menu_sort_number, getString(ResaleGiftsList.Sorting.BY_NUMBER.buttonStringResId), () -> {
                     list.setSorting(ResaleGiftsList.Sorting.BY_NUMBER);
+                })
+                .addGap()
+                .addChecked(!list.starsOnly, getString(R.string.GiftResaleFilterAllListings), () -> {
+                    if (list.starsOnly) {
+                        list.starsOnly = false;
+                        checkbox.setChecked(false, true);
+                        list.reload();
+                    }
+                })
+                .addChecked(list.starsOnly, getString(R.string.GiftResaleFilterForStarsOnly), () -> {
+                    if (!list.starsOnly) {
+                        list.starsOnly = true;
+                        checkbox.setChecked(true, true);
+                        list.reload();
+                    }
                 })
                 .setDrawScrim(false)
                 .setOnTopOfScrim()
@@ -672,21 +752,6 @@ public class ResaleGiftsFragment extends BaseFragment {
         }
     }
 
-    private boolean clearFiltersShown = true;
-    private void setClearFiltersShown(boolean show, boolean animated) {
-        if (clearFiltersShown == show) return;
-        clearFiltersShown = show;
-        if (animated) {
-            clearFiltersContainer.animate()
-                .translationY(show ? 0 : dp(49))
-                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setDuration(420)
-                .start();
-        } else {
-            clearFiltersContainer.setTranslationY(show ? 0 : dp(49));
-        }
-    }
-
     private void updateList(boolean first) {
         if (list.getTotalCount() > 12) {
             setFiltersShown(true, true);
@@ -699,7 +764,7 @@ public class ResaleGiftsFragment extends BaseFragment {
         }
         if (actionBar != null) {
             actionBar.setTitle(gift_name);
-            actionBar.setSubtitle(list.getTotalCount() <= 0 ? getString(R.string.Gift2ResaleNoCount) : LocaleController.formatPluralStringComma("Gift2ResaleCount", list.getTotalCount()));
+            actionBar.setSubtitle(list.getTotalCount() <= 0 ? getString(R.string.Gift2ResaleNoCount) : LocaleController.formatPluralStringComma("Gift2ListingsCount", list.getTotalCount()));
         }
         if (sortButton != null) {
             sortButton.setSorting(list.getSorting());
@@ -719,7 +784,8 @@ public class ResaleGiftsFragment extends BaseFragment {
         if (isLoadingVisible()) {
             list.load();
         }
-        setClearFiltersShown((list.loading || list.getTotalCount() > 0) && (!list.notSelectedModelAttributes.isEmpty() || !list.notSelectedBackdropAttributes.isEmpty() || !list.notSelectedPatternAttributes.isEmpty()), true);
+        boolean show = (list.loading || list.getTotalCount() > 0) && (!list.notSelectedModelAttributes.isEmpty() || !list.notSelectedBackdropAttributes.isEmpty() || !list.notSelectedPatternAttributes.isEmpty());
+        animatorClearFiltersButtonVisible.setValue(show, true);
     }
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
@@ -852,6 +918,14 @@ public class ResaleGiftsFragment extends BaseFragment {
         return false;
     }
 
+    @Override
+    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+        if (id == ANIMATOR_ID_CLEAR_FILTERS_BUTTON_VISIBLE) {
+            onlyStarsContainer.setTranslationY(-dp(44 + 8) * factor);
+            FragmentFloatingButton.setAnimatedVisibility(clearFiltersContainer, factor);
+        }
+    }
+
     public static class ResaleGiftsList implements StarsController.IGiftsList {
         private final int account;
         public final long gift_id;
@@ -921,6 +995,8 @@ public class ResaleGiftsFragment extends BaseFragment {
 
         }
 
+        private boolean starsOnly;
+
         private boolean for_craft;
         public ResaleGiftsList forCraft() {
             this.for_craft = true;
@@ -941,6 +1017,7 @@ public class ResaleGiftsFragment extends BaseFragment {
             req.offset = last_offset == null ? "" : last_offset;
             req.limit = 15;
             req.for_craft = for_craft;
+            req.stars_only = starsOnly;
             if (sorting == Sorting.BY_NUMBER) {
                 req.sort_by_num = true;
                 req.sort_by_price = false;
@@ -2199,6 +2276,12 @@ public class ResaleGiftsFragment extends BaseFragment {
         }
     }
 
+    private BlurredBackgroundSourceColor iBlur3SourceColor;
+    private BlurredBackgroundDrawableViewFactory iBlur3Factory;
 
 
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
 }

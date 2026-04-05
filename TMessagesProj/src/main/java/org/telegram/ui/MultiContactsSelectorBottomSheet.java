@@ -61,17 +61,17 @@ public class MultiContactsSelectorBottomSheet extends BottomSheetWithRecyclerLis
         void onUserSelected(List<Long> ids);
     }
 
-    public static void open(Boolean bots, Boolean premium, int maxCount, SelectorListener selectorListener) {
+    public static MultiContactsSelectorBottomSheet open(Boolean bots, Boolean premium, int maxCount, SelectorListener selectorListener) {
         BaseFragment fragment = LaunchActivity.getLastFragment();
         if (fragment == null) {
-            return;
+            return null;
         }
         if (instance != null) {
-            return;
+            return instance;
         }
         MultiContactsSelectorBottomSheet sheet = new MultiContactsSelectorBottomSheet(fragment, true, maxCount, bots, premium, selectorListener);
         sheet.show();
-        instance = sheet;
+        return instance = sheet;
     }
 
     private static final int BOTTOM_HEIGHT_DP = 60;

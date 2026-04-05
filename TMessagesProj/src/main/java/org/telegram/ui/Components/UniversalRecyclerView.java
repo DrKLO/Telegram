@@ -16,6 +16,7 @@ import android.util.Pair;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -149,21 +150,25 @@ public class UniversalRecyclerView extends RecyclerListView {
             protected void onMoveAnimationUpdate(ViewHolder holder) {
                 super.onMoveAnimationUpdate(holder);
                 invalidate();
+                onLayoutUpdate();
             }
             @Override
             protected void onRemoveAnimationUpdate(ViewHolder holder) {
                 super.onRemoveAnimationUpdate(holder);
                 if (hasSections()) invalidate();
+                onLayoutUpdate();
             }
             @Override
             protected void onAddAnimationUpdate(ViewHolder holder) {
                 super.onAddAnimationUpdate(holder);
                 if (hasSections()) invalidate();
+                onLayoutUpdate();
             }
             @Override
             protected void onChangeAnimationUpdate(ViewHolder holder) {
                 super.onChangeAnimationUpdate(holder);
                 if (hasSections()) invalidate();
+                onLayoutUpdate();
             }
         };
         itemAnimator.setSupportsChangeAnimations(false);
@@ -171,6 +176,10 @@ public class UniversalRecyclerView extends RecyclerListView {
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDurations(350);
         setItemAnimator(itemAnimator);
+    }
+
+    protected void onLayoutUpdate() {
+
     }
 
     public void makeHorizontal() {

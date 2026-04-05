@@ -9,6 +9,9 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.loadVCardFromStream;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -19,6 +22,7 @@ import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -36,25 +40,28 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.TextWatcherImpl;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Cells.SharedAudioCell;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import me.vkryl.android.animator.BoolAnimator;
@@ -68,17 +75,14 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
     private final FrameLayout frameLayout;
     private final FragmentSearchField searchField;
-    private final ListAdapter listAdapter;
-    private final SearchAdapter searchAdapter;
-    private final LinearLayoutManager layoutManager;
-    private final EmptyTextProgressView progressView;
-    private final LinearLayout emptyView;
-    private final ImageView emptyImageView;
-    private final TextView emptyTitleTextView;
-    private final TextView emptySubtitleTextView;
-    private final RecyclerListView listView;
+    private UniversalRecyclerView listView;
     private final View fadeView;
-    private View currentEmptyView;
+
+    private DialogsActivityTopPanelLayout topPanelLayout;
+    private FrameLayout fragmentContextViewWrapper;
+    private FragmentContextView fragmentContextView;
+
+    private String query;
 
     private int maxSelectedFiles = -1;
 
@@ -87,8 +91,10 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private boolean loadingAudio;
 
     private ArrayList<MediaController.AudioEntry> audioEntries = new ArrayList<>();
-    private final ArrayList<MediaController.AudioEntry> selectedAudiosOrder = new ArrayList<>();
-    private final LongSparseArray<MediaController.AudioEntry> selectedAudios = new LongSparseArray<>();
+    private final HashSet<MediaController.AudioEntry> selectedAudios = new HashSet<>();
+
+    private ArrayList<MediaController.AudioEntry> foundInChats = new ArrayList<>();
+    private ArrayList<MediaController.AudioEntry> foundGlobal = new ArrayList<>();
 
     private AudioSelectDelegate delegate;
 
@@ -107,7 +113,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         NotificationCenter.getInstance(parentAlert.currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         loadAudio();
 
-        fadeView = new ChatAttachAlert.SearchFadeView(context, resourcesProvider);
+        fadeView = new ChatAttachAlert.SearchFadeView(context, Theme.key_windowBackgroundWhite, resourcesProvider);
         fadeView.setVisibility(INVISIBLE);
 
         frameLayout = new FrameLayout(context);
@@ -116,16 +122,31 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         searchField.editText.addTextChangedListener(new TextWatcherImpl() {
             @Override
             public void afterTextChanged(Editable s) {
-                String text = s.toString();
-                if (text.isEmpty()) {
-                    if (listView.getAdapter() != listAdapter) {
-                        listView.setAdapter(listAdapter);
-                        listAdapter.notifyDataSetChanged();
+                final boolean wasEmpty = TextUtils.isEmpty(query);
+                query = s.toString().trim();
+
+                AndroidUtilities.cancelRunOnUIThread(searchChatsRunnable);
+                if (!TextUtils.isEmpty(query)) {
+                    loadingSearchChats = query != null && query.length() >= 0;
+                    if (!TextUtils.equals(lastSearchChatsQuery, query)) {
+                        foundInChats.clear();
+                        searchChatsNextRate = 0;
+                        searchChatsHasMore = false;
                     }
+                    AndroidUtilities.runOnUIThread(searchChatsRunnable, 1500);
                 }
-                if (searchAdapter != null) {
-                    searchAdapter.search(text);
+
+                AndroidUtilities.cancelRunOnUIThread(searchGlobalRunnable);
+                if (!TextUtils.isEmpty(query)) {
+                    loadingSearchGlobal = query != null && query.length() >= 3 && !TextUtils.isEmpty(MessagesController.getInstance(parentAlert.currentAccount).config.musicSearchUsername.get());
+                    if (!TextUtils.equals(lastSearchGlobalQuery, query)) {
+                        foundGlobal.clear();
+                        searchGlobalHasMore = false;
+                    }
+                    AndroidUtilities.runOnUIThread(searchGlobalRunnable, 1500);
                 }
+
+                updateWithSavingScroll();
             }
         });
         searchField.editText.setHint(LocaleController.getString(R.string.SearchMusic));
@@ -134,98 +155,300 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         lp.topMargin += AndroidUtilities.statusBarHeight;
         frameLayout.addView(searchField, lp);
 
-        progressView = new EmptyTextProgressView(context, null, resourcesProvider);
-        progressView.showProgress();
-        addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        topPanelLayout = new DialogsActivityTopPanelLayout(context);
+        topPanelLayout.setPadding(dp(11), dp(21), dp(11), dp(21));
+        topPanelLayout.setOnAnimatedHeightChangedListener(() -> {
+            alert.blur3_InvalidateBlur();
+            checkUi_listViewPadding();
 
-        emptyView = new LinearLayout(context);
-        emptyView.setOrientation(LinearLayout.VERTICAL);
-        emptyView.setGravity(Gravity.CENTER);
-        emptyView.setVisibility(View.GONE);
-        addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        emptyView.setOnTouchListener((v, event) -> true);
+            parentAlert.updateLayout(ChatAttachAlertAudioLayout.this, true, 0);
+        });
 
-        emptyImageView = new ImageView(context);
-        emptyImageView.setImageResource(R.drawable.music_empty);
-        emptyImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogEmptyImage), PorterDuff.Mode.MULTIPLY));
-        emptyView.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        fragmentContextViewWrapper = new FrameLayout(context);
+        topPanelLayout.addView(fragmentContextViewWrapper);
+        topPanelLayout.setViewVisible(fragmentContextViewWrapper, true, false);
+        fragmentContextView = new FragmentContextView(context, alert.baseFragment, frameLayout, false, resourcesProvider) {
+            @Override
+            public void setVisibility(int visibility) {
+                topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
+            }
+        };
+        fragmentContextView.isInsideBubble = true;
+        fragmentContextViewWrapper.addView(fragmentContextView);
+        lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 8, 0, 4);
+        lp.topMargin += AndroidUtilities.statusBarHeight + dp(48 - 21);
+        frameLayout.addView(topPanelLayout, lp);
 
-        emptyTitleTextView = new TextView(context);
-        emptyTitleTextView.setTextColor(getThemedColor(Theme.key_dialogEmptyText));
-        emptyTitleTextView.setGravity(Gravity.CENTER);
-        emptyTitleTextView.setTypeface(AndroidUtilities.bold());
-        emptyTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        emptyTitleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
-        emptyView.addView(emptyTitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 11, 0, 0));
-
-        emptySubtitleTextView = new TextView(context);
-        emptySubtitleTextView.setTextColor(getThemedColor(Theme.key_dialogEmptyText));
-        emptySubtitleTextView.setGravity(Gravity.CENTER);
-        emptySubtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        emptySubtitleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
-        emptyView.addView(emptySubtitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 6, 0, 0));
-
-        listView = new RecyclerListView(context, resourcesProvider) {
+        listView = new UniversalRecyclerView(context, alert.currentAccount, 0, this::fillItems, this::onItemClick, this::onItemLongClick, resourcesProvider) {
             @Override
             protected boolean allowSelectChildAtPosition(float x, float y) {
                 return y >= parentAlert.scrollOffsetY[0] + AndroidUtilities.dp(30) + (!parentAlert.inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
             }
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                super.onLayout(changed, l, t, r, b);
+                parentAlert.updateLayout(ChatAttachAlertAudioLayout.this, true, 0);
+            }
+            @Override
+            protected void onLayoutUpdate() {
+                parentAlert.updateLayout(ChatAttachAlertAudioLayout.this, true, 0);
+            }
         };
+        listView.adapter.setApplyBackground(false);
         listView.setSections();
         iBlur3Capture = listView;
         iBlur3CaptureView = listView;
         occupyStatusBar = true;
         occupyNavigationBar = true;
         listView.setClipToPadding(false);
-        listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(9), listView) {
-            @Override
-            public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
-                LinearSmoothScroller linearSmoothScroller = new LinearSmoothScroller(recyclerView.getContext()) {
-                    @Override
-                    public int calculateDyToMakeVisible(View view, int snapPreference) {
-                        int dy = super.calculateDyToMakeVisible(view, snapPreference);
-                        dy -= (listView.getPaddingTop() - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(7));
-                        return dy;
-                    }
-
-                    @Override
-                    protected int calculateTimeForDeceleration(int dx) {
-                        return super.calculateTimeForDeceleration(dx) * 2;
-                    }
-                };
-                linearSmoothScroller.setTargetPosition(position);
-                startSmoothScroll(linearSmoothScroller);
-            }
-        });
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
-        listView.setAdapter(listAdapter = new ListAdapter(context));
         listView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
-        listView.setOnItemClickListener((view, position) -> onItemClick(view));
-        listView.setOnItemLongClickListener((view, position) -> {
-            onItemClick(view);
-            return true;
-        });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 parentAlert.updateLayout(ChatAttachAlertAudioLayout.this, true, dy);
-                updateEmptyViewPosition();
+//                if (listView.scrollingByUser) {
+//                    AndroidUtilities.hideKeyboard(searchField.editText);
+//                }
             }
         });
 
-        searchAdapter = new SearchAdapter(context);
-        lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.TOP);
-        lp.height += AndroidUtilities.statusBarHeight;
+        lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.LEFT | Gravity.TOP);
         addView(frameLayout, lp);
 
-        updateEmptyView();
+        listView.adapter.update(false);
+        checkUi_listViewPadding();
+    }
+
+    private void checkUi_listViewPadding() {
+        int padding;
+        if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
+            padding = AndroidUtilities.dp(8);
+            parentAlert.setAllowNestedScroll(false);
+        } else {
+            if (!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+                padding = (int) (preMeasuredAvailableHeight / 3.5f);
+            } else {
+                padding = (preMeasuredAvailableHeight / 5 * 2);
+            }
+            parentAlert.setAllowNestedScroll(true);
+        }
+        padding += AndroidUtilities.statusBarHeight;
+        padding += dp(56);
+        padding += topPanelLayout.getAnimatedHeightWithPadding(0);
+        listView.setPadding/*WithoutRequestLayout*/(0, padding, 0, listPaddingBottom);
+    }
+
+    private boolean needPlayMessage(MessageObject messageObject) {
+        playingAudio = messageObject;
+        ArrayList<MessageObject> arrayList = new ArrayList<>();
+        arrayList.add(messageObject);
+        return MediaController.getInstance().setPlaylist(arrayList, messageObject, 0);
+    }
+
+    private int LOAD_MORE_SEARCH_CHATS = 1;
+    private int LOAD_MORE_SEARCH_GLOBAL = 2;
+
+    private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        items.add(UItem.asSpace(-100, dp(1)));
+        int firstIndex = items.size();
+        if (TextUtils.isEmpty(query)) {
+            adapter.whiteSectionStart();
+            for (int i = 0; i < audioEntries.size(); ++i) {
+                final MediaController.AudioEntry audioEntry = audioEntries.get(i);
+                audioEntry.messageObject.setQuery(null);
+                items.add(
+                    SharedAudioCell.Factory.as(audioEntry, this::needPlayMessage)
+                        .setChecked(selectedAudios.contains(audioEntry))
+                        .setId(-1)
+                );
+            }
+            if (loadingAudio) {
+                items.add(UItem.asFlicker(11, FlickerLoadingView.AUDIO_TYPE));
+                items.add(UItem.asFlicker(12, FlickerLoadingView.AUDIO_TYPE));
+                items.add(UItem.asFlicker(13, FlickerLoadingView.AUDIO_TYPE));
+            }
+            adapter.whiteSectionEnd();
+        } else {
+            final String q = query.toLowerCase();
+            final String tq = AndroidUtilities.translitSafe(q);
+
+            boolean addedHeader = false;
+            for (int i = 0; i < audioEntries.size(); ++i) {
+                final MediaController.AudioEntry audioEntry = audioEntries.get(i);
+
+                boolean matches = false;
+                if (audioEntry.author != null) {
+                    final String a = audioEntry.author.toLowerCase();
+                    final String ta = AndroidUtilities.translitSafe(a);
+                    matches = matches || a.startsWith(q) || a.contains(" " + q) || ta.startsWith(tq) || ta.contains(" " + tq);
+                }
+                if (audioEntry.title != null) {
+                    final String t =  audioEntry.title.toLowerCase();
+                    final String tt = AndroidUtilities.translitSafe(t);
+                    matches = matches || t.startsWith(q) || t.contains(" " + q) || tt.startsWith(tq) || tt.contains(" " + tq);
+                }
+
+                if (matches) {
+                    if (!addedHeader) {
+                        if (items.size() > firstIndex) {
+                            items.add(UItem.asShadow(-97, null));
+                        }
+                        adapter.whiteSectionStart();
+                        items.add(UItem.asHeader(10, getString(R.string.AudioSearchLocal)));
+                        addedHeader = true;
+                    }
+                    audioEntry.messageObject.setQuery(query);
+                    items.add(
+                        SharedAudioCell.Factory.as(audioEntry, this::needPlayMessage)
+                            .setChecked(selectedAudios.contains(audioEntry))
+                            .setId(10)
+                    );
+                }
+            }
+            adapter.whiteSectionEnd();
+
+            if (foundInChats != null && (!foundInChats.isEmpty() || searchChatsRequestId >= 0 || loadingSearchChats)) {
+                if (items.size() > firstIndex) {
+                    items.add(UItem.asShadow(-98, null));
+                }
+                adapter.whiteSectionStart();
+                items.add(UItem.asHeader((searchChatsRequestId >= 0 || loadingSearchChats) && foundInChats.isEmpty() ? 25 : 20, getString(R.string.AudioSearchChats)));
+                for (int i = 0; i < foundInChats.size(); ++i) {
+                    final MediaController.AudioEntry audioEntry = foundInChats.get(i);
+                    audioEntry.messageObject.setQuery(query);
+                    items.add(
+                        SharedAudioCell.Factory.as(audioEntry, this::needPlayMessage)
+                            .setChecked(selectedAudios.contains(audioEntry))
+                    );
+                }
+                if (searchChatsRequestId >= 0 || loadingSearchChats) {
+                    items.add(UItem.asFlicker(21, FlickerLoadingView.AUDIO_TYPE));
+                    items.add(UItem.asFlicker(22, FlickerLoadingView.AUDIO_TYPE));
+                    items.add(UItem.asFlicker(23, FlickerLoadingView.AUDIO_TYPE));
+                }
+                if (searchChatsHasMore) {
+                    items.add(UItem.asButton(LOAD_MORE_SEARCH_CHATS, R.drawable.arrow_more, getString(R.string.ShowMore)).accent());
+                }
+                adapter.whiteSectionEnd();
+            }
+
+            if (foundGlobal != null && (!foundGlobal.isEmpty() || searchGlobalRequestId >= 0 || loadingSearchGlobal)) {
+                if (items.size() > firstIndex) {
+                    items.add(UItem.asShadow(-96, null));
+                }
+                adapter.whiteSectionStart();
+                items.add(UItem.asHeader((searchGlobalRequestId >= 0 || loadingSearchGlobal) && foundGlobal.isEmpty() ? 35 : 30, getString(R.string.AudioSearchGlobal)));
+                int count = foundGlobal.size();
+                for (int i = 0; i < count; ++i) {
+                    final MediaController.AudioEntry audioEntry = foundGlobal.get(i);
+                    audioEntry.messageObject.setQuery(query);
+                    items.add(
+                        SharedAudioCell.Factory.as(audioEntry, this::needPlayMessage)
+                            .setChecked(selectedAudios.contains(audioEntry))
+                    );
+                }
+                if (searchGlobalRequestId >= 0 || loadingSearchGlobal) {
+                    items.add(UItem.asFlicker(31, FlickerLoadingView.AUDIO_TYPE));
+                    items.add(UItem.asFlicker(32, FlickerLoadingView.AUDIO_TYPE));
+                    items.add(UItem.asFlicker(33, FlickerLoadingView.AUDIO_TYPE));
+                }
+                if (searchGlobalHasMore) {
+                    items.add(UItem.asButton(LOAD_MORE_SEARCH_GLOBAL, R.drawable.arrow_more, getString(R.string.ShowMore)).accent());
+                }
+                adapter.whiteSectionEnd();
+            }
+        }
+        if (items.size() <= firstIndex && !loadingAudio) {
+            if (isSearching()) {
+                items.add(EmptyView.Factory.as(getString(R.string.NoAudioFound), AndroidUtilities.replaceTags(formatString(query.length() >= 3 ? R.string.NoAudioFoundInfo2 : R.string.NoAudioFoundInfo, query))));
+            } else {
+                items.add(EmptyView.Factory.as(getString(R.string.NoAudioFiles), getString(R.string.NoAudioFilesInfo)));
+            }
+        }
+        items.add(UItem.asShadow(-99, null));
+    }
+
+    private void updateWithSavingScroll() {
+        AndroidUtilities.cancelRunOnUIThread(updateWithSavingScrollRunnable);
+        AndroidUtilities.runOnUIThread(updateWithSavingScrollRunnable);
+    }
+
+    private final Runnable updateWithSavingScrollRunnable = () -> {
+        boolean atTop = !listView.canScrollVertically(-1);
+        int position = -1, top = -1;
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            final View child = listView.getChildAt(i);
+            position = listView.getChildAdapterPosition(child);
+            top = child.getTop();
+            if (position >= 0) break;
+        }
+        listView.adapter.update(true);
+        if (atTop) {
+            listView.layoutManager.scrollToPositionWithOffset(0, 0);
+        } else if (position >= 0) {
+            final int savedPosition = position;
+            final int savedTop = top;
+//            listView.post(() -> {
+                listView.layoutManager.scrollToPositionWithOffset(savedPosition, savedTop - listView.getPaddingTop());
+//            });
+        }
+    };
+
+    private void onItemClick(UItem item, View view, int position, float x, float y) {
+        if (item != null && item.id == LOAD_MORE_SEARCH_CHATS) {
+            searchChats();
+            return;
+        } else if (item != null && item.id == LOAD_MORE_SEARCH_GLOBAL) {
+            searchGlobal();
+            return;
+        }
+        if (!(view instanceof SharedAudioCell)) {
+            return;
+        }
+        SharedAudioCell audioCell = (SharedAudioCell) view;
+        MediaController.AudioEntry audioEntry = (MediaController.AudioEntry) audioCell.getTag();
+        boolean add;
+        if (parentAlert.isStoryAudioPicker || parentAlert.isPollAttach) {
+            sendPressed = true;
+            ArrayList<MessageObject> audios = new ArrayList<>();
+            audios.add(audioEntry.messageObject);
+            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, 0, false, 0);
+            add = true;
+        } else if (selectedAudios.contains(audioEntry)) {
+            selectedAudios.remove(audioEntry);
+            item.checked = false;
+            audioCell.setChecked(false, true);
+            add = false;
+        } else {
+            if (maxSelectedFiles >= 0 && selectedAudios.size() >= maxSelectedFiles) {
+                showErrorBox(LocaleController.formatString(R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
+                return;
+            }
+            item.checked = true;
+            selectedAudios.add(audioEntry);
+            audioCell.setChecked(true, true);
+            add = true;
+        }
+        parentAlert.updateCountButton(add ? 1 : 2);
+    }
+
+    private boolean onItemLongClick(UItem item, View view, int position, float x, float y) {
+        onItemClick(item, view, position, x, y);
+        return true;
     }
 
     public void setupBlurredSearchField(BlurredBackgroundDrawableViewFactory factory) {
         if (searchField != null) {
-            searchField.setupBlurredBackground(factory.create(searchField, BlurredBackgroundProviderImpl.attachMenuSearch(resourcesProvider)));
+            searchField.setupBlurredBackground(factory.create(searchField, BlurredBackgroundProviderImpl.topPanel(resourcesProvider)));
+        }
+        if (topPanelLayout != null) {
+            final BlurredBackgroundDrawable topPanelLayoutBackground = factory.create(topPanelLayout, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
+            topPanelLayoutBackground.setRadius(dp(24));
+            topPanelLayoutBackground.setPadding(dp(7));
+            topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
         }
     }
 
@@ -245,40 +468,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         playingAudio = null;
     }
 
-    private void updateEmptyViewPosition() {
-        if (currentEmptyView.getVisibility() != VISIBLE) {
-            return;
-        }
-        View child = listView.getChildAt(0);
-        if (child == null) {
-            return;
-        }
-        currentEmptyView.setTranslationY((currentEmptyView.getMeasuredHeight() - getMeasuredHeight() + child.getTop()) / 2 - currentPanTranslationProgress / 2);
-    }
-
-    private void updateEmptyView() {
-        if (loadingAudio) {
-            currentEmptyView = progressView;
-            emptyView.setVisibility(View.GONE);
-        } else {
-            if (listView.getAdapter() == searchAdapter) {
-                emptyTitleTextView.setText(LocaleController.getString(R.string.NoAudioFound));
-            } else {
-                emptyTitleTextView.setText(LocaleController.getString(R.string.NoAudioFiles));
-                emptySubtitleTextView.setText(LocaleController.getString(R.string.NoAudioFilesInfo));
-            }
-            currentEmptyView = emptyView;
-            progressView.setVisibility(View.GONE);
-        }
-
-        boolean visible;
-        if (listView.getAdapter() == searchAdapter) {
-            visible = searchAdapter.searchResult.isEmpty();
-        } else {
-            visible = audioEntries.isEmpty();
-        }
-        currentEmptyView.setVisibility(visible ? VISIBLE :  GONE);
-        updateEmptyViewPosition();
+    private boolean isSearching() {
+        return !TextUtils.isEmpty(query);
     }
 
     public void setMaxSelectedFiles(int value) {
@@ -295,18 +486,31 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         if (listView.getChildCount() <= 0) {
             return Integer.MAX_VALUE;
         }
-        View child = listView.getChildAt(0);
-        RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
-        int top = child.getTop() - AndroidUtilities.statusBarHeight - AndroidUtilities.dp(8);
-        int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 0 ? top : 0;
-        if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
+        boolean hadFirstChild = false;
+        int top = Integer.MAX_VALUE;
+        for (int i = 0; i < listView.getChildCount(); ++i) {
+            final View child = listView.getChildAt(i);
+            final int position = listView.getChildAdapterPosition(child);
+            if (position == 0) {
+                hadFirstChild = true;
+            }
+            if (position >= 0 && (int) child.getTop() < top) {
+                top = (int) child.getTop();
+            }
+        }
+        if (top == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        top = top - dp(56) - (int) topPanelLayout.getAnimatedHeightWithPadding(0) - AndroidUtilities.statusBarHeight - dp(8);
+        int newOffset = top > 0 && hadFirstChild ? top : 0;
+        if (top >= 0 && hadFirstChild) {
             newOffset = top;
             animatorFadeVisible.setValue(false, true);
         } else {
             animatorFadeVisible.setValue(true, true);
         }
         frameLayout.setTranslationY(newOffset);
-        return newOffset + AndroidUtilities.dp(12);
+        return newOffset + dp(12);
     }
 
     @Override
@@ -330,43 +534,25 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
     @Override
     public int getListTopPadding() {
-        return listView.getPaddingTop();
+        return listView.getPaddingTop() - dp(56) - (int) topPanelLayout.getAnimatedHeightWithPadding(0);
     }
 
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        updateEmptyViewPosition();
-    }
-
+    private int preMeasuredAvailableHeight;
     @Override
     public void onPreMeasure(int availableWidth, int availableHeight) {
-        int padding;
-        if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
-            padding = AndroidUtilities.dp(8);
-            parentAlert.setAllowNestedScroll(false);
-        } else {
-            if (!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
-                padding = (int) (availableHeight / 3.5f);
-            } else {
-                padding = (availableHeight / 5 * 2);
-            }
-            parentAlert.setAllowNestedScroll(true);
-        }
-        padding += AndroidUtilities.statusBarHeight;
-        listView.setPaddingWithoutRequestLayout(0, padding, 0, listPaddingBottom);
+        preMeasuredAvailableHeight = availableHeight;
+        checkUi_listViewPadding();
     }
 
     @Override
     public void onShow(ChatAttachAlert.AttachAlertLayout previousLayout) {
-        layoutManager.scrollToPositionWithOffset(0, 0);
-        listAdapter.notifyDataSetChanged();
+        listView.layoutManager.scrollToPositionWithOffset(0, 0);
+        listView.adapter.update(false);
     }
 
     @Override
     public void onHidden() {
         selectedAudios.clear();
-        selectedAudiosOrder.clear();
     }
 
     @Override
@@ -408,37 +594,6 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString(R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString(R.string.OK), null).show();
     }
 
-    private void onItemClick(View view) {
-        if (!(view instanceof SharedAudioCell)) {
-            return;
-        }
-        SharedAudioCell audioCell = (SharedAudioCell) view;
-        MediaController.AudioEntry audioEntry = (MediaController.AudioEntry) audioCell.getTag();
-        boolean add;
-        if (parentAlert.isStoryAudioPicker) {
-            sendPressed = true;
-            ArrayList<MessageObject> audios = new ArrayList<>();
-            audios.add(audioEntry.messageObject);
-            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, 0, false, 0);
-            add = true;
-        } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
-            selectedAudios.remove(audioEntry.id);
-            selectedAudiosOrder.remove(audioEntry);
-            audioCell.setChecked(false, true);
-            add = false;
-        } else {
-            if (maxSelectedFiles >= 0 && selectedAudios.size() >= maxSelectedFiles) {
-                showErrorBox(LocaleController.formatString("PassportUploadMaxReached", R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
-                return;
-            }
-            selectedAudios.put(audioEntry.id, audioEntry);
-            selectedAudiosOrder.add(audioEntry);
-            audioCell.setChecked(true, true);
-            add = true;
-        }
-        parentAlert.updateCountButton(add ? 1 : 2);
-    }
-
     @Override
     public int getSelectedItemsCount() {
         return selectedAudios.size();
@@ -451,8 +606,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         }
         sendPressed = true;
         ArrayList<MessageObject> audios = new ArrayList<>();
-        for (int a = 0; a < selectedAudiosOrder.size(); a++) {
-            audios.add(selectedAudiosOrder.get(a).messageObject);
+        for (MediaController.AudioEntry entry : selectedAudios) {
+            audios.add(entry.messageObject);
         }
         return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), audios.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
             delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, scheduleRepeatPeriod, effectId, invertMedia, payStars);
@@ -462,8 +617,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
     public ArrayList<MessageObject> getSelected() {
         ArrayList<MessageObject> audios = new ArrayList<>();
-        for (int a = 0; a < selectedAudiosOrder.size(); a++) {
-            audios.add(selectedAudiosOrder.get(a).messageObject);
+        for (MediaController.AudioEntry entry : selectedAudios) {
+            audios.add(entry.messageObject);
         }
         return audios;
     }
@@ -544,260 +699,224 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             AndroidUtilities.runOnUIThread(() -> {
                 loadingAudio = false;
                 audioEntries = newAudioEntries;
-                listAdapter.notifyDataSetChanged();
+                updateWithSavingScroll();
             });
         });
     }
 
-    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+    private int searchChatsRequestId = -1;
+    private String lastSearchChatsQuery;
+    private boolean loadingSearchChats;
+    private final Runnable searchChatsRunnable = this::searchChats;
+    private int searchChatsNextRate;
+    private boolean searchChatsHasMore;
+    private void searchChats() {
+        AndroidUtilities.cancelRunOnUIThread(searchChatsRunnable);
 
-        private Context mContext;
-
-        public ListAdapter(Context context) {
-            mContext = context;
+        if (TextUtils.isEmpty(query) || query.length() < 3) {
+            if (loadingSearchChats) {
+                loadingSearchChats = false;
+                updateWithSavingScroll();
+            }
+            return;
+        }
+        if (!TextUtils.equals(lastSearchChatsQuery, query)) {
+            foundInChats.clear();
+            searchChatsNextRate = 0;
+            searchChatsHasMore = false;
+        }
+        if (!foundInChats.isEmpty() && !searchChatsHasMore) {
+            if (loadingSearchChats) {
+                loadingSearchChats = false;
+                updateWithSavingScroll();
+            }
+            return;
         }
 
-        @Override
-        public int getItemCount() {
-            return 1 + audioEntries.size() + (audioEntries.isEmpty() ? 0 : 1);
+        final int account = parentAlert.currentAccount;
+        final MessagesController messagesController = MessagesController.getInstance(account);
+        final ConnectionsManager connectionsManager = ConnectionsManager.getInstance(account);
+
+        if (searchChatsRequestId >= 0) {
+            connectionsManager.cancelRequest(searchChatsRequestId, true);
+            searchChatsRequestId = -1;
         }
 
-        @Override
-        public long getItemId(int i) {
-            return i;
+        final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
+        req.filter = new TLRPC.TL_inputMessagesFilterMusic();
+        req.q = lastSearchChatsQuery = query == null ? "" : query;
+        req.limit = foundInChats.isEmpty() ? 3 : 15;
+        if (foundInChats.size() > 0) {
+            final MessageObject lastMessage = foundInChats.get(foundInChats.size() - 1).messageObject;
+            req.offset_id = lastMessage.getId();
+            req.offset_rate = searchChatsNextRate;
+            req.offset_peer = messagesController.getInputPeer(MessageObject.getPeerId(lastMessage.messageOwner.peer_id));
+        } else {
+            req.offset_rate = 0;
+            req.offset_id = 0;
+            req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
 
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getItemViewType() == 0;
-        }
+        searchChatsRequestId = connectionsManager.sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            searchChatsRequestId = -1;
+            loadingSearchChats = false;
+            if (res != null) {
+                messagesController.putUsers(res.users, false);
+                messagesController.putChats(res.chats, false);
 
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0:
-                    SharedAudioCell sharedAudioCell = new SharedAudioCell(mContext, resourcesProvider) {
-                        @Override
-                        public boolean needPlayMessage(MessageObject messageObject) {
-                            playingAudio = messageObject;
-                            ArrayList<MessageObject> arrayList = new ArrayList<>();
-                            arrayList.add(messageObject);
-                            return MediaController.getInstance().setPlaylist(arrayList, messageObject, 0);
+                for (TLRPC.Message message : res.messages) {
+                    final MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();
+                    audioEntry.messageObject = new MessageObject(account, message, false, true);
+
+                    final TLRPC.Document document = audioEntry.messageObject.getDocument();
+                    if (document == null) continue;
+
+                    TLRPC.TL_documentAttributeAudio attr = null;
+                    for (int i = 0; i < document.attributes.size(); ++i) {
+                        if (document.attributes.get(i) instanceof TLRPC.TL_documentAttributeAudio) {
+                            attr = (TLRPC.TL_documentAttributeAudio) document.attributes.get(i);
+                            break;
                         }
-                    };
-                    sharedAudioCell.setCheckForButtonPress(true);
-                    view = sharedAudioCell;
-                    break;
-                case 1:
-                    view = new View(mContext);
-                    view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(56)));
-                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
-                    break;
-                default:
-                    view = new View(mContext);
-                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
-                    break;
-            }
-            return new RecyclerListView.Holder(view);
-        }
+                    }
+                    if (attr == null) continue;
 
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (holder.getItemViewType() == 0) {
-                position--;
-                MediaController.AudioEntry audioEntry = audioEntries.get(position);
+                    audioEntry.author = attr.performer;
+                    audioEntry.title = attr.title;
+                    audioEntry.duration = (int) attr.duration;
 
-                SharedAudioCell audioCell = (SharedAudioCell) holder.itemView;
-                audioCell.setTag(audioEntry);
-                audioCell.setMessageObject(audioEntry.messageObject, position != audioEntries.size() - 1);
-                audioCell.setChecked(selectedAudios.indexOfKey(audioEntry.id) >= 0, false);
-            }
-        }
+                    foundInChats.add(audioEntry);
+                }
 
-        @Override
-        public int getItemViewType(int i) {
-            if (i == getItemCount() - 1) {
-                return 2;
-            }
-            if (i == 0) {
-                return 1;
-            }
-            return 0;
-        }
+                searchChatsNextRate = res.next_rate;
+                searchChatsHasMore = res.next_rate != 0 || (res.count > 0 && foundInChats.size() < res.count);
 
-        @Override
-        public void notifyDataSetChanged() {
-            super.notifyDataSetChanged();
-            updateEmptyView();
-        }
+                updateWithSavingScroll();
+            }
+        });
+
+        updateWithSavingScroll();
     }
 
-    public class SearchAdapter extends RecyclerListView.SelectionAdapter {
+    private int searchGlobalRequestId = -1;
+    private String lastSearchGlobalQuery;
+    private final Runnable searchGlobalRunnable = this::searchGlobal;
+    private boolean searchGlobalHasMore;
+    private TLRPC.User globalAudioBot;
+    private boolean resolvingGlobalAudioBot;
+    private boolean failedToResolveGlobalAudioBot;
+    private String globalAudioOffset;
+    private int globalAudioMessageId = -1000000000;
+    private boolean loadingSearchGlobal;
+    private void searchGlobal() {
+        AndroidUtilities.cancelRunOnUIThread(searchGlobalRunnable);
 
-        private Context mContext;
-        private ArrayList<MediaController.AudioEntry> searchResult = new ArrayList<>();
-        private Runnable searchRunnable;
-        private int lastSearchId;
-        private int reqId = 0;
-        private int lastReqId;
-
-        public SearchAdapter(Context context) {
-            mContext = context;
+        if (TextUtils.isEmpty(query) || query.length() < 3) {
+            if (loadingSearchGlobal) {
+                loadingSearchGlobal = false;
+                updateWithSavingScroll();
+            }
+            return;
+        }
+        if (!TextUtils.equals(lastSearchGlobalQuery, query)) {
+            foundGlobal.clear();
+            searchGlobalHasMore = false;
         }
 
-        public void search(final String query) {
-            if (searchRunnable != null) {
-                AndroidUtilities.cancelRunOnUIThread(searchRunnable);
-                searchRunnable = null;
-            }
-            if (TextUtils.isEmpty(query)) {
-                if (!searchResult.isEmpty()) {
-                    searchResult.clear();
+        final int account = parentAlert.currentAccount;
+        final MessagesController messagesController = MessagesController.getInstance(account);
+        final ConnectionsManager connectionsManager = ConnectionsManager.getInstance(account);
+
+        if (searchGlobalRequestId >= 0) {
+            connectionsManager.cancelRequest(searchGlobalRequestId, true);
+            searchGlobalRequestId = -1;
+        }
+
+        final String botUsername = messagesController.config.musicSearchUsername.get();
+        if (TextUtils.isEmpty(botUsername)) {
+            return;
+        }
+        if (globalAudioBot == null) {
+            globalAudioBot = messagesController.getUser(botUsername);
+        }
+        if (globalAudioBot == null) {
+            if (resolvingGlobalAudioBot || failedToResolveGlobalAudioBot) return;
+            resolvingGlobalAudioBot = true;
+            messagesController.getUserNameResolver().resolve(botUsername, botId -> {
+                resolvingGlobalAudioBot = false;
+                globalAudioBot = botId == null ? null : messagesController.getUser(botId);
+                failedToResolveGlobalAudioBot = globalAudioBot == null;
+                if (globalAudioBot != null) {
+                    searchGlobal();
                 }
-                if (listView.getAdapter() != listAdapter) {
-                    listView.setAdapter(listAdapter);
-                }
-                notifyDataSetChanged();
-            } else {
-                int searchId = ++lastSearchId;
-                AndroidUtilities.runOnUIThread(searchRunnable = () -> {
-                    final ArrayList<MediaController.AudioEntry> copy = new ArrayList<>(audioEntries);
-                    Utilities.searchQueue.postRunnable(() -> {
-                        String search1 = query.trim().toLowerCase();
-                        if (search1.length() == 0) {
-                            updateSearchResults(new ArrayList<>(), query, lastSearchId);
-                            return;
-                        }
-                        String search2 = LocaleController.getInstance().getTranslitString(search1);
-                        if (search1.equals(search2) || search2.length() == 0) {
-                            search2 = null;
-                        }
-                        String[] search = new String[1 + (search2 != null ? 1 : 0)];
-                        search[0] = search1;
-                        if (search2 != null) {
-                            search[1] = search2;
-                        }
+            });
+            return;
+        }
 
-                        ArrayList<MediaController.AudioEntry> resultArray = new ArrayList<>();
+        final TLRPC.User self = UserConfig.getInstance(account).getCurrentUser();
+        final TLRPC.TL_messages_getInlineBotResults req = new TLRPC.TL_messages_getInlineBotResults();
+        req.bot = messagesController.getInputUser(globalAudioBot);
+        req.peer = MessagesController.getInputPeer(self);
+        req.offset = foundGlobal.isEmpty() || globalAudioOffset == null ? "" : globalAudioOffset;
+        req.query = lastSearchGlobalQuery = query == null ? "" : query;
+        searchGlobalRequestId = connectionsManager.sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            searchGlobalRequestId = -1;
+            loadingSearchGlobal = false;
+            if (res != null) {
+                messagesController.putUsers(res.users, false);
+                for (TLRPC.BotInlineResult r : res.results) {
+                    if (r instanceof TLRPC.TL_botInlineMediaResult) {
+                        final TLRPC.TL_botInlineMediaResult rMedia = (TLRPC.TL_botInlineMediaResult) r;
+                        if (rMedia.document != null) {
+                            final TLRPC.TL_message message = new TLRPC.TL_message();
+                            message.out = true;
+                            message.id = globalAudioMessageId--;
+                            message.peer_id = new TLRPC.TL_peerUser();
+                            message.from_id = new TLRPC.TL_peerUser();
+                            message.peer_id.user_id = message.from_id.user_id = UserConfig.getInstance(account).getClientUserId();
+                            message.date = (int) (System.currentTimeMillis() / 1000);
+                            message.message = "";
+                            message.media = new TLRPC.TL_messageMediaDocument();
+                            message.media.flags |= 3;
+                            message.media.document = rMedia.document;
+                            message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 
-                        for (int a = 0; a < copy.size(); a++) {
-                            MediaController.AudioEntry entry = copy.get(a);
-                            for (int b = 0; b < search.length; b++) {
-                                String q = search[b];
+                            final MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();
+                            audioEntry.messageObject = new MessageObject(account, message, false, true);
 
-                                boolean ok = false;
-                                if (entry.author != null) {
-                                    ok = entry.author.toLowerCase().contains(q);
-                                }
-                                if (!ok && entry.title != null) {
-                                    ok = entry.title.toLowerCase().contains(q);
-                                }
-                                if (ok) {
-                                    resultArray.add(entry);
+                            final TLRPC.Document document = audioEntry.messageObject.getDocument();
+                            if (document == null) continue;
+
+                            TLRPC.TL_documentAttributeAudio attr = null;
+                            for (int i = 0; i < document.attributes.size(); ++i) {
+                                if (document.attributes.get(i) instanceof TLRPC.TL_documentAttributeAudio) {
+                                    attr = (TLRPC.TL_documentAttributeAudio) document.attributes.get(i);
                                     break;
                                 }
                             }
+                            if (attr == null) continue;
+
+                            audioEntry.author = attr.performer;
+                            audioEntry.title = attr.title;
+                            audioEntry.duration = (int) attr.duration;
+
+                            foundGlobal.add(audioEntry);
                         }
-
-                        updateSearchResults(resultArray, query, searchId);
-                    });
-                }, 300);
-            }
-        }
-
-        private void updateSearchResults(final ArrayList<MediaController.AudioEntry> result, String query, final int searchId) {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (searchId != lastSearchId) {
-                    return;
+                    }
                 }
-                if (searchId != -1 && listView.getAdapter() != searchAdapter) {
-                    listView.setAdapter(searchAdapter);
-                }
-                if (listView.getAdapter() == searchAdapter) {
-                    emptySubtitleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("NoAudioFoundInfo", R.string.NoAudioFoundInfo, query)));
-                }
-                searchResult = result;
-                notifyDataSetChanged();
-            });
-        }
+                globalAudioOffset = res.next_offset;
+                searchGlobalHasMore = !TextUtils.isEmpty(globalAudioOffset);
 
-        @Override
-        public void notifyDataSetChanged() {
-            super.notifyDataSetChanged();
-            updateEmptyView();
-        }
-
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getItemViewType() == 0;
-        }
-
-        @Override
-        public int getItemCount() {
-            return 1 + searchResult.size() + (searchResult.isEmpty() ? 0 : 1);
-        }
-
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0:
-                    SharedAudioCell sharedAudioCell = new SharedAudioCell(mContext, resourcesProvider) {
-                        @Override
-                        public boolean needPlayMessage(MessageObject messageObject) {
-                            playingAudio = messageObject;
-                            ArrayList<MessageObject> arrayList = new ArrayList<>();
-                            arrayList.add(messageObject);
-                            return MediaController.getInstance().setPlaylist(arrayList, messageObject, 0);
-                        }
-                    };
-                    sharedAudioCell.setCheckForButtonPress(true);
-                    view = sharedAudioCell;
-                    break;
-                case 1:
-                    view = new View(mContext);
-                    view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(56)));
-                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
-                    break;
-                default:
-                    view = new View(mContext);
-                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
-                    break;
+                updateWithSavingScroll();
             }
-            return new RecyclerListView.Holder(view);
-        }
+        });
 
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (holder.getItemViewType() == 0) {
-                position--;
-                MediaController.AudioEntry audioEntry = searchResult.get(position);
-
-                SharedAudioCell audioCell = (SharedAudioCell) holder.itemView;
-                audioCell.setTag(audioEntry);
-                audioCell.setMessageObject(audioEntry.messageObject, position != searchResult.size() - 1);
-                audioCell.setChecked(selectedAudios.indexOfKey(audioEntry.id) >= 0, false);
-            }
-        }
-
-        @Override
-        public int getItemViewType(int i) {
-            if (i == getItemCount() - 1) {
-                return 2;
-            }
-            if (i == 0) {
-                return 1;
-            }
-            return 0;
-        }
+        updateWithSavingScroll();
     }
 
     @Override
     public void onContainerTranslationUpdated(float currentPanTranslationY) {
         this.currentPanTranslationProgress = currentPanTranslationY;
         super.onContainerTranslationUpdated(currentPanTranslationY);
-        updateEmptyViewPosition();
     }
 
     @Override
@@ -808,21 +927,100 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         }
     }
 
+    public static final class EmptyView extends FrameLayout implements Theme.Colorable {
+
+        private final Theme.ResourcesProvider resourcesProvider;
+
+        public LinearLayout layout;
+        public BackupImageView imageView;
+        public TextView titleView;
+        public TextView subtitleView;
+
+        public EmptyView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+
+            setPadding(0, dp(42), 0, dp(42));
+            setTag(RecyclerListView.TAG_NOT_SECTION);
+
+            layout = new LinearLayout(context);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            addView(layout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+            imageView = new BackupImageView(context);
+            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(120), dp(120)));
+            layout.addView(imageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER, 0, 0, 0, 0));
+
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            titleView.setTypeface(AndroidUtilities.bold());
+            titleView.setGravity(Gravity.CENTER);
+            layout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 12, 32, 8));
+
+            subtitleView = new TextView(context);
+            subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            subtitleView.setGravity(Gravity.CENTER);
+            layout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 0, 32, 0));
+
+            updateColors();
+        }
+
+        public void set(CharSequence title, CharSequence subtitle) {
+            titleView.setText(title);
+            subtitleView.setText(subtitle);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
+
+        @Override
+        public void updateColors() {
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        }
+
+        public static final class Factory extends UItem.UItemFactory<EmptyView> {
+            static { setup(new Factory()); }
+
+            @Override
+            public boolean isShadow() {
+                return true;
+            }
+
+            @Override
+            public boolean isClickable() {
+                return false;
+            }
+
+            @Override
+            public EmptyView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+                return new EmptyView(context, resourcesProvider);
+            }
+
+            @Override
+            public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+                ((EmptyView) view).set(item.text, item.subtext);
+            }
+
+            public static UItem as(CharSequence title, CharSequence subtitle) {
+                final UItem item = UItem.ofFactory(Factory.class);
+                item.text = title;
+                item.subtext = subtitle;
+                return item;
+            }
+        }
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
-
-        themeDescriptions.add(new ThemeDescription(emptyImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyImage));
-        themeDescriptions.add(new ThemeDescription(emptyTitleTextView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyText));
-        themeDescriptions.add(new ThemeDescription(emptySubtitleTextView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyText));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_dialogScrollGlow));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
-
-        themeDescriptions.add(new ThemeDescription(progressView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_emptyListPlaceholder));
-        themeDescriptions.add(new ThemeDescription(progressView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOX, new Class[]{SharedAudioCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkbox));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{SharedAudioCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck));

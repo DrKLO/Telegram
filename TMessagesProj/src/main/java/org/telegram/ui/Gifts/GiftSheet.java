@@ -518,6 +518,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                         final BaseFragment.BottomSheetParams bottomSheetParams = new BaseFragment.BottomSheetParams();
                         bottomSheetParams.transitionFromLeft = true;
                         bottomSheetParams.allowNestedScroll = false;
+                        bottomSheetParams.occupyNavigationBar = true;
 
                         ViewTreeObserver observer = container.getViewTreeObserver();
                         ViewTreeObserver.OnPreDrawListener onPreDrawListener = () -> false;

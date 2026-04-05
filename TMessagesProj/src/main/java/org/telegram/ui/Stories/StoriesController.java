@@ -2265,6 +2265,13 @@ public class StoriesController {
                     editStory.id = entry.editStoryId;
                     editStory.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
 
+                    editStory.flags |= TLObject.FLAG_4;
+                    if (entry.audioDocument != null) {
+                        editStory.music = entry.audioDocument;
+                    } else {
+                        editStory.music = new TLRPC.TL_inputDocumentEmpty();
+                    }
+
                     if (media != null && entry.editedMedia) {
                         editStory.flags |= 1;
                         editStory.media = media;
@@ -2326,6 +2333,11 @@ public class StoriesController {
                     sendStory.pinned = entry.pinned;
                     sendStory.noforwards = !entry.allowScreenshots;
                     sendStory.albums = entry.albums != null ? new ArrayList<>(entry.albums) : null;
+
+                    if (entry.audioDocument != null) {
+                        sendStory.flags |= TLObject.FLAG_9;
+                        sendStory.music = entry.audioDocument;
+                    }
 
                     if (entry.caption != null) {
                         sendStory.flags |= 3;

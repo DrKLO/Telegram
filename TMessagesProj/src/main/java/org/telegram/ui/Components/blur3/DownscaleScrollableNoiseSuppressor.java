@@ -86,7 +86,6 @@ public class DownscaleScrollableNoiseSuppressor {
         for (int b = 0; b < rectRenderNodesCount; b++) {
             final SourcePart sourcePart = rectRenderNodes.get(b);
             if (canvas.quickReject(sourcePart.position.left, sourcePart.position.top, sourcePart.position.right, sourcePart.position.bottom)) {
-                // Log.i("WTF_DEBUG", "quickrejected");
                 continue;
             }
 

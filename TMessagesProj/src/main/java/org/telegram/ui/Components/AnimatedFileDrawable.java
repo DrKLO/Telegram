@@ -23,17 +23,14 @@ import android.graphics.Shader;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimatedFileDrawableStream;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.DispatchQueuePoolBackground;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.SharedConfig;
@@ -70,7 +67,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     public static native void prepareToSeek(long ptr);
 
-    public static native void getVideoInfo(int sdkVersion, String src, int[] params);
+    public static native void getVideoInfo(int sdkVersion, String src, int[] params, long fileOffset);
 
     public final static int PARAM_NUM_SUPPORTED_VIDEO_CODEC = 0;
     public final static int PARAM_NUM_WIDTH = 1;
@@ -151,6 +148,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     private float endTime;
     private int renderingHeight;
     private int renderingWidth;
+    private boolean loop;
     private boolean precache;
     private float scaleFactor = 1f;
     public boolean isWebmSticker;
@@ -447,7 +445,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
 
-                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime, true) == 0) {
+                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime, loop) == 0) {
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
@@ -499,10 +497,10 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
     }
 
     public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions) {
-        this(file, createDecoder, streamSize, streamLoadingPriority, document, location, parentObject, seekTo, account, preview, w, h, cacheOptions, document != null ? 1 : 0);
+        this(file, createDecoder, streamSize, streamLoadingPriority, document, location, parentObject, seekTo, account, preview, w, h, cacheOptions, document != null ? 1 : 0, true);
     }
 
-    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions, int cacheType) {
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, int streamLoadingPriority, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h, BitmapsCache.CacheOptions cacheOptions, int cacheType, boolean loop) {
         path = file;
         PRERENDER_FRAME = SharedConfig.deviceIsAboveAverage();
         streamFileSize = streamSize;
@@ -510,6 +508,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         currentAccount = account;
         renderingHeight = h;
         renderingWidth = w;
+        this.loop = loop;
         this.precache = cacheOptions != null && renderingWidth > 0 && renderingHeight > 0;
         this.document = document;
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -1121,8 +1120,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         return drawable;
     }
 
-    public static void getVideoInfo(String src, int[] params) {
-        getVideoInfo(Build.VERSION.SDK_INT, src, params);
+    public static void getVideoInfo(String src, int[] params, long fileOffset) {
+        getVideoInfo(Build.VERSION.SDK_INT, src, params, fileOffset);
     }
 
     public void setStartEndTime(long startTime, long endTime) {
@@ -1209,7 +1208,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (generatingCacheBitmap == null) {
             generatingCacheBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         }
-        getVideoFrame(cacheGenerateNativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime, true);
+        getVideoFrame(cacheGenerateNativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime, this.loop);
         if (cacheGenerateTimestamp != 0 && (metaData[3] == 0 || cacheGenerateTimestamp > metaData[3])) {
             return 0;
         }

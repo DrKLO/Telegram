@@ -35,7 +35,6 @@ public class CheckBoxBase {
     private RectF rect = new RectF();
 
     private static Paint paint;
-    private static Paint eraser;
     private Paint checkPaint;
     public float checkScale = 1.0f;
     private Paint backgroundPaint;
@@ -75,6 +74,8 @@ public class CheckBoxBase {
     private int background2ColorKey = Theme.key_chat_serviceBackground;
     private int strokeBackgroundKey = Theme.key_dialogBackground;
     private int strokeBackgroundWidth = -1;
+    private float customRadius = 0;
+    private float customRadiusFactor = 1;
 
     private int backgroundColor;
 
@@ -104,10 +105,6 @@ public class CheckBoxBase {
         size = sz;
         if (paint == null) {
             paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-            eraser = new Paint(Paint.ANTI_ALIAS_FLAG);
-            eraser.setColor(0);
-            eraser.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }
         checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         checkPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -118,6 +115,10 @@ public class CheckBoxBase {
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setStyle(Paint.Style.STROKE);
         backgroundPaint.setStrokeWidth(dp(1.2f));
+    }
+
+    public void setSize(float size) {
+        this.size = size;
     }
 
     public void setResourcesProvider(Theme.ResourcesProvider resourcesProvider) {
@@ -137,6 +138,14 @@ public class CheckBoxBase {
         bounds.top = y;
         bounds.right = x + width;
         bounds.bottom = y + height;
+    }
+
+    public void setCustomRadius(float customRadius) {
+        this.customRadius = customRadius;
+    }
+
+    public void setCustomRadiusFactor(float customRadiusFactor) {
+        this.customRadiusFactor = customRadiusFactor;
     }
 
     public void setDrawUnchecked(boolean value) {
@@ -357,7 +366,13 @@ public class CheckBoxBase {
             if (backgroundType == 12 || backgroundType == 13) {
                 //draw nothing
             } else if (backgroundType == 8 || backgroundType == 10 || backgroundType == 14) {
-                canvas.drawCircle(cx, cy, rad - dp(1.5f), backgroundPaint);
+                if (customRadius > 0) {
+                    final float r = rad - dp(1.5f);
+                    final float rr = lerp(r, customRadius, customRadiusFactor);
+                    canvas.drawRoundRect(cx - r, cy - r, cx + r, cy + r, rr, rr, backgroundPaint);
+                } else {
+                    canvas.drawCircle(cx, cy, rad - dp(1.5f), backgroundPaint);
+                }
             } else if (backgroundType == 6 || backgroundType == 7) {
                 canvas.drawCircle(cx, cy, rad - dp(1), paint);
                 canvas.drawCircle(cx, cy, rad - dp(1.5f), backgroundPaint);
@@ -456,10 +471,17 @@ public class CheckBoxBase {
                     if (circlePaint != paint) {
                         circlePaint.setAlpha(a);
                     }
+                } else if (customRadius > 0) {
+                    rad -= dp(0.5f);
+                    final float rad2 = lerp(rad, customRadius, customRadiusFactor);
+                    canvas.drawRoundRect(sizeHalf - rad, sizeHalf - rad, sizeHalf + rad, sizeHalf + rad, rad2, rad2, circlePaint);
+                    final float r = rad * (1.0f - roundProgress);
+                    final float rr = lerp(r, customRadius, customRadiusFactor);
+                    canvas.drawRoundRect(sizeHalf - r, sizeHalf - r, sizeHalf + r, sizeHalf + r, rr, rr, Theme.PAINT_CLEAR);
                 } else {
                     rad -= dp(0.5f);
                     canvas.drawCircle(sizeHalf, sizeHalf, rad, circlePaint);
-                    canvas.drawCircle(sizeHalf, sizeHalf, rad * (1.0f - roundProgress), eraser);
+                    canvas.drawCircle(sizeHalf, sizeHalf, rad * (1.0f - roundProgress), Theme.PAINT_CLEAR);
                 }
                 canvas.restoreToCount(restoreCount);
             }

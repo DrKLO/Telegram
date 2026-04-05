@@ -74,6 +74,7 @@ public sealed class TlGen_StoryItem : TlGen_Object {
     public val views: TlGen_StoryViews?,
     public val sent_reaction: TlGen_Reaction?,
     public val albums: List<Int>?,
+    public val music: TlGen_Document?,
   ) : TlGen_StoryItem() {
     internal val flags: UInt
       get() {
@@ -96,6 +97,7 @@ public sealed class TlGen_StoryItem : TlGen_Object {
         if (fwd_from != null) result = result or 131072U
         if (from_id != null) result = result or 262144U
         if (albums != null) result = result or 524288U
+        if (music != null) result = result or 1048576U
         return result
       }
 
@@ -115,10 +117,11 @@ public sealed class TlGen_StoryItem : TlGen_Object {
       views?.serializeToStream(stream)
       sent_reaction?.serializeToStream(stream)
       albums?.let { TlGen_Vector.serializeInt(stream, it) }
+      music?.serializeToStream(stream)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xEDF164F1U
+      public const val MAGIC: UInt = 0x16A4B93CU
     }
   }
 
@@ -368,6 +371,77 @@ public sealed class TlGen_StoryItem : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x79B26A24U
+    }
+  }
+
+  public data class TL_storyItem_layer223(
+    public val pinned: Boolean,
+    public val `public`: Boolean,
+    public val close_friends: Boolean,
+    public val min: Boolean,
+    public val noforwards: Boolean,
+    public val edited: Boolean,
+    public val contacts: Boolean,
+    public val selected_contacts: Boolean,
+    public val `out`: Boolean,
+    public val id: Int,
+    public val date: Int,
+    public val from_id: TlGen_Peer?,
+    public val fwd_from: TlGen_StoryFwdHeader?,
+    public val expire_date: Int,
+    public val caption: String?,
+    public val entities: List<TlGen_MessageEntity>?,
+    public val media: TlGen_MessageMedia,
+    public val media_areas: List<TlGen_MediaArea>?,
+    public val privacy: List<TlGen_PrivacyRule>?,
+    public val views: TlGen_StoryViews?,
+    public val sent_reaction: TlGen_Reaction?,
+    public val albums: List<Int>?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (caption != null) result = result or 1U
+        if (entities != null) result = result or 2U
+        if (privacy != null) result = result or 4U
+        if (views != null) result = result or 8U
+        if (pinned) result = result or 32U
+        if (public) result = result or 128U
+        if (close_friends) result = result or 256U
+        if (min) result = result or 512U
+        if (noforwards) result = result or 1024U
+        if (edited) result = result or 2048U
+        if (contacts) result = result or 4096U
+        if (selected_contacts) result = result or 8192U
+        if (media_areas != null) result = result or 16384U
+        if (sent_reaction != null) result = result or 32768U
+        if (out) result = result or 65536U
+        if (fwd_from != null) result = result or 131072U
+        if (from_id != null) result = result or 262144U
+        if (albums != null) result = result or 524288U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(id)
+      stream.writeInt32(date)
+      from_id?.serializeToStream(stream)
+      fwd_from?.serializeToStream(stream)
+      stream.writeInt32(expire_date)
+      caption?.let { stream.writeString(it) }
+      entities?.let { TlGen_Vector.serialize(stream, it) }
+      media.serializeToStream(stream)
+      media_areas?.let { TlGen_Vector.serialize(stream, it) }
+      privacy?.let { TlGen_Vector.serialize(stream, it) }
+      views?.serializeToStream(stream)
+      sent_reaction?.serializeToStream(stream)
+      albums?.let { TlGen_Vector.serializeInt(stream, it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xEDF164F1U
     }
   }
 }

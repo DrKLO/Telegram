@@ -811,7 +811,7 @@ public class MotionBackgroundDrawable extends Drawable {
                 paint2.setColorFilter(patternColorFilter);
                 paint2.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha));
                 canvas.drawBitmap(patternBitmap, null, rect, paint2);
-                paint.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha * 0.8f));
+                paint2.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha * 0.8f));
                 drawGiftPatternsForPositiveIntensity(canvas, rect, paint2, giftPosition);
             }
         }
@@ -1017,7 +1017,7 @@ public class MotionBackgroundDrawable extends Drawable {
                 } else {
                     canvas.drawBitmap(patternBitmap, null, rect, paint2);
                 }
-                paint.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha * 0.8f));
+                paint2.setAlpha((int) ((Math.abs(intensity) / 100f) * alpha * patternAlpha * 0.8f));
                 drawGiftPatternsForPositiveIntensity(canvas, rect, paint2, giftPosition);
             }
         }

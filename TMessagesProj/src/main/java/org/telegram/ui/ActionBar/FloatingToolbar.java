@@ -42,6 +42,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -70,6 +71,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.view.menu.MenuItemImpl;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
@@ -77,6 +79,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.GradientProtectionDrawable;
@@ -220,6 +224,7 @@ public final class FloatingToolbar {
     }
 
     private static final int TRANSLATE = 16908353; // android.R.id.textAssist;
+    private static final int TRANSLATE2 = 16909808;
     private void doShow() {
         List<MenuItem> menuItems = getVisibleAndEnabledMenuItems(mMenu);
         Collections.sort(menuItems, mMenuItemComparator);
@@ -253,16 +258,34 @@ public final class FloatingToolbar {
     }
 
     private List<MenuItem> getVisibleAndEnabledMenuItems(Menu menu) {
-        List<MenuItem> menuItems = new ArrayList<>();
+        final List<MenuItem> menuItems = new ArrayList<>();
+//        boolean addedTranslate = false;
+//        for (int i = 0; (menu != null) && (i < menu.size()); i++) {
+//            final MenuItem menuItem = menu.getItem(i);
+//            if (menuItem.isVisible() && menuItem.isEnabled()) {
+//                if (menuItem.getItemId() == R.id.menu_translate) {
+//                    addedTranslate = true;
+//                }
+//            }
+//        }
         for (int i = 0; (menu != null) && (i < menu.size()); i++) {
-            MenuItem menuItem = menu.getItem(i);
+            final MenuItem menuItem = menu.getItem(i);
             if (menuItem.isVisible() && menuItem.isEnabled()) {
                 Menu subMenu = menuItem.getSubMenu();
                 if (subMenu != null) {
                     menuItems.addAll(getVisibleAndEnabledMenuItems(subMenu));
                 } else if (menuItem.getItemId() == R.id.menu_quote && (quoteShowCallback != null && !quoteShowCallback.run())) {
                     continue;
-                } else if (menuItem.getItemId() != TRANSLATE && (menuItem.getItemId() != R.id.menu_regular || premiumLockClickListener == null)) {
+                } else if (
+                    !(
+//                        addedTranslate &&
+                        (menuItem.getItemId() == TRANSLATE || menuItem.getItemId() == TRANSLATE2)
+                    ) &&
+                    (
+                        menuItem.getItemId() != R.id.menu_regular ||
+                        premiumLockClickListener == null
+                    )
+                ) {
                     menuItems.add(menuItem);
                 }
             }

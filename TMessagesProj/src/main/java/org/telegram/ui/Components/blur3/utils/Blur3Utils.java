@@ -1,11 +1,20 @@
 package org.telegram.ui.Components.blur3.utils;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.DrawableContainer;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.annotation.NonNull;
+import androidx.core.graphics.drawable.WrappedDrawable;
 
 import org.jspecify.annotations.Nullable;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
@@ -73,5 +82,42 @@ public class Blur3Utils {
                 canvas.restore();
             }
         }
+    }
+
+    public static Drawable wrapCenteredDrawable(Drawable drawable, int w, int h) {
+        return new Drawable() {
+            @Override
+            protected void onBoundsChange(@NonNull Rect bounds) {
+                super.onBoundsChange(bounds);
+                final int x = (bounds.width() - w) / 2;
+                final int y = (bounds.height() - h) / 2;
+                drawable.setBounds(x, y, x + w, y + h);
+            }
+
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                drawable.draw(canvas);
+            }
+
+            @Override
+            public int getAlpha() {
+                return drawable.getAlpha();
+            }
+
+            @Override
+            public void setAlpha(int alpha) {
+                drawable.setAlpha(alpha);
+            }
+
+            @Override
+            public void setColorFilter(@androidx.annotation.Nullable ColorFilter colorFilter) {
+
+            }
+
+            @Override
+            public int getOpacity() {
+                return drawable.getOpacity();
+            }
+        };
     }
 }

@@ -43,10 +43,12 @@ public sealed class TlGen_UrlAuthResult : TlGen_Object {
     public val request_write_access: Boolean,
     public val request_phone_number: Boolean,
     public val match_codes_first: Boolean,
+    public val is_app: Boolean,
     public val bot: TlGen_User,
     public val domain: String,
     public val match_codes: List<String>?,
     public val user_id_hint: Long?,
+    public val verified_app_name: String?,
     public val multiflags_2: Multiflags_2?,
   ) : TlGen_UrlAuthResult() {
     internal val flags: UInt
@@ -58,6 +60,8 @@ public sealed class TlGen_UrlAuthResult : TlGen_Object {
         if (match_codes != null) result = result or 8U
         if (user_id_hint != null) result = result or 16U
         if (match_codes_first) result = result or 32U
+        if (is_app) result = result or 64U
+        if (verified_app_name != null) result = result or 128U
         return result
       }
 
@@ -72,6 +76,7 @@ public sealed class TlGen_UrlAuthResult : TlGen_Object {
       multiflags_2?.let { stream.writeString(it.region) }
       match_codes?.let { TlGen_Vector.serializeString(stream, it) }
       user_id_hint?.let { stream.writeInt64(it) }
+      verified_app_name?.let { stream.writeString(it) }
     }
 
     public data class Multiflags_2(
@@ -82,7 +87,7 @@ public sealed class TlGen_UrlAuthResult : TlGen_Object {
     )
 
     public companion object {
-      public const val MAGIC: UInt = 0xF8F8EB1EU
+      public const val MAGIC: UInt = 0x3CD623ECU
     }
   }
 }

@@ -26,8 +26,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.util.StateSet;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -38,7 +36,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.BaseCell;
 
+import me.vkryl.android.animator.BoolAnimator;
+
 public class Switch extends View {
+    private final BoolAnimator animatorIconVisibility = new BoolAnimator(this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
 
     private RectF rectF;
 
@@ -304,6 +305,10 @@ public class Switch extends View {
         invalidate();
     }
 
+    public void setIconVisible(boolean visible, boolean animated) {
+        animatorIconVisibility.setValue(visible, animated);
+    }
+
     public void setDrawIconType(int iconType, boolean animated) {
         if (drawIconType != iconType) {
             drawIconType = iconType;
@@ -493,8 +498,19 @@ public class Switch extends View {
 
             if (a == 0) {
                 if (iconDrawable != null) {
-                    iconDrawable.setBounds(tx - iconDrawable.getIntrinsicWidth() / 2, ty - iconDrawable.getIntrinsicHeight() / 2, tx + iconDrawable.getIntrinsicWidth() / 2, ty + iconDrawable.getIntrinsicHeight() / 2);
-                    iconDrawable.draw(canvasToDraw);
+                    final float factor = animatorIconVisibility.getFloatValue();
+                    if (factor > 0) {
+                        final boolean needScale = factor < 1;
+                        if (needScale) {
+                            canvas.save();
+                            canvas.scale(factor, factor, tx, ty);
+                        }
+                        iconDrawable.setBounds(tx - iconDrawable.getIntrinsicWidth() / 2, ty - iconDrawable.getIntrinsicHeight() / 2, tx + iconDrawable.getIntrinsicWidth() / 2, ty + iconDrawable.getIntrinsicHeight() / 2);
+                        iconDrawable.draw(canvasToDraw);
+                        if (needScale) {
+                            canvas.restore();
+                        }
+                    }
                 } else if (drawIconType == 1) {
                     tx -= AndroidUtilities.dp(10.8f) - AndroidUtilities.dp(1.3f) * progress;
                     ty -= AndroidUtilities.dp(8.5f) - AndroidUtilities.dp(0.5f) * progress;

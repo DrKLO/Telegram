@@ -21,6 +21,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -92,6 +93,7 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.LoadingSpan;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
@@ -641,7 +643,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             if (parent.list == list) {
                 items.add(UItem.asSpace(dp(20)));
                 if (parent.dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                    items.add(TextFactory.asText(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Gravity.CENTER, 14, LocaleController.getString(R.string.ProfileGiftsInfo), true, dp(24)));
+                    items.add(TextFactory.asText(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Gravity.CENTER, 14, LocaleController.getString(R.string.ProfileGiftsInfo), false, dp(24), 0));
                 }
                 items.add(UItem.asSpace(dp(24 + 48 + 10)));
             } else if (!items.isEmpty()) {
@@ -1810,27 +1812,28 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             textView.setGravity(item.intValue);
             textView.setTextColor((int) item.longValue);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, item.floatValue);
-            textView.setTypeface(item.checked ? null : AndroidUtilities.bold());
-            textView.setPadding(item.pad, 0, item.pad, 0);
+            textView.setTypeface(item.accent ? AndroidUtilities.bold() : null);
+            textView.setPadding(item.pad, 0, item.pad, item.iconResId);
             textView.setText(item.text);
         }
 
         public static UItem asBoldText(int color, int gravity, float textSizeDp, CharSequence text) {
-            return asText(color, gravity, textSizeDp, text, true, 0);
+            return asText(color, gravity, textSizeDp, text, true, 0, 0);
         }
 
         public static UItem asText(int color, int gravity, float textSizeDp, CharSequence text) {
-            return asText(color, gravity, textSizeDp, text, false, 0);
+            return asText(color, gravity, textSizeDp, text, false, 0, 0);
         }
 
-        public static UItem asText(int color, int gravity, float textSizeDp, CharSequence text, boolean bold, int padding) {
+        public static UItem asText(int color, int gravity, float textSizeDp, CharSequence text, boolean bold, int padding, int bottomPadding) {
             UItem item = UItem.ofFactory(TextFactory.class);
             item.text = text;
             item.intValue = gravity;
             item.longValue = color;
             item.floatValue = textSizeDp;
             item.pad = padding;
-            item.checked = bold;
+            item.iconResId = bottomPadding;
+            item.accent = bold;
             return item;
         }
     }

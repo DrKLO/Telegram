@@ -380,6 +380,53 @@ public sealed class TlGen_MessageEntity : TlGen_Object {
     }
   }
 
+  public data class TL_messageEntityDiffInsert(
+    public val offset: Int,
+    public val length: Int,
+  ) : TlGen_MessageEntity() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(offset)
+      stream.writeInt32(length)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x71777116U
+    }
+  }
+
+  public data class TL_messageEntityDiffReplace(
+    public val offset: Int,
+    public val length: Int,
+    public val old_text: String,
+  ) : TlGen_MessageEntity() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(offset)
+      stream.writeInt32(length)
+      stream.writeString(old_text)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xC6C1E5A7U
+    }
+  }
+
+  public data class TL_messageEntityDiffDelete(
+    public val offset: Int,
+    public val length: Int,
+  ) : TlGen_MessageEntity() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(offset)
+      stream.writeInt32(length)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x0652C1C5U
+    }
+  }
+
   public data class TL_messageEntityMentionName_layer132(
     public val offset: Int,
     public val length: Int,

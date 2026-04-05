@@ -79,7 +79,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
         );
 
         if (buttonCallback != null) {
-            ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider);
+            ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider).setRound();
             button.setText(LocaleController.getString("GotIt"), false);
             button.setOnClickListener(e -> buttonCallback.run());
             layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 14, 18, 14, 0));

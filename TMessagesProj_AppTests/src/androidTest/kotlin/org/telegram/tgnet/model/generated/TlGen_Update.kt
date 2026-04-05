@@ -421,31 +421,6 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
-  public data class TL_updateMessagePoll(
-    public val poll_id: Long,
-    public val poll: TlGen_Poll?,
-    public val results: TlGen_PollResults,
-  ) : TlGen_Update() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (poll != null) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeInt64(poll_id)
-      poll?.serializeToStream(stream)
-      results.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xACA1657BU
-    }
-  }
-
   public data class TL_updateChatDefaultBannedRights(
     public val peer: TlGen_Peer,
     public val default_banned_rights: TlGen_ChatBannedRights,
@@ -1406,25 +1381,6 @@ public sealed class TlGen_Update : TlGen_Object {
     }
   }
 
-  public data class TL_updateMessagePollVote(
-    public val poll_id: Long,
-    public val peer: TlGen_Peer,
-    public val options: List<List<Byte>>,
-    public val qts: Int,
-  ) : TlGen_Update() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt64(poll_id)
-      peer.serializeToStream(stream)
-      TlGen_Vector.serializeBytes(stream, options)
-      stream.writeInt32(qts)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x24F40E77U
-    }
-  }
-
   public data class TL_updateStoryID(
     public val id: Int,
     public val random_id: Long,
@@ -2305,6 +2261,81 @@ public sealed class TlGen_Update : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xBD8367B9U
+    }
+  }
+
+  public data class TL_updateMessagePoll(
+    public val top_msg_id: Int?,
+    public val poll_id: Long,
+    public val poll: TlGen_Poll?,
+    public val results: TlGen_PollResults,
+    public val multiflags_1: Multiflags_1?,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (poll != null) result = result or 1U
+        if (multiflags_1 != null) result = result or 2U
+        if (top_msg_id != null) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      multiflags_1?.let { it.peer.serializeToStream(stream) }
+      multiflags_1?.let { stream.writeInt32(it.msg_id) }
+      top_msg_id?.let { stream.writeInt32(it) }
+      stream.writeInt64(poll_id)
+      poll?.serializeToStream(stream)
+      results.serializeToStream(stream)
+    }
+
+    public data class Multiflags_1(
+      public val peer: TlGen_Peer,
+      public val msg_id: Int,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0xD64C522BU
+    }
+  }
+
+  public data class TL_updateMessagePollVote(
+    public val poll_id: Long,
+    public val peer: TlGen_Peer,
+    public val options: List<List<Byte>>,
+    public val positions: List<Int>,
+    public val qts: Int,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(poll_id)
+      peer.serializeToStream(stream)
+      TlGen_Vector.serializeBytes(stream, options)
+      TlGen_Vector.serializeInt(stream, positions)
+      stream.writeInt32(qts)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x7699F014U
+    }
+  }
+
+  public data class TL_updateManagedBot(
+    public val user_id: Long,
+    public val bot_id: Long,
+    public val qts: Int,
+  ) : TlGen_Update() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(user_id)
+      stream.writeInt64(bot_id)
+      stream.writeInt32(qts)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x4880ED9AU
     }
   }
 }

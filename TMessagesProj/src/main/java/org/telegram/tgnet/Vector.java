@@ -164,6 +164,9 @@ public class Vector<T extends TLObject> extends TLObject {
     public static void serializeString(OutputSerializedData stream, final ArrayList<String> objects) {
         serialize(stream, stream::writeString, objects);
     }
+    public static void serializeByteArray(OutputSerializedData stream, final ArrayList<byte[]> objects) {
+        serialize(stream, stream::writeByteArray, objects);
+    }
 
     public static <T> ArrayList<T> deserialize(InputSerializedData stream, Utilities.CallbackReturn<Boolean, T> read, boolean exception) {
         final int magic = stream.readInt32(exception);

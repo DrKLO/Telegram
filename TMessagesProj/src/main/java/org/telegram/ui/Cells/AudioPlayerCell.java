@@ -128,7 +128,9 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
             String title = currentMessageObject.getMusicTitle();
             int width = (int) Math.ceil(Theme.chat_contextResult_titleTextPaint.measureText(title));
             CharSequence titleFinal = TextUtils.ellipsize(title.replace('\n', ' '), Theme.chat_contextResult_titleTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.END);
-            titleLayout = new StaticLayout(titleFinal, Theme.chat_contextResult_titleTextPaint, maxWidth + dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            CharSequence titleFinalH = AndroidUtilities.highlightText(titleFinal, currentMessageObject.highlightedWords, resourcesProvider);
+            if (titleFinalH == null) titleFinalH = titleFinal;
+            titleLayout = new StaticLayout(titleFinalH, Theme.chat_contextResult_titleTextPaint, maxWidth + dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
         } catch (Exception e) {
             FileLog.e(e);
@@ -140,7 +142,9 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
                 author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject, 2));
             }
             CharSequence authorFinal = TextUtils.ellipsize(author, Theme.chat_contextResult_descriptionTextPaint, maxWidth, TextUtils.TruncateAt.END);
-            descriptionLayout = new StaticLayout(authorFinal, Theme.chat_contextResult_descriptionTextPaint, maxWidth + dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            CharSequence authorFinalH = AndroidUtilities.highlightText(authorFinal, currentMessageObject.highlightedWords, resourcesProvider);
+            if (authorFinalH == null) authorFinalH = authorFinal;
+            descriptionLayout = new StaticLayout(authorFinalH, Theme.chat_contextResult_descriptionTextPaint, maxWidth + dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);
         } catch (Exception e) {
             FileLog.e(e);

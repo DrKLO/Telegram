@@ -85,8 +85,6 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_TOGGLEABLE_EDIT = 25;
     public static final int CACHE_TYPE_NOANIMATE_FOLDER = 26;
 
-    public int rawDrawIndex;
-
     private static SparseArray<LongSparseArray<AnimatedEmojiDrawable>> globalEmojiCache;
     private static boolean LOG_MEMORY_LEAK = false;
 

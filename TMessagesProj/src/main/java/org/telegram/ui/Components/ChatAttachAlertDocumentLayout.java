@@ -826,6 +826,20 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         } else {
             return false;
         }
+
+        if (parentAlert.isPollAttach) {
+            if (selectedFiles.isEmpty() && selectedMessages.isEmpty() || delegate == null || sendPressed) {
+                return true;
+            }
+            final ArrayList<MessageObject> fmessages = new ArrayList<>();
+            for (FilteredSearchView.MessageHashId hashId : selectedMessages.keySet()) {
+                fmessages.add(selectedMessages.get(hashId));
+            }
+            final ArrayList<String> files = new ArrayList<>(selectedFilesOrder);
+            delegate.didSelectFiles(files, null, null, fmessages, false, 0, 0, 0, false, 0);
+            return true;
+        }
+
         if (view instanceof SharedDocumentCell) {
             ((SharedDocumentCell) view).setChecked(add, true);
         }
@@ -1345,7 +1359,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             FileLog.e(e);
         }
 
-        if (!isSoundPicker) {
+        if (!isSoundPicker && (parentAlert == null || !parentAlert.isPollAttach)) {
             fs = new ListItem();
             fs.title = LocaleController.getString(R.string.Gallery);
             fs.subtitle = LocaleController.getString(R.string.GalleryInfo);

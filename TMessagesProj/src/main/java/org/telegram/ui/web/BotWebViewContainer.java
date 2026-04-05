@@ -34,6 +34,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
 import android.text.InputType;
@@ -76,6 +77,7 @@ import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
+import org.checkerframework.common.subtyping.qual.Bottom;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -93,6 +95,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
@@ -104,6 +107,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
@@ -118,17 +122,21 @@ import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.CameraScanActivity;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.CreateBotAlert;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Paint.Views.LinkPreview;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.MultiContactsSelectorBottomSheet;
 import org.telegram.ui.OAuthSheet;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
@@ -157,6 +165,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -2362,7 +2371,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                             progressDialog.dismissUnless(500);
                         };
                         Utilities.globalQueue.postRunnable(() -> {
-                            AnimatedFileDrawable.getVideoInfo(file.getAbsolutePath(), params);
+                            AnimatedFileDrawable.getVideoInfo(file.getAbsolutePath(), params, 0);
                             AndroidUtilities.runOnUIThread(open);
                         });
                     });
@@ -2757,6 +2766,195 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         onVerifiedAge.run(passed, age, gender, genderProbability);
                     });
                 }
+                break;
+            }
+            case "web_app_request_chat": {
+                String _requestId = null;
+                try {
+                    JSONObject o = new JSONObject(eventData);
+                    _requestId = o.optString("req_id");
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                if (_requestId == null) return;
+                final String requestId = _requestId;
+
+                final TL_bots.getRequestedWebViewButton req = new TL_bots.getRequestedWebViewButton();
+                req.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
+                req.webapp_req_id = requestId;
+                ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                    if (res instanceof TLRPC.TL_keyboardButtonRequestPeer) {
+                        final TLRPC.TL_keyboardButtonRequestPeer btn = (TLRPC.TL_keyboardButtonRequestPeer) res;
+                        if (btn.peer_type instanceof TLRPC.TL_requestPeerTypeCreateBot) {
+                            final TLRPC.TL_requestPeerTypeCreateBot peerType = (TLRPC.TL_requestPeerTypeCreateBot) btn.peer_type;
+                            CreateBotAlert.show(getContext(), currentAccount, botUser, peerType, false, newBot -> {
+                                if (newBot == null) {
+                                    notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    return;
+                                }
+
+                                final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
+                                req2.peer = MessagesController.getInputPeer(botUser);
+                                req2.webapp_req_id = requestId;
+                                req2.button_id = btn.button_id;
+                                req2.requested_peers.add(MessagesController.getInputPeer(newBot));
+                                ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (updates, err2) -> {
+                                    if (updates != null) {
+                                        MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                                        notifyEvent("requested_chat_sent", obj("req_id", requestId));
+
+                                        final long managerId = botUser.id;
+                                        final Bundle args = new Bundle();
+                                        args.putLong("user_id", newBot.id);
+                                        final ChatActivity chatActivity = new ChatActivity(args) {
+                                            private boolean shownToast;
+                                            @Override
+                                            public void onBecomeFullyVisible() {
+                                                super.onBecomeFullyVisible();
+                                                if (!shownToast) {
+                                                    shownToast = true;
+                                                    BulletinFactory.of(this).createSimpleBulletin(
+                                                        R.raw.contact_check,
+                                                        formatString(R.string.CreateManagedBotCreatedTitle, UserObject.getUserName(newBot)),
+                                                        AndroidUtilities.replaceSingleTag(
+                                                            formatString(R.string.CreateManagedBotCreatedText, UserObject.getUserName(botUser)),
+                                                            () -> presentFragment(ChatActivity.of(managerId))
+                                                        )
+                                                    ).show();
+                                                }
+                                            }
+                                        };
+                                        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                                        if (lastFragment != null)
+                                            lastFragment.presentFragment(chatActivity);
+
+                                        if (delegate != null) {
+                                            delegate.onCloseToTabs();
+                                        }
+                                        return;
+                                    }
+                                    if (err2 != null) {
+                                        BulletinFactory.of(this, resourcesProvider).showForError(err2);
+                                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    } else {
+                                        BulletinFactory.of(this, resourcesProvider).showForError("UNKNOWN_BUTTON");
+                                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    }
+                                });
+                                notifyEvent("requested_chat_sent", obj("req_id", requestId));
+                            }, resourcesProvider, BulletinFactory.of(this, resourcesProvider), true);
+                            return;
+                        }
+                        if (btn.peer_type instanceof TLRPC.TL_requestPeerTypeUser && btn.max_quantity > 1) {
+                            TLRPC.TL_requestPeerTypeUser peer_type = (TLRPC.TL_requestPeerTypeUser) btn.peer_type;
+                            final boolean[] sent = new boolean[1];
+                            final BottomSheet sheet = MultiContactsSelectorBottomSheet.open(peer_type.bot, peer_type.premium, btn.max_quantity, ids -> {
+                                if (ids != null && !ids.isEmpty()) {
+                                    sent[0] = true;
+                                    final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
+                                    req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(botUser);
+                                    req2.webapp_req_id = requestId;
+                                    req2.button_id = btn.button_id;
+                                    for (Long id : ids) {
+                                        req2.requested_peers.add(MessagesController.getInstance(currentAccount).getInputPeer(id));
+                                    }
+                                    ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (updates, err2) -> {
+                                        if (updates != null) {
+                                            MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                                            notifyEvent("requested_chat_sent", obj("req_id", requestId));
+                                            return;
+                                        }
+                                        if (err2 != null) {
+                                            BulletinFactory.of(this, resourcesProvider).showForError(err2);
+                                            notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                        } else {
+                                            BulletinFactory.of(this, resourcesProvider).showForError("UNKNOWN_BUTTON");
+                                            notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                        }
+                                    });
+                                }
+                            });
+                            if (sheet != null) {
+                                sheet.setOnDismissListener(d -> {
+                                    if (!sent[0]) {
+                                        sent[0] = true;
+                                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    }
+                                });
+                            }
+                            return;
+                        }
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlySelect", true);
+                        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER);
+                        args.putLong("requestPeerBotId", botUser.id);
+                        try {
+                            SerializedData buffer = new SerializedData(btn.peer_type.getObjectSize());
+                            btn.peer_type.serializeToStream(buffer);
+                            args.putByteArray("requestPeerType", buffer.toByteArray());
+                            buffer.cleanup();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        final boolean[] sent = new boolean[1];
+                        DialogsActivity fragment = new DialogsActivity(args) {
+                            @Override
+                            public void onFragmentDestroy() {
+                                super.onFragmentDestroy();
+                                if (!sent[0]) {
+                                    sent[0] = true;
+                                    notifyEvent("requested_chat_failed", obj());
+                                }
+                            }
+                        };
+                        fragment.setDelegate((dialogFragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
+                            if (dids != null && !dids.isEmpty()) {
+                                sent[0] = true;
+                                final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
+                                req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(botUser);
+                                req2.webapp_req_id = requestId;
+                                req2.button_id = btn.button_id;
+                                HashSet<Long> dialogIds = new HashSet<>();
+                                for (MessagesStorage.TopicKey key : dids) {
+                                    dialogIds.add(key.dialogId);
+                                }
+                                for (long did : dialogIds) {
+                                    req2.requested_peers.add(MessagesController.getInstance(currentAccount).getInputPeer(did));
+                                }
+                                ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (updates, err2) -> {
+                                    if (updates != null) {
+                                        MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                                        notifyEvent("requested_chat_sent", obj("req_id", requestId));
+                                        return;
+                                    }
+                                    if (err2 != null) {
+                                        BulletinFactory.of(this, resourcesProvider).showForError(err2);
+                                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    } else {
+                                        BulletinFactory.of(this, resourcesProvider).showForError("UNKNOWN_BUTTON");
+                                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                                    }
+                                });
+                            }
+                            dialogFragment.finishFragment();
+                            return true;
+                        });
+                        BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                        if (lastFragment == null) return;
+                        BaseFragment.BottomSheetParams params = new BaseFragment.BottomSheetParams();
+                        params.transitionFromLeft = true;
+                        params.allowNestedScroll = false;
+                        lastFragment.showAsSheet(fragment, params);
+                        return;
+                    }
+                    if (err != null) {
+                        BulletinFactory.of(this, resourcesProvider).showForError(err);
+                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                    } else {
+                        BulletinFactory.of(this, resourcesProvider).showForError("UNKNOWN_BUTTON");
+                        notifyEvent("requested_chat_failed", obj("req_id", requestId));
+                    }
+                });
                 break;
             }
             default: {

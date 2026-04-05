@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -32,6 +33,8 @@ import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -362,5 +365,46 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     @Override
     public Layout getStaticTextLayout() {
         return getLayout();
+    }
+
+    private boolean triedGetInvalidate;
+    private static Field mEditor;
+    private static Class editorClass;
+    private static Method mEditorInvalidateDisplayList;
+    private Object editor;
+
+    @Override
+    public void invalidate() {
+        if (!triedGetInvalidate) {
+            triedGetInvalidate = true;
+            try {
+                if (editorClass == null) {
+                    mEditor = TextView.class.getDeclaredField("mEditor");
+                    mEditor.setAccessible(true);
+                    editorClass = Class.forName("android.widget.Editor");
+                    try {
+                        mEditorInvalidateDisplayList = editorClass.getDeclaredMethod("invalidateTextDisplayList");
+                        mEditorInvalidateDisplayList.setAccessible(true);
+                    } catch (Exception ignore) {}
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+        super.invalidate();
+        if (!isHardwareAccelerated()) {
+            return;
+        }
+        try {
+            // on hardware accelerated edittext to invalidate imagespan display list must be invalidated
+            if (mEditorInvalidateDisplayList != null) {
+                if (editor == null) {
+                    editor = mEditor.get(this);
+                }
+                if (editor != null) {
+                    mEditorInvalidateDisplayList.invoke(editor);
+                }
+            }
+        } catch (Exception ignore) {};
     }
 }
