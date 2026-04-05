@@ -66,6 +66,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.ContactsActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Gifts.GiftSheet;
@@ -135,6 +141,7 @@ public class ItemOptions {
     }
 
     public ActionBarPopupWindow actionBarPopupWindow;
+    private BlurredBackgroundSourceBitmap scrimBlur3SourceBitmap;
     private final float[] point = new float[2];
 
     private Runnable dismissListener;
@@ -144,9 +151,17 @@ public class ItemOptions {
     private boolean drawScrim = true;
 
     private boolean blur;
+    private boolean blurForMenu;
+
+    public ItemOptions setBlur(boolean blur, boolean blurForMenu) {
+        this.blur = blur;
+        this.blurForMenu = blurForMenu;
+        return this;
+    }
 
     public ItemOptions setBlur(boolean b) {
         this.blur = b;
+        this.blurForMenu = b;
         return this;
     }
 
@@ -1027,6 +1042,17 @@ public class ItemOptions {
         return layout;
     }
 
+    public ItemOptions setBlurBackground(BlurredBackgroundDrawableViewFactory factory, BlurredBackgroundProvider colorProvider, boolean multiwindow) {
+        if (layout instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
+            layout.setBackground(factory.create(layout, multiwindow)
+                .setColorProvider(colorProvider)
+                .setPadding(dp(8))
+                .setHasPadding(true)
+                .setRadius(dp(12)));
+        }
+        return this;
+    }
+
     public ItemOptions setBlurBackground(BlurringShader.BlurManager blurManager, float ox, float oy) {
         Drawable baseDrawable = context.getResources().getDrawable(R.drawable.popup_fixed_alert2).mutate();
         if (layout instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {
@@ -1147,6 +1173,10 @@ public class ItemOptions {
                     }
                 }
             }
+        }
+
+        if (blur && scrimBlur3SourceBitmap == null) {
+            scrimBlur3SourceBitmap = new BlurredBackgroundSourceBitmap();
         }
 
         ViewGroup container = pointContainer = this.container == null ? fragment.getParentLayout().getOverlayContainerView() : this.container;
@@ -1344,6 +1374,19 @@ public class ItemOptions {
             fragment.getFragmentView().getRootView().dispatchTouchEvent(AndroidUtilities.emptyMotionEvent());
         } else if (this.container != null) {
             container.dispatchTouchEvent(AndroidUtilities.emptyMotionEvent());
+        }
+
+        if (blurForMenu && scrimBlur3SourceBitmap != null) {
+            setGapBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+            BlurredBackgroundDrawable bg = new BlurredBackgroundDrawableViewFactory(scrimBlur3SourceBitmap)
+                .create(layout, true)
+                .setColorProvider(BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider))
+                .setPadding(dp(8))
+                .setHasPadding(true)
+                .setRadius(dp(12));
+
+            bg.setSourceOffset(X + this.translateX, Y + this.translateY);
+            layout.setBackground(bg);
         }
 
         actionBarPopupWindow.setScaleOut(scaleOut);
@@ -1592,10 +1635,26 @@ public class ItemOptions {
             if (blur) {
                 blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
                 scrimView.setAlpha(0.0f);
-                AndroidUtilities.makeGlobalBlurBitmap(b -> {
+                ScrimOptions.makeGlobalBlurBitmaps((bitmapBg, bitmapOptions) -> {
                     scrimView.setAlpha(1.0f);
-                    blurBitmap = b;
-                }, 12.0f);
+                    blurBitmap = bitmapBg;
+                    if (scrimBlur3SourceBitmap != null) {
+                        scrimBlur3SourceBitmap.setBitmap(bitmapOptions);
+                        Blur3Utils.checkBitmapSourceMatrixScale(scrimBlur3SourceBitmap, DimView.this);
+                        if (layout != null) {
+                            layout.invalidate();
+                        }
+                    }
+                });
+            }
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            Blur3Utils.checkBitmapSourceMatrixScale(scrimBlur3SourceBitmap, DimView.this);
+            if (layout != null) {
+                layout.invalidate();
             }
         }
 

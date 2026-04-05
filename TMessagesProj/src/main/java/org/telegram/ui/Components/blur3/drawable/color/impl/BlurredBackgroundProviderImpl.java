@@ -48,6 +48,18 @@ public class BlurredBackgroundProviderImpl {
             .build();
     }
 
+    public static BlurredBackgroundProvider scrimMenuBackground(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) ->
+                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.76f))
+            .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
+            .setStrokeColorBottom(0xFFFFFFFF, 0x20FFFFFF)
+            .setShadowColor(0x26000000, 0)
+            .setShadowLayer(dpf2(4f), 0, 0)
+            .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
+            .build();
+    }
+
     public static BlurredBackgroundProvider attachMenuSearch(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
                 .setBackgroundColor((r, isDark) -> {
@@ -121,6 +133,15 @@ public class BlurredBackgroundProviderImpl {
                     final int colorTarget = 0xFF1A1A1A;
                     return 0; // solveSrcColor(colorBg, colorTarget, alpha);
                 })
+                .setStrokeColorTop(0x28FFFFFF, 0x28FFFFFF)
+                .setStrokeColorBottom(0x14FFFFFF, 0x14FFFFFF)
+                .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
+                .build();
+    }
+
+    public static BlurredBackgroundProvider photoViewerMenu(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+                .setBackgroundColor((r, isDark) -> 0x40000000)
                 .setStrokeColorTop(0x28FFFFFF, 0x28FFFFFF)
                 .setStrokeColorBottom(0x14FFFFFF, 0x14FFFFFF)
                 .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))

@@ -21,13 +21,19 @@ import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Layout;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeProvider;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
 import androidx.core.graphics.ColorUtils;
@@ -39,6 +45,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
@@ -132,6 +139,8 @@ public class ProfileActionsView extends View {
         this.targetHeight = (int) (targetHeight - ypadding - top);
 
         setBackgroundColor(0);
+
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
 
     public void drawingBlur(boolean drawing) {
@@ -1233,5 +1242,115 @@ public class ProfileActionsView extends View {
             this.filledIcon = filledIcon;
             this.outlineIcon = outlineIcon;
         }
+    }
+
+    private AccessibilityNodeProvider accessibilityNodeProvider;
+    @Override
+    public AccessibilityNodeProvider getAccessibilityNodeProvider() {
+        if (accessibilityNodeProvider == null) {
+            accessibilityNodeProvider = new AccessibilityNodeProvider() {
+                @Override
+                public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
+                    int[] pos = {0, 0};
+                    getLocationOnScreen(pos);
+                    if (virtualViewId == HOST_VIEW_ID) {
+                        AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain(ProfileActionsView.this);
+                        onInitializeAccessibilityNodeInfo(info);
+                        info.setEnabled(true);
+
+                        for (int i = 0; i < actions.size(); ++i) {
+                            info.addChild(ProfileActionsView.this, actions.get(i).key);
+                        }
+
+                        return info;
+                    } else {
+                        Action action = null;
+                        for (int i = 0; i < actions.size(); ++i) {
+                            if (actions.get(i).key == virtualViewId) {
+                                action = actions.get(i);
+                                break;
+                            }
+                        }
+                        if (action == null) return null;
+                        if (action.rect.isEmpty()) return null;
+
+                        AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain();
+                        info.setSource(ProfileActionsView.this, virtualViewId);
+                        info.setParent(ProfileActionsView.this);
+                        info.setPackageName(getContext().getPackageName());
+
+                        info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        info.addAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
+                        info.setClickable(true);
+                        info.setFocusable(true);
+                        info.setEnabled(true);
+                        info.setVisibleToUser(true);
+                        info.setClassName(android.widget.Button.class.getName());
+
+                        info.setText(action.text.getText());
+
+                        Rect parentBounds = new Rect(
+                                (int) action.rect.left,
+                                (int) action.rect.top,
+                                (int) action.rect.right,
+                                (int) action.rect.bottom
+                        );
+                        info.setBoundsInParent(parentBounds);
+                        parentBounds.offset(pos[0], pos[1]);
+                        info.setBoundsInScreen(parentBounds);
+
+                        return info;
+                    }
+                }
+
+                @Override
+                public boolean performAction(int virtualViewId, int action, @Nullable Bundle arguments) {
+                    if (virtualViewId == HOST_VIEW_ID) {
+                        return performAccessibilityAction(action, arguments);
+                    }
+
+                    Action button = null;
+                    for (int i = 0; i < actions.size(); ++i) {
+                        if (actions.get(i).key == virtualViewId) {
+                            button = actions.get(i);
+                            break;
+                        }
+                    }
+                    if (button == null) return false;
+
+                    if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                        sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+                        return true;
+                    } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+                        if (onActionClickListener != null) {
+                            onActionClickListener.onClick(virtualViewId, 0, 0);
+                        }
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
+                    sendAccessibilityEventForVirtualView(viewId, eventType, null);
+                }
+
+                private void sendAccessibilityEventForVirtualView(int viewId, int eventType, String text) {
+                    AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+                    if (am.isTouchExplorationEnabled()) {
+                        AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
+                        event.setPackageName(getContext().getPackageName());
+                        event.setSource(ProfileActionsView.this, viewId);
+                        if (text != null) {
+                            event.getText().add(text);
+                        }
+                        if (getParent() != null) {
+                            getParent().requestSendAccessibilityEvent(ProfileActionsView.this, event);
+                        }
+                    }
+                }
+            };
+        }
+        return accessibilityNodeProvider;
     }
 }

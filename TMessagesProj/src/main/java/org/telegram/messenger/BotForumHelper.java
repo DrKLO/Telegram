@@ -101,6 +101,11 @@ public class BotForumHelper extends BaseController {
             new BotForumTextDraftUpdateNotification(userId, topicId, draftMessage.messageObject, isNew));
     }
 
+    public boolean hasBotForumDrafts(long userId, int topicId) {
+        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
+        return messages != null && messages.size() > 0;
+    }
+
     public MessageObject onBotForumDraftCheckNewMessages(long userId, int topicId, int messageId, String message) {
         LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
         if (messages == null) {

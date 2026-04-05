@@ -872,7 +872,7 @@ public class CollageLayoutView2 extends FrameLayout implements ItemOptions.Scrim
             })
             .setGravity(Gravity.CENTER_HORIZONTAL)
             .allowCenter(true)
-            .setBlur(true)
+            .setBlur(true, false)
             .setRoundRadius(dp(12), dp(10))
             .setOnDismiss(() -> {
                 if (longPressedPart != null && longPressedPart.videoPlayer != null) {

@@ -5009,6 +5009,8 @@
     <string name="AccDescrMentionReaction">With new reaction</string>
     <string name="AccDescrSpeedSlider">Choose speed</string>
     <string name="AccDescrCaptureStory">Capture story</string>
+    <string name="AccDescrProfileMusic">Profile Music</string>
+    <string name="AccDescrProfileRatingLevel">Profile Stars Rating Level</string>
     <!--date formatters-->
     <string name="formatterBoostExpired">MMM dd, yyyy</string>
     <string name="formatterGiveawayCard">dd MMM yyyy</string>

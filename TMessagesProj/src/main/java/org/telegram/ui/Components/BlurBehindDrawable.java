@@ -45,7 +45,7 @@ public class BlurBehindDrawable {
     private boolean error;
     private boolean animateAlpha = true;
 
-    private final float DOWN_SCALE = 6f;
+    private final float DOWN_SCALE = 15f;
     private int lastH;
     private int lastW;
     private int toolbarH;
@@ -199,7 +199,7 @@ public class BlurBehindDrawable {
     }
 
     private int getBlurRadius() {
-        return Math.max(7, Math.max(lastH, lastW) / 180);
+        return 15; // Math.max(7, Math.max(lastH, lastW) / 180);
     }
 
     public void clear() {

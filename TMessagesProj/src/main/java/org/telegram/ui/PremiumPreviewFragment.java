@@ -95,6 +95,7 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FillLastLinearLayoutManager;
@@ -2158,6 +2159,12 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
             backgroundView.imageView.setDialogVisible(false);
         }
         particlesView.setPaused(false);
+        Bulletin.addDelegate(this, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                return AndroidUtilities.navigationBarHeight;
+            }
+        });
     }
 
     @Override
@@ -2169,6 +2176,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         if (particlesView != null) {
             particlesView.setPaused(true);
         }
+        Bulletin.removeDelegate(this);
     }
 
     @Override

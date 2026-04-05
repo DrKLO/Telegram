@@ -143,6 +143,16 @@ public abstract class GradientHeaderActivity extends BaseFragment {
     }
 
     @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+    }
+
+    @Override
     public View createView(Context context) {
         hasOwnBackground = true;
 
@@ -156,7 +166,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
         }
 
         contentView = createContentView();
-        contentView.setFitsSystemWindows(true);
+        actionBar.setAddToContainer(false);
         listView = new RecyclerListView(context);
         if (useFillLastLayoutManager) {
             layoutManager = new FillLastLinearLayoutManager(context, AndroidUtilities.dp(68) + statusBarHeight - AndroidUtilities.dp(16), listView);
@@ -217,7 +227,8 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         contentView.addView(particlesView = createParticlesView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         contentView.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        contentView.addView(listView);
+        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        contentView.addView(actionBar);
 
         fragmentView = contentView;
         actionBar.setBackground(null);
@@ -402,10 +413,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
             gradientTools.gradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -getMeasuredWidth() * 0.1f * progress, 0);
             if (whiteBackground) {
-                if (backgroundGradient == null) {
-                    backgroundGradient = new LinearGradient(0, 0, 0, dp(350), new int[] {getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_windowBackgroundGray)}, new float[] {0.3f, 1}, Shader.TileMode.CLAMP);
-                    backgroundGradientPaint.setShader(backgroundGradient);
-                }
+                backgroundGradientPaint.setColor(getThemedColor(Theme.key_windowBackgroundGray));
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundGradientPaint);
             } else {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), gradientTools.paint);
@@ -417,7 +425,9 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             headerBgPaint.setAlpha((int) (255 * (1f - alpha)));
             setLightStatusBar(Theme.blendOver(Theme.getColor(Theme.key_premiumGradientBackground4, resourceProvider), headerBgPaint.getColor()));
             canvas.drawRect(0, 0, getMeasuredWidth(), actionBar.getMeasuredHeight(), headerBgPaint);
+
             super.dispatchDraw(canvas);
+
             if (alpha <= 0.01f && drawActionBarShadow()) {
                 parentLayout.drawHeaderShadow(canvas, 0xFF, actionBar.getMeasuredHeight());
             }

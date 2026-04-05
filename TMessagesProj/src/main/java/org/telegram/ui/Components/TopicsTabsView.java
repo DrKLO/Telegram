@@ -9,8 +9,10 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -72,8 +74,10 @@ import java.util.HashSet;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.BitwiseUtils;
 
+@SuppressLint("ViewConstructor")
 public class TopicsTabsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     public static final int TOP_TABS_HEIGHT = 36;
+    public static final int SIDE_TABS_WIDTH = 64;
 
     private final int currentAccount;
     private final long dialogId;
@@ -121,14 +125,17 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
         topTabs = new UniversalRecyclerView(context, currentAccount, 0, this::fillHorizontalTabs, this::onTabClick, this::onTabLongClick, resourcesProvider) {
             private final GradientClip clip = new GradientClip();
-            private final AnimatedFloat animatedClip = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final AnimatedFloat animatedClipL = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+            private final AnimatedFloat animatedClipR = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
             private final RectF lineRect = new RectF();
             private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             private final AnimatedFloat animateTab = new AnimatedFloat(this, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                final float clipAlpha = animatedClip.set(canScrollHorizontally(-1));
-                if (clipAlpha > 0) {
+                final float clipAlphaL = animatedClipL.set(canScrollHorizontally(-1));
+                final float clipAlphaR = animatedClipR.set(canScrollHorizontally(1));
+                final boolean needClip = clipAlphaL > 0 || clipAlphaR > 0;
+                if (needClip) {
                     canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
                 }
                 drawPinnedBackground(canvas);
@@ -171,10 +178,16 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     linePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 31));
                     canvas.drawRoundRect(lineRect, dp(14), dp(14), linePaint);
                 }
-                if (clipAlpha > 0) {
+                if (needClip) {
                     canvas.save();
-                    AndroidUtilities.rectTmp.set(0, 0, dp(12), getHeight());
-                    clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.LEFT, clipAlpha);
+                    if (clipAlphaL > 0) {
+                        AndroidUtilities.rectTmp.set(0, 0, dp(12), getHeight());
+                        clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.LEFT, clipAlphaL);
+                    }
+                    if (clipAlphaR > 0) {
+                        AndroidUtilities.rectTmp.set(getWidth() - dp(12), 0, getWidth(), getHeight());
+                        clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.RIGHT, clipAlphaR);
+                    }
                     canvas.restore();
                     canvas.restore();
                 }
@@ -330,8 +343,8 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             }
         });
 
-        toggleButtonTop = createButton(context, R.drawable.menu_sidebar, this::onSideMenuButtonClick);
-        toggleButtonSide = createButton(context, R.drawable.menu_sidebar, this::onSideMenuButtonClick);
+        toggleButtonTop = createButton(context, R.drawable.menu_sidebar_left, this::onSideMenuButtonClick);
+        toggleButtonSide = createButton(context, R.drawable.menu_sidebar_left, this::onSideMenuButtonClick);
         topTabsContainer.addView(toggleButtonTop, LayoutHelper.createFrame(44, TOP_TABS_HEIGHT, Gravity.LEFT | Gravity.TOP));
         sideTabsContainer.addView(toggleButtonSide, LayoutHelper.createFrame(64, 48, Gravity.LEFT | Gravity.TOP));
 
@@ -342,10 +355,13 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
         MessagesController.getInstance(currentAccount).getTopicsController().loadTopics(-dialogId, false, TopicsController.LOAD_TYPE_HASH_CHECK);
 
-        if (MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("topicssidetabs" + dialogId, false)) {
+        SharedPreferences sp = MessagesController.getInstance(currentAccount).getMainSettings();
+        if (sp.getBoolean("topicssidetabs" + dialogId, false)) {
             sidemenuT = 1.0f;
             sidemenuEnabled = true;
         }
+        topicBottom = sp.getBoolean("topicssidetabsb" + dialogId, false);
+        toggleButtonSide.setImageResource(topicBottom ? R.drawable.menu_sidebar_top : R.drawable.menu_sidebar_bottom);
 
         checkUi_closeButtonVisibility();
         updateSidemenuPosition();
@@ -465,6 +481,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     public void setSideMenuBackgroundMarginBottom(float margin) {
         sideMenuBackgroundMarginBottom = margin;
+        checkUi_topicsVerticalPosition();
         checkSideTabsPadding(true);
         invalidate();
     }
@@ -472,6 +489,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     public void setSideMenuBackgroundMarginTop(float margin) {
         sideMenuBackgroundMarginTop = margin;
         sideTabsContainer.setTranslationY(margin);
+        checkUi_topicsVerticalPosition();
         checkSideTabsPadding(true);
         invalidate();
     }
@@ -501,13 +519,22 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     }
     */
 
+    private Runnable onUpdateSideMenuPosition;
+
+    public void doOnUpdateSideMenuPosition(Runnable runnable) {
+        onUpdateSideMenuPosition = runnable;
+    }
+
+    private boolean topicBottom;
     public boolean sidemenuEnabled;
     public float sidemenuT = 0.0f;
     public boolean sidemenuAnimating;
     public void updateSidemenuPosition() {
-        topTabsContainer.setTranslationY(-dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
-        topTabsContainer.setAlpha(lerp(1.0f, 0.85f, sidemenuT));
-        topTabsContainer.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
+        if (onUpdateSideMenuPosition != null) {
+            onUpdateSideMenuPosition.run();
+        }
+
+        checkUi_topicsVerticalPosition();
 
         sideTabsContainer.setTranslationX(-dp(64 + 7 + 7) * (1.0f - sidemenuT));
         sideTabsContainer.setVisibility(sidemenuT <= 0.0f ? View.GONE : View.VISIBLE);
@@ -540,6 +567,16 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         invalidate();
     }
 
+    private void checkUi_topicsVerticalPosition() {
+        topTabsContainer.setAlpha(lerp(1.0f, 0.85f, sidemenuT));
+        topTabsContainer.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
+        if (topicBottom) {
+            topTabsContainer.setTranslationY(getMeasuredHeight() - dp(TOP_TABS_HEIGHT + 7 + 7) - sideMenuBackgroundMarginBottom + dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
+        } else {
+            topTabsContainer.setTranslationY(-dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
+        }
+    }
+
     private Boolean pendingSidemenu;
     private ValueAnimator animator;
     private void animateSidemenuTo(boolean side) {
@@ -551,6 +588,11 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 return;
             }
         }
+
+        if (!side) {
+            topicBottom = !topicBottom;
+        }
+
         sidemenuEnabled = side;
         sidemenuAnimating = true;
         animator = ValueAnimator.ofFloat(sidemenuT, side ? 1.0f : 0.0f);
@@ -565,8 +607,12 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     sidemenuT = side ? 1.0f : 0.0f;
                     updateSidemenuPosition();
                     sidemenuAnimating = false;
+                    toggleButtonSide.setImageResource(topicBottom ? R.drawable.menu_sidebar_top : R.drawable.menu_sidebar_bottom);
                     animator = null;
-                    MessagesController.getInstance(currentAccount).getMainSettings().edit().putBoolean("topicssidetabs" + dialogId, sidemenuEnabled).apply();
+                    MessagesController.getInstance(currentAccount).getMainSettings().edit()
+                        .putBoolean("topicssidetabs" + dialogId, sidemenuEnabled)
+                        .putBoolean("topicssidetabsb" + dialogId, topicBottom)
+                        .apply();
                     if (pendingSidemenu != null && side != pendingSidemenu) {
                         final boolean newValue = pendingSidemenu;
                         pendingSidemenu = null;
@@ -1974,6 +2020,13 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         }
     }
 
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        checkUi_topicsVerticalPosition();
+    }
+
+
     private final HashSet<Integer> excludeTopics = new HashSet<>();
     private void deleteTopics(HashSet<Integer> selectedTopics, Runnable runnable) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
@@ -2057,5 +2110,36 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         public int getOpacity() {
             return PixelFormat.UNKNOWN;
         }
+    }
+
+
+
+
+    public enum Position {
+        TOP, LEFT, BOTTOM
+    }
+
+    private static int getTabsSize(Position position) {
+        return dp(position == Position.LEFT ? SIDE_TABS_WIDTH : TOP_TABS_HEIGHT);
+    }
+
+    private float getTabsVisibility(Position position) {
+        if (position == Position.LEFT) {
+            return sidemenuT;
+        }
+        if (position == Position.TOP && !topicBottom || position == Position.BOTTOM && topicBottom) {
+            return (1.0f - sidemenuT);
+        }
+        return 0;
+    }
+
+    public Position getCurrentTabsPosition() {
+        return sidemenuEnabled ? Position.LEFT : (topicBottom ? Position.BOTTOM : Position.TOP);
+    }
+
+    public float getTabsVisibleSpaceWithPadding(Position position, float padding) {
+        final float visibility = getTabsVisibility(position);
+        final int size = getTabsSize(position);
+        return (size + padding) * visibility;
     }
 }

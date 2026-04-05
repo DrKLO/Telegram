@@ -324,9 +324,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
             if (!defaultBannedRights.pin_messages) {
                 adminRights.pin_messages = true;
             }
-            if (!defaultBannedRights.edit_rank) {
-                adminRights.manage_ranks = true;
-            }
         } else if (type == TYPE_BANNED) {
             defaultBannedRights = rightsBannedDefault;
             if (defaultBannedRights == null) {
@@ -1703,7 +1700,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     } else if (position == pinMessagesRow) {
                         return myAdminRights.pin_messages && (defaultBannedRights == null || defaultBannedRights.pin_messages);
                     } else if (position == editTagsRow) {
-                        return myAdminRights.manage_ranks && (defaultBannedRights == null || defaultBannedRights.edit_rank);
+                        return myAdminRights.manage_ranks;
                     } else if (position == manageTopicsRow) {
                         return myAdminRights.manage_topics;
                     } else if (position == channelPostStoriesRow) {
@@ -2069,7 +2066,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         }
                     } else if (position == editTagsRow) {
                         if (currentType == TYPE_ADMIN || currentType == TYPE_ADD_BOT) {
-                            checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminEditTags), asAdminValue && adminRights.manage_ranks || !defaultBannedRights.edit_rank, true);
+                            checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminEditTags), asAdminValue && adminRights.manage_ranks, true);
                             if (currentType == TYPE_ADD_BOT) {
                                 checkCell.setIcon(myAdminRights.manage_ranks || isCreator ? 0 : R.drawable.permission_locked);
                             }
@@ -2344,7 +2341,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         childEnabled = myAdminRights.pin_messages && defaultBannedRights.pin_messages;
                     } else if (childPosition == editTagsRow) {
                         childValue = adminRights.manage_ranks;
-                        childEnabled = myAdminRights.manage_ranks && defaultBannedRights.edit_rank;
+                        childEnabled = myAdminRights.manage_ranks;
                     } else if (childPosition == startVoiceChatRow) {
                         childValue = adminRights.manage_call;
                         childEnabled = myAdminRights.manage_call;

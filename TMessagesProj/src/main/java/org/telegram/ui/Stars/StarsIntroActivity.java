@@ -256,11 +256,6 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
     }
 
     @Override
-    public int getNavigationBarColor() {
-        return Theme.getColor(Theme.key_dialogBackgroundGray);
-    }
-
-    @Override
     public View createView(Context context) {
         useFillLastLayoutManager = false;
         particlesViewHeight = dp(32 + 190 + 16);
@@ -282,7 +277,6 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
             }
         };
-        emptyLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
 
         super.createView(context);
 
@@ -495,7 +489,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 if (target == listView && transactionsLayout.isAttachedToWindow()) {
                     RecyclerListView innerListView = transactionsLayout.getCurrentListView();
                     int bottom = ((View) transactionsLayout.getParent()).getBottom();
-                    if (listView.getHeight() - bottom >= 0) {
+                    if (listView.getHeight() - listView.getPaddingBottom() - bottom >= 0) {
                         consumed[1] = dyUnconsumed;
                         innerListView.scrollBy(0, dyUnconsumed);
                     }
@@ -533,7 +527,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 int bottom = ((View) transactionsLayout.getParent()).getBottom();
                 if (dy < 0) {
                     boolean scrolledInner = false;
-                    if (listView.getHeight() - bottom >= 0) {
+                    if (listView.getHeight() - listView.getPaddingBottom() - bottom >= 0) {
                         RecyclerListView innerListView = transactionsLayout.getCurrentListView();
                         LinearLayoutManager linearLayoutManager = (LinearLayoutManager) innerListView.getLayoutManager();
                         int pos = linearLayoutManager.findFirstVisibleItemPosition();
@@ -567,7 +561,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                         }
                     } else if (dy > 0) {
                         RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        if (listView.getHeight() - bottom >= 0 && innerListView != null && !innerListView.canScrollVertically(1)) {
+                        if (listView.getHeight() - listView.getPaddingBottom() - bottom >= 0 && innerListView != null && !innerListView.canScrollVertically(1)) {
                             consumed[1] = dy;
                             listView.stopScroll();
                         }
@@ -601,7 +595,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         if (transactionsLayout == null || !(transactionsLayout.getParent() instanceof View))
             return false;
         int bottom = ((View) transactionsLayout.getParent()).getBottom();
-        return listView.getHeight() - bottom >= 0;
+        return listView.getHeight() - listView.getPaddingBottom() - bottom >= 0;
     }
 
     @Override
@@ -737,9 +731,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         }
 
         if (hadTransactions = c.hasTransactions()) {
-            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(12)));
+            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(24) + AndroidUtilities.navigationBarHeight));
         } else {
-            items.add(UItem.asCustom(emptyLayout));
+            items.add(UItem.asCustomShadow(emptyLayout));
         }
     }
 

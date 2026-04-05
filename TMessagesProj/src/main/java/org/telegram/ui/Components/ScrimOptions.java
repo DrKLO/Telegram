@@ -14,7 +14,6 @@ import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.CornerPathEffect;
-import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -26,7 +25,6 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -39,21 +37,28 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.ui.Components.blur3.utils.Blur3Utils;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 
 import java.util.ArrayList;
 
@@ -62,11 +67,13 @@ public class ScrimOptions extends Dialog {
     public final Theme.ResourcesProvider resourcesProvider;
     public final int currentAccount = UserConfig.selectedAccount;
 
-    private final android.graphics.Rect insets = new Rect();
     private Bitmap blurBitmap;
     private BitmapShader blurBitmapShader;
     private Paint blurBitmapPaint;
     private Matrix blurMatrix;
+
+    private final BlurredBackgroundSourceBitmap iBlur3SourceBitmap;
+    private final BlurredBackgroundDrawableViewFactory iBlur3Factory;
 
     private float openProgress;
 
@@ -131,6 +138,12 @@ public class ScrimOptions extends Dialog {
                 super.onLayout(changed, left, top, right, bottom);
                 ScrimOptions.this.layout();
             }
+
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+                checkBitmapMatrix();
+            }
         };
         windowView.setOnClickListener(v -> onBackPressed());
 
@@ -138,32 +151,26 @@ public class ScrimOptions extends Dialog {
         containerView.setClipToPadding(false);
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            windowView.setFitsSystemWindows(true);
-            windowView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @NonNull
-                @Override
-                public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
-                        ScrimOptions.this.insets.set(r.left, r.top, r.right, r.bottom);
-                    } else {
-                        ScrimOptions.this.insets.set(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-                    }
-                    containerView.setPadding(ScrimOptions.this.insets.left, ScrimOptions.this.insets.top, ScrimOptions.this.insets.right, ScrimOptions.this.insets.bottom);
-                    windowView.requestLayout();
-                    if (Build.VERSION.SDK_INT >= 30) {
-                        return WindowInsets.CONSUMED;
-                    } else {
-                        return insets.consumeSystemWindowInsets();
-                    }
-                }
-            });
-        }
+        iBlur3SourceBitmap = new BlurredBackgroundSourceBitmap();
+        iBlur3Factory = new BlurredBackgroundDrawableViewFactory(iBlur3SourceBitmap);
+        iBlur3Factory.setSourceRootView(new ViewPositionWatcher(windowView), windowView);
+
+        ViewCompat.setOnApplyWindowInsetsListener(windowView, new OnApplyWindowInsetsListener() {
+            @Override
+            public @NonNull WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+                final Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                containerView.setPadding(r.left, r.top, r.right, r.bottom);
+                windowView.requestLayout();
+
+                return WindowInsetsCompat.CONSUMED;
+            }
+        });
     }
 
     public void setItemOptions(ItemOptions options) {
-        this.options = options;
+        this.options = options
+            .setGapBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f))
+            .setBlurBackground(iBlur3Factory, BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider), false);
         optionsView = options.getLayout();
         optionsContainer = new FrameLayout(context);
         optionsContainer.addView(optionsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -283,16 +290,15 @@ public class ScrimOptions extends Dialog {
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
-        params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        if (Build.VERSION.SDK_INT >= 21) {
-            params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                    WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION |
-                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS;
-        }
-        params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-        params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
+            | WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+            | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION
+            | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+            | WindowManager.LayoutParams.FLAG_FULLSCREEN
+            | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+
         if (Build.VERSION.SDK_INT >= 28) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
@@ -306,20 +312,46 @@ public class ScrimOptions extends Dialog {
         if (withoutView != null) {
             withoutView.setVisibility(View.INVISIBLE);
         }
-        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+
+        makeGlobalBlurBitmaps((bitmapBg, bitmapOptions) -> {
             if (withoutView != null) {
                 withoutView.setVisibility(View.VISIBLE);
             }
-            blurBitmap = bitmap;
+            blurBitmap = bitmapBg;
 
             blurBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             blurBitmapPaint.setShader(blurBitmapShader = new BitmapShader(blurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-            ColorMatrix colorMatrix = new ColorMatrix();
-            AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? .08f : +.25f);
-            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? -.02f : -.07f);
-            blurBitmapPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             blurMatrix = new Matrix();
-        }, 14);
+
+            iBlur3SourceBitmap.setBitmap(bitmapOptions);
+            checkBitmapMatrix();
+        });
+    }
+
+    public static void makeGlobalBlurBitmaps(Utilities.Callback2<Bitmap, Bitmap> bitmaps) {
+        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+            final ColorMatrix colorMatrixBg = new ColorMatrix();
+            AndroidUtilities.adjustSaturationColorMatrix(colorMatrixBg, Theme.isCurrentThemeDark() ? .04f : +.25f);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrixBg, Theme.isCurrentThemeDark() ? -.04f : -.07f);
+            final Bitmap bitmapBg = AndroidUtilities.applyColorMatrix(bitmap, colorMatrixBg);
+            bitmapBg.setHasAlpha(false);
+
+            final ColorMatrix colorMatrixOptions = new ColorMatrix();
+            colorMatrixOptions.setSaturation(Theme.isCurrentThemeDark() ? 2 : 3);
+            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrixOptions, Theme.isCurrentThemeDark() ? -.2f : -.07f);
+            final Bitmap bitmapOptions = AndroidUtilities.applyColorMatrix(bitmap, colorMatrixOptions);
+            bitmapOptions.setHasAlpha(false);
+
+            bitmap.recycle();
+            bitmaps.run(bitmapBg, bitmapOptions);
+        }, 15);
+    }
+
+    private void checkBitmapMatrix() {
+        Blur3Utils.checkBitmapSourceMatrixScale(iBlur3SourceBitmap, windowView);
+        if (optionsView != null) {
+            optionsView.invalidate();
+        }
     }
 
     public void layout() {
@@ -582,6 +614,7 @@ public class ScrimOptions extends Dialog {
                 if (cell != null && cell.drawBackgroundInParent()) {
                     if (cell.currentBackgroundDrawable != null && cell.currentBackgroundDrawable.getPaint() != null) {
                         canvas.save();
+                        cell.setBackgroundTopY(true);
                         canvas.translate(0, -cell.currentBackgroundDrawable.getTopY());
                         canvas.drawPaint(cell.currentBackgroundDrawable.getPaint());
                         canvas.restore();

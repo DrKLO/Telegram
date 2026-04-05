@@ -216,6 +216,10 @@ public abstract class ViewPagerActivity extends BaseFragment {
         for (int a = 0, N = fragmentsArr.size(); a < N; a++) {
             final FragmentState state = fragmentsArr.valueAt(a);
             if (state != null) {
+                if (state.isResumed) {
+                    state.fragment.onPause();
+                    state.isResumed = false;
+                }
                 state.fragment.clearViews();
             }
         }
@@ -394,7 +398,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
             final boolean isOpen = newVisibility > oldVisibility;
             final boolean backward = false; // todo: support backward
 
-            if (!isResumed && visibilityByViewPage > 0) {
+            if (!isResumed && visibilityByViewPage > 0 && parentIsResumed && fragment.fragmentView != null) {
                 fragment.onResume();
                 isResumed = true;
             }

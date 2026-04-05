@@ -117,7 +117,7 @@ public class WindowAnimatedInsetsProvider extends WindowInsetsAnimationCompat.Ca
 
     @Nullable
     public static WindowInsetsCompat calculateWindowInsets(WindowInsetsCompat rootInsets, View view, View rootView) {
-        if (view == null || rootView == null || !ViewPositionWatcher.computeRectInParent(view, rootView, tmpRectF)) {
+        if (view == null || rootView == null || rootInsets == null || !ViewPositionWatcher.computeRectInParent(view, rootView, tmpRectF)) {
             return null;
         }
         tmpRectF.round(tmpRect);

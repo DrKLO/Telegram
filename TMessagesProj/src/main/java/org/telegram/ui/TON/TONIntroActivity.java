@@ -198,7 +198,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
             }
         };
-        emptyLayout.setBackgroundColor(Theme.getColor(allowTopUp ? Theme.key_dialogBackgroundGray : Theme.key_dialogBackground));
 
         super.createView(context);
 
@@ -625,9 +624,9 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
         if (hadTransactions = c.hasTransactions()) {
             if (!allowTopUp) items.add(UItem.asShadow(null));
-            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(12)));
+            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(24) + AndroidUtilities.navigationBarHeight));
         } else {
-            items.add(UItem.asCustom(emptyLayout));
+            items.add(UItem.asCustomShadow(emptyLayout));
         }
     }
 

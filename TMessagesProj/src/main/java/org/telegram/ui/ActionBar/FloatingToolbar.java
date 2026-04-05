@@ -52,7 +52,6 @@ import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.View.OnLayoutChangeListener;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.AnimationUtils;
@@ -82,6 +81,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.GradientProtectionDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -141,9 +142,16 @@ public final class FloatingToolbar {
     
     private final Theme.ResourcesProvider resourcesProvider;
 
+    BlurredBackgroundDrawableViewFactory blurredBackgroundDrawableViewFactory;
+
     public FloatingToolbar(Context context, View windowView, int style, Theme.ResourcesProvider resourcesProvider) {
+        this(context, windowView, style, resourcesProvider, null);
+    }
+
+    public FloatingToolbar(Context context, View windowView, int style, Theme.ResourcesProvider resourcesProvider, BlurredBackgroundDrawableViewFactory factory) {
         mWindowView = windowView;
         currentStyle = style;
+        blurredBackgroundDrawableViewFactory = factory;
         this.resourcesProvider = resourcesProvider;
         mPopup = new FloatingToolbarPopup(context, windowView);
     }
@@ -1235,13 +1243,6 @@ public final class FloatingToolbar {
                 super(popup.mContext);
                 this.mPopup = popup;
                 setVerticalScrollBarEnabled(false);
-                setOutlineProvider(new ViewOutlineProvider() {
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() + dp(6), dp(6));
-                    }
-                });
-                setClipToOutline(true);
             }
 
             @Override
@@ -1451,18 +1452,27 @@ public final class FloatingToolbar {
         contentContainer.setElevation(dp(1));
         contentContainer.setFocusable(true);
         contentContainer.setFocusableInTouchMode(true);
-        GradientDrawable shape = new GradientDrawable();
-        shape.setShape(GradientDrawable.RECTANGLE);
-        int r = dp(12);
-        shape.setCornerRadii(new float[] { r, r, r, r, r, r, r, r });
-        if (currentStyle == STYLE_DIALOG) {
-            shape.setColor(getThemedColor(Theme.key_dialogBackground));
-        } else if (currentStyle == STYLE_BLACK) {
-            shape.setColor(0xf9222222);
-        } else if (currentStyle == STYLE_THEME) {
-            shape.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+
+        if (blurredBackgroundDrawableViewFactory != null) {
+            contentContainer.setBackground(blurredBackgroundDrawableViewFactory
+                .create(contentContainer, true)
+                .setColorProvider(BlurredBackgroundProviderImpl.photoViewerMenu(resourcesProvider))
+                .setRadius(dp(12)));
+        } else {
+            GradientDrawable shape = new GradientDrawable();
+            shape.setShape(GradientDrawable.RECTANGLE);
+            int r = dp(12);
+            shape.setCornerRadii(new float[] { r, r, r, r, r, r, r, r });
+            if (currentStyle == STYLE_DIALOG) {
+                shape.setColor(getThemedColor(Theme.key_dialogBackground));
+            } else if (currentStyle == STYLE_BLACK) {
+                shape.setColor(0xf9222222);
+            } else if (currentStyle == STYLE_THEME) {
+                shape.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
+            contentContainer.setBackground(shape);
         }
-        contentContainer.setBackground(shape);
+
         contentContainer.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         contentContainer.setClipToOutline(true);
         return contentContainer;
