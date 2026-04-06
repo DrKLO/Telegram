@@ -918,6 +918,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
     }
 
     public boolean isFullSize() {
+        if (requestProps != null && requestProps.compact) {
+            return false;
+        }
         return fullsize == null ? defaultFullsize : fullsize;
     }
 
