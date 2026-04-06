@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -677,6 +678,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 } else {
                     shadowDrawable.setBounds(-AndroidUtilities.dp(6), top, parent.getMeasuredWidth() + AndroidUtilities.dp(6), parent.getMeasuredHeight());
                 }
+                checkBackDrawableInsets();
                 shadowDrawable.draw(canvas);
 
                 if (showHandle && handleAlpha > 0) {
@@ -694,11 +696,25 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
         }
     }
 
+    private void checkBackDrawableInsets() {
+        if (backDrawable == null || containerView == null || shadowDrawable == null || !shouldDrawBackground() || hasFixedSize) {
+            return;
+        }
+
+        final Rect sBounds = shadowDrawable.getBounds();
+        if (containerView.getMeasuredWidth() >= container.getMeasuredWidth()) {
+            backDrawable.setBackgroundInsets(0, 0, 0, containerView.getMeasuredHeight() - sBounds.top - dp(30) - (int) containerView.getTranslationY());
+        } else {
+            backDrawable.setBackgroundInsets(0, 0, 0, 0);
+        }
+    }
+
     protected void onActionBarAlpha(float alpha) {}
 
     @Override
     protected void onContainerViewTranslation() {
         onSheetTop(lastTop);
+        checkBackDrawableInsets();
     }
 
     private float lastTop;

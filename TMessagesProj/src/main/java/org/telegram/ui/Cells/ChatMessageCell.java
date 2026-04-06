@@ -857,6 +857,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         }
 
+        default boolean allowAddPollOptions() {
+            return false;
+        }
+
         default int getAddPollOptionInputFieldHeight(ChatMessageCell cell) {
             return 0;
         }
@@ -11546,8 +11550,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 pollCheckBox[a].checkScale = 0.85f;
             }
 
-            final boolean canAddPollAnswers = media.poll.open_answers
-                && !pollClosed && !messageObject.scheduled
+            final boolean canAddPollAnswers = delegate != null && delegate.allowAddPollOptions()
+                && media.poll.open_answers && !pollClosed && !messageObject.scheduled && !messageObject.isForwarded()
                 && (media.poll.answers.size() < MessagesController.getInstance(currentAccount).config.pollAnswersMax.get());
 
             if (canAddPollAnswers) {

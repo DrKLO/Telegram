@@ -337,6 +337,8 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         headerPlay.setImageResource(R.drawable.filled_gift_pause_24);
         headerPlay.setScaleType(ImageView.ScaleType.CENTER);
         headerPlay.setOnClickListener(v -> {
+            // AndroidUtilities.dumpCanvas(container);
+
             if (mode == Mode.SELECTED) {
                 topView.setPreviewingAttributes(attributes);
                 setMode(Mode.RANDOM);
@@ -499,7 +501,14 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
         if (gradientVisible != newGradientVisible) {
             gradientVisible = newGradientVisible;
-            gradientTop.animate().alpha(newGradientVisible ? 1 : 0).setDuration(200).start();
+            if (newGradientVisible) {
+                gradientTop.setVisibility(View.VISIBLE);
+            }
+            gradientTop.animate().alpha(newGradientVisible ? 1 : 0).setDuration(200).withEndAction(() -> {
+                if (!newGradientVisible) {
+                    gradientTop.setVisibility(View.GONE);
+                }
+            }).start();
         }
 
         headerMoveTop = top <= 0 ? 0 : dp(6);
@@ -538,9 +547,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
         int tab = tabsSelectorView.getSelectedTab();
         if (tab == TAB_MODELS) {
-            if (crafting) {
-                items.add(UItem.asCenterShadow(replaceTags(LocaleController.formatPluralStringComma(crafting ? "GiftPreviewCountModelsCrafting" : "GiftPreviewCountModels", models.size()))));
-            }
+            items.add(UItem.asCenterShadow(replaceTags(LocaleController.formatPluralStringComma(crafting ? "GiftPreviewCountModelsCrafting" : "GiftPreviewCountModels", models.size()))));
             for (TL_stars.starGiftAttributeModel model : models) {
                 items.add(GiftAttributeCell.Factory.asAttribute(tab, new Attributes(
                     rBackdrops.next(), rPatterns.next(), model)));

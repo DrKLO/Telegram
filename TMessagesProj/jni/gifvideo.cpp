@@ -392,8 +392,12 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
         info->fmt_ctx->pb = avio;
 
         if ((ret = avformat_open_input(&info->fmt_ctx, nullptr, nullptr, nullptr)) < 0) {
-            LOGE("can't open source file at offset %s, %s", info->src, av_err2str(ret));
-            av_free(ioBuf);
+            LOGE("can't open source file at offset %s (offset=%lld), %s", info->src, fileOffset, av_err2str(ret));
+            info->fmt_ctx = nullptr;
+            if (avio) {
+                av_freep(&avio->buffer);
+                avio_context_free(&avio);
+            }
             close(fd);
             delete ioCtx;
             delete info;

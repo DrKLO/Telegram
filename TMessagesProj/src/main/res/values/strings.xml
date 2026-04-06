@@ -10628,6 +10628,7 @@
     <string name="ProfileBotManagedBy">Created and managed by **@%s**</string>
     <string name="ManagedBotChatInfo">**%1$s** is ready!\n\nTap **Start** below to test your new chatbot. Its behavior is defined by **%2$s**.</string>
     <string name="CreateManagedBotLimitTitle">Bot Limit Exceeded</string>
+    <string name="CreateManagedBotLimitTextTime">You can create another bot in %s.</string>
     <string name="CreateManagedBotLimitTextPremium">Subscribe to **Premium** to create up to %1$d bots, or delete one of your %2$d bots via @BotFather</string>
     <string name="CreateManagedBotLimitText">You can create up to %d bots, or delete your current ones via @BotFather</string>
     <string name="UnverifiedApp">Unverified App</string>

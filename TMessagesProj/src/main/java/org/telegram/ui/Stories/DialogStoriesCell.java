@@ -1781,7 +1781,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     }
                     textAlpha = params.globalState == StoriesUtilities.STATE_READ ? 0.7f : 1f;//AndroidUtilities.lerp(1f, 0.7f, p);
                 }
-                textViewContainer.setAlpha(textAlphaTransition * textAlpha);
+                final float alpha = textAlphaTransition * textAlpha;
+                textViewContainer.setAlpha(alpha);
+                textViewContainer.setVisibility(alpha > 0 ? View.VISIBLE : View.INVISIBLE);
             }
             super.dispatchDraw(canvas);
         }
@@ -1926,7 +1928,9 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 recyclerListView.invalidate();
             }
             textAlphaTransition = mini ? 0 : 1f - Utilities.clamp(collapsedProgress / K, 1f, 0);
-            textViewContainer.setAlpha(textAlphaTransition * textAlpha);
+            final float alpha = textAlphaTransition * textAlpha;
+            textViewContainer.setAlpha(alpha);
+            textViewContainer.setVisibility(alpha > 0 ? View.VISIBLE : View.INVISIBLE);
         }
 
         public void setCrossfadeTo(long dialogId) {

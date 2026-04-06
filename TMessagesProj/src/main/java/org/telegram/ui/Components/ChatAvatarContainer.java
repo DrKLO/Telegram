@@ -324,6 +324,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             starBgItem.setImageResource(R.drawable.star_small_outline);
             starBgItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefault), PorterDuff.Mode.SRC_IN));
             starBgItem.setAlpha(0.0f);
+            starBgItem.setVisibility(View.INVISIBLE);
             starBgItem.setScaleY(0.0f);
             starBgItem.setScaleX(0.0f);
             addView(starBgItem);
@@ -331,6 +332,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             starFgItem = new ImageView(context);
             starFgItem.setImageResource(R.drawable.star_small_inner);
             starFgItem.setAlpha(0.0f);
+            starFgItem.setVisibility(View.INVISIBLE);
             starFgItem.setScaleY(0.0f);
             starFgItem.setScaleX(0.0f);
             addView(starFgItem);
@@ -834,15 +836,29 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (starBgItem == null || starFgItem == null) return;
         this.stars = stars;
         if (!animated) {
+            starBgItem.setVisibility(stars ? VISIBLE : INVISIBLE);
             starBgItem.setAlpha(stars ? 1f : 0f);
             starBgItem.setScaleX(stars ? 1.1f : 0f);
             starBgItem.setScaleY(stars ? 1.1f : 0f);
+            starFgItem.setVisibility(stars ? VISIBLE : INVISIBLE);
             starFgItem.setAlpha(stars ? 1f : 0f);
             starFgItem.setScaleX(stars ? 1f : 0f);
             starFgItem.setScaleY(stars ? 1f : 0f);
         } else {
-            starBgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1.1f : 0f).scaleY(stars ? 1.1f : 0f).start();
-            starFgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1f : 0f).scaleY(stars ? 1f : 0f).start();
+            if (stars) {
+                starBgItem.setVisibility(VISIBLE);
+                starFgItem.setVisibility(VISIBLE);
+            }
+            starBgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1.1f : 0f).scaleY(stars ? 1.1f : 0f).withEndAction(() -> {
+                if (!stars) {
+                    starBgItem.setVisibility(INVISIBLE);
+                }
+            }).start();
+            starFgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1f : 0f).scaleY(stars ? 1f : 0f).withEndAction(() -> {
+                if (!stars) {
+                    starFgItem.setVisibility(INVISIBLE);
+                }
+            }).start();
         }
     }
 

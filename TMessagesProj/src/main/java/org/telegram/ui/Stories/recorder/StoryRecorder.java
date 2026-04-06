@@ -4791,7 +4791,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 animateGalleryListView(false);
                 if (entry instanceof MediaController.PhotoEntry) {
                     MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
-                    mode = photoEntry.isVideo ? MODE_VIDEO : MODE_PHOTO;
+                    mode = photoEntry.isVideo && !photoEntry.isLivePhoto ? MODE_VIDEO : MODE_PHOTO;
                     storyEntry = StoryEntry.fromPhotoEntry(photoEntry);
                     storyEntry.blurredVideoThumb = blurredBitmap;
                     storyEntry.botId = botId;

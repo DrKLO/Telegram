@@ -913,7 +913,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView {
                     int maximumChildWidth = 0;
                     for (int i = 0; i < getChildCount(); i++) {
                         final View child = getChildAt(i);
-                        child.setPadding(0, 0, 0, 0);
+                        child.setPadding(dp(8), 0, dp(8), 0);
                         child.measure(
                              horiz ? MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED) : widthMeasureSpec,
                             !horiz ? MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED) : heightMeasureSpec
@@ -926,7 +926,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView {
                     for (int i = 0; i < getChildCount(); i++) {
                         final View child = getChildAt(i);
                         final LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) child.getLayoutParams();
-                        child.setPadding(dp(!useWeight ? 8 : 0), 0, dp(!useWeight ? 8 : 0), 0);
+                        child.setPadding(dp(8), 0, dp(8), 0);
                         if (useWeight) {
                             if (horiz) lp.width = 0; else lp.height = 0;
                             lp.weight = 1f;

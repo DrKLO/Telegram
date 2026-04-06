@@ -5882,7 +5882,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                         video = item;
                                     }
                                 }
-                                if (photo != null && video != null) {
+                                if (photo != null && video != null && video.length > 0) {
                                     try {
                                         final File wholeFile = new File(path);
                                         final long videoStart = wholeFile.length() - video.length;

@@ -6203,6 +6203,7 @@ public class MessageObject {
         if (isSponsored()) {
             type = TYPE_TEXT;
         } else if (channelJoined) {
+            contentType = 0;
             type = TYPE_JOINED_CHANNEL;
             channelJoinedExpanded = MessagesController.getInstance(currentAccount).getMainSettings().getBoolean("c" + getDialogId() + "_rec", true);
         } else if (messageOwner instanceof TLRPC.TL_message || messageOwner instanceof TLRPC.TL_messageForwarded_old2) {

@@ -590,10 +590,12 @@ public class ReplyMessageLine {
             canvas.drawPath(color2Path, color2Paint);
             color2Paint.setAlpha(wasAlpha);
 
-            wasAlpha = color3Paint.getAlpha();
-            color3Paint.setAlpha((int) (wasAlpha * color3Alpha));
-            canvas.drawPath(color3Path, color3Paint);
-            color3Paint.setAlpha(wasAlpha);
+            if (color3Alpha > 0) {
+                wasAlpha = color3Paint.getAlpha();
+                color3Paint.setAlpha((int) (wasAlpha * color3Alpha));
+                canvas.drawPath(color3Path, color3Paint);
+                color3Paint.setAlpha(wasAlpha);
+            }
 
             canvas.restore();
         }

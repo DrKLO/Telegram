@@ -14,15 +14,20 @@ import java.nio.ByteOrder;
 import androidx.core.math.MathUtils;
 
 public class NinePatchBuilder {
+    public static final int TRANSPARENT_COLOR = 0x00000000;
+    public static final int NO_COLOR = 0x00000001;
+
     private NinePatchBuilder() {}
 
     public static NinePatchDrawable createNinePatch(
+        Bitmap[] bitmapRef,
         int fillColor,
         float[] radii,              // 8 values: TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy
         float shadowRadiusPx,
         int shadowColor,
         float shadowDxPx,
-        float shadowDyPx
+        float shadowDyPx,
+        int centralColorHint
     ) {
         if (radii == null || radii.length != 8) {
             throw new IllegalArgumentException("radii must have 8 values: TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy");
@@ -58,7 +63,23 @@ public class NinePatchBuilder {
         final int bitmapW = contentW + padLeft + padRight;
         final int bitmapH = contentH + padTop + padBottom;
 
-        final Bitmap bitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
+        final boolean hasBitmapRef = bitmapRef != null && bitmapRef.length == 1;
+
+        Bitmap bitmap = null;
+        if (hasBitmapRef && bitmapRef[0] != null) {
+            final Bitmap b = bitmapRef[0];
+            if (!b.isRecycled() && b.isMutable() && b.getWidth() == bitmapW && b.getHeight() == bitmapH && b.getConfig() == Bitmap.Config.ARGB_8888) {
+                b.eraseColor(0);
+                bitmap = b;
+            }
+        }
+        if (bitmap == null) {
+            bitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
+        }
+        if (hasBitmapRef) {
+            bitmapRef[0] = bitmap;
+        }
+
         final Canvas canvas = new Canvas(bitmap);
 
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -113,7 +134,8 @@ public class NinePatchBuilder {
         final byte[] chunk = createNinePatchChunk(
             x1, x2,
             y1, y2,
-            padLeft, padTop, padRight, padBottom
+            padLeft, padTop, padRight, padBottom,
+            centralColorHint
         ).array();
 
         final Rect padding = new Rect(padLeft, padTop, padRight, padBottom);
@@ -127,7 +149,9 @@ public class NinePatchBuilder {
     public static ByteBuffer createNinePatchChunk(
             int x1, int x2,
             int y1, int y2,
-            int padLeft, int padTop, int padRight, int padBottom
+            int padLeft, int padTop,
+            int padRight, int padBottom,
+            int centralColorHint
     ) {
         final byte xDivsCount = 2;
         final byte yDivsCount = 2;
@@ -162,10 +186,16 @@ public class NinePatchBuilder {
         buffer.putInt(y1);
         buffer.putInt(y2);
 
-        // colors: fill with NO_COLOR (1)
-        for (int i = 0; i < colorsCount; i++) {
-            buffer.putInt(0x00000001);
-        }
+        // color hint
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
+        buffer.putInt(centralColorHint);
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
+        buffer.putInt(0x00000001);
 
         return buffer;
     }

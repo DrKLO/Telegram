@@ -540,7 +540,7 @@ public class PollItemMenu extends Dialog {
             }
 
 
-            if (chatActivity != null) {
+            if (chatActivity != null && chatActivity.canSendMessage()) {
                 taskOptions.add(R.drawable.menu_reply, getString(R.string.PollItemQuote), () -> {
                     chatActivity.showFieldPanelForReplyQuote(messageObject, ChatActivity.ReplyQuote.fromPollOption(messageObject, task.option));
                     dismiss(false);
@@ -566,7 +566,7 @@ public class PollItemMenu extends Dialog {
                 final long currentTime = ConnectionsManager.getInstance(messageObject.currentAccount).getCurrentTime();
                 final long deadlineTime = task.date + MessagesController.getInstance(messageObject.currentAccount).config.pollAnswerDeletePeriod.get(TimeUnit.SECONDS);
 
-                if (media.poll.creator || dialogId == selfId && currentTime < deadlineTime) {
+                if (!messageObject.isForwarded() && (media.poll.creator || dialogId == selfId && currentTime < deadlineTime)) {
                     taskOptions.add(R.drawable.msg_delete, getString(R.string.Delete), true, () -> {
                         SendMessagesHelper.getInstance(messageObject.currentAccount).deletePollOption(messageObject, taskId);
                         dismiss(true);

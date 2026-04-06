@@ -1775,7 +1775,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 } else if (child == recyclerListView) {
                     child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height - bottomInset, MeasureSpec.EXACTLY));
                 } else {
-                    child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(9999, MeasureSpec.AT_MOST));
+                    final int allowedHeight = child.getLayoutParams() != null && child.getLayoutParams().height == LayoutHelper.MATCH_PARENT ?
+                        height : 9999;  // why 9999?
+
+                    child.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(allowedHeight, MeasureSpec.AT_MOST));
                 }
             }
             setMeasuredDimension(width, height);
@@ -2051,7 +2054,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             imageLayout = new FrameLayout(context);
             for (int i = 0; i < imageView.length; ++i) {
-                imageView[i] = new BackupImageView(context);
+                imageView[i] = new BackupImageView(context) {
+                    @Override
+                    public void setAlpha(float alpha) {
+                        super.setAlpha(alpha);
+                        setVisibility(alpha > 0 ? VISIBLE : INVISIBLE);
+                    }
+                };
                 imageView[i].setLayerNum(4 | 6656);
                 if (i > 0) {
                     imageView[i].getImageReceiver().setCrossfadeDuration(1);
@@ -2287,7 +2296,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         public void onSwitchPage(PageTransition p) {
             currentPage = p;
             for (int i = 0; i < layout.length; ++i) {
-                layout[i].setAlpha(p.at(i));
+                final  float alpha = p.at(i);
+                layout[i].setAlpha(alpha);
+                layout[i].setVisibility(alpha > 0 ? VISIBLE : INVISIBLE);
             }
             closeView.setAlpha(Math.max(backdrop[0] != null ? p.at(PAGE_WEAR) : 0.0f, backdrop[1] != null ? p.at(PAGE_UPGRADE) : 0.0f));
             closeView.setVisibility(backdrop[0] != null && p.to == PAGE_WEAR || backdrop[1] != null && p.to == PAGE_UPGRADE ? View.VISIBLE : View.GONE);
