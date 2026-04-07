@@ -2953,7 +2953,16 @@ public class AndroidUtilities {
     }
 
     public static boolean isTabletForce() {
-        return ApplicationLoader.applicationContext != null && ApplicationLoader.applicationContext.getResources().getBoolean(R.bool.isTablet);
+        if (displaySize.x > 0 && displaySize.y > 0 && density > 0) {
+            float smallestWidthDp = Math.min(displaySize.x, displaySize.y) / density;
+            return smallestWidthDp >= 600;
+        }
+        if (ApplicationLoader.applicationContext == null) {
+            return false;
+        }
+        DisplayMetrics displayMetrics = ApplicationLoader.applicationContext.getResources().getDisplayMetrics();
+        float smallestWidthDp = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels) / displayMetrics.density;
+        return smallestWidthDp >= 600;
     }
 
     public static boolean isTabletInternal() {

@@ -274,6 +274,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private final static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
     private final static ArrayList<BaseFragment> rightFragmentsStack = new ArrayList<>();
     private ViewTreeObserver.OnGlobalLayoutListener onGlobalLayoutListener;
+    private View.OnLayoutChangeListener windowBoundsLayoutListener;
     private ArrayList<Parcelable> importingStickers;
     private ArrayList<String> importingStickersEmoji;
     private String importingStickersSoftware;
@@ -330,6 +331,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private boolean passcodeSaveIntentIsRestore;
 
     private boolean tabletFullSize;
+    // Give foldable window/config changes one short settle pass before rechecking layout.
+    private static final int FOLDABLE_RECHECK_DELAY = 300;
+    private final Runnable deferredFoldableLayoutCheck = () -> reconcileNavigationForCurrentWindowState(true);
 
     private String loadingThemeFileName;
     private String loadingThemeWallpaperName;
@@ -631,6 +635,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         checkLayout();
         checkSystemBarColors();
         handleIntent(getIntent(), false, savedInstanceState != null, false, null, true, true);
+        View rootView = getWindow().getDecorView().getRootView();
+        rootView.addOnLayoutChangeListener(windowBoundsLayoutListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+                onWindowBoundsMayHaveChanged(right - left, bottom - top, oldRight - oldLeft, oldBottom - oldTop));
         try {
             String os1 = Build.DISPLAY;
             String os2 = Build.USER;
@@ -1298,6 +1305,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
             tabletFullSize = false;
+            if (actionBarLayout.getFragmentStack().isEmpty()) {
+                if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
+                    actionBarLayout.addFragmentToStack(getClientNotActivatedFragment(), INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+                } else {
+                    // Notification/floating-window opens can hand us a ChatActivity-only stack.
+                    // Split tablet mode needs a stable root fragment on the left pane.
+                    actionBarLayout.addFragmentToStack(new MainTabsActivity(), INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+                }
+            }
             List<BaseFragment> fragmentStack = actionBarLayout.getFragmentStack();
             if (fragmentStack.size() >= 2) {
                 for (int a = 1; a < fragmentStack.size(); a++) {
@@ -1307,7 +1323,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();
-                    chatFragment.setParentLayout(null);
+                    chatFragment.resetFragment();
                     fragmentStack.remove(chatFragment);
                     rightActionBarLayout.addFragmentToStack(chatFragment);
                     a--;
@@ -1331,7 +1347,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();
-                    chatFragment.setParentLayout(null);
+                    chatFragment.resetFragment();
                     fragmentStack.remove(chatFragment);
                     actionBarLayout.addFragmentToStack(chatFragment);
                     a--;
@@ -1343,6 +1359,42 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             shadowTabletSide.setVisibility(View.GONE);
             rightActionBarLayout.getView().setVisibility(View.GONE);
             backgroundTablet.setVisibility(!actionBarLayout.getFragmentStack().isEmpty() ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private void onWindowBoundsMayHaveChanged(int width, int height, int oldWidth, int oldHeight) {
+        if (width <= 0 || height <= 0 || oldWidth <= 0 || oldHeight <= 0) {
+            return;
+        }
+        if (width == oldWidth || Math.abs(width - oldWidth) < AndroidUtilities.dp(120)) {
+            return;
+        }
+        AndroidUtilities.cancelRunOnUIThread(deferredFoldableLayoutCheck);
+        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, FOLDABLE_RECHECK_DELAY);
+    }
+
+    private void syncCurrentMultiwindowState() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            AndroidUtilities.isInMultiwindow = isInMultiWindowMode();
+        }
+    }
+
+    private void reconcileNavigationForCurrentWindowState(boolean refreshDisplaySize) {
+        if (refreshDisplaySize) {
+            AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
+        }
+        syncCurrentMultiwindowState();
+        AndroidUtilities.resetTabletFlag();
+        invalidateTabletMode();
+        checkLayout();
+        actionBarLayout.resetNavigationStateIfNeeded();
+        if (AndroidUtilities.isTablet()) {
+            if (rightActionBarLayout != null) {
+                rightActionBarLayout.resetNavigationStateIfNeeded();
+            }
+            if (layersActionBarLayout != null) {
+                layersActionBarLayout.resetNavigationStateIfNeeded();
+            }
         }
     }
 
@@ -6752,9 +6804,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 final View view = getWindow().getDecorView().getRootView();
                 view.getViewTreeObserver().removeOnGlobalLayoutListener(onGlobalLayoutListener);
             }
+            if (windowBoundsLayoutListener != null) {
+                final View view = getWindow().getDecorView().getRootView();
+                view.removeOnLayoutChangeListener(windowBoundsLayoutListener);
+                windowBoundsLayoutListener = null;
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
+        AndroidUtilities.cancelRunOnUIThread(deferredFoldableLayoutCheck);
         if (Build.VERSION.SDK_INT >= 34) {
             if (onBackAnimationCallback instanceof OnBackAnimationCallback) {
                 getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((OnBackAnimationCallback) onBackAnimationCallback);
@@ -6795,6 +6853,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         super.onResume();
         isResumed = true;
         pipActivityHandler.onResume();
+        reconcileNavigationForCurrentWindowState(true);
         if (onResumeStaticCallback != null) {
             onResumeStaticCallback.run();
             onResumeStaticCallback = null;
@@ -6868,7 +6927,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (VoIPFragment.getInstance() != null) {
             VoIPFragment.onResume();
         }
-        invalidateTabletMode();
         SpoilerEffect2.pause(false);
 
         if (ApplicationLoader.applicationLoaderInstance != null) {
@@ -6922,6 +6980,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         layerFragmentsStack.add(fragment);
                     }
                 }
+                if (mainFragmentsStack.isEmpty()) {
+                    if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
+                        mainFragmentsStack.add(getClientNotActivatedFragment());
+                    } else {
+                        MainTabsActivity mainTabsActivity = new MainTabsActivity();
+                        mainTabsActivity.prepareDialogsActivity(null);
+                        mainFragmentsStack.add(mainTabsActivity);
+                    }
+                }
             }
 
             setupActionBarLayout();
@@ -6949,7 +7016,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         super.onConfigurationChanged(newConfig);
         pipActivityHandler.onConfigurationChanged(newConfig);
-        checkLayout();
+        reconcileNavigationForCurrentWindowState(false);
+        AndroidUtilities.cancelRunOnUIThread(deferredFoldableLayoutCheck);
+        AndroidUtilities.runOnUIThread(deferredFoldableLayoutCheck, FOLDABLE_RECHECK_DELAY);
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.onConfigurationChanged();
@@ -6977,9 +7046,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
-        AndroidUtilities.isInMultiwindow = isInMultiWindowMode;
-        checkLayout();
         super.onMultiWindowModeChanged(isInMultiWindowMode);
+        reconcileNavigationForCurrentWindowState(true);
     }
 
     @Override
@@ -8080,18 +8148,22 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         if (AndroidUtilities.isTablet()) {
             if (layersActionBarLayout != null && layersActionBarLayout.getView().getVisibility() == View.VISIBLE) {
+                layersActionBarLayout.resetNavigationStateIfNeeded();
                 layersActionBarLayout.onBackPressed();
             } else {
-                if (rightActionBarLayout != null && rightActionBarLayout.getView().getVisibility() == View.VISIBLE && !rightActionBarLayout.getFragmentStack().isEmpty()) {
-                    BaseFragment lastFragment = rightActionBarLayout.getFragmentStack().get(rightActionBarLayout.getFragmentStack().size() - 1);
-                    if (lastFragment.onBackPressed(true)) {
-                        lastFragment.finishFragment();
-                    }
+                if (!tabletFullSize && rightActionBarLayout != null && rightActionBarLayout.getView().getVisibility() == View.VISIBLE && !rightActionBarLayout.getFragmentStack().isEmpty()) {
+                    rightActionBarLayout.resetNavigationStateIfNeeded();
+                    rightActionBarLayout.onBackPressed();
+                } else if (actionBarLayout.getFragmentStack().isEmpty()) {
+                    onFinish();
+                    finish();
                 } else {
+                    actionBarLayout.resetNavigationStateIfNeeded();
                     actionBarLayout.onBackPressed();
                 }
             }
         } else {
+            actionBarLayout.resetNavigationStateIfNeeded();
             actionBarLayout.onBackPressed();
         }
     }
