@@ -60,16 +60,17 @@ public class FlagSecureReason {
     }
 
     private static void updateWindowSecure(Window window) {
+        if (ConfigManager.getBooleanOrFalse(Defines.allowScreenshotOnNoForwardChat)) {
+            return;
+        }
         if (window == null) {
             return;
         }
 
         if (isSecuredNow(window)) {
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            AndroidUtilities.logFlagSecure();
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            AndroidUtilities.logFlagSecure();
         }
     }
 
