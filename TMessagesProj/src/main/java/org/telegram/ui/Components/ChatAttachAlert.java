@@ -6555,6 +6555,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         captionLimitBulletinShown = false;
         super.dismiss();
         allowPassConfirmationAlert = false;
+        removeFromRoot();
     }
 
     @Override
