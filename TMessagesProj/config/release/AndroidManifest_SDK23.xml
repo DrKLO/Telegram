@@ -28,8 +28,8 @@
     <permission android:name="${applicationId}.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
 
     <application
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/ic_jaatgram_launcher"
+        android:roundIcon="@drawable/ic_jaatgram_launcher"
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
         android:hardwareAccelerated="true"
@@ -38,7 +38,7 @@
         android:requestLegacyExternalStorage="true"
         tools:replace="android:supportsRtl">
 
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
+        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="${MAPS_API_KEY}" />
 
         <service
             android:name="org.telegram.messenger.GcmPushListenerService"

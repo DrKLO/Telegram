@@ -106,6 +106,14 @@ android {
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         multiDexEnabled true
+        manifestPlaceholders = [MAPS_API_KEY: getConfigValue("JAATGRAM_MAPS_API_KEY", "")]
+        buildConfigField "String", "FORK_APP_PACKAGE", quoteBuildString(getConfigValue("APP_PACKAGE", APP_PACKAGE))
+        buildConfigField "int", "FORK_APP_ID", String.valueOf(getConfigInt("JAATGRAM_APP_ID", 0))
+        buildConfigField "String", "FORK_APP_HASH", quoteBuildString(getConfigValue("JAATGRAM_APP_HASH", ""))
+        buildConfigField "String", "FORK_PLAYSTORE_APP_URL", quoteBuildString(getConfigValue("JAATGRAM_PLAYSTORE_APP_URL", ""))
+        buildConfigField "String", "FORK_SAFETYNET_KEY", quoteBuildString(getConfigValue("JAATGRAM_SAFETYNET_KEY", ""))
+        buildConfigField "String", "FORK_GOOGLE_AUTH_CLIENT_ID", quoteBuildString(getConfigValue("JAATGRAM_GOOGLE_AUTH_CLIENT_ID", ""))
+        buildConfigField "String", "FORK_HUAWEI_APP_ID", quoteBuildString(getConfigValue("JAATGRAM_HUAWEI_APP_ID", ""))
 
         externalNativeBuild {
             cmake {
@@ -220,14 +228,53 @@ android {
 
 
 def getProps(String propName) {
+    return getConfigValue(propName, "")
+}
+
+def localPropsCache
+
+def getLocalProps() {
+    if (localPropsCache != null) {
+        return localPropsCache
+    }
+    localPropsCache = new Properties()
     def propsFile = rootProject.file('local.properties')
     if (propsFile.exists()) {
-        def props = new Properties()
-        props.load(new FileInputStream(propsFile))
-        return props[propName]
-    } else {
-        return "";
+        propsFile.withInputStream { stream ->
+            localPropsCache.load(stream)
+        }
     }
+    return localPropsCache
+}
+
+def getConfigValue(String propName, String defaultValue = "") {
+    if (project.hasProperty(propName)) {
+        return String.valueOf(project.property(propName))
+    }
+    def envValue = System.getenv(propName)
+    if (envValue != null && !envValue.isEmpty()) {
+        return envValue
+    }
+    def localValue = getLocalProps().getProperty(propName)
+    if (localValue != null) {
+        return localValue
+    }
+    return defaultValue
+}
+
+def getConfigInt(String propName, int defaultValue = 0) {
+    try {
+        return Integer.parseInt(getConfigValue(propName, String.valueOf(defaultValue)))
+    } catch (Exception ignored) {
+        return defaultValue
+    }
+}
+
+def quoteBuildString(String value) {
+    def safeValue = String.valueOf(value ?: "")
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+    return "\"" + safeValue + "\""
 }
 apply plugin: 'com.google.gms.google-services'
 

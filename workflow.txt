@@ -1,0 +1,86 @@
+name: Build Jaatgram
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_JAATGRAM_APP_ID: ${{ secrets.JAATGRAM_APP_ID }}
+      ORG_GRADLE_PROJECT_JAATGRAM_APP_HASH: ${{ secrets.JAATGRAM_APP_HASH }}
+      ORG_GRADLE_PROJECT_JAATGRAM_MAPS_API_KEY: ${{ secrets.JAATGRAM_MAPS_API_KEY }}
+      ORG_GRADLE_PROJECT_JAATGRAM_GOOGLE_AUTH_CLIENT_ID: ${{ secrets.JAATGRAM_GOOGLE_AUTH_CLIENT_ID }}
+      ORG_GRADLE_PROJECT_JAATGRAM_SAFETYNET_KEY: ${{ secrets.JAATGRAM_SAFETYNET_KEY }}
+      ORG_GRADLE_PROJECT_JAATGRAM_PLAYSTORE_APP_URL: ${{ secrets.JAATGRAM_PLAYSTORE_APP_URL }}
+      ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+      ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;21.4.7075529" \
+            "cmake;3.10.2.4988404"
+
+      - name: Validate required secrets
+        run: |
+          for value_name in \
+            ORG_GRADLE_PROJECT_JAATGRAM_APP_ID \
+            ORG_GRADLE_PROJECT_JAATGRAM_APP_HASH \
+            GOOGLE_SERVICES_JSON_BASE64 \
+            SIGNING_KEYSTORE_BASE64 \
+            ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD \
+            ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS \
+            ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD
+          do
+            eval "value=\${$value_name}"
+            if [ -z "$value" ]; then
+              echo "Missing required secret mapped to $value_name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Prepare local files
+        run: |
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 -d > TMessagesProj/config/release.keystore
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj/google-services.json
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj_App/google-services.json
+
+      - name: Build release APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jaatgram-apk
+          path: TMessagesProj_App/build/outputs/apk/**/app.apk

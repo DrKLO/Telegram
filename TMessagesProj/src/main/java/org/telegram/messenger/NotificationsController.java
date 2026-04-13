@@ -5468,7 +5468,7 @@ public class NotificationsController extends BaseController {
             }
             Intent msgHeardIntent = new Intent(ApplicationLoader.applicationContext, AutoMessageHeardReceiver.class);
             msgHeardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            msgHeardIntent.setAction("org.telegram.messenger.ACTION_MESSAGE_HEARD");
+            msgHeardIntent.setAction(BuildVars.ACTION_MESSAGE_HEARD);
             msgHeardIntent.putExtra("dialog_id", dialogId);
             msgHeardIntent.putExtra("max_id", maxId);
             msgHeardIntent.putExtra("currentAccount", currentAccount);
@@ -5562,7 +5562,7 @@ public class NotificationsController extends BaseController {
             if (copybutton != null) {
                 Intent copyIntent = new Intent(ApplicationLoader.applicationContext, CopyCodeReceiver.class);
                 copyIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                copyIntent.setAction("org.telegram.messenger.ACTION_COPY_CODE");
+                copyIntent.setAction(BuildVars.ACTION_COPY_CODE);
                 copyIntent.putExtra("text", copybutton.copy_text);
                 PendingIntent copyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, internalId, copyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
                 NotificationCompat.Action copyAction = new NotificationCompat.Action.Builder(R.drawable.msg_copy, copybutton.text, copyPendingIntent)
@@ -5739,7 +5739,7 @@ public class NotificationsController extends BaseController {
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
         if (dialogId == UserObject.OAUTH) {
-            personBuilder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.ic_launcher_dr));
+            personBuilder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.ic_jaatgram_launcher));
             return personBuilder;
         }
         if (avatar != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

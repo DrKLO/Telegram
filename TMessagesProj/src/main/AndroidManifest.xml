@@ -131,8 +131,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.VintageIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_6_launcher"
-            android:roundIcon="@mipmap/icon_6_launcher_round"
+            android:icon="@drawable/ic_jaatgram_launcher"
+            android:roundIcon="@drawable/ic_jaatgram_launcher"
             android:exported="true">
 
             <intent-filter>
@@ -147,8 +147,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.AquaIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_4_launcher"
-            android:roundIcon="@mipmap/icon_4_launcher_round"
+            android:icon="@drawable/ic_jaatgram_launcher"
+            android:roundIcon="@drawable/ic_jaatgram_launcher"
             android:exported="true">
 
             <intent-filter>
@@ -163,8 +163,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.PremiumIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_3_launcher"
-            android:roundIcon="@mipmap/icon_3_launcher_round"
+            android:icon="@drawable/ic_jaatgram_launcher"
+            android:roundIcon="@drawable/ic_jaatgram_launcher"
             android:exported="true">
 
             <intent-filter>
@@ -179,8 +179,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.TurboIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_5_launcher"
-            android:roundIcon="@mipmap/icon_5_launcher_round"
+            android:icon="@drawable/ic_jaatgram_launcher"
+            android:roundIcon="@drawable/ic_jaatgram_launcher"
             android:exported="true">
 
             <intent-filter>
@@ -195,8 +195,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.NoxIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_2_launcher"
-            android:roundIcon="@mipmap/icon_2_launcher_round"
+            android:icon="@drawable/ic_jaatgram_launcher"
+            android:roundIcon="@drawable/ic_jaatgram_launcher"
             android:exported="true">
 
             <intent-filter>
@@ -252,7 +252,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.com.jaatgram.messenger.android.profile"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
@@ -265,13 +265,13 @@
                 <data android:host="t.me" android:scheme="http" />
                 <data android:host="t.me" android:scheme="https" />
             </intent-filter>
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:priority="1">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher" android:priority="1">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="tonsite" />
             </intent-filter>
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:priority="1">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher" android:priority="1">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -296,8 +296,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.com.jaatgram.messenger.android.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.com.jaatgram.messenger.android.call.video"/>
             </intent-filter>
         </activity-alias>
         <activity
@@ -317,7 +317,7 @@
             android:stateNotNeeded="true"
             android:theme="@style/Theme.TMessages.Transparent"
             android:exported="true">
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:priority="1">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher" android:priority="1">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -330,7 +330,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher">
                 <action android:name="org.telegram.passport.AUTHORIZE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
@@ -341,7 +341,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher">
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>
         </activity>
@@ -351,7 +351,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
-            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+            <intent-filter android:icon="@drawable/ic_jaatgram_launcher" android:roundIcon="@drawable/ic_jaatgram_launcher">
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>
         </activity>
@@ -399,7 +399,7 @@
             android:name=".AutoMessageHeardReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.messenger.ACTION_MESSAGE_HEARD"/>
+                <action android:name="com.jaatgram.messenger.ACTION_MESSAGE_HEARD"/>
             </intent-filter>
         </receiver>
 
@@ -407,7 +407,7 @@
             android:name=".CopyCodeReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.messenger.ACTION_COPY_CODE"/>
+                <action android:name="com.jaatgram.messenger.ACTION_COPY_CODE"/>
             </intent-filter>
         </receiver>
 
@@ -423,7 +423,7 @@
             android:name=".AutoMessageReplyReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.messenger.ACTION_MESSAGE_REPLY"/>
+                <action android:name="com.jaatgram.messenger.ACTION_MESSAGE_REPLY"/>
             </intent-filter>
         </receiver>
 
