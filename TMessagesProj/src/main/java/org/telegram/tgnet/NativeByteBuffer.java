@@ -532,6 +532,11 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
                 sl = 4;
             }
+
+            if (l > remaining() || l < 0) {
+                throw new RuntimeException("string size too big");
+            }
+
             byte[] b = new byte[l];
             buffer.get(b);
             int i = sl;
@@ -562,6 +567,11 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
                 sl = 4;
             }
+
+            if (l > remaining() || l < 0) {
+                throw new RuntimeException("byte array size too big");
+            }
+
             byte[] b = new byte[l];
             buffer.get(b);
             int i = sl;
@@ -591,6 +601,11 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 l = getIntFromByte(buffer.get()) | (getIntFromByte(buffer.get()) << 8) | (getIntFromByte(buffer.get()) << 16);
                 sl = 4;
             }
+
+            if (l > remaining() || l < 0) {
+                throw new RuntimeException("byte array size too big");
+            }
+
             NativeByteBuffer b = new NativeByteBuffer(l);
             int old = buffer.limit();
             buffer.limit(buffer.position() + l);

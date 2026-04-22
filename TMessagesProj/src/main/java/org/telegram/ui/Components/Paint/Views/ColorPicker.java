@@ -102,7 +102,7 @@ public class ColorPicker extends FrameLayout {
         });
 
         undoButton = new ImageView(context);
-        undoButton.setContentDescription(LocaleController.getString(R.string.Undo));
+        undoButton.setContentDescription(LocaleController.getString(R.string.UndoNoCaps));
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
         undoButton.setImageResource(R.drawable.photo_undo);
         addView(undoButton, LayoutHelper.createFrame(46, 52));

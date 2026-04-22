@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -44,11 +45,12 @@ import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 
+@SuppressLint("ViewConstructor")
 public class SearchDownloadsContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final FlickerLoadingView loadingView;
     StickerEmptyView emptyView;
-    public RecyclerListView recyclerListView;
+    public final @NonNull RecyclerListView recyclerListView;
     DownloadsAdapter adapter = new DownloadsAdapter();
     private final int currentAccount;
 
@@ -84,7 +86,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         this.parentFragment = fragment;
         this.parentActivity = fragment.getParentActivity();
         this.currentAccount = currentAccount;
-        recyclerListView = new BlurredRecyclerView(getContext()) {
+        recyclerListView = new RecyclerListView(getContext()) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 super.onLayout(changed, l, t, r, b);
@@ -208,6 +210,35 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
         recyclerListView.setEmptyView(emptyView);
 
         FileLoader.getInstance(currentAccount).getCurrentLoadingFiles(currentLoadingFiles);
+    }
+
+    public void setPagesPaddings(int top, int bottom) {
+        setPagesPaddings(top, bottom, false);
+    }
+
+    public void setPagesPaddings(int top, int bottom, boolean doNotRequestLayout) {
+        setClipToPadding(false);
+        ignoreRequestLayout = doNotRequestLayout;
+
+        setPadding(0, top, 0, bottom);
+        recyclerListView.setPadding(0, top, 0, bottom, doNotRequestLayout);
+
+        MarginLayoutParams lp = null;
+        lp = (MarginLayoutParams) recyclerListView.getLayoutParams();
+        lp.topMargin = -top;
+        lp.bottomMargin = -bottom;
+
+        ignoreRequestLayout = false;
+    }
+
+    private boolean ignoreRequestLayout;
+
+    @Override
+    public void requestLayout() {
+        if (ignoreRequestLayout) {
+            return;
+        }
+        super.requestLayout();
     }
 
     private void checkFilesExist() {

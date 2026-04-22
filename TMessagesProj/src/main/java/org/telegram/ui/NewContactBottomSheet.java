@@ -591,7 +591,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         checkTextView = new TextView(context);
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        checkTextView.setText("Sync Contact to Phone");
+        checkTextView.setText(getString(R.string.AddContactSync));
 
         checkLayout = new LinearLayout(context);
         checkLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -652,7 +652,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         SpannableStringBuilder qrButtonText = new SpannableStringBuilder("QR");
         qrButtonText.setSpan(new ColoredImageSpan(R.drawable.header_qr_24), 0, qrButtonText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         qrButtonText.append("  ");
-        qrButtonText.append("Add via QR Code");
+        qrButtonText.append(getString(R.string.AddContactQr));
         qrButton.setText(qrButtonText, false);
         qrButton.setOnClickListener(v -> {
             dismiss();

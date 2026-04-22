@@ -1,7 +1,6 @@
 package org.telegram.ui.Components.chat;
 
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +38,7 @@ public final class ViewPositionWatcher implements
         final ViewGroup parent;
         final OnChangedListener listener;
         final RectF last = new RectF();
+        boolean multiwindow;
         boolean hasLast;
 
         Tracked(@NonNull ViewGroup parent, @NonNull OnChangedListener listener) {
@@ -49,6 +49,7 @@ public final class ViewPositionWatcher implements
 
     private final WeakHashMap<View, List<Tracked>> tracked = new WeakHashMap<>();
     private final RectF tmpRect = new RectF(); // reused for all calculations
+    private static final int[] tmpCords = new int[2];
 
     public ViewPositionWatcher(@NonNull View anchorView) {
         this.anchorView = anchorView;
@@ -56,11 +57,19 @@ public final class ViewPositionWatcher implements
         attachIfPossible();
     }
 
-    /** Subscribe a view for tracking relative to the given parent (must be an ancestor). */
     public void subscribe(@NonNull View view,
                           @NonNull ViewGroup parentView,
                           @NonNull OnChangedListener listener) {
+        subscribe(view, parentView, listener, false);
+    }
+
+    /** Subscribe a view for tracking relative to the given parent (must be an ancestor). */
+    public void subscribe(@NonNull View view,
+                          @NonNull ViewGroup parentView,
+                          @NonNull OnChangedListener listener,
+                          boolean multiwindow) {
         Tracked t = new Tracked(parentView, listener);
+        t.multiwindow = multiwindow;
         List<Tracked> tList = tracked.get(view);
         if (tList == null) {
             tList = new ArrayList<>(1);
@@ -70,9 +79,13 @@ public final class ViewPositionWatcher implements
 
         computeRectInParent(view, parentView, tmpRect);
         t.last.set(tmpRect);
-        t.hasLast = true;
+        // t.hasLast = true;
 
         ensureListening();
+
+        if (multiwindow) {
+            view.getViewTreeObserver().addOnPreDrawListener(this);
+        }
     }
 
     /** Unsubscribe a specific view. */
@@ -149,7 +162,15 @@ public final class ViewPositionWatcher implements
             if (view == null || tList == null) continue;
 
             for (Tracked t : tList) {
-                if (!computeRectInParent(view, t.parent, tmpRect)) continue;
+                if (t.multiwindow) {
+                    view.getLocationOnScreen(tmpCords);
+                    tmpRect.set(tmpCords[0], tmpCords[1], tmpCords[0] + view.getWidth(), tmpCords[1] + view.getHeight());
+
+                    t.parent.getLocationOnScreen(tmpCords);
+                    tmpRect.offset(-tmpCords[0], -tmpCords[1]);
+                } else {
+                    if (!computeRectInParent(view, t.parent, tmpRect)) continue;
+                }
 
                 if (!t.hasLast || !tmpRect.equals(t.last)) {
                     t.last.set(tmpRect);
@@ -192,7 +213,7 @@ public final class ViewPositionWatcher implements
      */
 
     public static boolean computeRectInParent(@NonNull View view,
-                                               @NonNull ViewGroup parentView,
+                                               @NonNull View parentView,
                                                @NonNull RectF out) {
         float left = 0f;
         float top = 0f;
@@ -206,7 +227,11 @@ public final class ViewPositionWatcher implements
             if (!(vp instanceof View)) {
                 return false; // parentView not found in hierarchy
             }
-            current = (View) vp;
+            View parent = (View) vp;
+            left -= parent.getScrollX();
+            top  -= parent.getScrollY();
+
+            current = parent;
         }
 
         if (current != parentView) {

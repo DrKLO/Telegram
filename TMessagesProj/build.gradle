@@ -128,6 +128,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "0"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
@@ -145,6 +146,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "1"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
@@ -162,6 +164,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PUBLIC_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "4"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
@@ -179,6 +182,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_HARDCORE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "5"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
@@ -196,6 +200,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "6"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"
@@ -214,6 +219,7 @@ android {
             buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
             def pwd = project.hasProperty('SEARCH_PASSWORD') ? project.property('SEARCH_PASSWORD') : "36952"

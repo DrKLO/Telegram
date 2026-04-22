@@ -2,6 +2,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.REPLACING_TAG_TYPE_LINK;
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -50,7 +51,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 
-public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
+public class UnconfirmedAuthHintCell extends FrameLayout {
 
     private final LinearLayout linearLayout;
     private final TextView titleTextView;
@@ -60,8 +61,8 @@ public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
     private final TextViewWithLoading yesButton;
     private final TextViewWithLoading noButton;
 
-    public UnconfirmedAuthHintCell(Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout) {
-        super(context, sizeNotifierFrameLayout);
+    public UnconfirmedAuthHintCell(Context context) {
+        super(context);
 
         setClickable(true);
 
@@ -73,12 +74,13 @@ public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setText(LocaleController.getString(R.string.UnconfirmedAuthTitle));
-        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  11, 28, 0));
+        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  8, 28, 0));
 
         messageTextView = new TextView(context);
         messageTextView.setGravity(Gravity.CENTER);
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  5, 28, 0));
+        messageTextView.setLineSpacing(dpf2(2), 1);
+        linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  2, 28, 0));
 
         buttonsLayout = new LinearLayout(context);
         buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -104,7 +106,7 @@ public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
 
         buttonsLayout.addView(new Space(context), LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER, 1));
 
-        linearLayout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 28, 7, 28, 8));
+        linearLayout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 28, 4, 28, 8));
 
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
@@ -173,7 +175,7 @@ public class UnconfirmedAuthHintCell extends BlurredFrameLayout {
     }
 
     public void updateColors() {
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        // setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         yesButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));

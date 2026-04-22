@@ -19,11 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 public class BotForumHelper extends BaseController {
 
-    public boolean isThinking(long userId, int topicId) {
-        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
-        return messages != null && messages.size() > 0;
-    }
-
     private MessageObject createDraftMessage(long userId, int topicId, long randomId, int messageId, TLRPC.TL_textWithEntities text) {
         TLRPC.Message message = new TLRPC.TL_message();
         message.dialog_id = userId;
@@ -63,11 +58,34 @@ public class BotForumHelper extends BaseController {
     public void onBotForumDraftUpdate(long userId, int topicId, long randomId, TLRPC.TL_textWithEntities text) {
         FileLog.d("[BotForum] onDraftNewDraft " + userId + " " + topicId + " " + randomId);
 
+        LongSparseArray<BotDraftMessage> drafts = botTextDraftsByRandomIds.get(userId, topicId);
+        long[] toRemove = null;
+        if (drafts != null && drafts.size() > 0) {
+            toRemove = new long[drafts.size()];
+            for (int a = 0, N = drafts.size(); a < N; a++) {
+                toRemove[a] = drafts.keyAt(a);
+            }
+        }
+
         BotDraftMessage draftMessage = botTextDraftsByRandomIds.get(userId, topicId, randomId);
         if (draftMessage == null) {
             draftMessage = new BotDraftMessage(userId, topicId, randomId, getUserConfig().getNewMessageId());
             botTextDraftsByRandomIds.put(userId, topicId, randomId, draftMessage);
         }
+
+        if (toRemove != null) {
+            for (long id: toRemove) {
+                if (id == randomId) {
+                    continue;
+                }
+                BotDraftMessage deletedMessage = drafts.get(id);
+                if (deletedMessage.selfDestruct != null) {
+                    AndroidUtilities.cancelRunOnUIThread(deletedMessage.selfDestruct);
+                }
+                onBotForumDraftTimeout(userId, topicId, id);
+            }
+        }
+
         final boolean isNew = draftMessage.messageObject == null;
         if (draftMessage.selfDestruct != null) {
             AndroidUtilities.cancelRunOnUIThread(draftMessage.selfDestruct);
@@ -81,6 +99,11 @@ public class BotForumHelper extends BaseController {
 
         getNotificationCenter().postNotificationName(NotificationCenter.botForumDraftUpdate,
             new BotForumTextDraftUpdateNotification(userId, topicId, draftMessage.messageObject, isNew));
+    }
+
+    public boolean hasBotForumDrafts(long userId, int topicId) {
+        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
+        return messages != null && messages.size() > 0;
     }
 
     public MessageObject onBotForumDraftCheckNewMessages(long userId, int topicId, int messageId, String message) {
@@ -100,6 +123,12 @@ public class BotForumHelper extends BaseController {
                 FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
                 return draftMessage.messageObject;
             }
+        }
+
+        if (messages.size() > 0) {
+            final BotDraftMessage draftMessage = messages.valueAt(0);
+            FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
+            return draftMessage.messageObject;
         }
 
         return null;
@@ -155,7 +184,7 @@ public class BotForumHelper extends BaseController {
         }
 
         final TLRPC.User user = getMessagesController().getUser(dialogId);
-        if (!UserObject.isBotForum(user)) {
+        if (!UserObject.isBotForumWithEditableTopics(user)) {
             return true;
         }
 

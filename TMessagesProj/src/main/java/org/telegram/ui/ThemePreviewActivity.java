@@ -15,7 +15,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -34,7 +33,6 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -60,7 +58,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
@@ -132,9 +129,9 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
+import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.GestureDetector2;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -255,7 +252,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     private FrameLayout page1;
     private RecyclerListView listView;
     private DialogsAdapter dialogsAdapter;
-    private ImageView floatingButton;
+    private FragmentFloatingButton floatingButton;
     MessageObject serverWallpaper;
 
     private boolean wasScroll;
@@ -652,7 +649,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
 
         ActionBarMenu menu = actionBar.createMenu();
-        final ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        final ActionBarMenuItem item = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
 
@@ -723,34 +720,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         });
         page1.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
-        floatingButton = new ImageView(context);
-        floatingButton.setScaleType(ImageView.ScaleType.CENTER);
-
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(dp(56), getThemedColor(Theme.key_chats_actionBackground), getThemedColor(Theme.key_chats_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(dp(56), dp(56));
-            drawable = combinedDrawable;
-        }
-        floatingButton.setBackgroundDrawable(drawable);
-        floatingButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
+        floatingButton = new FragmentFloatingButton(context, resourceProvider);
         floatingButton.setImageResource(R.drawable.floating_pencil);
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, View.TRANSLATION_Z, dp(2), dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, View.TRANSLATION_Z, dp(4), dp(2)).setDuration(200));
-            floatingButton.setStateListAnimator(animator);
-            floatingButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, dp(56), dp(56));
-                }
-            });
-        }
-        page1.addView(floatingButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
+        page1.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
 
         dialogsAdapter = new DialogsAdapter(context);
         listView.setAdapter(dialogsAdapter);
@@ -770,7 +742,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     ignoreLayout = true;
                     if (!AndroidUtilities.isTablet()) {
                         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-                        layoutParams.topMargin = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                        layoutParams.topMargin = AndroidUtilities.statusBarHeight;
                         dropDownContainer.setLayoutParams(layoutParams);
                     }
                     if (!AndroidUtilities.isTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -2216,9 +2188,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             protected void onDraw(Canvas canvas) {
                 if (!AndroidUtilities.usingHardwareInput) {
                     getLocationInWindow(loc);
-                    if (Build.VERSION.SDK_INT < 21 && !AndroidUtilities.isTablet()) {
-                        loc[1] -= AndroidUtilities.statusBarHeight;
-                    }
                     if (actionBar2.getTranslationY() != loc[1]) {
                         actionBar2.setTranslationY(-loc[1]);
                         page2.invalidate();
@@ -3350,17 +3319,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         final int w = (int) ((float) d.getIntrinsicWidth() / d.getIntrinsicHeight() * h);
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         d.setBounds(0, 0, w, h);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            final ColorFilter wasColorFilter = d.getColorFilter();
-            ColorMatrix colorMatrix = new ColorMatrix();
-            colorMatrix.setSaturation(1.3f);
-            AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .94f);
-            d.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-            d.draw(new Canvas(bitmap));
-            d.setColorFilter(wasColorFilter);
-        } else {
-            d.draw(new Canvas(bitmap));
-        }
+        final ColorFilter wasColorFilter = d.getColorFilter();
+        ColorMatrix colorMatrix = new ColorMatrix();
+        colorMatrix.setSaturation(1.3f);
+        AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .94f);
+        d.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+        d.draw(new Canvas(bitmap));
+        d.setColorFilter(wasColorFilter);
         Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
         blurredDrawable = new BitmapDrawable(getContext().getResources(), bitmap);
         blurredDrawable.setFilterBitmap(true);
@@ -5670,6 +5635,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             if (colorPicker != null) {
                 colorPicker.invalidate();
             }
+            if (floatingButton != null) {
+                floatingButton.updateColors();
+            }
         };
 
         ArrayList<ThemeDescription> items = new ArrayList<>();
@@ -5691,10 +5659,6 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
         items.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
         items.add(new ThemeDescription(listView2, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-
-        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
-        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
-        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
 
         if (!useDefaultThemeForButtons) {
             items.add(new ThemeDescription(saveButtonsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -6099,9 +6063,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             boolean r = false;
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 r = true;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    rippleDrawable.setHotspot(event.getX(), event.getY());
-                }
+                rippleDrawable.setHotspot(event.getX(), event.getY());
                 rippleDrawable.setState(new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed});
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 rippleDrawable.setState(StateSet.NOTHING);

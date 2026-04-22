@@ -15,6 +15,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -32,8 +33,11 @@ import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -53,9 +57,12 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.utils.DebugRecordingCanvas;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ArticleViewer;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.DebugRecordingCanvasReplayFragment;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 import org.telegram.ui.bots.BotWebViewAttachedSheet;
@@ -64,7 +71,7 @@ import java.util.ArrayList;
 
 public abstract class BaseFragment {
 
-    protected boolean isFinished;
+    public boolean isFinished;
     protected boolean finishing;
     public Dialog visibleDialog;
     protected int currentAccount = UserConfig.selectedAccount;
@@ -113,6 +120,10 @@ public abstract class BaseFragment {
         public void setOnDismissListener(Runnable onDismiss);
 
         default void setLastVisible(boolean lastVisible) {};
+
+        default public BulletinFactory getBulletinFactory() {
+            return null;
+        }
     }
 
     public static interface AttachedSheetWindow {}
@@ -600,6 +611,10 @@ public abstract class BaseFragment {
         return null;
     }
 
+    public FrameLayout getBulletinLayoutContainer() {
+        return getLayoutContainer();
+    }
+
     public boolean presentFragmentAsPreview(BaseFragment fragment) {
         return allowPresentFragment() && parentLayout != null && parentLayout.presentFragmentAsPreview(fragment);
     }
@@ -683,10 +698,6 @@ public abstract class BaseFragment {
     }
 
     public void onSlideProgress(boolean isOpen, float progress) {
-
-    }
-
-    public void onSlideProgressFront(boolean isOpen, float progress) {
 
     }
 
@@ -922,7 +933,7 @@ public abstract class BaseFragment {
 
     }
 
-    protected Animator getCustomSlideTransition(boolean topFragment, boolean backAnimation, float distanceToMove) {
+    public Animator getCustomSlideTransition(boolean topFragment, boolean backAnimation, float distanceToMove) {
         return null;
     }
 
@@ -931,10 +942,6 @@ public abstract class BaseFragment {
     }
 
     public void prepareFragmentToSlide(boolean topFragment, boolean beginSlide) {
-
-    }
-
-    public void setProgressToDrawerOpened(float v) {
 
     }
 
@@ -1158,10 +1165,6 @@ public abstract class BaseFragment {
         return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
-    public void drawOverlay(Canvas canvas, View parent) {
-
-    }
-
     public void setPreviewOpenedProgress(float progress) {
 
     }
@@ -1299,6 +1302,19 @@ public abstract class BaseFragment {
         return storyViewer;
     }
 
+
+    public void setTitleOverlayTextIfActionBarAttached(String title, int titleId, Runnable action) {
+        if (actionBar != null && actionBar.shouldAddToContainer()) {
+            setTitleOverlayText(title, titleId, action);
+        }
+    }
+
+    public void setTitleOverlayText(String title, int titleId, Runnable action) {
+        if (actionBar != null) {
+            actionBar.setTitleOverlayText(title, titleId, action);
+        }
+    }
+
     public void removeSheet(BaseFragment.AttachedSheet sheet) {
         if (sheetsStack == null) return;
         sheetsStack.remove(sheet);
@@ -1371,5 +1387,30 @@ public abstract class BaseFragment {
     public boolean isSupportEdgeToEdge() {
         // warn: overridden method must return a constant
         return false;
+    }
+
+    public boolean drawEdgeNavigationBar() {
+        return isSupportEdgeToEdge();
+    }
+
+    public WindowInsetsCompat onInsetsInternal(@NonNull View view, @NonNull WindowInsetsCompat windowInsets) {
+        final Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars() | WindowInsetsCompat.Type.statusBars());
+        onInsets(insets.left, insets.top, insets.right, bottomInset = insets.bottom);
+        return WindowInsetsCompat.CONSUMED;
+    }
+
+    private int bottomInset;
+    public int getBottomInset() {
+        return bottomInset;
+    }
+
+    public void onInsets(int left, int top, int right, int bottom) {
+
+    }
+
+
+
+    protected void dumpCanvas() {
+        AndroidUtilities.dumpCanvas(fragmentView);
     }
 }

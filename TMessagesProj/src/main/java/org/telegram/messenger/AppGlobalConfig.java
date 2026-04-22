@@ -53,6 +53,25 @@ public class AppGlobalConfig {
 
     public final ConfigBoolean settingsDisplayPasskeys = ofBoolean("settings_display_passkeys", BuildVars.DEBUG_VERSION ? true : false);
 
+    public final ConfigBoolean disableBlurInLightTheme = ofBoolean("android_disable_blur_in_light_theme", false);
+    public final ConfigBoolean disableBlurInDarkTheme = ofBoolean("android_disable_blur_in_dark_theme", false);
+
+    public final ConfigTime noForwardsRequestExpirePeriod = ofTime("no_forwards_request_expire_period", 86400, TimeUnit.SECONDS);
+    public final ConfigTime pollClosePeriodMax = ofTime("poll_close_period_max", 86400 * 30, TimeUnit.SECONDS);
+
+    public final ConfigString musicSearchUsername = ofString("music_search_username", null);
+
+    public final ConfigInt pollAnswersMax = ofInt("poll_answers_max", 12);
+    public final ConfigInt pollAnswerLengthMax = ofInt("poll_answer_length_max", 100);
+    public final ConfigInt pollQuestionLengthMax = ofInt("poll_question_length_max", 255);
+    public final ConfigInt pollSolutionLengthMax = ofInt("poll_solution_length_max", 200);
+    public final ConfigInt pollCaptionLengthMax = ofInt("poll_caption_length_max", 300);
+
+    public final ConfigTime pollAnswerDeletePeriod = ofTime("poll_answer_delete_period", 300, TimeUnit.SECONDS);
+
+    public final ConfigInt botsCreateLimitDefault = ofInt("bots_create_limit_default", 20);
+    public final ConfigInt botsCreateLimitPremium = ofInt("bots_create_limit_premium", 40);
+
     /* * */
 
     public boolean apply(SharedPreferences.Editor editor, TLRPC.TL_jsonObject object) {

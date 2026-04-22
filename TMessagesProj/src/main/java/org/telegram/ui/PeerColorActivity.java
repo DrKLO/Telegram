@@ -292,7 +292,6 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                     return super.getSelectorColor(position);
                 }
             };
-            listView.setClipToPadding(false);
             ((DefaultItemAnimator) listView.getItemAnimator()).setSupportsChangeAnimations(false);
             layoutManager = new GridLayoutManager(getContext(), 3);
             layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -488,7 +487,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                             if (resaleGifts == null) return;
                             if (index2 < 0 || index2 >= uniqueGifts.size()) return;
                             final TL_stars.TL_starGiftUnique gift2 = uniqueGifts.get(index2);
-                            giftCell2.setStarsGift(gift2, false, false, false, true);
+                            giftCell2.setStarsGift(gift2, false, false, false, true, false);
                             giftCell2.setSelected(
                                 selectedEmojiCollectible != null && selectedEmojiCollectible.collectible_id == gift2.id ||
                                 selectedPeerCollectible != null && selectedPeerCollectible.collectible_id == gift2.id,
@@ -570,7 +569,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                         if (resaleGifts == null) return;
                         if (index2 < 0 || index2 >= uniqueGifts.size()) return;
                         final TL_stars.TL_starGiftUnique gift2 = uniqueGifts.get(index2);
-                        giftCell2.setStarsGift(gift2, false, false, false, true);
+                        giftCell2.setStarsGift(gift2, false, false, false, true, false);
                         giftCell2.setSelected(
                             selectedEmojiCollectible != null && selectedEmojiCollectible.collectible_id == gift2.id ||
                             selectedPeerCollectible != null && selectedPeerCollectible.collectible_id == gift2.id,
@@ -733,6 +732,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             buttonCollectible = getString(R.string.UserColorApplyCollectible);
 
             button = new ButtonWithCounterView(getContext(), getResourceProvider());
+            button.setRound();
             button.text.setHacks(true, true, true);
             button.setText(isChannel ? buttonUnlocked : (!getUserConfig().isPremium() ? buttonLocked : (selectedEmojiCollectible != null ? buttonCollectible : buttonUnlocked)), false);
             button.setOnClickListener(v -> buttonClick());
@@ -1764,7 +1764,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             final StarGiftSheet.PaymentFormState initial = new StarGiftSheet.PaymentFormState(currency, form);
             final String giftName = gift.title + " #" + LocaleController.formatNumber(gift.num, ',');
             final boolean[] buying = new boolean[1];
-            final StarGiftSheet.ResaleBuyTransferAlert sheet = new StarGiftSheet.ResaleBuyTransferAlert(getContext(), resourceProvider, gift, initial, currentAccount, to, giftName, (state, progress) -> {
+            final StarGiftSheet.ResaleBuyTransferAlert sheet = new StarGiftSheet.ResaleBuyTransferAlert(getContext(), resourceProvider, gift, initial, currentAccount, to, giftName, false, (state, progress) -> {
                 buying[0] = true;
                 progress.init();
                 StarsController.getInstance(currentAccount, state.currency).buyResellingGift(state.form, gift, to, (status, err) -> {
@@ -3321,6 +3321,17 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 (getWidth() + dp(86)) / 2f,
                 getHeight() - dp(82)
             );
+
+            StarGiftPatterns.drawProfileAnimatedPattern(
+                canvas,
+                emoji,
+                getWidth(),
+                getHeight(),
+                1.0f,
+                rectF,
+                1.0f
+            );
+
             imageReceiver.setRoundRadius(isForum ? dp(18) : dp(54));
             imageReceiver.setImageCoords(rectF);
             imageReceiver.draw(canvas);
@@ -3336,18 +3347,6 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 storyGradient.getPaint(rectF)
             );
 
-//            final float patternFull = emojiCollectible.set(isEmojiCollectible);
-//            StarGiftPatterns.drawProfilePattern(canvas, emoji, getWidth(), getHeight(), 1.0f, patternFull);
-            StarGiftPatterns.drawProfileAnimatedPattern(
-                canvas,
-                emoji,
-                getWidth(),
-                getHeight(),
-                1.0f,
-                rectF,
-                1.0f
-            );
-
             super.dispatchDraw(canvas);
         }
     }
@@ -3355,51 +3354,6 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
     public static int adaptProfileEmojiColor(int color) {
         final boolean isDark = AndroidUtilities.computePerceivedBrightness(color) < .2f;
         return Theme.adaptHSV(color, +.5f, isDark ? +.28f : -.28f);
-    }
-
-    public static final float PARTICLE_SIZE_DP = 24;
-    public static final int PARTICLES_COUNT = 15;
-    public static final float GOLDEN_RATIO_ANGLE = 139f;
-    public static final float FILL_SCALE = 1;
-
-    public static void drawSunflowerPattern(float cx, float cy, Utilities.Callback3<Float, Float, Float> draw) {
-        drawSunflowerPattern(PARTICLES_COUNT, cx, cy, 30, dp(PARTICLE_SIZE_DP) * .7f, 1.4f, GOLDEN_RATIO_ANGLE, draw);
-    }
-
-    public static void drawSunflowerPattern(int count, float cx, float cy, float anglestart, float scale, float scale2, float angle, Utilities.Callback3<Float, Float, Float> draw) {
-        for (int i = 1; i <= count; ++i) {
-            final float a = anglestart + i * angle;
-            final float r = (float) (Math.sqrt(i * scale2) * scale);
-            final float x = (float) (cx + Math.cos(a / 180f * Math.PI) * r) + (i == 3 ? .3f * scale : 0);
-            final float y = (float) (cy + Math.sin(a / 180f * Math.PI) * r) + (i == 3 ? -.5f * scale : 0);
-            draw.run(x, y, (float) Math.sqrt(1f - (float) i / count));
-        }
-    }
-
-    private final static float[] particles = {
-        -18, -24.66f, 24, .4f,
-        5.33f, -53, 28, .38f,
-        -4, -86, 19, .18f,
-        31, -30, 21, .35f,
-        12, -3, 24, .18f,
-        30, -73, 19, .3f,
-        43, -101, 16, .1f,
-        -50, 1.33f, 20, .22f,
-        -58, -33, 24, .22f,
-        -35, -62, 25, .22f,
-        -59, -88, 19, .18f,
-        -86, -61, 19, .1f,
-        -90, -14.33f, 19.66f, .18f
-    };
-    public static void drawProfileIconPattern(float cx, float cy, float scale, Utilities.Callback4<Float, Float, Float, Float> draw) {
-        for (int i = 0; i < particles.length; i += 4) {
-            draw.run(
-                cx + dp(particles[i]) * scale,
-                cy + dp(particles[i + 1]) * scale,
-                dpf2(particles[i + 2]),
-                particles[i + 3]
-            );
-        }
     }
 
     private View changeDayNightView;
@@ -3636,7 +3590,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
             static { setup(new Factory()); }
 
             @Override
-            public GiftCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public GiftCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new GiftCell(context, true, resourcesProvider);
             }
 

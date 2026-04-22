@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -41,6 +42,8 @@ import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.util.FloatProperty;
+import android.util.Property;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -94,6 +97,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.chromecast.ChromecastController;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -116,6 +120,7 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.telegram.ui.Stories.recorder.SelectAudioAlert;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -123,6 +128,7 @@ import java.util.List;
 
 public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener {
 
+    private View actionBarBackground;
     private ActionBar actionBar;
     private View actionBarShadow;
     private View playerShadow;
@@ -139,7 +145,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private FrameLayout playerLayout;
     private ButtonWithCounterView saveToProfileButton;
-    private LinkSpanDrawable.LinksTextView unsaveFromProfileTextView;
+    private ButtonWithCounterView unsaveFromProfileButton;
     private ItemTouchHelper itemTouchHelper;
     private CoverContainer coverContainer;
     private ClippingTextViewSwitcher titleTextView;
@@ -168,6 +174,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private PlayPauseDrawable playPauseDrawable;
     private FrameLayout blurredView;
     private BackupImageView bigAlbumConver;
+    private ActionBarMenuItem addItem;
     private ActionBarMenuItem searchItem;
     private boolean blurredAnimationInProgress;
     private View[] buttons = new View[5];
@@ -183,7 +190,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private int searchOpenPosition = -1;
     private int searchOpenOffset;
 
-    private boolean padWithItem;
+    private final boolean isProfilePlaylist;
+    private final boolean padWithItem;
 
     private MessagesController.SavedMusicList savedMusicList;
     private boolean isMyList() {
@@ -397,20 +405,25 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (playlist.size() <= 1) {
                     shadowDrawable.setBounds(0, getMeasuredHeight() - playerLayout.getMeasuredHeight() - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
                     shadowDrawable.draw(canvas);
+                    if (isProfilePlaylist) {
+                        actionBar.setVisibility(View.GONE);
+                    }
                 } else {
                     if (listView.getVisibility() != View.VISIBLE) return;
 
                     int offset = dp(13);
                     int top = scrollOffsetY - backgroundPaddingTop - offset;
-//                    if (currentSheetAnimationType == 1) {
-                        top += listView.getTranslationY();
-//                    }
+                    top += listView.getTranslationY();
+                    if (isProfilePlaylist) {
+                        top -= ActionBar.getCurrentActionBarHeight();
+                        top += dp(10);
+                    }
                     int y = top + dp(20);
 
                     int height = getMeasuredHeight() + dp(15) + backgroundPaddingTop;
                     float rad = 1.0f;
 
-                    if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight()) {
+                    if (!isProfilePlaylist && top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight()) {
                         float toMove = offset + dp(11 - 7);
                         float moveProgress = Math.min(1.0f, (ActionBar.getCurrentActionBarHeight() - top - backgroundPaddingTop) / toMove);
                         float availableToMove = ActionBar.getCurrentActionBarHeight() - toMove;
@@ -430,13 +443,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
                     shadowDrawable.draw(canvas);
 
-                    if (rad != 1.0f) {
+                    if (!isProfilePlaylist && rad != 1.0f) {
                         Theme.dialogs_onlineCirclePaint.setColor(getThemedColor(Theme.key_dialogBackground));
                         rect.set(backgroundPaddingLeft, backgroundPaddingTop + top, getMeasuredWidth() - backgroundPaddingLeft, backgroundPaddingTop + top + dp(24));
                         canvas.drawRoundRect(rect, dp(12) * rad, dp(12) * rad, Theme.dialogs_onlineCirclePaint);
                     }
 
-                    if (rad != 0) {
+                    if (!isProfilePlaylist && rad != 0) {
                         float alphaProgress = 1.0f;
                         int w = dp(36);
                         rect.set((getMeasuredWidth() - w) / 2, y, (getMeasuredWidth() + w) / 2, y + dp(4));
@@ -445,6 +458,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         Theme.dialogs_onlineCirclePaint.setColor(color);
                         Theme.dialogs_onlineCirclePaint.setAlpha((int) (alpha * alphaProgress * rad));
                         canvas.drawRoundRect(rect, dp(2), dp(2), Theme.dialogs_onlineCirclePaint);
+                    }
+
+                    if (isProfilePlaylist) {
+                        actionBar.setVisibility(View.VISIBLE);
+                        actionBar.setTranslationY(Math.max(0, top - backgroundPaddingTop - dp(10) + dp(6) * (1.0f - actionBarSlide) - actionBar.getTop()));
+                        actionBarShadow.setTranslationY(Math.max(0, top - backgroundPaddingTop - dp(10) + dp(6) * (1.0f - actionBarSlide) - actionBar.getTop()));
                     }
                 }
             }
@@ -476,53 +495,22 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 containerView.invalidate();
             }
         };
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        actionBar.setBackgroundColor(0);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setItemsColor(getThemedColor(Theme.key_player_actionBarTitle), false);
         actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_player_actionBarSelector), false);
         actionBar.setTitleColor(getThemedColor(Theme.key_player_actionBarTitle));
         actionBar.setSubtitleColor(getThemedColor(Theme.key_player_actionBarSubtitle));
         actionBar.setOccupyStatusBar(true);
+
+        actionBar.menuOccupyBack = true;
+        final ActionBarMenu menu = actionBar.createMenu();
+        menu.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        actionBarBackground = new View(context);
+        actionBarBackground.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        actionBar.addView(actionBarBackground, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        actionBarBackground.setAlpha(0.0f);
         actionBar.setAlpha(0.0f);
-
-        ActionBarMenu menu = actionBar.createMenu();
-        searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
-            @Override
-            public void onSearchCollapse() {
-                if (searching) {
-                    searchWas = false;
-                    searching = false;
-                    setAllowNestedScroll(true);
-                    listAdapter.search(null);
-                }
-            }
-
-            @Override
-            public void onSearchExpand() {
-                searchOpenPosition = layoutManager.findLastVisibleItemPosition();
-                View firstVisView = layoutManager.findViewByPosition(searchOpenPosition);
-                searchOpenOffset = firstVisView == null ? 0 : firstVisView.getTop();
-                searching = true;
-                setAllowNestedScroll(false);
-                listAdapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onTextChanged(EditText editText) {
-                if (editText.length() > 0) {
-                    listAdapter.search(editText.getText().toString());
-                } else {
-                    searchWas = false;
-                    listAdapter.search(null);
-                }
-            }
-        });
-        searchItem.setContentDescription(LocaleController.getString(R.string.Search));
-        EditTextBoldCursor editText = searchItem.getSearchField();
-        editText.setHint(LocaleController.getString(R.string.Search));
-        editText.setTextColor(getThemedColor(Theme.key_player_actionBarTitle));
-        editText.setHintTextColor(getThemedColor(Theme.key_player_time));
-        editText.setCursorColor(getThemedColor(Theme.key_player_actionBarTitle));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -1271,38 +1259,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         });
 
-        unsaveFromProfileTextView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
-        unsaveFromProfileTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        unsaveFromProfileTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
-        unsaveFromProfileTextView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        unsaveFromProfileTextView.setGravity(Gravity.CENTER);
-        unsaveFromProfileTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.AudioAddedToProfileRemove), () -> {
-            final MessageObject messageObject1 = MediaController.getInstance().getPlayingMessageObject();
-            if (messageObject1 == null || parentActivity == null) {
-                return;
-            }
-            saveToProfile(messageObject1, false, () -> {
-            }, false);
-            setVisibleInProfile(false);
-            BulletinFactory.of((FrameLayout) containerView, resourcesProvider)
-                .createSimpleBulletin(R.raw.ic_delete, getString(R.string.AudioSaveToMyProfileUnsaved))
-                .show();
-        }), true, dp(1.33f), dp(1)));
-        playerLayout.addView(unsaveFromProfileTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 12, 12, 12, 12));
-
-        saveToProfileButton = new ButtonWithCounterView(context, resourcesProvider);
+        saveToProfileButton = new ButtonWithCounterView(context, resourcesProvider).setRound();
         SpannableStringBuilder sb = new SpannableStringBuilder();
         sb.append("+ ");
         sb.setSpan(new ColoredImageSpan(R.drawable.filled_track_add), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         sb.append(getString(R.string.AudioAddToProfile));
-        saveToProfileButton.setText(sb, false);
+        saveToProfileButton.setText(sb);
         saveToProfileButton.setOnClickListener(v -> {
             final MessageObject messageObject1 = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject1 == null || parentActivity == null) {
                 return;
             }
-            saveToProfile(messageObject1, true, () -> {
-            }, false);
+            saveToProfile(messageObject1, true, () -> {}, false);
             setVisibleInProfile(true);
             BulletinFactory.of((FrameLayout) containerView, resourcesProvider)
                 .createSimpleBulletin(R.raw.saved_messages, getString(R.string.AudioSaveToMyProfileSaved))
@@ -1310,9 +1278,81 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         });
         playerLayout.addView(saveToProfileButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 12, 12, 12, 12));
 
+        unsaveFromProfileButton = new ButtonWithCounterView(context, resourcesProvider).setRound().setNeutral();
+        unsaveFromProfileButton.setText(getString(R.string.AudioRemoveFromProfile));
+        unsaveFromProfileButton.setOnClickListener(v -> {
+            final MessageObject messageObject1 = MediaController.getInstance().getPlayingMessageObject();
+            if (messageObject1 == null || parentActivity == null) {
+                return;
+            }
+            saveToProfile(messageObject1, false, () -> {}, false);
+            setVisibleInProfile(false);
+            BulletinFactory.of((FrameLayout) containerView, resourcesProvider)
+                .createSimpleBulletin(R.raw.ic_delete, getString(R.string.AudioSaveToMyProfileUnsaved))
+                .show();
+        });
+        playerLayout.addView(unsaveFromProfileButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 12, 12, 12, 12));
+
         savedMusicList = MediaController.getInstance().currentSavedMusicList;
+        isProfilePlaylist = savedMusicList != null;
         padWithItem = isMyList();
         playlist = MediaController.getInstance().getPlaylist();
+        if (isMyList()) {
+            addItem = menu.addItem(8, R.drawable.msg_add);
+        }
+        searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            @Override
+            public void onSearchCollapse() {
+                if (searching) {
+                    searchWas = false;
+                    searching = false;
+                    setAllowNestedScroll(true);
+                    listAdapter.search(null);
+                    if (addItem != null) {
+                        addItem.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
+
+            @Override
+            public void onSearchExpand() {
+                searchOpenPosition = layoutManager.findLastVisibleItemPosition();
+                View firstVisView = layoutManager.findViewByPosition(searchOpenPosition);
+                searchOpenOffset = firstVisView == null ? 0 : firstVisView.getTop();
+                searching = true;
+                setAllowNestedScroll(false);
+                listAdapter.notifyDataSetChanged();
+                if (addItem != null) {
+                    addItem.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onTextChanged(EditText editText) {
+                if (editText.length() > 0) {
+                    listAdapter.search(editText.getText().toString());
+                } else {
+                    searchWas = false;
+                    listAdapter.search(null);
+                }
+            }
+        });
+        searchItem.setContentDescription(LocaleController.getString(R.string.Search));
+        EditTextBoldCursor editText = searchItem.getSearchField();
+        editText.setHint(LocaleController.getString(R.string.Search));
+        editText.setTextColor(getThemedColor(Theme.key_player_actionBarTitle));
+        editText.setHintTextColor(getThemedColor(Theme.key_player_time));
+        editText.setCursorColor(getThemedColor(Theme.key_player_actionBarTitle));
+
+        if (isProfilePlaylist) {
+            listView.setSections();
+            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+
+            actionBar.setAlpha(1.0f);
+            actionBarBackground.setAlpha(0.0f);
+            actionBarSlideProperty.set(actionBar, 0.0f);
+        }
+
         listAdapter.setup();
         listAdapter.notifyDataSetChanged();
 
@@ -1354,7 +1394,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         if (isMyList()) {
             saveToProfileButton.setVisibility(View.GONE);
-            unsaveFromProfileTextView.setVisibility(View.GONE);
+            unsaveFromProfileButton.setVisibility(View.GONE);
 
             itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
                 @Override
@@ -1598,7 +1638,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             };
             speedHintView.setExtraTranslationY(dp(6));
-            speedHintView.setText(LocaleController.getString("SpeedHint"));
+            speedHintView.setText(LocaleController.getString(R.string.SpeedHint));
             playerLayout.addView(speedHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 0, 6, 0));
             speedHintView.showForView(playbackSpeedButton, true);
         }
@@ -1702,6 +1742,62 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     }
                 }
             }, false);
+        } else if (id == 8) {
+            new SelectAudioAlert(getContext(), true, null, audio -> {
+                if (audio == null || savedMusicList == null) return;
+                final TLRPC.Document document = audio.getDocument();
+                if (document == null) return;
+                if (document.id != 0) {
+                    final TLRPC.TL_account_saveMusic req = new TLRPC.TL_account_saveMusic();
+                    req.id = new TLRPC.TL_inputDocument();
+                    req.id.id = document.id;
+                    req.id.access_hash = document.access_hash;
+                    req.id.file_reference = document.file_reference;
+                    if (savedMusicList != null) {
+                        savedMusicList.add(document);
+                    }
+                    playlist.clear();
+                    playlist.addAll(savedMusicList.list);
+                    listAdapter.notifyDataSetChanged();
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
+                    return;
+                }
+                final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
+                progressDialog.showDelayed(180);
+                final File localFile = new File(audio.messageOwner.attachPath);
+                if (!localFile.exists()) return;
+                FileLoader.getInstance(currentAccount).uploadFile(localFile.getAbsolutePath(), file -> {
+                    if (file == null) {
+                        progressDialog.dismiss();
+                        return;
+                    }
+                    final TLRPC.TL_messages_uploadMedia req = new TLRPC.TL_messages_uploadMedia();
+                    req.peer = MessagesController.getInstance(currentAccount).getInputPeer(UserConfig.getInstance(currentAccount).getClientUserId());
+                    req.media = new TLRPC.TL_inputMediaUploadedDocument();
+                    req.media.file = file;
+                    req.media.mime_type = document.mime_type;
+                    req.media.attributes.addAll(document.attributes);
+                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                        progressDialog.dismiss();
+                        if (res instanceof TLRPC.TL_messageMediaDocument) {
+                            final TLRPC.TL_messageMediaDocument r = (TLRPC.TL_messageMediaDocument) res;
+
+                            final TLRPC.TL_account_saveMusic req2 = new TLRPC.TL_account_saveMusic();
+                            req2.id = new TLRPC.TL_inputDocument();
+                            req2.id.id = r.document.id;
+                            req2.id.access_hash = r.document.access_hash;
+                            req2.id.file_reference = r.document.file_reference;
+                            if (savedMusicList != null) {
+                                savedMusicList.add(r.document);
+                            }
+                            playlist.clear();
+                            playlist.addAll(savedMusicList.list);
+                            listAdapter.notifyDataSetChanged();
+                            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, null);
+                        }
+                    }));
+                });
+            }, null).withoutSavedMusic().show();
         }
     }
 
@@ -1898,10 +1994,20 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 actionBarAnimation = null;
             }
             actionBarAnimation = new AnimatorSet();
-            actionBarAnimation.setDuration(180);
-            actionBarAnimation.playTogether(
+            if (isProfilePlaylist) {
+                actionBarAnimation.playTogether(
+                    ObjectAnimator.ofFloat(actionBar, actionBarSlideProperty, show ? 1.0f : 0.0f),
+                    ObjectAnimator.ofFloat(actionBarBackground, View.ALPHA, show ? 1.0f : 0.0f),
+                    ObjectAnimator.ofFloat(actionBarShadow, View.ALPHA, show ? 1.0f : 0.0f)
+                );
+            } else {
+                actionBarAnimation.playTogether(
                     ObjectAnimator.ofFloat(actionBar, View.ALPHA, show ? 1.0f : 0.0f),
-                    ObjectAnimator.ofFloat(actionBarShadow, View.ALPHA, show ? 1.0f : 0.0f));
+                    ObjectAnimator.ofFloat(actionBarShadow, View.ALPHA, show ? 1.0f : 0.0f)
+                );
+            }
+            actionBarAnimation.setDuration(320);
+            actionBarAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
             actionBarAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -1941,6 +2047,38 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             AndroidUtilities.setLightStatusBar(getWindow(), wasLight = light);
         }
     }
+
+    private float actionBarSlide;
+    private final Property<ActionBar, Float> actionBarSlideProperty = new AnimationProperties.FloatProperty<ActionBar>("actionBarSlide") {
+        @Override
+        public void setValue(ActionBar actionBar, float value) {
+            actionBarSlide = value;
+            final View titleTextView = actionBar.getTitleTextView();
+            final View backButton = actionBar.getBackButton();
+
+            titleTextView.setTranslationX(dp(-52) * (1.0f - value));
+            backButton.setTranslationX(dp(-52) * (1.0f - value));
+            if (searchItem != null && searchItem.getSearchContainer() != null) {
+                searchItem.getSearchContainer().setClipChildren(false);
+                searchItem.getSearchContainer().setClipToPadding(false);
+                searchItem.getSearchContainer().setPadding(0, 0, dp(AndroidUtilities.isTablet() ? 74 : 66), 0);
+                searchItem.getSearchContainer().setTranslationX(dp(AndroidUtilities.isTablet() ? 74 : 66) + dp(-52) * (1.0f - value));
+                if (searchItem.getSearchClearButton() != null) {
+                    searchItem.getSearchClearButton().setTranslationX(dp(52) * (1.0f - value));
+                }
+            }
+
+            backButton.setScaleX(lerp(0.6f, 1.0f, value));
+            backButton.setScaleY(lerp(0.6f, 1.0f, value));
+            backButton.setAlpha(lerp(0.0f, 1.0f, value));
+            containerView.invalidate();
+        }
+
+        @Override
+        public Float get(ActionBar object) {
+            return actionBarSlide;
+        }
+    };
 
     @Override
     public void dismiss() {
@@ -2137,8 +2275,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             final long dialogId = messageObject.getDialogId();
             final long docId = messageObject.getDocument() != null ? messageObject.getDocument().id : 0L;
             final boolean noforwards = (
-                dialogId < 0 && MessagesController.getInstance(currentAccount).isChatNoForwards(-dialogId) ||
-                MessagesController.getInstance(currentAccount).isChatNoForwards(messageObject.getChatId()) ||
+                dialogId < 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(dialogId) ||
+                MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
                 messageObject.messageOwner.noforwards
             );
             if (noforwards != this.noforwards) {
@@ -2295,6 +2433,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         private Context context;
         private ArrayList<MessageObject> searchResult = new ArrayList<>();
+        private String searchQuery;
         private Runnable searchRunnable;
 
         public ListAdapter(Context context) {
@@ -2352,13 +2491,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         @Override
         public int getItemCount() {
             if (searchWas) {
-                return searchResult.size();
+                return (padWithItem ? 1 : 0) + searchResult.size();
             }
-            return playlist.size() > 1 ? playlist.size() : 0;
+            return playlist.size() > 1 ? (padWithItem ? 1 : 0) + playlist.size() : 0;
         }
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            if (padWithItem && holder.getAdapterPosition() == 0)
+                return false;
             return true;
         }
 
@@ -2374,6 +2515,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         );
                     }
                 };
+                paddingView.setTag(RecyclerListView.TAG_NOT_SECTION);
                 return new RecyclerListView.Holder(paddingView);
             } else {
                 View view = new AudioPlayerCell(context, MediaController.getInstance().currentPlaylistIsGlobalSearch() ? AudioPlayerCell.VIEW_TYPE_GLOBAL_SEARCH : AudioPlayerCell.VIEW_TYPE_DEFAULT, resourcesProvider);
@@ -2404,6 +2546,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 messageObject = playlist.get(playlist.size() - position - 1);
                 needDivider = (playlist.size() - position - 2) >= 0;
             }
+            if (messageObject != null) {
+                messageObject.setQuery(searchQuery);
+            }
             if (isMyList()) {
                 onReorderTouch = (v, e) -> {
                     if (e.getAction() == MotionEvent.ACTION_DOWN) {
@@ -2432,6 +2577,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 searchRunnable = null;
             }
             if (query == null) {
+                searchQuery = null;
                 searchResult.clear();
                 notifyDataSetChanged();
             } else {
@@ -2514,9 +2660,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
                 searchWas = true;
                 searchResult = documents;
+                searchQuery = query;
                 notifyDataSetChanged();
                 layoutManager.scrollToPosition(0);
-                emptySubtitleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("NoAudioFoundPlayerInfo", R.string.NoAudioFoundPlayerInfo, query)));
+                emptySubtitleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.NoAudioFoundPlayerInfo, query)));
             });
         }
     }
@@ -2546,7 +2693,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             optionsButton.redrawPopup(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
         };
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
+//        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, delegate, Theme.key_player_actionBarTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
@@ -2846,11 +2993,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private void setVisibleInProfile(boolean visible) {
         if (isMyList() || noforwards) {
             saveToProfileButton.setVisibility(View.GONE);
-            unsaveFromProfileTextView.setVisibility(View.GONE);
+            unsaveFromProfileButton.setVisibility(View.GONE);
             return;
         }
         saveToProfileButton.setVisibility(View.VISIBLE);
-        unsaveFromProfileTextView.setVisibility(View.VISIBLE);
+        unsaveFromProfileButton.setVisibility(View.VISIBLE);
         saveToProfileButton.animate()
             .alpha(visible ? 0.0f : 1.0f)
             .scaleX(visible ? 0.8f : 1.0f)
@@ -2861,14 +3008,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 saveToProfileButton.setVisibility(visible ? View.GONE : View.VISIBLE);
             })
             .start();
-        unsaveFromProfileTextView.animate()
+        unsaveFromProfileButton.animate()
             .alpha(!visible ? 0.0f : 1.0f)
             .scaleX(!visible ? 0.8f : 1.0f)
             .scaleY(!visible ? 0.8f : 1.0f)
             .setDuration(420)
             .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
             .withEndAction(() -> {
-                unsaveFromProfileTextView.setVisibility(visible ? View.VISIBLE : View.GONE);
+                unsaveFromProfileButton.setVisibility(visible ? View.VISIBLE : View.GONE);
             })
             .start();
     }

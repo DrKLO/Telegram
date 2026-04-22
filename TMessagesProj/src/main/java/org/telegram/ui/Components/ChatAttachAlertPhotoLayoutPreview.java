@@ -102,6 +102,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         super(alert, context, themeDelegate);
 
         this.themeDelegate = themeDelegate;
+        occupyNavigationBar = true;
+
         setWillNotDraw(false);
 
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
@@ -177,7 +179,6 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         listView.setClipToPadding(false);
         listView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(46));
 
         groupsView = new PreviewGroupsView(context);
         groupsView.setClipToPadding(true);
@@ -393,12 +394,10 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     rotate = false;
                     try {
                         if (photo.isVideo) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                                MediaMetadataRetriever m = new MediaMetadataRetriever();
-                                m.setDataSource(photo.path);
-                                String rotation = m.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-                                rotate = rotation != null && (rotation.equals("90") || rotation.equals("270"));
-                            }
+                            MediaMetadataRetriever m = new MediaMetadataRetriever();
+                            m.setDataSource(photo.path);
+                            String rotation = m.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                            rotate = rotation != null && (rotation.equals("90") || rotation.equals("270"));
                         } else {
                             ExifInterface exif = new ExifInterface(photo.path);
                             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
@@ -818,8 +817,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             paddingTop = 0;
         }
 //        paddingTop -= AndroidUtilities.dp(9);
-        if (listView.getPaddingTop() != paddingTop) {
-            listView.setPadding(listView.getPaddingLeft(), paddingTop, listView.getPaddingRight(), listView.getPaddingBottom());
+        if (listView.getPaddingTop() != paddingTop || listView.getPaddingBottom() != listPaddingBottom) {
+            listView.setPaddingWithoutRequestLayout(listView.getPaddingLeft(), paddingTop, listView.getPaddingRight(), listPaddingBottom);
             invalidate();
         }
 

@@ -10,6 +10,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -27,6 +28,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.CaptionContainerView;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -53,6 +56,8 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     private Drawable moveButtonIcon;
     private final AnimatedTextView.AnimatedTextDrawable moveButtonText = new AnimatedTextView.AnimatedTextDrawable();
     private final ButtonBounce moveButtonBounce = new ButtonBounce(this);
+
+    private BlurredBackgroundDrawable backgroundForCaptionButton;
 
     @Override
     protected int getEditTextStyle() {
@@ -88,14 +93,14 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         addPhotoButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         addPhotoButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, RIPPLE_MASK_CIRCLE_20DP, dp(18)));
         setAddPhotoVisible(false, false);
-        addView(addPhotoButton, LayoutHelper.createFrame(44, 44, Gravity.LEFT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 14, isAtTop() ? 10 : 0, 0, isAtTop() ? 0 : 10));
+        addView(addPhotoButton, LayoutHelper.createFrame(44, 44, Gravity.LEFT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 14, isAtTop() ? 6 : 0, 0, isAtTop() ? 0 : 6));
 
         timerButton = new ImageView(context);
         timerButton.setImageDrawable(timerDrawable = new PeriodDrawable());
         timerButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, RIPPLE_MASK_CIRCLE_20DP, dp(18)));
         timerButton.setScaleType(ImageView.ScaleType.CENTER);
         setTimerVisible(false, false);
-        addView(timerButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 0, isAtTop() ? 10 : 0, 11, isAtTop() ? 0 : 10));
+        addView(timerButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 0, isAtTop() ? 6 : 0, 10, isAtTop() ? 0 : 6));
 
         hint = new HintView2(context, isAtTop() ? HintView2.DIRECTION_TOP : HintView2.DIRECTION_BOTTOM);
         hint.setRounding(12);
@@ -184,10 +189,11 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         final float moveButtonExpanded = moveButtonExpandedAnimated.set(this.moveButtonExpanded);
         if (moveButtonAlpha > 0.0f) {
             float s = moveButtonBounce.getScale(.03f);
+            final int offset = dp(4 * (1f - keyboardT));
             if (isAtTop()) {
-                moveButtonBounds.set(dp(10), bounds.bottom + dp(10), dp(10 + 34) + (moveButtonText.getCurrentWidth() + dp(11)) * moveButtonExpanded, bounds.bottom + dp(10 + 32));
+                moveButtonBounds.set(offset + dp(7), bounds.bottom + dp(10), offset + dp(7 + 37) + (moveButtonText.getCurrentWidth() + dp(11)) * moveButtonExpanded, bounds.bottom + dp(10 + 32));
             } else {
-                moveButtonBounds.set(dp(10), bounds.top - dp(32 + 10), dp(10 + 34) + (moveButtonText.getCurrentWidth() + dp(11)) * moveButtonExpanded, bounds.top - dp(10));
+                moveButtonBounds.set(offset + dp(7), bounds.top - dp(32 + 10), offset + dp(7 + 37) + (moveButtonText.getCurrentWidth() + dp(11)) * moveButtonExpanded, bounds.top - dp(10));
             }
             if (moveButtonAlpha < 1) {
                 canvas.saveLayerAlpha(moveButtonBounds, (int) (0xFF * moveButtonAlpha), Canvas.ALL_SAVE_FLAG);
@@ -196,30 +202,27 @@ public class CaptionPhotoViewer extends CaptionContainerView {
             }
             canvas.scale(s, s, moveButtonBounds.centerX(), moveButtonBounds.centerY());
             canvas.clipRect(moveButtonBounds);
-            float r = dpf2(8.33f);
-            if (customBlur()) {
-                drawBlur(backgroundBlur, canvas, moveButtonBounds, r, false, 0, 0, true, 1.0f);
-                backgroundPaint.setAlpha((int) (lerp(0, 0x40, moveButtonAlpha)));
-                canvas.drawRoundRect(moveButtonBounds, r, r, backgroundPaint);
-            } else {
-                Paint[] blurPaints = backgroundBlur.getPaints(moveButtonAlpha, 0, 0);
-                if (blurPaints == null || blurPaints[1] == null) {
-                    backgroundPaint.setAlpha(lerp(0, 0x80, moveButtonAlpha));
-                    canvas.drawRoundRect(moveButtonBounds, r, r, backgroundPaint);
-                } else {
-                    if (blurPaints[0] != null) {
-                        canvas.drawRoundRect(moveButtonBounds, r, r, blurPaints[0]);
-                    }
-                    if (blurPaints[1] != null) {
-                        canvas.drawRoundRect(moveButtonBounds, r, r, blurPaints[1]);
-                    }
-                    backgroundPaint.setAlpha(lerp(0, 0x33, moveButtonAlpha));
-                    canvas.drawRoundRect(moveButtonBounds, r, r, backgroundPaint);
+            float r = dpf2(16f);
+
+            if (factoryForMentions != null) {
+                if (backgroundForCaptionButton == null) {
+                    backgroundForCaptionButton = factoryForMentions.create(this)
+                        .setColorProvider(BlurredBackgroundProviderImpl.photoViewer(resourcesProvider))
+                        .setPadding(dp(5))
+                        .setRadius(dp(16));
                 }
+
+                moveButtonBounds.round(AndroidUtilities.rectTmp2);
+                AndroidUtilities.rectTmp2.inset(-dp(5), -dp(5));
+                backgroundForCaptionButton.setBounds(AndroidUtilities.rectTmp2);
+                backgroundForCaptionButton.draw(canvas);
+
+                // backgroundPaint.setAlpha(lerp(0, 0x40, moveButtonAlpha));
+                // canvas.drawRoundRect(moveButtonBounds, r, r, backgroundPaint);
             }
-            moveButtonIcon.setBounds((int) (moveButtonBounds.left + dp(9)), (int) (moveButtonBounds.centerY() - dp(9)), (int) (moveButtonBounds.left + dp(9 + 18)), (int) (moveButtonBounds.centerY() + dp(9)));
+            moveButtonIcon.setBounds((int) (moveButtonBounds.left + dp(9)), (int) (moveButtonBounds.centerY() - dp(10)), (int) (moveButtonBounds.left + dp(9 + 20)), (int) (moveButtonBounds.centerY() + dp(10)));
             moveButtonIcon.draw(canvas);
-            moveButtonText.setBounds(moveButtonBounds.left + dp(34), moveButtonBounds.top, moveButtonBounds.right, moveButtonBounds.bottom);
+            moveButtonText.setBounds(moveButtonBounds.left + dp(37), moveButtonBounds.top, moveButtonBounds.right, moveButtonBounds.bottom);
             moveButtonText.setAlpha((int) (0xFF * moveButtonExpanded));
             moveButtonText.draw(canvas);
             canvas.restore();
@@ -248,7 +251,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         updateEditTextLeft();
 
         MarginLayoutParams lp = (MarginLayoutParams) editText.getLayoutParams();
-        lp.rightMargin = dp(12 + (addPhotoVisible && timerVisible ? 33 : 0));
+        lp.rightMargin = dp(32 + (addPhotoVisible && timerVisible ? 33 : 0));
         editText.setLayoutParams(lp);
     }
 
@@ -286,7 +289,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         }
 
         MarginLayoutParams lp = (MarginLayoutParams) editText.getLayoutParams();
-        lp.rightMargin = dp(12 + (addPhotoVisible && timerVisible ? 33 : 0));
+        lp.rightMargin = dp(32 + (addPhotoVisible && timerVisible ? 33 : 0));
         editText.setLayoutParams(lp);
     }
 

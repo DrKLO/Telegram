@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,10 +21,10 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.GestureDetectorCompat;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -31,15 +33,15 @@ public class CustomPhoneKeyboardView extends ViewGroup {
 
     private final static int SIDE_PADDING = 10, BUTTON_PADDING = 6;
 
-    private ImageView backButton;
+    private final ImageView backButton;
     private EditText editText;
-    private View[] views = new View[12];
+    private final View[] views = new View[12];
 
     private View viewToFindFocus;
 
     private boolean dispatchBackWhenEmpty;
     private boolean runningLongClick;
-    private Runnable onBackButton = () -> {
+    private final Runnable onBackButton = () -> {
         checkFindEditText();
         if (editText == null || editText.length() == 0 && !dispatchBackWhenEmpty) return;
 
@@ -56,7 +58,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     };
 
     private boolean postedLongClick;
-    private Runnable detectLongClick = () -> {
+    private final Runnable detectLongClick = () -> {
         postedLongClick = false;
         runningLongClick = true;
         onBackButton.run();
@@ -151,11 +153,17 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         };
         backButton.setImageResource(R.drawable.msg_clear_input);
         backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        backButton.setBackground(getButtonDrawable());
-        int pad = AndroidUtilities.dp(11);
+        int pad = dp(11);
         backButton.setPadding(pad, pad, pad, pad);
         backButton.setOnClickListener(v -> {});
         addView(views[11] = backButton);
+
+        for (int a = 0; a < views.length; a++) {
+            final View v = views[a];
+            if (v == null) continue;
+            ScaleStateListAnimator.apply(v, 0.02f, 1.2f);
+            v.setBackground(getButtonDrawable(a));
+        }
     }
 
     @Override
@@ -171,7 +179,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         int touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         return new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
             @Override
-            public boolean onDown(MotionEvent e) {
+            public boolean onDown(@NonNull MotionEvent e) {
                 if (postedLongClick) {
                     removeCallbacks(detectLongClick);
                 }
@@ -182,7 +190,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
             }
 
             @Override
-            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            public boolean onScroll(MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
                 if ((postedLongClick || runningLongClick) && (Math.abs(distanceX) >= touchSlop || Math.abs(distanceY) >= touchSlop)) {
                     postedLongClick = false;
                     runningLongClick = false;
@@ -214,13 +222,13 @@ public class CustomPhoneKeyboardView extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        int btnWidth = (getWidth() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
-        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
+        int btnWidth = (getWidth() - dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
+        int btnHeight = (getHeight() - dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
 
         for (int i = 0; i < views.length; i++) {
             int rowX = i % 3, rowY = i / 3;
-            int left = rowX * (btnWidth + AndroidUtilities.dp(BUTTON_PADDING)) + AndroidUtilities.dp(SIDE_PADDING);
-            int top = rowY * (btnHeight + AndroidUtilities.dp(BUTTON_PADDING)) + AndroidUtilities.dp(SIDE_PADDING);
+            int left = rowX * (btnWidth + dp(BUTTON_PADDING)) + dp(SIDE_PADDING);
+            int top = rowY * (btnHeight + dp(BUTTON_PADDING)) + dp(SIDE_PADDING);
             if (views[i] != null) {
                 views[i].layout(left, top, left + btnWidth, top + btnHeight);
             }
@@ -231,8 +239,8 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
 
-        int btnWidth = (getWidth() - AndroidUtilities.dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
-        int btnHeight = (getHeight() - AndroidUtilities.dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
+        int btnWidth = (getWidth() - dp(SIDE_PADDING * 2 + BUTTON_PADDING * 2)) / 3;
+        int btnHeight = (getHeight() - dp(SIDE_PADDING * 3 + BUTTON_PADDING * 2)) / 4;
 
         for (View v : views) {
             if (v != null) {
@@ -241,15 +249,29 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         }
     }
 
-    private static Drawable getButtonDrawable() {
-        return Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_listSelector), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 60));
+    private static Drawable getButtonDrawable(int index) {
+        final boolean isTop = index < 3;        // 0 1 2
+        final boolean isLeft = index % 3 == 0;  // 0 3 6 9
+        final boolean isRight = index % 3 == 2; // 2 5 8 11
+        final boolean isBottom = index > 8;     // 9 10 11
+
+        final int defaultColor = Theme.getColor(Theme.key_listSelector);
+        final int pressedColor = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 30);
+
+        return Theme.createSimpleSelectorRoundRectDrawable(
+            dp(isLeft && isTop ? 24 : 12),
+            dp(isRight && isTop ? 24 : 12),
+            dp(isRight && isBottom ? 24 : 12),
+            dp(/*index == 10 || index == 6 ||*/ isLeft && isBottom ? 24 : 12),
+            defaultColor, pressedColor, pressedColor);
     }
 
     public void updateColors() {
         backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        for (View v : views) {
+        for (int a = 0; a < views.length; a++) {
+            View v = views[a];
             if (v != null) {
-                v.setBackground(getButtonDrawable());
+                v.setBackground(getButtonDrawable(a));
 
                 if (v instanceof NumberButtonView) {
                     ((NumberButtonView) v).updateColors();
@@ -259,20 +281,20 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     }
 
     private final static class NumberButtonView extends View {
-        private TextPaint numberTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private TextPaint symbolsTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private String mNumber, mSymbols;
-        private Rect rect = new Rect();
+        private final TextPaint numberTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final TextPaint symbolsTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final String mNumber;
+        private final String mSymbols;
+        private final Rect rect = new Rect();
 
         public NumberButtonView(Context context, String number, String symbols) {
             super(context);
             mNumber = number;
             mSymbols = symbols;
 
-            numberTextPaint.setTextSize(AndroidUtilities.dp(24));
-            symbolsTextPaint.setTextSize(AndroidUtilities.dp(14));
+            numberTextPaint.setTextSize(dp(24));
+            symbolsTextPaint.setTextSize(dp(14));
 
-            setBackground(getButtonDrawable());
             updateColors();
         }
 

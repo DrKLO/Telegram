@@ -3,16 +3,15 @@ package org.telegram.ui.Cells;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,14 +26,12 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
 
-public class DialogsHintCell extends BlurredFrameLayout {
+public class DialogsHintCell extends FrameLayout {
 
     private final LinearLayout parentView;
     private final LinearLayout contentView;
@@ -47,11 +44,11 @@ public class DialogsHintCell extends BlurredFrameLayout {
 
     public boolean titleIsError;
 
-    public DialogsHintCell(@NonNull Context context, SizeNotifierFrameLayout parentFrameLayout) {
-        super(context, parentFrameLayout);
+    public DialogsHintCell(@NonNull Context context) {
+        super(context);
 
         setWillNotDraw(false);
-        setPadding(dp(9), dp(8), dp(9), dp(8));
+        setPadding(dp(9), dp(5), dp(9), dp(7));
 
         avatarsImageView = new AvatarsImageView(context, false);
         avatarsImageView.setStepFactor(46f / 81f);
@@ -67,14 +64,14 @@ public class DialogsHintCell extends BlurredFrameLayout {
 
         titleView = new AnimatedEmojiSpan.TextViewEmojis(context);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setMaxLines(5);
 
         contentView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP));
 
         messageView = new LinkSpanDrawable.LinksTextView(context);
-        messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        messageView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         messageView.setEllipsize(TextUtils.TruncateAt.END);
         messageView.setMaxLines(5);
         contentView.addView(messageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP));
@@ -92,30 +89,33 @@ public class DialogsHintCell extends BlurredFrameLayout {
         parentView.setOrientation(LinearLayout.HORIZONTAL);
         if (LocaleController.isRTL) {
             parentView.addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 7, 0, 7, 0));
-            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, 36, Gravity.CENTER_VERTICAL, 2, 0, 8, 0));
-            parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 2, 1, 0, 0));
+            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 0, 0, -2, 0));
+            parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, -2, 0));
         } else {
-            parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 1, 2, 0));
-            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, 36, Gravity.CENTER_VERTICAL, 0, 0, 2, 0));
+            parentView.addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_VERTICAL | Gravity.LEFT, -2, 0, 0, 0));
+            parentView.addView(avatarsImageView, LayoutHelper.createFrame(0, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, -2, 0, 0, 0));
             parentView.addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 7, 0, 7, 0));
         }
         addView(parentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        parentView.setClipChildren(false);
+        parentView.setClipToPadding(false);
 
         chevronView = new ImageView(context);
         chevronView.setImageResource(R.drawable.arrow_newchat);
-        addView(chevronView, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
+        addView(chevronView, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 4, 0, 4, 0));
 
         closeView = new ImageView(context);
         closeView.setImageResource(R.drawable.msg_close);
         closeView.setPadding(dp(6), dp(6), dp(6), dp(6));
-        addView(closeView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? -15 + 7 : 0, 0, LocaleController.isRTL ? 0 : -15 + 7, 0));
+        addView(closeView, LayoutHelper.createFrame(36, 36, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, -4, 0, -4, 0));
         closeView.setVisibility(GONE);
         setClipToPadding(false);
+        setClipChildren(false);
         updateColors();
     }
 
     public void setCompact(boolean compact) {
-        setPadding(dp(9), dp(compact ? 4 : 8), dp(9), dp(8));
+
     }
 
     public void updateColors() {
@@ -125,22 +125,22 @@ public class DialogsHintCell extends BlurredFrameLayout {
         chevronView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         closeView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN);
         closeView.setBackground(Theme.AdaptiveRipple.filledCircle());
-        setBackground(Theme.AdaptiveRipple.filledRect());
+        // setBackground(Theme.AdaptiveRipple.filledRect());
     }
 
     public void setAvatars(int currentAccount, ArrayList<TLRPC.User> users) {
         final int count = Math.min(3, users == null ? 0 : users.size());
         final boolean updated = count != avatarsImageView.avatarsDrawable.count;
         if (count <= 1) {
-            avatarsImageView.setAvatarsTextSize(dp(20));
-            avatarsImageView.setSize(dp(32));
+            avatarsImageView.setAvatarsTextSize(dp(22));
+            avatarsImageView.setSize(dp(36));
         } else {
-            avatarsImageView.setAvatarsTextSize(dp(18));
-            avatarsImageView.setSize(dp(27));
+            avatarsImageView.setAvatarsTextSize(dp(20));
+            avatarsImageView.setSize(dp(30));
         }
         avatarsImageView.setCount(count);
         avatarsImageView.setVisibility(count <= 0 ? View.GONE : View.VISIBLE);
-        avatarsImageView.getLayoutParams().width = count <= 1 ? dp(32) : dp(27 + 16 * (count - 1));
+        avatarsImageView.getLayoutParams().width = count <= 1 ? dp(36) : dp(30 + 18 * (count - 1));
         if (updated) parentView.requestLayout();
         if (users != null) {
             for (int i = 0; i < 3; ++i) {
@@ -199,35 +199,21 @@ public class DialogsHintCell extends BlurredFrameLayout {
         return super.onTouchEvent(event);
     }
 
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        super.dispatchDraw(canvas);
-        canvas.drawRect(0, getHeight() - 1, getWidth(), getHeight(), Theme.dividerPaint);
-    }
-
     private int height;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        if (width <= 0) {
-            width = AndroidUtilities.displaySize.x;
-        }
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
         contentView.measure(
-                MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST)
+            MeasureSpec.makeMeasureSpec(contentView.getMeasuredWidth(), MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST)
         );
-        this.height = parentView.getMeasuredHeight() + getPaddingTop() + getPaddingBottom() + 1;
+        this.height = contentView.getMeasuredHeight() + getPaddingTop() + getPaddingBottom();
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
-    }
 
-    public int height() {
-        if (getVisibility() != View.VISIBLE) {
-            return 0;
-        }
-        if (height <= 0) {
-            height = dp(72) + 1;
-        }
-        return height;
+        closeView.setTranslationY((getPaddingBottom() - getPaddingTop()) / 2f);
+        avatarsImageView.setTranslationY((getPaddingBottom() - getPaddingTop()) / 2f);
+        imageView.setTranslationY((getPaddingBottom() - getPaddingTop()) / 2f);
+        chevronView.setTranslationY((getPaddingBottom() - getPaddingTop()) / 2f);
     }
 }

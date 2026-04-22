@@ -18,7 +18,8 @@ half sdfRect(half2 p, half4 r) {
 
 half4 srcOver(half4 src, half4 dst) {
     half3 outRGB = (src.rgb + dst.rgb * (1.0 - src.a));
-    return half4(outRGB, 1.0);
+    float outA = src.a + (1.0 - src.a) * dst.a;
+    return half4(outRGB, outA);
 }
 
 half4 main(in float2 fragCoord) {

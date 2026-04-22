@@ -216,6 +216,9 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         greetingsView.setPreview("", "");
 
         super.createView(context);
+        listView.setSections();
+        listView.adapter.setApplyBackground(false);
+        actionBar.setAdaptiveBackground(listView);
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -577,6 +580,17 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         if (id == NotificationCenter.userInfoDidLoad) {
             setValue();
         }
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
     }
 
 }

@@ -11,6 +11,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeColors;
 
 public class BottomPagesView extends View {
 
@@ -70,7 +71,7 @@ public class BottomPagesView extends View {
         if (selectedColorKey >= 0) {
             paint.setColor(Theme.getColor(selectedColorKey));
         } else {
-            paint.setColor(0xff2ca5e0);
+            paint.setColor(ThemeColors.TELEGRAM_COLOR);
         }
         x = currentPage * AndroidUtilities.dp(11);
         if (progress != 0) {

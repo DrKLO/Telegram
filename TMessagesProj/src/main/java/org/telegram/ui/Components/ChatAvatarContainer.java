@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -32,6 +33,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -60,10 +62,14 @@ import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.ProfileActivity2;
 import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.TopicsFragment;
 
 import java.util.concurrent.atomic.AtomicReference;
+
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 
 public class ChatAvatarContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -291,13 +297,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment != null) {
             timeItem = new ImageView(context);
-            timeItem.setPadding(dp(10), dp(10), dp(5), dp(5));
             timeItem.setScaleType(ImageView.ScaleType.CENTER);
             timeItem.setAlpha(0.0f);
             timeItem.setScaleY(0.0f);
             timeItem.setScaleX(0.0f);
             timeItem.setVisibility(GONE);
             timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context, resourcesProvider));
+            timerDrawable.setBackgroundColor(0);
             addView(timeItem);
             secretChatTimer = needTime;
 
@@ -318,6 +324,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             starBgItem.setImageResource(R.drawable.star_small_outline);
             starBgItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefault), PorterDuff.Mode.SRC_IN));
             starBgItem.setAlpha(0.0f);
+            starBgItem.setVisibility(View.INVISIBLE);
             starBgItem.setScaleY(0.0f);
             starBgItem.setScaleX(0.0f);
             addView(starBgItem);
@@ -325,6 +332,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             starFgItem = new ImageView(context);
             starFgItem.setImageResource(R.drawable.star_small_inner);
             starFgItem.setAlpha(0.0f);
+            starFgItem.setVisibility(View.INVISIBLE);
             starFgItem.setScaleY(0.0f);
             starFgItem.setScaleX(0.0f);
             addView(starFgItem);
@@ -397,6 +405,22 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         canvas.scale(s, s, getWidth() / 2f, getHeight() / 2f);
         super.dispatchDraw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+        if (child == avatarImageView && timeItem != null && timeItem.getVisibility() == VISIBLE) {
+            AndroidUtilities.rectTmp.set(child.getX(), child.getY(), child.getX() + child.getWidth(), child.getY() + child.getHeight());
+            canvas.saveLayer(AndroidUtilities.rectTmp, null);
+            final boolean b = super.drawChild(canvas, child, drawingTime);
+            final float cx = timeItem.getX() + timeItem.getWidth() / 2f;    // AndroidUtilities.rectTmp.left + dpf2(68 / 3f + 11);
+            final float cy = timeItem.getY() + timeItem.getHeight() / 2f;   // AndroidUtilities.rectTmp.top + dpf2(66 / 3f + 11);
+            final float r = dpf2(11.5f) * timeItem.getScaleX();         //dpf2(11) * ttlFactor;
+            canvas.drawCircle(cx, cy, r, Theme.PAINT_CLEAR);
+            canvas.restore();
+            return b;
+        }
+        return super.drawChild(canvas, child, drawingTime);
     }
 
     public boolean ignoreTouches;
@@ -577,7 +601,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 }
                 args.putBoolean("reportSpam", parentFragment.hasReportSpam());
                 args.putInt("actionBarColor", getThemedColor(Theme.key_actionBarDefault));
-                ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
+                final ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
                 if (!monoforum) {
                     fragment.setUserInfo(parentFragment.getCurrentUserInfo(), parentFragment.profileChannelMessageFetcher, parentFragment.birthdayAssetsFetcher);
                 }
@@ -594,7 +618,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             } else if (parentFragment.isTopic) {
                 args.putLong("topic_id", parentFragment.getThreadMessage().getId());
             }
-            ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
+            final ProfileActivity fragment = new ProfileActivity(args, sharedMediaPreloader);
             if (!monoforum) {
                 fragment.setChatInfo(parentFragment.getCurrentChatInfo());
             }
@@ -758,7 +782,9 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         timeItem.setVisibility(VISIBLE);
         timeItem.setTag(1);
         if (animated) {
-            timeItem.animate().setDuration(180).alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setListener(null).start();
+            timeItem.animate().setDuration(180).alpha(1.0f).scaleX(1.0f).scaleY(1.0f)
+                .setListener(null)
+                .setUpdateListener(v -> invalidate()).start();
         } else {
             timeItem.setAlpha(1.0f);
             timeItem.setScaleY(1.0f);
@@ -779,7 +805,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     timeItem.setVisibility(GONE);
                     super.onAnimationEnd(animation);
                 }
-            }).start();
+            }).setUpdateListener(v -> invalidate()).start();
         } else {
             timeItem.setVisibility(GONE);
             timeItem.setAlpha(0.0f);
@@ -810,15 +836,29 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (starBgItem == null || starFgItem == null) return;
         this.stars = stars;
         if (!animated) {
+            starBgItem.setVisibility(stars ? VISIBLE : INVISIBLE);
             starBgItem.setAlpha(stars ? 1f : 0f);
             starBgItem.setScaleX(stars ? 1.1f : 0f);
             starBgItem.setScaleY(stars ? 1.1f : 0f);
+            starFgItem.setVisibility(stars ? VISIBLE : INVISIBLE);
             starFgItem.setAlpha(stars ? 1f : 0f);
             starFgItem.setScaleX(stars ? 1f : 0f);
             starFgItem.setScaleY(stars ? 1f : 0f);
         } else {
-            starBgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1.1f : 0f).scaleY(stars ? 1.1f : 0f).start();
-            starFgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1f : 0f).scaleY(stars ? 1f : 0f).start();
+            if (stars) {
+                starBgItem.setVisibility(VISIBLE);
+                starFgItem.setVisibility(VISIBLE);
+            }
+            starBgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1.1f : 0f).scaleY(stars ? 1.1f : 0f).withEndAction(() -> {
+                if (!stars) {
+                    starBgItem.setVisibility(INVISIBLE);
+                }
+            }).start();
+            starFgItem.animate().alpha(stars ? 1f : 0f).scaleX(stars ? 1f : 0f).scaleY(stars ? 1f : 0f).withEndAction(() -> {
+                if (!stars) {
+                    starFgItem.setVisibility(INVISIBLE);
+                }
+            }).start();
         }
     }
 
@@ -1014,10 +1054,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         subtitleIsThinkingBot = false;
         CharSequence printString = MessagesController.getInstance(currentAccount).getPrintingString(parentFragment.getDialogId(), parentFragment.getThreadId(), false);
         if (printString == null && UserObject.isBotForum(user)) {
-            if (BotForumHelper.getInstance(currentAccount).isThinking(user.id, (int) parentFragment.getTopicId())) {
-                printString = "thinking";
-                subtitleIsThinkingBot = true;
-            }
+            //if (BotForumHelper.getInstance(currentAccount).isThinking(user.id, (int) parentFragment.getTopicId())) {
+            //    printString = "thinking";
+            //    subtitleIsThinkingBot = true;
+            //}
         }
 
         if (printString != null) {

@@ -57,6 +57,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
     public static final int STAR_SUBSCRIPTION = 33;
     public static final int STAR_GIFT = 34;
     public static final int STAR_GIFT_SELECT = 35;
+    public static final int STAR_GIFT_SHORTER = 36;
 
     private int gradientWidth;
     private LinearGradient gradient;
@@ -164,7 +165,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
             paint = globalGradientView.paint;
         }
 
-        if (getViewType() == STAR_GIFT || getViewType() == STAR_GIFT_SELECT) {
+        if (getViewType() == STAR_GIFT || getViewType() == STAR_GIFT_SELECT || getViewType() == STAR_GIFT_SHORTER) {
             parentXOffset = -getX();
         }
 
@@ -856,7 +857,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
                     break;
                 }
             }
-        } else if (getViewType() == STAR_GIFT || getViewType() == STAR_GIFT_SELECT) {
+        } else if (getViewType() == STAR_GIFT || getViewType() == STAR_GIFT_SELECT || getViewType() == STAR_GIFT_SHORTER) {
             rectF.set(paddingLeft, paddingTop, getMeasuredWidth() - paddingLeft, getMeasuredHeight() - paddingTop);
             rectF.inset(dp(3.33f), dp(4));
             canvas.drawRoundRect(rectF, dp(11), dp(11), paint);
@@ -881,7 +882,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         if (width == 0) {
             width = getMeasuredWidth();
         }
-        if (viewType == STAR_GIFT || viewType == STAR_GIFT_SELECT) {
+        if (viewType == STAR_GIFT || viewType == STAR_GIFT_SELECT || viewType == STAR_GIFT_SHORTER) {
             width = Math.max(width, AndroidUtilities.displaySize.x);
         }
         int height = parentHeight;
@@ -918,7 +919,7 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
         if (this.color1 != color1 || this.color0 != color0) {
             this.color0 = color0;
             this.color1 = color1;
-            if (viewType == STAR_GIFT || viewType == STAR_GIFT_SELECT) {
+            if (viewType == STAR_GIFT || viewType == STAR_GIFT_SELECT || viewType == STAR_GIFT_SHORTER) {
                 gradientWidth = AndroidUtilities.displaySize.x;
             } else if (isSingleCell || viewType == MESSAGE_SEEN_TYPE || viewType == CHAT_THEMES_TYPE || viewType == QR_TYPE) {
                 gradientWidth = dp(200);
@@ -1008,6 +1009,8 @@ public class FlickerLoadingView extends View implements Theme.Colorable {
                 return dp(140);
             case STAR_GIFT_SELECT:
                 return dp(120 - 8);
+            case STAR_GIFT_SHORTER:
+                return dp(108);
         }
         return 0;
     }

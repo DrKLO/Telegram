@@ -10,8 +10,10 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.CRC32;
 
 public class TlUtils {
 
@@ -199,5 +201,68 @@ public class TlUtils {
         }
 
         return newGroupCall;
+    }
+
+
+
+
+    public static TLRPC.InputMedia toInputMediaGeo(TLRPC.MessageMedia location) {
+        TLRPC.InputMedia inputMedia = null;
+        if (location instanceof TLRPC.TL_messageMediaVenue) {
+            inputMedia = new TLRPC.TL_inputMediaVenue();
+            inputMedia.address = location.address;
+            inputMedia.title = location.title;
+            inputMedia.provider = location.provider;
+            inputMedia.venue_id = location.venue_id;
+            inputMedia.venue_type = "";
+        } else if (location instanceof TLRPC.TL_messageMediaGeoLive) {
+            inputMedia = new TLRPC.TL_inputMediaGeoLive();
+            inputMedia.period = location.period;
+            inputMedia.flags |= 2;
+            if (location.heading != 0) {
+                inputMedia.heading = location.heading;
+                inputMedia.flags |= 4;
+            }
+            if (location.proximity_notification_radius != 0) {
+                inputMedia.proximity_notification_radius = location.proximity_notification_radius;
+                inputMedia.flags |= 8;
+            }
+        } else {
+            inputMedia = new TLRPC.TL_inputMediaGeoPoint();
+        }
+        inputMedia.geo_point = new TLRPC.TL_inputGeoPoint();
+        inputMedia.geo_point.lat = location.geo.lat;
+        inputMedia.geo_point._long = location.geo._long;
+        return inputMedia;
+    }
+
+    public static void calculateAnswerShuffleHash(TLRPC.Poll poll, long userId) {
+        if (poll == null) {
+            return;
+        }
+
+        for (int a = 0, N = poll.answers.size(); a < N; a++) {
+            final TLRPC.PollAnswer answer = poll.answers.get(a);
+            answer.unshuffled_index = a;
+        }
+
+        if (!poll.creator && poll.shuffle_answers) {
+            final CRC32 crc32 = new CRC32();
+            for (int a = 0, N = poll.answers.size(); a < N; a++) {
+                final TLRPC.PollAnswer answer = poll.answers.get(a);
+                if (answer.option == null) {
+                    continue;
+                }
+
+                crc32.reset();
+                crc32.update(Long.toString(userId).getBytes(StandardCharsets.UTF_8));
+                crc32.update(answer.option);
+                crc32.update(Long.toString(poll.id).getBytes(StandardCharsets.UTF_8));
+                answer.shuffle_hash = crc32.getValue();
+            }
+
+            poll.shuffled_answers = new ArrayList<>(poll.answers);
+            poll.shuffled_answers.sort((a1, a2) -> Long.compareUnsigned(a1.shuffle_hash, a2.shuffle_hash));
+        }
     }
 }

@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Components.RLottieDrawable;
 
@@ -110,7 +111,7 @@ public class ActionBarMenu extends LinearLayout {
         return addItemAt(-1, id, icon, text, backgroundColor, drawable, width, title, resourcesProvider);
     }
 
-    protected ActionBarMenuItem addItemAt(int index, int id, int icon, CharSequence text, int backgroundColor, Drawable drawable, int width, CharSequence title, Theme.ResourcesProvider resourcesProvider) {
+    public ActionBarMenuItem addItemAt(int index, int id, int icon, CharSequence text, int backgroundColor, Drawable drawable, int width, CharSequence title, Theme.ResourcesProvider resourcesProvider) {
         ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor, isActionMode ? parentActionBar.itemsActionModeColor : parentActionBar.itemsColor, text != null, resourcesProvider);
         menuItem.setTag(id);
         if (text != null) {
@@ -150,6 +151,10 @@ public class ActionBarMenu extends LinearLayout {
 
     public LazyItem lazilyAddItem(int id, int icon, Theme.ResourcesProvider resourcesProvider) {
         return lazilyAddItem(id, icon, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, null, AndroidUtilities.dp(48), null, resourcesProvider);
+    }
+
+    public LazyItem lazilyAddItem(int id, Drawable drawable, Theme.ResourcesProvider resourcesProvider) {
+        return lazilyAddItem(id, 0, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48), null, resourcesProvider);
     }
 
     public LazyItem lazilyAddItem(int id, int icon, CharSequence text, int backgroundColor, Drawable drawable, int width, CharSequence title, Theme.ResourcesProvider resourcesProvider) {
@@ -194,6 +199,7 @@ public class ActionBarMenu extends LinearLayout {
 
         int visibility = GONE;
         ActionBarMenuItem cell;
+        ArrayList<Utilities.Callback<ActionBarMenuItem>> onViews;
 
         public void setVisibility(int visibility) {
             if (this.visibility != visibility) {
@@ -320,6 +326,21 @@ public class ActionBarMenu extends LinearLayout {
                 cell.setSearchFieldHint(searchFieldHint);
             }
             cell.setAlpha(alpha);
+
+            if (onViews != null) {
+                for (Utilities.Callback<ActionBarMenuItem> onView : onViews)
+                    onView.run(cell);
+                onViews = null;
+            }
+        }
+
+        public void onView(Utilities.Callback<ActionBarMenuItem> onView) {
+            if (cell != null) {
+                onView.run(cell);
+                return;
+            }
+            if (onViews == null) onViews = new ArrayList<>();
+            onViews.add(onView);
         }
     }
 
@@ -550,6 +571,17 @@ public class ActionBarMenu extends LinearLayout {
             }
         }
         return w;
+    }
+
+    public int getVisibleItemsMeasuredWidthWithAlpha() {
+        float w = 0;
+        for (int i = 0, count = getChildCount(); i < count; i++) {
+            View view = getChildAt(i);
+            if (view instanceof ActionBarMenuItem && view.getVisibility() == View.VISIBLE) {
+                w += view.getMeasuredWidth() * view.getAlpha();
+            }
+        }
+        return (int) w;
     }
 
     public boolean searchFieldVisible() {

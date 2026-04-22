@@ -17,24 +17,22 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class VideoTimelinePlayView extends View {
@@ -43,11 +41,14 @@ public class VideoTimelinePlayView extends View {
     private int videoWidth, videoHeight;
     private float progressLeft;
     private float progressRight = 1;
+    private float progressPreview;
     private boolean pressedLeft;
     private boolean pressedRight;
     private boolean pressedPlay;
     private float playProgress = 0.5f;
     private float pressDx;
+    private boolean isLivePhoto;
+    private ParcelFileDescriptor fd;
     private MediaMetadataRetriever mediaMetadataRetriever;
     private VideoTimelineViewDelegate delegate;
     private ArrayList<BitmapFrame> frames = new ArrayList<>();
@@ -86,6 +87,7 @@ public class VideoTimelinePlayView extends View {
     public static int TYPE_PROGRESS = 2;
 
     private final Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint yellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dimPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint cutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -94,6 +96,7 @@ public class VideoTimelinePlayView extends View {
     public VideoTimelinePlayView(Context context) {
         super(context);
         whitePaint.setColor(0xffffffff);
+        yellowPaint.setColor(0xffffff00);
         shadowPaint.setColor(0x26000000);
         dimPaint.setColor(0x4d000000);
         cutPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -301,9 +304,10 @@ public class VideoTimelinePlayView extends View {
         return true;
     }
 
-    public void setVideoPath(String path, float left, float right) {
+    public void setVideoPath(String path, long pathOffset, float left, float right, long livePhotoTimestampUs) {
         destroy();
         mediaMetadataRetriever = new MediaMetadataRetriever();
+        isLivePhoto = pathOffset > 0;
         progressLeft = left;
         progressRight = right;
         if (playProgress < progressLeft) {
@@ -312,7 +316,13 @@ public class VideoTimelinePlayView extends View {
             playProgress = progressRight;
         }
         try {
-            mediaMetadataRetriever.setDataSource(path);
+            if (pathOffset > 0) {
+                final File file = new File(path);
+                fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+                mediaMetadataRetriever.setDataSource(fd.getFileDescriptor(), pathOffset, file.length() - pathOffset);
+            } else {
+                mediaMetadataRetriever.setDataSource(path);
+            }
             String value;
             value = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             if (value != null) {
@@ -334,6 +344,9 @@ public class VideoTimelinePlayView extends View {
                     videoWidth = videoHeight;
                     videoHeight = temp;
                 }
+            }
+            if (isLivePhoto) {
+                progressPreview = (float) ((livePhotoTimestampUs / 1000.0) / videoLength);
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -438,6 +451,14 @@ public class VideoTimelinePlayView extends View {
     public void destroy() {
         synchronized (sync) {
             try {
+                if (fd != null) {
+                    fd.close();
+                    fd = null;
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            try {
                 if (mediaMetadataRetriever != null) {
                     mediaMetadataRetriever.release();
                     mediaMetadataRetriever = null;
@@ -465,6 +486,9 @@ public class VideoTimelinePlayView extends View {
 
     private final AnimatedFloat loopProgress = new AnimatedFloat(0, this, 0, 200, CubicBezierInterpolator.EASE_BOTH);
     public void setProgress(float value) {
+        if (isLivePhoto && (value <= 0 || value >= 1)) {
+            value = progressPreview;
+        }
         float d = videoLength == 0 ? 0 : 240 / (float) videoLength;
         if (value < this.playProgress && value <= progressLeft + d && this.playProgress + d >= progressRight) {
             loopProgress.set(1, true);
@@ -575,31 +599,37 @@ public class VideoTimelinePlayView extends View {
             canvas.restore();
         }
 
-        canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
-        rect3.set(startX - dpf2(10), top, endX + dpf2(10), end);
-        whitePaint.setAlpha(0xFF);
-        canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), whitePaint);
-        rect3.set(startX, top + dpf2(2), endX, end - dpf2(2));
-        canvas.drawRect(rect3, cutPaint);
-        canvas.restore();
+        if (!isLivePhoto) {
+            canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+            rect3.set(startX - dpf2(10), top, endX + dpf2(10), end);
+            whitePaint.setAlpha(0xFF);
+            canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), whitePaint);
+            rect3.set(startX, top + dpf2(2), endX, end - dpf2(2));
+            canvas.drawRect(rect3, cutPaint);
+            canvas.restore();
 
-        final float hw = dp(2), hh = dp(10);
-        float hx = startX - (dpf2(10) - hw) / 2f, hy = top + (end - top - hh) / 2f;
-        rect3.set(hx, hy, hx - hw, hy + hh);
-        canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), handlePaint);
+            final float hw = dp(2), hh = dp(10);
+            float hx = startX - (dpf2(10) - hw) / 2f, hy = top + (end - top - hh) / 2f;
+            rect3.set(hx, hy, hx - hw, hy + hh);
+            canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), handlePaint);
 
-        hx = endX + (dpf2(10) - hw) / 2f;
-        rect3.set(hx, hy, hx + hw, hy + hh);
-        canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), handlePaint);
+            hx = endX + (dpf2(10) - hw) / 2f;
+            rect3.set(hx, hy, hx + hw, hy + hh);
+            canvas.drawRoundRect(rect3, dpf2(6), dpf2(6), handlePaint);
+        }
 
         float loopT = loopProgress.set(0);
         if (loopT > 0) {
-            drawProgress(canvas, progressRight, loopT);
+            drawProgress(canvas, progressRight, loopT, whitePaint);
         }
-        drawProgress(canvas, playProgress, 1f - loopT);
+        drawProgress(canvas, playProgress, 1f - loopT, whitePaint);
+
+        if (isLivePhoto) {
+            drawProgress(canvas, progressPreview, 1f, yellowPaint);
+        }
     }
 
-    private void drawProgress(Canvas canvas, float progress, float scale) {
+    private void drawProgress(Canvas canvas, float progress, float scale, Paint paint) {
         final float px = dpf2(12);
         final float width = getMeasuredWidth() - px * 2 - dp(2 * 10);
         float top = dp(2);
@@ -609,14 +639,14 @@ public class VideoTimelinePlayView extends View {
         top += h / 2f * (1f - scale);
         end -= h / 2f * (1f - scale);
         shadowPaint.setAlpha((int) (0x26 * scale));
-        whitePaint.setAlpha((int) (0xff * scale));
+        paint.setAlpha((int) (0xff * scale));
 
         float cx = px + dp(10) + width * progress;
         rect3.set(cx - dpf2(1.5f), top, cx + dpf2(1.5f), end);
         rect3.inset(-dpf2(0.66f), -dpf2(0.66f));
         canvas.drawRoundRect(rect3, dp(6), dp(6), shadowPaint);
         rect3.set(cx - dpf2(1.5f), top, cx + dpf2(1.5f), end);
-        canvas.drawRoundRect(rect3, dp(6), dp(6), whitePaint);
+        canvas.drawRoundRect(rect3, dp(6), dp(6), paint);
     }
 
     private static class BitmapFrame {

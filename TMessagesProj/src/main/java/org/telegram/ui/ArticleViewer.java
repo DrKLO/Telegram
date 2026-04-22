@@ -194,6 +194,7 @@ import org.telegram.ui.Components.TextPaintSpan;
 import org.telegram.ui.Components.TextPaintUrlSpan;
 import org.telegram.ui.Components.TextPaintWebpageUrlSpan;
 import org.telegram.ui.Components.TranslateAlert2;
+import org.telegram.ui.Components.TranslateAlert3;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.WebPlayerView;
@@ -201,6 +202,7 @@ import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
+import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.web.AddressBarList;
 import org.telegram.ui.web.BookmarksFragment;
 import org.telegram.ui.web.BotWebViewContainer;
@@ -218,10 +220,13 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
 public class ArticleViewer implements NotificationCenter.NotificationCenterDelegate {
+
+    public static HashSet<ArticleViewer> activeSheets = new HashSet<>();
 
     public static final boolean BOTTOM_ACTION_BAR = false;
 
@@ -4619,6 +4624,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         if (MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled()) {
             textSelectionHelper.setOnTranslate((text, fromLang, toLang, onAlertDismiss) -> {
                 TranslateAlert2.showAlert(parentActivity, parentFragment, currentAccount, fromLang, toLang, text, null, false, null, onAlertDismiss);
+//                final TranslateAlert3 alert =
+//                    new TranslateAlert3(parentActivity, parentFragment != null ? parentFragment.getResourceProvider() : getResourcesProvider())
+//                        .setText(fromLang, text);
+//                alert.setOnDismissListener(onAlertDismiss);
+//                alert.show();
             });
         }
         textSelectionHelper.layoutManager = pages[0].layoutManager;
@@ -13110,12 +13120,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
 
                 @Override
-                public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
+                public void onSetupMainButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
 
                 }
 
                 @Override
-                public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
+                public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, long emojiId, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
 
                 }
 
@@ -13839,6 +13849,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (pages[1] != null) {
                 pages[1].resume();
             }
+            activeSheets.add(ArticleViewer.this);
         }
 
         public void show() {
@@ -13899,6 +13910,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 onDismissListener.run();
                 onDismissListener = null;
             }
+            activeSheets.remove(ArticleViewer.this);
         }
 
         public void dismissInstant() {
@@ -14443,6 +14455,19 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         public void updateLastVisible() {
             pages[0].setLastVisible(lastVisible);
             pages[1].setLastVisible(false);
+        }
+
+        @Override
+        public BulletinFactory getBulletinFactory() {
+            final FrameLayout container;
+            if (pages[0].isWeb()) {
+                if (pages[0].getWebView() == null) return null;
+                container = pages[0].webViewContainer;
+            } else {
+                if (pages[0].adapter.currentPage == null) return null;
+                container = pages[0];
+            }
+            return BulletinFactory.of(container, getResourcesProvider());
         }
     }
 

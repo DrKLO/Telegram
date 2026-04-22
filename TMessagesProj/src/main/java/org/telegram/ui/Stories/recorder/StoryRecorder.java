@@ -1994,9 +1994,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     private boolean videoError;
 
-    private static final int MODE_LIVE = -1;
-    private static final int MODE_PHOTO = 0;
-    private static final int MODE_VIDEO = 1;
+    public static final int MODE_LIVE = -1;
+    public static final int MODE_PHOTO = 0;
+    public static final int MODE_VIDEO = 1;
+
     private int mode = MODE_PHOTO;
     private boolean takingPhoto = false;
     private boolean takingVideo = false;
@@ -4651,6 +4652,21 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         containerViewBackAnimator.start();
     }
 
+    public StoryRecorder setMode(int mode) {
+        if (this.mode == mode)
+            return this;
+        this.mode = mode;
+        if (modeSwitcherView != null) {
+            modeSwitcherView.switchMode(mode);
+        }
+        showVideoTimer(mode == MODE_VIDEO, true);
+        if (collageListView != null) {
+            collageListView.setVisible(false, true);
+        }
+        updateActionBarButtons(false);
+        return this;
+    }
+
     private void openThemeSheet() {
         if (themeSheet == null) {
             themeSheet = new StoryThemeSheet(getContext(), currentAccount, resourcesProvider, () -> {
@@ -4775,7 +4791,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 animateGalleryListView(false);
                 if (entry instanceof MediaController.PhotoEntry) {
                     MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
-                    mode = photoEntry.isVideo ? MODE_VIDEO : MODE_PHOTO;
+                    mode = photoEntry.isVideo && !photoEntry.isLivePhoto ? MODE_VIDEO : MODE_PHOTO;
                     storyEntry = StoryEntry.fromPhotoEntry(photoEntry);
                     storyEntry.blurredVideoThumb = blurredBitmap;
                     storyEntry.botId = botId;

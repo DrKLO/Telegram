@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BillingController;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -821,6 +822,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
                     TLRPC.User user;
                     String role = null;
                     String status = null;
+                    final boolean isAdmin, isOwner, canEditAdmin;
                     TLRPC.ChatParticipant part = null;
                     TLRPC.TL_chatInviteImporter invitedUser = null;
                     long userId;
@@ -860,29 +862,46 @@ public class InviteLinkBottomSheet extends BottomSheet {
                     }
                     if (position == creatorRow && part != null) {
                         if (part instanceof TLRPC.TL_chatChannelParticipant) {
-                            TLRPC.ChannelParticipant channelParticipant = ((TLRPC.TL_chatChannelParticipant) part).channelParticipant;
-                            if (!TextUtils.isEmpty(channelParticipant.rank)) {
-                                role = channelParticipant.rank;
+                            final TLRPC.ChannelParticipant channelParticipant = ((TLRPC.TL_chatChannelParticipant) part).channelParticipant;
+                            role = channelParticipant.rank;
+                            if (channelParticipant instanceof TLRPC.TL_channelParticipantCreator) {
+                                if (TextUtils.isEmpty(role)) role = getString("ChannelCreator", R.string.ChannelCreator);
+                                isOwner = true;
+                                isAdmin = true;
+                                canEditAdmin = false;
+                            } else if (channelParticipant instanceof TLRPC.TL_channelParticipantAdmin) {
+                                if (TextUtils.isEmpty(role)) role = getString("ChannelAdmin", R.string.ChannelAdmin);
+                                isOwner = false;
+                                isAdmin = true;
+                                canEditAdmin = channelParticipant.promoted_by == UserConfig.getInstance(currentAccount).getClientUserId();
                             } else {
-                                if (channelParticipant instanceof TLRPC.TL_channelParticipantCreator) {
-                                    role = LocaleController.getString(R.string.ChannelCreator);
-                                } else if (channelParticipant instanceof TLRPC.TL_channelParticipantAdmin) {
-                                    role = LocaleController.getString(R.string.ChannelAdmin);
-                                } else {
-                                    role = null;
-                                }
+                                isAdmin = isOwner = canEditAdmin = false;
                             }
                         } else {
+                            role = part.rank;
                             if (part instanceof TLRPC.TL_chatParticipantCreator) {
-                                role = LocaleController.getString(R.string.ChannelCreator);
+                                if (TextUtils.isEmpty(role)) role = getString("ChannelCreator", R.string.ChannelCreator);
+                                isOwner = true;
+                                isAdmin = true;
+                                canEditAdmin = false;
                             } else if (part instanceof TLRPC.TL_chatParticipantAdmin) {
-                                role = LocaleController.getString(R.string.ChannelAdmin);
+                                if (TextUtils.isEmpty(role)) role = getString("ChannelAdmin", R.string.ChannelAdmin);
+                                isOwner = false;
+                                isAdmin = true;
+                                canEditAdmin = part.inviter_id == UserConfig.getInstance(currentAccount).getClientUserId();
                             } else {
-                                role = null;
+                                isAdmin = isOwner = canEditAdmin = false;
                             }
                         }
+                    } else {
+                        isAdmin = isOwner = canEditAdmin = false;
                     }
-                    userCell.setAdminRole(role);
+                    final String finalRole = role;
+                    final TLRPC.User finalUser = user;
+                    final boolean showAddTag = UserObject.isUserSelf(user) && ChatObject.canManageMyTag(MessagesController.getInstance(currentAccount).getChat(chatId));
+                    userCell.setAdminRole(role, isAdmin, isOwner, showAddTag, v -> {
+                        TagEditCell.showInfoSheet(getContext(), currentAccount, -chatId, finalUser, finalRole, isAdmin, isOwner, canEditAdmin, resourcesProvider);
+                    });
                     userCell.setData(user, null, status, 0, false);
                     if (position != creatorRow && invite.subscription_pricing != null && invitedUser != null) {
                         userCell.setRevenue(invite.subscription_pricing, invitedUser.date);

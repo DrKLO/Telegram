@@ -31,18 +31,21 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
     public static final int BUTTON_PAGE_DOWN = 1;
     public static final int BUTTON_MENTION = 2;
     public static final int BUTTON_REACTIONS = 3;
-    public static final int BUTTON_SEARCH_DOWN = 4;
-    public static final int BUTTON_SEARCH_UP = 5;
+    public static final int BUTTON_POLL_VOTES = 4;
+    public static final int BUTTON_SEARCH_DOWN = 5;
+    public static final int BUTTON_SEARCH_UP = 6;
 
-    private static final int BUTTONS_COUNT = 6;
+    private static final int BUTTONS_COUNT = 7;
 
-    private static final int VISIBILITY_ANIMATOR_ID = 1;
+    private static final int ANIMATOR_ID_VISIBILITY = 1;
+    private static final int ANIMATOR_ID_COUNTER_VISIBILITY = 2;
 
     private static final @DrawableRes int[] buttonIcons = new int[] {
         R.drawable.msg_input_attach2,
         R.drawable.pagedown,
         R.drawable.mentionbutton,
         R.drawable.reactionbutton,
+        R.drawable.menu_poll_notify,
         R.drawable.pagedown,
         R.drawable.pagedown
     };
@@ -52,6 +55,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
         LocaleController.getString(R.string.AccDescrPageDown),
         LocaleController.getString(R.string.AccDescrMentionDown),
         LocaleController.getString(R.string.AccDescrReactionMentionDown),
+        LocaleController.getString(R.string.AccDescrPollVotesMentionDown),
         LocaleController.getString(R.string.AccDescrSearchPrev),
         LocaleController.getString(R.string.AccDescrSearchNext)
     };
@@ -116,6 +120,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
     public void setButtonCount(final int buttonId, int count, boolean animated) {
         final ButtonHolder holder = getOrCreateButtonHolder(buttonId);
         holder.button.setCount(count, animated);
+        holder.counterVisibilityAnimator.setValue(count > 0, animated);
     }
 
     public void setButtonLoading(final int buttonId, boolean loading, boolean animated) {
@@ -143,7 +148,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
             return;
         }
 
-        if (animatorId == VISIBILITY_ANIMATOR_ID) {
+        if (animatorId == ANIMATOR_ID_VISIBILITY || animatorId == ANIMATOR_ID_COUNTER_VISIBILITY) {
             checkButtonsPositionsAndVisibility();
         }
     }
@@ -159,16 +164,18 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
             }
 
             final float visibility = holder.visibilityAnimator.getFloatValue();
+            final float counterVisibility = holder.counterVisibilityAnimator.getFloatValue();
+
             holder.button.setVisibility(visibility > 0 ? VISIBLE : GONE);
             holder.button.setAlpha(visibility);
             holder.button.setScaleX(lerp(0.7f, 1f, visibility));
             holder.button.setScaleY(lerp(0.7f, 1f, visibility));
             if (buttonId != BUTTON_ATTACH) {
-                holder.button.setTranslationY(dp(100) * (1f - visibility) - totalHeight);
+                holder.button.setTranslationY(dp(80) * (1f - visibility) - totalHeight);
             }
 
             final int height = dp(44);
-            final int gap = dp(buttonId == BUTTON_SEARCH_UP || buttonId == BUTTON_SEARCH_DOWN ? 10 : 16);
+            final int gap = dp(10 + 10 * counterVisibility);
 
             totalHeight += (height + gap) * visibility;
         }
@@ -188,15 +195,18 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
     private ButtonHolder getOrCreateButtonHolder(final int buttonId) {
         if (buttonHolders[buttonId] == null) {
 
-            final int animatorId = (buttonId << 16) | VISIBILITY_ANIMATOR_ID;
             final BoolAnimator visibilityAnimator = new BoolAnimator(
-                animatorId,
-                this,
+                (buttonId << 16) | ANIMATOR_ID_VISIBILITY, this,
                 buttonId == BUTTON_ATTACH ? CubicBezierInterpolator.EASE_OUT_QUINT : AnimatorUtils.DECELERATE_INTERPOLATOR,
                 buttonId == BUTTON_ATTACH ? 300 : 280
             );
 
-            int size = 58, iconSize = 48;
+            final BoolAnimator counterVisibilityAnimator = new BoolAnimator(
+                (buttonId << 16) | ANIMATOR_ID_COUNTER_VISIBILITY, this,
+                buttonId == BUTTON_ATTACH ? CubicBezierInterpolator.EASE_OUT_QUINT : AnimatorUtils.DECELERATE_INTERPOLATOR,
+                buttonId == BUTTON_ATTACH ? 300 : 280);
+
+            int size = 56, iconSize = 48;
             if (buttonId == BUTTON_ATTACH) {
                 size = 50;
                 iconSize = 32;
@@ -235,7 +245,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
 
             addView(button, LayoutHelper.createFrame(size, size + 8, gravity));
 
-            buttonHolders[buttonId] = new ButtonHolder(button, visibilityAnimator);
+            buttonHolders[buttonId] = new ButtonHolder(button, visibilityAnimator, counterVisibilityAnimator);
             checkButtonsPositionsAndVisibility();
         }
 
@@ -245,10 +255,12 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
     private static class ButtonHolder {
         public final ChatActivityBlurredRoundPageDownButton button;
         public final BoolAnimator visibilityAnimator;
+        public final BoolAnimator counterVisibilityAnimator;
 
-        private ButtonHolder(ChatActivityBlurredRoundPageDownButton button, BoolAnimator visibilityAnimator) {
+        private ButtonHolder(ChatActivityBlurredRoundPageDownButton button, BoolAnimator visibilityAnimator, BoolAnimator counterVisibilityAnimator) {
             this.button = button;
             this.visibilityAnimator = visibilityAnimator;
+            this.counterVisibilityAnimator = counterVisibilityAnimator;
         }
     }
 }

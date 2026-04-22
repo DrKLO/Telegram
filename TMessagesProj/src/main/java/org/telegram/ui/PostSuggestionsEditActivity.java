@@ -10,17 +10,10 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -35,17 +28,14 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkActionView;
-import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -125,7 +115,9 @@ public class PostSuggestionsEditActivity extends BaseFragment {
         linkView.setUsers(0, null);
 
         listView = new UniversalRecyclerView(context, currentAccount, classGuid, this::fillItems, this::onItemClick, null, resourceProvider);
+        listView.setSections();
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView;
     }

@@ -29,6 +29,10 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ClickableAnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.time.DayOfWeek;
 import java.time.format.TextStyle;
@@ -125,7 +129,7 @@ public class ProfileHoursCell extends LinearLayout {
                 todayTimeContainer.addView(todayTimeTextContainer2, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.BOTTOM, 0, 0, 0, 0));
                 line.addView(todayTimeContainer, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.BOTTOM, 0, 0, 0, 12));
 
-                addView(lines[i] = line, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 22, 0, 33 - 20, 0));
+                addView(lines[i] = line, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 0, (18 + 10) - 20, 0));
             } else {
                 LinearLayout line = new LinearLayout(context);
                 line.setOrientation(HORIZONTAL);
@@ -153,7 +157,7 @@ public class ProfileHoursCell extends LinearLayout {
                     line.addView(timeTextContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP));
                 }
 
-                addView(lines[i] = line, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 22, i == 1 ? 1f : 11.66f, 33, i == 6 ? 16.66f : 0));
+                addView(lines[i] = line, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, i == 1 ? 1f : 11.66f, 18 + 10, i == 6 ? 16.66f : 0));
             }
         }
 
@@ -366,5 +370,46 @@ public class ProfileHoursCell extends LinearLayout {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         return super.dispatchTouchEvent(ev);
+    }
+
+    public static final class Factory extends UItem.UItemFactory<ProfileHoursCell> {
+        static { setup(new Factory()); }
+
+        @Override
+        public ProfileHoursCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new ProfileHoursCell(context, resourcesProvider);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+            final ProfileHoursCell cell = (ProfileHoursCell) view;
+            cell.setId(item.id);
+            cell.setOnTimezoneSwitchClick(item.clickCallback);
+            cell.set(
+                (TL_account.TL_businessWorkHours) item.object,
+                item.locked, item.accent,
+                divider
+            );
+        }
+
+        public static UItem of(int id, TL_account.TL_businessWorkHours value, boolean expanded, boolean showInMyTimezone, View.OnClickListener onTimezoneClick) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.id = id;
+            item.object = value;
+            item.locked = expanded;
+            item.accent = showInMyTimezone;
+            item.clickCallback = onTimezoneClick;
+            return item;
+        }
+
+        @Override
+        public boolean equals(UItem a, UItem b) {
+            return a.id == b.id;
+        }
+
+        @Override
+        public boolean contentsEquals(UItem a, UItem b) {
+            return a.accent == b.accent && a.locked == b.locked;
+        }
     }
 }

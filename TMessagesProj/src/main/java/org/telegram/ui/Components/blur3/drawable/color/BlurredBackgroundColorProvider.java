@@ -1,8 +1,10 @@
 package org.telegram.ui.Components.blur3.drawable.color;
 
+import androidx.annotation.ColorInt;
+
 public interface BlurredBackgroundColorProvider {
-    int getShadowColor();
-    int getBackgroundColor();
-    int getStrokeColorTop();
-    int getStrokeColorBottom();
+    @ColorInt int getShadowColor();
+    @ColorInt int getBackgroundColor();
+    @ColorInt int getStrokeColorTop();
+    @ColorInt int getStrokeColorBottom();
 }

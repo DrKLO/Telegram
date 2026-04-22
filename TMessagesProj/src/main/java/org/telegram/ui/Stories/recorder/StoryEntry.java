@@ -91,6 +91,7 @@ public class StoryEntry {
     public TLRPC.TL_error error;
 
     public String audioPath;
+    public TLRPC.InputDocument audioDocument;
     public String audioAuthor, audioTitle;
     public long audioDuration;
     public long audioOffset;
@@ -940,7 +941,7 @@ public class StoryEntry {
         entry.file = new File(photoEntry.path);
         entry.orientation = photoEntry.orientation;
         entry.invert = photoEntry.invert;
-        entry.isVideo = photoEntry.isVideo;
+        entry.isVideo = photoEntry.isVideo && !photoEntry.isLivePhoto;
         entry.thumbPath = photoEntry.thumbPath;
         entry.duration = photoEntry.duration * 1000L;
         entry.left = 0;
@@ -1424,14 +1425,14 @@ public class StoryEntry {
             Utilities.globalQueue.postRunnable(() -> {
                 for (int i = 0; i < paths.length; ++i)
                     if (paths[i] != null)
-                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i]);
+                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         } else if (file == null) {
             fill.run();
         } else {
             Utilities.globalQueue.postRunnable(() -> {
-                AnimatedFileDrawable.getVideoInfo(videoPath, params[0]);
+                AnimatedFileDrawable.getVideoInfo(videoPath, params[0], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         }
@@ -1633,6 +1634,7 @@ public class StoryEntry {
         newEntry.isError = isError;
         newEntry.error = error;
         newEntry.audioPath = audioPath;
+        newEntry.audioDocument = audioDocument;
         newEntry.audioAuthor = audioAuthor;
         newEntry.audioTitle = audioTitle;
         newEntry.audioDuration = audioDuration;

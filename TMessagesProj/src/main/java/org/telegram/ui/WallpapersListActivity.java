@@ -20,8 +20,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -40,6 +38,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -74,7 +73,6 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.WallpaperCell;
 import org.telegram.ui.Components.ColorPicker;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
@@ -89,6 +87,7 @@ import java.util.HashMap;
 public class WallpapersListActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private int rowCount;
+    @Keep
     private int uploadImageRow;
     private int setColorRow;
     private int sectionRow;
@@ -661,7 +660,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
         if (currentType == TYPE_ALL) {
             ActionBarMenu menu = actionBar.createMenu();
-            searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     listView.setAdapter(searchAdapter);
@@ -712,42 +711,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-        listView = new RecyclerListView(context) {
-
-            private Paint paint = new Paint();
-
-            @Override
-            public boolean hasOverlappingRendering() {
-                return false;
-            }
-
-            @Override
-            public void onDraw(Canvas c) {
-                ViewHolder holder;
-                if (getAdapter() == listAdapter && resetInfoRow != -1) {
-                    holder = findViewHolderForAdapterPosition(resetInfoRow);
-                } else {
-                    holder = null;
-                }
-                int bottom;
-                int height = getMeasuredHeight();
-                if (holder != null) {
-                    bottom = holder.itemView.getBottom();
-                    if (holder.itemView.getBottom() >= height) {
-                        bottom = height;
-                    }
-                } else {
-                    bottom = height;
-                }
-
-                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                c.drawRect(0, 0, getMeasuredWidth(), bottom, paint);
-                if (bottom != height) {
-                    paint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-                    c.drawRect(0, bottom, getMeasuredWidth(), height, paint);
-                }
-            }
-        };
+        listView = new RecyclerListView(context);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
+        listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         listView.setClipToPadding(false);
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
@@ -826,7 +793,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         searchEmptyView = new EmptyTextProgressView(context);
         searchEmptyView.setVisibility(View.GONE);
         searchEmptyView.setShowAtCenter(true);
-        searchEmptyView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        searchEmptyView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         searchEmptyView.setText(LocaleController.getString(R.string.NoResult));
         listView.setEmptyView(searchEmptyView);
         frameLayout.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -1858,18 +1825,10 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                 }
                 case 1: {
                     view = new ShadowSectionCell(mContext);
-                    Drawable drawable = Theme.getThemedDrawableByKey(mContext, wallPaperStartRow == -1 ? R.drawable.greydivider_bottom : R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
-                    combinedDrawable.setFullsize(true);
-                    view.setBackgroundDrawable(combinedDrawable);
                     break;
                 }
                 case 3: {
                     view = new TextInfoPrivacyCell(mContext);
-                    Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
-                    combinedDrawable.setFullsize(true);
-                    view.setBackgroundDrawable(combinedDrawable);
                     break;
                 }
                 case 2:
@@ -2007,19 +1966,18 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         themeDescriptions.add(new ThemeDescription(fragmentView, 0, null, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, 0, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+//        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGray));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGray));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));

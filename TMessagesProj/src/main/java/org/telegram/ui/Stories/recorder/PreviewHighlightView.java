@@ -143,7 +143,7 @@ public class PreviewHighlightView extends FrameLayout {
 
     public void updateCaption(CharSequence caption) {
         caption = AnimatedEmojiSpan.cloneSpans(new SpannableString(caption));
-        storyCaptionView.captionTextview.setText(caption, null, false, false);
+        storyCaptionView.captionTextview.setText(caption, null, null, false, false);
     }
 
     private boolean shownTop = false, shownBottom = false;

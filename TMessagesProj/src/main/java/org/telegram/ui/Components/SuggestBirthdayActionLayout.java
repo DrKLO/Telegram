@@ -242,7 +242,7 @@ public class SuggestBirthdayActionLayout {
             },
             null,
             true,
-            resourcesProvider
+                false, resourcesProvider
         ).show();
     }
 

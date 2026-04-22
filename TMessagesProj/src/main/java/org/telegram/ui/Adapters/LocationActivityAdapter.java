@@ -17,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
@@ -35,7 +34,6 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
 import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
 import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.LocationActivity;
@@ -70,6 +68,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     public boolean animated = true;
     public TLRPC.TL_messageMediaVenue city, street;
+    public boolean isPollAttach;
 
     public void setAddressNameOverride(String address) {
         overrideAddressName = address;
@@ -223,7 +222,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 } else if (!myLocationDenied) {
                     address = LocaleController.getString(R.string.Loading);
                 }
-                if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
+                if (isPollAttach) {
+                    sendLocationCell.setText(LocaleController.getString(R.string.AttachSelectedLocation), address);
+                } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
                     sendLocationCell.setText(LocaleController.getString(R.string.ChatSetThisLocation), address);
                 } else {
                     sendLocationCell.setText(LocaleController.getString(R.string.SendSelectedLocation), address);
@@ -390,6 +391,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 //                    }
 //                };
                 view = emptyCell = new FrameLayout(mContext);
+                emptyCell.setTag(RecyclerListView.TAG_NOT_SECTION);
                 emptyCell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, overScrollHeight));
                 break;
             case VIEW_TYPE_SEND_LOCATION:
@@ -434,7 +436,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                 CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
                 combinedDrawable.setFullsize(true);
-                view.setBackgroundDrawable(combinedDrawable);
+                // view.setBackgroundDrawable(combinedDrawable);
                 break;
             }
             case VIEW_TYPE_STORY_LOCATION: {

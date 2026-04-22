@@ -44,6 +44,8 @@ public class TL_stars {
         public long upgrade_stars;
         public long resell_min_stars;
         public boolean theme_available;
+        public boolean burned;
+        public boolean crafted;
         public TLRPC.Peer theme_peer;
         public TLRPC.PeerColor peer_color;
         public TLRPC.Peer host_id;
@@ -68,6 +70,7 @@ public class TL_stars {
         public int auction_start_date;
         public int upgrade_variants;
         public TL_starGiftBackground background;
+        public int craft_chance_permille;
 
         public AmountUtils.Amount getResellAmount(AmountUtils.Currency currency) {
             if (resell_amount == null || resell_amount.isEmpty()) {
@@ -93,6 +96,7 @@ public class TL_stars {
             switch (constructor) {
                 case TL_starGift.constructor:                   return new TL_starGift();
                 case TL_starGiftUnique.constructor:             return new TL_starGiftUnique();
+                case TL_starGiftUnique_layer221.constructor:    return new TL_starGiftUnique_layer221();
                 case TL_starGiftUnique_layer219.constructor:    return new TL_starGiftUnique_layer219();
                 case TL_starGiftUnique_layer215.constructor:    return new TL_starGiftUnique_layer215();
                 case TL_starGiftUnique_layer214.constructor:    return new TL_starGiftUnique_layer214();
@@ -135,6 +139,124 @@ public class TL_stars {
     }
 
     public static class TL_starGiftUnique extends StarGift {
+        public static final int constructor = 0x85f0a9cd;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            require_premium = hasFlag(flags, FLAG_6);
+            resale_ton_only = hasFlag(flags, FLAG_7);
+            theme_available = hasFlag(flags, FLAG_9);
+            burned = hasFlag(flags, FLAG_14);
+            crafted = hasFlag(flags, FLAG_15);
+            id = stream.readInt64(exception);
+            gift_id = stream.readInt64(exception);
+            title = stream.readString(exception);
+            slug = stream.readString(exception);
+            num = stream.readInt32(exception);
+            if (hasFlag(flags, 1)) {
+                owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, 2)) {
+                owner_name = stream.readString(exception);
+            }
+            if (hasFlag(flags, 4)) {
+                owner_address = stream.readString(exception);
+            }
+            attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
+            availability_issued = stream.readInt32(exception);
+            availability_total = stream.readInt32(exception);
+            if (hasFlag(flags, 8)) {
+                gift_address = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                value_amount = stream.readInt64(exception);
+                value_currency = stream.readString(exception);
+                value_usd_amount = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_10)) {
+                theme_peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                peer_color = TLRPC.PeerColor.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_12)) {
+                host_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                offer_min_stars = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                craft_chance_permille = stream.readInt32(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_4, resell_amount != null && !resell_amount.isEmpty());
+            flags = setFlag(flags, FLAG_6, require_premium);
+            flags = setFlag(flags, FLAG_7, resale_ton_only);
+            flags = setFlag(flags, FLAG_9, theme_available);
+            flags = setFlag(flags, FLAG_14, burned);
+            flags = setFlag(flags, FLAG_15, crafted);
+            stream.writeInt32(flags);
+            stream.writeInt64(id);
+            stream.writeInt64(gift_id);
+            stream.writeString(title);
+            stream.writeString(slug);
+            stream.writeInt32(num);
+            if (hasFlag(flags, 1)) {
+                owner_id.serializeToStream(stream);
+            }
+            if (hasFlag(flags, 2)) {
+                stream.writeString(owner_name);
+            }
+            if (hasFlag(flags, 4)) {
+                stream.writeString(owner_address);
+            }
+            Vector.serialize(stream, attributes);
+            stream.writeInt32(availability_issued);
+            stream.writeInt32(availability_total);
+            if (hasFlag(flags, 8)) {
+                stream.writeString(gift_address);
+            }
+            if (hasFlag(flags, 16)) {
+                Vector.serialize(stream, resell_amount);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                released_by.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                stream.writeInt64(value_amount);
+                stream.writeString(value_currency);
+                stream.writeInt64(value_usd_amount);
+            }
+            if (hasFlag(flags, FLAG_10)) {
+                theme_peer.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                peer_color.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_12)) {
+                host_id.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                stream.writeInt32(offer_min_stars);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                stream.writeInt32(craft_chance_permille);
+            }
+        }
+    }
+
+    public static class TL_starGiftUnique_layer221 extends TL_starGiftUnique {
         public static final int constructor = 0x569D64C9;
 
         @Override
@@ -148,25 +270,25 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -201,25 +323,25 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -256,28 +378,28 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 value_amount = stream.readInt64(exception);
                 value_currency = stream.readString(exception);
             }
@@ -305,28 +427,28 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(value_amount);
                 stream.writeString(value_currency);
             }
@@ -356,28 +478,28 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 value_amount = stream.readInt64(exception);
                 value_currency = stream.readString(exception);
             }
@@ -402,28 +524,28 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(value_amount);
                 stream.writeString(value_currency);
             }
@@ -450,28 +572,28 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 value_amount = stream.readInt64(exception);
                 value_currency = stream.readString(exception);
             }
@@ -493,28 +615,28 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(value_amount);
                 stream.writeString(value_currency);
             }
@@ -537,28 +659,28 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 value_amount = stream.readInt64(exception);
                 value_currency = stream.readString(exception);
             }
@@ -576,28 +698,28 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(value_amount);
                 stream.writeString(value_currency);
             }
@@ -616,25 +738,25 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = Vector.deserialize(stream,StarsAmount::TLdeserialize, exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -651,25 +773,25 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 Vector.serialize(stream, resell_amount);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
         }
@@ -686,26 +808,26 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
             if (hasFlag(flags, FLAG_4)) {
                 resell_amount = new ArrayList<>();
                 resell_amount.add(StarsAmount.ofStars(stream.readInt64(exception)));
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -719,25 +841,25 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(getResellStars());
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 released_by.serializeToStream(stream);
             }
         }
@@ -753,22 +875,22 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_amount = new ArrayList<>();
                 resell_amount.add(StarsAmount.ofStars(stream.readInt64(exception)));
             }
@@ -782,22 +904,22 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(getResellStars());
             }
         }
@@ -813,19 +935,19 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
             availability_issued = stream.readInt32(exception);
             availability_total = stream.readInt32(exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 gift_address = stream.readString(exception);
             }
         }
@@ -838,19 +960,19 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
             stream.writeInt32(availability_issued);
             stream.writeInt32(availability_total);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(gift_address);
             }
         }
@@ -866,13 +988,13 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 owner_address = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
@@ -888,13 +1010,13 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(owner_address);
             }
             Vector.serialize(stream, attributes);
@@ -913,11 +1035,11 @@ public class TL_stars {
             title = stream.readString(exception);
             slug = stream.readString(exception);
             num = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 owner_id = new TLRPC.TL_peerUser();
                 owner_id.user_id = stream.readInt64(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 owner_name = stream.readString(exception);
             }
             attributes = Vector.deserialize(stream, StarGiftAttribute::TLdeserialize, exception);
@@ -933,10 +1055,10 @@ public class TL_stars {
             stream.writeString(title);
             stream.writeString(slug);
             stream.writeInt32(num);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt64(owner_id.user_id);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(owner_name);
             }
             Vector.serialize(stream, attributes);
@@ -979,10 +1101,10 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             flags = setFlag(flags, FLAG_7, require_premium);
             flags = setFlag(flags, FLAG_8, limited_per_user);
             flags = setFlag(flags, FLAG_10, peer_color_available);
@@ -992,28 +1114,28 @@ public class TL_stars {
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by.serializeToStream(stream);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1039,10 +1161,10 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             require_premium = hasFlag(flags, FLAG_7);
             limited_per_user = hasFlag(flags, FLAG_8);
             peer_color_available = hasFlag(flags, FLAG_10);
@@ -1050,28 +1172,28 @@ public class TL_stars {
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1101,10 +1223,10 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             flags = setFlag(flags, FLAG_7, require_premium);
             flags = setFlag(flags, FLAG_8, limited_per_user);
             flags = setFlag(flags, FLAG_10, peer_color_available);
@@ -1113,28 +1235,28 @@ public class TL_stars {
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by.serializeToStream(stream);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1153,10 +1275,10 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             require_premium = hasFlag(flags, FLAG_7);
             limited_per_user = hasFlag(flags, FLAG_8);
             peer_color_available = hasFlag(flags, FLAG_10);
@@ -1164,28 +1286,28 @@ public class TL_stars {
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1208,10 +1330,10 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             flags = setFlag(flags, FLAG_7, require_premium);
             flags = setFlag(flags, FLAG_8, limited_per_user);
             flags = setFlag(flags, FLAG_10, peer_color_available);
@@ -1219,28 +1341,28 @@ public class TL_stars {
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by.serializeToStream(stream);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1255,38 +1377,38 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             require_premium = hasFlag(flags, FLAG_7);
             limited_per_user = hasFlag(flags, FLAG_8);
             peer_color_available = hasFlag(flags, FLAG_10);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1305,38 +1427,38 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             flags = setFlag(flags, FLAG_7, require_premium);
             flags = setFlag(flags, FLAG_8, limited_per_user);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by.serializeToStream(stream);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1348,37 +1470,37 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             require_premium = hasFlag(flags, FLAG_7);
             limited_per_user = hasFlag(flags, FLAG_8);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             if (hasFlag(flags, FLAG_8)) {
@@ -1394,36 +1516,36 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by.serializeToStream(stream);
             }
         }
@@ -1431,35 +1553,35 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 released_by = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -1471,33 +1593,33 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(availability_resale);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(resell_min_stars);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeString(title);
             }
         }
@@ -1505,32 +1627,32 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 availability_resale = stream.readInt64(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 resell_min_stars = stream.readInt64(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 title = stream.readString(exception);
             }
         }
@@ -1542,24 +1664,24 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
-            flags = can_upgrade ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
+            flags = setFlag(flags, 8, can_upgrade);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt64(upgrade_stars);
             }
         }
@@ -1567,23 +1689,23 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
-            can_upgrade = (flags & 8) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
+            can_upgrade = hasFlag(flags, 8);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 upgrade_stars = stream.readInt64(exception);
             }
         }
@@ -1595,19 +1717,19 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
-            flags = sold_out ? flags | 2 : flags &~ 2;
-            flags = birthday ? flags | 4 : flags &~ 4;
+            flags = setFlag(flags, 1, limited);
+            flags = setFlag(flags, 2, sold_out);
+            flags = setFlag(flags, 4, birthday);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
             stream.writeInt64(convert_stars);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(first_sale_date);
                 stream.writeInt32(last_sale_date);
             }
@@ -1616,18 +1738,18 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
-            sold_out = (flags & 2) != 0;
-            birthday = (flags & 4) != 0;
+            limited = hasFlag(flags, 1);
+            sold_out = hasFlag(flags, 2);
+            birthday = hasFlag(flags, 4);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
             convert_stars = stream.readInt64(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 first_sale_date = stream.readInt32(exception);
                 last_sale_date = stream.readInt32(exception);
             }
@@ -1640,12 +1762,12 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = limited ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, limited);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             sticker.serializeToStream(stream);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(availability_remains);
                 stream.writeInt32(availability_total);
             }
@@ -1655,11 +1777,11 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            limited = (flags & 1) != 0;
+            limited = hasFlag(flags, 1);
             id = stream.readInt64(exception);
             sticker = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 availability_remains = stream.readInt32(exception);
                 availability_total = stream.readInt32(exception);
             }
@@ -1761,11 +1883,11 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = exclude_unsaved ? flags | 1 : flags &~ 1;
-            flags = exclude_saved ? flags | 2 : flags &~ 2;
-            flags = exclude_unlimited ? flags | 4 : flags &~ 4;
-            flags = exclude_unique ? flags | 16 : flags &~ 16;
-            flags = sort_by_value ? flags | 32 : flags &~ 32;
+            flags = setFlag(flags, 1, exclude_unsaved);
+            flags = setFlag(flags, 2, exclude_saved);
+            flags = setFlag(flags, 4, exclude_unlimited);
+            flags = setFlag(flags, 16, exclude_unique);
+            flags = setFlag(flags, FLAG_5, sort_by_value);
             flags = setFlag(flags, FLAG_7, exclude_upgradable);
             flags = setFlag(flags, FLAG_8, exclude_unupgradable);
             flags = setFlag(flags, FLAG_9, peer_color_available);
@@ -1811,7 +1933,7 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = unsave ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, unsave);
             stream.writeInt32(flags);
             stargift.serializeToStream(stream);
         }
@@ -1849,7 +1971,7 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = keep_original_details ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, keep_original_details);
             stream.writeInt32(flags);
             stargift.serializeToStream(stream);
         }
@@ -1963,9 +2085,9 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            extended = (flags & 2) != 0;
+            extended = hasFlag(flags, 2);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 store_product = stream.readString(exception);
             }
             currency = stream.readString(exception);
@@ -1974,10 +2096,10 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = extended ? flags | 2 : flags &~ 2;
+            flags = setFlag(flags, 2, extended);
             stream.writeInt32(flags);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(store_product);
             }
             stream.writeString(currency);
@@ -2004,9 +2126,9 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            extended = (flags & 2) != 0;
+            extended = hasFlag(flags, 2);
             stars = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 store_product = stream.readString(exception);
             }
             currency = stream.readString(exception);
@@ -2015,10 +2137,10 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = extended ? flags | 2 : flags &~ 2;
+            flags = setFlag(flags, 2, extended);
             stream.writeInt32(flags);
             stream.writeInt64(stars);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(store_product);
             }
             stream.writeString(currency);
@@ -2041,14 +2163,14 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            isDefault = (flags & 1) != 0;
+            isDefault = hasFlag(flags, 1);
             users = stream.readInt32(exception);
             per_user_stars = stream.readInt64(exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = isDefault ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, isDefault);
             stream.writeInt32(flags);
             stream.writeInt32(users);
             stream.writeInt64(per_user_stars);
@@ -2078,11 +2200,11 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            extended = (flags & 1) != 0;
-            isDefault = (flags & 2) != 0;
+            extended = hasFlag(flags, 1);
+            isDefault = hasFlag(flags, 2);
             stars = stream.readInt64(exception);
             yearly_boosts = stream.readInt32(exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 store_product = stream.readString(exception);
             }
             currency = stream.readString(exception);
@@ -2092,12 +2214,12 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = extended ? (flags | 1) : (flags &~ 1);
-            flags = isDefault ? (flags | 2) : (flags &~ 2);
+            flags = setFlag(flags, 1, extended);
+            flags = setFlag(flags, 2, isDefault);
             stream.writeInt32(flags);
             stream.writeInt64(stars);
             stream.writeInt32(yearly_boosts);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(store_product);
             }
             stream.writeString(currency);
@@ -2301,37 +2423,37 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
+            refund = hasFlag(flags, 8);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 8, refund);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
         }
@@ -2342,23 +2464,23 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
@@ -2366,24 +2488,24 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
@@ -2478,21 +2600,21 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
-            floodskip = (flags & 32768) != 0;
-            stargift_upgrade = (flags & 262144) != 0;
-            paid_message = (flags & 524288) != 0;
-            premium_gift = (flags & 1048576) != 0;
-            business_transfer = (flags & 2097152) != 0;
-            stargift_resale = (flags & 4194304) != 0;
-            posts_search = (flags & 16777216) != 0;
-            stargift_prepaid_upgrade = (flags & 33554432) != 0;
-            stargift_drop_original_details = (flags & 67108864) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
+            floodskip = hasFlag(flags, FLAG_15);
+            stargift_upgrade = hasFlag(flags, FLAG_18);
+            paid_message = hasFlag(flags, FLAG_19);
+            premium_gift = hasFlag(flags, FLAG_20);
+            business_transfer = hasFlag(flags, FLAG_21);
+            stargift_resale = hasFlag(flags, FLAG_22);
+            posts_search = hasFlag(flags, FLAG_24);
+            stargift_prepaid_upgrade = hasFlag(flags, FLAG_25);
+            stargift_drop_original_details = hasFlag(flags, FLAG_26);
             phonegroup_message = hasFlag(flags, FLAG_27);
             stargift_auction_bid = hasFlag(flags, FLAG_28);
             offer = hasFlag(flags, FLAG_29);
@@ -2500,51 +2622,51 @@ public class TL_stars {
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 floodskip_number = stream.readInt32(exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 starref_commission_permille = stream.readInt32(exception);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
                 starref_amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 paid_messages = stream.readInt32(exception);
             }
-            if ((flags & 1048576) != 0) {
+            if (hasFlag(flags, FLAG_20)) {
                 premium_gift_months = stream.readInt32(exception);
             }
             if (hasFlag(flags, FLAG_23)) {
@@ -2555,21 +2677,21 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
-            flags = floodskip ? flags | 32768 : flags &~ 32768;
-            flags = stargift_upgrade ? flags | 262144 : flags &~ 262144;
-            flags = paid_message ? flags | 524288 : flags &~ 524288;
-            flags = premium_gift ? flags | 1048576 : flags &~ 1048576;
-            flags = business_transfer ? flags | 2097152 : flags &~ 2097152;
-            flags = stargift_resale ? flags | 4194304 : flags &~ 4194304;
-            flags = posts_search ? flags | 16777216 : flags &~ 16777216;
-            flags = stargift_prepaid_upgrade ? flags | 33554432 : flags &~ 33554432;
-            flags = stargift_drop_original_details ? flags | 67108864 : flags &~ 67108864;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
+            flags = setFlag(flags, FLAG_15, floodskip);
+            flags = setFlag(flags, FLAG_18, stargift_upgrade);
+            flags = setFlag(flags, FLAG_19, paid_message);
+            flags = setFlag(flags, FLAG_20, premium_gift);
+            flags = setFlag(flags, FLAG_21, business_transfer);
+            flags = setFlag(flags, FLAG_22, stargift_resale);
+            flags = setFlag(flags, FLAG_24, posts_search);
+            flags = setFlag(flags, FLAG_25, stargift_prepaid_upgrade);
+            flags = setFlag(flags, FLAG_26, stargift_drop_original_details);
             flags = setFlag(flags, FLAG_27, phonegroup_message);
             flags = setFlag(flags, FLAG_28, stargift_auction_bid);
             flags = setFlag(flags, FLAG_29, offer);
@@ -2578,51 +2700,51 @@ public class TL_stars {
             amount.serializeToStream(stream);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 stream.writeInt32(floodskip_number);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeInt32(starref_commission_permille);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer.serializeToStream(stream);
                 starref_amount.serializeToStream(stream);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 stream.writeInt32(paid_messages);
             }
-            if ((flags & 1048576) != 0) {
+            if (hasFlag(flags, FLAG_20)) {
                 stream.writeInt32(premium_gift_months);
             }
             if (hasFlag(flags, FLAG_23)) {
@@ -2637,133 +2759,133 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
-            floodskip = (flags & 32768) != 0;
-            stargift_upgrade = (flags & 262144) != 0;
-            paid_message = (flags & 524288) != 0;
-            premium_gift = (flags & 1048576) != 0;
-            stargift_resale = (flags & 4194304) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
+            floodskip = hasFlag(flags, FLAG_15);
+            stargift_upgrade = hasFlag(flags, FLAG_18);
+            paid_message = hasFlag(flags, FLAG_19);
+            premium_gift = hasFlag(flags, FLAG_20);
+            stargift_resale = hasFlag(flags, FLAG_22);
             id = stream.readString(exception);
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 floodskip_number = stream.readInt32(exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 starref_commission_permille = stream.readInt32(exception);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
                 starref_amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 paid_messages = stream.readInt32(exception);
             }
-            if ((flags & 1048576) != 0) {
+            if (hasFlag(flags, FLAG_20)) {
                 premium_gift_months = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
-            flags = floodskip ? flags | 32768 : flags &~ 32768;
-            flags = stargift_upgrade ? flags | 262144 : flags &~ 262144;
-            flags = paid_message ? flags | 524288 : flags &~ 524288;
-            flags = premium_gift ? flags | 1048576 : flags &~ 1048576;
-            flags = stargift_resale ? flags | 4194304 : flags &~ 4194304;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
+            flags = setFlag(flags, FLAG_15, floodskip);
+            flags = setFlag(flags, FLAG_18, stargift_upgrade);
+            flags = setFlag(flags, FLAG_19, paid_message);
+            flags = setFlag(flags, FLAG_20, premium_gift);
+            flags = setFlag(flags, FLAG_22, stargift_resale);
             stream.writeInt32(flags);
             stream.writeString(id);
             amount.serializeToStream(stream);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 stream.writeInt32(floodskip_number);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeInt32(starref_commission_permille);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer.serializeToStream(stream);
                 starref_amount.serializeToStream(stream);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 stream.writeInt32(paid_messages);
             }
-            if ((flags & 1048576) != 0) {
+            if (hasFlag(flags, FLAG_20)) {
                 stream.writeInt32(premium_gift_months);
             }
         }
@@ -2774,125 +2896,125 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
-            floodskip = (flags & 32768) != 0;
-            stargift_upgrade = (flags & 262144) != 0;
-            paid_message = (flags & 524288) != 0;
-            premium_gift = (flags & 1048576) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
+            floodskip = hasFlag(flags, FLAG_15);
+            stargift_upgrade = hasFlag(flags, FLAG_18);
+            paid_message = hasFlag(flags, FLAG_19);
+            premium_gift = hasFlag(flags, FLAG_20);
             id = stream.readString(exception);
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 floodskip_number = stream.readInt32(exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 starref_commission_permille = stream.readInt32(exception);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
                 starref_amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 paid_messages = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
-            flags = floodskip ? flags | 32768 : flags &~ 32768;
-            flags = stargift_upgrade ? flags | 262144 : flags &~ 262144;
-            flags = paid_message ? flags | 524288 : flags &~ 524288;
-            flags = premium_gift ? flags | 1048576 : flags &~ 1048576;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
+            flags = setFlag(flags, FLAG_15, floodskip);
+            flags = setFlag(flags, FLAG_18, stargift_upgrade);
+            flags = setFlag(flags, FLAG_19, paid_message);
+            flags = setFlag(flags, FLAG_20, premium_gift);
             stream.writeInt32(flags);
             stream.writeString(id);
             amount.serializeToStream(stream);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 stream.writeInt32(floodskip_number);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeInt32(starref_commission_permille);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer.serializeToStream(stream);
                 starref_amount.serializeToStream(stream);
             }
-            if ((flags & 524288) != 0) {
+            if (hasFlag(flags, FLAG_19)) {
                 stream.writeInt32(paid_messages);
             }
         }
@@ -2903,57 +3025,57 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
-            floodskip = (flags & 32768) != 0;
-            stargift_upgrade = (flags & 262144) != 0;
-            paid_message = (flags & 524288) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
+            floodskip = hasFlag(flags, FLAG_15);
+            stargift_upgrade = hasFlag(flags, FLAG_18);
+            paid_message = hasFlag(flags, FLAG_19);
             id = stream.readString(exception);
             amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 floodskip_number = stream.readInt32(exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 starref_commission_permille = stream.readInt32(exception);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
                 starref_amount = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
@@ -2961,58 +3083,58 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
-            flags = floodskip ? flags | 32768 : flags &~ 32768;
-            flags = stargift_upgrade ? flags | 262144 : flags &~ 262144;
-            flags = paid_message ? flags | 524288 : flags &~ 524288;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
+            flags = setFlag(flags, FLAG_15, floodskip);
+            flags = setFlag(flags, FLAG_18, stargift_upgrade);
+            flags = setFlag(flags, FLAG_19, paid_message);
             stream.writeInt32(flags);
             stream.writeString(id);
             amount.serializeToStream(stream);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 stream.writeInt32(floodskip_number);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeInt32(starref_commission_permille);
             }
-            if ((flags & 131072) != 0) {
+            if (hasFlag(flags, FLAG_17)) {
                 starref_peer.serializeToStream(stream);
                 starref_amount.serializeToStream(stream);
             }
@@ -3024,99 +3146,99 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
-            floodskip = (flags & 32768) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
+            floodskip = hasFlag(flags, FLAG_15);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 floodskip_number = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
-            flags = floodskip ? flags | 32768 : flags &~ 32768;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
+            flags = setFlag(flags, FLAG_15, floodskip);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 stream.writeInt32(floodskip_number);
             }
         }
@@ -3127,91 +3249,91 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stargift.serializeToStream(stream);
             }
         }
@@ -3222,85 +3344,85 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 giveaway_post_id = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(giveaway_post_id);
             }
         }
@@ -3311,79 +3433,79 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
-            reaction = (flags & 2048) != 0;
-            subscription = (flags & 4096) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
+            reaction = hasFlag(flags, FLAG_11);
+            subscription = hasFlag(flags, FLAG_12);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 subscription_period = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
-            flags = reaction ? flags | 2048 : flags &~ 2048;
-            flags = subscription ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
+            flags = setFlag(flags, FLAG_11, reaction);
+            flags = setFlag(flags, FLAG_12, subscription);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
-            if ((flags & 4096) != 0) {
+            if (hasFlag(flags, FLAG_12)) {
                 stream.writeInt32(subscription_period);
             }
         }
@@ -3394,69 +3516,69 @@ public class TL_stars {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            refund = (flags & 8) != 0;
-            pending = (flags & 16) != 0;
-            failed = (flags & 64) != 0;
-            gift = (flags & 1024) != 0;
+            refund = hasFlag(flags, 8);
+            pending = hasFlag(flags, 16);
+            failed = hasFlag(flags, FLAG_6);
+            gift = hasFlag(flags, FLAG_10);
             id = stream.readString(exception);
             amount = StarsAmount.ofStars(stream.readInt64(exception));
             date = stream.readInt32(exception);
             peer = StarsTransactionPeer.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 description = stream.readString(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 bot_payload = stream.readByteArray(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 extended_media = Vector.deserialize(stream, TLRPC.MessageMedia::TLdeserialize, exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = refund ? flags | 8 : flags &~ 8;
-            flags = pending ? flags | 16 : flags &~ 16;
-            flags = failed ? flags | 64 : flags &~ 64;
-            flags = gift ? flags | 1024 : flags &~ 1024;
+            flags = setFlag(flags, 8, refund);
+            flags = setFlag(flags, 16, pending);
+            flags = setFlag(flags, FLAG_6, failed);
+            flags = setFlag(flags, FLAG_10, gift);
             stream.writeInt32(flags);
             stream.writeString(id);
             stream.writeInt64(amount.amount);
             stream.writeInt32(date);
             peer.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(description);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeByteArray(bot_payload);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 512) != 0) {
+            if (hasFlag(flags, FLAG_9)) {
                 Vector.serialize(stream, extended_media);
             }
         }
@@ -3494,19 +3616,19 @@ public class TL_stars {
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             balance = StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 subscriptions = Vector.deserialize(stream, StarsSubscription::TLdeserialize, exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 subscriptions_next_offset = stream.readString(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 subscriptions_missing_balance = stream.readInt64(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 history = Vector.deserialize(stream, StarsTransaction::TLdeserialize, exception);
             }
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
@@ -3517,19 +3639,19 @@ public class TL_stars {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             balance.serializeToStream(stream);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 Vector.serialize(stream, subscriptions);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(subscriptions_next_offset);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(subscriptions_missing_balance);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 Vector.serialize(stream, history);
             }
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
             Vector.serialize(stream, chats);
@@ -3544,19 +3666,19 @@ public class TL_stars {
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             balance = StarsAmount.ofStars(stream.readInt64(exception));
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 subscriptions = Vector.deserialize(stream, StarsSubscription::TLdeserialize, exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 subscriptions_next_offset = stream.readString(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 subscriptions_missing_balance = stream.readInt64(exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 history = Vector.deserialize(stream, StarsTransaction::TLdeserialize, exception);
             }
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
@@ -3567,19 +3689,19 @@ public class TL_stars {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeInt64(balance.amount);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 Vector.serialize(stream, subscriptions);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeString(subscriptions_next_offset);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(subscriptions_missing_balance);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 Vector.serialize(stream, history);
             }
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
             Vector.serialize(stream, chats);
@@ -3612,7 +3734,7 @@ public class TL_stars {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 user_id.serializeToStream(stream);
             }
         }
@@ -3743,24 +3865,24 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            canceled = (flags & 1) != 0;
-            can_refulfill = (flags & 2) != 0;
-            missing_balance = (flags & 4) != 0;
-            bot_canceled = (flags & 128) != 0;
+            canceled = hasFlag(flags, 1);
+            can_refulfill = hasFlag(flags, 2);
+            missing_balance = hasFlag(flags, 4);
+            bot_canceled = hasFlag(flags, FLAG_7);
             id = stream.readString(exception);
             peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             until_date = stream.readInt32(exception);
             pricing = TL_starsSubscriptionPricing.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 chat_invite_hash = stream.readString(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 title = stream.readString(exception);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 photo = TLRPC.WebDocument.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 invoice_slug = stream.readString(exception);
             }
         }
@@ -3768,25 +3890,25 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = canceled ? (flags | 1) : (flags &~ 1);
-            flags = can_refulfill ? (flags | 2) : (flags &~ 2);
-            flags = missing_balance ? (flags | 4) : (flags &~ 4);
-            flags = bot_canceled ? (flags | 128) : (flags &~ 128);
+            flags = setFlag(flags, 1, canceled);
+            flags = setFlag(flags, 2, can_refulfill);
+            flags = setFlag(flags, 4, missing_balance);
+            flags = setFlag(flags, FLAG_7, bot_canceled);
             stream.writeInt32(flags);
             stream.writeString(id);
             peer.serializeToStream(stream);
             stream.writeInt32(until_date);
             pricing.serializeToStream(stream);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(chat_invite_hash);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeString(title);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 photo.serializeToStream(stream);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeString(invoice_slug);
             }
         }
@@ -3798,14 +3920,14 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            canceled = (flags & 1) != 0;
-            can_refulfill = (flags & 2) != 0;
-            missing_balance = (flags & 4) != 0;
+            canceled = hasFlag(flags, 1);
+            can_refulfill = hasFlag(flags, 2);
+            missing_balance = hasFlag(flags, 4);
             id = stream.readString(exception);
             peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             until_date = stream.readInt32(exception);
             pricing = TL_starsSubscriptionPricing.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 chat_invite_hash = stream.readString(exception);
             }
         }
@@ -3813,15 +3935,15 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = canceled ? (flags | 1) : (flags &~ 1);
-            flags = can_refulfill ? (flags | 2) : (flags &~ 2);
-            flags = missing_balance ? (flags | 4) : (flags &~ 4);
+            flags = setFlag(flags, 1, canceled);
+            flags = setFlag(flags, 2, can_refulfill);
+            flags = setFlag(flags, 4, missing_balance);
             stream.writeInt32(flags);
             stream.writeString(id);
             peer.serializeToStream(stream);
             stream.writeInt32(until_date);
             pricing.serializeToStream(stream);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeString(chat_invite_hash);
             }
         }
@@ -3833,9 +3955,9 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            canceled = (flags & 1) != 0;
-            can_refulfill = (flags & 2) != 0;
-            missing_balance = (flags & 4) != 0;
+            canceled = hasFlag(flags, 1);
+            can_refulfill = hasFlag(flags, 2);
+            missing_balance = hasFlag(flags, 4);
             id = stream.readString(exception);
             peer = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             until_date = stream.readInt32(exception);
@@ -3845,9 +3967,9 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = canceled ? (flags | 1) : (flags &~ 1);
-            flags = can_refulfill ? (flags | 2) : (flags &~ 2);
-            flags = missing_balance ? (flags | 4) : (flags &~ 4);
+            flags = setFlag(flags, 1, canceled);
+            flags = setFlag(flags, 2, can_refulfill);
+            flags = setFlag(flags, 4, missing_balance);
             stream.writeInt32(flags);
             stream.writeString(id);
             peer.serializeToStream(stream);
@@ -3895,7 +4017,7 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = missing_balance ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, missing_balance);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeString(offset);
@@ -3916,11 +4038,11 @@ public class TL_stars {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = (canceled != null) ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, (canceled != null));
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeString(subscription_id);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeBool(canceled);
             }
         }
@@ -4037,8 +4159,10 @@ public class TL_stars {
 
     public static class StarGiftAttribute extends TLObject {
 
+        public boolean crafted;
+        public int flags;
         public String name;
-        public int rarity_permille;
+        public StarGiftAttributeRarity rarity;
 
         public static StarGiftAttribute TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             StarGiftAttribute result = null;
@@ -4046,11 +4170,20 @@ public class TL_stars {
                 case starGiftAttributeModel.constructor:
                     result = new starGiftAttributeModel();
                     break;
+                case starGiftAttributeModel_layer221.constructor:
+                    result = new starGiftAttributeModel_layer221();
+                    break;
                 case starGiftAttributePattern.constructor:
                     result = new starGiftAttributePattern();
                     break;
+                case starGiftAttributePattern_layer221.constructor:
+                    result = new starGiftAttributePattern_layer221();
+                    break;
                 case starGiftAttributeBackdrop.constructor:
                     result = new starGiftAttributeBackdrop();
+                    break;
+                case starGiftAttributeBackdrop_layer221.constructor:
+                    result = new starGiftAttributeBackdrop_layer221();
                     break;
                 case starGiftAttributeBackdrop_layer202.constructor:
                     result = new starGiftAttributeBackdrop_layer202();
@@ -4064,30 +4197,64 @@ public class TL_stars {
             }
             return TLdeserialize(StarGiftAttribute.class, result, stream, constructor, exception);
         }
+
+        public int getRarityPermille() {
+            if (rarity instanceof TL_starGiftAttributeRarity) {
+                return ((TL_starGiftAttributeRarity) rarity).permille;
+            }
+            return 0;
+        }
     }
 
     public static class starGiftAttributeModel extends StarGiftAttribute {
-        public static final int constructor = 0x39d99013;
+        public static final int constructor = 0x565251e2;
 
         public TLRPC.Document document;
 
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            crafted = hasFlag(flags, FLAG_0);
             stream.writeString(name);
             document.serializeToStream(stream);
-            stream.writeInt32(rarity_permille);
+            rarity.serializeToStream(stream);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = setFlag(flags, FLAG_0, crafted);
+            flags = stream.readInt32(exception);
+            name = stream.readString(exception);
+            document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            rarity = StarGiftAttributeRarity.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+    }
+    public static class starGiftAttributeModel_layer221 extends starGiftAttributeModel {
+        public static final int constructor = 0x39d99013;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(name);
+            document.serializeToStream(stream);
+            if (rarity instanceof TL_starGiftAttributeRarity) {
+                stream.writeInt32(((TL_starGiftAttributeRarity) rarity).permille);
+            } else {
+                stream.writeInt32(0);
+            }
         }
 
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             name = stream.readString(exception);
             document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
-            rarity_permille = stream.readInt32(exception);
+            rarity = new TL_starGiftAttributeRarity();
+            ((TL_starGiftAttributeRarity) rarity).permille = stream.readInt32(exception);
         }
     }
     public static class starGiftAttributePattern extends StarGiftAttribute {
-        public static final int constructor = 0x13acff19;
+        public static final int constructor = 0x4e7085ea;
 
         public TLRPC.Document document;
 
@@ -4096,18 +4263,41 @@ public class TL_stars {
             stream.writeInt32(constructor);
             stream.writeString(name);
             document.serializeToStream(stream);
-            stream.writeInt32(rarity_permille);
+            rarity.serializeToStream(stream);
         }
 
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             name = stream.readString(exception);
             document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
-            rarity_permille = stream.readInt32(exception);
+            rarity = StarGiftAttributeRarity.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+    }
+    public static class starGiftAttributePattern_layer221 extends starGiftAttributePattern {
+        public static final int constructor = 0x13acff19;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(name);
+            document.serializeToStream(stream);
+            if (rarity instanceof TL_starGiftAttributeRarity) {
+                stream.writeInt32(((TL_starGiftAttributeRarity) rarity).permille);
+            } else {
+                stream.writeInt32(0);
+            }
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            name = stream.readString(exception);
+            document = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
+            rarity = new TL_starGiftAttributeRarity();
+            ((TL_starGiftAttributeRarity) rarity).permille = stream.readInt32(exception);
         }
     }
     public static class starGiftAttributeBackdrop extends StarGiftAttribute {
-        public static final int constructor = 0xd93d859c;
+        public static final int constructor = 0x9f2504e4;
 
         public int backdrop_id;
         public int center_color;
@@ -4124,7 +4314,7 @@ public class TL_stars {
             stream.writeInt32(edge_color);
             stream.writeInt32(pattern_color);
             stream.writeInt32(text_color);
-            stream.writeInt32(rarity_permille);
+            rarity.serializeToStream(stream);
         }
 
         @Override
@@ -4135,7 +4325,38 @@ public class TL_stars {
             edge_color = stream.readInt32(exception);
             pattern_color = stream.readInt32(exception);
             text_color = stream.readInt32(exception);
-            rarity_permille = stream.readInt32(exception);
+            rarity = StarGiftAttributeRarity.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+    }
+    public static class starGiftAttributeBackdrop_layer221 extends starGiftAttributeBackdrop {
+        public static final int constructor = 0xd93d859c;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(name);
+            stream.writeInt32(backdrop_id);
+            stream.writeInt32(center_color);
+            stream.writeInt32(edge_color);
+            stream.writeInt32(pattern_color);
+            stream.writeInt32(text_color);
+            if (rarity instanceof TL_starGiftAttributeRarity) {
+                stream.writeInt32(((TL_starGiftAttributeRarity) rarity).permille);
+            } else {
+                stream.writeInt32(0);
+            }
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            name = stream.readString(exception);
+            backdrop_id = stream.readInt32(exception);
+            center_color = stream.readInt32(exception);
+            edge_color = stream.readInt32(exception);
+            pattern_color = stream.readInt32(exception);
+            text_color = stream.readInt32(exception);
+            rarity = new TL_starGiftAttributeRarity();
+            ((TL_starGiftAttributeRarity) rarity).permille = stream.readInt32(exception);
         }
     }
     public static class starGiftAttributeBackdrop_layer202 extends starGiftAttributeBackdrop {
@@ -4149,7 +4370,11 @@ public class TL_stars {
             stream.writeInt32(edge_color);
             stream.writeInt32(pattern_color);
             stream.writeInt32(text_color);
-            stream.writeInt32(rarity_permille);
+            if (rarity instanceof TL_starGiftAttributeRarity) {
+                stream.writeInt32(((TL_starGiftAttributeRarity) rarity).permille);
+            } else {
+                stream.writeInt32(0);
+            }
         }
 
         @Override
@@ -4159,7 +4384,8 @@ public class TL_stars {
             edge_color = stream.readInt32(exception);
             pattern_color = stream.readInt32(exception);
             text_color = stream.readInt32(exception);
-            rarity_permille = stream.readInt32(exception);
+            rarity = new TL_starGiftAttributeRarity();
+            ((TL_starGiftAttributeRarity) rarity).permille = stream.readInt32(exception);
         }
     }
     public static class starGiftAttributeOriginalDetails extends StarGiftAttribute {
@@ -4175,12 +4401,12 @@ public class TL_stars {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 sender_id.serializeToStream(stream);
             }
             recipient_id.serializeToStream(stream);
             stream.writeInt32(date);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 message.serializeToStream(stream);
             }
         }
@@ -4188,12 +4414,12 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 sender_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             recipient_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             date = stream.readInt32(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -4205,12 +4431,12 @@ public class TL_stars {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt64(sender_id.user_id);
             }
             stream.writeInt64(recipient_id.user_id);
             stream.writeInt32(date);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 message.serializeToStream(stream);
             }
         }
@@ -4218,14 +4444,14 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 sender_id = new TLRPC.TL_peerUser();
                 sender_id.user_id = stream.readInt64(exception);
             }
             recipient_id = new TLRPC.TL_peerUser();
             recipient_id.user_id = stream.readInt64(exception);
             date = stream.readInt32(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -4300,12 +4526,19 @@ public class TL_stars {
         public String prepaid_upgrade_hash;
         public long drop_original_details_stars;
         public int gift_num;
+        public int can_craft_at;
 
         public static SavedStarGift TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             SavedStarGift result = null;
             switch (constructor) {
                 case TL_savedStarGift.constructor:
                     result = new TL_savedStarGift();
+                    break;
+                case TL_savedStarGift_layer221_2.constructor:
+                    result = new TL_savedStarGift_layer221_2();
+                    break;
+                case TL_savedStarGift_layer221.constructor:
+                    result = new TL_savedStarGift_layer221();
                     break;
                 case TL_savedStarGift_layer219.constructor:
                     result = new TL_savedStarGift_layer219();
@@ -4328,56 +4561,300 @@ public class TL_stars {
     }
 
     public static class TL_savedStarGift extends SavedStarGift {
+        public static final int constructor = 0x41df43fc;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            upgrade_separate = hasFlag(flags, FLAG_17);
+            if (hasFlag(flags, 2)) {
+                from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            date = stream.readInt32(exception);
+            gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if (hasFlag(flags, 4)) {
+                message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, 8)) {
+                msg_id = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                saved_id = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, 16)) {
+                convert_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                upgrade_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_7)) {
+                can_export_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                transfer_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                can_transfer_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_14)) {
+                can_resell_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_15)) {
+                collection_id = Vector.deserializeInt(stream, exception);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                prepaid_upgrade_hash = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_18)) {
+                drop_original_details_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_19)) {
+                gift_num = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_20)) {
+                can_craft_at = stream.readInt32(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
+            flags = setFlag(flags, FLAG_17, upgrade_separate);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, 2)) {
+                from_id.serializeToStream(stream);
+            }
+            stream.writeInt32(date);
+            gift.serializeToStream(stream);
+            if (hasFlag(flags, 4)) {
+                message.serializeToStream(stream);
+            }
+            if (hasFlag(flags, 8)) {
+                stream.writeInt32(msg_id);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                stream.writeInt64(saved_id);
+            }
+            if (hasFlag(flags, 16)) {
+                stream.writeInt64(convert_stars);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                stream.writeInt64(upgrade_stars);
+            }
+            if (hasFlag(flags, FLAG_7)) {
+                stream.writeInt32(can_export_at);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                stream.writeInt64(transfer_stars);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                stream.writeInt32(can_transfer_at);
+            }
+            if (hasFlag(flags, FLAG_14)) {
+                stream.writeInt32(can_resell_at);
+            }
+            if (hasFlag(flags, FLAG_15)) {
+                Vector.serializeInt(stream, collection_id);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                stream.writeString(prepaid_upgrade_hash);
+            }
+            if (hasFlag(flags, FLAG_18)) {
+                stream.writeInt64(drop_original_details_stars);
+            }
+            if (hasFlag(flags, FLAG_19)) {
+                stream.writeInt32(gift_num);
+            }
+            if (hasFlag(flags, FLAG_20)) {
+                stream.writeInt32(can_craft_at);
+            }
+        }
+    }
+
+    public static class TL_savedStarGift_layer221_2 extends TL_savedStarGift {
+        public static final int constructor = 0x389bb419;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            upgrade_separate = hasFlag(flags, FLAG_17);
+            if (hasFlag(flags, 2)) {
+                from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            date = stream.readInt32(exception);
+            gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if (hasFlag(flags, 4)) {
+                message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, 8)) {
+                msg_id = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                saved_id = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, 16)) {
+                convert_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                upgrade_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_7)) {
+                can_export_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                transfer_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                can_transfer_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_14)) {
+                can_resell_at = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_15)) {
+                collection_id = Vector.deserializeInt(stream, exception);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                prepaid_upgrade_hash = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_18)) {
+                drop_original_details_stars = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_19)) {
+                gift_num = stream.readInt32(exception);
+            }
+            if (hasFlag(flags, FLAG_20)) {
+                can_craft_at = stream.readInt32(exception);
+                stream.readInt32(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
+            flags = setFlag(flags, FLAG_17, upgrade_separate);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, 2)) {
+                from_id.serializeToStream(stream);
+            }
+            stream.writeInt32(date);
+            gift.serializeToStream(stream);
+            if (hasFlag(flags, 4)) {
+                message.serializeToStream(stream);
+            }
+            if (hasFlag(flags, 8)) {
+                stream.writeInt32(msg_id);
+            }
+            if (hasFlag(flags, FLAG_11)) {
+                stream.writeInt64(saved_id);
+            }
+            if (hasFlag(flags, 16)) {
+                stream.writeInt64(convert_stars);
+            }
+            if (hasFlag(flags, FLAG_6)) {
+                stream.writeInt64(upgrade_stars);
+            }
+            if (hasFlag(flags, FLAG_7)) {
+                stream.writeInt32(can_export_at);
+            }
+            if (hasFlag(flags, FLAG_8)) {
+                stream.writeInt64(transfer_stars);
+            }
+            if (hasFlag(flags, FLAG_13)) {
+                stream.writeInt32(can_transfer_at);
+            }
+            if (hasFlag(flags, FLAG_14)) {
+                stream.writeInt32(can_resell_at);
+            }
+            if (hasFlag(flags, FLAG_15)) {
+                Vector.serializeInt(stream, collection_id);
+            }
+            if (hasFlag(flags, FLAG_16)) {
+                stream.writeString(prepaid_upgrade_hash);
+            }
+            if (hasFlag(flags, FLAG_18)) {
+                stream.writeInt64(drop_original_details_stars);
+            }
+            if (hasFlag(flags, FLAG_19)) {
+                stream.writeInt32(gift_num);
+            }
+            if (hasFlag(flags, FLAG_20)) {
+                stream.writeInt32(can_craft_at);
+                stream.writeInt32(0);
+            }
+        }
+    }
+
+    public static class TL_savedStarGift_layer221 extends TL_savedStarGift {
         public static final int constructor = 0xEAD6805E;
 
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            upgrade_separate = (flags & 131072) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            upgrade_separate = hasFlag(flags, FLAG_17);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 can_transfer_at = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 can_resell_at = stream.readInt32(exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 collection_id = Vector.deserializeInt(stream, exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 prepaid_upgrade_hash = stream.readString(exception);
             }
-            if ((flags & 262144) != 0) {
+            if (hasFlag(flags, FLAG_18)) {
                 drop_original_details_stars = stream.readInt64(exception);
             }
             if (hasFlag(flags, FLAG_19)) {
@@ -4388,52 +4865,52 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
-            flags = upgrade_separate ? flags | 131072 : flags &~ 131072;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
+            flags = setFlag(flags, FLAG_17, upgrade_separate);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(can_transfer_at);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stream.writeInt32(can_resell_at);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 Vector.serializeInt(stream, collection_id);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeString(prepaid_upgrade_hash);
             }
-            if ((flags & 262144) != 0) {
+            if (hasFlag(flags, FLAG_18)) {
                 stream.writeInt64(drop_original_details_stars);
             }
             if (hasFlag(flags, FLAG_19)) {
@@ -4448,51 +4925,51 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            upgrade_separate = (flags & 131072) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            upgrade_separate = hasFlag(flags, FLAG_17);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 can_transfer_at = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 can_resell_at = stream.readInt32(exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 collection_id = Vector.deserializeInt(stream, exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 prepaid_upgrade_hash = stream.readString(exception);
             }
-            if ((flags & 262144) != 0) {
+            if (hasFlag(flags, FLAG_18)) {
                 drop_original_details_stars = stream.readInt64(exception);
             }
         }
@@ -4500,52 +4977,52 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
-            flags = upgrade_separate ? flags | 131072 : flags &~ 131072;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
+            flags = setFlag(flags, FLAG_17, upgrade_separate);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(can_transfer_at);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stream.writeInt32(can_resell_at);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 Vector.serializeInt(stream, collection_id);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeString(prepaid_upgrade_hash);
             }
-            if ((flags & 262144) != 0) {
+            if (hasFlag(flags, FLAG_18)) {
                 stream.writeInt64(drop_original_details_stars);
             }
         }
@@ -4557,48 +5034,48 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            upgrade_separate = (flags & 131072) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            upgrade_separate = hasFlag(flags, FLAG_17);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 can_transfer_at = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 can_resell_at = stream.readInt32(exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 collection_id = Vector.deserializeInt(stream, exception);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 prepaid_upgrade_hash = stream.readString(exception);
             }
         }
@@ -4606,49 +5083,49 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
-            flags = upgrade_separate ? flags | 131072 : flags &~ 131072;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
+            flags = setFlag(flags, FLAG_17, upgrade_separate);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(can_transfer_at);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stream.writeInt32(can_resell_at);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 Vector.serializeInt(stream, collection_id);
             }
-            if ((flags & 65536) != 0) {
+            if (hasFlag(flags, FLAG_16)) {
                 stream.writeString(prepaid_upgrade_hash);
             }
         }
@@ -4660,44 +5137,44 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 can_transfer_at = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 can_resell_at = stream.readInt32(exception);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 collection_id = Vector.deserializeInt(stream, exception);
             }
         }
@@ -4705,45 +5182,45 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(can_transfer_at);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stream.writeInt32(can_resell_at);
             }
-            if ((flags & 32768) != 0) {
+            if (hasFlag(flags, FLAG_15)) {
                 Vector.serializeInt(stream, collection_id);
             }
         }
@@ -4755,41 +5232,41 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 can_transfer_at = stream.readInt32(exception);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 can_resell_at = stream.readInt32(exception);
             }
         }
@@ -4797,42 +5274,42 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
-            if ((flags & 8192) != 0) {
+            if (hasFlag(flags, FLAG_13)) {
                 stream.writeInt32(can_transfer_at);
             }
-            if ((flags & 16384) != 0) {
+            if (hasFlag(flags, FLAG_14)) {
                 stream.writeInt32(can_resell_at);
             }
         }
@@ -4844,35 +5321,35 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            name_hidden = (flags & 1) != 0;
-            unsaved = (flags & 32) != 0;
-            refunded = (flags & 512) != 0;
-            can_upgrade = (flags & 1024) != 0;
-            pinned_to_top = (flags & 4096) != 0;
-            if ((flags & 2) != 0) {
+            name_hidden = hasFlag(flags, 1);
+            unsaved = hasFlag(flags, FLAG_5);
+            refunded = hasFlag(flags, FLAG_9);
+            can_upgrade = hasFlag(flags, FLAG_10);
+            pinned_to_top = hasFlag(flags, FLAG_12);
+            if (hasFlag(flags, 2)) {
                 from_id = TLRPC.Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             date = stream.readInt32(exception);
             gift = StarGift.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 msg_id = stream.readInt32(exception);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 saved_id = stream.readInt64(exception);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 convert_stars = stream.readInt64(exception);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 upgrade_stars = stream.readInt64(exception);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 can_export_at = stream.readInt32(exception);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 transfer_stars = stream.readInt64(exception);
             }
         }
@@ -4880,36 +5357,36 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = name_hidden ? flags | 1 : flags &~ 1;
-            flags = unsaved ? flags | 32 : flags &~ 32;
-            flags = refunded ? flags | 512 : flags &~ 512;
-            flags = can_upgrade ? flags | 1024 : flags &~ 1024;
-            flags = pinned_to_top ? flags | 4096 : flags &~ 4096;
+            flags = setFlag(flags, 1, name_hidden);
+            flags = setFlag(flags, FLAG_5, unsaved);
+            flags = setFlag(flags, FLAG_9, refunded);
+            flags = setFlag(flags, FLAG_10, can_upgrade);
+            flags = setFlag(flags, FLAG_12, pinned_to_top);
             stream.writeInt32(flags);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 from_id.serializeToStream(stream);
             }
             stream.writeInt32(date);
             gift.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 message.serializeToStream(stream);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeInt32(msg_id);
             }
-            if ((flags & 2048) != 0) {
+            if (hasFlag(flags, FLAG_11)) {
                 stream.writeInt64(saved_id);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeInt64(convert_stars);
             }
-            if ((flags & 64) != 0) {
+            if (hasFlag(flags, FLAG_6)) {
                 stream.writeInt64(upgrade_stars);
             }
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 stream.writeInt32(can_export_at);
             }
-            if ((flags & 256) != 0) {
+            if (hasFlag(flags, FLAG_8)) {
                 stream.writeInt64(transfer_stars);
             }
         }
@@ -4935,11 +5412,11 @@ public class TL_stars {
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             count = stream.readInt32(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 chat_notifications_enabled = stream.readBool(exception);
             }
             gifts = Vector.deserialize(stream, SavedStarGift::TLdeserialize, exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
@@ -4951,11 +5428,11 @@ public class TL_stars {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeInt32(count);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeBool(chat_notifications_enabled);
             }
             Vector.serialize(stream, gifts);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
             Vector.serialize(stream, chats);
@@ -5050,7 +5527,7 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = enabled ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, enabled);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
         }
@@ -5176,7 +5653,7 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = suggestions_allowed ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, suggestions_allowed);
             stream.writeInt32(flags);
             channel.serializeToStream(stream);
             stream.writeInt64(send_paid_messages_stars);
@@ -5244,15 +5721,15 @@ public class TL_stars {
             flags = stream.readInt32(exception);
             count = stream.readInt32(exception);
             gifts = Vector.deserialize(stream, TL_stars.StarGift::TLdeserialize, exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 attributes = Vector.deserialize(stream, TL_stars.StarGiftAttribute::TLdeserialize, exception);
                 attributes_hash = stream.readInt64(exception);
             }
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 counters = Vector.deserialize(stream, TL_stars.starGiftAttributeCounter::TLdeserialize, exception);
             }
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
@@ -5264,15 +5741,15 @@ public class TL_stars {
             stream.writeInt32(flags);
             stream.writeInt32(count);
             Vector.serialize(stream, gifts);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 Vector.serialize(stream, attributes);
                 stream.writeInt64(attributes_hash);
             }
             Vector.serialize(stream, chats);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 Vector.serialize(stream, counters);
             }
             Vector.serialize(stream, users);
@@ -5285,6 +5762,8 @@ public class TL_stars {
         public int flags;
         public boolean sort_by_price;
         public boolean sort_by_num;
+        public boolean for_craft;
+        public boolean stars_only;
         public long attributes_hash;
         public long gift_id;
         public ArrayList<TL_stars.StarGiftAttributeId> attributes = new ArrayList<>();
@@ -5299,14 +5778,16 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = sort_by_price ? flags | 2 : flags &~ 2;
-            flags = sort_by_num ? flags | 4 : flags &~ 4;
+            flags = setFlag(flags, 2, sort_by_price);
+            flags = setFlag(flags, 4, sort_by_num);
+            flags = setFlag(flags, 16, for_craft);
+            flags = setFlag(flags, FLAG_5, stars_only);
             stream.writeInt32(flags);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt64(attributes_hash);
             }
             stream.writeInt64(gift_id);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 Vector.serialize(stream, attributes);
             }
             stream.writeString(offset);
@@ -5378,7 +5859,7 @@ public class TL_stars {
             flags = stream.readInt32(exception);
             collection_id = stream.readInt32(exception);
             title = stream.readString(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 icon = TLRPC.Document.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
             gifts_count = stream.readInt32(exception);
@@ -5391,7 +5872,7 @@ public class TL_stars {
             stream.writeInt32(flags);
             stream.writeInt32(collection_id);
             stream.writeString(title);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 icon.serializeToStream(stream);
             }
             stream.writeInt32(gifts_count);
@@ -5483,16 +5964,16 @@ public class TL_stars {
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeInt32(collection_id);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 Vector.serialize(stream, delete_stargift);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 Vector.serialize(stream, add_stargift);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 Vector.serialize(stream, order);
             }
         }
@@ -6173,5 +6654,117 @@ public class TL_stars {
         public starGiftUpgradeAttributes deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
             return starGiftUpgradeAttributes.TLdeserialize(stream, constructor, exception);
         }
+    }
+
+    public static class getCraftStarGifts extends TLMethod<TL_payments_savedStarGifts> {
+        public static final int constructor = 0xfd05dd00;
+
+        public long gift_id;
+        public String offset;
+        public int limit;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(gift_id);
+            stream.writeString(offset);
+            stream.writeInt32(limit);
+        }
+
+        @Override
+        public TL_payments_savedStarGifts deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_payments_savedStarGifts.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class craftStarGift extends TLMethod<TLRPC.Updates> {
+        public static final int constructor = 0xb0f9684f;
+
+        public ArrayList<InputSavedStarGift> stargift = new ArrayList<>();
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serialize(stream, stargift);
+        }
+
+        @Override
+        public TLRPC.Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Updates.TLdeserialize(stream, constructor, exception);
+        }
+    }
+
+    public static class StarGiftAttributeRarity extends TLObject {
+        private static StarGiftAttributeRarity fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_starGiftAttributeRarity.constructor:          return new TL_starGiftAttributeRarity();
+                case TL_starGiftAttributeRarityRare.constructor:      return new TL_starGiftAttributeRarityRare();
+                case TL_starGiftAttributeRarityEpic.constructor:      return new TL_starGiftAttributeRarityEpic();
+                case TL_starGiftAttributeRarityLegendary.constructor: return new TL_starGiftAttributeRarityLegendary();
+                case TL_starGiftAttributeRarityUncommon.constructor: return new TL_starGiftAttributeRarityUncommon();
+            }
+            return null;
+        }
+
+        public static StarGiftAttributeRarity TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(StarGiftAttributeRarity.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+    }
+
+    public static class TL_starGiftAttributeRarity extends StarGiftAttributeRarity {
+        public static final int constructor = 0x36437737;
+
+        public int permille;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(permille);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            permille = stream.readInt32(exception);
+        }
+    }
+
+    public static class TL_starGiftAttributeRarityRare extends StarGiftAttributeRarity {
+        public static final int constructor = 0xf08d516b;
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {}
+    }
+
+    public static class TL_starGiftAttributeRarityEpic extends StarGiftAttributeRarity {
+        public static final int constructor = 0x78fbf3a8;
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {}
+    }
+
+    public static class TL_starGiftAttributeRarityLegendary extends StarGiftAttributeRarity {
+        public static final int constructor = 0xcef7e7a8;
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {}
+    }
+
+    public static class TL_starGiftAttributeRarityUncommon extends StarGiftAttributeRarity {
+        public static final int constructor = 0xDBCE6389;
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {}
     }
 }

@@ -31,7 +31,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 
@@ -60,6 +59,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 
 import java.util.ArrayList;
@@ -88,7 +88,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     private FrameLayout actionButtonContainer;
     private ImageView actionButtonContainerGradient;
     private int keyboardHeight;
-    private ScrollView scrollView;
+    private SectionsScrollView scrollView;
 
     private final HashMap<Long, AnimatedEmojiSpan> selectedEmojisMap = new LinkedHashMap<>();
     private final List<Long> selectedEmojisIds = new ArrayList<>();
@@ -162,8 +162,11 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }
         });
 
-        scrollView = new ScrollView(context);
+        contentLayout = new SectionsScrollView.SectionsLinearLayout(context);
+        scrollView = new SectionsScrollView(context, contentLayout, resourceProvider);
         scrollView.setFillViewport(true);
+        actionBar.setAdaptiveBackground(scrollView);
+
         FrameLayout rootLayout = new FrameLayout(context) {
             final AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
 
@@ -217,7 +220,6 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }
         };
 
-        contentLayout = new LinearLayout(context);
         contentLayout.setOrientation(LinearLayout.VERTICAL);
 
         scrollView.addView(contentLayout);
@@ -235,7 +237,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         });
         contentLayout.addView(enableReactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context);
+        TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context, 12, resourceProvider);
         infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         infoCell.setTopPadding(12);
         infoCell.setBottomPadding(16);
@@ -281,7 +283,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         layoutTransition.enableTransitionType(LayoutTransition.CHANGING);
         switchLayout.setLayoutTransition(layoutTransition);
 
-        TextInfoPrivacyCell infoCell2 = new TextInfoPrivacyCell(context);
+        TextInfoPrivacyCell infoCell2 = new TextInfoPrivacyCell(context, 12, resourceProvider);
         infoCell2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         infoCell2.setText(AndroidUtilities.replaceSingleTag(
                 getString(R.string.ReactionCreateOwnPack),
@@ -292,12 +294,10 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         switchLayout.addView(infoCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         HeaderCell headerCell1 = new HeaderCell(context, resourceProvider);
-        headerCell1.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         headerCell1.setText(getString(R.string.MaximumReactionsHeader));
         switchLayout.addView(headerCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         slideView = new SlideIntChooseView(context, resourceProvider);
-        slideView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         if (info instanceof TLRPC.TL_chatFull ? (info.flags & 1048576) != 0 : (info.flags2 & 8192) != 0) {
             currentReactionsCount = reactionsCount = info.reactions_limit;
         } else {
@@ -307,7 +307,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             reactionsCount = value;
         });
         switchLayout.addView(slideView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        TextInfoPrivacyCell infoCell3 = new TextInfoPrivacyCell(context);
+        TextInfoPrivacyCell infoCell3 = new TextInfoPrivacyCell(context, 12, resourceProvider);
         infoCell3.setTopPadding(12);
         infoCell3.setBottomPadding(16);
         infoCell3.setText(LocaleController.getString(R.string.MaximumReactionsInfo));
@@ -315,14 +315,13 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
 
         if (info.paid_media_allowed) {
             paidCheckCell = new TextCheckCell(context);
-            paidCheckCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
             paidCheckCell.setTextAndCheck(LocaleController.getString(R.string.ChannelEnablePaidReactions), false, false);
             switchLayout.addView(paidCheckCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             paidCheckCell.setOnClickListener(v -> {
                 toggleStarsEnabled();
             });
 
-            infoCell = new TextInfoPrivacyCell(context);
+            infoCell = new TextInfoPrivacyCell(context, 12, resourceProvider);
             infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
             infoCell.setTopPadding(12);
             infoCell.setBottomPadding(70);

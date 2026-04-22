@@ -154,4 +154,12 @@ public sealed class TlGen_MessagesFilter : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
     }
   }
+
+  public data object TL_inputMessagesFilterPoll : TlGen_MessagesFilter() {
+    public const val MAGIC: UInt = 0xFA2BC90AU
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
 }

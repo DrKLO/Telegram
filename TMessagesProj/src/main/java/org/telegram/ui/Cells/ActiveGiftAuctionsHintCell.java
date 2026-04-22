@@ -39,16 +39,16 @@ import org.telegram.ui.Gifts.AuctionBidSheet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners {
+@SuppressLint("ViewConstructor")
+public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners {
     private final int currentAccount;
-
 
     private final AnimatedTextView titleTextView;
     private final AnimatedTextView messageTextView;
     private final CountDown timerView;
 
-    public ActiveGiftAuctionsHintCell(@NonNull Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout, int currentAccount) {
-        super(context, sizeNotifierFrameLayout);
+    public ActiveGiftAuctionsHintCell(@NonNull Context context, int currentAccount) {
+        super(context);
         this.currentAccount = currentAccount;
 
 
@@ -58,16 +58,17 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
         titleTextView = new AnimatedTextView(context);
         titleTextView.setTextSize(dp(14));
         titleTextView.setTypeface(AndroidUtilities.bold());
+        titleTextView.setTranslationY(-dp(1));
         layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 18));
 
         messageTextView = new AnimatedTextView(context);
         messageTextView.setTextSize(dp(13));
-        layout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17));
+        layout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17, 2, 0, 2, 0));
 
         timerView = new CountDown(context, currentAccount);
         timerView.updateTimer(299);
 
-        addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 0, 92, 0));
+        addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 14, 0, 90, 0));
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 11, 0));
 
         updateColors();
@@ -82,7 +83,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
     }
 
     public void updateColors() {
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        setBackground(Theme.getSelectorDrawable(false));
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         messageTextView.setTextColor(Theme.getColor(isOutbid ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteGrayText));
         invalidate();
@@ -295,7 +296,7 @@ public class ActiveGiftAuctionsHintCell extends BlurredFrameLayout implements Gi
 
         @Override
         protected void dispatchDraw(@NonNull Canvas canvas) {
-            final int l = getMeasuredWidth() - dp(8) - (int) textView.getCurrentWidth();
+            final int l = getMeasuredWidth() - dp(14) - (int) textView.getCurrentWidth();
 
             final int o = l - dp(30);
             canvas.save();

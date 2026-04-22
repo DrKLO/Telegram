@@ -81,7 +81,7 @@ public class BusinessBotButton extends FrameLayout {
         subtitleView.getDrawable().setHacks(true, true, false);
         subtitleView.setTextSize(dp(13));
         subtitleView.setText(LocaleController.getString(R.string.BizBotStatusManages));
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        subtitleView.setTextColor(Theme.getColor(Theme.key_chat_topPanelMessage, resourcesProvider));
         subtitleView.setEllipsizeByGradient(true);
         textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17));
 
@@ -119,13 +119,13 @@ public class BusinessBotButton extends FrameLayout {
         });
         pauseButton.setOnWidthUpdatedListener(this::updateTextRightPadding);
         pauseButton.setText(LocaleController.getString(paused ? R.string.BizBotStart : R.string.BizBotStop));
-        addView(pauseButton, LayoutHelper.createFrame(64, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 49, 0));
+        addView(pauseButton, LayoutHelper.createFrame(64, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 46, 0));
 
         menuView = new ImageView(context);
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
-        menuView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
-        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        menuView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0));
+        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         menuView.setOnClickListener(e -> {
             ItemOptions itemOptions = ItemOptions.makeOptions(chatActivity.getLayoutContainer(), resourcesProvider, menuView);
             itemOptions.add(R.drawable.msg_cancel, LocaleController.getString(R.string.BizBotRemove), true, () -> {
@@ -150,7 +150,7 @@ public class BusinessBotButton extends FrameLayout {
             itemOptions.setDimAlpha(0);
             itemOptions.show();
         });
-        addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 8, 0, 9, 0));
+        addView(menuView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 8, 0, 6, 0));
     }
 
     private float leftMargin;

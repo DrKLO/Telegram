@@ -23,7 +23,7 @@ public sealed class TlGen_ContactLink : TlGen_Object {
   }
 
   public data object TL_contactLinkHasPhone_layer99 : TlGen_ContactLink() {
-    public const val MAGIC: UInt = 0x268F3F59U
+    public const val MAGIC: UInt = 0x268F3FBDU
 
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())

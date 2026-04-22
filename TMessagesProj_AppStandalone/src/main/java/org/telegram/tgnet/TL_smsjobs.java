@@ -38,13 +38,13 @@ public class TL_smsjobs {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            allow_international = (flags & 1) != 0;
+            allow_international = hasFlag(flags, 1);
             recent_sent = stream.readInt32(exception);
             recent_since = stream.readInt32(exception);
             recent_remains = stream.readInt32(exception);
             total_sent = stream.readInt32(exception);
             total_since = stream.readInt32(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 last_gift_slug = stream.readString(exception);
             }
             terms_url = stream.readString(exception);
@@ -53,14 +53,14 @@ public class TL_smsjobs {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = allow_international ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, allow_international);
             stream.writeInt32(flags);
             stream.writeInt32(recent_sent);
             stream.writeInt32(recent_since);
             stream.writeInt32(recent_remains);
             stream.writeInt32(total_sent);
             stream.writeInt32(total_since);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(last_gift_slug);
             }
             stream.writeString(terms_url);
@@ -211,7 +211,7 @@ public class TL_smsjobs {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeString(job_id);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(error);
             }
         }
@@ -231,7 +231,7 @@ public class TL_smsjobs {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = allow_international ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, allow_international);
             stream.writeInt32(flags);
         }
     }

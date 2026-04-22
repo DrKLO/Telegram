@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StatusBadgeComponent;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -333,7 +334,7 @@ public class SelectorUserCell extends BaseCell {
         static { setup(new Factory()); }
 
         @Override
-        public SelectorUserCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public SelectorUserCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             return new SelectorUserCell(context, true, false, resourcesProvider, false);
         }
 

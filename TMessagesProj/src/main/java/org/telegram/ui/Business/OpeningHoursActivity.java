@@ -80,7 +80,10 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        listView.setSections();
+        listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        actionBar.setAdaptiveBackground(listView);
 
         setValue();
 
@@ -610,45 +613,13 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
         }
     }
 
-//    private class TimezonesBottomSheet extends BottomSheetWithRecyclerListView {
-//        private String currentTimezoneId;
-//        private Utilities.Callback<String> whenSelectedTimezone;
-//        public TimezonesBottomSheet(BaseFragment fragment, String timezoneId, Utilities.Callback<String> whenSelected) {
-//            super(fragment, false, false);
-//            currentTimezoneId = timezoneId;
-//            whenSelectedTimezone = whenSelected;
-//            listView.setOnItemClickListener((view, position) -> {
-//                position -= 2;
-//                TimezonesController timezonesController = TimezonesController.getInstance(currentAccount);
-//                ArrayList<TLRPC.TL_timezone> timezones = timezonesController.getTimezones();
-//                if (position >= 0 && position < timezones.size()) {
-//                    if (whenSelectedTimezone != null) {
-//                        whenSelectedTimezone.run(timezones.get(position).id);
-//                    }
-//                    dismiss();
-//                }
-//            });
-//        }
-//
-//        @Override
-//        protected CharSequence getTitle() {
-//            return getString(R.string.BusinessHoursTimezonePicker);
-//        }
-//
-//        @Override
-//        protected RecyclerListView.SelectionAdapter createAdapter() {
-//            return new UniversalAdapter(getContext(), currentAccount, this::fillItems, getResourceProvider());
-//        }
-//
-//        private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-//            items.add(UItem.asHeader(getString(R.string.BusinessHoursTimezonePicker)));
-//
-//            TimezonesController timezonesController = TimezonesController.getInstance(currentAccount);
-//            ArrayList<TLRPC.TL_timezone> timezones = timezonesController.getTimezones();
-//            for (int i = 0; i < timezones.size(); ++i) {
-//                items.add(UItem.asCheck(i, timezonesController.getTimezoneName(timezones.get(i), true)).setChecked(TextUtils.equals(currentTimezoneId, timezones.get(i).id)));
-//            }
-//        }
-//    }
-
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
+    }
 }

@@ -1,12 +1,22 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.ui.ActionBar.Theme.multAlpha;
+
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -17,6 +27,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 
 import java.util.ArrayList;
 
@@ -24,7 +35,7 @@ public class UniversalRecyclerView extends RecyclerListView {
 
     public LinearLayoutManager layoutManager;
     public final UniversalAdapter adapter;
-    private ItemTouchHelper itemTouchHelper;
+    public ItemTouchHelper itemTouchHelper;
 
     private boolean doNotDetachViews;
     public void doNotDetachViews() {
@@ -139,6 +150,25 @@ public class UniversalRecyclerView extends RecyclerListView {
             protected void onMoveAnimationUpdate(ViewHolder holder) {
                 super.onMoveAnimationUpdate(holder);
                 invalidate();
+                onLayoutUpdate();
+            }
+            @Override
+            protected void onRemoveAnimationUpdate(ViewHolder holder) {
+                super.onRemoveAnimationUpdate(holder);
+                if (hasSections()) invalidate();
+                onLayoutUpdate();
+            }
+            @Override
+            protected void onAddAnimationUpdate(ViewHolder holder) {
+                super.onAddAnimationUpdate(holder);
+                if (hasSections()) invalidate();
+                onLayoutUpdate();
+            }
+            @Override
+            protected void onChangeAnimationUpdate(ViewHolder holder) {
+                super.onChangeAnimationUpdate(holder);
+                if (hasSections()) invalidate();
+                onLayoutUpdate();
             }
         };
         itemAnimator.setSupportsChangeAnimations(false);
@@ -146,6 +176,10 @@ public class UniversalRecyclerView extends RecyclerListView {
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDurations(350);
         setItemAnimator(itemAnimator);
+    }
+
+    protected void onLayoutUpdate() {
+
     }
 
     public void makeHorizontal() {
@@ -225,7 +259,7 @@ public class UniversalRecyclerView extends RecyclerListView {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        adapter.drawWhiteSections(canvas, this);
+        if (!hasSections()) adapter.drawWhiteSections(canvas, this);
         super.dispatchDraw(canvas);
     }
 
@@ -272,18 +306,6 @@ public class UniversalRecyclerView extends RecyclerListView {
             }
         }
         return -1;
-    }
-
-    public View findViewByPosition(int position) {
-        if (position == NO_POSITION) return null;
-        for (int i = 0; i < getChildCount(); ++i) {
-            View child = getChildAt(i);
-            int childPosition = getChildAdapterPosition(child);
-            if (childPosition != NO_POSITION && childPosition == position) {
-                return child;
-            }
-        }
-        return null;
     }
 
     private class TouchHelperCallback extends ItemTouchHelper.Callback {
@@ -349,5 +371,25 @@ public class UniversalRecyclerView extends RecyclerListView {
             super.clearView(recyclerView, viewHolder);
             viewHolder.itemView.setPressed(false);
         }
+    }
+
+    public void setSections() {
+        setSections(dp(12), dp(16), false);
+    }
+    public void setSections(boolean topPadding) {
+        setSections(dp(12), dp(16), topPadding);
+    }
+    public void setSections(int padding, float roundRadius, boolean topPadding) {
+        super.setSections(
+            view -> {
+                if (view.getParent() != this) return false;
+                final ViewHolder viewHolder = getChildViewHolder(view);
+                return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
+            },
+            UniversalAdapter::isShadow,
+            padding, roundRadius,
+            super::drawBackgroundRect,
+            topPadding
+        );
     }
 }

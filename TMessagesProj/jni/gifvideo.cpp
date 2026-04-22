@@ -341,7 +341,23 @@ enum PARAM_NUM {
     PARAM_NUM_COUNT = 11,
 };
 
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jint sdkVersion, jstring src, jintArray data) {
+struct OffsetIOContext {
+    int fd;
+    int64_t offset;
+};
+
+static int offsetRead(void *opaque, uint8_t *buf, int size) {
+    OffsetIOContext *ctx = (OffsetIOContext *)opaque;
+    return read(ctx->fd, buf, size);
+}
+
+static int64_t offsetSeek(void *opaque, int64_t pos, int whence) {
+    OffsetIOContext *ctx = (OffsetIOContext *)opaque;
+    if (whence == AVSEEK_SIZE) return -1;  // unknown size, FFmpeg handles this
+    return lseek(ctx->fd, ctx->offset + pos, whence);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jint sdkVersion, jstring src, jintArray data, jlong fileOffset) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -354,10 +370,45 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
     }
 
     int ret;
-    if ((ret = avformat_open_input(&info->fmt_ctx, info->src, NULL, NULL)) < 0) {
-        LOGE("can't open source file %s, %s", info->src, av_err2str(ret));
-        delete info;
-        return;
+    if (fileOffset > 0) {
+        int fd = open(info->src, O_RDONLY);
+        if (fd < 0) {
+            LOGE("can't open source file %s", info->src);
+            delete info;
+            return;
+        }
+        if (lseek(fd, fileOffset, SEEK_SET) < 0) {
+            LOGE("can't seek to offset %lld in file %s", (long long)fileOffset, info->src);
+            close(fd);
+            delete info;
+            return;
+        }
+
+        OffsetIOContext *ioCtx = new OffsetIOContext{fd, fileOffset};
+        uint8_t *ioBuf = (uint8_t *)av_malloc(32 * 1024);
+        AVIOContext *avio = avio_alloc_context(ioBuf, 32 * 1024, 0, ioCtx, offsetRead, nullptr, offsetSeek);
+
+        info->fmt_ctx = avformat_alloc_context();
+        info->fmt_ctx->pb = avio;
+
+        if ((ret = avformat_open_input(&info->fmt_ctx, nullptr, nullptr, nullptr)) < 0) {
+            LOGE("can't open source file at offset %s (offset=%lld), %s", info->src, fileOffset, av_err2str(ret));
+            info->fmt_ctx = nullptr;
+            if (avio) {
+                av_freep(&avio->buffer);
+                avio_context_free(&avio);
+            }
+            close(fd);
+            delete ioCtx;
+            delete info;
+            return;
+        }
+    } else {
+        if ((ret = avformat_open_input(&info->fmt_ctx, info->src, nullptr, nullptr)) < 0) {
+            LOGE("can't open source file %s, %s", info->src, av_err2str(ret));
+            delete info;
+            return;
+        }
     }
 
     if ((ret = avformat_find_stream_info(info->fmt_ctx, NULL)) < 0) {

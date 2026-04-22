@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.app.Activity;
 import android.graphics.PointF;
 import android.view.Gravity;
@@ -21,6 +23,7 @@ public class ReadAllMentionsMenu {
 
     public final static int TYPE_REACTIONS = 0;
     public final static int TYPE_MENTIONS = 1;
+    public final static int TYPE_POLL_VOTES = 2;
 
     public static ActionBarPopupWindow show(int type, Activity activity, INavigationLayout navigationLayout, FrameLayout contentView, View mentionButton, Theme.ResourcesProvider resourcesProvider, Runnable onRead) {
         ActionBarPopupWindow.ActionBarPopupWindowLayout popupWindowLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(activity);
@@ -28,7 +31,17 @@ public class ReadAllMentionsMenu {
 
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(activity, true,true, resourcesProvider);
         cell.setMinimumWidth(AndroidUtilities.dp(200));
-        cell.setTextAndIcon(type == TYPE_REACTIONS ? LocaleController.getString(R.string.ReadAllReactions) : LocaleController.getString(R.string.ReadAllMentions) , R.drawable.msg_seen);
+
+        final String text;
+        if (type == TYPE_REACTIONS) {
+            text = getString(R.string.ReadAllReactions);
+        } else if (type == TYPE_MENTIONS) {
+            text = getString(R.string.ReadAllMentions);
+        } else {
+            text = getString(R.string.ReadAllPollVotes);
+        }
+
+        cell.setTextAndIcon(text, R.drawable.msg_seen);
         cell.setOnClickListener(view -> {
             if (onRead != null) {
                 onRead.run();

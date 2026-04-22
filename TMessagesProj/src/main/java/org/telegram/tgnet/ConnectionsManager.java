@@ -993,6 +993,17 @@ public class ConnectionsManager extends BaseController {
     public static native void native_receivedCaptchaResult(int currentAccount, int[] requestTokens, String token);
     public static native boolean native_isGoodPrime(byte[] prime, int g);
 
+
+    public static boolean testNativeTlScheme(NativeByteBuffer buffer, INativeTlTest test) {
+        return test.test(buffer.address);
+    }
+
+    public static native boolean native_test_AuthAuthorization(long object);
+    public interface INativeTlTest {
+        boolean test(long address);
+    }
+
+
     public static int generateClassGuid() {
         return lastClassGuid++;
     }

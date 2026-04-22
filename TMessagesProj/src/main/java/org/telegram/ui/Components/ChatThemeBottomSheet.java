@@ -70,10 +70,10 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ActionBar.theme.ThemeKey;
-import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.StatisticActivity;
 import org.telegram.ui.ThemePreviewActivity;
@@ -1127,7 +1127,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
             }
             boolean animated = true;
             ChatThemeItem newItem = items.get(position);
-            if (view.chatThemeItem == null || !ThemeKey.equals(view.chatThemeItem.chatTheme.getThemeKey(), newItem.chatTheme.getThemeKey()) || DrawerProfileCell.switchingTheme || view.lastThemeIndex != newItem.themeIndex) {
+            if (view.chatThemeItem == null || !ThemeKey.equals(view.chatThemeItem.chatTheme.getThemeKey(), newItem.chatTheme.getThemeKey()) || DialogsActivity.switchingTheme || view.lastThemeIndex != newItem.themeIndex) {
                 animated = false;
             }
 

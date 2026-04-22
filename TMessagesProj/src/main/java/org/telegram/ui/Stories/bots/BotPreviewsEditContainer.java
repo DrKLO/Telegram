@@ -867,6 +867,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     if (view instanceof SharedPhotoVideoCell2) {
                         SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) view;
                         final int position = listView.getChildAdapterPosition(cell), spanCount = layoutManager.getSpanCount();
+                        cell.isTop = position < spanCount;
                         cell.isFirst = position % spanCount == 0;
                         cell.isLast = position % spanCount == spanCount - 1;
                         outRect.left = 0;
@@ -938,6 +939,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     if (view instanceof SharedPhotoVideoCell2) {
                         SharedPhotoVideoCell2 cell = (SharedPhotoVideoCell2) view;
                         final int position = supportingListView.getChildAdapterPosition(cell), spanCount = supportingLayoutManager.getSpanCount();
+                        cell.isTop = position < spanCount;
                         cell.isFirst = position % spanCount == 0;
                         cell.isLast = position % spanCount == spanCount - 1;
                         outRect.left = 0;
@@ -1975,7 +1977,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
             public static class Factory extends UItem.UItemFactory<LanguageView> {
                 static { setup(new Factory()); }
                 @Override
-                public LanguageView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+                public LanguageView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                     return new LanguageView(context);
                 }
                 @Override

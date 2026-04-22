@@ -4,29 +4,19 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Outline;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
-import android.widget.ImageView;
 import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
@@ -117,8 +107,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         }
     };
     private int maxSize;
-    private final ImageView floatingButton;
-    private AnimatorSet currentDoneButtonAnimation;
+    private final FragmentFloatingButton floatingButton;
     private int searchAdditionalHeight;
     private long chatId;
 
@@ -254,37 +243,10 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
         spansScrollView.addView(spansContainer);
         containerView.addView(spansScrollView);
 
-        floatingButton = new ImageView(context);
-        floatingButton.setScaleType(ImageView.ScaleType.CENTER);
-
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
-        if (Build.VERSION.SDK_INT < 21) {
-            Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow).mutate();
-            shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
-            CombinedDrawable combinedDrawable = new CombinedDrawable(shadowDrawable, drawable, 0, 0);
-            combinedDrawable.setIconSize(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-            drawable = combinedDrawable;
-        }
-        floatingButton.setBackgroundDrawable(drawable);
-        floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
+        floatingButton = new FragmentFloatingButton(context, resourcesProvider);
         floatingButton.setImageResource(R.drawable.floating_check);
-
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            floatingButton.setStateListAnimator(animator);
-            floatingButton.setOutlineProvider(new ViewOutlineProvider() {
-                @SuppressLint("NewApi")
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                }
-            });
-        }
-
         floatingButton.setOnClickListener(v -> {
-            if (dialogsDelegate == null && selectedContacts.size() == 0) {
+            if (dialogsDelegate == null && selectedContacts.isEmpty()) {
                 return;
             }
             Activity activity = AndroidUtilities.findActivity(context);
@@ -332,13 +294,10 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 builder.show();
             }
         });
-        floatingButton.setVisibility(View.INVISIBLE);
-        floatingButton.setScaleX(0.0f);
-        floatingButton.setScaleY(0.0f);
-        floatingButton.setAlpha(0.0f);
+        floatingButton.setButtonVisible(false, false);
         floatingButton.setContentDescription(LocaleController.getString(R.string.Next));
 
-        containerView.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.RIGHT | Gravity.BOTTOM, 14, 14, 14, 14));
+        containerView.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
 
         ((ViewGroup.MarginLayoutParams) emptyView.getLayoutParams()).topMargin = AndroidUtilities.dp(20);
         ((ViewGroup.MarginLayoutParams) emptyView.getLayoutParams()).leftMargin = AndroidUtilities.dp(4);
@@ -454,56 +413,14 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                 });
                 spansEnterAnimator.setDuration(150);
                 spansEnterAnimator.start();
-
-                if (!spanEnter && dialogsDelegate == null) {
-                    if (currentDoneButtonAnimation != null) {
-                        currentDoneButtonAnimation.cancel();
-                    }
-                    currentDoneButtonAnimation = new AnimatorSet();
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.0f),
-                            ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.0f),
-                            ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 0.0f));
-                    currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            floatingButton.setVisibility(View.INVISIBLE);
-                        }
-                    });
-                    currentDoneButtonAnimation.setDuration(180);
-                    currentDoneButtonAnimation.start();
-                } else {
-                    if (currentDoneButtonAnimation != null) {
-                        currentDoneButtonAnimation.cancel();
-                    }
-                    currentDoneButtonAnimation = new AnimatorSet();
-                    floatingButton.setVisibility(View.VISIBLE);
-                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.0f),
-                            ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.0f),
-                            ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 1.0f));
-                    currentDoneButtonAnimation.setDuration(180);
-                    currentDoneButtonAnimation.start();
-                }
             } else {
                 spansEnterProgress = enter ? 1.0f : 0.0f;
                 containerView.invalidate();
                 if (!enter) {
                     spansScrollView.setVisibility(View.GONE);
                 }
-                if (currentDoneButtonAnimation != null) {
-                    currentDoneButtonAnimation.cancel();
-                }
-                if (!spanEnter && dialogsDelegate == null) {
-                    floatingButton.setScaleY(0.0f);
-                    floatingButton.setScaleX(0.0f);
-                    floatingButton.setAlpha(0.0f);
-                    floatingButton.setVisibility(View.INVISIBLE);
-                } else {
-                    floatingButton.setScaleY(1.0f);
-                    floatingButton.setScaleX(1.0f);
-                    floatingButton.setAlpha(1.0f);
-                    floatingButton.setVisibility(View.VISIBLE);
-                }
             }
+            floatingButton.setButtonVisible(spanEnter || dialogsDelegate != null, animated);
         }
     }
 

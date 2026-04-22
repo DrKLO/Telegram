@@ -356,6 +356,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             drawableFromTop -= dp(46);
         }
 
+        listViewTargetBottomPadding = listView.getPaddingBottom()
+            - (chatActivity.getInputIslandHeightTarget() - dp(44));
+
         gradientMatrix = new Matrix();
         gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         gradientPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
@@ -428,6 +431,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     private final RectF messageReplySelectorRect = new RectF();
     private Path replyRoundRect;
     private float[] roundRectRadii;
+    private float listViewTargetBottomPadding;
 
     public void onDraw(Canvas canvas) {
         if (drawBitmaps && !initBitmaps && crossfadeTextBitmap != null && messageView.getTransitionParams().wasDraw) {
@@ -456,6 +460,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             messageViewX = messageView.getX() + listView.getX() - container.getX();
             messageViewY = messageView.getTop() + messageView.getPaddingTop() + listView.getTop() - container.getY();
+
+            messageViewY -= (listViewTargetBottomPadding - listView.getPaddingBottom());
 
             lastMessageX = messageViewX;
             lastMessageY = messageViewY;
@@ -710,7 +716,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 if (messageView.needReplyImage && (!messageView.isReplyQuote || messageView.replyTextRTL)) {
                     left += replyImageSz + dp(3);
                 }
-                if (messageView.isReplyTask && messageView.replyTaskCheckbox != null) {
+                if (messageView.isReplyTaskOrPollOption && messageView.replyTaskCheckbox != null) {
                     final float x = lerp(fromReplayX - messageView.replyTextOffset, left, progressX);
                     final int sz = 12;
                     messageView.replyTaskCheckbox.setBounds((int) x, (int) top + dp(2), dp(sz), dp(sz));
@@ -720,7 +726,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                     messageView.replyTaskCheckbox.setAlpha(progress);
                     messageView.replyTaskCheckbox.draw(canvas);
                 }
-                if (messageView.isReplyTask) {
+                if (messageView.isReplyTaskOrPollOption) {
                     left += dp(16);
                 }
                 if (messageView.replyTextRTL && messageView.replyTextOffset > 0) {
@@ -858,9 +864,15 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             ViewPositionWatcher.computeCoordinatesInParent(enterView.getSendButton(), chatActivity.contentView, tmpPointF);
             canvas.save();
             canvas.translate(
-                tmpPointF.x - container.getX() + dp(52) * sendProgress,
+                tmpPointF.x - container.getX() /*+ dp(52) * sendProgress*/,
                 tmpPointF.y - container.getY());
-            enterView.getSendButton().draw(canvas);
+
+            View sendButton = enterView.getSendButton();
+
+            canvas.saveLayerAlpha(0, 0, sendButton.getWidth(), sendButton.getHeight(), (int) ((1f - sendProgress) * 255));
+            sendButton.draw(canvas);
+            canvas.restore();
+
             canvas.restore();
             canvas.restore();
         }

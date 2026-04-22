@@ -152,6 +152,8 @@ public class FileRefController extends BaseController {
             return null;
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia && parentObject instanceof ArrayList) {
             return null;
+        } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPoll && parentObject instanceof ArrayList) {
+            return null;
         }
         if (args[0] instanceof StoriesController.BotPreview) {
             StoriesController.BotPreview storyItem = (StoriesController.BotPreview) args[0];
@@ -235,6 +237,19 @@ public class FileRefController extends BaseController {
                 return new Pair<>(location, "file_" + mediaDocument.id.id);
             } else if (req.media instanceof TLRPC.TL_inputMediaPhoto) {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
+                final TLRPC.InputFileLocation location = new TLRPC.TL_inputPhotoFileLocation();
+                location.id = mediaPhoto.id.id;
+                return new Pair<>(location, "photo_" + mediaPhoto.id.id);
+            }
+        } else if (args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
+            TLRPC.TL_messages_addPollAnswer req = (TLRPC.TL_messages_addPollAnswer) args[0];
+            if (req.answer.input_media instanceof TLRPC.TL_inputMediaDocument) {
+                TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.answer.input_media;
+                final TLRPC.InputFileLocation location = new TLRPC.TL_inputDocumentFileLocation();
+                location.id = mediaDocument.id.id;
+                return new Pair<>(location, "file_" + mediaDocument.id.id);
+            } else if (req.answer.input_media instanceof TLRPC.TL_inputMediaPhoto) {
+                TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.answer.input_media;
                 final TLRPC.InputFileLocation location = new TLRPC.TL_inputPhotoFileLocation();
                 location.id = mediaPhoto.id.id;
                 return new Pair<>(location, "photo_" + mediaPhoto.id.id);
@@ -763,6 +778,22 @@ public class FileRefController extends BaseController {
                 mediaPhoto.id.file_reference = file_reference;
             }
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null, null, (Boolean) requester.args[6]));
+        } else if (requester.args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
+            TLRPC.TL_messages_addPollAnswer req = (TLRPC.TL_messages_addPollAnswer) requester.args[0];
+            if (req.answer.input_media instanceof TLRPC.TL_inputMediaDocument) {
+                TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.answer.input_media;
+                if (fromCache && isSameReference(mediaDocument.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaDocument.id.file_reference = file_reference;
+            } else if (req.answer.input_media instanceof TLRPC.TL_inputMediaPhoto) {
+                TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.answer.input_media;
+                if (fromCache && isSameReference(mediaPhoto.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaPhoto.id.file_reference = file_reference;
+            }
+            AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null, null, (Boolean) requester.args[6]));
         } else if (requester.args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) requester.args[0];
             if (fromCache && isSameReference(req.id.file_reference, file_reference)) {
@@ -867,7 +898,7 @@ public class FileRefController extends BaseController {
                 multiMediaCache.remove(req);
                 AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
             }
-        } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) || args[0] instanceof TLRPC.TL_messages_editMessage) {
+        } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPoll) || args[0] instanceof TLRPC.TL_messages_editMessage || args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null, null, (Boolean) args[6]));
         } else if (args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) args[0];
@@ -968,44 +999,16 @@ public class FileRefController extends BaseController {
                                 TLRPC.MessageExtendedMedia extendedMedia = paidMedia.extended_media.get(j);
                                 if (extendedMedia instanceof TLRPC.TL_messageExtendedMedia) {
                                     TLRPC.MessageMedia media = ((TLRPC.TL_messageExtendedMedia) extendedMedia).media;
-                                    if (media != null) {
-                                        if (media.document != null) {
-                                            result = getFileReference(media.document, media.alt_documents, requester.location, needReplacement, locationReplacement);
-                                        } else if (media.game != null) {
-                                            result = getFileReference(media.game.document, null, requester.location, needReplacement, locationReplacement);
-                                            if (result == null) {
-                                                result = getFileReference(media.game.photo, requester.location, needReplacement, locationReplacement);
-                                            }
-                                        } else if (media.photo != null) {
-                                            result = getFileReference(media.photo, requester.location, needReplacement, locationReplacement);
-                                        } else if (media.webpage != null) {
-                                            result = getFileReference(media.webpage, requester.location, needReplacement, locationReplacement);
-                                        }
-                                        if (result == null && media.video_cover != null) {
-                                            result = getFileReference(media.video_cover, requester.location, needReplacement, locationReplacement);
-                                        }
-                                    }
+                                    result = getFileReferenceForMediaImpl(media, requester.location, needReplacement, locationReplacement);
                                 }
                                 if (result != null) {
                                     break;
                                 }
                             }
+                        } else if (message.media instanceof TLRPC.TL_messageMediaPoll) {
+                            result = getFileReferenceForPoll((TLRPC.TL_messageMediaPoll) message.media, requester.location, needReplacement, locationReplacement);
                         } else if (message.media != null) {
-                            if (message.media.document != null) {
-                                result = getFileReference(message.media.document, message.media.alt_documents, requester.location, needReplacement, locationReplacement);
-                            } else if (message.media.game != null) {
-                                result = getFileReference(message.media.game.document, null, requester.location, needReplacement, locationReplacement);
-                                if (result == null) {
-                                    result = getFileReference(message.media.game.photo, requester.location, needReplacement, locationReplacement);
-                                }
-                            } else if (message.media.photo != null) {
-                                result = getFileReference(message.media.photo, requester.location, needReplacement, locationReplacement);
-                            } else if (message.media.webpage != null) {
-                                result = getFileReference(message.media.webpage, requester.location, needReplacement, locationReplacement);
-                            }
-                            if (result == null && message.media.video_cover != null) {
-                                result = getFileReference(message.media.video_cover, requester.location, needReplacement, locationReplacement);
-                            }
+                            result = getFileReferenceForMediaImpl(message.media, requester.location, needReplacement, locationReplacement);
                         } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionSuggestProfilePhoto) {
                             result = getFileReference(message.action.photo, requester.location, needReplacement, locationReplacement);
                         }
@@ -1278,6 +1281,9 @@ public class FileRefController extends BaseController {
                 TL_stories.StoryItem newStoryItem = null;
                 if (!stories.stories.isEmpty()) {
                     TL_stories.StoryItem storyItem = stories.stories.get(0);
+                    if (result == null && storyItem.music != null) {
+                        result = getFileReference(storyItem.music, null, requester.location, needReplacement, locationReplacement);
+                    }
                     if (storyItem.media != null) {
                         newStoryItem = storyItem;
                         if (result == null && storyItem.media.photo != null) {
@@ -1371,44 +1377,16 @@ public class FileRefController extends BaseController {
                             TLRPC.MessageExtendedMedia extendedMedia = paidMedia.extended_media.get(j);
                             if (extendedMedia instanceof TLRPC.TL_messageExtendedMedia) {
                                 TLRPC.MessageMedia media = ((TLRPC.TL_messageExtendedMedia) extendedMedia).media;
-                                if (media != null) {
-                                    if (media.document != null) {
-                                        result = getFileReference(media.document, media.alt_documents, location, needReplacement, locationReplacement);
-                                    } else if (media.game != null) {
-                                        result = getFileReference(media.game.document, null, location, needReplacement, locationReplacement);
-                                        if (result == null) {
-                                            result = getFileReference(media.game.photo, location, needReplacement, locationReplacement);
-                                        }
-                                    } else if (media.photo != null) {
-                                        result = getFileReference(media.photo, location, needReplacement, locationReplacement);
-                                    } else if (media.webpage != null) {
-                                        result = getFileReference(media.webpage, location, needReplacement, locationReplacement);
-                                    }
-                                    if (result == null && media.video_cover != null) {
-                                        result = getFileReference(media.video_cover, location, needReplacement, locationReplacement);
-                                    }
-                                }
+                                result = getFileReferenceForMediaImpl(media, location, needReplacement, locationReplacement);
                             }
                             if (result != null) {
                                 break;
                             }
                         }
+                    } else if (message.media instanceof TLRPC.TL_messageMediaPoll) {
+                        result = getFileReferenceForPoll((TLRPC.TL_messageMediaPoll) message.media, location, needReplacement, locationReplacement);
                     } else if (message.media != null) {
-                        if (message.media.document != null) {
-                            result = getFileReference(message.media.document, message.media.alt_documents, location, needReplacement, locationReplacement);
-                        } else if (message.media.game != null) {
-                            result = getFileReference(message.media.game.document, null, location, needReplacement, locationReplacement);
-                            if (result == null) {
-                                result = getFileReference(message.media.game.photo, location, needReplacement, locationReplacement);
-                            }
-                        } else if (message.media.photo != null) {
-                            result = getFileReference(message.media.photo, location, needReplacement, locationReplacement);
-                        } else if (message.media.webpage != null) {
-                            result = getFileReference(message.media.webpage, location, needReplacement, locationReplacement);
-                        }
-                        if (result == null && message.media.video_cover != null) {
-                            result = getFileReference(message.media.video_cover, location, needReplacement, locationReplacement);
-                        }
+                        result = getFileReferenceForMediaImpl(message.media, location, needReplacement, locationReplacement);
                     } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto || message.action instanceof TLRPC.TL_messageActionSuggestProfilePhoto) {
                         result = getFileReference(message.action.photo, location, needReplacement, locationReplacement);
                     }
@@ -1668,6 +1646,52 @@ public class FileRefController extends BaseController {
         return new Pair<>(result, locationReplacement == null || locationReplacement[0] == null ? null : locationReplacement[0]);
     }
 
+    private byte[] getFileReferenceForPoll(TLRPC.TL_messageMediaPoll mediaPoll, TLRPC.InputFileLocation location, boolean[] needReplacement, TLRPC.InputFileLocation[] locationReplacement) {
+        if (mediaPoll == null) {
+            return null;
+        }
+
+        byte[] result = getFileReferenceForMediaImpl(mediaPoll.attached_media, location, needReplacement, locationReplacement);
+        if (result == null && mediaPoll.results != null && mediaPoll.results.solution_media != null) {
+            result = getFileReferenceForMediaImpl(mediaPoll.results.solution_media, location, needReplacement, locationReplacement);
+        }
+        if (result == null && mediaPoll.poll.answers != null) {
+            for (TLRPC.PollAnswer answer : mediaPoll.poll.answers) {
+                result = getFileReferenceForMediaImpl(answer.media, location, needReplacement, locationReplacement);
+                if (result != null) {
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private byte[] getFileReferenceForMediaImpl(TLRPC.MessageMedia media, TLRPC.InputFileLocation location, boolean[] needReplacement, TLRPC.InputFileLocation[] locationReplacement) {
+        if (media == null) {
+            return null;
+        }
+
+        byte[] result = null;
+        if (media.document != null) {
+            result = getFileReference(media.document, media.alt_documents, location, needReplacement, locationReplacement);
+        } else if (media.game != null) {
+            result = getFileReference(media.game.document, null, location, needReplacement, locationReplacement);
+            if (result == null) {
+                result = getFileReference(media.game.photo, location, needReplacement, locationReplacement);
+            }
+        } else if (media.photo != null) {
+            result = getFileReference(media.photo, location, needReplacement, locationReplacement);
+        } else if (media.webpage != null) {
+            result = getFileReference(media.webpage, location, needReplacement, locationReplacement);
+        }
+        if (result == null && media.video_cover != null) {
+            result = getFileReference(media.video_cover, location, needReplacement, locationReplacement);
+        }
+
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
     private boolean updateFileReferenceFromCache(byte[] file_reference, TLRPC.InputFileLocation locationReplacement, TLRPC.InputFileLocation location, String locationKey, Object... args) {
         if (args[0] instanceof TL_stories.TL_storyItem) {
@@ -1677,6 +1701,8 @@ public class FileRefController extends BaseController {
         } else if (args[0] instanceof TLRPC.TL_inputSingleMedia) {
             return false;
         } else if (args.length >= 2 && args[1] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
+            return false;
+        } else if (args.length >= 2 && args[1] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[1]).media instanceof TLRPC.TL_inputMediaPoll && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
             return false;
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia) {
             TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) args[0];
@@ -1703,6 +1729,21 @@ public class FileRefController extends BaseController {
                 mediaDocument.id.file_reference = file_reference;
             } else if (req.media instanceof TLRPC.TL_inputMediaPhoto) {
                 TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.media;
+                if (isSameReference(mediaPhoto.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaPhoto.id.file_reference = file_reference;
+            }
+        } else if (args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
+            TLRPC.TL_messages_addPollAnswer req = (TLRPC.TL_messages_addPollAnswer) args[0];
+            if (req.answer.input_media instanceof TLRPC.TL_inputMediaDocument) {
+                TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.answer.input_media;
+                if (isSameReference(mediaDocument.id.file_reference, file_reference)) {
+                    return false;
+                }
+                mediaDocument.id.file_reference = file_reference;
+            } else if (req.answer.input_media instanceof TLRPC.TL_inputMediaPhoto) {
+                TLRPC.TL_inputMediaPhoto mediaPhoto = (TLRPC.TL_inputMediaPhoto) req.answer.input_media;
                 if (isSameReference(mediaPhoto.id.file_reference, file_reference)) {
                     return false;
                 }

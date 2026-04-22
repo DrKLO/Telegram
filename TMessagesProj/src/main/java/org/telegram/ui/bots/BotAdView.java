@@ -113,7 +113,7 @@ public class BotAdView extends FrameLayout {
         ScaleStateListAnimator.apply(closeView);
         closeView.setImageResource(R.drawable.msg_close);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
-        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.SRC_IN));
         closeView.setOnClickListener(v -> {
 
         });
@@ -121,11 +121,8 @@ public class BotAdView extends FrameLayout {
         layout.addView(closeView, LayoutHelper.createLinear(32, 32, Gravity.RIGHT | Gravity.TOP, 10, 3, 0, 2));
     }
 
-    private boolean invalidatedMeasure = true;
     public void set(ChatActivity chatActivity, MessageObject messageObject, Runnable onRemoveListener, Runnable onCloseListener) {
         if (messageObject == null) return;
-
-        invalidatedMeasure = true;
 
         CharSequence channel = messageObject.sponsoredTitle;
         channel = Emoji.replaceEmoji(channel, titleView.getPaint().getFontMetricsInt(), false);
@@ -186,8 +183,6 @@ public class BotAdView extends FrameLayout {
         titleView.setText(title);
         textView.setText(text);
 
-        setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
-
         textView.setOnLinkPressListener(span -> {
             if (chatActivity != null) {
                 chatActivity.logSponsoredClicked(messageObject, false, false);
@@ -220,18 +215,4 @@ public class BotAdView extends FrameLayout {
             }
         });
     }
-
-    public int height() {
-        if (invalidatedMeasure || getMeasuredHeight() <= 0) {
-            measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, MeasureSpec.AT_MOST));
-        }
-        return getMeasuredHeight();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        invalidatedMeasure = false;
-    }
-
 }

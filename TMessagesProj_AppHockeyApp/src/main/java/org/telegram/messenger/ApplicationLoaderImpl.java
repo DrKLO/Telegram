@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Pair;
 import android.view.ViewGroup;
 
 import androidx.core.content.FileProvider;
@@ -16,7 +15,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.microsoft.appcenter.AppCenter;
 import com.microsoft.appcenter.CustomProperties;
 import com.microsoft.appcenter.analytics.Analytics;
-import com.microsoft.appcenter.analytics.EventProperties;
 import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.distribute.Distribute;
 
@@ -25,13 +23,10 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
-import org.telegram.ui.Components.UpdateButton;
 import org.telegram.ui.Components.UpdateLayout;
-import org.telegram.ui.IUpdateButton;
 import org.telegram.ui.IUpdateLayout;
 
 import java.io.File;
-import java.util.Locale;
 
 public class ApplicationLoaderImpl extends ApplicationLoader {
     @Override
@@ -254,15 +249,9 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
     }
 
     @Override
-    public IUpdateLayout takeUpdateLayout(Activity activity, ViewGroup sideMenu, ViewGroup sideMenuContainer) {
+    public IUpdateLayout takeUpdateLayout(Activity activity, ViewGroup sideMenuContainer) {
         if (!isCustomUpdate()) return null;
-        return new UpdateLayout(activity, sideMenu, sideMenuContainer);
-    }
-
-    @Override
-    public IUpdateButton takeUpdateButton(Context context) {
-        if (!isCustomUpdate()) return null;
-        return new UpdateButton(context);
+        return new UpdateLayout(activity, sideMenuContainer);
     }
 
     @Override

@@ -140,7 +140,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             }
         };
         giftCell.setPriorityAuction();
-        giftCell.setStarsGift(starGift, false, false, false, false);
+        giftCell.setStarsGift(starGift, false, false, false, false, false);
         giftCell.setImageSize(dp(100));
         giftCell.setImageLayer(7);
         giftCell.hidePrice();
@@ -259,6 +259,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         }
 
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
+        buttonView.setRound();
         buttonView.setOnClickListener(v -> {
             if (auction != null && !auction.isFinished()) {
                 if ((dialogId == 0 || dialogId == UserConfig.getInstance(currentAccount).getClientUserId()) && auction.previewAttributes != null) {
@@ -321,7 +322,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         }
 
         if (auction != null && auction.previewAttributes != null) {
-            StarGiftSheet.TopView topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
+            StarGiftSheet.TopView topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, null, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
                 @Override
                 public float getRealHeight() {
                     return dp(288);
@@ -416,7 +417,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             itemsVariants.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
             itemsVariants.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
             itemsVariants.setOnClickListener((v) -> {
-                new StarGiftPreviewSheet(context, resourcesProvider, currentAccount, auction.gift, auction.previewAttributes).show();
+                new StarGiftPreviewSheet(context, resourcesProvider, currentAccount, auction.gift.title, auction.previewAttributes, false).show();
                 dismiss();
             });
             ScaleStateListAnimator.apply(itemsVariants, 0.02f, 1.5f);

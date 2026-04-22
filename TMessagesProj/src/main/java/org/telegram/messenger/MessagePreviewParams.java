@@ -7,24 +7,17 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
-import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseBooleanArray;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.MessagePreviewView;
 
-import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class MessagePreviewParams {
 
@@ -43,7 +36,7 @@ public class MessagePreviewParams {
         public ArrayList<MessageObject> messages;
         public ArrayList<MessageObject> previewMessages = new ArrayList<>();
         public SparseBooleanArray selectedIds = new SparseBooleanArray();
-        public ArrayList<TLRPC.TL_pollAnswerVoters> pollChosenAnswers = new ArrayList<>();
+        public ArrayList<TLRPC.PollAnswerVoters> pollChosenAnswers = new ArrayList<>();
         public boolean hasSpoilers;
         public boolean hasText;
 
@@ -101,9 +94,9 @@ public class MessagePreviewParams {
 
                     if (messageObject.canUnvote()) {
                         for (int a = 0, N = mediaPoll.results.results.size(); a < N; a++) {
-                            TLRPC.TL_pollAnswerVoters answer = mediaPoll.results.results.get(a);
+                            TLRPC.PollAnswerVoters answer = mediaPoll.results.results.get(a);
                             if (answer.chosen) {
-                                TLRPC.TL_pollAnswerVoters newAnswer = new TLRPC.TL_pollAnswerVoters();
+                                TLRPC.PollAnswerVoters newAnswer = new TLRPC.PollAnswerVoters();
                                 newAnswer.chosen = answer.chosen;
                                 newAnswer.correct = answer.correct;
                                 newAnswer.flags = answer.flags;

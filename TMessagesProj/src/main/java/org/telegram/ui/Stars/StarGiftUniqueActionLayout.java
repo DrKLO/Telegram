@@ -21,19 +21,21 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Gifts.GiftSheet;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
@@ -79,6 +81,8 @@ public class StarGiftUniqueActionLayout {
     private final ButtonBounce buttonBounce;
 
     private final ButtonBounce bounce;
+
+    private boolean burned;
 
     private static final class Row {
         public final float y;
@@ -154,8 +158,13 @@ public class StarGiftUniqueActionLayout {
             }
             setGiftImage(imageReceiver, model.document, 110);
         }
-        ribbon.setBackdrop(backdrop, true);
-        ribbon.setText(11, getString(R.string.Gift2UniqueRibbon), true);
+        if (burned = gift.burned) {
+            ribbon.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ribbon.setText(11, getString(R.string.Gift2UniqueRibbonBurned), true);
+        } else {
+            ribbon.setBackdrop(backdrop, true, false);
+            ribbon.setText(11, getString(R.string.Gift2UniqueRibbon), true);
+        }
 
         if (repost) {
             width = dp(200);
@@ -185,7 +194,13 @@ public class StarGiftUniqueActionLayout {
         } else if (action.peer != null || UserObject.isService(messageObject.getDialogId())) {
             title = new Text(LocaleController.getString(R.string.Gift2UniqueTitle2), 14, AndroidUtilities.bold());
         } else if (messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId()) {
-            title = new Text(LocaleController.getString(R.string.Gift2ActionSelfTitle), 14, AndroidUtilities.bold());
+            if (gift.crafted) {
+                title = new Text(LocaleController.getString(R.string.Gift2ActionCraftedTitle), 14, AndroidUtilities.bold());
+            } else if (action.resale_amount != null) {
+                title = new Text(LocaleController.getString(R.string.Gift2ActionPurchasedTitle), 14, AndroidUtilities.bold());
+            } else {
+                title = new Text(LocaleController.getString(R.string.Gift2ActionUpgradedTitle), 14, AndroidUtilities.bold());
+            }
         } else {
             title = new Text(LocaleController.formatString(R.string.Gift2UniqueTitle, fromName), 14, AndroidUtilities.bold());
         }
@@ -389,9 +404,18 @@ public class StarGiftUniqueActionLayout {
                 bounce.setPressed(false);
             }
         } else if (e.getAction() == MotionEvent.ACTION_UP && (buttonBounce.isPressed() || bounce.isPressed())) {
-            new StarGiftSheet(view.getContext(), currentAccount, currentMessageObject.getDialogId(), resourcesProvider)
-                .set(currentMessageObject)
-                .show();
+            if (burned) {
+                final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                if (lastFragment != null) {
+                    BulletinFactory.of(lastFragment)
+                        .createSimpleBulletin(R.raw.fire_on, getString(R.string.UniqueGiftNotFoundBurned))
+                        .show();
+                }
+            } else {
+                new StarGiftSheet(view.getContext(), currentAccount, currentMessageObject.getDialogId(), resourcesProvider)
+                    .set(currentMessageObject)
+                    .show();
+            }
             buttonBounce.setPressed(false);
             bounce.setPressed(false);
             return true;

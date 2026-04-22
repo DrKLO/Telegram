@@ -15,12 +15,15 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class LoadingSpan extends ReplacementSpan {
 
-    private int size;
+    public int size;
     private View view;
     private LoadingDrawable drawable;
 
     public int yOffset;
     private float scaleY = 1f;
+    public float height = -1;
+    public float alpha = 1.0f;
+    public boolean fullWidth = false;
 
     public LoadingSpan(View view, int size) {
         this(view, size, dp(2));
@@ -36,6 +39,19 @@ public class LoadingSpan extends ReplacementSpan {
         this.yOffset = yOffset;
         this.drawable = new LoadingDrawable(resourcesProvider);
         this.drawable.setRadiiDp(4);
+    }
+
+    public LoadingSpan setHeight(float height) {
+        this.height = height;
+        return this;
+    }
+    public LoadingSpan setAlpha(float alpha) {
+        this.alpha = alpha;
+        return this;
+    }
+    public LoadingSpan setFullWidth(boolean fullWidth) {
+        this.fullWidth = fullWidth;
+        return this;
     }
 
     public void setColorKeys(int colorKey1, int colorKey2) {
@@ -62,7 +78,6 @@ public class LoadingSpan extends ReplacementSpan {
         this.view = view;
     }
 
-    private Paint paint;
     @Override
     public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fm) {
         final Paint.FontMetrics paintFontMetrics = paint.getFontMetrics();
@@ -73,27 +88,36 @@ public class LoadingSpan extends ReplacementSpan {
             fm.leading = (int) paintFontMetrics.leading;
             fm.top = (int) paintFontMetrics.top;
         }
-        this.paint = paint;
         if (paint != null && this.drawable.color1 == null && this.drawable.color2 == null) {
             drawable.setColors(
                 Theme.multAlpha(paint.getColor(), .1f),
                 Theme.multAlpha(paint.getColor(), .25f)
             );
         }
+        if (fullWidth && view != null && view.getMeasuredWidth() > 0) {
+            return view.getMeasuredWidth() - view.getPaddingLeft() - view.getPaddingRight() - size;
+        }
         return size;
     }
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence charSequence, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-        drawable.setBounds(
-            (int) x,
-            (int) (top + (bottom - dp(2) - top) / 2f * (1f - scaleY) + yOffset),
-            (int) x + size,
-            (int) (bottom - dp(2) - ((bottom - dp(2)) - top) / 2f * (1f - scaleY) + yOffset)
-        );
-        if (paint != null) {
-            drawable.setAlpha(paint.getAlpha());
+        int size = this.size;
+        if (fullWidth && view != null && view.getMeasuredWidth() > 0) {
+            size = view.getMeasuredWidth() - view.getPaddingLeft() - view.getPaddingRight() - this.size;
         }
+        if (height > 0) {
+            final float cy = (top + bottom) / 2f;
+            drawable.setBounds((int) x, (int) (cy - height / 2f), (int) x + size, (int) (cy + height / 2f));
+        } else {
+            drawable.setBounds(
+                (int) x,
+                (int) (top + (bottom - dp(2) - top) / 2f * (1f - scaleY) + yOffset),
+                (int) x + size,
+                (int) (bottom - dp(2) - ((bottom - dp(2)) - top) / 2f * (1f - scaleY) + yOffset)
+            );
+        }
+        drawable.setAlpha((int) ((paint == null ? 0xFF : paint.getAlpha()) * alpha));
         drawable.draw(canvas);
         if (view != null) {
             view.invalidate();

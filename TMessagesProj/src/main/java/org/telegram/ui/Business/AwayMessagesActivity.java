@@ -82,7 +82,11 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         }
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        listView.setSections();
+        listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        actionBar.setAdaptiveBackground(listView);
+
         setValue();
 
         return fragmentView = contentView;
@@ -401,4 +405,14 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         super.onFragmentDestroy();
     }
 
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
+    }
 }

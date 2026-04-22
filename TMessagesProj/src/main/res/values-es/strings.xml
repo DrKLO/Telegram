@@ -392,7 +392,6 @@
     <string name="Languages_other">%1$d idiomas</string>
     <string name="ChooseLanguages">Elige los idiomas</string>
     <string name="TranslateMessagesInfo1">El botón “Traducir” aparecerá al realizar un solo toque en un mensaje de texto.</string>
-    <string name="TranslateMessagesInfo2">Google puede tener acceso al texto de los mensajes que traduzcas.</string>
     <string name="Language">Idioma</string>
     <string name="LanguageCustom">Personalizado</string>
     <string name="LanguageTitle">¿Cambiar idioma?</string>

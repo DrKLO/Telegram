@@ -27,6 +27,7 @@ public sealed class TlGen_ChannelAdminLogEventsFilter : TlGen_Object {
     public val send: Boolean,
     public val forums: Boolean,
     public val sub_extend: Boolean,
+    public val edit_rank: Boolean,
   ) : TlGen_ChannelAdminLogEventsFilter() {
     internal val flags: UInt
       get() {
@@ -50,6 +51,7 @@ public sealed class TlGen_ChannelAdminLogEventsFilter : TlGen_Object {
         if (send) result = result or 65536U
         if (forums) result = result or 131072U
         if (sub_extend) result = result or 262144U
+        if (edit_rank) result = result or 524288U
         return result
       }
 

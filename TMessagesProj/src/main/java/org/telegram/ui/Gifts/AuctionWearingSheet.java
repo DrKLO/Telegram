@@ -3,7 +3,6 @@ package org.telegram.ui.Gifts;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceArrows;
 import static org.telegram.messenger.LocaleController.formatNumber;
-import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -16,8 +15,6 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.OvalShape;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -118,6 +115,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
 
 
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
+        buttonView.setRound();
 
         FrameLayout.LayoutParams lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 16, 16, 16);
         lp.leftMargin += backgroundPaddingLeft;
@@ -129,7 +127,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
 
         final int topHeightDp = isInfo ? 220: 208;
         auction = GiftAuctionController.getInstance(currentAccount).subscribeToGiftAuction(giftId, this);
-        topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
+        topView = new StarGiftSheet.TopView(context, resourcesProvider, this::onBackPressed, v -> {}, null, v -> {}, v -> {}, v -> {}, v -> {}, v -> {}) {
             @Override
             public float getRealHeight() {
                 return dp(topHeightDp);
@@ -251,7 +249,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             }
         };
         giftCell.setPriorityAuction();
-        giftCell.setStarsGift(starGift, true, false, false, false);
+        giftCell.setStarsGift(starGift, true, false, false, false, false);
         giftCell.setImageSize(dp(84));
         giftCell.setImageLayer(7);
         giftCell.hidePrice();
@@ -321,7 +319,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
         };
         giftCell2.removeImage();
         giftCell2.setPriorityAuction();
-        giftCell2.setStarsGift(starGift, true, false, false, false);
+        giftCell2.setStarsGift(starGift, true, false, false, false, false);
         giftCell2.setImageSize(dp(100));
         giftCell2.setImageLayer(7);
         giftCell2.hidePrice();

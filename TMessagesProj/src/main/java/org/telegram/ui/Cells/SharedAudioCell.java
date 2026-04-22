@@ -42,10 +42,10 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.EnableTopicsActivity;
 import org.telegram.ui.FilteredSearchView;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
@@ -582,7 +582,14 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         return TAG;
     }
 
+    private Utilities.CallbackReturn<MessageObject, Boolean> needPlayMessageListener;
+    public void setNeedPlayMessageListener(Utilities.CallbackReturn<MessageObject, Boolean> listener) {
+        this.needPlayMessageListener = listener;
+    }
     protected boolean needPlayMessage(MessageObject messageObject) {
+        if (needPlayMessageListener != null && needPlayMessageListener.run(messageObject)) {
+            return true;
+        }
         return false;
     }
 
@@ -764,24 +771,51 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         static { setup(new Factory()); }
 
         @Override
-        public SharedAudioCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public SharedAudioCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             final SharedAudioCell cell = new SharedAudioCell(context, resourcesProvider);
-            cell.setPadding(dp(12), 0, dp(12), 0);
+            cell.setCheckForButtonPress(true);
             return cell;
         }
 
         @Override
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             final SharedAudioCell cell = (SharedAudioCell) view;
-            final MessageObject messageObject = (MessageObject) item.object;
-            cell.setMessageObject(messageObject, divider);
+            if (item.object instanceof MessageObject) {
+                final MessageObject messageObject = (MessageObject) item.object;
+                cell.setMessageObject(messageObject, divider);
+            } else if (item.object instanceof MediaController.AudioEntry) {
+                final MediaController.AudioEntry audioEntry = (MediaController.AudioEntry) item.object;
+                cell.setTag(audioEntry);
+                cell.setMessageObject(audioEntry.messageObject, divider);
+            }
+            if (item.object2 instanceof Utilities.CallbackReturn) {
+                cell.setNeedPlayMessageListener((Utilities.CallbackReturn<MessageObject, Boolean>) item.object2);
+            }
             cell.setChecked(item.checked, false);
         }
 
-        public static UItem as(MessageObject messageObject) {
+        public static UItem as(MessageObject messageObject, Utilities.CallbackReturn<MessageObject, Boolean> playAudio) {
             final UItem item = UItem.ofFactory(Factory.class);
             item.object = messageObject;
+            item.object2 = playAudio;
             return item;
+        }
+
+        public static UItem as(MediaController.AudioEntry audioEntry, Utilities.CallbackReturn<MessageObject, Boolean> playAudio) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.object = audioEntry;
+            item.object2 = playAudio;
+            return item;
+        }
+
+        @Override
+        public boolean equals(UItem a, UItem b) {
+            return a.id == b.id && a.object == b.object;
+        }
+
+        @Override
+        public boolean contentsEquals(UItem a, UItem b) {
+            return a.id == b.id && a.object == b.object;
         }
     }
 }

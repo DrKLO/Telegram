@@ -32,7 +32,11 @@ public class UserNameResolver {
     }
 
     public Runnable resolve(String username, String referrer, Consumer<Long> resolveConsumer) {
-        if (TextUtils.isEmpty(referrer)) {
+        return resolve(username, referrer, false, resolveConsumer);
+    }
+
+    public Runnable resolve(String username, String referrer, boolean force, Consumer<Long> resolveConsumer) {
+        if (TextUtils.isEmpty(referrer) && !force) {
             CachedPeer cachedPeer = resolvedCache.get(username);
             if (cachedPeer != null) {
                 if (System.currentTimeMillis() - cachedPeer.time < CACHE_TIME) {

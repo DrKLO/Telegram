@@ -120,6 +120,22 @@ public class ForumUtilities {
             backupImageView.setImageDrawable(createTopicDrawable(forumTopic, false));
         }
     }
+    public static void setTopicIcon(Context context, ImageReceiver imageReceiver, TLRPC.TL_forumTopic forumTopic, boolean actionBar, boolean largeIcon, Theme.ResourcesProvider resourcesProvider) {
+        if (forumTopic == null || imageReceiver == null) {
+            return;
+        }
+        if (forumTopic.id == 1) {
+            imageReceiver.setImageBitmap(createGeneralTopicDrawable(context, 0.75f, Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), false, largeIcon));
+        } else if (forumTopic.icon_emoji_id != 0) {
+            if (imageReceiver.getImageDrawable() == null || !(imageReceiver.getImageDrawable() instanceof AnimatedEmojiDrawable) || forumTopic.icon_emoji_id != ((AnimatedEmojiDrawable) imageReceiver.getDrawable()).getDocumentId()) {
+                final AnimatedEmojiDrawable drawable = new AnimatedEmojiDrawable(largeIcon ? AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC_LARGE : AnimatedEmojiDrawable.CACHE_TYPE_FORUM_TOPIC, UserConfig.selectedAccount, forumTopic.icon_emoji_id);
+                drawable.setColorFilter(actionBar ? new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultTitle), PorterDuff.Mode.SRC_IN) : Theme.getAnimatedEmojiColorFilter(resourcesProvider));
+                imageReceiver.setImageBitmap(drawable);
+            }
+        } else {
+            imageReceiver.setImageBitmap(createTopicDrawable(forumTopic, false));
+        }
+    }
 
     public static GeneralTopicDrawable createGeneralTopicDrawable(Context context, float scale, int color, boolean isDialog) {
         return createGeneralTopicDrawable(context, scale, color, isDialog, false);

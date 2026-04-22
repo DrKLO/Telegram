@@ -40,6 +40,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -56,6 +57,11 @@ import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -80,10 +86,10 @@ public class StickerSetCell extends FrameLayout {
 
     private boolean emojis;
     private FrameLayout sideButtons;
-    private TextView addButtonView;
-    private TextView removeButtonView;
-    private PremiumButtonView premiumButtonView;
-    private ImageView deleteView;
+    public TextView addButtonView;
+    public TextView removeButtonView;
+    public PremiumButtonView premiumButtonView;
+    public ImageView deleteView;
 
     public StickerSetCell(Context context, int option) {
         this(context, null, option);
@@ -138,22 +144,24 @@ public class StickerSetCell extends FrameLayout {
         addButtonView.setTypeface(AndroidUtilities.bold());
         addButtonView.setText(LocaleController.getString(R.string.Add));
         addButtonView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
-        addButtonView.setBackground(Theme.AdaptiveRipple.createRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider), 4));
+        addButtonView.setBackground(Theme.AdaptiveRipple.createRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider), 14));
         addButtonView.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         addButtonView.setGravity(Gravity.CENTER);
         addButtonView.setOnClickListener(e -> onAddButtonClick());
         sideButtons.addView(addButtonView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
+        ScaleStateListAnimator.apply(addButtonView);
 
         removeButtonView = new TextView(context);
         removeButtonView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         removeButtonView.setTypeface(AndroidUtilities.bold());
         removeButtonView.setText(LocaleController.getString(R.string.StickersRemove));
         removeButtonView.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText, resourcesProvider));
-        removeButtonView.setBackground(Theme.AdaptiveRipple.createRect(0, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) & 0x1affffff, 4));
+        removeButtonView.setBackground(Theme.AdaptiveRipple.createRect(0, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) & 0x1affffff, 14));
         removeButtonView.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
         removeButtonView.setGravity(Gravity.CENTER);
         removeButtonView.setOnClickListener(e -> onRemoveButtonClick());
         sideButtons.addView(removeButtonView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 32, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 0, -2, 0, 0));
+        ScaleStateListAnimator.apply(removeButtonView);
 
         premiumButtonView = new PremiumButtonView(context, AndroidUtilities.dp(4), false, resourcesProvider);
         premiumButtonView.setIcon(R.raw.unlock_icon);
@@ -168,6 +176,7 @@ public class StickerSetCell extends FrameLayout {
             premiumButtonView.getChildAt(0).setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         } catch (Exception ev) {}
         sideButtons.addView(premiumButtonView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
+        ScaleStateListAnimator.apply(premiumButtonView);
 
         sideButtons.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
         addView(sideButtons, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 0));
@@ -674,6 +683,76 @@ public class StickerSetCell extends FrameLayout {
         if (checkBox != null && checkBox.isChecked()) {
             info.setCheckable(true);
             info.setChecked(true);
+        }
+    }
+
+    public static final class Factory extends UItem.UItemFactory<StickerSetCell> {
+        static { setup(new Factory()); }
+
+        @SuppressLint("ClickableViewAccessibility")
+        @Override
+        public StickerSetCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            final StickerSetCell cell = new StickerSetCell(context, 1);
+            if (listView instanceof UniversalRecyclerView) {
+                final UniversalRecyclerView universalListView = (UniversalRecyclerView) listView;
+                cell.setOnReorderButtonTouchListener((v, event) -> {
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && universalListView.itemTouchHelper != null) {
+                        universalListView.itemTouchHelper.startDrag(universalListView.getChildViewHolder(cell));
+                    }
+                    return false;
+                });
+            }
+            return cell;
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+            final StickerSetCell cell = (StickerSetCell) view;
+            final TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) item.object;
+            cell.setStickersSet(set, divider);
+            cell.setChecked(item.checked, false);
+            cell.setReorderable(listView.isReorderAllowed(), true);
+            cell.setOnOptionsClick(item.clickCallback);
+            cell.addButtonView.setOnClickListener(item.clickCallback2);
+            cell.removeButtonView.setOnClickListener(item.clickCallback2);
+            cell.premiumButtonView.setOnClickListener(item.clickCallback2);
+            if (set != null && set.set != null && set.set.emojis) {
+                boolean installed = MediaDataController.getInstance(adapter.currentAccount).isStickerPackInstalled(set.set.id);
+                boolean unlock = !UserConfig.getInstance(adapter.currentAccount).isPremium();
+                if (unlock) {
+                    boolean premium = false;
+                    for (int i = 0; i < set.documents.size(); ++i) {
+                        if (!MessageObject.isFreeEmoji(set.documents.get(i))) {
+                            premium = true;
+                            break;
+                        }
+                    }
+                    if (!premium) {
+                        unlock = false;
+                    }
+                }
+                cell.updateButtonState(
+                    unlock ? (
+                        installed && !set.set.official ? StickerSetCell.BUTTON_STATE_LOCKED_RESTORE : StickerSetCell.BUTTON_STATE_LOCKED
+                    ) : (
+                        installed ? StickerSetCell.BUTTON_STATE_REMOVE : StickerSetCell.BUTTON_STATE_ADD
+                    ),
+                    false
+                );
+            }
+        }
+
+        @Override
+        public void attachedView(RecyclerListView listView, View view, UItem item) {
+            final StickerSetCell cell = (StickerSetCell) view;
+            cell.setChecked(item.checked, true);
+            cell.setReorderable(listView instanceof UniversalRecyclerView ? ((UniversalRecyclerView) listView).isReorderAllowed() : false, true);
+        }
+
+        public static UItem of(TLRPC.TL_messages_stickerSet set) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.object = set;
+            return item;
         }
     }
 }

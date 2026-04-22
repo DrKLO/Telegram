@@ -21,8 +21,6 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -198,6 +196,12 @@ public class RadialProgress {
         alphaForMiniPrevious = value;
     }
 
+    private float rotationSpeed = 3000;
+
+    public void setRotationTime(float rotationSpeed) {
+        this.rotationSpeed = rotationSpeed;
+    }
+
     private void updateAnimation(boolean progress) {
         if (disableUpdate) {
             return;
@@ -213,7 +217,7 @@ public class RadialProgress {
 
         if (progress) {
             if (animatedProgressValue != 1) {
-                radOffset += 360 * dt / 3000.0f;
+                radOffset += 360 * dt / rotationSpeed;
                 float progressDiff = currentProgress - animationProgressStart;
                 if (progressDiff > 0) {
                     currentProgressTime += dt;

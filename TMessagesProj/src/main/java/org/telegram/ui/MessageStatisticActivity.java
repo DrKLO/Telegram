@@ -313,10 +313,12 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         frameLayout.addView(progressLayout, LayoutHelper.createFrame(240, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 30));
 
         listView = new RecyclerListView(context, getResourceProvider());
+        listView.setSections();
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         ((SimpleItemAnimator) listView.getItemAnimator()).setSupportsChangeAnimations(false);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
+        actionBar.setAdaptiveBackground(listView);
 
         listView.setOnItemClickListener((view, position) -> {
             if (position >= startRow && position < endRow) {
@@ -522,7 +524,6 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         }
         actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, getResourceProvider()), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector, getResourceProvider()), false);
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
 
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -831,14 +832,12 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                     ManageChatUserCell cell = new ManageChatUserCell(mContext, 6, 2, false, getResourceProvider());
                     cell.setDividerColor(Theme.key_divider);
                     view = cell;
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 1:
                     view = new ShadowSectionCell(mContext, getResourceProvider());
                     break;
                 case 2:
                     HeaderCell headerCell = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlackText, 16, 11, false, getResourceProvider());
-                    headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     headerCell.setHeight(43);
                     view = headerCell;
                     break;
@@ -938,17 +937,14 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                             //  viewData.load(currentAccount, classGuid, );
                         }
                     };
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 5:
                     view = new OverviewCell(mContext);
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 6:
                     view = new EmptyCell(mContext, 16);
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 16));
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
                     break;
                 case 3:
                 default:
@@ -1190,7 +1186,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+//        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getSubtitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_player_actionBarSubtitle, null));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_statisticChartLineEmpty));

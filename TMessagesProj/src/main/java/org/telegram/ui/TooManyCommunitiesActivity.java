@@ -138,7 +138,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        ActionBarMenuItem searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
 
             boolean expanded = false;
 

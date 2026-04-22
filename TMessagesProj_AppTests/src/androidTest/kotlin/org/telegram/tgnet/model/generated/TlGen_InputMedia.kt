@@ -69,59 +69,6 @@ public sealed class TlGen_InputMedia : TlGen_Object {
     }
   }
 
-  public data class TL_inputMediaUploadedPhoto(
-    public val spoiler: Boolean,
-    public val `file`: TlGen_InputFile,
-    public val stickers: List<TlGen_InputDocument>?,
-    public val ttl_seconds: Int?,
-  ) : TlGen_InputMedia() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (stickers != null) result = result or 1U
-        if (ttl_seconds != null) result = result or 2U
-        if (spoiler) result = result or 4U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      file.serializeToStream(stream)
-      stickers?.let { TlGen_Vector.serialize(stream, it) }
-      ttl_seconds?.let { stream.writeInt32(it) }
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x1E287D04U
-    }
-  }
-
-  public data class TL_inputMediaPhoto(
-    public val spoiler: Boolean,
-    public val id: TlGen_InputPhoto,
-    public val ttl_seconds: Int?,
-  ) : TlGen_InputMedia() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (ttl_seconds != null) result = result or 1U
-        if (spoiler) result = result or 2U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      id.serializeToStream(stream)
-      ttl_seconds?.let { stream.writeInt32(it) }
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xB3BA0635U
-    }
-  }
-
   public data class TL_inputMediaPhotoExternal(
     public val spoiler: Boolean,
     public val url: String,
@@ -163,38 +110,6 @@ public sealed class TlGen_InputMedia : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xF8AB7DFBU
-    }
-  }
-
-  public data class TL_inputMediaPoll(
-    public val poll: TlGen_Poll,
-    public val correct_answers: List<List<Byte>>?,
-    public val multiflags_1: Multiflags_1?,
-  ) : TlGen_InputMedia() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (correct_answers != null) result = result or 1U
-        if (multiflags_1 != null) result = result or 2U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      poll.serializeToStream(stream)
-      correct_answers?.let { TlGen_Vector.serializeBytes(stream, it) }
-      multiflags_1?.let { stream.writeString(it.solution) }
-      multiflags_1?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
-    }
-
-    public data class Multiflags_1(
-      public val solution: String,
-      public val solution_entities: List<TlGen_MessageEntity>,
-    )
-
-    public companion object {
-      public const val MAGIC: UInt = 0x0F94E5F1U
     }
   }
 
@@ -471,6 +386,177 @@ public sealed class TlGen_InputMedia : TlGen_Object {
     }
   }
 
+  public data class TL_inputMediaStakeDice(
+    public val game_hash: String,
+    public val ton_amount: Long,
+    public val client_seed: List<Byte>,
+  ) : TlGen_InputMedia() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeString(game_hash)
+      stream.writeInt64(ton_amount)
+      stream.writeByteArray(client_seed.toByteArray())
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xF3A9244AU
+    }
+  }
+
+  public data class TL_inputMediaUploadedPhoto(
+    public val spoiler: Boolean,
+    public val `file`: TlGen_InputFile,
+    public val stickers: List<TlGen_InputDocument>?,
+    public val ttl_seconds: Int?,
+    public val video: TlGen_InputDocument?,
+  ) : TlGen_InputMedia() {
+    public val live_photo: Boolean = video != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (stickers != null) result = result or 1U
+        if (ttl_seconds != null) result = result or 2U
+        if (spoiler) result = result or 4U
+        if (live_photo) result = result or 8U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      file.serializeToStream(stream)
+      stickers?.let { TlGen_Vector.serialize(stream, it) }
+      ttl_seconds?.let { stream.writeInt32(it) }
+      video?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x7D8375DAU
+    }
+  }
+
+  public data class TL_inputMediaPhoto(
+    public val spoiler: Boolean,
+    public val id: TlGen_InputPhoto,
+    public val ttl_seconds: Int?,
+    public val video: TlGen_InputDocument?,
+  ) : TlGen_InputMedia() {
+    public val live_photo: Boolean = video != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (ttl_seconds != null) result = result or 1U
+        if (spoiler) result = result or 2U
+        if (live_photo) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      id.serializeToStream(stream)
+      ttl_seconds?.let { stream.writeInt32(it) }
+      video?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xE3AF4434U
+    }
+  }
+
+  public data class TL_inputMediaPoll(
+    public val poll: TlGen_Poll,
+    public val correct_answers: List<Int>?,
+    public val attached_media: TlGen_InputMedia?,
+    public val solution_media: TlGen_InputMedia?,
+    public val multiflags_1: Multiflags_1?,
+  ) : TlGen_InputMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (correct_answers != null) result = result or 1U
+        if (multiflags_1 != null) result = result or 2U
+        if (solution_media != null) result = result or 4U
+        if (attached_media != null) result = result or 8U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      poll.serializeToStream(stream)
+      correct_answers?.let { TlGen_Vector.serializeInt(stream, it) }
+      attached_media?.serializeToStream(stream)
+      multiflags_1?.let { stream.writeString(it.solution) }
+      multiflags_1?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
+      solution_media?.serializeToStream(stream)
+    }
+
+    public data class Multiflags_1(
+      public val solution: String,
+      public val solution_entities: List<TlGen_MessageEntity>,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x883A4108U
+    }
+  }
+
+  public data class TL_inputMediaUploadedPhoto_layer223(
+    public val spoiler: Boolean,
+    public val `file`: TlGen_InputFile,
+    public val stickers: List<TlGen_InputDocument>?,
+    public val ttl_seconds: Int?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (stickers != null) result = result or 1U
+        if (ttl_seconds != null) result = result or 2U
+        if (spoiler) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      file.serializeToStream(stream)
+      stickers?.let { TlGen_Vector.serialize(stream, it) }
+      ttl_seconds?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1E287D04U
+    }
+  }
+
+  public data class TL_inputMediaPhoto_layer223(
+    public val spoiler: Boolean,
+    public val id: TlGen_InputPhoto,
+    public val ttl_seconds: Int?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (ttl_seconds != null) result = result or 1U
+        if (spoiler) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      id.serializeToStream(stream)
+      ttl_seconds?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xB3BA0635U
+    }
+  }
+
   public data class TL_inputMediaUploadedDocument_layer197(
     public val nosound_video: Boolean,
     public val force_file: Boolean,
@@ -532,6 +618,38 @@ public sealed class TlGen_InputMedia : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xFB52DC99U
+    }
+  }
+
+  public data class TL_inputMediaPoll_layer223(
+    public val poll: TlGen_Poll,
+    public val correct_answers: List<List<Byte>>?,
+    public val multiflags_1: Multiflags_1?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (correct_answers != null) result = result or 1U
+        if (multiflags_1 != null) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      poll.serializeToStream(stream)
+      correct_answers?.let { TlGen_Vector.serializeBytes(stream, it) }
+      multiflags_1?.let { stream.writeString(it.solution) }
+      multiflags_1?.let { TlGen_Vector.serialize(stream, it.solution_entities) }
+    }
+
+    public data class Multiflags_1(
+      public val solution: String,
+      public val solution_entities: List<TlGen_MessageEntity>,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0x0F94E5F1U
     }
   }
 
