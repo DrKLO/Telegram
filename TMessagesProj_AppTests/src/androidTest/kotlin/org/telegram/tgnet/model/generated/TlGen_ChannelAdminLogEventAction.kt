@@ -733,4 +733,21 @@ public sealed class TlGen_ChannelAdminLogEventAction : TlGen_Object {
       public const val MAGIC: UInt = 0xE6D83D7EU
     }
   }
+
+  public data class TL_channelAdminLogEventActionParticipantEditRank(
+    public val user_id: Long,
+    public val prev_rank: String,
+    public val new_rank: String,
+  ) : TlGen_ChannelAdminLogEventAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(user_id)
+      stream.writeString(prev_rank)
+      stream.writeString(new_rank)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x5806B4ECU
+    }
+  }
 }

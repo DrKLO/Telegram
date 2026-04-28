@@ -2199,7 +2199,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     }
 
     private void showAudioAlert(Utilities.Callback<MessageObject> onAudioSelected) {
-        final SelectAudioAlert sheet = new SelectAudioAlert(getContext(), onAudioSelected);
+        final SelectAudioAlert sheet = new SelectAudioAlert(getContext(), onAudioSelected, new DarkThemeResourceProvider());
         sheet.setOnDismissListener(() -> {
             onOpenCloseStickersAlert(false);
         });

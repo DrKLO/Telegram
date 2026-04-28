@@ -64,7 +64,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
             } else {
                 p.setFlags(p.getFlags() &~ Paint.UNDERLINE_TEXT_FLAG);
             }
-            if ((flags & FLAG_STYLE_STRIKE) != 0) {
+            if ((flags & FLAG_STYLE_STRIKE) != 0 || (flags & FLAG_STYLE_STRIKE_RED) != 0) {
                 p.setFlags(p.getFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             } else {
                 p.setFlags(p.getFlags() &~ Paint.STRIKE_THRU_TEXT_FLAG);
@@ -72,6 +72,11 @@ public class TextStyleSpan extends MetricAffectingSpan {
 
             if ((flags & FLAG_STYLE_SPOILER_REVEALED) != 0) {
                 p.bgColor = Theme.getColor(Theme.key_chats_archivePullDownBackground);
+            }
+            if ((flags & FLAG_STYLE_STRIKE_RED) != 0) {
+                p.setColor(Theme.getColor(Theme.key_text_RedBold));
+            } else if ((flags & FLAG_STYLE_ACCENT) != 0) {
+                p.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
             }
         }
 
@@ -102,7 +107,8 @@ public class TextStyleSpan extends MetricAffectingSpan {
     public final static int FLAG_STYLE_SPOILER_REVEALED = 512;
     public final static int FLAG_STYLE_TEXT_URL = 1024;
     public final static int FLAG_STYLE_CODE = 2048;
-
+    public final static int FLAG_STYLE_ACCENT = 4096;
+    public final static int FLAG_STYLE_STRIKE_RED = 8192;
 
     public TextStyleSpan(TextStyleRun run) {
         this(run, 0, 0);

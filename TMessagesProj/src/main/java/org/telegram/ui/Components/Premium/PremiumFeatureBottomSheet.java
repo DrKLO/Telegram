@@ -702,7 +702,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             if (!onlySelectedType) {
                 description.setLines(2);
             }
-            addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 10, 21, 16));
+            addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 21, 10, 21, 16));
 
             setClipChildren(false);
         }
@@ -794,6 +794,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_NAME_COLOR) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewProfileColor));
                     description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewProfileColorDescription)));
+                } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_SHARING_DISABLE) {
+                    title.setText(LocaleController.getString(R.string.PremiumPreviewSharingDisable));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewSharingDisableDescription)));
                 } else {
                     title.setText(featureData.title);
                     description.setText(AndroidUtilities.replaceTags(featureData.description));
@@ -804,7 +807,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 description.setText(AndroidUtilities.replaceTags(featureData.description));
                 topViewOnFullHeight = false;
             }
-//            description.setMaxWidth(HintView2.cutInFancyHalf(description.getText(), description.getPaint()));
+            description.setMaxWidth(HintView2.cutInFancyHalf(description.getText(), description.getPaint()));
             requestLayout();
 
             final boolean withFeatures = featureData.type == PremiumPreviewFragment.FEATURE_GIFTS;

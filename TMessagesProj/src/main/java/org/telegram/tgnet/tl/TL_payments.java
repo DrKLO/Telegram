@@ -32,12 +32,12 @@ public class TL_payments {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            revoked = (flags & 2) != 0;
+            revoked = hasFlag(flags, 2);
             url = stream.readString(exception);
             date = stream.readInt32(exception);
             bot_id = stream.readInt64(exception);
             commission_permille = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 duration_months = stream.readInt32(exception);
             }
             participants = stream.readInt64(exception);
@@ -47,13 +47,13 @@ public class TL_payments {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = revoked ? flags | 2 : flags &~ 2;
+            flags = setFlag(flags, 2, revoked);
             stream.writeInt32(flags);
             stream.writeString(url);
             stream.writeInt32(date);
             stream.writeInt64(bot_id);
             stream.writeInt32(commission_permille);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(duration_months);
             }
             stream.writeInt64(participants);
@@ -109,7 +109,7 @@ public class TL_payments {
             count = stream.readInt32(exception);
             suggested_bots = Vector.deserialize(stream, starRefProgram::TLdeserialize, exception);
             users = Vector.deserialize(stream, TLRPC.User::TLdeserialize, exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
         }
@@ -121,7 +121,7 @@ public class TL_payments {
             stream.writeInt32(count);
             Vector.serialize(stream, suggested_bots);
             Vector.serialize(stream, users);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
         }
@@ -147,13 +147,13 @@ public class TL_payments {
             flags = stream.readInt32(exception);
             bot_id = stream.readInt64(exception);
             commission_permille = stream.readInt32(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 duration_months = stream.readInt32(exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 end_date = stream.readInt32(exception);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 daily_revenue_per_user = TL_stars.StarsAmount.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
@@ -164,13 +164,13 @@ public class TL_payments {
             stream.writeInt32(flags);
             stream.writeInt64(bot_id);
             stream.writeInt32(commission_permille);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(duration_months);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(end_date);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 daily_revenue_per_user.serializeToStream(stream);
             }
         }
@@ -213,8 +213,8 @@ public class TL_payments {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = order_by_revenue ? flags | 1 : flags &~ 1;
-            flags = order_by_date ? flags | 2 : flags &~ 2;
+            flags = setFlag(flags, 1, order_by_revenue);
+            flags = setFlag(flags, 2, order_by_date);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeString(offset);
@@ -241,7 +241,7 @@ public class TL_payments {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeInt32(offset_date);
                 stream.writeString(offset_link);
             }
@@ -285,7 +285,7 @@ public class TL_payments {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = revoked ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, revoked);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeString(link);

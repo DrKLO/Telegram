@@ -2,6 +2,7 @@ package org.telegram.ui.Components.Paint.Views;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
@@ -55,6 +56,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -563,7 +565,7 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
             }
         });
 
-        actionTextView.setText(LocaleController.getString(R.string.SegmentationTabToCrop));
+        actionTextView.setText(getString(R.string.SegmentationTabToCrop));
         actionTextView.animate().cancel();
         actionTextView.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(240).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
         if (bordersAnimator != null) {
@@ -1339,7 +1341,7 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
         }
     }
 
-    public void uploadStickerFile(String path, VideoEditedInfo videoEditedInfo, String emoji, CharSequence stickerPackName, boolean addToFavorite, TLRPC.StickerSet stickerSet, TLRPC.Document replacedSticker, String thumbPath, Utilities.Callback<Boolean> whenDone, Utilities.Callback2<String, TLRPC.InputDocument> customStickerHandler) {
+    public void uploadStickerFile(String path, VideoEditedInfo videoEditedInfo, String emoji, CharSequence stickerPackName, boolean addToFavorite, long dialogId, TLRPC.StickerSet stickerSet, TLRPC.Document replacedSticker, TLRPC.Document uploadedSticker, String thumbPath, Utilities.Callback<Boolean> whenDone, Utilities.Callback2<String, TLRPC.InputDocument> customStickerHandler) {
         AndroidUtilities.runOnUIThread(() -> {
             final boolean newStickerUploader = !(whenDone != null && stickerUploader != null && stickerUploader.uploaded);
             if (newStickerUploader) {
@@ -1352,8 +1354,10 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
             stickerUploader.path = stickerUploader.finalPath = path;
             stickerUploader.stickerPackName = stickerPackName;
             stickerUploader.addToFavorite = addToFavorite;
+            stickerUploader.sendToDialogId = dialogId;
             stickerUploader.stickerSet = stickerSet;
             stickerUploader.replacedSticker = replacedSticker;
+            stickerUploader.uploadedSticker = uploadedSticker;
             stickerUploader.videoEditedInfo = videoEditedInfo;
             stickerUploader.thumbPath = thumbPath;
             stickerUploader.whenDone = whenDone;
@@ -1361,7 +1365,13 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
             stickerUploader.setupFiles();
             if (!newStickerUploader) {
                 afterUploadingMedia();
-            } else if (videoEditedInfo != null) {
+            } else if (uploadedSticker != null) {
+                stickerUploader.tlInputStickerSetItem = MediaDataController.getInputStickerSetItem(uploadedSticker, stickerUploader.emoji);
+                stickerUploader.mediaDocument = new TLRPC.TL_messageMediaDocument();
+                stickerUploader.mediaDocument.flags |= 1;
+                stickerUploader.mediaDocument.document = uploadedSticker;
+                afterUploadingMedia();
+            } if (videoEditedInfo != null) {
                 TLRPC.TL_message message = new TLRPC.TL_message();
                 message.id = 1;
                 stickerUploader.finalPath = message.attachPath = StoryEntry.makeCacheFile(UserConfig.selectedAccount, "webm").getAbsolutePath();
@@ -1379,7 +1389,7 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
 
     private void showLoadingDialog() {
         if (loadingToast == null) {
-            loadingToast = new DownloadButton.PreparingVideoToast(getContext());
+            loadingToast = new DownloadButton.PreparingVideoToast(getContext(), getString(R.string.PreparingSticker));
         }
         loadingToast.setOnCancelListener(() -> {
             if (stickerUploader != null) {
@@ -1526,6 +1536,27 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
             if (stickerUploader.whenDone != null) {
                 stickerUploader.whenDone.run(true);
             }
+        } else if (stickerUploader.sendToDialogId != 0) {
+            SendMessagesHelper.getInstance(currentAccount).sendSticker(
+                stickerUploader.mediaDocument.document,
+                null,
+                stickerUploader.sendToDialogId,
+                null, null, null, null, null,
+                true, 0, 0, false,
+                null, null, 0, 0, 0,
+                null
+            );
+            if (loadingToast != null) {
+                loadingToast.setProgress(1f);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.customStickerCreated, false);
+                hideLoadingDialog();
+            }, 450);
+            if (stickerUploader.whenDone != null) {
+                stickerUploader.whenDone.run(true);
+                stickerUploader.whenDone = null;
+            }
         } else if (stickerUploader.stickerSet != null) {
             TLRPC.TL_stickers_addStickerToSet req = new TLRPC.TL_stickers_addStickerToSet();
             req.stickerset = MediaDataController.getInputStickerSet(stickerUploader.stickerSet);
@@ -1567,8 +1598,10 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
         public TLRPC.TL_messageMediaDocument mediaDocument;
         public TLRPC.InputFile file;
         public boolean addToFavorite;
+        public long sendToDialogId;
         public TLRPC.StickerSet stickerSet;
         public TLRPC.Document replacedSticker;
+        public TLRPC.Document uploadedSticker;
         public String thumbPath;
         public Utilities.Callback2<String, TLRPC.InputDocument> customHandler;
         public Utilities.Callback<Boolean> whenDone;

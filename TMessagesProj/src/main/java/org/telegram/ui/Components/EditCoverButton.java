@@ -2,21 +2,21 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
@@ -25,28 +25,27 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.PhotoViewer;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
+@SuppressLint("ViewConstructor")
 public class EditCoverButton extends View {
 
     private final Text text;
-    private final PhotoViewerBlurDrawable blur;
     private final Drawable arrowDrawable;
+    private final ImageReceiver imageReceiver;
+    private final Rect bounds = new Rect();
 
-    private ImageReceiver imageReceiver;
-
-    private final ButtonBounce bounce = new ButtonBounce(this);
     private final RectF imageBounds = new RectF();
 
-    public EditCoverButton(Context context, PhotoViewer photoViewer, CharSequence text, boolean withArrow) {
+    private BlurredBackgroundDrawable blurredBackgroundDrawable;
+
+    public EditCoverButton(Context context, CharSequence text, boolean withArrow) {
         super(context);
 
         imageReceiver = new ImageReceiver(this);
         imageReceiver.setRoundRadius(dp(22.66f));
 
         this.text = new Text(text, 14, AndroidUtilities.bold());
-        this.blur = new PhotoViewerBlurDrawable(photoViewer, photoViewer.blurManager, this).setApplyBounds(false);
         if (withArrow) {
             this.arrowDrawable = context.getResources().getDrawable(R.drawable.arrow_newchat).mutate();
             this.arrowDrawable.setColorFilter(new PorterDuffColorFilter(0x99FFFFFF, PorterDuff.Mode.SRC_IN));
@@ -54,6 +53,12 @@ public class EditCoverButton extends View {
             this.arrowDrawable = null;
         }
 
+    }
+
+    public void setBlurredBackgroundDrawable(BlurredBackgroundDrawable blurredBackgroundDrawable) {
+        this.blurredBackgroundDrawable = blurredBackgroundDrawable
+            .setPadding(dp(4))
+            .setRadius(dp(11));
     }
 
     @Override
@@ -105,21 +110,22 @@ public class EditCoverButton extends View {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        final float scale = bounce.getScale(0.05f);
-        canvas.save();
-        canvas.scale(scale, scale, getWidth() / 2.0f, getHeight() / 2.0f);
-
         final boolean hasImage = imageReceiver.hasBitmapImage();
         final int leftPadding = (hasImage ? dp(30.33f) : dp(11.33f));
         final int width = leftPadding + (int) Math.ceil(text.getCurrentWidth()) + dp(19);
         final int height = dp(24);
-        final int left = (getWidth() - width) / 2, cy = getHeight() / 2;
+        final int left = (getWidth() - width) / 2, cy = getHeight() / 2, top = cy - height / 2;
 
-        blur.setBounds(left, cy - height / 2, left + width, cy + height / 2);
-        blur.draw(canvas);
+        bounds.set(left, top, left + width, top + height);
+        bounds.inset(-dp(4), -dp(4));
+
+        if (blurredBackgroundDrawable != null) {
+            blurredBackgroundDrawable.setBounds(bounds);
+            blurredBackgroundDrawable.draw(canvas);
+        }
 
         if (hasImage) {
-            imageBounds.set(left + dp(.66f), cy - dp(22.66f) / 2, left + dp(.66f + 22.66f), cy + dp(22.66f) / 2);
+            imageBounds.set(left + dp(.66f), cy - dp(22.66f) / 2f, left + dp(.66f + 22.66f), cy + dp(22.66f) / 2f);
             imageReceiver.setImageCoords(imageBounds);
             imageReceiver.draw(canvas);
         }
@@ -128,39 +134,15 @@ public class EditCoverButton extends View {
 
         arrowDrawable.setBounds(left + width - dp(17), cy - dp(6), left + width - dp(5), cy + dp(6));
         arrowDrawable.draw(canvas);
-
-        canvas.restore();
-    }
-
-    private OnClickListener listener;
-    @Override
-    public void setOnClickListener(@Nullable OnClickListener l) {
-        listener = l;
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        final boolean hit = blur.getBounds().contains((int) event.getX(), (int) event.getY());
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            bounce.setPressed(hit);
-        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-            if (!hit) {
-                bounce.setPressed(false);
-            }
-        } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-            if (bounce.isPressed()) {
-                bounce.setPressed(false);
-                return true;
-            }
-        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            if (bounce.isPressed()) {
-                bounce.setPressed(false);
-                if (listener != null) {
-                    listener.onClick(this);
-                }
-                return true;
-            }
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        final boolean hit = bounds.contains((int) event.getX(), (int) event.getY());
+        if (!hit && event.getAction() == MotionEvent.ACTION_DOWN) {
+            return false;
         }
-        return bounce.isPressed();
+
+        return super.dispatchTouchEvent(event);
     }
 }

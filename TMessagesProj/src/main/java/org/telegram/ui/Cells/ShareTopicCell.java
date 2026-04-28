@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -21,7 +22,9 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -33,16 +36,17 @@ import org.telegram.ui.Components.Forum.ForumBubbleDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterDrawable;
 
+@SuppressLint("ViewConstructor")
 public class ShareTopicCell extends FrameLayout {
 
-    private BackupImageView imageView;
+    private final BackupImageView imageView;
     private final AvatarDrawable avatarDrawable;
-    private TextView nameTextView;
+    private final TextView nameTextView;
 
     private long currentDialog;
     private long currentTopic;
 
-    private int currentAccount = UserConfig.selectedAccount;
+    private final int currentAccount = UserConfig.selectedAccount;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public ShareTopicCell(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -80,6 +84,19 @@ public class ShareTopicCell extends FrameLayout {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(103), MeasureSpec.EXACTLY));
     }
 
+    public void setAsNewBotForumTopic(TLRPC.Dialog dialog) {
+        nameTextView.setText(LocaleController.getString(R.string.ShareSendToNewTopic));
+
+        imageView.setAnimatedEmojiDrawable(null);
+        ForumBubbleDrawable forumBubbleDrawable = new ForumBubbleDrawable(ForumBubbleDrawable.serverSupportedColor[0]);
+        LetterDrawable letterDrawable = new LetterDrawable(null, LetterDrawable.STYLE_TOPIC_DRAWABLE);
+        letterDrawable.setTitle("");
+        letterDrawable.scale = 1.8f;
+        CombinedDrawable combinedDrawable = new CombinedDrawable(forumBubbleDrawable, letterDrawable, 0, 0);
+        combinedDrawable.setFullsize(true);
+        imageView.setImageDrawable(combinedDrawable);
+    }
+
     public void setTopic(TLRPC.Dialog dialog, TLRPC.TL_forumTopic topic, boolean checked, CharSequence name) {
         if (dialog == null) {
             return;
@@ -87,6 +104,8 @@ public class ShareTopicCell extends FrameLayout {
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialog.id);
         if (name != null) {
             nameTextView.setText(name);
+        } else if (dialog.id > 0) {
+            nameTextView.setText(topic.title);
         } else if (chat != null) {
             if (chat.monoforum) {
                 nameTextView.setText(MessagesController.getInstance(currentAccount).getPeerName(DialogObject.getPeerDialogId(topic.from_id)));

@@ -13,6 +13,7 @@ import androidx.core.view.WindowInsetsCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
@@ -49,6 +50,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
+        hasOwnBackground = true;
         contentView = createContentView(context);
 
         viewPager = new ViewPagerFixed(context) {
@@ -135,9 +137,14 @@ public abstract class ViewPagerActivity extends BaseFragment {
 
                 FrameLayout container = (FrameLayout) view;
                 container.removeAllViews();
-                AndroidUtilities.removeFromParent(fragment.getFragmentView());
 
-                container.addView(fragment.getFragmentView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                final View fragmentView = fragment.getFragmentView();
+                AndroidUtilities.removeFromParent(fragmentView);
+                if (!fragment.hasOwnBackground() && fragmentView.getBackground() == null) {
+                    fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                }
+
+                container.addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                 if (fragment.getActionBar() != null && fragment.getActionBar().shouldAddToContainer()) {
                     AndroidUtilities.removeFromParent(fragment.getActionBar());
                     container.addView(fragment.getActionBar());
@@ -216,6 +223,10 @@ public abstract class ViewPagerActivity extends BaseFragment {
         for (int a = 0, N = fragmentsArr.size(); a < N; a++) {
             final FragmentState state = fragmentsArr.valueAt(a);
             if (state != null) {
+                if (state.isResumed) {
+                    state.fragment.onPause();
+                    state.isResumed = false;
+                }
                 state.fragment.clearViews();
             }
         }
@@ -394,7 +405,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
             final boolean isOpen = newVisibility > oldVisibility;
             final boolean backward = false; // todo: support backward
 
-            if (!isResumed && visibilityByViewPage > 0) {
+            if (!isResumed && visibilityByViewPage > 0 && parentIsResumed && fragment.fragmentView != null) {
                 fragment.onResume();
                 isResumed = true;
             }

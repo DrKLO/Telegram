@@ -59,6 +59,10 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
     }
 
     public void setFadeHeight(int fadeHeight, boolean opacity) {
+        if (this.fadeHeight == fadeHeight && this.opacity == opacity) {
+            return;
+        }
+
         this.fadeHeight = fadeHeight;
         this.opacity = opacity;
         maskFadeGradientPaint.setShader(shader = createGradient(Color.BLACK, opacity));
@@ -112,7 +116,7 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
             return;
         }
 
-        if (source instanceof BlurredBackgroundSourceBitmap) {
+        if (source instanceof BlurredBackgroundSourceBitmap && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             // fast way - just draw gradient
 
             final BlurredBackgroundSourceBitmap s = (BlurredBackgroundSourceBitmap) source;
@@ -160,9 +164,9 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
             return;
         }
 
-        if (source instanceof BlurredBackgroundSourceRenderNode) {
-            return;
-        }
+        //if (source instanceof BlurredBackgroundSourceRenderNode) {
+        //    return;
+        //}
         final int save = canvas.saveLayer(bounds.left, bounds.top, bounds.right, bounds.bottom, null);
         int offset = 0;
         if (fadeHeight < 0) {

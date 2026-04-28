@@ -194,6 +194,7 @@ public class FileLog {
             privateFields.add("mContext");
             privateFields.add("priority");
             privateFields.add("constructor");
+            privateFields.add("constructorName");
             for (int i = 0; i < 32; i++) {
                 privateFields.add("FLAG_" + i);
             }

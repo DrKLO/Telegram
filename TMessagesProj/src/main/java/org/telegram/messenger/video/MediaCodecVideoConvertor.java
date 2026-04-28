@@ -364,7 +364,16 @@ public class MediaCodecVideoConvertor {
                 checkConversionCanceled();
             } else {
                 extractor = new MediaExtractor();
-                extractor.setDataSource(videoPath);
+                if (convertVideoParams.videoOffset > 0) {
+                    java.io.FileInputStream fis = new java.io.FileInputStream(videoPath);
+                    try {
+                        extractor.setDataSource(fis.getFD(), convertVideoParams.videoOffset, Long.MAX_VALUE);
+                    } finally {
+                        fis.close();
+                    }
+                } else {
+                    extractor.setDataSource(videoPath);
+                }
 
                 int videoIndex = MediaController.findTrack(extractor, false);
                 int audioIndex = bitrate != -1 && !muted && volume > 0 ? MediaController.findTrack(extractor, true) : -1;
@@ -1418,6 +1427,7 @@ public class MediaCodecVideoConvertor {
 
     public static class ConvertVideoParams {
         String videoPath;
+        long videoOffset;
         File cacheFile;
         int rotationValue;
         boolean isSecret;
@@ -1460,7 +1470,7 @@ public class MediaCodecVideoConvertor {
 
         }
 
-        public static ConvertVideoParams of(String videoPath, File cacheFile,
+        public static ConvertVideoParams of(String videoPath, File cacheFile, long videoOffset,
                                             int rotationValue, boolean isSecret,
                                             int originalWidth, int originalHeight,
                                             int resultWidth, int resultHeight,
@@ -1471,6 +1481,7 @@ public class MediaCodecVideoConvertor {
                                             VideoEditedInfo info) {
             ConvertVideoParams params = new ConvertVideoParams();
             params.videoPath = videoPath;
+            params.videoOffset = videoOffset;
             params.cacheFile = cacheFile;
             params.rotationValue = rotationValue;
             params.isSecret = isSecret;

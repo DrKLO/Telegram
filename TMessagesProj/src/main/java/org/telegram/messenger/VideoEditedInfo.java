@@ -60,6 +60,7 @@ public class VideoEditedInfo {
     public int bitrate;
     public int framerate = 24;
     public String originalPath;
+    public long videoOffset;
     public long estimatedSize;
     public long estimatedDuration;
     public boolean roundVideo;
@@ -549,7 +550,7 @@ public class VideoEditedInfo {
         } else {
             filters = "";
         }
-        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_-%s_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalDuration, framerate, filters, originalPath);
+        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_-%s_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalDuration, framerate, videoOffset, filters, originalPath);
     }
 
     public boolean parseString(String string) {
@@ -558,7 +559,7 @@ public class VideoEditedInfo {
         }
         try {
             String[] args = string.split("_");
-            if (args.length >= 11) {
+            if (args.length >= 12) {
                 startTime = Long.parseLong(args[1]);
                 endTime = Long.parseLong(args[2]);
                 rotationValue = Integer.parseInt(args[3]);
@@ -569,11 +570,12 @@ public class VideoEditedInfo {
                 resultHeight = Integer.parseInt(args[8]);
                 originalDuration = Long.parseLong(args[9]);
                 framerate = Integer.parseInt(args[10]);
+                videoOffset = Long.parseLong(args[11]);
                 muted = bitrate == -1;
                 int start;
-                if (args[11].startsWith("-")) {
-                    start = 12;
-                    String s = args[11].substring(1);
+                if (args[12].startsWith("-")) {
+                    start = 13;
+                    String s = args[12].substring(1);
                     if (s.length() > 0) {
                         SerializedData serializedData = new SerializedData(Utilities.hexToBytes(s));
                         int version = serializedData.readInt32(false);
@@ -693,7 +695,7 @@ public class VideoEditedInfo {
                         serializedData.cleanup();
                     }
                 } else {
-                    start = 11;
+                    start = 12;
                 }
 
                 for (int a = start; a < args.length; a++) {

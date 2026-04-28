@@ -113,7 +113,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -249,9 +248,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private ChooseStickerActionTracker chooseStickerActionTracker;
 
     public void setAllow(boolean allowStickers, boolean allowGifs, boolean animated) {
+        setAllow(true, allowStickers, allowGifs, animated);
+    }
+
+    public void setAllow(boolean allowEmoji, boolean allowStickers, boolean allowGifs, boolean animated) {
         currentTabs.clear();
         for (int i = 0; i < allTabs.size(); i++) {
-            if (allTabs.get(i).type == TAB_EMOJI) {
+            if (allTabs.get(i).type == TAB_EMOJI && allowEmoji) {
                 currentTabs.add(allTabs.get(i));
             } if (allTabs.get(i).type == TAB_GIFS && allowGifs) {
                 currentTabs.add(allTabs.get(i));
@@ -288,7 +291,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
     @IntDef({Type.STICKERS, Type.EMOJIS, Type.GIFS})
     @Retention(RetentionPolicy.SOURCE)
-    private @interface Type {
+    public @interface Type {
         int STICKERS = 0;
         int EMOJIS = 1;
         int GIFS = 2;
@@ -426,6 +429,14 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         default void onGifSelected(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+
+        }
+
+        default boolean canAddCaptionToGif(TLRPC.Document document) {
+            return false;
+        }
+
+        default void onGifSelectedForAddCaption(View view, Object gif, String query, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
 
         }
 
@@ -621,6 +632,25 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         @Override
+        public boolean canEditSticker() {
+            return true;
+        }
+
+        @Override
+        public void editSticker(TLRPC.Document document) {
+            TLRPC.InputStickerSet newSet = null;
+            for (int a = 0; a < document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker && attribute.stickerset != null) {
+                    newSet = attribute.stickerset;
+                    break;
+                }
+            }
+            final TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSet(newSet, true);
+            StickersAlert.editSticker(fragment, stickerSet, document);
+        }
+
+        @Override
         public boolean canSchedule() {
             return delegate.canSchedule();
         }
@@ -644,6 +674,18 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 delegate.onGifSelected(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
             } else if (gifGridView.getAdapter() == gifSearchAdapter) {
                 delegate.onGifSelected(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
+            }
+        }
+
+        @Override
+        public boolean canAddCaption(TLRPC.Document document) {
+            return delegate.canAddCaptionToGif(document);
+        }
+
+        @Override
+        public void addCaptionToGif(Object gif, Object parent, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+            if (gifGridView.getAdapter() == gifAdapter || gifGridView.getAdapter() == gifSearchAdapter) {
+                delegate.onGifSelectedForAddCaption(null, gif, null, parent, notify, scheduleDate, scheduleRepeatPeriod);
             }
         }
 
@@ -2778,6 +2820,22 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         setBlurredBackgroundDrawableFactory(blurredBackgroundDrawableFactory);
     }
 
+    private boolean mForceHideBackspaceButton;
+    private boolean mForceHideSettingsButton;
+
+    public void forceHideSettingsButton() {
+        mForceHideSettingsButton = true;
+        if (stickerSettingsButton != null) {
+            stickerSettingsButton.setVisibility(View.GONE);
+        }
+    }
+
+    public void forceHideBackspaceButton() {
+        mForceHideBackspaceButton = true;
+        if (backspaceButton != null) {
+            backspaceButton.setVisibility(View.GONE);
+        }
+    }
 
     public void setBlurredBackgroundDrawableFactory(BlurredBackgroundDrawableViewFactory factory) {
         BlurredBackgroundColorProviderThemed provider = new BlurredBackgroundColorProviderThemed(resourcesProvider, Theme.key_windowBackgroundWhite);
@@ -4885,7 +4943,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     }
 
     private void showBackspaceButton(boolean show, boolean animated) {
-        if (show && backspaceButton.getTag() == null || !show && backspaceButton.getTag() != null) {
+        if (show && backspaceButton.getTag() == null || !show && backspaceButton.getTag() != null || mForceHideBackspaceButton) {
             return;
         }
         if (backspaceButtonAnimation != null) {
@@ -4923,7 +4981,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     }
 
     private void showStickerSettingsButton(boolean show, boolean animated) {
-        if (stickerSettingsButton == null) {
+        if (stickerSettingsButton == null || mForceHideSettingsButton) {
             return;
         }
         if (show && stickerSettingsButton.getTag() == null || !show && stickerSettingsButton.getTag() != null) {
@@ -5087,7 +5145,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         getLayoutManagerForType(type).startSmoothScroll(smoothScroller);
     }
 
-    private View getTabsForType(@Type int type) {
+    public View getTabsForType(@Type int type) {
         switch (type) {
             case Type.STICKERS:
                 return stickersTab;
@@ -5100,7 +5158,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
-    private RecyclerListView getListViewForType(@Type int type) {
+    public RecyclerListView getListViewForType(@Type int type) {
         switch (type) {
             case Type.STICKERS:
                 return stickersGridView;
@@ -6462,6 +6520,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     }
 
+    private boolean disableStickerEditor = StickersAlert.DISABLE_STICKER_EDITOR;
+
+    public void setDisableStickerEditor() {
+        disableStickerEditor = true;
+    }
+
     private class StickersGridAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
@@ -6763,7 +6827,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) object;
                             if (set.set != null) {
                                 cell.setText(set.set.title, 0);
-                                if (set.set.creator && !StickersAlert.DISABLE_STICKER_EDITOR) {
+                                if (set.set.creator && !disableStickerEditor) {
                                     cell.setEdit(v -> {
                                         delegate.onShowStickerSet(set.set, null, true);
                                     });
@@ -6836,7 +6900,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     packStartPosition.put(key = "fav", totalItems);
                 } else if (a == -2) {
                     documents = recentStickers;
-                    if (!documents.isEmpty() && !StickersAlert.DISABLE_STICKER_EDITOR) {
+                    if (!documents.isEmpty() && !disableStickerEditor) {
                         isAddedStickerBtnSet = true;
                     }
                     packStartPosition.put(key = "recent", totalItems);
@@ -6848,7 +6912,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     key = null;
                     pack = packs.get(a);
                     documents = pack.documents;
-                    if (!isAddedStickerBtnSet && !StickersAlert.DISABLE_STICKER_EDITOR) {
+                    if (!isAddedStickerBtnSet && !disableStickerEditor) {
                         isAddedStickerBtnSet = true;
                         documents = new ArrayList<>(documents);
                         documents.add(0, new TLRPC.TL_documentEmpty());

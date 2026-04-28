@@ -22,7 +22,7 @@ import com.google.android.exoplayer2.util.MimeTypes;
 import java.util.List;
 
 /** Describes the layout and metadata of a motion photo file. */
-/* package */ final class MotionPhotoDescription {
+public final class MotionPhotoDescription {
 
   /** Describes a media item in the motion photo. */
   public static final class ContainerItem {

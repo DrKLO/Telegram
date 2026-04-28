@@ -8,7 +8,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -61,6 +60,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
 import java.util.ArrayList;
 
@@ -272,17 +273,14 @@ public class MessagePreviewView extends FrameLayout {
             chatPreviewContainer.setBackgroundImage(resourcesProvider.getWallpaperDrawable(), resourcesProvider.isWallpaperMotion());
             chatPreviewContainer.setOccupyStatusBar(false);
 
-            if (Build.VERSION.SDK_INT >= 21) {
-                chatPreviewContainer.setOutlineProvider(new ViewOutlineProvider() {
-                    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setRoundRect(0, (int) (currentTopOffset + 1), view.getMeasuredWidth(), view.getMeasuredHeight(), dp(8));
-                    }
-                });
-                chatPreviewContainer.setClipToOutline(true);
-                chatPreviewContainer.setElevation(dp(4));
-            }
+            chatPreviewContainer.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, currentTopOffset + 1, view.getMeasuredWidth(), view.getMeasuredHeight(), dp(8));
+                }
+            });
+            chatPreviewContainer.setClipToOutline(true);
+            chatPreviewContainer.setElevation(dp(4));
 
             actionBar = new MessagePreviewView.ActionBar(context, resourcesProvider);
             actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
@@ -779,6 +777,12 @@ public class MessagePreviewView extends FrameLayout {
             menu.getSwipeBack().setOnForegroundOpenFinished(() -> {
                 switchToQuote(true, false);
             });
+            menu.setBackground(iBlur3Factory.create(menu).setColorProvider(BlurredBackgroundProviderImpl
+                .scrimMenuBackground(resourcesProvider))
+                .setPadding(dp(8))
+                .setHasPadding(true)
+                .setRadius(dp(12)));
+
             addView(menu, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
             if (tab == TAB_REPLY && messagePreviewParams.replyMessage != null) {
@@ -798,6 +802,7 @@ public class MessagePreviewView extends FrameLayout {
                         swipeback.addView(backButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                         ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
+                        gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
                         gap.setTag(R.id.fit_width_tag, 1);
                         swipeback.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -921,6 +926,7 @@ public class MessagePreviewView extends FrameLayout {
 
                 if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     ActionBarPopupWindow.GapView gap2 = new ActionBarPopupWindow.GapView(context, resourcesProvider);
+                    gap2.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
                     gap2.setTag(R.id.fit_width_tag, 1);
                     menu.addView(gap2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
                 }
@@ -975,6 +981,7 @@ public class MessagePreviewView extends FrameLayout {
                 menu.addView(changeRecipientView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                 ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
+                gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
                 gap.setTag(R.id.fit_width_tag, 1);
                 menu.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -1069,6 +1076,7 @@ public class MessagePreviewView extends FrameLayout {
                 videoChangeSizeBtn.setState(messagePreviewParams.webpageSmall, false);
 
                 ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
+                gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
                 gap.setTag(R.id.fit_width_tag, 1);
                 menu.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -1139,10 +1147,8 @@ public class MessagePreviewView extends FrameLayout {
 
 
             textSelectionOverlay = textSelectionHelper.getOverlayView(context);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                textSelectionOverlay.setElevation(dp(8));
-                textSelectionOverlay.setOutlineProvider(null);
-            }
+            textSelectionOverlay.setElevation(dp(8));
+            textSelectionOverlay.setOutlineProvider(null);
             if (textSelectionOverlay != null) {
                 if (textSelectionOverlay.getParent() instanceof ViewGroup) {
                     ((ViewGroup) textSelectionOverlay.getParent()).removeView(textSelectionOverlay);
@@ -1466,16 +1472,12 @@ public class MessagePreviewView extends FrameLayout {
         private void setOffset(float yOffset, int chatTopOffset) {
             if (isLandscapeMode) {
                 actionBar.setTranslationY(0);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    chatPreviewContainer.invalidateOutline();
-                }
+                chatPreviewContainer.invalidateOutline();
                 chatPreviewContainer.setTranslationY(0);
                 menu.setTranslationY(0);
             } else {
                 actionBar.setTranslationY(chatTopOffset);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    chatPreviewContainer.invalidateOutline();
-                }
+                chatPreviewContainer.invalidateOutline();
                 chatPreviewContainer.setTranslationY(yOffset);
                 menu.setTranslationY(yOffset + chatPreviewContainer.getMeasuredHeight() - dp(2));
             }
@@ -1723,13 +1725,15 @@ public class MessagePreviewView extends FrameLayout {
 
     private final ArrayList<MessageObject.GroupedMessages> drawingGroups = new ArrayList<>(10);
     private final ResourcesDelegate resourcesProvider;
+    private final BlurredBackgroundDrawableViewFactory iBlur3Factory;
 
     @SuppressLint("ClickableViewAccessibility")
-    public MessagePreviewView(@NonNull Context context, ChatActivity chatActivity, MessagePreviewParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider, int startTab, boolean showOutdatedQuote)  {
+    public MessagePreviewView(@NonNull Context context, ChatActivity chatActivity, BlurredBackgroundDrawableViewFactory iBlur3Factory, MessagePreviewParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider, int startTab, boolean showOutdatedQuote)  {
         super(context);
         this.showOutdatedQuote = showOutdatedQuote;
         this.chatActivity = chatActivity;
         this.currentAccount = currentAccount;
+        this.iBlur3Factory = iBlur3Factory;
         currentUser = user;
         currentChat = chat;
         messagePreviewParams = params;
@@ -1765,6 +1769,12 @@ public class MessagePreviewView extends FrameLayout {
         };
 
         tabsView = new TabsView(context, resourcesProvider);
+        tabsView.setBackground(iBlur3Factory.create(tabsView)
+            .setColorProvider(BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider))
+            .setHasPadding(true)
+            .setPadding(dp(8))
+            .setRadius(dp(16)));
+
         int p = 0;
         for (int i = 0; i < 3; ++i) {
             if (i == TAB_REPLY && params.replyMessage != null) {
@@ -1938,6 +1948,7 @@ public class MessagePreviewView extends FrameLayout {
         private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private int color;
         private int selectedColor;
+        private Drawable bgDrawable;
 
         public TabsView(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -1987,16 +1998,16 @@ public class MessagePreviewView extends FrameLayout {
             invalidate();
         }
 
-        private float tabInnerPadding = dp(12);
-        private float marginBetween = dp(13);
+        private float tabInnerPadding = dp(14);
+        private float marginBetween = dp(0);
         private RectF selectRect = new RectF();
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-            tabInnerPadding = dp(12);
-            marginBetween = dp(13);
+            tabInnerPadding = dp(14);
+            marginBetween = dp(0);
             float W = 0;
             for (int i = 0; i < tabs.size(); ++i) {
                 if (i > 0) {
@@ -2017,10 +2028,18 @@ public class MessagePreviewView extends FrameLayout {
                 tabs.get(i).clickBounds.inset(-marginBetween / 2f, -top);
                 x += w + marginBetween;
             }
+            if (bgDrawable != null) {
+                bgDrawable.getPadding(AndroidUtilities.rectTmp2);
+                bgDrawable.setBounds(
+                    (int) ((fullWidth - W) / 2f) - dp(3) - AndroidUtilities.rectTmp2.left,
+                    fullHeight / 2 - dp(16) - AndroidUtilities.rectTmp2.top,
+                    (int) ((fullWidth + W) / 2f) + dp(3) + AndroidUtilities.rectTmp2.right,
+                    fullHeight / 2 + dp(16) + AndroidUtilities.rectTmp2.bottom);
+            }
         }
 
         @Override
-        protected void dispatchDraw(Canvas canvas) {
+        protected void dispatchDraw(@NonNull Canvas canvas) {
             if (tabs.size() <= 1) {
                 return;
             }
@@ -2043,6 +2062,11 @@ public class MessagePreviewView extends FrameLayout {
             } else if (higherInRange) {
                 selectRect.set(tabs.get(higher).bounds);
             }
+
+            if (bgDrawable != null) {
+                bgDrawable.draw(canvas);
+            }
+
             if (lowerInRange || higherInRange) {
                 canvas.drawRoundRect(selectRect, dp(13), dp(13), bgPaint);
             }
@@ -2051,6 +2075,11 @@ public class MessagePreviewView extends FrameLayout {
                 Tab tab = tabs.get(i);
                 tab.text.draw(canvas, tab.bounds.left + tabInnerPadding, getMeasuredHeight() / 2f, ColorUtils.blendARGB(color, selectedColor, 1f - Math.abs(tabT - i)), 1f);
             }
+        }
+
+        @Override
+        public void setBackground(Drawable background) {
+            bgDrawable = background;
         }
 
         private Utilities.Callback<Integer> onTabClick;

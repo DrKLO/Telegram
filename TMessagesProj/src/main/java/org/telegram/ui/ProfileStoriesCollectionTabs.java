@@ -17,10 +17,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.StoriesController;
@@ -29,8 +31,9 @@ import java.util.ArrayList;
 
 @SuppressLint("ViewConstructor")
 public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate {
+
     private final ViewPagerFixed viewPager;
-    private final ViewPagerFixed.TabsView tabsView;
+    public final ViewPagerFixed.TabsView tabsView;
     private final StoriesController.StoriesCollections collections;
     private final Adapter adapter;
 
@@ -80,7 +83,14 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
 
         viewPager.setAdapter(adapter);
         viewPager.setTranslationY(dp(42));
-        tabsView = viewPager.createTabsView(true, 9);
+        tabsView = viewPager.createTabsView(true, 10);
+        tabsView.setColors(
+            Theme.key_profile_tabSelectedLine,
+            Theme.key_windowBackgroundWhiteBlackText,
+            Theme.key_profile_tabText,
+            Theme.key_profile_tabSelector,
+            Theme.key_actionBarDefault
+        );
         tabsView.tabMarginDp = 12;
         tabsView.setPreTabClick((id, pos) -> {
             if (reorderingCollections) {

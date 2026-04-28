@@ -344,7 +344,7 @@ public class MessageSeenView extends FrameLayout {
         return listView;
     }
 
-    private static class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+    public static class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
         private int currentAccount = UserConfig.selectedAccount;
 
@@ -357,6 +357,7 @@ public class MessageSeenView extends FrameLayout {
         TLObject object;
 
         private static MessageSeenCheckDrawable seenDrawable = new MessageSeenCheckDrawable(R.drawable.msg_mini_checks, Theme.key_windowBackgroundWhiteGrayText);
+        private static MessageSeenCheckDrawable votedDrawable = new MessageSeenCheckDrawable(R.drawable.mini_checklist_done_outline, Theme.key_windowBackgroundWhiteGrayText);
 
         public UserCell(Context context) {
             super(context);
@@ -383,21 +384,25 @@ public class MessageSeenView extends FrameLayout {
 
             if (LocaleController.isRTL) {
                 addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
-                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 8, 6.33f, 55, 0));
-                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 13, 20, 55, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 8, 5.33f, 55, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 13, 19, 55, 0));
             } else {
                 addView(avatarImageView, LayoutHelper.createFrame(34, 34, Gravity.LEFT | Gravity.CENTER_VERTICAL, 10f, 0, 0, 0));
-                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 6.33f, 8, 0));
-                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 20, 13, 0));
+                addView(nameView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 5.33f, 8, 0));
+                addView(readView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 55, 19, 13, 0));
             }
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), View.MeasureSpec.EXACTLY));
         }
 
         public void setUser(TLObject object, int date) {
+            setUser(object, date, false);
+        }
+
+        public void setUser(TLObject object, int date, boolean isVote) {
             this.object = object;
             updateStatus(false);
 
@@ -412,7 +417,7 @@ public class MessageSeenView extends FrameLayout {
                 readView.setVisibility(GONE);
                 nameView.setTranslationY(AndroidUtilities.dp(9));
             } else {
-                readView.setText(TextUtils.concat(seenDrawable.getSpanned(getContext(), null), LocaleController.formatSeenDate(date)));
+                readView.setText(TextUtils.concat((isVote ? votedDrawable : seenDrawable).getSpanned(getContext(), null), LocaleController.formatSeenDate(date)));
                 readView.setVisibility(VISIBLE);
                 nameView.setTranslationY(0);
             }

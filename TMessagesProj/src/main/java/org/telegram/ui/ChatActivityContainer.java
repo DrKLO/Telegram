@@ -52,6 +52,11 @@ public class ChatActivityContainer extends FrameLayout {
         chatActivity.isInsideContainer = true;
     }
 
+    private int topPadding;
+    public void setTopPadding(int topPadding) {
+        this.topPadding = topPadding;
+    }
+
     protected void onSearchLoadingUpdate(boolean loading) {
 
     }
@@ -78,6 +83,9 @@ public class ChatActivityContainer extends FrameLayout {
                 chatActivity.onRemoveFromParent();
                 parent.removeView(fragmentView);
             }
+        }
+        if (chatActivity.getChatListView() != null && topPadding != 0) {
+            chatActivity.getChatListView().setPadding(0, topPadding, 0, 0);
         }
         chatActivity.openedInstantly();
         addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));

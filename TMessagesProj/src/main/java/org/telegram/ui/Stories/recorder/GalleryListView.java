@@ -241,7 +241,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
                     AndroidUtilities.updateVisibleRows(listView);
                     updateSelectButtonVisible();
                 } else {
-                    onSelectListener.run(entry, entry.isVideo ? prepareBlurredThumb(cell) : null);
+                    onSelectListener.run(entry, entry.isVideo && !entry.isLivePhoto ? prepareBlurredThumb(cell) : null);
                 }
             }
         });
@@ -629,13 +629,10 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         if (album == null) {
             return new ArrayList<>();
         }
-        if (!onlyPhotos) {
-            return album.photos;
-        }
         ArrayList<MediaController.PhotoEntry> photos = new ArrayList<>();
         for (int i = 0; i < album.photos.size(); ++i) {
             MediaController.PhotoEntry entry = album.photos.get(i);
-            if (!entry.isVideo) {
+            if (!onlyPhotos || !entry.isVideo) {
                 photos.add(entry);
             }
         }
@@ -670,7 +667,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
         }
         final ArrayList<Bitmap> blurredBitmaps = new ArrayList<>();
         for (MediaController.PhotoEntry entry : selectedPhotos) {
-            blurredBitmaps.add(entry.isVideo ? prepareBlurredThumb(findCell(entry)) : null);
+            blurredBitmaps.add(entry.isVideo && !entry.isLivePhoto ? prepareBlurredThumb(findCell(entry)) : null);
         }
         onSelectMultipleListener.run(collage, new ArrayList<>(selectedPhotos), blurredBitmaps);
         selectedPhotos.clear();
@@ -993,7 +990,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
         public void set(MediaController.PhotoEntry photoEntry) {
             currentObject = photoEntry;
-            setDuration(photoEntry != null && photoEntry.isVideo ? AndroidUtilities.formatShortDuration(photoEntry.duration) : null);
+            setDuration(photoEntry != null && photoEntry.isVideo && !photoEntry.isLivePhoto ? AndroidUtilities.formatShortDuration(photoEntry.duration) : null);
             setDraft(false);
             loadBitmap(photoEntry);
             invalidate();
@@ -1268,7 +1265,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
             if (photoEntry.thumbPath != null) {
                 return BitmapFactory.decodeFile(photoEntry.thumbPath, options);
-            } else if (photoEntry.isVideo) {
+            } else if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
                 return MediaStore.Video.Thumbnails.getThumbnail(getContext().getContentResolver(), photoEntry.imageId, MediaStore.Video.Thumbnails.MINI_KIND, options);
             } else {
 //                Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, photoEntry.imageId);
@@ -1302,7 +1299,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             }
             if (photoEntry.thumbPath != null) {
                 return photoEntry.thumbPath;
-            } else if (photoEntry.isVideo) {
+            } else if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
                 return "" + photoEntry.imageId;
             } else {
                 return photoEntry.path;

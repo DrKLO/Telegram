@@ -272,6 +272,7 @@ public class PreviewView extends FrameLayout {
             entry.editedMedia = true;
             if (messageObject == null || messageObject.messageOwner == null) {
                 entry.audioPath = null;
+                entry.audioDocument = null;
                 entry.audioAuthor = null;
                 entry.audioTitle = null;
                 entry.audioDuration = entry.audioOffset = 0;
@@ -279,6 +280,12 @@ public class PreviewView extends FrameLayout {
                 entry.audioRight = 1;
             } else {
                 final TLRPC.Document audioDocument = messageObject.getDocument();
+                if (audioDocument != null && audioDocument.id != 0) {
+                    entry.audioDocument = new TLRPC.TL_inputDocument();
+                    entry.audioDocument.id = audioDocument.id;
+                    entry.audioDocument.file_reference = audioDocument.file_reference;
+                    entry.audioDocument.access_hash = audioDocument.access_hash;
+                }
                 if (!TextUtils.isEmpty(messageObject.messageOwner.attachPath)) {
                     entry.audioPath = messageObject.messageOwner.attachPath;
                 } else {
@@ -287,6 +294,7 @@ public class PreviewView extends FrameLayout {
                         file = FileLoader.getInstance(messageObject.currentAccount).getPathToAttach(audioDocument, null, true, true);
                         if (file == null || !file.exists()) {
                             entry.audioPath = null;
+                            entry.audioDocument = null;
                             entry.audioAuthor = null;
                             entry.audioTitle = null;
                             entry.audioDuration = entry.audioOffset = 0;

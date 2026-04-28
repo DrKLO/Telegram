@@ -26,18 +26,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
@@ -189,7 +188,9 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             textView.allowClickSpoilers = false;
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.bold());
+            NotificationCenter.listenEmojiLoading(textView);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+            NotificationCenter.listenEmojiLoading(textView);
 
             setTag(button);
 
@@ -232,15 +233,15 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
 
             if (button.style != null) {
                 if (button.style.bg_primary) {
-                    color = getThemedColor(Theme.key_botKeyboard_button_primary);
+                    color = Theme.multAlpha(getThemedColor(Theme.key_botKeyboard_button_primary), 0.8f);
                     pressed = ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), color);
                     textColor = Color.WHITE;
                 } else if (button.style.bg_danger) {
-                    color = getThemedColor(Theme.key_botKeyboard_button_danger);
+                    color = Theme.multAlpha(getThemedColor(Theme.key_botKeyboard_button_danger), 0.8f);
                     pressed = ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), color);
                     textColor = Color.WHITE;
                 } else if (button.style.bg_success) {
-                    color = getThemedColor(Theme.key_botKeyboard_button_success);
+                    color = Theme.multAlpha(getThemedColor(Theme.key_botKeyboard_button_success), 0.8f);
                     pressed = ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), color);
                     textColor = Color.WHITE;
                 }
