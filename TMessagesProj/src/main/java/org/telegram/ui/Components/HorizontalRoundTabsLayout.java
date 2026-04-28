@@ -17,11 +17,15 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.PeerColorActivity;
 
 import java.util.ArrayList;
 
 public class HorizontalRoundTabsLayout extends HorizontalScrollView {
+
+    private final Theme.ResourcesProvider resourcesProvider;
     private final AnimatedFloat selectorStartX;
     private final AnimatedFloat selectorEndX;
     public final LinearLayout linearLayout;
@@ -29,8 +33,12 @@ public class HorizontalRoundTabsLayout extends HorizontalScrollView {
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
-    public HorizontalRoundTabsLayout(Context context) {
+    private boolean accent;
+
+    public HorizontalRoundTabsLayout(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+
+        this.resourcesProvider = resourcesProvider;
 
         linearLayout = new LinearLayout(context);
         linearLayout.setLayerType(View.LAYER_TYPE_NONE, null);
@@ -63,6 +71,10 @@ public class HorizontalRoundTabsLayout extends HorizontalScrollView {
         setHorizontalScrollBarEnabled(false);
     }
 
+    public void setAccent(boolean accent) {
+        this.accent = accent;
+    }
+
     public void setTabs(ArrayList<CharSequence> tabs, MessagesStorage.IntCallback onSelect) {
         linearLayout.removeAllViews();
 
@@ -75,6 +87,7 @@ public class HorizontalRoundTabsLayout extends HorizontalScrollView {
                 selectorStartX.set(v.getLeft(), false);
                 selectorEndX.set(v.getRight(), false);
                 onSelect.run(finalA);
+                invalidate();
             });
 
             tabView.setPadding(dp(12), dp(5), dp(12), dp(5));
@@ -126,16 +139,28 @@ public class HorizontalRoundTabsLayout extends HorizontalScrollView {
         clipPath2.addRoundRect(tmpRect, dp(13), dp(13), Path.Direction.CCW);
         clipPath2.close();
 
-        bgPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText) & 0x1EFFFFFF);
+        bgPaint.setColor(
+            accent ?
+                Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f) :
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider) & 0x1EFFFFFF
+        );
         canvas.drawPath(clipPath, bgPaint);
 
-        textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        textPaint.setColor(
+//            accent ?
+//                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) :
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)
+        );
         canvas.save();
         canvas.clipPath(clipPath2);
         super.dispatchDraw(canvas);
         canvas.restore();
 
-        textPaint.setColor(Theme.getColor(Theme.key_chats_nameArchived));
+        textPaint.setColor(
+            accent ?
+                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) :
+                Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)
+        );
         canvas.save();
         canvas.clipPath(clipPath);
         for (int a = 0; a < linearLayout.getChildCount(); a++) {
@@ -175,6 +200,33 @@ public class HorizontalRoundTabsLayout extends HorizontalScrollView {
         public void draw(@NonNull Canvas canvas) {
             super.draw(canvas);
             text.draw(canvas, (getMeasuredWidth() - text.getWidth()) / 2, getMeasuredHeight() / 2f);
+        }
+    }
+
+    public static final class Factory extends UItem.UItemFactory<HorizontalRoundTabsLayout> {
+        static { setup(new Factory()); }
+
+        @Override
+        public HorizontalRoundTabsLayout createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new HorizontalRoundTabsLayout(context, resourcesProvider);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+            final HorizontalRoundTabsLayout cell = (HorizontalRoundTabsLayout) view;
+            cell.setTabs(
+                (ArrayList<CharSequence>) item.object,
+                x -> ((Utilities.Callback2<Integer, HorizontalRoundTabsLayout>) item.object2).run(x, cell)
+            );
+            cell.setSelectedIndex(item.intValue, false);
+        }
+
+        public static UItem as(int selected, ArrayList<CharSequence> tabs, Utilities.Callback2<Integer, HorizontalRoundTabsLayout> onSelect) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.intValue = selected;
+            item.object = tabs;
+            item.object2 = onSelect;
+            return item;
         }
     }
 }

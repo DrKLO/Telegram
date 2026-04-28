@@ -68,6 +68,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     public boolean animated = true;
     public TLRPC.TL_messageMediaVenue city, street;
+    public boolean isPollAttach;
 
     public void setAddressNameOverride(String address) {
         overrideAddressName = address;
@@ -221,7 +222,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 } else if (!myLocationDenied) {
                     address = LocaleController.getString(R.string.Loading);
                 }
-                if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
+                if (isPollAttach) {
+                    sendLocationCell.setText(LocaleController.getString(R.string.AttachSelectedLocation), address);
+                } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
                     sendLocationCell.setText(LocaleController.getString(R.string.ChatSetThisLocation), address);
                 } else {
                     sendLocationCell.setText(LocaleController.getString(R.string.SendSelectedLocation), address);

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Scale group to add ~1dp padding without distorting shape -->
+    <group
+        android:scaleX="0.75"
+        android:scaleY="0.75"
+        android:pivotX="24"
+        android:pivotY="18">
+
+        <!-- Original box (unchanged geometry) -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4.5"
+            android:pathData="M35,2
+                              C41.0751322,2 46,6.92486775 46,13
+                              L46,35
+                              C46,41.0751322 41.0751322,46 35,46
+                              L13,46
+                              C6.92486775,46 2,41.0751322 2,35
+                              L2,13
+                              C2,6.92486775 6.92486775,2 13,2
+                              L35,2 Z" />
+
+        <!-- Check mark (left + slightly down) -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M13.5,26
+                              L20,32
+                              L35,17.5" />
+    </group>
+</vector>

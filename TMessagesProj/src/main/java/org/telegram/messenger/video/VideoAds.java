@@ -841,7 +841,7 @@ public class VideoAds {
 
         public void hideImage() {
             imageView.setVisibility(GONE);
-            ((MarginLayoutParams) linearLayout.getLayoutParams()).setMarginStart(dp(10));
+            linearLayout.setLayoutParams(LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 10, 8, 54, 8));
         }
     }
 

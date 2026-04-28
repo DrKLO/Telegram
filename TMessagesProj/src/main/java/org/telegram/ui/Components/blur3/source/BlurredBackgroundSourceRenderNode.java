@@ -113,11 +113,11 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
             throw new IllegalStateException();
         }
 
-        canvas.save();
-        canvas.clipRect(left, top, right, bottom);
         if (underSource != null) {
             underSource.draw(canvas, left, top, right, bottom);
         }
+        canvas.save();
+        canvas.clipRect(left, top, right, bottom);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableNoiseSuppressor != null) {
             scrollableNoiseSuppressor.drawInline(canvas, scrollableNoiseSuppressorIndex);
         } else {
@@ -161,6 +161,7 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
         onDrawablesRelativePositionChangeListener = callback;
     }
 
+    @Override
     public void dispatchOnDrawablesRelativePositionChange() {
         if (onDrawablesRelativePositionChangeListener != null) {
             onDrawablesRelativePositionChangeListener.run();

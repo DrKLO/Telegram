@@ -53,33 +53,41 @@ public class ClipRoundedDrawable extends Drawable {
 
     private Path path;
     private RectF tempBounds = new RectF();
+    private RectF padding = new RectF();
     private boolean hasRadius = false;
     private float[] radii = new float[8];
 
-    public void setRadius(float r) {
+    public ClipRoundedDrawable setRadius(float r) {
         radii[0] = radii[1] = radii[2] = radii[3] =
         radii[4] = radii[5] = radii[6] = radii[7] = Math.max(0, r);
         hasRadius = r > 0;
         updatePath();
+        return this;
     }
 
-    public void setRadii(float rx, float ry) {
+    public ClipRoundedDrawable setRadii(float rx, float ry) {
         radii[0] = radii[2] = radii[4] = radii[6] = Math.max(0, rx);
         radii[1] = radii[3] = radii[5] = radii[7] = Math.max(0, ry);
         hasRadius = rx > 0 || ry > 0;
         updatePath();
+        return this;
     }
 
-    public void setRadii(float topLeft, float topRight, float bottomRight, float bottomLeft) {
+    public ClipRoundedDrawable setRadii(float topLeft, float topRight, float bottomRight, float bottomLeft) {
         radii[0] = radii[1] = Math.max(0, topLeft);
         radii[2] = radii[3] = Math.max(0, topRight);
         radii[4] = radii[5] = Math.max(0, bottomRight);
         radii[6] = radii[7] = Math.max(0, bottomLeft);
         hasRadius = topLeft > 0 || topRight > 0 || bottomRight > 0 || bottomLeft > 0;
         updatePath();
+        return this;
     }
 
-    private int R = (int) Math.round(Math.random() * 9999999);
+    public ClipRoundedDrawable setPadding(float left, float top, float right, float bottom) {
+        padding.set(left, top, right, bottom);
+        updatePath();
+        return this;
+    }
 
     public void setRadii(float[] newRadii) {
         if (newRadii == null) {
@@ -113,6 +121,10 @@ public class ClipRoundedDrawable extends Drawable {
             path.rewind();
         }
         tempBounds.set(getBounds());
+        tempBounds.left += padding.left;
+        tempBounds.top += padding.top;
+        tempBounds.right -= padding.right;
+        tempBounds.bottom -= padding.bottom;
         path.addRoundRect(tempBounds, radii, Path.Direction.CW);
     }
 

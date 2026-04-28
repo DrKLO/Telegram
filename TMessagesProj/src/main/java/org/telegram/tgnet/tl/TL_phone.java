@@ -131,7 +131,7 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
+            video = hasFlag(flags, FLAG_6);
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -143,7 +143,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
+            flags = setFlag(flags, FLAG_6, video);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -160,9 +160,9 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            p2p_allowed = (flags & 32) != 0;
-            video = (flags & 64) != 0;
-            conference_supported = (flags & 256) != 0;
+            p2p_allowed = hasFlag(flags, FLAG_5);
+            video = hasFlag(flags, FLAG_6);
+            conference_supported = hasFlag(flags, FLAG_8);
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -173,16 +173,16 @@ public class TL_phone {
             protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
             connections = Vector.deserialize(stream, TLRPC.PhoneConnection::TLdeserialize, exception);
             start_date = stream.readInt32(exception);
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 custom_parameters = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = p2p_allowed ? (flags | 32) : (flags &~ 32);
-            flags = video ? (flags | 64) : (flags &~ 64);
-            flags = conference_supported ? (flags | 256) : (flags &~ 256);
+            flags = setFlag(flags, FLAG_5, p2p_allowed);
+            flags = setFlag(flags, FLAG_6, video);
+            flags = setFlag(flags, FLAG_8, conference_supported);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -194,7 +194,7 @@ public class TL_phone {
             protocol.serializeToStream(stream);
             Vector.serialize(stream, connections);
             stream.writeInt32(start_date);
-            if ((flags & 128) != 0) {
+            if (hasFlag(flags, FLAG_7)) {
                 custom_parameters.serializeToStream(stream);
             }
         }
@@ -205,8 +205,8 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            p2p_allowed = (flags & 32) != 0;
-            video = (flags & 64) != 0;
+            p2p_allowed = hasFlag(flags, FLAG_5);
+            video = hasFlag(flags, FLAG_6);
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -221,8 +221,8 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = p2p_allowed ? (flags | 32) : (flags &~ 32);
-            flags = video ? (flags | 64) : (flags &~ 64);
+            flags = setFlag(flags, FLAG_5, p2p_allowed);
+            flags = setFlag(flags, FLAG_6, video);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -255,7 +255,7 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
+            video = hasFlag(flags, FLAG_6);
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -267,7 +267,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
+            flags = setFlag(flags, FLAG_6, video);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -284,21 +284,21 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 64) != 0;
+            video = hasFlag(flags, FLAG_6);
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
             admin_id = stream.readInt64(exception);
             participant_id = stream.readInt64(exception);
             protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 receive_date = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 64) : (flags &~ 64);
+            flags = setFlag(flags, FLAG_6, video);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -306,7 +306,7 @@ public class TL_phone {
             stream.writeInt64(admin_id);
             stream.writeInt64(participant_id);
             protocol.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt32(receive_date);
             }
         }
@@ -317,29 +317,29 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            need_rating = (flags & 4) != 0;
-            need_debug = (flags & 8) != 0;
-            video = (flags & 64) != 0;
+            need_rating = hasFlag(flags, 4);
+            need_debug = hasFlag(flags, 8);
+            video = hasFlag(flags, FLAG_6);
             id = stream.readInt64(exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 reason = TLRPC.PhoneCallDiscardReason.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 duration = stream.readInt32(exception);
             }
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = need_rating ? (flags | 4) : (flags &~ 4);
-            flags = need_debug ? (flags | 8) : (flags &~ 8);
-            flags = video ? (flags | 64) : (flags &~ 64);
+            flags = setFlag(flags, 4, need_rating);
+            flags = setFlag(flags, 8, need_debug);
+            flags = setFlag(flags, FLAG_6, video);
             stream.writeInt32(flags);
             stream.writeInt64(id);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 reason.serializeToStream(stream);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(duration);
             }
         }
@@ -474,7 +474,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, video);
             stream.writeInt32(flags);
             user_id.serializeToStream(stream);
             stream.writeInt32(random_id);
@@ -554,7 +554,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, video);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeInt32(duration);
@@ -578,7 +578,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = user_initiative ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, user_initiative);
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeInt32(rating);
@@ -638,10 +638,10 @@ public class TL_phone {
             stream.writeInt32(flags);
             peer.serializeToStream(stream);
             stream.writeInt32(random_id);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(title);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(schedule_date);
             }
         }
@@ -666,15 +666,15 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = muted ? (flags | 1) : (flags &~ 1);
-            flags = video_stopped ? (flags | 4) : (flags &~ 4);
+            flags = setFlag(flags, 1, muted);
+            flags = setFlag(flags, 4, video_stopped);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
             join_as.serializeToStream(stream);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(invite_hash);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeBytes(public_key);
                 stream.writeByteArray(block);
             }
@@ -838,14 +838,14 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = start ? (flags | 1) : (flags &~ 1);
-            flags = video ? (flags | 4) : (flags &~ 4);
+            flags = setFlag(flags, 1, start);
+            flags = setFlag(flags, 4, video);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeString(title);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeBool(video_portrait);
             }
         }
@@ -873,22 +873,22 @@ public class TL_phone {
             stream.writeInt32(flags);
             call.serializeToStream(stream);
             participant.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeBool(muted);
             }
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(volume);
             }
-            if ((flags & 4) != 0) {
+            if (hasFlag(flags, 4)) {
                 stream.writeBool(raise_hand);
             }
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeBool(video_stopped);
             }
-            if ((flags & 16) != 0) {
+            if (hasFlag(flags, 16)) {
                 stream.writeBool(video_paused);
             }
-            if ((flags & 32) != 0) {
+            if (hasFlag(flags, FLAG_5)) {
                 stream.writeBool(presentation_paused);
             }
         }
@@ -939,7 +939,7 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = can_self_unmute ? (flags | 1) : (flags &~ 1);
+            flags = setFlag(flags, 1, can_self_unmute);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
         }
@@ -1135,8 +1135,8 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            udp_p2p = (flags & 1) != 0;
-            udp_reflector = (flags & 2) != 0;
+            udp_p2p = hasFlag(flags, 1);
+            udp_reflector = hasFlag(flags, 2);
             min_layer = stream.readInt32(exception);
             max_layer = stream.readInt32(exception);
             library_versions = Vector.deserializeString(stream, exception);
@@ -1144,8 +1144,8 @@ public class TL_phone {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = udp_p2p ? (flags | 1) : (flags &~ 1);
-            flags = udp_reflector ? (flags | 2) : (flags &~ 2);
+            flags = setFlag(flags, 1, udp_p2p);
+            flags = setFlag(flags, 2, udp_reflector);
             stream.writeInt32(flags);
             stream.writeInt32(min_layer);
             stream.writeInt32(max_layer);
@@ -1158,16 +1158,16 @@ public class TL_phone {
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            udp_p2p = (flags & 1) != 0;
-            udp_reflector = (flags & 2) != 0;
+            udp_p2p = hasFlag(flags, 1);
+            udp_reflector = hasFlag(flags, 2);
             min_layer = stream.readInt32(exception);
             max_layer = stream.readInt32(exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = udp_p2p ? (flags | 1) : (flags &~ 1);
-            flags = udp_reflector ? (flags | 2) : (flags &~ 2);
+            flags = setFlag(flags, 1, udp_p2p);
+            flags = setFlag(flags, 2, udp_reflector);
             stream.writeInt32(flags);
             stream.writeInt32(min_layer);
             stream.writeInt32(max_layer);
@@ -1211,12 +1211,12 @@ public class TL_phone {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = muted ? flags | 1 : flags &~ 1;
-            flags = video_stopped ? flags | 4 : flags &~ 4;
-            flags = join ? flags | 8 : flags &~ 8;
+            flags = setFlag(flags, 1, muted);
+            flags = setFlag(flags, 4, video_stopped);
+            flags = setFlag(flags, 8, join);
             stream.writeInt32(flags);
             stream.writeInt32(random_id);
-            if ((flags & 8) != 0) {
+            if (hasFlag(flags, 8)) {
                 stream.writeBytes(public_key);
                 stream.writeByteArray(block);
                 params.serializeToStream(stream);
@@ -1242,8 +1242,8 @@ public class TL_phone {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = only_left ? (flags | 1) : (flags &~ 1);
-            flags = kick ? (flags | 2) : (flags &~ 2);
+            flags = setFlag(flags, 1, only_left);
+            flags = setFlag(flags, 2, kick);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
             Vector.serializeLong(stream, ids);
@@ -1286,7 +1286,7 @@ public class TL_phone {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? flags | 1 : flags &~ 1;
+            flags = setFlag(flags, 1, video);
             stream.writeInt32(flags);
             call.serializeToStream(stream);
             user_id.serializeToStream(stream);

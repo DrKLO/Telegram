@@ -13,6 +13,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -29,10 +30,12 @@ import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -60,6 +63,7 @@ import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.glass.GlassTabView;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,6 +99,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private boolean dropCallsFragmentAfterPageScroll;
 
     private UpdateLayoutWrapper updateLayoutWrapper;
+    private FrameLayout tabsViewWrapper;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
     private View fadeView;
@@ -196,13 +201,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     public void onResume() {
         super.onResume();
         blur3_updateColors();
-        if (tabsView != null && tabs[INDEX_CONTACTS] != null) {
-            if (Build.VERSION.SDK_INT >= 23 && UserConfig.getInstance(currentAccount).syncContacts && !ContactsController.hasContactsPermission()) {
-                tabs[INDEX_CONTACTS].setCounter("!", true, true);
-            } else {
-                tabs[INDEX_CONTACTS].setCounter(null, true, true);
-            }
-        }
+        checkContactsTabBadge();
         checkUnreadCount(true);
 
         Bulletin.Delegate delegate = new Bulletin.Delegate() {
@@ -214,6 +213,22 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         Bulletin.addDelegate(this, delegate);
         Bulletin.addDelegate(contentView, delegate);
+
+        showAccountChangeHint();
+    }
+
+    private void checkContactsTabBadge() {
+        if (tabsView != null && tabs[INDEX_CONTACTS] != null) {
+            final boolean hasPermission = Build.VERSION.SDK_INT >= 23 && ContactsController.hasContactsPermission();
+            if (hasPermission) {
+                MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts2", true).apply();
+            }
+            if (Build.VERSION.SDK_INT >= 23 && UserConfig.getInstance(currentAccount).syncContacts && !hasPermission && MessagesController.getGlobalNotificationsSettings().getBoolean("askAboutContacts2", true)) {
+                tabs[INDEX_CONTACTS].setCounter("!", true, true);
+            } else {
+                tabs[INDEX_CONTACTS].setCounter(null, true, true);
+            }
+        }
     }
 
     @Override
@@ -221,6 +236,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         super.onPause();
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
+        if (accountSwitchHint != null) {
+            accountSwitchHint.hide();
+        }
     }
 
     @Override
@@ -294,7 +312,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         fadeView.setBackground(fadeDrawable);
 
         contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
-        contentView.addView(tabsView, LayoutHelper.createFrame(328 + DialogsActivity.MAIN_TABS_MARGIN * 2, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+
+        tabsViewWrapper = new FrameLayout(context);
+        tabsViewWrapper.setOnClickListener(v -> {});
+        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(328 + DialogsActivity.MAIN_TABS_MARGIN * 2, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        tabsViewWrapper.setClipToPadding(false);
+        contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         updateLayoutWrapper = new UpdateLayoutWrapper(context);
         contentView.addView(updateLayoutWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
@@ -303,9 +326,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (updateLayout != null) {
             updateLayout.updateAppUpdateViews(currentAccount, false);
         }
-
-        //AndroidUtilities.cancelRunOnUIThread(justForTestR);
-        //AndroidUtilities.runOnUIThread(justForTestR, 2000);
 
         checkUnreadCount(false);
         return contentView;
@@ -368,6 +388,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 }
             });
         }
+
+        if (BuildConfig.DEBUG_PRIVATE_VERSION) {
+            o.add(R.drawable.menu_download_round, "Dump Canvas", () -> AndroidUtilities.runOnUIThread(this::dumpCanvas, 1000));
+        }
+
         if (accountNumbers.size() > 0) {
             if (o.getItemsCount() > 0) o.addGap();
             for (int acc : accountNumbers) {
@@ -384,14 +409,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
-        // o.addGap();
-        // o.add(R.drawable.msg_leave, getString(R.string.LogOut), true, () -> presentFragment(new LogoutActivity()));
         o.setBlur(true);
         o.translate(0, -dp(4));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
         bg.getPaint().setShadowLayer(dp(6), 0, dp(1), Theme.multAlpha(0xFF000000, 0.15f));
         o.setScrimViewBackground(bg);
         o.show();
+
+        MessagesController.getGlobalMainSettings().edit()
+            .putInt("accountswitchhint", 3)
+            .apply();
     }
 
     public LinearLayout accountView(int account, boolean selected) {
@@ -433,6 +460,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         textView.setText(UserObject.getUserName(user));
+        textView.setMaxLines(2);
+        textView.setEllipsize(TextUtils.TruncateAt.END);
         btn.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 13, 0, 14, 0));
 
         return btn;
@@ -643,6 +672,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
+        tabsViewWrapper.setPadding(0, 0, 0, navigationBarHeight);
+
         final WindowInsetsCompat consumed = isUpdateLayoutVisible ?
             insets.inset(0, 0, 0, navigationBarHeight) : insets;
 
@@ -701,21 +732,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             if (tabs != null && tabs[INDEX_PROFILE] != null) {
                 tabs[INDEX_PROFILE].updateUserAvatar(currentAccount);
             }
+        } else if (id == NotificationCenter.contactsPermissionBadgeCheck) {
+            checkContactsTabBadge();
         }
     }
-
-    /* Just For Test */
-
-    //private final Runnable justForTestR = this::justForTest;
-
-    //private void justForTest() {
-    //    getUserConfig().setShowCallsTab(!getUserConfig().showCallsTab);
-    //    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
-    //    AndroidUtilities.cancelRunOnUIThread(justForTestR);
-    //    AndroidUtilities.runOnUIThread(justForTestR, 3000);
-    //}
-
-
 
     @Override
     public boolean onFragmentCreate() {
@@ -726,6 +746,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.callTabsVisibleToggled);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.mainUserInfoChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsPermissionBadgeCheck);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateLoading);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
@@ -742,6 +763,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.callTabsVisibleToggled);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.mainUserInfoChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsPermissionBadgeCheck);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateLoading);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
@@ -775,13 +797,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void checkUi_tabsPosition() {
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
-        final int normalY = -(navigationBarHeight + updateLayoutHeight);
+        final int normalY = -(updateLayoutHeight);
         final int hiddenY = normalY + dp(40);
 
         final float factor = animatorTabsVisible.getFloatValue();
         final float scale = lerp(0.85f, 1f, factor);
 
-        tabsView.setTranslationY(lerp(hiddenY, normalY, factor));
+        tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
         tabsView.setScaleX(scale);
         tabsView.setScaleY(scale);
         tabsView.setClickable(factor > 1);
@@ -802,7 +824,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         ArrayList<ThemeDescription> themeDescriptions = super.getThemeDescriptions();
 
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::blur3_updateColors;
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_dialogBackground));
 
@@ -859,6 +880,41 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
 
+    private HintView2 accountSwitchHint;
+    private boolean accountSwitchHintShown;
+
+    private void showAccountChangeHint() {
+        if (accountSwitchHintShown) return;
+
+        if (accountSwitchHint == null && MessagesController.getGlobalMainSettings().getInt("accountswitchhint", 0) < 2) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (getContext() == null || tabs == null) return;
+
+                final View v = tabs[INDEX_PROFILE];
+                final float translate = (contentView.getWidth() - ((tabsView.getX() + v.getX()) + v.getWidth()) + v.getWidth() / 2f) / AndroidUtilities.density;
+
+                accountSwitchHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+                accountSwitchHint.setTranslationY(-navigationBarHeight + dp(4));
+                accountSwitchHint.setPadding(dp(7.33f), 0, dp(7.33f), 0);
+                accountSwitchHint.setMultilineText(false);
+                accountSwitchHint.setCloseButton(true);
+                accountSwitchHint.setText(getString(R.string.SwitchAccountHint));
+                accountSwitchHint.setJoint(1, -translate + 7.33f);
+                contentView.addView(accountSwitchHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
+                accountSwitchHint.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(accountSwitchHint));
+                accountSwitchHint.setDuration(8000);
+                accountSwitchHint.show();
+            }, 1500);
+
+            MessagesController.getGlobalMainSettings().edit()
+                .putInt("accountswitchhint", MessagesController.getGlobalMainSettings()
+                .getInt("channelgifthint", 0) + 1)
+                .apply();
+        }
+
+        accountSwitchHintShown = true;
+    }
+
 
     /* * */
 
@@ -880,12 +936,20 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private void blur3_updateColors() {
         iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
-        tabsViewBackground.updateColors();
+        if (tabsViewBackground != null) {
+            tabsViewBackground.updateColors();
+        }
         blur3_invalidateBlur();
-        fadeView.invalidate();
-        tabsView.invalidate();
-        for (GlassTabView tabView : tabs) {
-            tabView.updateColorsLottie();
+        if (fadeView != null) {
+            fadeView.invalidate();
+        }
+        if (tabsView != null) {
+            tabsView.invalidate();
+        }
+        if (tabs != null) {
+            for (GlassTabView tabView : tabs) {
+                tabView.updateColorsLottie();
+            }
         }
     }
 }

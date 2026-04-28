@@ -193,10 +193,13 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
     private float additionalTranslationY;
     private float internalTranslationY;
+    private boolean setTranslationInternal;
 
     private void setAdditionalTranslationY(float translationY) {
         if (additionalTranslationY != translationY) {
+            setTranslationInternal = true;
             super.setTranslationY(internalTranslationY + translationY);
+            setTranslationInternal = false;
             additionalTranslationY = translationY;
         }
     }
@@ -220,13 +223,19 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     @Override
     public void setTranslationY(float translationY) {
         if (internalTranslationY != translationY) {
+            setTranslationInternal = true;
             super.setTranslationY(translationY + additionalTranslationY);
+            setTranslationInternal = false;
             internalTranslationY = translationY;
         }
     }
 
     @Override
     public float getTranslationY() {
+        if (setTranslationInternal) {
+            return super.getTranslationY();
+        }
+
         return internalTranslationY;
     }
 

@@ -74,6 +74,8 @@ public class BotInlineKeyboard {
         public static final int OPEN_MESSAGE_THREAD = 4;
         public static final int GIFT_OFFER_DECLINE = 5;
         public static final int GIFT_OFFER_ACCEPT = 6;
+        public static final int SHARING_OFFER_DECLINE = 7;
+        public static final int SHARING_OFFER_ACCEPT = 8;
 
         public final int id;
         public final @DrawableRes int icon;
@@ -165,6 +167,13 @@ public class BotInlineKeyboard {
             buttons.add(new Button[]{
                 new ButtonCustom(ButtonCustom.GIFT_OFFER_DECLINE, R.string.GiftOfferDecline, R.drawable.filled_bot_decline_24),
                 new ButtonCustom(ButtonCustom.GIFT_OFFER_ACCEPT, R.string.GiftOfferAccept, R.drawable.filled_bot_approve_24),
+            });
+        }
+
+        public void addSharingOfferKeyboard() {
+            buttons.add(new Button[]{
+                new ButtonCustom(ButtonCustom.SHARING_OFFER_DECLINE, R.string.DisableSharingOfferDecline, R.drawable.filled_bot_decline_24),
+                new ButtonCustom(ButtonCustom.SHARING_OFFER_ACCEPT, R.string.DisableSharingOfferAccept, R.drawable.filled_bot_approve_24),
             });
         }
 

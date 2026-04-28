@@ -1125,6 +1125,17 @@ public class SavedMessagesController {
         lastFragment.presentFragment(new ChatActivity(args));
     }
 
+    public static void openSavedMessagesReminders() {
+        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+        if (lastFragment == null) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putLong("user_id", UserConfig.getInstance(lastFragment.getCurrentAccount()).getClientUserId());
+        args.putInt("chatMode", ChatActivity.MODE_SCHEDULED);
+        lastFragment.presentFragment(new ChatActivity(args));
+    }
+
     public void checkSavedDialogCount(long dialogId) {
         SavedDialog d = findSavedDialog(dialogId);
         if (d != null && !d.messagesCountLoaded) {

@@ -8,6 +8,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -18,6 +19,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -60,6 +62,7 @@ import org.telegram.ui.Cells.SharedLinkCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.DialogsActivity;
@@ -832,6 +835,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }
         if (show && !parent.getActionBar().actionModeIsExist(actionModeTag)) {
             actionMode = parent.getActionBar().createActionMode(true, actionModeTag);
+            // actionMode.setBackgroundColor(Color.TRANSPARENT);
+            // actionMode.drawBlur = false;
 
             if (parent.hasMainTabs) {
                 actionModeCloseView = new ImageView(getContext());
@@ -1247,20 +1252,35 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         this.pagesPaddingTop = top;
         this.pagesPaddingBottom = bottom;
 
-        searchListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
-        channelsSearchListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
-        botsSearchListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
-        hashtagSearchListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
-        postsSearchContainer.listView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
+        setPagesPaddings(searchContainer, searchListView, pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
+        setPagesPaddings(channelsSearchContainer, channelsSearchListView, pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
+        setPagesPaddings(botsSearchContainer, botsSearchListView, pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
+        setPagesPaddings(hashtagSearchContainer, hashtagSearchListView, pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
+        postsSearchContainer.setPagesPaddings(pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
         if (downloadsContainer != null) {
-            downloadsContainer.recyclerListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
+            downloadsContainer.setPagesPaddings(pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
         }
         for (int i = 0, N = viewsByType.size(); i < N; i++) {
             View v = viewsByType.valueAt(i);
             if (v instanceof FilteredSearchView) {
-                ((FilteredSearchView) v).recyclerListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom, doNotRequestLayout);
+                ((FilteredSearchView) v).setPagesPaddings(pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
             }
         }
+        for (int i = 0; i < getChildCount(); i++) {
+            if (getChildAt(i) instanceof FilteredSearchView) {
+                ((FilteredSearchView) getChildAt(i)).setPagesPaddings(pagesPaddingTop, pagesPaddingBottom, doNotRequestLayout);
+            }
+        }
+    }
+
+    private static void setPagesPaddings(ViewGroup parent, RecyclerListView recyclerListView, int top, int bottom, boolean doNotRequestLayout) {
+        parent.setClipToPadding(false);
+        parent.setPadding(0, top, 0, bottom);
+        recyclerListView.setPadding(0, top, 0, bottom, doNotRequestLayout);
+        MarginLayoutParams lp = null;
+        lp = (MarginLayoutParams) recyclerListView.getLayoutParams();
+        lp.topMargin = -top;
+        lp.bottomMargin = -bottom;
     }
 
     public void setKeyboardHeight(int keyboardSize) {
@@ -1390,6 +1410,12 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     @Override
     protected void invalidateBlur() {
         fragmentView.invalidateBlur();
+    }
+
+    BlurredBackgroundDrawableViewFactory blurredBackgroundDrawableFactory;
+
+    public void setBlurredBackgroundDrawableFactory(BlurredBackgroundDrawableViewFactory factory) {
+        blurredBackgroundDrawableFactory = factory;
     }
 
     public void cancelEnterAnimation() {
@@ -1534,7 +1560,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 return hashtagSearchContainer;
             } else if (viewType == 2) {
                 downloadsContainer = new SearchDownloadsContainer(parent, currentAccount);
-                downloadsContainer.recyclerListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom);
+                downloadsContainer.setPagesPaddings(pagesPaddingTop, pagesPaddingBottom);
                 downloadsContainer.recyclerListView.setClipToPadding(false);
                 downloadsContainer.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
@@ -1552,7 +1578,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 FilteredSearchView filteredSearchView = new FilteredSearchView(parent);
                 filteredSearchView.setChatPreviewDelegate(chatPreviewDelegate);
                 filteredSearchView.setUiCallback(SearchViewPager.this);
-                filteredSearchView.recyclerListView.setPadding(0, pagesPaddingTop, 0, pagesPaddingBottom);
+                filteredSearchView.setPagesPaddings(pagesPaddingTop, pagesPaddingBottom);
+                if (blurredBackgroundDrawableFactory != null) {
+                    filteredSearchView.setBlurredBackgroundDrawableFactory(blurredBackgroundDrawableFactory);
+                }
                 filteredSearchView.recyclerListView.setClipToPadding(false);
                 filteredSearchView.recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
@@ -1602,6 +1631,11 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 this.type = type;
             }
         }
+    }
+
+    @Override
+    protected long getManualScrollDuration() {
+        return 320L;
     }
 
     public interface ChatPreviewDelegate {

@@ -17,11 +17,10 @@ import androidx.annotation.RequiresApi;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.LiquidGlassEffect;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawable {
-    private final BlurredBackgroundSourceRenderNode source;
+    private final BlurredBackgroundSource source;
     private final Outline outline = new Outline();
     private final Rect outlineRect = new Rect();
 
@@ -34,7 +33,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
 
     private boolean renderNodeInvalidated;
 
-    public BlurredBackgroundDrawableRenderNode(BlurredBackgroundSourceRenderNode source) {
+    public BlurredBackgroundDrawableRenderNode(BlurredBackgroundSource source) {
         this.renderNode = new RenderNode("BlurredNode");
         this.renderNodeFill = new RenderNode("BlurredFill");
         this.renderNode.setClipToOutline(true);
@@ -124,7 +123,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
             );
         }
         source.draw(c, sL, sT, sR, sB);
-        c.restore();
+        c.save();
         renderNodeFill.endRecording();
 
 
@@ -180,7 +179,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
         }
         renderNodeInvalidated = false;
 
-        int color = Theme.multAlpha(shadowColor, renderNode.getAlpha());
+        int color = Theme.multAlpha(shadowColor, renderNode.getAlpha() * shadowAlpha);
         if (Color.alpha(color) != 0) {
             paintShadow.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, color);
             boundProps.drawShadows(canvas, paintShadow, inAppKeyboardOptimization);

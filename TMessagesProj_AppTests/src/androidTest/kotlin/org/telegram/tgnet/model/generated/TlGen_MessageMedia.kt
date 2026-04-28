@@ -76,47 +76,6 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
-  public data class TL_messageMediaPhoto(
-    public val spoiler: Boolean,
-    public val photo: TlGen_Photo?,
-    public val ttl_seconds: Int?,
-  ) : TlGen_MessageMedia() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (photo != null) result = result or 1U
-        if (ttl_seconds != null) result = result or 4U
-        if (spoiler) result = result or 8U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      photo?.serializeToStream(stream)
-      ttl_seconds?.let { stream.writeInt32(it) }
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x695150D7U
-    }
-  }
-
-  public data class TL_messageMediaPoll(
-    public val poll: TlGen_Poll,
-    public val results: TlGen_PollResults,
-  ) : TlGen_MessageMedia() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      poll.serializeToStream(stream)
-      results.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x4BD6E798U
-    }
-  }
-
   public data class TL_messageMediaGeoLive(
     public val geo: TlGen_GeoPoint,
     public val heading: Int?,
@@ -476,6 +435,62 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
+  public data class TL_messageMediaPhoto(
+    public val spoiler: Boolean,
+    public val photo: TlGen_Photo?,
+    public val ttl_seconds: Int?,
+    public val video: TlGen_Document?,
+  ) : TlGen_MessageMedia() {
+    public val live_photo: Boolean = video != null
+
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (photo != null) result = result or 1U
+        if (ttl_seconds != null) result = result or 4U
+        if (spoiler) result = result or 8U
+        if (live_photo) result = result or 16U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      photo?.serializeToStream(stream)
+      ttl_seconds?.let { stream.writeInt32(it) }
+      video?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xE216EB63U
+    }
+  }
+
+  public data class TL_messageMediaPoll(
+    public val poll: TlGen_Poll,
+    public val results: TlGen_PollResults,
+    public val attached_media: TlGen_MessageMedia?,
+  ) : TlGen_MessageMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (attached_media != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      poll.serializeToStream(stream)
+      results.serializeToStream(stream)
+      attached_media?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x773F4E66U
+    }
+  }
+
   public data class TL_messageMediaPhoto_layer27(
     public val photo: TlGen_Photo,
   ) : TlGen_Object {
@@ -733,6 +748,32 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
     }
   }
 
+  public data class TL_messageMediaPhoto_layer223(
+    public val spoiler: Boolean,
+    public val photo: TlGen_Photo?,
+    public val ttl_seconds: Int?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (photo != null) result = result or 1U
+        if (ttl_seconds != null) result = result or 4U
+        if (spoiler) result = result or 8U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      photo?.serializeToStream(stream)
+      ttl_seconds?.let { stream.writeInt32(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x695150D7U
+    }
+  }
+
   public data class TL_messageMediaDocument_layer159(
     public val nopremium: Boolean,
     public val spoiler: Boolean,
@@ -779,6 +820,21 @@ public sealed class TlGen_MessageMedia : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xCBF24940U
+    }
+  }
+
+  public data class TL_messageMediaPoll_layer223(
+    public val poll: TlGen_Poll,
+    public val results: TlGen_PollResults,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      poll.serializeToStream(stream)
+      results.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x4BD6E798U
     }
   }
 

@@ -15,9 +15,8 @@ public class ChatListViewPaddingsAnimator {
     private int currentAdditionalHeight;
     public void setPaddings(
         int paddingTopTarget,
-        float paddingBottomAnimated, int paddingBottomTarget, boolean allowScrollCompensation
+        float paddingBottomAnimated, boolean allowScrollCompensation
     ) {
-        final float translationY = paddingBottomTarget - paddingBottomAnimated;
         final int additionalHeight = 0; //(int) Math.ceil(Math.abs(translationY));
 
         if (additionalHeight == 0 && currentAdditionalHeight != 0) {

@@ -1131,13 +1131,13 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                     if (param != 0) {
                         chatId = param;
                         currentChat = getMessagesController().getChat(param);
-                        getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
+                        getMessagesController().toggleChatNoForwards(-chatId, currentChat.noforwards = isSaveRestricted);
                         processDone();
                     }
                 });
                 return false;
             } else {
-                getMessagesController().toggleChatNoForwards(chatId, currentChat.noforwards = isSaveRestricted);
+                getMessagesController().toggleChatNoForwards(-chatId, currentChat.noforwards = isSaveRestricted);
             }
         }
         return true;

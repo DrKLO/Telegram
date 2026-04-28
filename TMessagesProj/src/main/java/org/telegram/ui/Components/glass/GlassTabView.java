@@ -281,10 +281,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             if (icon != null && icon.icon != null) {
                 TLRPC.Document iconDoc = icon.icon;
                 if (lastBotIconId != icon.icon.id) {
+                    String filter = "24_24" + (animatedIcon && !animated || true ? "_lastframe" : "");
                     backupImageView.setImage(
-                        ImageLocation.getForDocument(iconDoc),
-                        "24_24" + (animatedIcon && !animated || true ? "_lastframe" : ""),
-                        animatedIcon ? "tgs" : "svg",
+                        ImageLocation.getForDocument(iconDoc), filter,
+                        ImageLocation.getForDocument(iconDoc), filter,
                         animatedIcon ? null : DocumentObject.getSvgThumb(iconDoc, Theme.key_windowBackgroundGray, 1f),
                         tabAnimationBot
                     );
@@ -380,22 +380,6 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             }
             imageView.playAnimation();
         }
-    }
-
-    public static GlassTabView createGiftTab(Context context, Theme.ResourcesProvider resourcesProvider, TabAnimation tabAnimation, @StringRes int stringRes, Runnable onClick) {
-        GlassTabView tab = new GlassTabView(context);
-        tab.resourcesProvider = resourcesProvider;
-        tab.tabAnimation = tabAnimation;
-        tab.textView.setText(LocaleController.getString(stringRes));
-        tab.checkPlayAnimation(false);
-        tab.imageView.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 6, 0, 0));
-        tab.colorDefault = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 153);
-        tab.colorSelected = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 255);
-        tab.colorSelectedText = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 255);
-        tab.setOnClickListener(v -> onClick.run());
-        tab.updateColors();
-        ScaleStateListAnimator.apply(tab);
-        return tab;
     }
 
     public static GlassTabView createMainTab(Context context, Theme.ResourcesProvider resourcesProvider, TabAnimation tabAnimation, @StringRes int stringRes) {
@@ -531,12 +515,15 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         GALLERY(R.raw.tab_gallery, R.raw.tab_gallery_reverse),
         GIFT(R.raw.tab_gift, R.raw.tab_gift_reverse),
         LOCATION(R.raw.tab_location, R.raw.tab_location_reverse),
+        STICKER(R.raw.tab_sticker, R.raw.tab_sticker_reverse),
+        EMOJI(R.raw.tab_emoji, R.raw.tab_emoji_reverse),
         MODELS(R.raw.tab_models, R.raw.tab_models_reverse),
         MUSIC(R.raw.tab_music, R.raw.tab_music_reverse),
         POLL(R.raw.tab_poll, R.raw.tab_poll_reverse),
         SYMBOLS(R.raw.tab_symbols, R.raw.tab_symbols_reverse),
         REPLIES(R.raw.tab_reply, R.raw.tab_reply_reverse),
         WALLET(R.raw.tab_wallet, R.raw.tab_wallet_reverse),
+
         BOOSTS(R.raw.boosts, 25, 49),
         MONETIZATION(R.raw.monetize, 19, 45);
 

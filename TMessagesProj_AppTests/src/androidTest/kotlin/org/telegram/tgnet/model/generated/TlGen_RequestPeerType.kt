@@ -1,6 +1,7 @@
 package org.telegram.tgnet.model.generated
 
 import kotlin.Boolean
+import kotlin.String
 import kotlin.UInt
 import org.telegram.tgnet.OutputSerializedData
 import org.telegram.tgnet.model.TlGen_Object
@@ -91,6 +92,32 @@ public sealed class TlGen_RequestPeerType : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x339BEF6CU
+    }
+  }
+
+  public data class TL_requestPeerTypeCreateBot(
+    public val bot_managed: Boolean,
+    public val suggested_name: String?,
+    public val suggested_username: String?,
+  ) : TlGen_RequestPeerType() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (bot_managed) result = result or 1U
+        if (suggested_name != null) result = result or 2U
+        if (suggested_username != null) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      suggested_name?.let { stream.writeString(it) }
+      suggested_username?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3E81E078U
     }
   }
 }

@@ -577,6 +577,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return this;
     }
 
+    public UItem setId(int id) {
+        this.id = id;
+        return this;
+    }
+
     public UItem setChecked(boolean checked) {
         this.checked = checked;
         if (viewType == UniversalAdapter.VIEW_TYPE_FILTER_CHAT) {
@@ -726,6 +731,29 @@ public class UItem extends AdapterWithDiffUtils.Item {
     }
 
     public boolean itemContentEquals(UItem item) {
+        if (viewType == item.viewType) {
+            if (id != item.id) return false;
+            switch (viewType) {
+                case UniversalAdapter.VIEW_TYPE_SHADOW:
+                    if (text == null && item.text == null)
+                        return true;
+                case UniversalAdapter.VIEW_TYPE_HEADER:
+                case UniversalAdapter.VIEW_TYPE_BLACK_HEADER:
+                case UniversalAdapter.VIEW_TYPE_LARGE_HEADER:
+                    return TextUtils.equals(text, item.text);
+                case UniversalAdapter.VIEW_TYPE_FLICKER:
+                    return intValue == item.intValue;
+                case UniversalAdapter.VIEW_TYPE_TEXT:
+                    return (
+                        object == item.object &&
+                        TextUtils.equals(text, item.text) &&
+                        TextUtils.equals(textValue, item.textValue) &&
+                        iconResId == item.iconResId &&
+                        accent == item.accent &&
+                        red == item.red
+                    );
+            }
+        }
         return super.contentsEquals(item);
     }
 

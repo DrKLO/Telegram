@@ -10,6 +10,7 @@ public sealed class TlGen_ReactionsNotifySettings : TlGen_Object {
   public data class TL_reactionsNotifySettings(
     public val messages_notify_from: TlGen_ReactionNotificationsFrom?,
     public val stories_notify_from: TlGen_ReactionNotificationsFrom?,
+    public val poll_votes_notify_from: TlGen_ReactionNotificationsFrom?,
     public val sound: TlGen_NotificationSound,
     public val show_previews: Boolean,
   ) : TlGen_ReactionsNotifySettings() {
@@ -18,6 +19,7 @@ public sealed class TlGen_ReactionsNotifySettings : TlGen_Object {
         var result = 0U
         if (messages_notify_from != null) result = result or 1U
         if (stories_notify_from != null) result = result or 2U
+        if (poll_votes_notify_from != null) result = result or 4U
         return result
       }
 
@@ -26,12 +28,13 @@ public sealed class TlGen_ReactionsNotifySettings : TlGen_Object {
       stream.writeInt32(flags.toInt())
       messages_notify_from?.serializeToStream(stream)
       stories_notify_from?.serializeToStream(stream)
+      poll_votes_notify_from?.serializeToStream(stream)
       sound.serializeToStream(stream)
       stream.writeBool(show_previews)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x56E34970U
+      public const val MAGIC: UInt = 0x71E4EA58U
     }
   }
 }

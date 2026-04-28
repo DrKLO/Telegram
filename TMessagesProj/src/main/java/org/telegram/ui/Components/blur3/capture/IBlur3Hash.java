@@ -1,5 +1,6 @@
 package org.telegram.ui.Components.blur3.capture;
 
+import android.graphics.ColorMatrix;
 import android.os.Build;
 import android.view.View;
 
@@ -23,5 +24,15 @@ public interface IBlur3Hash {
 
     default void add(boolean value) {
         add(value ? 1 : 0);
+    }
+
+    default void add(ColorMatrix colorMatrix) {
+        add(colorMatrix.getArray());
+    }
+
+    default void add(float[] arr) {
+        for (float f : arr) {
+            addF(f);
+        }
     }
 }

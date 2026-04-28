@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.util.Property;
 import android.view.animation.OvershootInterpolator;
@@ -78,17 +79,19 @@ public class AnimationProperties {
         }
     };
 
-    public static final Property<ColorDrawable, Integer> COLOR_DRAWABLE_ALPHA = new IntProperty<ColorDrawable>("alpha") {
+    public static final Property<Drawable, Integer> DRAWABLE_ALPHA = new IntProperty<Drawable>("alpha") {
         @Override
-        public void setValue(ColorDrawable object, int value) {
+        public void setValue(Drawable object, int value) {
             object.setAlpha(value);
         }
 
         @Override
-        public Integer get(ColorDrawable object) {
+        public Integer get(Drawable object) {
             return object.getAlpha();
         }
     };
+
+    public static final Property<Drawable, Integer> COLOR_DRAWABLE_ALPHA = DRAWABLE_ALPHA;
 
     public static final Property<ShapeDrawable, Integer> SHAPE_DRAWABLE_ALPHA = new IntProperty<ShapeDrawable>("alpha") {
         @Override

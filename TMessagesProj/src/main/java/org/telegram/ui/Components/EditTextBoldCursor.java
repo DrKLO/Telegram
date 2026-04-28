@@ -70,6 +70,7 @@ import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.ui.ActionBar.FloatingActionMode;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -1143,6 +1144,12 @@ public class EditTextBoldCursor extends EditTextEffects {
         AndroidUtilities.cancelRunOnUIThread(invalidateRunnable);
     }
 
+    BlurredBackgroundDrawableViewFactory blurredBackgroundDrawableViewFactory;
+
+    public void setBlurredBackgroundDrawableViewFactory(BlurredBackgroundDrawableViewFactory factory) {
+        blurredBackgroundDrawableViewFactory = factory;
+    }
+
     @Override
     public ActionMode startActionMode(ActionMode.Callback callback) {
         if (Build.VERSION.SDK_INT >= 23 && (windowView != null || attachedToWindow != null)) {
@@ -1150,7 +1157,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 floatingActionMode.finish();
             }
             cleanupFloatingActionModeViews();
-            floatingToolbar = new FloatingToolbar(getContext(), windowView != null ? windowView : attachedToWindow, getActionModeStyle(), getResourcesProvider());
+            floatingToolbar = new FloatingToolbar(getContext(), windowView != null ? windowView : attachedToWindow, getActionModeStyle(), getResourcesProvider(), blurredBackgroundDrawableViewFactory);
             floatingToolbar.setOnPremiumLockClick(onPremiumMenuLockClickListener);
             floatingToolbar.setQuoteShowVisible(this::shouldShowQuoteButton);
             floatingActionMode = new FloatingActionMode(getContext(), new ActionModeCallback2Wrapper(callback), this, floatingToolbar);
