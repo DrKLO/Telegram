@@ -39,7 +39,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
@@ -441,11 +440,15 @@ public class SvgHelper {
     }
 
     public static Bitmap getBitmap(int res, int width, int height, int color, float scale) {
+        return getBitmap(res, width, height, color, scale, ScaleMode.Default);
+    }
+
+    public static Bitmap getBitmap(int res, int width, int height, int color, float scale, ScaleMode scaleMode) {
         try (InputStream stream = ApplicationLoader.applicationContext.getResources().openRawResource(res)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
-            SVGHandler handler = new SVGHandler(width, height, color, false, scale);
+            SVGHandler handler = new SVGHandler(width, height, color, false, scale, scaleMode);
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -471,11 +474,15 @@ public class SvgHelper {
     }
 
     public static Bitmap getBitmap(File file, int width, int height, boolean white) {
+        return getBitmap(file, width, height, white, ScaleMode.Default);
+    }
+
+    public static Bitmap getBitmap(File file, int width, int height, boolean white, ScaleMode scaleMode) {
         try (FileInputStream stream = new FileInputStream(file)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
-            SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f);
+            SVGHandler handler = new SVGHandler(width, height, white ? 0xffffffff : null, false, 1f, scaleMode);
             if (!white) {
                 handler.alphaOnly = true;
             }
@@ -1362,6 +1369,10 @@ public class SvgHelper {
         }
     }
 
+    public enum ScaleMode {
+        Default, ByWidth;
+    }
+
     private static class SVGHandler extends DefaultHandler implements SvgResult{
 
         private Canvas canvas;
@@ -1375,6 +1386,7 @@ public class SvgHelper {
         private RectF rectTmp = new RectF();
         private Integer paintColor;
         private float globalScale = 1f;
+        private ScaleMode scaleMode;
 
         boolean pushed = false;
 
@@ -1382,10 +1394,15 @@ public class SvgHelper {
         private boolean alphaOnly;
 
         private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale) {
+            this(dw, dh, color, asDrawable, scale, ScaleMode.Default);
+        }
+
+        private SVGHandler(int dw, int dh, Integer color, boolean asDrawable, float scale, ScaleMode scaleMode) {
             globalScale = scale;
             desiredWidth = dw;
             desiredHeight = dh;
             paintColor = color;
+            this.scaleMode = scaleMode;
             if (asDrawable) {
                 drawable = new SvgDrawable();
             }
@@ -1561,8 +1578,11 @@ public class SvgHelper {
                         width = desiredWidth;
                         height = desiredHeight;
                     } else if (desiredWidth != 0 && desiredHeight != 0) {
-                        scale = Math.min(desiredWidth / (float) width, desiredHeight / (float) height);
-                        // scale = Math.max(desiredWidth / (float) width, desiredHeight / (float) height);
+                        if (scaleMode == ScaleMode.ByWidth) {
+                            scale = desiredWidth / (float) width;
+                        } else {
+                            scale = Math.min(desiredWidth / (float) width, desiredHeight / (float) height);
+                        }
                         width *= scale;
                         height *= scale;
                     }

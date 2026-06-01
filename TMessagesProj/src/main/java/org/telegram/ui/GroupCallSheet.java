@@ -204,23 +204,13 @@ public class GroupCallSheet {
             }
             textView.setMaxWidth(HintView2.cutInFancyHalf(textView.getText(), textView.getPaint()));
             linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 2, 0, 2, 25));
-
-//            UniversalRecyclerView listView = new UniversalRecyclerView(context, currentAccount, 0, (items, adapter) -> {
-//                for (long id : participantIds) {
-//                    items.add(UserView.Factory.asUser(id));
-//                }
-//            }, null, null, resourcesProvider);
-//            listView.makeHorizontal();
-//            listView.setPadding(dp(10), 0, dp(10), 0);
-//            listView.setClipToPadding(false);
-//            linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 122, Gravity.CENTER_HORIZONTAL, 2, 0, 2, 0));
         }
 
         final LinearLayout checkboxLayout = new LinearLayout(context);
         checkboxLayout.setPadding(dp(12), dp(8), dp(12), dp(8));
         checkboxLayout.setClipToPadding(false);
         checkboxLayout.setOrientation(LinearLayout.HORIZONTAL);
-        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
+        checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 20, 20));
         final CheckBox2 checkbox = new CheckBox2(context, 24, resourcesProvider);
         checkbox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
         checkbox.setDrawUnchecked(true);
@@ -230,7 +220,7 @@ public class GroupCallSheet {
         final TextView checkboxTextView = new TextView(context);
         checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        checkboxTextView.setText("Turn on the microphone");
+        checkboxTextView.setText(getString(R.string.GroupCallLinkMicrophone));
         checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
         linearLayout.addView(checkboxLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
         ScaleStateListAnimator.apply(checkboxLayout, 0.025f, 1.5f);
@@ -239,7 +229,7 @@ public class GroupCallSheet {
             MessagesController.getGlobalMainSettings().edit().putBoolean("callmiconstart", checkbox.isChecked()).apply();
         });
 
-        final ButtonWithCounterView joinButton = new ButtonWithCounterView(context, resourcesProvider);
+        final ButtonWithCounterView joinButton = new ButtonWithCounterView(context, resourcesProvider).setRound();
         joinButton.setText(getString(R.string.GroupCallLinkJoin), false);
         linearLayout.addView(joinButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 2, 0, 2, 0));
 

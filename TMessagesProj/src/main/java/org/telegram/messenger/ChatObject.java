@@ -74,6 +74,8 @@ public class ChatObject {
     public static final int ACTION_MANAGE_DIRECT = 24;
     public static final int ACTION_MANAGE_TAGS = 25;
 
+    public static final int ACTION_SEND_REACTIONS = 26;
+
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
     public final static int VIDEO_FRAME_HAS_FRAME = 2;
@@ -675,22 +677,7 @@ public class ChatObject {
             for (int a = 0, N = participantsToLoad.size(); a < N; a++) {
                 long uid = participantsToLoad.get(a);
                 if (isIds) {
-                    if (uid > 0) {
-                        TLRPC.TL_inputPeerUser peerUser = new TLRPC.TL_inputPeerUser();
-                        peerUser.user_id = uid;
-                        req.ids.add(peerUser);
-                    } else {
-                        TLRPC.Chat chat = currentAccount.getMessagesController().getChat(-uid);
-                        TLRPC.InputPeer inputPeer;
-                        if (chat == null || ChatObject.isChannel(chat)) {
-                            inputPeer = new TLRPC.TL_inputPeerChannel();
-                            inputPeer.channel_id = -uid;
-                        } else {
-                            inputPeer = new TLRPC.TL_inputPeerChat();
-                            inputPeer.chat_id = -uid;
-                        }
-                        req.ids.add(inputPeer);
-                    }
+                    req.ids.add(currentAccount.getMessagesController().getInputPeer(uid));
                 } else {
                     req.sources.add((int) uid);
                 }
@@ -1636,6 +1623,7 @@ public class ChatObject {
             case ACTION_SEND_DOCUMENTS:
             case ACTION_SEND_VOICE:
             case ACTION_SEND_ROUND:
+            case ACTION_SEND_REACTIONS:
             case ACTION_SEND_PLAIN:
                 return true;
         }
@@ -1696,6 +1684,8 @@ public class ChatObject {
                 return rights.send_voices;
             case ACTION_SEND_ROUND:
                 return rights.send_roundvideos;
+            case ACTION_SEND_REACTIONS:
+                return rights.send_reactions;
             case ACTION_SEND_PLAIN:
                 return rights.send_plain;
         }
@@ -2250,6 +2240,7 @@ public class ChatObject {
         currentBannedRights += bannedRights.send_docs ? 1 : 0;
         currentBannedRights += bannedRights.send_plain ? 1 : 0;
         currentBannedRights += bannedRights.edit_rank ? 1 : 0;
+        currentBannedRights += bannedRights.send_reactions ? 1 : 0;
         currentBannedRights += bannedRights.until_date;
         return currentBannedRights;
     }

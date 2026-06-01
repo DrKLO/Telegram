@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+
+    <path
+        android:strokeColor="#ffffff"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M49 8.95532C45.067 7.06133 40.6574 6 36 6C19.4315 6 6 19.4315 6 36C6 39.1356 6.48106 42.1589 7.37341 45" />
+    <path
+        android:strokeColor="#ffffff"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M25 63.9192C28.406 65.2622 32.1168 66 36 66C52.5685 66 66 52.5685 66 36C66 32.4936 65.3985 29.1278 64.2929 26" />
+    <path
+        android:strokeColor="#ffffff"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M24 35.5H48M36.0039 23.5039L36.0039 47.5039" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillType="evenOdd"
+        android:pathData="M58.0289 8.84627C58.2791 7.8325 59.72 7.83249 59.9703 8.84627L61.1949 13.8043L66.1529 15.0289C67.1661 15.2795 67.1662 16.7199 66.1529 16.9703L61.1949 18.1949L59.9703 23.1529C59.7199 24.1662 58.2795 24.1661 58.0289 23.1529L56.8043 18.1949L51.8463 16.9703C50.8325 16.72 50.8325 15.2792 51.8463 15.0289L56.8043 13.8043L58.0289 8.84627ZM57.107 17.7965L57.0513 17.7594C57.0444 17.7554 57.037 17.7522 57.0299 17.7486C57.0571 17.7623 57.083 17.7782 57.107 17.7965ZM57.0504 14.2388C57.0309 14.2498 57.0108 14.2598 56.9898 14.2681C57.0321 14.2512 57.0714 14.2289 57.107 14.2017L57.0504 14.2388Z" />
+    <path
+        android:fillColor="#ffffff"
+        android:fillType="evenOdd"
+        android:pathData="M13.2585 47.3581C13.5784 46.0629 15.4191 46.0629 15.739 47.3581L17.3034 53.6941L23.6394 55.2585C24.9342 55.5786 24.9343 57.419 23.6394 57.739L17.3034 59.3034L15.739 65.6394C15.419 66.9343 13.5786 66.9342 13.2585 65.6394L11.6941 59.3034L5.35812 57.739C4.06292 57.4191 4.06291 55.5784 5.35812 55.2585L11.6941 53.6941L13.2585 47.3581ZM23.6257 55.9304C23.6172 55.9261 23.6092 55.9206 23.6003 55.9167L23.5818 55.9099C23.597 55.9161 23.6114 55.9233 23.6257 55.9304Z" />
+</vector>

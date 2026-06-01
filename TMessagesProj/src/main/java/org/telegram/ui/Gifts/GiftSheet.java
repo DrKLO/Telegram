@@ -1,5 +1,6 @@
 package org.telegram.ui.Gifts;
 
+import static android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -40,6 +41,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -197,6 +199,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         StarsController.getInstance(currentAccount).loadStarGifts();
 
         final BackupImageView avatarImageView = new BackupImageView(context);
+        avatarImageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         final AvatarDrawable avatarDrawable = new AvatarDrawable();
 
         if (dialogId > 0) {
@@ -1191,6 +1194,83 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             chanceTextView.setTextColor(0xFFFFFFFF);
             card.addView(chanceTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 17, Gravity.TOP | Gravity.LEFT, 4, 4, 0, 0));
             chanceTextView.setVisibility(View.GONE);
+
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            card.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            ribbon.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName("android.widget.Button");
+            info.setClickable(true);
+            if (isEnabled()) {
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+            try {
+                final StringBuilder sb = new StringBuilder();
+                CharSequence name = null;
+                if (premiumTier != null) {
+                    if (titleView != null && titleView.getVisibility() == View.VISIBLE && !TextUtils.isEmpty(titleView.getText())) {
+                        name = titleView.getText();
+                    }
+                } else if (userGift != null && userGift.gift != null) {
+                    if (userGift.gift instanceof TL_stars.TL_starGiftUnique && !TextUtils.isEmpty(userGift.gift.title)) {
+                        name = userGift.gift.title;
+                    }
+                } else if (gift != null) {
+                    if (gift instanceof TL_stars.TL_starGiftUnique && !TextUtils.isEmpty(gift.title)) {
+                        name = gift.title;
+                    }
+                }
+                if (TextUtils.isEmpty(name)) {
+                    name = getString(R.string.Gift2Gift);
+                }
+                sb.append(name);
+                if (subtitleView != null && subtitleView.getVisibility() == View.VISIBLE && !TextUtils.isEmpty(subtitleView.getText())) {
+                    sb.append(", ").append(subtitleView.getText());
+                }
+                if (ribbon != null && ribbon.getVisibility() == View.VISIBLE) {
+                    final CharSequence ribbonText = ribbon.getText();
+                    if (!TextUtils.isEmpty(ribbonText)) {
+                        sb.append(", ").append(ribbonText);
+                    }
+                }
+                if (priceLayout != null && priceLayout.getVisibility() == View.VISIBLE
+                        && priceView != null && priceView.getVisibility() == View.VISIBLE
+                        && !TextUtils.isEmpty(priceView.getText())) {
+                    sb.append(", ").append(priceView.getText());
+                }
+                if (userGift != null && userGift.unsaved) {
+                    sb.append(", ").append(getString(R.string.Gift2FilterHidden));
+                }
+                if (userGift != null && !(userGift.gift instanceof TL_stars.TL_starGiftUnique) && !userGift.name_hidden && avatarView != null && avatarView.getVisibility() == View.VISIBLE) {
+                    final long fromDialogId = DialogObject.getPeerDialogId(userGift.from_id);
+                    if (fromDialogId != 0) {
+                        CharSequence fromName = null;
+                        if (fromDialogId > 0) {
+                            final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromDialogId);
+                            if (user != null) {
+                                fromName = UserObject.getUserName(user);
+                            }
+                        } else {
+                            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromDialogId);
+                            if (chat != null) {
+                                fromName = chat.title;
+                            }
+                        }
+                        if (!TextUtils.isEmpty(fromName)) {
+                            sb.append(", ").append(fromName);
+                        }
+                    }
+                }
+                if (checkBox != null && checkBox.isChecked()) {
+                    info.setCheckable(true);
+                    info.setChecked(true);
+                }
+                info.setContentDescription(sb.toString());
+            } catch (Exception ignored) {}
         }
 
         public void removeImage() {
@@ -1507,8 +1587,8 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 0.3f);
 
             imageView.setImage(
-                ImageLocation.getForDocument(document), "100_100",
-                ImageLocation.getForDocument(photoSize, document), "100_100",
+                ImageLocation.getForDocument(document), "80_80_nolimit_pcache",
+                ImageLocation.getForDocument(photoSize, document), "80_80_nolimit_pcache",
                 svgThumb,
                 parentObject
             );
@@ -2146,17 +2226,24 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     public static class Ribbon extends View {
 
         public final RibbonDrawable drawable = new RibbonDrawable(this, 1.0f);
+        private CharSequence currentText;
 
         public Ribbon(Context context) {
             super(context);
             drawable.setCallback(this);
         }
 
+        public CharSequence getText() {
+            return currentText;
+        }
+
         public void setText(CharSequence text, boolean bold) {
+            currentText = text;
             drawable.setText(bold ? 10 : 11, text, bold);
         }
 
         public void setText(int textSizeDp, CharSequence text, boolean bold) {
+            currentText = text;
             drawable.setText(textSizeDp, text, bold);
         }
 

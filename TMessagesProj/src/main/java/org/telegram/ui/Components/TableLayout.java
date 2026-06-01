@@ -4,11 +4,19 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.Pair;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+
+import androidx.annotation.NonNull;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
@@ -70,7 +78,7 @@ public class TableLayout extends View {
     private boolean isStriped;
     private boolean isRtl;
     private ArrayList<Child> cellsToFixHeight = new ArrayList<>();
-    private ArrayList<Point> rowSpans = new ArrayList<>();
+    private ArrayList<PointF> rowSpans = new ArrayList<>();
 
     private Path linePath = new Path();
     private Path backgroundPath = new Path();
@@ -376,7 +384,9 @@ public class TableLayout extends View {
         child.rowspan = y;
         childrens.add(child);
         if (cell.rowspan > 1) {
-            rowSpans.add(new Point(y, y + cell.rowspan));
+            float x1 = y;
+            float y1 = y + cell.rowspan;
+            rowSpans.add(new PointF(x1, y1));
         }
         invalidateStructure();
     }
@@ -410,6 +420,8 @@ public class TableLayout extends View {
         return childrens.get(index);
     }
 
+    private TableA11yHelper accessibilityHelper;
+
     public TableLayout(Context context, TableLayoutDelegate tableLayoutDelegate, TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper) {
         super(context);
         this.textSelectionHelper = textSelectionHelper;
@@ -421,6 +433,75 @@ public class TableLayout extends View {
         setRowOrderPreserved(DEFAULT_ORDER_PRESERVED);
         setColumnOrderPreserved(DEFAULT_ORDER_PRESERVED);
         delegate = tableLayoutDelegate;
+        accessibilityHelper = new TableA11yHelper(this);
+        ViewCompat.setAccessibilityDelegate(this, accessibilityHelper);
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        if (accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+            return true;
+        }
+        return super.dispatchHoverEvent(event);
+    }
+
+    private class TableA11yHelper extends ExploreByTouchHelper {
+
+        private final Rect tmpRect = new Rect();
+
+        TableA11yHelper(@NonNull View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            for (int i = 0, n = getChildCount(); i < n; i++) {
+                Child c = getChildAt(i);
+                if (c.measuredWidth <= 0 || c.measuredHeight <= 0) continue;
+                if (x >= c.x && x < c.x + c.measuredWidth && y >= c.y && y < c.y + c.measuredHeight) {
+                    return i;
+                }
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            for (int i = 0, n = getChildCount(); i < n; i++) {
+                Child c = getChildAt(i);
+                if (c.measuredWidth <= 0 || c.measuredHeight <= 0) continue;
+                list.add(i);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            if (id < 0 || id >= getChildCount()) {
+                tmpRect.set(0, 0, 1, 1);
+                info.setBoundsInParent(tmpRect);
+                info.setVisibleToUser(false);
+                info.setContentDescription("");
+                return;
+            }
+            Child c = getChildAt(id);
+            tmpRect.set(c.x, c.y, c.x + c.measuredWidth, c.y + c.measuredHeight);
+            info.setBoundsInParent(tmpRect);
+            info.setClassName("android.widget.TextView");
+            info.setEnabled(true);
+            CharSequence text = c.textLayout != null ? c.textLayout.getText() : null;
+            if (text == null || text.length() == 0) {
+                text = " ";
+            }
+            info.setText(text);
+            if (c.cell != null && c.cell.header) {
+                info.setHeading(true);
+            }
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, android.os.Bundle args) {
+            return false;
+        }
     }
 
     public int getOrientation() {
@@ -885,7 +966,7 @@ public class TableLayout extends View {
                 if (c.fixedHeight != 0 && c.fixedHeight != height && c.layoutParams.rowSpec.span.max - c.layoutParams.rowSpec.span.min <= 1) {
                     boolean found = false;
                     for (int a = 0, size = rowSpans.size(); a < size; a++) {
-                        Point p = rowSpans.get(a);
+                        PointF p = rowSpans.get(a);
                         if (p.x <= c.layoutParams.rowSpec.span.min && p.y > c.layoutParams.rowSpec.span.min) {
                             found = true;
                             break;

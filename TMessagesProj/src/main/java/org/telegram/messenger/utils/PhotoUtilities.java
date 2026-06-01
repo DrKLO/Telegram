@@ -82,7 +82,7 @@ public class PhotoUtilities {
                                 src.renameTo(destFile);
                                 String oldKey = smallSize.location.volume_id + "_" + smallSize.location.local_id + "@50_50";
                                 String newKey = smallSize2.location.volume_id + "_" + smallSize2.location.local_id + "@50_50";
-                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), false);
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(currentAccount, user, ImageLocation.TYPE_SMALL), false);
                             }
 
                             if (bigSize2 != null && bigSize != null && bigSize.location != null) {
@@ -199,7 +199,7 @@ public class PhotoUtilities {
                             src.renameTo(destFile);
                             String oldKey = avatar[0].volume_id + "_" + avatar[0].local_id + "@50_50";
                             String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
-                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), false);
+                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUserOrChat(chatActivity.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), false);
                         }
 
                         if (videoSize != null && videoPath != null) {

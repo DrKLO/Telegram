@@ -1268,7 +1268,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
         clipPath.rewind();
         float radius = dp(16) * (AndroidUtilities.isTablet() ? 1f : 1f - actionBarTransitionProgress);
-        final float r = AndroidUtilities.lerp(radius, dp(10), progress);
+        final float r = AndroidUtilities.lerp(radius, dp(18), progress);
         clipPath.addRoundRect(clipRect, r, r, Path.Direction.CW);
         canvas.clipPath(clipPath);
         canvas.drawPaint(backgroundPaint);

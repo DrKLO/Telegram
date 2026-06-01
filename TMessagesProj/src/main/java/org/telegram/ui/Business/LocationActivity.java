@@ -251,7 +251,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         listView.setSections();
         listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        actionBar.setAdaptiveBackground(listView);
+        actionBar.setAdaptiveBackground(listView, true);
 
         setValue();
 
@@ -455,7 +455,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private final int BUTTON_CLEAR = 2;
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asTopView(getString(R.string.BusinessLocationInfo), R.raw.biz_map));
+        items.add(UItem.asTopView(getString(R.string.BusinessLocation), getString(R.string.BusinessLocationInfo), R.raw.biz_map));
         items.add(UItem.asCustom(editTextContainer));
         items.add(UItem.asShadow(null));
         items.add(UItem.asCheck(BUTTON_MAP, getString(R.string.BusinessLocationMap)).setChecked(geo != null));

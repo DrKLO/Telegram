@@ -886,7 +886,7 @@ public class TopicsController extends BaseController {
                         fragment.showDialog(
                             new AlertDialog.Builder(fragment.getContext())
                                 .setTitle(LocaleController.getString(R.string.LimitReached))
-                                .setMessage(LocaleController.formatString("LimitReachedPinnedTopics", R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
+                                .setMessage(LocaleController.formatString(R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
                                 .setPositiveButton(LocaleController.getString(R.string.OK), null)
                                 .create()
                         );

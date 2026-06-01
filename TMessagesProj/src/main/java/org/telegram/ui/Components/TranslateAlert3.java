@@ -480,6 +480,10 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         public final CheckBox2 emojifyCheckbox;
         public final TextView emojifyTextView;
 
+        public final LinearLayout anotherExample;
+        public final ImageView anotherExampleIcon;
+        public final TextView anotherExampleText;
+
         public Header(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             this.resourcesProvider = resourcesProvider;
@@ -536,6 +540,23 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             addView(emojifyContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, -3, -6, -3));
             ScaleStateListAnimator.apply(emojifyContainer, 0.025f, 1.5f);
 
+            anotherExample = new LinearLayout(context);
+            anotherExample.setPadding(dp(6), dp(3), dp(6), dp(3));
+            anotherExample.setOrientation(LinearLayout.HORIZONTAL);
+            anotherExample.setVisibility(View.GONE);
+            addView(anotherExample, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 0, -6, 0));
+            ScaleStateListAnimator.apply(anotherExample, 0.025f, 1.5f);
+
+            anotherExampleIcon = new ImageView(context);
+            anotherExampleIcon.setImageResource(R.drawable.mini_replace2);
+            anotherExample.addView(anotherExampleIcon, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
+
+            anotherExampleText = new TextView(context);
+            anotherExampleText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            anotherExampleText.setTypeface(AndroidUtilities.bold());
+            anotherExampleText.setText(getString(R.string.AIEditorAnotherExample));
+            anotherExample.addView(anotherExampleText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
             updateColors();
         }
 
@@ -552,9 +573,12 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
                 ScaleStateListAnimator.reset(layout2);
             }
             emojifyContainer.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 24, 24));
+            anotherExampleIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            anotherExampleText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            anotherExample.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), dp(8), dp(8)));
         }
 
-        public void set(CharSequence text1, CharSequence text2, CharSequence text3, View.OnClickListener onText2Click, boolean emojify, View.OnClickListener onEmojifyClick) {
+        public void set(CharSequence text1, CharSequence text2, CharSequence text3, View.OnClickListener onText2Click, boolean emojify, View.OnClickListener onEmojifyClick, View.OnClickListener onAnotherExampleClick) {
             text1View.setText(text1);
             text2View.setText(text2);
             text3View.setText(text3);
@@ -564,6 +588,17 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             emojifyCheckbox.setChecked(emojify, false);
             emojifyContainer.setVisibility(onEmojifyClick != null ? View.VISIBLE : View.GONE);
             emojifyContainer.setOnClickListener(onEmojifyClick);
+            anotherExample.setVisibility(onAnotherExampleClick != null ? View.VISIBLE : View.GONE);
+            anotherExample.setOnClickListener(v -> {
+                anotherExampleIcon.animate()
+                    .rotation(anotherExampleIcon.getRotation() + 180)
+                    .setDuration(380)
+                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                    .start();
+                if (onAnotherExampleClick != null) {
+                    onAnotherExampleClick.onClick(v);
+                }
+            });
             updateColors();
         }
 
@@ -582,7 +617,12 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                ((Header) view).set(item.text, item.subtext, item.textValue, item.clickCallback, item.checked, item.clickCallback2);
+                ((Header) view).set(
+                    item.text, item.subtext,
+                    item.textValue, item.clickCallback,
+                    item.checked, item.clickCallback2,
+                    item.object instanceof OnClickListener ? (View.OnClickListener) item.object : null
+                );
             }
 
             public static UItem of(
@@ -592,7 +632,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
                 CharSequence text3,
                 View.OnClickListener onClick
             ) {
-                return of(id, text1, text2, text3, onClick, false, null);
+                return of(id, text1, text2, text3, onClick, false, null, null);
             }
 
             public static UItem of(
@@ -600,9 +640,10 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
                 CharSequence text1,
                 CharSequence text2,
                 CharSequence text3,
-                View.OnClickListener onClick,
+                OnClickListener onClick,
                 boolean emojify,
-                View.OnClickListener onEmojifyClick
+                OnClickListener onEmojifyClick,
+                OnClickListener onAnotherExampleClick
             ) {
                 final UItem item = UItem.ofFactory(Factory.class);
                 item.id = id;
@@ -612,6 +653,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
                 item.clickCallback = onClick;
                 item.checked = emojify;
                 item.clickCallback2 = onEmojifyClick;
+                item.object = onAnotherExampleClick;
                 return item;
             }
 

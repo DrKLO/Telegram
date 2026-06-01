@@ -1909,14 +1909,14 @@ public class TL_account {
         }
     }
 
-    public static class getWebPagePreview extends TLObject {
+    public static class getWebPagePreview extends TLMethod<webPagePreview> {
         public static final int constructor = 0x570d6f6f;
 
         public int flags;
         public String message;
         public ArrayList<TLRPC.MessageEntity> entities = new ArrayList<>();
 
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+        public webPagePreview deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
             return webPagePreview.TLdeserialize(stream, constructor, exception);
         }
 

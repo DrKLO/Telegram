@@ -56,6 +56,13 @@ dependencies {
     implementation "androidx.credentials:credentials:1.6.0-alpha04"
     implementation "androidx.credentials:credentials-play-services-auth:1.6.0-alpha04"
 
+    implementation "io.noties.markwon:core:4.6.2"
+    implementation "io.noties.markwon:ext-strikethrough:4.6.2"
+    implementation "io.noties.markwon:ext-tables:4.6.2"
+    implementation "io.noties.markwon:html:4.6.2"
+    implementation "io.noties.markwon:inline-parser:4.6.2"
+    implementation "io.noties.markwon:ext-latex:4.6.2"
+
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
     constraints {
@@ -78,7 +85,7 @@ def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFa
 android {
     compileSdkVersion 35
     buildToolsVersion '35.0.0'
-    ndkVersion "21.4.7075529" // 26.3.11579264
+    ndkVersion "27.2.12479018"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 

@@ -32,6 +32,7 @@ import android.util.Pair;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -42,8 +43,10 @@ import androidx.core.math.MathUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -299,6 +302,7 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             privacyType = -1;
             privacyBitmap = null;
             authorText = null;
+            updateAccessibilityDescription();
             return;
         } else {
             if (attached) {
@@ -452,7 +456,69 @@ public class SharedPhotoVideoCell2 extends FrameLayout {
             authorText = new Text(sb, parentColumnsCount == 2 ? 14f : 10.1666f,  AndroidUtilities.bold());
         }
 
+        updateAccessibilityDescription();
         invalidate();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        try {
+            if (currentMessageObject != null) {
+                info.setEnabled(true);
+                info.setClickable(true);
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void updateAccessibilityDescription() {
+        try {
+            final MessageObject m = currentMessageObject;
+            if (m == null) {
+                setContentDescription(null);
+                return;
+            }
+            final boolean isStoryItem = m.isStory();
+            final StringBuilder sb = new StringBuilder();
+            if (isStoryItem && isStoryPinned) {
+                sb.append(getString(R.string.AccDescrStoryPinned));
+            }
+            String typeText;
+            int durationSec = 0;
+            if (m.isLivePhoto()) {
+                typeText = getString(R.string.AccDescrLivePhoto);
+            } else if (m.isRoundVideo()) {
+                typeText = getString(R.string.AccDescrRoundVideo);
+                durationSec = (int) m.getDuration();
+            } else if (m.isVideo() || m.isVideoStory()) {
+                typeText = getString(R.string.AttachVideo);
+                durationSec = (int) m.getDuration();
+            } else {
+                typeText = getString(R.string.AttachPhoto);
+            }
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(typeText);
+            if (durationSec > 0) {
+                sb.append(", ").append(LocaleController.formatDuration(durationSec));
+            }
+            if (isStoryItem && m.storyItem != null) {
+                if (m.storyItem.views != null && m.storyItem.views.views_count > 0) {
+                    sb.append(", ").append(LocaleController.formatPluralString("Views", m.storyItem.views.views_count));
+                }
+                if (m.storyItem.date > 0) {
+                    sb.append(", ").append(LocaleController.formatString(R.string.AccDescrPostedDate, LocaleController.formatDateAudio(m.storyItem.date, false)));
+                }
+            }
+            setContentDescription(sb.toString());
+        } catch (Exception e) {
+            FileLog.e(e);
+            try {
+                setContentDescription(null);
+            } catch (Exception ignored) {}
+        }
     }
 
     private void setPrivacyType(int type) {

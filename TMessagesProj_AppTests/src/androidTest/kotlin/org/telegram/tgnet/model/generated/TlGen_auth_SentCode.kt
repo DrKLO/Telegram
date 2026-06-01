@@ -55,6 +55,7 @@ public sealed class TlGen_auth_SentCode : TlGen_Object {
     public val phone_code_hash: String,
     public val support_email_address: String,
     public val support_email_subject: String,
+    public val premium_days: Int,
     public val currency: String,
     public val amount: Long,
   ) : TlGen_auth_SentCode() {
@@ -64,12 +65,13 @@ public sealed class TlGen_auth_SentCode : TlGen_Object {
       stream.writeString(phone_code_hash)
       stream.writeString(support_email_address)
       stream.writeString(support_email_subject)
+      stream.writeInt32(premium_days)
       stream.writeString(currency)
       stream.writeInt64(amount)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xE0955A3CU
+      public const val MAGIC: UInt = 0xF8827EBFU
     }
   }
 }

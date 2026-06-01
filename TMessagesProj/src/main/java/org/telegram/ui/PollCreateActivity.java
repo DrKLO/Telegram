@@ -909,15 +909,17 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 }
             }
         }
+        final int maxQuestionLength = todo ? getMessagesController().todoTitleLengthMax : ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH;
+        final int maxAnswerLength = todo ? getMessagesController().todoItemLengthMax : ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
         if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
             enabled = false;
-        } else if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString)) || questionString.length() > ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH) {
+        } else if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString)) || questionString.length() > maxQuestionLength) {
             enabled = false;
         } else {
             int count = 0;
             for (int a = 0; a < answers.length; a++) {
                 if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
-                    if (answers[a].length() > ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH) {
+                    if (answers[a].length() > maxAnswerLength) {
                         count = 0;
                         break;
                     }
@@ -1055,15 +1057,15 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         int max;
         int left;
         if (index == questionRow) {
-            max = ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH;
-            left = ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH - (questionString != null ? questionString.length() : 0);
+            max = todo ? getMessagesController().todoTitleLengthMax : ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH;
+            left = max - (questionString != null ? questionString.length() : 0);
         } else if (index == solutionRow) {
             max = ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH;
             left = ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH - (solutionString != null ? solutionString.length() : 0);
         } else if (index >= answerStartRow && index < answerStartRow + answersCount) {
             index -= answerStartRow;
-            max = ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
-            left = ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH - (answers[index] != null ? answers[index].length() : 0);
+            max = todo ? getMessagesController().todoItemLengthMax : ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
+            left = max - (answers[index] != null ? answers[index].length() : 0);
         } else {
             return;
         }

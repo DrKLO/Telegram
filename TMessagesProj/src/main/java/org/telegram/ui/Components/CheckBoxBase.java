@@ -325,6 +325,7 @@ public class CheckBoxBase {
         int cx = bounds.centerX();
         int cy = bounds.centerY();
 
+        final boolean cutCheck = this.cutCheck && roundProgress > 0 && progress >= 0.5f && !forbidden && checkedText == null;
         if (cutCheck) {
             canvas.saveLayerAlpha(cx - rad, cy - rad, cx + rad, cy + rad, 255, Canvas.ALL_SAVE_FLAG);
         }
@@ -462,7 +463,11 @@ public class CheckBoxBase {
                 float sizeHalf = dp(size) / 2f;
                 int restoreCount = canvas.save();
                 canvas.translate(cx - sizeHalf, cy - sizeHalf);
-                canvas.saveLayerAlpha(0, 0, dp(size), dp(size), 255, Canvas.ALL_SAVE_FLAG);
+
+                final boolean needSaveLayer = roundProgress < 1;
+                if (needSaveLayer) {
+                    canvas.saveLayerAlpha(0, 0, dp(size), dp(size), 255, Canvas.ALL_SAVE_FLAG);
+                }
                 Paint circlePaint = circlePaintProvider.provide(null);
                 if (backgroundType == 12 || backgroundType == 13) {
                     int a = circlePaint.getAlpha();
@@ -477,11 +482,16 @@ public class CheckBoxBase {
                     canvas.drawRoundRect(sizeHalf - rad, sizeHalf - rad, sizeHalf + rad, sizeHalf + rad, rad2, rad2, circlePaint);
                     final float r = rad * (1.0f - roundProgress);
                     final float rr = lerp(r, customRadius, customRadiusFactor);
-                    canvas.drawRoundRect(sizeHalf - r, sizeHalf - r, sizeHalf + r, sizeHalf + r, rr, rr, Theme.PAINT_CLEAR);
+                    if (needSaveLayer && r > 0) {
+                        canvas.drawRoundRect(sizeHalf - r, sizeHalf - r, sizeHalf + r, sizeHalf + r, rr, rr, Theme.PAINT_CLEAR);
+                    }
                 } else {
                     rad -= dp(0.5f);
                     canvas.drawCircle(sizeHalf, sizeHalf, rad, circlePaint);
-                    canvas.drawCircle(sizeHalf, sizeHalf, rad * (1.0f - roundProgress), Theme.PAINT_CLEAR);
+                    final float r = rad * (1.0f - roundProgress);
+                    if (needSaveLayer && r > 0) {
+                        canvas.drawCircle(sizeHalf, sizeHalf, r, Theme.PAINT_CLEAR);
+                    }
                 }
                 canvas.restoreToCount(restoreCount);
             }

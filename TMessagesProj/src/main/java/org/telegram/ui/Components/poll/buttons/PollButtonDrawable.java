@@ -167,7 +167,7 @@ public class PollButtonDrawable extends Drawable implements DownloadController.F
                 ImageLocation.getForObject(currentPhotoObjectThumb, photoObject),
                 "36_36_b",
                 null, // currentPhotoObjectThumbStripped
-                currentPhotoObjectObject.size,
+                currentPhotoObjectObject != null ? currentPhotoObjectObject.size : 0,
                 null,
                 parentObject,
                 1);

@@ -15,6 +15,9 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -43,12 +46,14 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     private final ImageView timerButton;
     private final PeriodDrawable timerDrawable;
     private ItemOptions timerPopup;
+    private AiButtonDrawable aiButtonIcon;
+    private ImageView aiButton;
+    public HintView2 aiHint;
 
     private int timer = 0;
     private final int SHOW_ONCE = 0x7FFFFFFF;
     private final int[] values = new int[] { SHOW_ONCE, 3, 10, 30, 0 };
 
-//    private final BlurringShader.StoryBlurDrawer hintBlur;
     private final HintView2 hint;
     private final Runnable applyCaption;
 
@@ -109,6 +114,43 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         hint.setMultilineText(true);
         addView(hint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM)));
 
+        aiButton = new ImageView(context);
+        aiButton.setImageDrawable(aiButtonIcon = new AiButtonDrawable(context));
+        aiButton.setScaleType(ImageView.ScaleType.CENTER);
+        aiButton.setColorFilter(new PorterDuffColorFilter(0xBBFFFFFF, PorterDuff.Mode.MULTIPLY));
+        aiButton.setBackground(Theme.createSelectorDrawable(0x40FFFFFF, Theme.RIPPLE_MASK_CIRCLE_20DP, dp(16)));
+        addView(aiButton, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.RIGHT, 8, 0, 8, 0));
+        aiButton.setContentDescription(getString(R.string.AIEditor));
+        ScaleStateListAnimator.apply(aiButton);
+        editText.getEditText().addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable editable) {
+                showAiButton(editText.getEditText().getLineCount() > 2 && editable != null && !TextUtils.isEmpty(editable.toString().trim()));
+            }
+        });
+        aiButton.setVisibility(View.GONE);
+        aiButton.setAlpha(0.0f);
+        aiButton.setScaleX(0.6f);
+        aiButton.setScaleY(0.6f);
+        aiButton.setOnClickListener(v -> {
+            MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
+            new AIEditorAlert(getContext(), new DarkThemeResourceProvider())
+                .setText(editText.getText())
+                .setOnUse(text -> {
+                    editText.setText(text);
+                    editText.setSelection(text.length(), text.length());
+                })
+                .setOnSend(0, true, (text, scheduleDate, scheduleRepeatPeriod, notify) -> {
+                    editText.setText(text);
+                    done();
+                })
+                .show();
+        });
+
         timerButton.setOnClickListener(e -> {
             if (timerPopup != null && timerPopup.isShown()) {
                 timerPopup.dismiss();
@@ -139,12 +181,27 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         });
     }
 
-//    private final AnimatedFloat aboveAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-//
-//    @Override
-//    protected float forceRound() {
-//        return aboveAnimated.set(isAtTop());
-//    }
+    @Override
+    protected void onLineCountChanged(int oldLineCount, int newLineCount) {
+        final CharSequence text = getText();
+        showAiButton(newLineCount > 2 && text != null && !TextUtils.isEmpty(text.toString().trim()));
+        if (shownAiButton && (oldLineCount < 3) != (newLineCount < 3)) {
+            invalidate();
+        }
+    }
+
+    @Override
+    public void clear() {
+        super.clear();
+        showAiButton(false);
+    }
+
+    @Override
+    public void setText(CharSequence text) {
+        super.setText(text);
+    }
+
+    private final AnimatedFloat lineCountAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
     private final AnimatedFloat moveButtonAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat moveButtonExpandedAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -184,6 +241,13 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
+        if (aiButton != null) {
+            aiButton.setTranslationX(-dp(4 * (1f - keyboardT)));
+            aiButton.setTranslationY(
+                (isAtTop() ? bounds.bottom - dp(44) : bounds.top) +
+                (isAtTop() ? 1 : -1) * dp(3) * Utilities.clamp01(-lineCountAnimated.set(editText.getEditText().getLineCount()) + 4)
+            );
+        }
 
         final float moveButtonAlpha = moveButtonAnimated.set(moveButtonVisible, !showMoveButton());
         final float moveButtonExpanded = moveButtonExpandedAnimated.set(this.moveButtonExpanded);
@@ -216,9 +280,6 @@ public class CaptionPhotoViewer extends CaptionContainerView {
                 AndroidUtilities.rectTmp2.inset(-dp(5), -dp(5));
                 backgroundForCaptionButton.setBounds(AndroidUtilities.rectTmp2);
                 backgroundForCaptionButton.draw(canvas);
-
-                // backgroundPaint.setAlpha(lerp(0, 0x40, moveButtonAlpha));
-                // canvas.drawRoundRect(moveButtonBounds, r, r, backgroundPaint);
             }
             moveButtonIcon.setBounds((int) (moveButtonBounds.left + dp(9)), (int) (moveButtonBounds.centerY() - dp(10)), (int) (moveButtonBounds.left + dp(9 + 20)), (int) (moveButtonBounds.centerY() + dp(10)));
             moveButtonIcon.draw(canvas);
@@ -465,5 +526,59 @@ public class CaptionPhotoViewer extends CaptionContainerView {
             }
         }
         return moveButtonBounce.isPressed() || super.dispatchTouchEvent(event);
+    }
+
+
+    private boolean shownAiButton;
+    private void showAiButton(boolean show_) {
+        final boolean show = show_;
+
+        if (shownAiButton == show) return;
+        if (show) {
+            MessagesController.getInstance(currentAccount).getTonesController().load();
+        }
+        shownAiButton = show;
+        aiButton.setVisibility(View.VISIBLE);
+        aiButton.animate()
+            .alpha(show ? 1.0f : 0.0f)
+            .scaleX(show ? 1.0f : 0.6f)
+            .scaleY(show ? 1.0f : 0.6f)
+            .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+            .setDuration(420)
+            .withEndAction(() -> {
+                if (!show) {
+                    aiButton.setVisibility(View.GONE);
+                }
+            })
+            .start();
+        if (show) {
+            aiButton.postDelayed(aiButtonIcon::animate, 220);
+
+            if (aiHint != null) {
+                aiHint.hide();
+                aiHint = null;
+            }
+
+            if (
+                MessagesController.getGlobalMainSettings().getInt("aihintshown", 0) < 3
+            ) {
+                final HintView2 thisHint = aiHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+                aiHint.setMultilineText(true);
+                aiHint.setText(getString(R.string.AIEditorHint));
+                aiHint.setJointPx(1f, -aiButton.getWidth() / 2f + dp(4));
+                addView(aiHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP, 0, -200 + 4, 0, 0));
+                aiHint.setOnHiddenListener(() -> removeView(thisHint));
+                aiHint.setDuration(4000L);
+                aiHint.show();
+                MessagesController.getGlobalMainSettings().edit().putInt("aihintshown",
+                    MessagesController.getGlobalMainSettings().getInt("aihintshown", 0) + 1
+                ).apply();
+            }
+        } else {
+            if (aiHint != null) {
+                aiHint.hide();
+                aiHint = null;
+            }
+        }
     }
 }

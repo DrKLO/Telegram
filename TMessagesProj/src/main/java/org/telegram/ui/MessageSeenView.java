@@ -408,7 +408,7 @@ public class MessageSeenView extends FrameLayout {
 
             if (object != null) {
                 avatarDrawable.setInfo(currentAccount, object);
-                ImageLocation imageLocation = ImageLocation.getForUserOrChat(object, ImageLocation.TYPE_SMALL);
+                ImageLocation imageLocation = ImageLocation.getForUserOrChat(currentAccount, object, ImageLocation.TYPE_SMALL);
                 avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, object);
                 nameView.setText(ContactsController.formatName(object));
             }

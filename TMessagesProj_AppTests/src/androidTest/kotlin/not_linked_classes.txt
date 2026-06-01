@@ -29,7 +29,6 @@ org.telegram.tgnet.TLRPC.TL_messageReactor_old #ef00d448
 org.telegram.tgnet.TLRPC.TL_messageReplyHeader_layer165_2 #3d5c1693
 org.telegram.tgnet.TLRPC.TL_message_layer104_2 #1c9b1027
 org.telegram.tgnet.TLRPC.TL_message_layer104_3 #9789dac4
-org.telegram.tgnet.TLRPC.TL_message_layer118 #f52e6b7f
 org.telegram.tgnet.TLRPC.TL_message_secret #555555fa
 org.telegram.tgnet.TLRPC.TL_message_secret_layer72 #555555f9
 org.telegram.tgnet.TLRPC.TL_message_secret_old #555555f8
@@ -65,3 +64,4 @@ org.telegram.tgnet.tl.TL_stars.TL_starsSubscription_old #d073f1e6
 org.telegram.tgnet.tl.TL_stars.TL_starsTransaction_layer199_2 #ecd50924
 org.telegram.tgnet.tl.TL_stories.TL_mediaAreaWeather2 #855f223e
 org.telegram.tgnet.tl.TL_stories.TL_mediaAreaWeatherOld #4386f849
+org.telegram.tgnet.tl.legacy.TL_legacy_message.TL_message_layer118 #f52e6b7f

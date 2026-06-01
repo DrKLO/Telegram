@@ -59,7 +59,19 @@ public class DebugRecordingCanvas extends Canvas {
 
     private static String paintInfo(@Nullable Paint p) {
         if (p == null) return "paint=null";
-        return "paint(alpha=" + p.getAlpha() + ")";
+        StringBuilder sb = new StringBuilder("paint(alpha=").append(p.getAlpha());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            float shadowRadius = p.getShadowLayerRadius();
+            if (shadowRadius > 0f) {
+                sb.append(" shadow(r=").append(shadowRadius)
+                        .append(" dx=").append(p.getShadowLayerDx())
+                        .append(" dy=").append(p.getShadowLayerDy())
+                        .append(" color=0x").append(Integer.toHexString(p.getShadowLayerColor()))
+                        .append(")");
+            }
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
     private static String bitmapInfo(@Nullable Bitmap bm) {
@@ -84,16 +96,35 @@ public class DebugRecordingCanvas extends Canvas {
     private static String coordWarn(float... coords) {
         for (float c : coords) {
             if (Math.abs(c) > COORD_WARN_THRESHOLD) {
-                return "⚠ COORD_OUT_OF_RANGE ";
+                // return "⚠ COORD_OUT_OF_RANGE ";
             }
         }
         return "";
     }
 
-    /** Returns a warning if paint alpha is <= 0. */
-    private static String paintWarn(@Nullable Paint p) {
-        if (p != null && p.getAlpha() <= 0) return "⚠ PAINT_ALPHA_ZERO ";
+    private static String pathWarn(Path path) {
+        if (path.isEmpty()) {
+            return "⚠ PATH_IS_EMPTY ";
+        }
+        if (!path.isConvex()) {
+            //    return "⚠ PATH_IS_NON_CONVEX ";
+        }
         return "";
+    }
+
+    /** Returns a warning if paint alpha is <= 0 or if a shadow layer is set. */
+    private static String paintWarn(@Nullable Paint p) {
+        if (p == null) return "";
+        StringBuilder warn = new StringBuilder();
+        if (p.getAlpha() <= 0) {
+            warn.append("⚠ PAINT_ALPHA_ZERO ");
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (p.getShadowLayerRadius() > 0f) {
+                warn.append("⚠ PAINT_HAS_SHADOW_LAYER ");
+            }
+        }
+        return warn.toString();
     }
 
     /**
@@ -274,7 +305,156 @@ public class DebugRecordingCanvas extends Canvas {
 
         @Override public String toString() {
             String opStr = hasOp ? " op=" + op : "";
-            return "clipPath(" + opStr + ")";
+            return pathWarn(path) + "clipPath(" + opStr + ")";
+        }
+    }
+
+    // ── quickReject commands ──────────────────────────────────────────────────
+
+    /**
+     * Records a {@code quickReject} call.
+     *
+     * <p>quickReject is a pure query (no canvas state is mutated), so replay simply
+     * re-issues the call on the target canvas and discards the boolean result.
+     * The recorded result from the original call is stored for inspection via
+     * {@link #wasRejected()}.
+     *
+     * <p>Deprecated {@link Canvas.EdgeType} overloads (API &lt; 30) are recorded with
+     * {@code edgeType != null}; modern overloads set {@code edgeType = null}.
+     */
+    public static final class QuickRejectCmd extends Command {
+
+        /** Discriminates which overload was originally called. */
+        public enum Kind { RECT_F, RECT_F_EDGE, COORDS, COORDS_EDGE, PATH, PATH_EDGE }
+
+        final Kind             kind;
+        // RECT_F / RECT_F_EDGE
+        final RectF            rectF;
+        // COORDS / COORDS_EDGE
+        final float            left, top, right, bottom;
+        // PATH / PATH_EDGE
+        final Path             path;
+        // deprecated EdgeType variants (stored as String to avoid hard dep on the enum)
+        @Nullable final String edgeType;
+        // result captured at record time
+        final boolean          rejected;
+
+        // ── constructors ──────────────────────────────────────────────────────
+
+        /** Modern: quickReject(RectF) */
+        QuickRejectCmd(@NonNull RectF r, boolean rejected) {
+            kind = Kind.RECT_F;
+            rectF = new RectF(r);
+            left = top = right = bottom = 0;
+            path = null; edgeType = null;
+            this.rejected = rejected;
+        }
+
+        /** Deprecated: quickReject(RectF, EdgeType) */
+        QuickRejectCmd(@NonNull RectF r, @NonNull Canvas.EdgeType et, boolean rejected) {
+            kind = Kind.RECT_F_EDGE;
+            rectF = new RectF(r);
+            left = top = right = bottom = 0;
+            path = null; edgeType = et.name();
+            this.rejected = rejected;
+        }
+
+        /** Modern: quickReject(float, float, float, float) */
+        QuickRejectCmd(float l, float t, float r, float b, boolean rejected) {
+            kind = Kind.COORDS;
+            rectF = null; path = null; edgeType = null;
+            left = l; top = t; right = r; bottom = b;
+            this.rejected = rejected;
+        }
+
+        /** Deprecated: quickReject(float, float, float, float, EdgeType) */
+        QuickRejectCmd(float l, float t, float r, float b,
+                       @NonNull Canvas.EdgeType et, boolean rejected) {
+            kind = Kind.COORDS_EDGE;
+            rectF = null; path = null; edgeType = et.name();
+            left = l; top = t; right = r; bottom = b;
+            this.rejected = rejected;
+        }
+
+        /** Modern: quickReject(Path) */
+        QuickRejectCmd(@NonNull Path p, boolean rejected) {
+            kind = Kind.PATH;
+            path = new Path(p);
+            rectF = null; edgeType = null;
+            left = top = right = bottom = 0;
+            this.rejected = rejected;
+        }
+
+        /** Deprecated: quickReject(Path, EdgeType) */
+        QuickRejectCmd(@NonNull Path p, @NonNull Canvas.EdgeType et, boolean rejected) {
+            kind = Kind.PATH_EDGE;
+            path = new Path(p);
+            rectF = null; edgeType = et.name();
+            left = top = right = bottom = 0;
+            this.rejected = rejected;
+        }
+
+        // ── accessors ─────────────────────────────────────────────────────────
+
+        /** Returns the boolean value returned by the original quickReject call. */
+        public boolean wasRejected() { return rejected; }
+
+        // ── replay ────────────────────────────────────────────────────────────
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public void replay(@NonNull Canvas c) {
+            // quickReject is a query — result is intentionally discarded during replay.
+            switch (kind) {
+                case RECT_F:
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        c.quickReject(rectF);
+                    }
+                    break;
+                case RECT_F_EDGE:
+                    c.quickReject(rectF, Canvas.EdgeType.valueOf(edgeType));
+                    break;
+                case COORDS:
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        c.quickReject(left, top, right, bottom);
+                    }
+                    break;
+                case COORDS_EDGE:
+                    c.quickReject(left, top, right, bottom, Canvas.EdgeType.valueOf(edgeType));
+                    break;
+                case PATH:
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        c.quickReject(path);
+                    }
+                    break;
+                case PATH_EDGE:
+                    c.quickReject(path, Canvas.EdgeType.valueOf(edgeType));
+                    break;
+            }
+        }
+
+        // ── toString ──────────────────────────────────────────────────────────
+
+        @Override
+        public String toString() {
+            String result = " -> " + rejected;
+            String edge   = edgeType != null ? " edgeType=" + edgeType : "";
+            switch (kind) {
+                case RECT_F:
+                case RECT_F_EDGE:
+                    return coordWarn(rectF.left, rectF.top, rectF.right, rectF.bottom)
+                            + "quickReject(" + rectInfo(rectF) + edge + result + ")";
+                case COORDS:
+                case COORDS_EDGE:
+                    return coordWarn(left, top, right, bottom)
+                            + "quickReject(" + left + "," + top + "," + right + "," + bottom
+                            + edge + result + ")";
+                case PATH:
+                case PATH_EDGE:
+                    return pathWarn(path) + "quickReject(path" + edge + result + ")";
+                default:
+                    return "quickReject(?" + result + ")";
+            }
         }
     }
 
@@ -534,7 +714,7 @@ public class DebugRecordingCanvas extends Canvas {
         @Override public void replay(@NonNull Canvas c) { c.drawPath(path, paint); }
 
         @Override public String toString() {
-            return paintWarn(paint) + "drawPath(" + paintInfo(paint) + ")";
+            return pathWarn(path) + paintWarn(paint) + "drawPath(" + paintInfo(paint) + ")";
         }
     }
 
@@ -691,7 +871,7 @@ public class DebugRecordingCanvas extends Canvas {
         @Override public void replay(@NonNull Canvas c) { c.drawTextOnPath(text, path, hOffset, vOffset, paint); }
 
         @Override public String toString() {
-            return paintWarn(paint)
+            return pathWarn(path) + paintWarn(paint)
                     + "drawTextOnPath(\"" + text + "\" h=" + hOffset + " v=" + vOffset
                     + " " + paintInfo(paint) + ")";
         }
@@ -1071,7 +1251,6 @@ public class DebugRecordingCanvas extends Canvas {
 
     @Override
     public boolean clipPath(@NonNull Path path) {
-        record(new ClipPathCmd(path));
         return super.clipPath(path);
     }
 
@@ -1080,6 +1259,77 @@ public class DebugRecordingCanvas extends Canvas {
     public boolean clipPath(@NonNull Path path, @NonNull Region.Op op) {
         record(new ClipPathCmd(path, op));
         return super.clipPath(path, op);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Canvas overrides – quickReject
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Modern: quickReject(RectF)
+     * Available on all API levels. Records the call and the result.
+     */
+    @Override
+    public boolean quickReject(@NonNull RectF rect) {
+        boolean result = super.quickReject(rect);
+        record(new QuickRejectCmd(rect, result));
+        return result;
+    }
+
+    /**
+     * Deprecated (API < 30): quickReject(RectF, EdgeType)
+     * EdgeType.AA / EdgeType.BW hint the rasteriser about anti-aliasing.
+     * Recorded with edgeType for full fidelity.
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean quickReject(@NonNull RectF rect, @NonNull Canvas.EdgeType type) {
+        boolean result = super.quickReject(rect, type);
+        record(new QuickRejectCmd(rect, type, result));
+        return result;
+    }
+
+    /**
+     * Modern: quickReject(float, float, float, float)
+     */
+    @Override
+    public boolean quickReject(float left, float top, float right, float bottom) {
+        boolean result = super.quickReject(left, top, right, bottom);
+        record(new QuickRejectCmd(left, top, right, bottom, result));
+        return result;
+    }
+
+    /**
+     * Deprecated (API < 30): quickReject(float, float, float, float, EdgeType)
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean quickReject(float left, float top, float right, float bottom,
+                               @NonNull Canvas.EdgeType type) {
+        boolean result = super.quickReject(left, top, right, bottom, type);
+        record(new QuickRejectCmd(left, top, right, bottom, type, result));
+        return result;
+    }
+
+    /**
+     * Modern: quickReject(Path)
+     */
+    @Override
+    public boolean quickReject(@NonNull Path path) {
+        boolean result = super.quickReject(path);
+        record(new QuickRejectCmd(path, result));
+        return result;
+    }
+
+    /**
+     * Deprecated (API < 30): quickReject(Path, EdgeType)
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean quickReject(@NonNull Path path, @NonNull Canvas.EdgeType type) {
+        boolean result = super.quickReject(path, type);
+        record(new QuickRejectCmd(path, type, result));
+        return result;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -1292,7 +1542,6 @@ public class DebugRecordingCanvas extends Canvas {
 
     @Override
     public void drawRect(@NonNull Rect r, @NonNull Paint paint) {
-        record(new DrawRectCmd(r, paint));
         super.drawRect(r, paint);
     }
 
@@ -1304,7 +1553,6 @@ public class DebugRecordingCanvas extends Canvas {
 
     @Override
     public void drawRoundRect(@NonNull RectF rect, float rx, float ry, @NonNull Paint paint) {
-        record(new DrawRoundRectCmd(rect, rx, ry, paint));
         super.drawRoundRect(rect, rx, ry, paint);
     }
 

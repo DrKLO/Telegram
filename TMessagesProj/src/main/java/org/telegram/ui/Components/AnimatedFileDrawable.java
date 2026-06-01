@@ -25,6 +25,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.view.View;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimatedFileDrawableStream;
 import org.telegram.messenger.DispatchQueue;
@@ -59,11 +61,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
 
     public static native void stopDecoder(long ptr);
 
-    public static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview, float startTimeSeconds, float endTimeSeconds, boolean loop);
+    public static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, boolean preview, float startTimeSeconds, float endTimeSeconds, boolean loop);
 
     public static native void seekToMs(long ptr, long ms, int[] params, boolean precise);
 
-    public static native int getFrameAtTime(long ptr, long ms, Bitmap bitmap, int[] data, int stride);
+    public static native int getFrameAtTime(long ptr, long ms, Bitmap bitmap, int[] data);
 
     public static native void prepareToSeek(long ptr);
 
@@ -380,6 +382,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                         destroyDecoder(nativePtr);
                         nativePtr = 0;
                     }
+                    adaptRenderingSize();
                     updateScaleFactor();
                     decoderCreated = !isWebmSticker || nativePtr != 0 || (decoderTryCount++) > MAX_TRIES;
                 }
@@ -445,7 +448,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
 
-                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime, loop) == 0) {
+                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, false, startTime, endTime, loop) == 0) {
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
@@ -469,6 +472,18 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
             AndroidUtilities.runOnUIThread(uiRunnable);
         }
     };
+
+    private void adaptRenderingSize() {
+        if (renderingWidth == 0 && renderingHeight == 0) {
+            if (metaData[0] > 3000 || metaData[1] > 3000) {
+                renderingWidth = metaData[0] / 4;
+                renderingHeight = metaData[1] / 4;
+            } else if (metaData[0] > 2200 || metaData[1] > 2200) {
+                renderingWidth = metaData[0] / 2;
+                renderingHeight = metaData[1] / 2;
+            }
+        }
+    }
 
     private void updateScaleFactor() {
         if (!isWebmSticker && renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
@@ -522,6 +537,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 destroyDecoder(nativePtr);
                 nativePtr = 0;
             }
+            adaptRenderingSize();
             updateScaleFactor();
             decoderCreated = true;
         }
@@ -566,9 +582,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         Bitmap backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         int result;
         if (precise) {
-            result = getFrameAtTime(nativePtr, ms, backgroundBitmap, metaData, backgroundBitmap.getRowBytes());
+            result = getFrameAtTime(nativePtr, ms, backgroundBitmap, metaData);
         } else {
-            result = getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), true, 0, 0, true);
+            result = getVideoFrame(nativePtr, backgroundBitmap, metaData, true, 0, 0, true);
         }
         return result != 0 ? backgroundBitmap : null;
     }
@@ -1155,7 +1171,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
                 backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
             }
         }
-        getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime, loop);
+        getVideoFrame(nativePtr, backgroundBitmap, metaData, false, startTime, endTime, loop);
         return backgroundBitmap;
     }
 
@@ -1163,7 +1179,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (nativePtr == 0) {
             return;
         }
-        getVideoFrame(nativePtr, null, metaData, 0, false, startTime, endTime, loop);
+        getVideoFrame(nativePtr, null, metaData, false, startTime, endTime, loop);
     }
 
     public void setLimitFps(boolean limitFps) {
@@ -1208,7 +1224,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (generatingCacheBitmap == null) {
             generatingCacheBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         }
-        getVideoFrame(cacheGenerateNativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime, this.loop);
+        getVideoFrame(cacheGenerateNativePtr, generatingCacheBitmap, metaData, false, startTime, endTime, this.loop);
         if (cacheGenerateTimestamp != 0 && (metaData[3] == 0 || cacheGenerateTimestamp > metaData[3])) {
             return 0;
         }
@@ -1243,7 +1259,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable, 
         if (generatingCacheBitmap == null) {
             generatingCacheBitmap = Bitmap.createBitmap(Math.max(1, metaData[0]), Math.max(1, metaData[1]), Bitmap.Config.ARGB_8888);
         }
-        getVideoFrame(nativePtr, generatingCacheBitmap, metaData, generatingCacheBitmap.getRowBytes(), false, startTime, endTime, true);
+        getVideoFrame(nativePtr, generatingCacheBitmap, metaData, false, startTime, endTime, true);
         destroyDecoder(nativePtr);
         bitmap.eraseColor(Color.TRANSPARENT);
         canvas.save();

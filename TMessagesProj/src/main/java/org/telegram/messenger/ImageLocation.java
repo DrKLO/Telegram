@@ -148,37 +148,55 @@ public class ImageLocation {
     public static final int TYPE_VIDEO_BIG = 4;
 
     public static ImageLocation getForUserOrChat(TLObject object, int type) {
+        return getForUserOrChat(UserConfig.selectedAccount, object, type);
+    }
+
+    public static ImageLocation getForUserOrChat(int currentAccount, TLObject object, int type) {
         if (object instanceof TLRPC.User) {
-            return getForUser((TLRPC.User) object, type);
+            return getForUser(currentAccount, (TLRPC.User) object, type);
         } else if (object instanceof TLRPC.Chat) {
-            return getForChat((TLRPC.Chat) object, type);
+            return getForChat(currentAccount, (TLRPC.Chat) object, type);
         }
         return null;
     }
 
     public static ImageLocation getForUser(TLRPC.User user, int type) {
-        if (user == null || user.access_hash == 0 || user.photo == null) {
+        return getForUser(UserConfig.selectedAccount, user, type);
+    }
+
+    public static ImageLocation getForUser(int currentAccount, TLRPC.User user, int type) {
+        if (user == null || user.photo == null) {
             return null;
         }
         if (type == TYPE_VIDEO_BIG || type == TYPE_VIDEO_SMALL) {
-            int currentAccount = UserConfig.selectedAccount;
             if (MessagesController.getInstance(currentAccount).isPremiumUser(user) && user.photo.has_video) {
                 final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(user.id);
-                if (userFull != null && userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
+                TLRPC.Photo photo = null;
+                if (userFull != null) {
+                    if (user.photo.personal && userFull.personal_photo != null && userFull.personal_photo.video_sizes != null && !userFull.personal_photo.video_sizes.isEmpty()) {
+                        photo = userFull.personal_photo;
+                    } else if (userFull.profile_photo != null && userFull.profile_photo.id == user.photo.photo_id && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
+                        photo = userFull.profile_photo;
+                    } else if (userFull.fallback_photo != null && userFull.fallback_photo.id == user.photo.photo_id && userFull.fallback_photo.video_sizes != null && !userFull.fallback_photo.video_sizes.isEmpty()) {
+                        photo = userFull.fallback_photo;
+                    } else if (userFull.profile_photo != null && userFull.profile_photo.video_sizes != null && !userFull.profile_photo.video_sizes.isEmpty()) {
+                        photo = userFull.profile_photo;
+                    }
+                }
+                if (photo != null) {
                     if (type == TYPE_VIDEO_BIG) {
-                        TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(userFull.profile_photo.video_sizes, 1000);
-                        return ImageLocation.getForPhoto(videoSize, userFull.profile_photo);
+                        TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 1000);
+                        return ImageLocation.getForPhoto(videoSize, photo);
                     } else {
-                        TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(userFull.profile_photo.video_sizes, 100);
-                        for (int i = 0; i < userFull.profile_photo.video_sizes.size(); i++) {
-                            if ("p".equals(userFull.profile_photo.video_sizes.get(i).type)) {
-                                videoSize = userFull.profile_photo.video_sizes.get(i);
+                        TLRPC.VideoSize videoSize = FileLoader.getClosestVideoSizeWithSize(photo.video_sizes, 100);
+                        for (int i = 0; i < photo.video_sizes.size(); i++) {
+                            if ("p".equals(photo.video_sizes.get(i).type)) {
+                                videoSize = photo.video_sizes.get(i);
                                 break;
                             }
                         }
-                        return ImageLocation.getForPhoto(videoSize, userFull.profile_photo);
+                        return ImageLocation.getForPhoto(videoSize, photo);
                     }
-
                 }
             }
             return null;
@@ -197,9 +215,23 @@ public class ImageLocation {
         if (fileLocation == null) {
             return null;
         }
-        TLRPC.TL_inputPeerUser inputPeer = new TLRPC.TL_inputPeerUser();
-        inputPeer.user_id = user.id;
-        inputPeer.access_hash = user.access_hash;
+        TLRPC.InputPeer inputPeer;
+        if (user.access_hash == 0) {
+            if (user.fromMessageDialogId != 0 && user.fromMessageId != 0) {
+                final TLRPC.TL_inputPeerUserFromMessage inputPeerUserFromMessage = new TLRPC.TL_inputPeerUserFromMessage();
+                inputPeerUserFromMessage.user_id = user.id;
+                inputPeerUserFromMessage.peer = MessagesController.getInstance(currentAccount).getInputPeer(user.fromMessageDialogId);
+                inputPeerUserFromMessage.msg_id = user.fromMessageId;
+                inputPeer = inputPeerUserFromMessage;
+            } else {
+                return null;
+            }
+        } else {
+            final TLRPC.TL_inputPeerUser inputPeerUser = new TLRPC.TL_inputPeerUser();
+            inputPeerUser.user_id = user.id;
+            inputPeerUser.access_hash = user.access_hash;
+            inputPeer = inputPeerUser;
+        }
         int dc_id;
         if (user.photo.dc_id != 0) {
             dc_id = user.photo.dc_id;
@@ -212,6 +244,9 @@ public class ImageLocation {
     }
 
     public static ImageLocation getForChat(TLRPC.Chat chat, int type) {
+        return getForChat(UserConfig.selectedAccount, chat, type);
+    }
+    public static ImageLocation getForChat(int currentAccount, TLRPC.Chat chat, int type) {
         if (chat == null || chat.photo == null) {
             return null;
         }

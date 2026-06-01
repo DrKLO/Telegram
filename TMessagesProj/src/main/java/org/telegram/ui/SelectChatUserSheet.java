@@ -717,7 +717,7 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                     }
                     final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                     if (lastFragment == null) return;
-                    AlertsCreator.showAddUserAlert(error.text, lastFragment, ChatObject.isChannelAndNotMegaGroup(chat), req);
+                    AlertsCreator.showAddUserAlert(error, lastFragment, ChatObject.isChannelAndNotMegaGroup(chat), req);
                 }
             } else {
                 if (srp != null) {

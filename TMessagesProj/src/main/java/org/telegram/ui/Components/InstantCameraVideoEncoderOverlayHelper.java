@@ -91,7 +91,7 @@ public class InstantCameraVideoEncoderOverlayHelper {
                         b = (y + 1) / 4f;
 
                         setTextureCords(texData, TEXTURE_BUFFER_WATERMARK_LOGO_POSITION + index * 8, l, t, r, b);
-                        RLottieDrawable.getFrame(logoPtr, index * 2, logoBitmap, logoSize, logoSize, logoBitmap.getRowBytes(), true);
+                        RLottieDrawable.getFrame(logoPtr, index * 2, logoBitmap, true);
                         canvas.drawBitmap(logoBitmap, trueSize * x - logoOffset, trueSize * y - logoOffset, null);
                     }
                 }

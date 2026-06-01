@@ -50,6 +50,9 @@ public class ClickHelper {
     default void onLongPressMove (View view, MotionEvent e, float x, float y, float startX, float startY) { }
     default void onLongPressCancelled (View view, float x, float y) { }
     default void onLongPressFinish (View view, float x, float y) { }
+    default boolean needCancelTouchBySlopMove() {
+      return true;
+    }
 
     default boolean ignoreHapticFeedbackSettings (float x, float y) {
       return false;
@@ -194,7 +197,7 @@ public class ClickHelper {
           delegate.onClickTouchMove(view, x, y);
           if ((flags & FLAG_IN_LONG_PRESS) != 0) {
             delegate.onLongPressMove(view, e, x, y, longPressX, longPressY);
-          } else if (Math.max(Math.abs(startX - x), Math.abs(startY - y)) > ViewConfiguration.get(view.getContext()).getScaledTouchSlop() * TOUCH_SLOP_SCALE) {
+          } else if (delegate.needCancelTouchBySlopMove() && Math.max(Math.abs(startX - x), Math.abs(startY - y)) > ViewConfiguration.get(view.getContext()).getScaledTouchSlop() * TOUCH_SLOP_SCALE) {
             resetTouch(view, x, y);
           }
           return true;

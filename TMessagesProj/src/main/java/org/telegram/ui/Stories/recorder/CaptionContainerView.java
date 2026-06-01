@@ -307,6 +307,11 @@ public class CaptionContainerView extends FrameLayout {
                 }
                 return true;
             }
+
+            @Override
+            protected void onLineCountChanged(int oldLineCount, int newLineCount) {
+                CaptionContainerView.this.onLineCountChanged(oldLineCount, newLineCount);
+            }
         };
         editText.glassDesignForEmojiView = true;
         editText.getEditText().addTextChangedListener(new EditTextSuggestionsFix());
@@ -400,11 +405,7 @@ public class CaptionContainerView extends FrameLayout {
         applyButton.setScaleType(ImageView.ScaleType.CENTER);
         applyButton.setAlpha(0f);
         applyButton.setVisibility(View.GONE);
-        applyButton.setOnClickListener(e -> {
-            closeKeyboard();
-            AndroidUtilities.cancelRunOnUIThread(textChangeRunnable);
-            textChangeRunnable.run();
-        });
+        applyButton.setOnClickListener(e -> done());
         addView(applyButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 8, 8, 8, 8));
 
         limitTextView = new AnimatedTextView(context, false, true, true);
@@ -422,8 +423,15 @@ public class CaptionContainerView extends FrameLayout {
         fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
     }
 
+    protected void onLineCountChanged(int oldLineCount, int newLineCount) {
+
+    }
+
     public void setDialogId(long dialogId) {
         this.dialogId = dialogId;
+        if (mentionContainer != null) {
+            mentionContainer.setDialogId(dialogId);
+        }
     }
 
     public int additionalRightMargin() {
@@ -432,6 +440,12 @@ public class CaptionContainerView extends FrameLayout {
 
     private final Runnable textChangeRunnable = () -> onTextChange();
     protected void onTextChange() {}
+
+    protected void done() {
+        closeKeyboard();
+        AndroidUtilities.cancelRunOnUIThread(textChangeRunnable);
+        textChangeRunnable.run();
+    }
 
     public void invalidateBlur() {
         invalidate();
@@ -531,7 +545,7 @@ public class CaptionContainerView extends FrameLayout {
 
 
     private void createMentionsContainer() {
-        mentionContainer = new MentionsContainerView(getContext(), UserConfig.getInstance(currentAccount).getClientUserId(), 0, LaunchActivity.getLastFragment(), new DarkThemeResourceProvider()) {
+        mentionContainer = new MentionsContainerView(getContext(), dialogId, 0, LaunchActivity.getLastFragment(), new DarkThemeResourceProvider()) {
             @Override
             public void drawRoundRect(Canvas canvas, Rect rectTmp, float radius) {
                 rectF.set(rectTmp);
@@ -576,7 +590,7 @@ public class CaptionContainerView extends FrameLayout {
         mentionContainer.getAdapter().setAllowStickers(false);
         mentionContainer.getAdapter().setAllowBots(false);
         mentionContainer.getAdapter().setAllowChats(false);
-        mentionContainer.getAdapter().setSearchInDailogs(true);
+        mentionContainer.getAdapter().setSearchInDialogs(this instanceof CaptionStory);
     }
 
     private void replaceWithText(int start, int len, CharSequence text, boolean parseEmoji) {

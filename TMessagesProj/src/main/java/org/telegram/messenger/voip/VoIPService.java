@@ -4000,7 +4000,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			builder.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 		} else {
 			builder.setContentTitle(LocaleController.getString(R.string.VoipOutgoingCall));
-			builder.setSmallIcon(R.drawable.ic_call);
+			builder.setSmallIcon(R.drawable.call);
             builder.setOngoing(true);
 		}
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -4704,7 +4704,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (groupCall != null) {
 					bldr.setSmallIcon(isMicMute() ? R.drawable.voicechat_muted : R.drawable.voicechat_active);
 				} else {
-					bldr.setSmallIcon(R.drawable.ic_call);
+					bldr.setSmallIcon(R.drawable.call);
 				}
 				foregroundStarted = true;
 				if (Build.VERSION.SDK_INT >= 33) {
@@ -4717,7 +4717,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				Notification.Builder bldr = new Notification.Builder(this, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL)
 						.setContentTitle(LocaleController.getString(R.string.VoipCallEnded))
 						.setShowWhen(false);
-				bldr.setSmallIcon(R.drawable.ic_call);
+				bldr.setSmallIcon(R.drawable.call);
 				foregroundStarted = true;
 				if (Build.VERSION.SDK_INT >= 33) {
 					startForeground(foregroundId = ID_ONGOING_CALL_NOTIFICATION, foregroundNotification = bldr.build(), lastForegroundType = getCurrentForegroundType());
@@ -5178,7 +5178,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 		Notification.Builder builder = new Notification.Builder(this)
 				.setContentTitle(video ? LocaleController.getString(R.string.VoipInVideoCallBranding) : LocaleController.getString(R.string.VoipInCallBranding))
-				.setSmallIcon(R.drawable.ic_call)
+				.setSmallIcon(R.drawable.call)
 				.setContentIntent(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE));
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			SharedPreferences nprefs = MessagesController.getGlobalNotificationsSettings();
@@ -5285,7 +5285,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			incomingNotification = builder.build();
 		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
 			builder.addAction(R.drawable.ic_call_end_white_24dp, endTitle, endPendingIntent);
-			builder.addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
+			builder.addAction(R.drawable.call, answerTitle, answerPendingIntent);
 			builder.setContentText(name);
 
 			RemoteViews customView = new RemoteViews(getPackageName(), LocaleController.isRTL ? R.layout.call_notification_rtl : R.layout.call_notification);
@@ -5310,7 +5310,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		} else {
 			builder.setContentText(name);
 			builder.addAction(R.drawable.ic_call_end_white_24dp, endTitle, endPendingIntent);
-			builder.addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
+			builder.addAction(R.drawable.call, answerTitle, answerPendingIntent);
 			incomingNotification = builder.getNotification();
 		}
 		foregroundStarted = true;

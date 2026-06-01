@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
@@ -1216,7 +1217,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
             if (draggingCell != null) {
                 canvas.save();
-                Point point = dragTranslate();
+                PointF point = dragTranslate();
                 canvas.translate(point.x, point.y);
                 if (draggingCell.draw(canvas, true)) {
                     invalidate();
@@ -1233,8 +1234,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
         private float draggingT = 0;
         private float savedDragFromX, savedDragFromY, savedDraggingT;
-        private final Point tmpPoint = new Point();
-        Point dragTranslate() {
+        private final PointF tmpPoint = new PointF();
+        PointF dragTranslate() {
             if (draggingCell == null) {
                 tmpPoint.x = 0;
                 tmpPoint.y = 0;
@@ -1276,7 +1277,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 draggingAnimator.cancel();
             }
 
-            Point dragTranslate = dragTranslate();
+            PointF dragTranslate = dragTranslate();
             savedDraggingT = draggingT;
             savedDragFromX = dragTranslate.x;
             savedDragFromY = dragTranslate.y;
@@ -1613,7 +1614,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             if (draggingCell != null) {
                 groupY = 0;
                 RectF drawingRect = draggingCell.rect();
-                Point dragPoint = dragTranslate();
+                PointF dragPoint = dragTranslate();
                 RectF draggingCellXY = new RectF();
                 float cx = dragPoint.x, cy = dragPoint.y;
                 draggingCellXY.set(

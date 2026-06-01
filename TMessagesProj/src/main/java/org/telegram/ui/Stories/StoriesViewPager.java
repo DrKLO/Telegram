@@ -100,7 +100,7 @@ public class StoriesViewPager extends ViewPager {
                 pageLayout.setTag(position);
                 if (days != null) {
                     pageLayout.day = days.get(storyViewer.reversed ? days.size() - 1 - position : position);
-                    if (storyViewer.storiesList instanceof StoriesController.SearchStoriesList) {
+                    if (storyViewer.storiesList instanceof StoriesController.SearchStoriesList || storyViewer.storiesList instanceof StoriesController.StoryRepostsList) {
                         MessageObject msg = storyViewer.storiesList.findMessageObject(pageLayout.day.get(0));
                         pageLayout.dialogId = msg == null ? daysDialogId : msg.getDialogId();
                     } else {
@@ -264,9 +264,15 @@ public class StoriesViewPager extends ViewPager {
         if (this.daysDialogId == dialogId && eqA(this.days, days) && this.currentAccount == currentAccount) {
             return;
         }
+        final boolean appendOnly = this.daysDialogId == dialogId && this.currentAccount == currentAccount && isPrefix(this.days, days);
         this.daysDialogId = dialogId;
         this.days = days;
         this.currentAccount = currentAccount;
+        if (appendOnly && pagerAdapter != null) {
+            pagerAdapter.notifyDataSetChanged();
+            updateDelegate = true;
+            return;
+        }
         setAdapter(null);
         setAdapter(pagerAdapter);
         int position;
@@ -280,6 +286,15 @@ public class StoriesViewPager extends ViewPager {
         }
         setCurrentItem(position);
         updateDelegate = true;
+    }
+
+    private static boolean isPrefix(ArrayList<ArrayList<Integer>> a, ArrayList<ArrayList<Integer>> b) {
+        if (a == null || b == null) return false;
+        if (b.size() <= a.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            if (!eq(a.get(i), b.get(i))) return false;
+        }
+        return true;
     }
 
     private static boolean eqA(ArrayList<ArrayList<Integer>> a, ArrayList<ArrayList<Integer>> b) {

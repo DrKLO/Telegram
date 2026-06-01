@@ -45,7 +45,6 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
     private boolean isSpoilersRevealed;
     private Path path = new Path();
-    private Paint xRefPaint;
     public boolean allowClickSpoilers = true;
 
     public int cacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
@@ -244,27 +243,31 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         }
         canvas.restore();
 
-        canvas.save();
-        path.rewind();
-        for (SpoilerEffect eff : spoilers) {
-            Rect bounds = eff.getBounds();
-            path.addRect(bounds.left + pl, bounds.top + pt, bounds.right + pl, bounds.bottom + pt, Path.Direction.CW);
-        }
-        canvas.clipPath(path, Region.Op.DIFFERENCE);
-        Emoji.emojiDrawingUseAlpha = useAlphaForEmoji;
-        super.onDraw(canvas);
-        Emoji.emojiDrawingUseAlpha = true;
-        canvas.restore();
+        if (spoilers.isEmpty()) {
+            super.onDraw(canvas);
+        } else {
+            canvas.save();
+            path.rewind();
+            for (SpoilerEffect eff : spoilers) {
+                Rect bounds = eff.getBounds();
+                path.addRect(bounds.left + pl, bounds.top + pt, bounds.right + pl, bounds.bottom + pt, Path.Direction.CW);
+            }
+            canvas.clipPath(path, Region.Op.DIFFERENCE);
+            Emoji.emojiDrawingUseAlpha = useAlphaForEmoji;
+            super.onDraw(canvas);
+            Emoji.emojiDrawingUseAlpha = true;
+            canvas.restore();
 
-        canvas.save();
-        canvas.clipPath(path);
-        path.rewind();
-        if (!spoilers.isEmpty()) {
-            spoilers.get(0).getRipplePath(path);
+            if (spoilers.get(0).hasRipplePath()) {
+                canvas.save();
+                canvas.clipPath(path);
+                path.rewind();
+                spoilers.get(0).getRipplePath(path);
+                canvas.clipPath(path);
+                super.onDraw(canvas);
+                canvas.restore();
+            }
         }
-        canvas.clipPath(path);
-        super.onDraw(canvas);
-        canvas.restore();
 
         updateAnimatedEmoji(false);
         if (animatedEmoji != null) {
@@ -277,7 +280,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         if (!spoilers.isEmpty()) {
             boolean useAlphaLayer = spoilers.get(0).getRippleProgress() != -1;
             if (useAlphaLayer) {
-                canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), null, canvas.ALL_SAVE_FLAG);
+                canvas.saveLayer(0, 0, getMeasuredWidth(), getMeasuredHeight(), null, Canvas.ALL_SAVE_FLAG);
             } else {
                 canvas.save();
             }
@@ -290,12 +293,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
             if (useAlphaLayer) {
                 path.rewind();
                 spoilers.get(0).getRipplePath(path);
-                if (xRefPaint == null) {
-                    xRefPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                    xRefPaint.setColor(0xff000000);
-                    xRefPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-                }
-                canvas.drawPath(path, xRefPaint);
+                canvas.drawPath(path, Theme.PAINT_CLEAR);
             }
             canvas.restore();
         }

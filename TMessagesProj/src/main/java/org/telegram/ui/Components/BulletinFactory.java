@@ -106,7 +106,7 @@ public final class BulletinFactory {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownError));
             b.hideAfterBottomSheet = false;
             b.show(top);
-        } else {
+        } else if (error.code != 406) {
             Bulletin b = createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text));
             b.hideAfterBottomSheet = false;
             b.show(top);
@@ -130,6 +130,7 @@ public final class BulletinFactory {
 
     public static void showError(TLRPC.TL_error error) {
         if (!LaunchActivity.isActive) return;
+        if (error != null && error.code == 406) return;
         global().createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, error.text)).show();
     }
 
@@ -140,6 +141,9 @@ public final class BulletinFactory {
 
         VIDEO("VideoSavedHint", R.string.VideoSavedHint, Icon.SAVED_TO_GALLERY),
         VIDEOS("VideosSavedHint", Icon.SAVED_TO_GALLERY),
+
+        LIVEPHOTO("LivePhotoSavedHint", R.string.LivePhotoSavedHint, Icon.SAVED_TO_GALLERY),
+        LIVEPHOTOS("LivePhotosSavedHint", Icon.SAVED_TO_GALLERY),
 
         MEDIA("MediaSavedHint", Icon.SAVED_TO_GALLERY),
 
@@ -697,6 +701,15 @@ public final class BulletinFactory {
         return createUsersBulletin(users, text);
     }
 
+    public Bulletin createEmojiBulletin(long emoji_id, String text, String subtext) {
+        final Bulletin.TwoLineBackupLayout layout = new Bulletin.TwoLineBackupLayout(getContext(), resourcesProvider);
+        layout.imageView.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, UserConfig.selectedAccount, emoji_id));
+        layout.imageView.setEmojiColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        layout.titleTextView.setText(text);
+        layout.subtitleTextView.setText(subtext);
+        return create(layout, Bulletin.DURATION_LONG);
+    }
+
     public Bulletin createEmojiBulletin(String emoji, String text) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
         layout.setAnimation(MediaDataController.getInstance(UserConfig.selectedAccount).getEmojiAnimatedSticker(emoji), 36, 36);
@@ -1191,6 +1204,11 @@ public final class BulletinFactory {
     }
 
     @CheckResult
+    public static Bulletin createSaveToGalleryBulletin(BaseFragment fragment, boolean video, boolean livePhoto, Theme.ResourcesProvider resourcesProvider) {
+        return of(fragment).createDownloadBulletin(livePhoto ? FileType.LIVEPHOTO : (video ? FileType.VIDEO : FileType.PHOTO), resourcesProvider);
+    }
+
+    @CheckResult
     public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, boolean video, Theme.ResourcesProvider resourcesProvider) {
         return of(containerLayout, resourcesProvider).createDownloadBulletin(video ? FileType.VIDEO : FileType.PHOTO, resourcesProvider);
     }
@@ -1201,8 +1219,42 @@ public final class BulletinFactory {
     }
 
     @CheckResult
+    public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, boolean video, boolean livePhoto, int backgroundColor, int textColor) {
+        return of(containerLayout, null).createDownloadBulletin(livePhoto ? FileType.LIVEPHOTO : (video ? FileType.VIDEO : FileType.PHOTO), 1, backgroundColor, textColor);
+    }
+
+    @CheckResult
     public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, int amount, boolean video, int backgroundColor, int textColor) {
         return of(containerLayout, null).createDownloadBulletin(video ? (amount > 1 ? FileType.VIDEOS : FileType.VIDEO) : (amount > 1 ? FileType.PHOTOS : FileType.PHOTO), amount, backgroundColor, textColor);
+    }
+
+    @CheckResult
+    public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, int amount, boolean video, boolean livePhoto, int backgroundColor, int textColor) {
+        final FileType ft;
+        if (livePhoto) {
+            ft = amount > 1 ? FileType.LIVEPHOTOS : FileType.LIVEPHOTO;
+        } else if (video) {
+            ft = amount > 1 ? FileType.VIDEOS : FileType.VIDEO;
+        } else {
+            ft = amount > 1 ? FileType.PHOTOS : FileType.PHOTO;
+        }
+        return of(containerLayout, null).createDownloadBulletin(ft, amount, backgroundColor, textColor);
+    }
+
+    @CheckResult
+    public static Bulletin createSaveMediaToGalleryBulletin(FrameLayout containerLayout, int amount, boolean hasVideo, boolean hasPhoto, boolean hasLivePhoto, int backgroundColor, int textColor) {
+        final int kinds = (hasVideo ? 1 : 0) + (hasPhoto ? 1 : 0) + (hasLivePhoto ? 1 : 0);
+        final FileType ft;
+        if (kinds > 1) {
+            ft = FileType.MEDIA;
+        } else if (hasLivePhoto) {
+            ft = amount > 1 ? FileType.LIVEPHOTOS : FileType.LIVEPHOTO;
+        } else if (hasVideo) {
+            ft = amount > 1 ? FileType.VIDEOS : FileType.VIDEO;
+        } else {
+            ft = amount > 1 ? FileType.PHOTOS : FileType.PHOTO;
+        }
+        return of(containerLayout, null).createDownloadBulletin(ft, amount, backgroundColor, textColor);
     }
 
     @CheckResult

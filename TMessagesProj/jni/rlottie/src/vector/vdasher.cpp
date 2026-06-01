@@ -33,6 +33,15 @@ VDasher::VDasher(const float *dashArray, size_t size)
     mIndex = 0;
     mCurrentLength = 0;
     mDiscard = false;
+    //if the dash array contains ZERO length
+    // segments or ZERO lengths gaps we could
+    // optimize those usecase.
+    for (size_t i = 0; i < mArraySize; i++) {
+        if (!vCompare(mDashArray[i].length, 0.0f))
+            mNoLength = false;
+        if (!vCompare(mDashArray[i].gap, 0.0f))
+            mNoGap = false;
+    }
 }
 
 void VDasher::moveTo(const VPointF &p)
@@ -178,7 +187,11 @@ void VDasher::cubicTo(const VPointF &cp1, const VPointF &cp2, const VPointF &e)
 
 VPath VDasher::dashed(const VPath &path)
 {
-    if (path.empty()) return VPath();
+    if (mNoLength && mNoGap) return path;
+
+    if (path.empty() || mNoLength) return VPath();
+
+    if (mNoGap) return path;
 
     mResult = {};
     mResult.reserve(path.points().size(), path.elements().size());

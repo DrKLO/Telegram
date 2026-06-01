@@ -64,9 +64,9 @@ public:
 std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory(std::shared_ptr<PlatformContext> platformContext, bool preferHardwareEncoding, bool isScreencast) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
-//    AndroidContext *context = (AndroidContext *) platformContext.get();
-//    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
-//    jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
+    AndroidContext *context = (AndroidContext *) platformContext.get();
+    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
+    jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
 
     webrtc::ScopedJavaLocalRef<jclass> factory_class =
             webrtc::GetClass(env, "org/webrtc/DefaultVideoEncoderFactory");
@@ -74,11 +74,9 @@ std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderF
             factory_class.obj(), "<init>", "(Lorg/webrtc/EglBase$Context;ZZ)V");
     webrtc::ScopedJavaLocalRef<jobject> factory_object(
             env, env->NewObject(factory_class.obj(), factory_constructor,
-                                nullptr /* shared_context */,
+                                eglContext /* shared_context */,
                                 false /* enable_intel_vp8_encoder */,
                                 true /* enable_h264_high_profile */));
-
-//    return webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj());
 
     return std::make_unique<SimulcastVideoEncoderFactory>(webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj()));
 }
@@ -86,9 +84,9 @@ std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderF
 std::unique_ptr<webrtc::VideoDecoderFactory> AndroidInterface::makeVideoDecoderFactory(std::shared_ptr<PlatformContext> platformContext) {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
-//    AndroidContext *context = (AndroidContext *) platformContext.get();
-//    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
-//    jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
+    AndroidContext *context = (AndroidContext *) platformContext.get();
+    jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
+    jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
 
     webrtc::ScopedJavaLocalRef<jclass> factory_class =
             webrtc::GetClass(env, "org/webrtc/DefaultVideoDecoderFactory");
@@ -96,7 +94,7 @@ std::unique_ptr<webrtc::VideoDecoderFactory> AndroidInterface::makeVideoDecoderF
             factory_class.obj(), "<init>", "(Lorg/webrtc/EglBase$Context;)V");
     webrtc::ScopedJavaLocalRef<jobject> factory_object(
             env, env->NewObject(factory_class.obj(), factory_constructor,
-                                nullptr /* shared_context */));
+                                eglContext /* shared_context */));
     return webrtc::JavaToNativeVideoDecoderFactory(env, factory_object.obj());
 }
 
@@ -114,9 +112,9 @@ bool AndroidInterface::supportsEncoding(const std::string &codecName, std::share
     if (hardwareVideoEncoderFactory == nullptr) {
         JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
 
-//        AndroidContext *context = (AndroidContext *) platformContext.get();
-//        jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
-//        jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
+        AndroidContext *context = (AndroidContext *) platformContext.get();
+        jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "getSharedEGLContext", "()Lorg/webrtc/EglBase$Context;");
+        jobject eglContext = env->CallObjectMethod(context->getJavaCapturer(), methodId);
 
         webrtc::ScopedJavaLocalRef<jclass> factory_class =
                 webrtc::GetClass(env, "org/webrtc/HardwareVideoEncoderFactory");
@@ -124,7 +122,7 @@ bool AndroidInterface::supportsEncoding(const std::string &codecName, std::share
                 factory_class.obj(), "<init>", "(Lorg/webrtc/EglBase$Context;ZZ)V");
         webrtc::ScopedJavaLocalRef<jobject> factory_object(
                 env, env->NewObject(factory_class.obj(), factory_constructor,
-                                    nullptr,
+                                    eglContext,
                                     false,
                                     true));
         hardwareVideoEncoderFactory = webrtc::JavaToNativeVideoEncoderFactory(env, factory_object.obj());

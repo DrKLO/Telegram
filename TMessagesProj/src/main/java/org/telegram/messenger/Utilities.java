@@ -87,6 +87,8 @@ public class Utilities {
     public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
 //    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
     public static native void generateGradient(Bitmap bitmap, boolean unpin, int phase, float progress, int width, int height, int stride, int[] colors);
+    public static native boolean applySoftLight(Bitmap inputBitmap, Bitmap outputBitmap, int color);
+    public static native boolean copyBitmaps(Bitmap src, Bitmap dst);
     public static native void setupNativeCrashesListener(String path);
 
     public static Bitmap stackBlurBitmapMax(Bitmap bitmap) {

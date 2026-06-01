@@ -53,13 +53,12 @@
 //#include "pixman-arm-asm.h"
 /* Supplementary macro for setting function attributes */
 .macro pixman_asm_function fname
-    .func fname
-    .global fname
+    .global \fname
 #ifdef __ELF__
-    .hidden fname
-    .type fname, %function
+    .hidden \fname
+    .type \fname, %function
 #endif
-fname:
+\fname:
 .endm
 
 //#include "pixman-private.h"
@@ -324,11 +323,11 @@ fname:
         vst4.8      {d28, d29, d30, d31}, [DST_W, :128]!
                                     PF subge PF_X, PF_X, ORIG_W
     vmull.u8    q8, d22, d4
-                                    PF subges PF_CTL, PF_CTL, #0x10
+                                    PF subsge PF_CTL, PF_CTL, #0x10
     vmull.u8    q9, d22, d5
-                                    PF ldrgeb DUMMY, [PF_SRC, SRC_STRIDE, lsl #src_bpp_shift]!
+                                    PF ldrbge DUMMY, [PF_SRC, SRC_STRIDE, lsl #src_bpp_shift]!
     vmull.u8    q10, d22, d6
-                                    PF ldrgeb DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
+                                    PF ldrbge DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
     vmull.u8    q11, d22, d7
 .endm
 
@@ -400,9 +399,9 @@ generate_composite_function_single_scanline \
     vmull.u8    q9, d24, d5
                                     PF subge PF_X, PF_X, ORIG_W
     vmull.u8    q10, d24, d6
-                                    PF subges PF_CTL, PF_CTL, #0x10
+                                    PF subsge PF_CTL, PF_CTL, #0x10
     vmull.u8    q11, d24, d7
-                                    PF ldrgeb DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
+                                    PF ldrbge DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
         vst4.8      {d28, d29, d30, d31}, [DST_W, :128]!
 .endm
 

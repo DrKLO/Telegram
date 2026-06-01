@@ -16,7 +16,7 @@ public class VideoEditTextureView extends TextureView implements TextureView.Sur
     private VideoPlayer currentVideoPlayer;
 
     private FilterGLThread eglThread;
-    private Rect viewRect = new Rect();
+    private RectOld viewRect = new RectOld();
     private int videoWidth;
     private int videoHeight;
 

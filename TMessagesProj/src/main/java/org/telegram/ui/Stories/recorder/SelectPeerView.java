@@ -92,6 +92,11 @@ public class SelectPeerView extends FrameLayout {
             showAnimator = animate()
                 .alpha(show ? 1.0f : 0.0f)
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .withEndAction(() -> {
+                    if (!show) {
+                        setVisibility(View.GONE);
+                    }
+                })
                 .setDuration(320);
             showAnimator.start();
         } else {

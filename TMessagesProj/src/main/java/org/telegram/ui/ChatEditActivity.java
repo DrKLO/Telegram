@@ -1648,7 +1648,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (currentUser != null ? currentUser.photo != null : currentChat.photo != null) {
             TLObject obj = currentUser != null ? currentUser : currentChat;
             avatar = currentUser != null ? currentUser.photo.photo_small : currentChat.photo.photo_small;
-            ImageLocation location = ImageLocation.getForUserOrChat(obj, ImageLocation.TYPE_SMALL);
+            ImageLocation location = ImageLocation.getForUserOrChat(currentAccount, obj, ImageLocation.TYPE_SMALL);
             avatarImage.setForUserOrChat(obj, avatarDrawable);
             hasPhoto = location != null;
         } else {
@@ -2298,7 +2298,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                         blockCell.setTextAndValueAndIcon(getString("ChannelBlacklist", R.string.ChannelBlacklist), String.format("%d", Math.max(info.banned_count, info.kicked_count)), R.drawable.msg_user_remove, logCell != null && logCell.getVisibility() == View.VISIBLE);
                     } else {
                         int count = 0;
-                        int totalCount = forum ? 15 : 14;
+                        int totalCount = forum ? 16 : 15;
                         if (currentChat.default_banned_rights != null) {
                             if (!currentChat.default_banned_rights.send_plain) {
                                 count++;

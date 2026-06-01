@@ -877,6 +877,7 @@ public class ReactionsLayoutInBubble {
             }
             if (textDrawable == null) {
                 textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
+                textDrawable.ignoreRTL = true;
                 textDrawable.setAnimationProperties(.4f, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
                 textDrawable.setTextSize(dp(13));
                 textDrawable.setCallback(supercallback);
@@ -1007,9 +1008,6 @@ public class ReactionsLayoutInBubble {
             particles.bounds.inset(-dp(4), -dp(4));
             particles.setBounds(particles.bounds);
             final boolean needsPostInvalidate = particles.process();
-            if (parentView != null) {
-                parentView.invalidate();
-            }
             particles.draw(canvas, ColorUtils.blendARGB(ColorUtils.setAlphaComponent(backgroundColor, 0xFF), ColorUtils.blendARGB(serviceTextColor, ColorUtils.setAlphaComponent(backgroundColor, 0xFF), .4f), getDrawServiceShaderBackground()));
 
             if (isSelected) {

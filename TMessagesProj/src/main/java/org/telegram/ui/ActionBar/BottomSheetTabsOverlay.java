@@ -18,27 +18,35 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RadialGradient;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.PixelCopy;
 import android.view.Surface;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.OverScroller;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import com.google.zxing.common.detector.MathUtils;
 
@@ -50,8 +58,11 @@ import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.GradientClip;
+import org.telegram.ui.bots.BotWebViewSheet;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class BottomSheetTabsOverlay extends View {
 
@@ -101,6 +112,8 @@ public class BottomSheetTabsOverlay extends View {
     private final int maximumVelocity, minimumVelocity;
     private int navigationBarInset;
 
+    private OverlayAccessibilityHelper accessibilityHelper;
+
     public BottomSheetTabsOverlay(Context context) {
         super(context);
 
@@ -111,7 +124,19 @@ public class BottomSheetTabsOverlay extends View {
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
         minimumVelocity = configuration.getScaledMinimumFlingVelocity();
 
+        accessibilityHelper = new OverlayAccessibilityHelper(this);
+        ViewCompat.setAccessibilityDelegate(this, accessibilityHelper);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+
         ViewCompat.setOnApplyWindowInsetsListener(this, this::onApplyWindowInsets);
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        if (openProgress > 0 && accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+            return true;
+        }
+        return super.dispatchHoverEvent(event);
     }
 
     @NonNull
@@ -591,6 +616,15 @@ public class BottomSheetTabsOverlay extends View {
     public void openTabsView() {
         if (tabsView == null || !(tabsView.getParent() instanceof View)) return;
 
+        if (!BotWebViewSheet.activeSheets.isEmpty()) {
+            final HashSet<BotWebViewSheet> set = new HashSet<>(BotWebViewSheet.activeSheets);
+            for (BotWebViewSheet sheet : set) {
+                sheet.dismiss(true);
+            }
+            AndroidUtilities.runOnUIThread(this::openTabsView, 100);
+            return;
+        }
+
         stopAnimations();
 
         actionBarLayout = (View) tabsView.getParent();
@@ -666,6 +700,7 @@ public class BottomSheetTabsOverlay extends View {
             tabsView.drawTabs = false;
             tabsView.invalidate();
         }
+        setModalAccessibility(open);
         invalidate();
         openAnimator = ValueAnimator.ofFloat(openProgress, open ? 1f : 0f);
         openAnimator.addUpdateListener(anm -> {
@@ -689,6 +724,182 @@ public class BottomSheetTabsOverlay extends View {
         openAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         openAnimator.setDuration(320);
         openAnimator.start();
+    }
+
+    private void setModalAccessibility(boolean open) {
+        setImportantForAccessibility(open ? IMPORTANT_FOR_ACCESSIBILITY_YES : IMPORTANT_FOR_ACCESSIBILITY_NO);
+        ViewParent parent = getParent();
+        if (parent instanceof ViewGroup) {
+            ViewGroup pg = (ViewGroup) parent;
+            for (int i = 0; i < pg.getChildCount(); ++i) {
+                View child = pg.getChildAt(i);
+                if (child == this) continue;
+                child.setImportantForAccessibility(open ? IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+            }
+        }
+        if (accessibilityHelper != null) {
+            accessibilityHelper.invalidateRoot();
+        }
+        if (open) {
+            sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+        }
+    }
+
+    private static final int VV_CLOSE_ALL = 1;
+    private static final int VV_TAB_BASE = 1000;
+    private static final int VV_CLOSE_BASE = 2000;
+
+    private class OverlayAccessibilityHelper extends ExploreByTouchHelper {
+
+        private final Rect tmpRect = new Rect();
+
+        public OverlayAccessibilityHelper(@NonNull View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (openProgress < 0.5f) return HOST_ID;
+            if (closeAllButtonBackground != null && closeAllButtonBackground.getBounds().contains((int) x, (int) y)) {
+                return VV_CLOSE_ALL;
+            }
+            for (int i = tabs.size() - 1; i >= 0; --i) {
+                TabPreview tab = tabs.get(i);
+                if (Math.abs(tab.dismissProgress) >= .4f) continue;
+                if (!tab.clickBounds.contains(x, y)) continue;
+                Rect closeBounds = tab.tabDrawable.closeRipple.getBounds();
+                if (!closeBounds.isEmpty()) {
+                    int localX = (int) (x - tab.clickBounds.left);
+                    int localY = (int) (y - tab.clickBounds.top - dp(24));
+                    if (closeBounds.contains(localX, localY)) {
+                        return VV_CLOSE_BASE + i;
+                    }
+                }
+                return VV_TAB_BASE + i;
+            }
+            return HOST_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            if (openProgress < 0.5f) return;
+            if (closeAllButtonBackground != null && !closeAllButtonBackground.getBounds().isEmpty()) {
+                list.add(VV_CLOSE_ALL);
+            }
+            for (int i = 0; i < tabs.size(); ++i) {
+                TabPreview tab = tabs.get(i);
+                if (Math.abs(tab.dismissProgress) >= .4f) continue;
+                if (tab.clickBounds.isEmpty()) continue;
+                list.add(VV_TAB_BASE + i);
+                if (tab.tabDrawable != null && !tab.tabDrawable.closeRipple.getBounds().isEmpty()) {
+                    list.add(VV_CLOSE_BASE + i);
+                }
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            info.setClassName("android.widget.Button");
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+            if (id == VV_CLOSE_ALL) {
+                if (closeAllButtonBackground != null) {
+                    tmpRect.set(closeAllButtonBackground.getBounds());
+                } else {
+                    tmpRect.set(0, 0, 1, 1);
+                    info.setVisibleToUser(false);
+                }
+                info.setBoundsInParent(tmpRect);
+                info.setContentDescription(getString(R.string.BotCloseAllTabs));
+                return;
+            }
+            int index;
+            boolean isClose;
+            if (id >= VV_CLOSE_BASE) {
+                index = id - VV_CLOSE_BASE;
+                isClose = true;
+            } else if (id >= VV_TAB_BASE) {
+                index = id - VV_TAB_BASE;
+                isClose = false;
+            } else {
+                tmpRect.set(0, 0, 1, 1);
+                info.setBoundsInParent(tmpRect);
+                info.setVisibleToUser(false);
+                return;
+            }
+            if (index < 0 || index >= tabs.size()) {
+                tmpRect.set(0, 0, 1, 1);
+                info.setBoundsInParent(tmpRect);
+                info.setVisibleToUser(false);
+                return;
+            }
+            TabPreview tab = tabs.get(index);
+            String title = tab.tabData != null && tab.tabData.getTitle() != null ? tab.tabData.getTitle() : "";
+            if (isClose) {
+                Rect closeBounds = tab.tabDrawable.closeRipple.getBounds();
+                int left = (int) (tab.clickBounds.left + closeBounds.left);
+                int top = (int) (tab.clickBounds.top + dp(24) + closeBounds.top);
+                int right = (int) (tab.clickBounds.left + closeBounds.right);
+                int bottom = (int) (tab.clickBounds.top + dp(24) + closeBounds.bottom);
+                tmpRect.set(left, top, right, bottom);
+                info.setBoundsInParent(tmpRect);
+                info.setContentDescription(TextUtils.isEmpty(title)
+                        ? getString(R.string.Close)
+                        : getString(R.string.Close) + ", " + title);
+            } else {
+                tmpRect.set((int) tab.clickBounds.left, (int) tab.clickBounds.top, (int) tab.clickBounds.right, (int) tab.clickBounds.bottom);
+                info.setBoundsInParent(tmpRect);
+                info.setContentDescription(TextUtils.isEmpty(title)
+                        ? getString(R.string.Open)
+                        : getString(R.string.Open) + ", " + title);
+            }
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
+            if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) return false;
+            if (id == VV_CLOSE_ALL) {
+                if (tabsView != null) {
+                    tabsView.removeAll();
+                }
+                closeTabsView();
+                return true;
+            }
+            int index;
+            boolean isClose;
+            if (id >= VV_CLOSE_BASE) {
+                index = id - VV_CLOSE_BASE;
+                isClose = true;
+            } else if (id >= VV_TAB_BASE) {
+                index = id - VV_TAB_BASE;
+                isClose = false;
+            } else {
+                return false;
+            }
+            if (index < 0 || index >= tabs.size()) return false;
+            TabPreview tab = tabs.get(index);
+            if (isClose) {
+                if (tabsView != null) {
+                    tabsView.removeTab(tab.tabData, success -> {
+                        if (success) {
+                            tab.animateDismiss(1f);
+                            if (tabsView.getTabs().isEmpty()) {
+                                closeTabsView();
+                            }
+                        } else {
+                            tab.animateDismiss(0);
+                        }
+                    });
+                }
+                return true;
+            } else {
+                if (tabsView != null) {
+                    closeTabsView();
+                    tab.webView = null;
+                    tabsView.openTab(tab.tabData);
+                }
+                return true;
+            }
+        }
     }
 
     private final int[] pos = new int[2];
@@ -1017,7 +1228,7 @@ public class BottomSheetTabsOverlay extends View {
             final float s = bounce.getScale(.01f);
             canvas.scale(s, s, bounds.centerX(), bounds.centerY());
 
-            final float r = lerp(dp(10), dp(6), expandProgress);
+            final float r = lerp(dp(18), dp(18), expandProgress);
             if (simple) {
                 shadowPaint.setColor(0);
                 shadowPaint.setShadowLayer(dp(30), 0, dp(10), Theme.multAlpha(0x20000000, alpha * expandProgress * (1f - openingProgress)));

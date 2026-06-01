@@ -2338,4 +2338,12 @@ public sealed class TlGen_Update : TlGen_Object {
       public const val MAGIC: UInt = 0x4880ED9AU
     }
   }
+
+  public data object TL_updateAiComposeTones : TlGen_Update() {
+    public const val MAGIC: UInt = 0x8C0F91FBU
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
 }

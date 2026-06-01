@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <cstdint>
+#include <mutex>
 #include <unistd.h>
 #include <android/bitmap.h>
 #include <string>
@@ -1249,6 +1251,402 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
     if (unpin) {
         AndroidBitmap_unlockPixels(env, bitmap);
     }
+}
+
+static inline uint32_t bitmapBytesPerPixel(int32_t format) {
+    switch (format) {
+        case ANDROID_BITMAP_FORMAT_A_8:
+            return 1;
+
+        case ANDROID_BITMAP_FORMAT_RGB_565:
+        case ANDROID_BITMAP_FORMAT_RGBA_4444: // deprecated since API 13
+            return 2;
+
+        case ANDROID_BITMAP_FORMAT_RGBA_8888:
+            return 4;
+
+        case ANDROID_BITMAP_FORMAT_RGBA_F16:
+            return 8;
+
+        case ANDROID_BITMAP_FORMAT_RGBA_1010102:
+            return 4;
+
+        default:
+            return 0;
+    }
+}
+
+/**
+ * Copies pixel data from src to dst.
+ *
+ * Both bitmaps must have identical dimensions and pixel format.
+ * Hardware-backed bitmaps are not supported.
+ * Copying a bitmap to itself is a no-op and returns JNI_TRUE.
+ *
+ * @param src  Source bitmap.
+ * @param dst  Destination bitmap.
+ * @return JNI_TRUE on success, JNI_FALSE if bitmaps are incompatible or an error occurred.
+ */
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_copyBitmaps(
+        JNIEnv *env,
+        jclass /*clazz*/,
+        jobject src,
+        jobject dst) {
+
+    if (__builtin_expect(src == nullptr || dst == nullptr, 0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(env->IsSameObject(src, dst), 0)) {
+        return JNI_TRUE;
+    }
+
+    AndroidBitmapInfo srcInfo{};
+    AndroidBitmapInfo dstInfo{};
+
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, src, &srcInfo) != ANDROID_BITMAP_RESULT_SUCCESS ||
+            AndroidBitmap_getInfo(env, dst, &dstInfo) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            (srcInfo.flags & ANDROID_BITMAP_FLAGS_IS_HARDWARE) != 0 ||
+            (dstInfo.flags & ANDROID_BITMAP_FLAGS_IS_HARDWARE) != 0,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            srcInfo.width != dstInfo.width ||
+            srcInfo.height != dstInfo.height ||
+            srcInfo.format != dstInfo.format ||
+            srcInfo.width == 0 ||
+            srcInfo.height == 0,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    const uint32_t bytesPerPixel = bitmapBytesPerPixel(srcInfo.format);
+    if (__builtin_expect(bytesPerPixel == 0, 0)) {
+        return JNI_FALSE;
+    }
+
+    // size_t cast prevents width * bytesPerPixel overflow on 32-bit platforms
+    const size_t rowBytes = static_cast<size_t>(srcInfo.width) * bytesPerPixel;
+
+    if (__builtin_expect(
+            static_cast<size_t>(srcInfo.stride) < rowBytes ||
+            static_cast<size_t>(dstInfo.stride) < rowBytes,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *srcPixels = nullptr;
+    void *dstPixels = nullptr;
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, src, &srcPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, dst, &dstPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        AndroidBitmap_unlockPixels(env, src);
+        return JNI_FALSE;
+    }
+
+    const bool contiguous =
+            static_cast<size_t>(srcInfo.stride) == rowBytes &&
+            static_cast<size_t>(dstInfo.stride) == rowBytes;
+
+    if (contiguous) {
+        // size_t cast prevents rowBytes * height overflow on 32-bit platforms
+        std::memcpy(dstPixels, srcPixels, rowBytes * static_cast<size_t>(srcInfo.height));
+    } else {
+        auto *srcRow = static_cast<const uint8_t *>(srcPixels);
+        auto *dstRow = static_cast<uint8_t *>(dstPixels);
+
+        for (uint32_t y = 0; y < srcInfo.height; ++y) {
+            std::memcpy(dstRow, srcRow, rowBytes);
+            srcRow += static_cast<ptrdiff_t>(srcInfo.stride);
+            dstRow += static_cast<ptrdiff_t>(dstInfo.stride);
+        }
+    }
+
+    AndroidBitmap_unlockPixels(env, dst);
+    AndroidBitmap_unlockPixels(env, src);
+    return JNI_TRUE;
+}
+
+// ---------------------------------------------------------------------------
+// Soft-Light blend — exact Android/Skia formula, simplified for α_dst = 1.
+//
+// General form (C values are pre-multiplied):
+//   m   = C_dst / α_dst
+//   g   = (16m² + 4m)*(m-1) + 7m    if 4*C_dst <= α_dst  (m <= 0.25)
+//       = sqrt(m) - m                otherwise
+//   f   = C_dst*(α_src + (2*C_src - α_src)*(1-m))    if 2*C_src <= α_src
+//       = C_dst*α_src + α_dst*(2*C_src - α_src)*g     otherwise
+//   α_out = α_src + α_dst - α_src*α_dst
+//   C_out = C_src/α_dst + C_dst/α_src + f
+//
+// Simplified for α_dst = 1 (guaranteed by caller).
+// Let cb = straight backdrop channel, cs = straight source channel,
+//     a  = α_src (color alpha, in [0,1]):
+//
+//   m = cb
+//   g = (16cb² + 4cb)*(cb-1) + 7cb    if cb <= 0.25
+//     = sqrt(cb) - cb                  otherwise
+//   f = cb*(a + (2*a*cs - a)*(1-cb))  if 2*a*cs <= a  →  cs <= 0.5
+//     = cb*a + (2*a*cs - a)*g         otherwise
+//
+// result_straight = f/a  (recover straight channel from pre-multiplied f)
+//
+// Both LUTs are built on the first call and reused across all subsequent calls.
+// ---------------------------------------------------------------------------
+
+// g_sl_lut[cs_u8][cb_u8] -> soft-light result as uint8, for fully opaque color (a=1).
+// 256 * 256 = 64 KB — fits in L2 cache on modern ARM cores.
+static uint8_t g_sl_lut[256][256];
+
+// g_lerp_lut[alpha_u8][value_u8] -> floor(alpha * value / 255)
+// Used for branch-free integer lerp in the hot loop:
+//   out = g_lerp_lut[alpha][blend] + g_lerp_lut[255 - alpha][cb]
+// 256 * 256 = 64 KB.
+static uint8_t g_lerp_lut[256][256];
+
+static std::once_flag g_lut_flag;
+
+static void build_luts() {
+    // lerp LUT: floor(a * v / 255) — intentional floor, not round.
+    // This guarantees lerpA[x] + lerpInvA[x] <= 255 for any x and any alpha,
+    // preventing uint8_t overflow when the two terms are summed in process_alpha.
+    //
+    // Proof: floor(a*x/255) + floor((255-a)*x/255)
+    //      <= a*x/255 + (255-a)*x/255 = x <= 255.
+    for (int a = 0; a < 256; ++a) {
+        for (int v = 0; v < 256; ++v) {
+            g_lerp_lut[a][v] = static_cast<uint8_t>((a * v) / 255);
+        }
+    }
+
+    // Soft-light LUT for fully opaque color (α_src = 1, i.e. a = 1).
+    // With a = 1: C_src = cs, so 2*C_src <= α_src becomes cs <= 0.5.
+    // f = cb*(1 + (2*cs - 1)*(1-cb))    if cs <= 0.5
+    //   = cb + (2*cs - 1)*g             otherwise
+    // result = f  (already straight since a = 1)
+    for (int cs_i = 0; cs_i < 256; ++cs_i) {
+        const float cs = cs_i / 255.0f;
+
+        for (int cb_i = 0; cb_i < 256; ++cb_i) {
+            const float cb = cb_i / 255.0f;
+            float result;
+
+            if (cs <= 0.5f) {
+                // f = cb * (α_src + (2*C_src - α_src)*(1 - m))
+                //   = cb * (1 + (2*cs - 1)*(1 - cb))
+                result = cb * (1.0f + (2.0f * cs - 1.0f) * (1.0f - cb));
+            } else {
+                // g = (16m² + 4m)*(m-1) + 7m,  m = cb
+                float g;
+                if (cb <= 0.25f) {
+                    g = (16.0f * cb * cb + 4.0f * cb) * (cb - 1.0f) + 7.0f * cb;
+                } else {
+                    g = sqrtf(cb) - cb;
+                }
+                // f = cb*α_src + α_dst*(2*C_src - α_src)*g
+                //   = cb + (2*cs - 1)*g          (α_src = α_dst = 1)
+                result = cb + (2.0f * cs - 1.0f) * g;
+            }
+
+            // Clamp for float rounding safety.
+            if (result < 0.0f) result = 0.0f;
+            if (result > 1.0f) result = 1.0f;
+
+            g_sl_lut[cs_i][cb_i] = static_cast<uint8_t>(result * 255.0f + 0.5f);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Three specialised hot loops, selected by colorA before entering the loop.
+// Alpha branching is lifted OUT of the loop — no branches inside iterations.
+// ---------------------------------------------------------------------------
+
+// colorA == 0xFF: out[ch] = sl_lut[cs][cb]
+static void process_opaque(
+        const uint8_t * __restrict__ inPx,
+        uint8_t * __restrict__ outPx,
+        uint32_t width, uint32_t height,
+        uint32_t inStride, uint32_t outStride,
+        uint8_t csR, uint8_t csG, uint8_t csB)
+{
+    // LUT row pointers are fixed for a given color — load them once outside the loop.
+    const uint8_t * __restrict__ slR = g_sl_lut[csR];
+    const uint8_t * __restrict__ slG = g_sl_lut[csG];
+    const uint8_t * __restrict__ slB = g_sl_lut[csB];
+
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t * __restrict__ src = inPx  + y * inStride;
+        uint8_t * __restrict__ dst = outPx + y * outStride;
+        const uint8_t * const end = src + width * 4u;
+
+        while (src < end) {
+            dst[0] = slR[src[0]];
+            dst[1] = slG[src[1]];
+            dst[2] = slB[src[2]];
+            dst[3] = 0xFF;
+            src += 4;
+            dst += 4;
+        }
+    }
+}
+
+// colorA == 0x00: output is a copy of input with alpha forced to 0xFF.
+// (Input bitmap is guaranteed opaque, so the copy is a straight pixel copy.)
+static void process_transparent(
+        const uint8_t * __restrict__ inPx,
+        uint8_t * __restrict__ outPx,
+        uint32_t width, uint32_t height,
+        uint32_t inStride, uint32_t outStride)
+{
+    if (inStride == width * 4u && outStride == width * 4u) {
+        memcpy(outPx, inPx, width * height * 4u);
+    } else {
+        for (uint32_t y = 0; y < height; ++y) {
+            memcpy(outPx + y * outStride, inPx + y * inStride, width * 4u);
+        }
+    }
+}
+
+// 0 < colorA < 0xFF:
+//   out[ch] = lerp_lut[colorA][sl[cs][cb]] + lerp_lut[255 - colorA][cb]
+// No floats, no branches inside the loop.
+static void process_alpha(
+        const uint8_t * __restrict__ inPx,
+        uint8_t * __restrict__ outPx,
+        uint32_t width, uint32_t height,
+        uint32_t inStride, uint32_t outStride,
+        uint8_t csR, uint8_t csG, uint8_t csB, uint8_t colorA)
+{
+    const uint8_t invA = static_cast<uint8_t>(255 - colorA);
+
+    const uint8_t * __restrict__ slR      = g_sl_lut[csR];
+    const uint8_t * __restrict__ slG      = g_sl_lut[csG];
+    const uint8_t * __restrict__ slB      = g_sl_lut[csB];
+    const uint8_t * __restrict__ lerpA    = g_lerp_lut[colorA];
+    const uint8_t * __restrict__ lerpInvA = g_lerp_lut[invA];
+
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t * __restrict__ src = inPx  + y * inStride;
+        uint8_t * __restrict__ dst = outPx + y * outStride;
+        const uint8_t * const end = src + width * 4u;
+
+        while (src < end) {
+            const uint8_t cbR = src[0];
+            const uint8_t cbG = src[1];
+            const uint8_t cbB = src[2];
+            dst[0] = lerpA[slR[cbR]] + lerpInvA[cbR];
+            dst[1] = lerpA[slG[cbG]] + lerpInvA[cbG];
+            dst[2] = lerpA[slB[cbB]] + lerpInvA[cbB];
+            dst[3] = 0xFF;
+            src += 4;
+            dst += 4;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point
+//
+// Kotlin: external fun applySoftLight(input: Bitmap, output: Bitmap, color: Int): Boolean  [org.telegram.messenger.Utilities]
+//
+// color  — Android packed ARGB (0xAARRGGBB), straight (non-premultiplied) alpha.
+// Returns true on success, false on error (size mismatch or unsupported format).
+// ---------------------------------------------------------------------------
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_applySoftLight(
+        JNIEnv *env,
+        jclass  /*clazz*/,
+        jobject inputBitmap,
+        jobject outputBitmap,
+        jint    color)
+{
+    std::call_once(g_lut_flag, build_luts);
+
+    if (__builtin_expect(env->IsSameObject(inputBitmap, outputBitmap), 0)) {
+        return JNI_FALSE;
+    }
+
+    AndroidBitmapInfo inInfo{};
+    AndroidBitmapInfo outInfo{};
+
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, inputBitmap,  &inInfo)  != ANDROID_BITMAP_RESULT_SUCCESS ||
+            AndroidBitmap_getInfo(env, outputBitmap, &outInfo) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            inInfo.width   != outInfo.width                   ||
+            inInfo.height  != outInfo.height                  ||
+            inInfo.format  != ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+            outInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+            inInfo.width   == 0                               ||
+            inInfo.height  == 0                               ||
+            inInfo.stride  < inInfo.width  * 4u               ||
+            outInfo.stride < outInfo.width * 4u,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *inPixels  = nullptr;
+    void *outPixels = nullptr;
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, inputBitmap, &inPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, outputBitmap, &outPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        AndroidBitmap_unlockPixels(env, inputBitmap);
+        return JNI_FALSE;
+    }
+
+    // Unpack Java color (0xAARRGGBB) into separate channels.
+    const auto u         = static_cast<uint32_t>(color);
+    const uint8_t colorA = static_cast<uint8_t>(u >> 24);
+    const uint8_t colorR = static_cast<uint8_t>(u >> 16);
+    const uint8_t colorG = static_cast<uint8_t>(u >>  8);
+    const uint8_t colorB = static_cast<uint8_t>(u);
+
+    const auto *src = static_cast<const uint8_t *>(inPixels);
+    auto       *dst = static_cast<uint8_t *>(outPixels);
+    const uint32_t w  = inInfo.width;
+    const uint32_t h  = inInfo.height;
+    const uint32_t si = inInfo.stride;
+    const uint32_t so = outInfo.stride;
+
+    // Dispatch before the loop so no alpha branching occurs inside it.
+    if (colorA == 0xFF) {
+        process_opaque(src, dst, w, h, si, so, colorR, colorG, colorB);
+    } else if (colorA == 0x00) {
+        process_transparent(src, dst, w, h, si, so);
+    } else {
+        process_alpha(src, dst, w, h, si, so, colorR, colorG, colorB, colorA);
+    }
+
+    AndroidBitmap_unlockPixels(env, outputBitmap);
+    AndroidBitmap_unlockPixels(env, inputBitmap);
+    return JNI_TRUE;
 }
 
 }

@@ -316,8 +316,8 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 40, 9, 40, 0));
 
         FrameLayout warningLayout = new FrameLayout(getContext());
-        warningLayout.setPadding(dp(10), dp(10), dp(10), dp(10));
-        warningLayout.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold), Theme.isCurrentThemeDark() ? .2f : .15f)));
+        warningLayout.setPadding(dp(24), dp(10), dp(24), dp(10));
+        warningLayout.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold), Theme.isCurrentThemeDark() ? .2f : .15f)));
 
         TextView warningTextView = new TextView(getContext());
         warningTextView.setTypeface(AndroidUtilities.bold());
@@ -329,7 +329,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
 
         linearLayout.addView(warningLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 14, 19, 14, 0));
 
-        ButtonWithCounterView button = new ButtonWithCounterView(getContext(), null);
+        ButtonWithCounterView button = new ButtonWithCounterView(getContext(), null).setRound();
         ScaleStateListAnimator.apply(button, 0.02f, 1.5f);
         button.setText(LocaleController.getString(R.string.GotIt), false);
         linearLayout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 14, 20, 14, 4));

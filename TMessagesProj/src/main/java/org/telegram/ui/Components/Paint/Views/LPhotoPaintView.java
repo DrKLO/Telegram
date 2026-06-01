@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -95,7 +96,6 @@ import org.telegram.ui.Components.Paint.PhotoFace;
 import org.telegram.ui.Components.Paint.RenderView;
 import org.telegram.ui.Components.Paint.Swatch;
 import org.telegram.ui.Components.Paint.UndoStore;
-import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Size;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -512,7 +512,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 }
                 view.setX(entity.x * paintingSize.width - entity.viewWidth * (1 - entity.scale) / 2);
                 view.setY(entity.y * paintingSize.height - entity.viewHeight * (1 - entity.scale) / 2);
-                view.setPosition(new Point(view.getX() + entity.viewWidth / 2f, view.getY() + entity.viewHeight / 2f));
+                float x = view.getX() + entity.viewWidth / 2f;
+                float y = view.getY() + entity.viewHeight / 2f;
+                view.setPosition(new PointF(x, y));
                 view.setScale(entity.scale);
                 view.setRotation((float) (-entity.rotation / Math.PI * 180));
             }
@@ -1015,7 +1017,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         onTextAdd();
 
         Size paintingSize = getPaintingSize();
-        Point position = startPositionRelativeToEntity(null);
+        PointF position = startPositionRelativeToEntity(null);
         TextPaintView view = new TextPaintView(getContext(), position, (int) (paintingSize.width / 9), "", colorSwatch, selectedTextType);
         view.setMinMaxFontSize((int) (0.5f * (paintingSize.width / 9f)), (int) (2f * (paintingSize.width / 9f)), () -> {
             if (weightChooserView != null) {
@@ -1888,7 +1890,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     continue;
                 }
                 EntityView entity = (EntityView) v;
-                Point position = entity.getPosition();
+                PointF position = entity.getPosition();
                 if (entities != null) {
                     VideoEditedInfo.MediaEntity mediaEntity = new VideoEditedInfo.MediaEntity();
                     if (entity instanceof TextPaintView) {
@@ -2847,7 +2849,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         }
 
         EntityView entityView = null;
-        Point position = startPositionRelativeToEntity(currentEntityView);
+        PointF position = startPositionRelativeToEntity(currentEntityView);
 
         if (currentEntityView instanceof StickerView) {
             StickerView newStickerView = new StickerView(getContext(), (StickerView) currentEntityView, position);
@@ -2866,21 +2868,23 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         selectEntity(entityView);
     }
 
-    private Point startPositionRelativeToEntity(EntityView entityView) {
+    private PointF startPositionRelativeToEntity(EntityView entityView) {
         float offset = 200.0f;
         if (currentCropState != null) {
             offset /= currentCropState.cropScale;
         }
 
         if (entityView != null) {
-            Point position = entityView.getPosition();
-            return new Point(position.x + offset, position.y + offset);
+            PointF position = entityView.getPosition();
+            float x = position.x + offset;
+            float y = position.y + offset;
+            return new PointF(x, y);
         } else {
             float minimalDistance = 100.0f;
             if (currentCropState != null) {
                 minimalDistance /= currentCropState.cropScale;
             }
-            Point position = centerPositionForEntity();
+            PointF position = centerPositionForEntity();
             while (true) {
                 boolean occupied = false;
                 for (int index = 0; index < entitiesView.getChildCount(); index++) {
@@ -2888,7 +2892,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                     if (!(view instanceof EntityView))
                         continue;
 
-                    Point location = ((EntityView) view).getPosition();
+                    PointF location = ((EntityView) view).getPosition();
                     float distance = (float) Math.sqrt(Math.pow(location.x - position.x, 2) + Math.pow(location.y - position.y, 2));
                     if (distance < minimalDistance) {
                         occupied = true;
@@ -2898,7 +2902,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 if (!occupied) {
                     break;
                 } else {
-                    position = new Point(position.x + offset, position.y + offset);
+                    float x = position.x + offset;
+                    float y = position.y + offset;
+                    position = new PointF(x, y);
                 }
             }
             return position;
@@ -2976,7 +2982,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         return new Size(side, side);
     }
 
-    private Point centerPositionForEntity() {
+    private PointF centerPositionForEntity() {
         Size paintingSize = getPaintingSize();
         float x = paintingSize.width / 2.0f;
         float y = paintingSize.height / 2.0f;
@@ -2987,7 +2993,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             x -= px * paintingSize.width;
             y -= py * paintingSize.height;
         }
-        return new Point(x, y);
+        float x1 = x;
+        float y1 = y;
+        return new PointF(x1, y1);
     }
 
     private StickerPosition calculateStickerPosition(TLRPC.Document document) {
@@ -3021,7 +3029,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 return defaultPosition;
             }
 
-            Point referencePoint = face.getPointForAnchor(anchor);
+            PointF referencePoint = face.getPointForAnchor(anchor);
             float referenceWidth = face.getWidthForAnchor(anchor);
             float angle = face.getAngle();
             Size baseSize = baseStickerSize();
@@ -3038,7 +3046,9 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             float x = referencePoint.x + xCompX + yCompX;
             float y = referencePoint.y + xCompY + yCompY;
 
-            return new StickerPosition(new Point(x, y), scale, angle);
+            float x1 = x;
+            float y1 = y;
+            return new StickerPosition(new PointF(x1, y1), scale, angle);
         }
     }
 
@@ -3063,7 +3073,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     }
 
     private boolean isFaceAnchorOccupied(PhotoFace face, int anchor, long documentId, TLRPC.TL_maskCoords maskCoords) {
-        Point anchorPoint = face.getPointForAnchor(anchor);
+        PointF anchorPoint = face.getPointForAnchor(anchor);
         if (anchorPoint == null) {
             return true;
         }
@@ -3081,7 +3091,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
                 continue;
             }
 
-            Point location = stickerView.getPosition();
+            PointF location = stickerView.getPosition();
             float distance = (float)Math.hypot(location.x - anchorPoint.x, location.y - anchorPoint.y);
             if ((documentId == stickerView.getSticker().id || faces.size() > 1) && distance < minDistance) {
                 return true;
@@ -3234,11 +3244,11 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     }
 
     private static class StickerPosition {
-        private Point position;
+        private PointF position;
         private float scale;
         private float angle;
 
-        StickerPosition(Point position, float scale, float angle) {
+        StickerPosition(PointF position, float scale, float angle) {
             this.position = position;
             this.scale = scale;
             this.angle = angle;

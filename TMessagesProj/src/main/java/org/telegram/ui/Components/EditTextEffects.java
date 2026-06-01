@@ -308,12 +308,16 @@ public class EditTextEffects extends EditText {
         if (clipToPadding && getScrollY() != 0) {
             canvas.clipRect(-AndroidUtilities.dp(3), getScrollY() - super.getExtendedPaddingTop() - offsetY, getMeasuredWidth(), getMeasuredHeight() + getScrollY() + super.getExtendedPaddingBottom() - offsetY);
         }
-        path.rewind();
-        for (SpoilerEffect eff : spoilers) {
-            Rect bounds = eff.getBounds();
-            path.addRect(bounds.left, bounds.top, bounds.right, bounds.bottom, Path.Direction.CW);
+
+        if (!spoilers.isEmpty()) {
+            path.rewind();
+            for (SpoilerEffect eff : spoilers) {
+                Rect bounds = eff.getBounds();
+                path.addRect(bounds.left, bounds.top, bounds.right, bounds.bottom, Path.Direction.CW);
+            }
+            canvas.clipPath(path, Region.Op.DIFFERENCE);
         }
-        canvas.clipPath(path, Region.Op.DIFFERENCE);
+
         invalidateQuotes(false);
         for (int i = 0; i < quoteBlocks.size(); ++i) {
             quoteBlocks.get(i).draw(canvas, 0, getWidth(), quoteColor, 1f, getPaint());
@@ -336,35 +340,39 @@ public class EditTextEffects extends EditText {
         }
         canvas.restore();
 
-        canvas.save();
-        canvas.clipPath(path);
-        path.rewind();
-        if (!spoilers.isEmpty())
-            spoilers.get(0).getRipplePath(path);
-        canvas.clipPath(path);
-        canvas.translate(0, -getPaddingTop());
-        if (wrapCanvasToFixClipping) {
-            if (wrappedCanvas == null) {
-                wrappedCanvas = new NoClipCanvas();
-            }
-            wrappedCanvas.canvas = canvas;
-            super.onDraw(wrappedCanvas);
-        } else {
-            super.onDraw(canvas);
-        }
-        canvas.restore();
+        if (!spoilers.isEmpty()) {
+            if (spoilers.get(0).hasRipplePath()) {
+                canvas.save();
+                canvas.clipPath(path);
+                path.rewind();
 
-        rect.set(0, (int) (getScrollY() - super.getExtendedPaddingTop() - offsetY), getWidth(), (int) (getMeasuredHeight() + getScrollY() + super.getExtendedPaddingBottom() - offsetY));
-        canvas.save();
-        canvas.clipRect(rect);
-        for (SpoilerEffect eff : spoilers) {
-            Rect b = eff.getBounds();
-            if (rect.top <= b.bottom && rect.bottom >= b.top || b.top <= rect.bottom && b.bottom >= rect.top) {
-                eff.setColor(eff.insideQuote ? quoteColor : getPaint().getColor());
-                eff.draw(canvas);
+                spoilers.get(0).getRipplePath(path);
+                canvas.clipPath(path);
+                canvas.translate(0, -getPaddingTop());
+                if (wrapCanvasToFixClipping) {
+                    if (wrappedCanvas == null) {
+                        wrappedCanvas = new NoClipCanvas();
+                    }
+                    wrappedCanvas.canvas = canvas;
+                    super.onDraw(wrappedCanvas);
+                } else {
+                    super.onDraw(canvas);
+                }
+                canvas.restore();
             }
+
+            rect.set(0, (int) (getScrollY() - super.getExtendedPaddingTop() - offsetY), getWidth(), (int) (getMeasuredHeight() + getScrollY() + super.getExtendedPaddingBottom() - offsetY));
+            canvas.save();
+            canvas.clipRect(rect);
+            for (SpoilerEffect eff : spoilers) {
+                Rect b = eff.getBounds();
+                if (rect.top <= b.bottom && rect.bottom >= b.top || b.top <= rect.bottom && b.bottom >= rect.top) {
+                    eff.setColor(eff.insideQuote ? quoteColor : getPaint().getColor());
+                    eff.draw(canvas);
+                }
+            }
+            canvas.restore();
         }
-        canvas.restore();
     }
 
     public void updateAnimatedEmoji(boolean force) {

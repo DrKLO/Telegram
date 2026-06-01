@@ -6,8 +6,11 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -50,13 +53,22 @@ public class BotAskCell extends View {
         final int bx = (getMeasuredWidth() - drawable.getBubbleWidth() + sideMenuWidth) / 2;
         final int by = dp(34);
 
-        applyServiceShaderMatrix(getMeasuredWidth(), getHeight(), sideMenuWidth / 2f, getTop());
+        applyServiceShaderMatrix(getMeasuredWidth(), sideMenuWidth / 2f);
         askBotForumSeparator.draw(canvas, getWidth(), sideMenuWidth, 0, 1.0f, 1f, false);
         drawable.setBounds(bx, by, bx + drawable.getBubbleWidth(), by + drawable.getBubbleHeight());
         drawable.draw(canvas);
     }
 
-    private void applyServiceShaderMatrix(int measuredWidth, int backgroundHeight, float x, float viewTop) {
+
+    private int backgroundHeight;
+    private float viewTop;
+
+    public void setVisiblePart(float visibleTop, int parentH) {
+        backgroundHeight = parentH;
+        viewTop = visibleTop;
+    }
+
+    private void applyServiceShaderMatrix(int measuredWidth, float x) {
         if (resourcesProvider != null) {
             resourcesProvider.applyServiceShaderMatrix(measuredWidth, backgroundHeight, x, viewTop);
         } else {

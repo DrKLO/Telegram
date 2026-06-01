@@ -77,4 +77,12 @@ public sealed class TlGen_TopPeerCategory : TlGen_Object {
       stream.writeInt32(MAGIC.toInt())
     }
   }
+
+  public data object TL_topPeerCategoryBotsGuestChat : TlGen_TopPeerCategory() {
+    public const val MAGIC: UInt = 0x6C24F3DDU
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
 }

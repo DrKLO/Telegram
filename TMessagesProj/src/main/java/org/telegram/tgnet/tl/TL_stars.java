@@ -255,7 +255,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer221 extends TL_starGiftUnique {
         public static final int constructor = 0x569D64C9;
 
@@ -363,7 +362,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer219 extends TL_starGiftUnique {
         public static final int constructor = 0xb0bf741b;
 
@@ -463,7 +461,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer215 extends TL_starGiftUnique {
         public static final int constructor = 0x3a0893b8;
 
@@ -557,7 +554,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer214 extends TL_starGiftUnique {
         public static final int constructor = 0x1befe865;
 
@@ -645,7 +641,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer213 extends TL_starGiftUnique {
         public static final int constructor = 0x26a5553e;
 
@@ -725,7 +720,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer211 extends TL_starGiftUnique {
         public static final int constructor = 0x3a274d50;
 
@@ -796,7 +790,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer210 extends TL_starGiftUnique {
         public static final int constructor = 0xf63778ae;
 
@@ -864,7 +857,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer206 extends TL_starGiftUnique {
         public static final int constructor = 0x6411db89;
 
@@ -924,7 +916,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer202 extends TL_starGiftUnique {
         public static final int constructor = 0x5c62d151;
 
@@ -977,7 +968,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGiftUnique_layer198 extends TL_starGiftUnique {
         public static final int constructor = 0xf2fe7e4a;
 
@@ -1024,7 +1014,6 @@ public class TL_stars {
             stream.writeInt32(availability_total);
         }
     }
-
     public static class TL_starGiftUnique_layer197 extends TL_starGiftUnique {
         public static final int constructor = 0x3482f322;
 
@@ -1066,7 +1055,6 @@ public class TL_stars {
             stream.writeInt32(availability_total);
         }
     }
-
     public static class TL_starGiftUnique_layer196 extends TL_starGiftUnique {
         public static final int constructor = 0x6a1407cd;
 
@@ -1216,7 +1204,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer219 extends TL_starGift {
         public static final int constructor = 0x1B9A4D7F;
 
@@ -1323,7 +1310,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer217 extends TL_starGift {
         public static final int constructor = 0x80ac53c3;
 
@@ -1420,7 +1406,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer212 extends TL_starGift {
         public static final int constructor = 0xbcff5b;
 
@@ -1509,7 +1494,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer209 extends TL_starGift {
         public static final int constructor = 0x7f853c12;
 
@@ -1586,7 +1570,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer206 extends TL_starGift {
         public static final int constructor = 0xc62aca28;
 
@@ -1657,7 +1640,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer202 extends TL_starGift {
         public static final int constructor = 0x2cc73c8;
 
@@ -1710,7 +1692,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer195 extends TL_starGift {
         public static final int constructor = 0x49c577cd;
 
@@ -1755,7 +1736,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starGift_layer190 extends TL_starGift {
         public static final int constructor = 0xaea174ee;
 
@@ -2276,7 +2256,6 @@ public class TL_stars {
             peer.serializeToStream(stream);
         }
     }
-
     public static class TL_starsTransactionPeerAppStore extends StarsTransactionPeer {
         public static final int constructor = 0xb457b375;
 
@@ -2286,7 +2265,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerPlayMarket extends StarsTransactionPeer {
         public static final int constructor = 0x7b560a0b;
 
@@ -2296,7 +2274,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerFragment extends StarsTransactionPeer {
         public static final int constructor = 0xe92fd902;
 
@@ -2306,7 +2283,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerPremiumBot extends StarsTransactionPeer {
         public static final int constructor = 0x250dbaf8;
 
@@ -2316,7 +2292,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerUnsupported extends StarsTransactionPeer {
         public static final int constructor = 0x95f2bfe4;
 
@@ -2326,7 +2301,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerAds extends StarsTransactionPeer {
         public static final int constructor = 0x60682812;
 
@@ -2336,7 +2310,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starsTransactionPeerAPI extends StarsTransactionPeer {
         public static final int constructor = 0xf9677aad;
 
@@ -2417,7 +2390,6 @@ public class TL_stars {
         }
 
     }
-
     public static class TL_starsTransaction_layer181 extends StarsTransaction {
         public static final int constructor = 0xcc7079b2;
 
@@ -2458,7 +2430,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer182 extends TL_starsTransaction {
         public static final int constructor = 0xaa00c898;
 
@@ -2554,7 +2525,6 @@ public class TL_stars {
             return amount == 0 ? nanos < 0 : amount < 0;
         }
     }
-
     public static class TL_starsTonAmount extends StarsAmount {
         public static final int constructor = 0x74aee3e0;
 
@@ -2573,7 +2543,6 @@ public class TL_stars {
             stream.writeInt64(amount);
         }
     }
-
     public static class TL_starsAmount extends StarsAmount {
         public static final int constructor = 0xbbb6b4a3;
 
@@ -2753,7 +2722,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer205 extends TL_starsTransaction {
         public static final int constructor = 0xa39fd94a;
 
@@ -2890,7 +2858,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer199_2 extends TL_starsTransaction {
         public static final int constructor = 0xecd50924;
 
@@ -3019,7 +2986,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer199 extends TL_starsTransaction {
         public static final int constructor = 0x64dfc926;
 
@@ -3140,7 +3106,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer194 extends TL_starsTransaction {
         public static final int constructor = 0x35d4f276;
 
@@ -3243,7 +3208,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer191 extends TL_starsTransaction {
         public static final int constructor = 0xa9ee4c2;
 
@@ -3338,7 +3302,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer188 extends TL_starsTransaction {
         public static final int constructor = 0xee7522d5;
 
@@ -3427,7 +3390,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer186 extends TL_starsTransaction {
         public static final int constructor = 0x433aeb2b;
 
@@ -3510,7 +3472,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsTransaction_layer185 extends TL_starsTransaction {
         public static final int constructor = 0x2db5418f;
 
@@ -3858,7 +3819,6 @@ public class TL_stars {
         }
 
     }
-
     public static class TL_starsSubscription extends StarsSubscription {
         public static final int constructor = 0x2e6eab1a;
 
@@ -3913,7 +3873,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsSubscription_layer193 extends StarsSubscription {
         public static final int constructor = 0x538ecf18;
 
@@ -3948,7 +3907,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_starsSubscription_old extends TL_starsSubscription {
         public static final int constructor = 0xd073f1e6;
 
@@ -4111,7 +4069,6 @@ public class TL_stars {
         }
 
     }
-
     public static class starGiftAttributeIdModel extends StarGiftAttributeId {
         public static final int constructor = 0x48aaae3c;
 
@@ -4126,7 +4083,6 @@ public class TL_stars {
             stream.writeInt64(document_id);
         }
     }
-
     public static class starGiftAttributeIdPattern extends StarGiftAttributeId {
         public static final int constructor = 0x4a162433;
 
@@ -4141,7 +4097,6 @@ public class TL_stars {
             stream.writeInt64(document_id);
         }
     }
-
     public static class starGiftAttributeIdBackdrop extends StarGiftAttributeId {
         public static final int constructor = 0x1f01c757;
 
@@ -4205,7 +4160,6 @@ public class TL_stars {
             return 0;
         }
     }
-
     public static class starGiftAttributeModel extends StarGiftAttribute {
         public static final int constructor = 0x565251e2;
 
@@ -4559,7 +4513,6 @@ public class TL_stars {
             return TLdeserialize(SavedStarGift.class, result, stream, constructor, exception);
         }
     }
-
     public static class TL_savedStarGift extends SavedStarGift {
         public static final int constructor = 0x41df43fc;
 
@@ -4680,7 +4633,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer221_2 extends TL_savedStarGift {
         public static final int constructor = 0x389bb419;
 
@@ -4803,7 +4755,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer221 extends TL_savedStarGift {
         public static final int constructor = 0xEAD6805E;
 
@@ -4918,7 +4869,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer219 extends TL_savedStarGift {
         public static final int constructor = 0x8983a452;
 
@@ -5027,7 +4977,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer214 extends TL_savedStarGift {
         public static final int constructor = 0x19a9b572;
 
@@ -5130,7 +5079,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer211 extends TL_savedStarGift {
         public static final int constructor = 0x1ea646df;
 
@@ -5225,7 +5173,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer209 extends TL_savedStarGift {
         public static final int constructor = 0xdfda0499;
 
@@ -5314,7 +5261,6 @@ public class TL_stars {
             }
         }
     }
-
     public static class TL_savedStarGift_layer202 extends TL_savedStarGift {
         public static final int constructor = 0x6056dba5;
 
@@ -5457,7 +5403,6 @@ public class TL_stars {
             return TLdeserialize(InputSavedStarGift.class, result, stream, constructor, exception);
         }
     }
-
     public static final class TL_inputSavedStarGiftUser extends InputSavedStarGift {
         public static final int constructor = 0x69279795;
 
@@ -5474,7 +5419,6 @@ public class TL_stars {
             msg_id = stream.readInt32(exception);
         }
     }
-
     public static final class TL_inputSavedStarGiftSlug extends InputSavedStarGift {
         public static final int constructor = 0x2085c238;
 
@@ -5491,7 +5435,6 @@ public class TL_stars {
             slug = stream.readString(exception);
         }
     }
-
     public static final class TL_inputSavedStarGiftChat extends InputSavedStarGift {
         public static final int constructor = 0xf101aa7f;
 
@@ -5603,7 +5546,6 @@ public class TL_stars {
             return 0;
         }
     }
-
     public static class paidReactionPrivacyDefault extends PaidReactionPrivacy {
         public static final int constructor = 0x206ad49e;
 
@@ -5612,7 +5554,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class paidReactionPrivacyAnonymous extends PaidReactionPrivacy {
         public static final int constructor = 0x1f0c1ad9;
 
@@ -5621,7 +5562,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class paidReactionPrivacyPeer extends PaidReactionPrivacy {
         public static final int constructor = 0xdc6cfcf0;
 
@@ -5896,7 +5836,6 @@ public class TL_stars {
             return TLdeserialize(StarGiftCollections.class, result, stream, constructor, exception);
         }
     }
-
     public static class TL_starGiftCollectionsNotModified extends StarGiftCollections {
         public static final int constructor = 0xa0ba4f17;
 
@@ -5905,7 +5844,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starGiftCollections extends StarGiftCollections {
         public static final int constructor = 0x8a2932f3;
 
@@ -6156,7 +6094,6 @@ public class TL_stars {
             return TLdeserialize(CheckCanSendGiftResult.class, result, stream, constructor, exception);
         }
     }
-
     public static class checkCanSendGiftResultOk extends CheckCanSendGiftResult {
         public static final int constructor = 0x374fa7ad;
 
@@ -6165,7 +6102,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class checkCanSendGiftResultFail extends CheckCanSendGiftResult {
         public static final int constructor = 0xd5e58274;
 
@@ -6218,7 +6154,6 @@ public class TL_stars {
             return TLdeserialize(StarGiftAuctionState.class, fromConstructor(constructor), stream, constructor, exception);
         }
     }
-
     public static class TL_starGiftAuctionState extends StarGiftAuctionState {
         public static final int constructor = 0x771a4e66;
 
@@ -6268,65 +6203,6 @@ public class TL_stars {
             rounds = Vector.deserialize(stream, StarGiftAuctionRound::TLdeserialize, exception);
         }
     }
-
-    public static class StarGiftAuctionRound extends TLObject {
-        public int num;
-        public int duration;
-        public int extend_top;
-        public int current_window;
-
-        public static StarGiftAuctionRound TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            StarGiftAuctionRound result = null;
-            switch (constructor) {
-                case TL_starGiftAuctionRound.constructor:
-                    result = new TL_starGiftAuctionRound();
-                    break;
-                case TL_starGiftAuctionRoundExtendable.constructor:
-                    result = new TL_starGiftAuctionRoundExtendable();
-                    break;
-            }
-            return TLdeserialize(StarGiftAuctionRound.class, result, stream, constructor, exception);
-        }
-    }
-
-    public static class TL_starGiftAuctionRound extends StarGiftAuctionRound {
-        public static final int constructor = 0x3aae0528;
-
-        @Override
-        public void readParams(InputSerializedData stream, boolean exception) {
-            num = stream.readInt32(exception);
-            duration = stream.readInt32(exception);
-        }
-
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt32(num);
-            stream.writeInt32(duration);
-        }
-    }
-
-    public static class TL_starGiftAuctionRoundExtendable extends StarGiftAuctionRound {
-        public static final int constructor = 0xaa021e5;
-
-        @Override
-        public void readParams(InputSerializedData stream, boolean exception) {
-            num = stream.readInt32(exception);
-            duration = stream.readInt32(exception);
-            extend_top = stream.readInt32(exception);
-            current_window = stream.readInt32(exception);
-        }
-
-        @Override
-        public void serializeToStream(OutputSerializedData stream) {
-            stream.writeInt32(constructor);
-            stream.writeInt32(num);
-            stream.writeInt32(duration);
-            stream.writeInt32(extend_top);
-            stream.writeInt32(current_window);
-        }
-    }
-
     public static class TL_starGiftAuctionStateNotModified extends StarGiftAuctionState {
         public static final int constructor = 0xFE333952;
 
@@ -6340,7 +6216,6 @@ public class TL_stars {
             stream.writeInt32(constructor);
         }
     }
-
     public static class TL_starGiftAuctionStateFinished extends StarGiftAuctionState {
         public static final int constructor = 0x972DABBF;
 
@@ -6381,6 +6256,62 @@ public class TL_stars {
                 stream.writeInt32(fragment_listed_count);
                 stream.writeString(fragment_listed_url);
             }
+        }
+    }
+
+    public static class StarGiftAuctionRound extends TLObject {
+        public int num;
+        public int duration;
+        public int extend_top;
+        public int current_window;
+
+        public static StarGiftAuctionRound TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            StarGiftAuctionRound result = null;
+            switch (constructor) {
+                case TL_starGiftAuctionRound.constructor:
+                    result = new TL_starGiftAuctionRound();
+                    break;
+                case TL_starGiftAuctionRoundExtendable.constructor:
+                    result = new TL_starGiftAuctionRoundExtendable();
+                    break;
+            }
+            return TLdeserialize(StarGiftAuctionRound.class, result, stream, constructor, exception);
+        }
+    }
+    public static class TL_starGiftAuctionRound extends StarGiftAuctionRound {
+        public static final int constructor = 0x3aae0528;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            num = stream.readInt32(exception);
+            duration = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(num);
+            stream.writeInt32(duration);
+        }
+    }
+    public static class TL_starGiftAuctionRoundExtendable extends StarGiftAuctionRound {
+        public static final int constructor = 0xaa021e5;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            num = stream.readInt32(exception);
+            duration = stream.readInt32(exception);
+            extend_top = stream.readInt32(exception);
+            current_window = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(num);
+            stream.writeInt32(duration);
+            stream.writeInt32(extend_top);
+            stream.writeInt32(current_window);
         }
     }
 
@@ -6525,7 +6456,6 @@ public class TL_stars {
             return TLdeserialize(InputStarGiftAuction.class, fromConstructor(constructor), stream, constructor, exception);
         }
     }
-
     public static class TL_inputStarGiftAuction extends InputStarGiftAuction {
         public static final int constructor = 0x02E16C98;
 
@@ -6542,7 +6472,6 @@ public class TL_stars {
             gift_id = stream.readInt64(exception);
         }
     }
-
     public static class TL_inputStarGiftAuctionSlug extends InputStarGiftAuction {
         public static final int constructor = 0x7AB58308;
 
@@ -6710,7 +6639,6 @@ public class TL_stars {
             return TLdeserialize(StarGiftAttributeRarity.class, fromConstructor(constructor), stream, constructor, exception);
         }
     }
-
     public static class TL_starGiftAttributeRarity extends StarGiftAttributeRarity {
         public static final int constructor = 0x36437737;
 
@@ -6727,7 +6655,6 @@ public class TL_stars {
             permille = stream.readInt32(exception);
         }
     }
-
     public static class TL_starGiftAttributeRarityRare extends StarGiftAttributeRarity {
         public static final int constructor = 0xf08d516b;
         @Override
@@ -6737,7 +6664,6 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {}
     }
-
     public static class TL_starGiftAttributeRarityEpic extends StarGiftAttributeRarity {
         public static final int constructor = 0x78fbf3a8;
         @Override
@@ -6747,7 +6673,6 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {}
     }
-
     public static class TL_starGiftAttributeRarityLegendary extends StarGiftAttributeRarity {
         public static final int constructor = 0xcef7e7a8;
         @Override
@@ -6757,7 +6682,6 @@ public class TL_stars {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {}
     }
-
     public static class TL_starGiftAttributeRarityUncommon extends StarGiftAttributeRarity {
         public static final int constructor = 0xDBCE6389;
         @Override

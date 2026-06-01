@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Typeface;
@@ -32,8 +33,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Paint.PaintTypeface;
 import org.telegram.ui.Components.Paint.Swatch;
-import org.telegram.ui.Components.Point;
-import org.telegram.ui.Components.Rect;
+import org.telegram.ui.Components.RectOld;
 
 public class TextPaintView extends EntityView {
 
@@ -45,7 +45,7 @@ public class TextPaintView extends EntityView {
 
     private PaintTypeface typeface = PaintTypeface.ROBOTO_MEDIUM;
 
-    public TextPaintView(Context context, Point position, int fontSize, CharSequence text, Swatch swatch, int type) {
+    public TextPaintView(Context context, PointF position, int fontSize, CharSequence text, Swatch swatch, int type) {
         super(context, position);
 
         baseFontSize = fontSize;
@@ -164,7 +164,7 @@ public class TextPaintView extends EntityView {
         }
     }
 
-    public TextPaintView(Context context, TextPaintView textPaintView, Point position) {
+    public TextPaintView(Context context, TextPaintView textPaintView, PointF position) {
         this(context, position, textPaintView.baseFontSize, textPaintView.getText(), textPaintView.getSwatch(), textPaintView.currentType);
         setRotation(textPaintView.getRotation());
         setScale(textPaintView.getScale());
@@ -382,17 +382,17 @@ public class TextPaintView extends EntityView {
     }
 
     @Override
-    public Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
         float width = getMeasuredWidth() * getScale() + AndroidUtilities.dp(64) / scale;
         float height = getMeasuredHeight() * getScale() + AndroidUtilities.dp(52) / scale;
         float left = (getPositionX() - width / 2.0f) * scale;
         float right = left + width * scale;
-        return new Rect(left, (getPositionY() - (height - editText.getExtendedPaddingTop() - AndroidUtilities.dpf2(4f)) / 2f) * scale, right - left, (height - editText.getExtendedPaddingBottom()) * scale);
+        return new RectOld(left, (getPositionY() - (height - editText.getExtendedPaddingTop() - AndroidUtilities.dpf2(4f)) / 2f) * scale, right - left, (height - editText.getExtendedPaddingBottom()) * scale);
     }
 
     protected TextViewSelectionView createSelectionView() {

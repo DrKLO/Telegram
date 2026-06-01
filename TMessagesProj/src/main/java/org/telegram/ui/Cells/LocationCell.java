@@ -197,7 +197,31 @@ public class LocationCell extends FrameLayout {
         imageView.setAlpha(fromEnterAlpha);
         nameTextView.setAlpha(fromEnterAlpha);
         addressTextView.setAlpha(fromEnterAlpha);
+        updateContentDescription(location, label);
         invalidate();
+    }
+
+    private void updateContentDescription(TLRPC.TL_messageMediaVenue location, String label) {
+        try {
+            if (location == null && TextUtils.isEmpty(label)) {
+                setContentDescription(null);
+                return;
+            }
+            StringBuilder sb = new StringBuilder();
+            if (location != null && !TextUtils.isEmpty(location.title)) {
+                sb.append(location.title);
+            }
+            CharSequence secondary = !TextUtils.isEmpty(label) ? label : (location != null ? location.address : null);
+            if (!TextUtils.isEmpty(secondary)) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(secondary);
+            }
+            setContentDescription(sb.length() > 0 ? sb.toString() : null);
+        } catch (Exception e) {
+            try {
+                setContentDescription(null);
+            } catch (Exception ignored) {}
+        }
     }
 
     private static FlickerLoadingView globalGradientView;

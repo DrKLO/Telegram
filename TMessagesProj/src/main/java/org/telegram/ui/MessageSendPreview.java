@@ -23,7 +23,6 @@ import android.view.KeyEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -195,23 +194,20 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
         windowView.setOnClickListener(v -> {
             onBackPressed();
         });
-        windowView.getViewTreeObserver().addOnGlobalFocusChangeListener(new ViewTreeObserver.OnGlobalFocusChangeListener() {
-            @Override
-            public void onGlobalFocusChanged(View oldFocus, View newFocus) {
-                if (!focusable && newFocus instanceof EditText) {
-                    AndroidUtilities.hideKeyboard(editText);
+        windowView.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            if (!focusable && newFocus instanceof EditText) {
+                AndroidUtilities.hideKeyboard(editText);
+                AndroidUtilities.runOnUIThread(() -> {
+                    makeFocusable();
                     AndroidUtilities.runOnUIThread(() -> {
-                        makeFocusable();
-                        AndroidUtilities.runOnUIThread(() -> {
-                            AndroidUtilities.showKeyboard(newFocus);
-                            if (anchorSendButton != null) {
-                                anchorSendButton.getLocationOnScreen(sendButtonInitialPosition);
+                        AndroidUtilities.showKeyboard(newFocus);
+                        if (anchorSendButton != null) {
+                            anchorSendButton.getLocationOnScreen(sendButtonInitialPosition);
 //                                sendButtonInitialPosition[0] = Math.min(sendButtonInitialPosition[0] + anchorSendButton.getWidth(), AndroidUtilities.displaySize.x) - anchorSendButton.getWidth();
-                                sendButtonInitialPosition[0] += anchorSendButton.getWidth() - anchorSendButton.width(anchorSendButton.getHeight()) - dp(6);
-                            }
-                        }, 100);
-                    }, 200);
-                }
+                            sendButtonInitialPosition[0] += anchorSendButton.getWidth() - anchorSendButton.width(anchorSendButton.getHeight()) - dp(6);
+                        }
+                    }, 100);
+                }, 200);
             }
         });
 
@@ -478,6 +474,8 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
+                updateMessagesVisiblePart();
+
                 canvas.saveLayerAlpha(0, getScrollY() + 1, getWidth(), getScrollY() + getHeight() - 1, 0xFF, Canvas.ALL_SAVE_FLAG);
                 canvas.save();
                 drawChatBackgroundElements(canvas);
@@ -996,6 +994,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 cell.setMessageObject(messageObject, group, false, false, false);
                 if (position == getMainMessageCellPosition() && !messageObject.needDrawForwarded()) {
                     mainMessageCell = cell;
+                    mainMessageCell.setParentViewSize(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
                     mainMessageCellId = messageObject.getId();
                 }
             }
@@ -1052,6 +1051,40 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
                 }
             }
         };
+    }
+
+    private void updateMessagesVisiblePart() {
+        final int height = containerView.getMeasuredHeight();
+        final int recyclerChatViewHeight = height;
+
+        for (int a = 0, N = chatListView.getChildCount(); a < N; a++) {
+            final View view = chatListView.getChildAt(a);
+            if (view instanceof ChatMessageCell) {
+                float y = ViewPositionWatcher.computeYCoordinateInParent(view, containerView);
+
+                final ChatMessageCell cell = (ChatMessageCell) view;
+
+                final int top = (int) y;
+                final int bottom = top + view.getMeasuredHeight();
+                int viewTop = top >= 0 ? 0 : -top;
+                int viewBottom = view.getMeasuredHeight();
+                if (viewBottom > height) {
+                    viewBottom = viewTop + height;
+                }
+
+                cell.setVisiblePart(
+                    viewTop,
+                    viewBottom - viewTop,
+                    recyclerChatViewHeight,
+                    y,
+                    y,
+                    containerView.getMeasuredWidth(),
+                    containerView.getMeasuredHeight(),
+                    0,
+                    0,
+                    0);
+            }
+        }
     }
 
     @Override
@@ -1127,13 +1160,11 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        if (Build.VERSION.SDK_INT >= 21) {
-            params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                    WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION |
-                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS;
-        }
+        params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION |
+                WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS;
         params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         if (Build.VERSION.SDK_INT >= 28) {

@@ -194,6 +194,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         };
 
         closeLayout = new FrameLayout(getContext());
+        closeLayout.setContentDescription(getString(R.string.Close));
         ImageView closeImage = new ImageView(getContext());
         closeImage.setImageResource(R.drawable.msg_close);
         closeImage.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(12), ColorUtils.setAlphaComponent(Color.WHITE, 40), ColorUtils.setAlphaComponent(Color.WHITE, 100)));
@@ -703,6 +704,8 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 description.setLines(2);
             }
             addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 21, 10, 21, 16));
+
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
 
             setClipChildren(false);
         }

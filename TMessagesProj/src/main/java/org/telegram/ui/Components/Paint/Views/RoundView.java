@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -19,7 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Point;
+import org.telegram.ui.Components.RectOld;
 import org.telegram.ui.Components.Size;
 
 public class RoundView extends EntityView {
@@ -35,7 +36,7 @@ public class RoundView extends EntityView {
     public Bitmap thumbBitmap;
     public final Rect src = new Rect(), dst = new Rect();
 
-    public RoundView(Context context, Point position, float angle, float scale, Size baseSize, String thumbPath) {
+    public RoundView(Context context, PointF position, float angle, float scale, Size baseSize, String thumbPath) {
         super(context, position);
         setRotation(angle);
         setScale(scale);
@@ -192,17 +193,17 @@ public class RoundView extends EntityView {
     }
 
     @Override
-    public org.telegram.ui.Components.Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new org.telegram.ui.Components.Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
         float width = getMeasuredWidth() * getScale() + AndroidUtilities.dp(64) / scale;
         float height = getMeasuredHeight() * getScale() + AndroidUtilities.dp(64) / scale;
         float left = (getPositionX() - width / 2.0f) * scale;
         float right = left + width * scale;
-        return new org.telegram.ui.Components.Rect(left, (getPositionY() - height / 2.0f) * scale, right - left, height * scale);
+        return new RectOld(left, (getPositionY() - height / 2.0f) * scale, right - left, height * scale);
     }
 
     @Override

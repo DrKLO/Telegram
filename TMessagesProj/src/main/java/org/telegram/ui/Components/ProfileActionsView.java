@@ -756,6 +756,7 @@ public class ProfileActionsView extends View {
                 } else {
                     insertIfAvailable(out, KEY_VOICE_CHAT);
                     insertIfNotAvailable(out, KEY_STREAM, KEY_VOICE_CHAT);
+                    insertIfAvailable(out, KEY_STORY);
                     insertIfAvailable(out, KEY_LEAVE);
                 }
                 break;

@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -172,13 +173,14 @@ public class CodeHighlighting {
         }
     }
 
-    private static final HashMap<String, Highlighting> processedHighlighting = new HashMap<>();
+    private static final ConcurrentHashMap<String, Highlighting> processedHighlighting = new ConcurrentHashMap<>();
     private static class Highlighting {
-        String text, language;
+        CharSequence text;
+        String language;
         SpannableString result;
     }
 
-    public static SpannableString getHighlighted(String text, String language) {
+    public static SpannableString getHighlighted(CharSequence text, String language) {
         if (TextUtils.isEmpty(language)) {
             return new SpannableString(text);
         }
@@ -192,7 +194,7 @@ public class CodeHighlighting {
 
             highlight(process.result, 0, process.result.length(), language, 0, null, true);
 
-            Iterator<String> keys = processedHighlighting.keySet().iterator();
+            final Iterator<String> keys = processedHighlighting.keySet().iterator();
             while (keys.hasNext() && processedHighlighting.size() > 8) {
                 keys.next();
                 keys.remove();

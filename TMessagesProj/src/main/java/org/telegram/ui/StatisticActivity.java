@@ -27,6 +27,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -623,7 +624,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         tabs = tabViews.toArray(new GlassTabView[0]);
-        tabsView = new MainTabsLayout(context);
+        tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
 
         for (int index = 0; index < tabs.length; index++) {
@@ -1784,6 +1785,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     }
 
     public static abstract class BaseChartCell extends FrameLayout {
+        final @Nullable Window window;
         BaseChartView chartView;
         BaseChartView zoomedChartView;
         ChartHeaderView chartHeaderView;
@@ -1805,6 +1807,13 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         public BaseChartCell(@NonNull Context context, int type, BaseChartView.SharedUiComponents sharedUi, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             setWillNotDraw(false);
+
+            if (context instanceof Activity) {
+                window = ((Activity) context).getWindow();
+            } else {
+                window = null;
+            }
+
             chartType = type;
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -1917,7 +1926,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             linearLayout.addView(chartHeaderView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52));
             linearLayout.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
+            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 10, 0, 10, 0));
 
             if (chartType == 4) {
                 frameLayout.setClipChildren(false);
@@ -2015,7 +2024,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                         zoomedChartView.enabled = true;
                         chartView.transitionMode = BaseChartView.TRANSITION_MODE_NONE;
                         zoomedChartView.transitionMode = BaseChartView.TRANSITION_MODE_NONE;
-                        ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        if (window != null) {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        }
                     }
                 });
                 animator.start();
@@ -2044,7 +2055,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 chartView.enabled = true;
                 zoomedChartView.enabled = false;
                 chartView.invalidate();
-                ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                if (window != null) {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                }
 
                 for (CheckBoxHolder checkbox : checkBoxes) {
                     checkbox.checkBox.setAlpha(1);
@@ -2072,7 +2085,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                             chartView.legendShowing = false;
                             chartView.clearSelection();
                         }
-                        ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        if (window != null) {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        }
                     }
                 });
                 for (CheckBoxHolder checkbox : checkBoxes) {
@@ -2086,8 +2101,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         private ValueAnimator createTransitionAnimator(long d, boolean in) {
-            ((Activity) getContext()).getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            if (window != null) {
+                window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
 
             chartView.enabled = false;
             zoomedChartView.enabled = false;

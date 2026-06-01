@@ -17,6 +17,7 @@ import org.telegram.ui.Stories.recorder.StoryPrivacyBottomSheet;
 import java.util.ArrayList;
 
 public class TL_stories {
+
     public static class TL_stories_storyViews extends TLObject {
         public static final int constructor = 0xde9eed1d;
 

@@ -124,6 +124,19 @@ public sealed class TlGen_WebPageAttribute : TlGen_Object {
     }
   }
 
+  public data class TL_webPageAttributeAiComposeTone(
+    public val emoji_id: Long,
+  ) : TlGen_WebPageAttribute() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(emoji_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x7781FE18U
+    }
+  }
+
   public data class TL_webPageAttributeStory_layer163(
     public val user_id: Long,
     public val id: Int,

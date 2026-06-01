@@ -2,8 +2,8 @@ package org.telegram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.PointF;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
@@ -16,9 +16,8 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.Rect;
+import org.telegram.ui.Components.RectOld;
 import org.telegram.ui.Components.Size;
 
 public class StickerView extends EntityView {
@@ -45,11 +44,11 @@ public class StickerView extends EntityView {
     private FrameLayoutDrawer containerView;
     public final ImageReceiver centerImage = new ImageReceiver();
 
-    public StickerView(Context context, Point position, Size baseSize, TLRPC.Document sticker, Object parentObject) {
+    public StickerView(Context context, PointF position, Size baseSize, TLRPC.Document sticker, Object parentObject) {
         this(context, position, 0.0f, 1.0f, baseSize, sticker, parentObject);
     }
 
-    public StickerView(Context context, Point position, float angle, float scale, Size baseSize, TLRPC.Document sticker, Object parentObject) {
+    public StickerView(Context context, PointF position, float angle, float scale, Size baseSize, TLRPC.Document sticker, Object parentObject) {
         super(context, position);
         setRotation(angle);
         setScale(scale);
@@ -90,7 +89,7 @@ public class StickerView extends EntityView {
         updatePosition();
     }
 
-    public StickerView(Context context, StickerView stickerView, Point position) {
+    public StickerView(Context context, StickerView stickerView, PointF position) {
         this(context, position, stickerView.getRotation(), stickerView.getScale(), stickerView.baseSize, stickerView.sticker, stickerView.parentObject);
         if (stickerView.mirrored) {
             mirror();
@@ -174,15 +173,15 @@ public class StickerView extends EntityView {
     }
 
     @Override
-    public Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
 
         float side = getMeasuredWidth() * (getScale() + 0.5f);
-        return new Rect((getPositionX() - side / 2.0f) * scale, (getPositionY() - side / 2.0f) * scale, side * scale, side * scale);
+        return new RectOld((getPositionX() - side / 2.0f) * scale, (getPositionY() - side / 2.0f) * scale, side * scale, side * scale);
     }
 
     @Override

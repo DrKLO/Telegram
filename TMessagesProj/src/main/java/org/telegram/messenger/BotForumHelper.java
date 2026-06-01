@@ -1,7 +1,18 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
 import android.util.LongSparseArray;
+import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 
 import androidx.annotation.Nullable;
@@ -10,6 +21,9 @@ import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_forum;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ColoredImageSpan;
+import org.telegram.ui.Components.TypingDotsDrawable;
 import org.telegram.ui.MultiLayoutTypingAnimator;
 
 import java.util.ArrayList;
@@ -44,8 +58,7 @@ public class BotForumHelper extends BaseController {
         message.media = new TLRPC.TL_messageMediaEmpty();
         message.flags |= 512;
 
-        MessageObject messageObject = new MessageObject(currentAccount, message, true, true);
-        // messageObject.wasJustSent = true;
+        MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
         messageObject.isBotPendingDraft = true;
         messageObject.resetLayout();
 
@@ -112,23 +125,27 @@ public class BotForumHelper extends BaseController {
             return null;
         }
 
+        BotDraftMessage bestDraftMessage = null;
         for (int i = 0; i < messages.size(); i++) {
             final BotDraftMessage draftMessage = messages.valueAt(i);
-            if (message.startsWith(draftMessage.text.text)) {
-                if (draftMessage.selfDestruct != null) {
-                    AndroidUtilities.cancelRunOnUIThread(draftMessage.selfDestruct);
-                }
-                botTextDraftsByRandomIds.remove(userId, topicId, draftMessage.randomId);
+            if (bestDraftMessage == null) {
+                bestDraftMessage = draftMessage;
+            }
 
-                FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
-                return draftMessage.messageObject;
+            if (message.startsWith(draftMessage.text.text)) {
+                bestDraftMessage = draftMessage;
+                break;
             }
         }
 
-        if (messages.size() > 0) {
-            final BotDraftMessage draftMessage = messages.valueAt(0);
+        if (bestDraftMessage != null) {
+            if (bestDraftMessage.selfDestruct != null) {
+                AndroidUtilities.cancelRunOnUIThread(bestDraftMessage.selfDestruct);
+            }
+            botTextDraftsByRandomIds.remove(userId, topicId, bestDraftMessage.randomId);
+
             FileLog.d("[BotForum] onDraftNewMessage " + userId + " " + topicId);
-            return draftMessage.messageObject;
+            return bestDraftMessage.messageObject;
         }
 
         return null;
@@ -388,12 +405,22 @@ public class BotForumHelper extends BaseController {
         }
     }
 
+    private final SharedPreferences preferences;
+
+    public void saveIsStreamingTopic(long dialogId, long topicId, boolean isStreaming) {
+        preferences.edit().putBoolean(dialogId + "_" + topicId, isStreaming).apply();
+    }
+
+    public boolean isStreamingTopic(long dialogId, long topicId) {
+        return preferences.getBoolean(dialogId + "_" + topicId, false);
+    }
 
 
     /** Instance **/
 
     private BotForumHelper(int currentAccount) {
         super(currentAccount);
+        preferences = ApplicationLoader.applicationContext.getSharedPreferences("bot_drafts" + currentAccount, Activity.MODE_PRIVATE);
     }
 
     private static volatile BotForumHelper[] Instance = new BotForumHelper[UserConfig.MAX_ACCOUNT_COUNT];
@@ -500,6 +527,40 @@ public class BotForumHelper extends BaseController {
             messages.remove(messageId);
 
             return oldValue;
+        }
+    }
+
+    public static CharSequence applyTypingAnimationSpan(CharSequence text) {
+        if (text instanceof Spannable) {
+            TypingBotSpan[] spans = ((Spannable) text).getSpans(0, text.length(), TypingBotSpan.class);
+            if (spans != null && spans.length > 0) {
+                return text;
+            }
+        }
+
+        final SpannableStringBuilder ssb;
+        if (text instanceof SpannableStringBuilder) {
+            ssb = (SpannableStringBuilder) text;
+        } else {
+            ssb = new SpannableStringBuilder(text);
+        }
+
+        final TypingDotsDrawable typingDotsDrawable = new TypingDotsDrawable(true);
+        typingDotsDrawable.setColor(Color.WHITE);
+        typingDotsDrawable.start();
+
+        final ColoredImageSpan coloredImageSpan = new TypingBotSpan(typingDotsDrawable, DynamicDrawableSpan.ALIGN_BASELINE);
+        coloredImageSpan.setColorKey(Theme.key_chat_messageTextIn);
+        coloredImageSpan.setTopOffset(-dp(10));
+
+        ssb.append(" _");
+        ssb.setSpan(coloredImageSpan, ssb.length() - 1, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return ssb;
+    }
+
+    private static class TypingBotSpan extends ColoredImageSpan {
+        public TypingBotSpan(TypingDotsDrawable drawable, int align) {
+            super(drawable, align);
         }
     }
 }

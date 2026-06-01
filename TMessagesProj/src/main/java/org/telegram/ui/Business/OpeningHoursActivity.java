@@ -83,7 +83,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
         listView.setSections();
         listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        actionBar.setAdaptiveBackground(listView);
+        actionBar.setAdaptiveBackground(listView, true);
 
         setValue();
 
@@ -523,7 +523,7 @@ public class OpeningHoursActivity extends BaseFragment implements NotificationCe
     public static final int BUTTON_TIMEZONE = -2;
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asTopView(getString(R.string.BusinessHoursInfo), R.raw.biz_clock));
+        items.add(UItem.asTopView(getString(R.string.BusinessHours), getString(R.string.BusinessHoursInfo), R.raw.biz_clock));
         items.add(UItem.asCheck(BUTTON_SHOW, getString(R.string.BusinessHoursShow)).setChecked(enabled));
         items.add(UItem.asShadow(-100, null));
         if (enabled) {

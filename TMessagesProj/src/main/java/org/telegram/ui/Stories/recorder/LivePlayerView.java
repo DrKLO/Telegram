@@ -215,13 +215,13 @@ public class LivePlayerView extends FrameLayout implements RendererCommon.Render
                 final String thumbPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "live" + dialogId + ".jpg").getAbsolutePath();
                 if (dialogId > 0) {
                     final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
-                    final ImageLocation imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
+                    final ImageLocation imageLocation = ImageLocation.getForUser(currentAccount, user, ImageLocation.TYPE_SMALL);
                     final int color = user != null ? AvatarDrawable.getColorForId(user.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     final GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     thumb.getImageReceiver().setImage(ImageLocation.getForPath(thumbPath), "500_500_nocache", imageLocation, "50_50_b2", null, null, gradientDrawable, 0, null, user, 0);
                 } else {
                     final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
-                    final ImageLocation imageLocation = ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL);
+                    final ImageLocation imageLocation = ImageLocation.getForChat(currentAccount, chat, ImageLocation.TYPE_SMALL);
                     final int color = chat != null ? AvatarDrawable.getColorForId(chat.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     final GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     thumb.getImageReceiver().setImage(ImageLocation.getForPath(thumbPath), "500_500_nocache", imageLocation, "50_50_b2", null, null, gradientDrawable, 0, null, chat, 0);

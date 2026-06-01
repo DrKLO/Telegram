@@ -96,6 +96,10 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
             final float position = entry.getPosition();
             final float alpha = entry.getVisibility() * Math.min(1, position);
 
+            if (alpha <= 0) {
+                continue;
+            }
+
             final int wasAlpha = Theme.dividerPaint.getAlpha();
             Theme.dividerPaint.setAlpha((int) (wasAlpha * alpha));
             final float offsetL = getPaddingLeft() + dp(16) * (1f - alpha);

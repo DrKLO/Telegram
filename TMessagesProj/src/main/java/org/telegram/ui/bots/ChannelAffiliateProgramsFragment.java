@@ -129,8 +129,8 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
         super.createView(context);
 
         aboveTitleView = new FrameLayout(context);
-        aboveTitleView.setClickable(true);
         iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_DEAL);
+        iconTextureView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         iconTextureView.mRenderer.colorKey1 = Theme.key_starsGradient1;
         iconTextureView.mRenderer.colorKey2 = Theme.key_starsGradient2;
         iconTextureView.mRenderer.updateColors();

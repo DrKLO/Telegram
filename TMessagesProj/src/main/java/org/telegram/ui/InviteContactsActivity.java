@@ -686,7 +686,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
             editText.setHint(LocaleController.getString(R.string.Search));
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             editText.setCursorWidth(1.5f);
-            editText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            editText.setInputType(editText.getInputType() | InputType.TYPE_TEXT_VARIATION_FILTER);
             editText.setSingleLine(true);
             editText.setBackground(null);
             editText.setVerticalScrollBarEnabled(false);

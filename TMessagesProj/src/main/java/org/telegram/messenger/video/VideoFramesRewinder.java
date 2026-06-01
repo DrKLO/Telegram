@@ -127,9 +127,9 @@ public class VideoFramesRewinder {
                 }
             }
             while (meta[3] + (long) Math.ceil(1000.0f / fps) < nextms) {
-                AnimatedFileDrawable.getVideoFrame(ptr, null, meta, 0, true, 0, meta[4], false);
+                AnimatedFileDrawable.getVideoFrame(ptr, null, meta, true, 0, meta[4], false);
             }
-            if (0 == AnimatedFileDrawable.getVideoFrame(ptr, frame.bitmap, meta, frame.bitmap.getRowBytes(), true, 0, meta[4], false)) {
+            if (0 == AnimatedFileDrawable.getVideoFrame(ptr, frame.bitmap, meta, true, 0, meta[4], false)) {
                 triesCount++;
                 if (triesCount > 6) break;
                 continue;

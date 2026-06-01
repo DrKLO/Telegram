@@ -17,6 +17,11 @@ public class NinePatchBuilder {
     public static final int TRANSPARENT_COLOR = 0x00000000;
     public static final int NO_COLOR = 0x00000001;
 
+    public interface NinePathRenderer {
+        void draw(Canvas canvas, RectF rect, float[] radii);
+    }
+
+
     private NinePatchBuilder() {}
 
     public static NinePatchDrawable createNinePatch(
@@ -28,6 +33,38 @@ public class NinePatchBuilder {
         float shadowDxPx,
         float shadowDyPx,
         int centralColorHint
+    ) {
+        return createNinePatch(bitmapRef, radii, shadowRadiusPx, shadowDxPx, shadowDyPx, centralColorHint, (canvas, rect, radii1) -> {
+            final Path path = new Path();
+            // radii are already per-corner (x,y), supports elliptical corners
+            path.addRoundRect(rect, radii1, Path.Direction.CW);
+
+            final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(fillColor);
+
+            if (shadowRadiusPx > 0f) {
+                paint.setShadowLayer(shadowRadiusPx, shadowDxPx, shadowDyPx, shadowColor);
+            }
+
+            canvas.drawPath(path, paint);
+
+            // Optional second pass without shadow to keep fill perfectly crisp
+            if (shadowRadiusPx > 0f) {
+                paint.clearShadowLayer();
+                canvas.drawPath(path, paint);
+            }
+        });
+    }
+
+    public static NinePatchDrawable createNinePatch(
+        Bitmap[] bitmapRef,
+        float[] radii,              // 8 values: TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy
+        float shadowRadiusPx,
+        float shadowDxPx,
+        float shadowDyPx,
+        int centralColorHint,
+        NinePathRenderer renderer
     ) {
         if (radii == null || radii.length != 8) {
             throw new IllegalArgumentException("radii must have 8 values: TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy");
@@ -81,38 +118,18 @@ public class NinePatchBuilder {
         }
 
         final Canvas canvas = new Canvas(bitmap);
-
-        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(fillColor);
-
-        if (shadowRadiusPx > 0f) {
-            paint.setShadowLayer(shadowRadiusPx, shadowDxPx, shadowDyPx, shadowColor);
-        }
-
         final RectF rect = new RectF(
-                padLeft,
-                padTop,
-                padLeft + contentW,
-                padTop + contentH
+            padLeft,
+            padTop,
+            padLeft + contentW,
+            padTop + contentH
         );
-
-        final Path path = new Path();
-        // radii are already per-corner (x,y), supports elliptical corners
-        path.addRoundRect(rect, new float[]{
-                tlRx, tlRy,
-                trRx, trRy,
-                brRx, brRy,
-                blRx, blRy
-        }, Path.Direction.CW);
-
-        canvas.drawPath(path, paint);
-
-        // Optional second pass without shadow to keep fill perfectly crisp
-        if (shadowRadiusPx > 0f) {
-            paint.clearShadowLayer();
-            canvas.drawPath(path, paint);
-        }
+        renderer.draw(canvas, rect, new float[]{
+            tlRx, tlRy,
+            trRx, trRy,
+            brRx, brRy,
+            blRx, blRy
+        });
 
         // 4) Stretch area: central region that must not include any corner curvature.
         // X uses Rx; Y uses Ry.
@@ -132,10 +149,10 @@ public class NinePatchBuilder {
         final int y2 = MathUtils.clamp(v, y1 + 1, bitmapH - 1);
 
         final byte[] chunk = createNinePatchChunk(
-            x1, x2,
-            y1, y2,
-            padLeft, padTop, padRight, padBottom,
-            centralColorHint
+                x1, x2,
+                y1, y2,
+                padLeft, padTop, padRight, padBottom,
+                centralColorHint
         ).array();
 
         final Rect padding = new Rect(padLeft, padTop, padRight, padBottom);

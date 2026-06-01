@@ -1365,6 +1365,9 @@ public class SecretChatHelper extends BaseController {
         if (encryptedChat == null || endSeq - startSeq < 0) {
             return;
         }
+        if (endSeq - startSeq > 10000) {
+            return;
+        }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 int sSeq = startSeq;

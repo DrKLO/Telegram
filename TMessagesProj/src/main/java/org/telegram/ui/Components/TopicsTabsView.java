@@ -72,12 +72,18 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 
 @SuppressLint("ViewConstructor")
-public class TopicsTabsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class TopicsTabsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
+    public static final int ANIMATOR_ID_TOPICS_VISIBILITY = 0;
+
     public static final int TOP_TABS_HEIGHT = 36;
     public static final int SIDE_TABS_WIDTH = 64;
+
+    private final BoolAnimator animatorTopicsVisibility = new BoolAnimator(ANIMATOR_ID_TOPICS_VISIBILITY,
+        this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
 
     private final int currentAccount;
     private final long dialogId;
@@ -363,9 +369,15 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         topicBottom = sp.getBoolean("topicssidetabsb" + dialogId, false);
         toggleButtonSide.setImageResource(topicBottom ? R.drawable.menu_sidebar_top : R.drawable.menu_sidebar_bottom);
 
+        checkTopicsVisibility(false);
         checkUi_closeButtonVisibility();
         updateSidemenuPosition();
         updateTabs();
+    }
+
+    private void checkTopicsVisibility(boolean animated) {
+        final ArrayList<TLRPC.TL_forumTopic> topicsList = MessagesController.getInstance(currentAccount).getTopicsController().getTopics(-dialogId);
+        animatorTopicsVisibility.setValue(topicsList != null && !topicsList.isEmpty() && !allTopicsHidden, animated);
     }
 
     private void onSideMenuButtonClick(View v) {
@@ -511,13 +523,6 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             sideTabsContainer.setPadding(0, 0, 0, 0);
         }
     }
-    /*
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        checkSideTabsPadding(true);
-        return super.dispatchTouchEvent(ev);
-    }
-    */
 
     private Runnable onUpdateSideMenuPosition;
 
@@ -526,9 +531,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
     }
 
     private boolean topicBottom;
-    public boolean sidemenuEnabled;
-    public float sidemenuT = 0.0f;
-    public boolean sidemenuAnimating;
+    private boolean sidemenuEnabled;
+    private float sidemenuT = 0.0f;
+    private boolean sidemenuAnimating;
     public void updateSidemenuPosition() {
         if (onUpdateSideMenuPosition != null) {
             onUpdateSideMenuPosition.run();
@@ -536,8 +541,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
         checkUi_topicsVerticalPosition();
 
-        sideTabsContainer.setTranslationX(-dp(64 + 7 + 7) * (1.0f - sidemenuT));
-        sideTabsContainer.setVisibility(sidemenuT <= 0.0f ? View.GONE : View.VISIBLE);
+        final float leftTabsVisibility = getTabsVisibility(Position.LEFT);
+        sideTabsContainer.setTranslationX(lerp(-dp(64 + 7 + 7), 0, leftTabsVisibility));
+        sideTabsContainer.setVisibility(leftTabsVisibility > 0 ? VISIBLE : GONE);
 
         toggleButtonTop.setColorFilter(new PorterDuffColorFilter(
             ColorUtils.blendARGB(
@@ -569,11 +575,11 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     private void checkUi_topicsVerticalPosition() {
         topTabsContainer.setAlpha(lerp(1.0f, 0.85f, sidemenuT));
-        topTabsContainer.setVisibility(sidemenuT >= 1.0f ? View.GONE : View.VISIBLE);
+        topTabsContainer.setVisibility(((1f - sidemenuT) * animatorTopicsVisibility.getFloatValue()) > 0 ? View.VISIBLE : View.GONE);
         if (topicBottom) {
-            topTabsContainer.setTranslationY(getMeasuredHeight() - dp(TOP_TABS_HEIGHT + 7 + 7) - sideMenuBackgroundMarginBottom + dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
+            topTabsContainer.setTranslationY(getMeasuredHeight() - dp(TOP_TABS_HEIGHT + 7 + 7) - sideMenuBackgroundMarginBottom + lerp(dp(TOP_TABS_HEIGHT + 7), 0, getTabsVisibility(Position.BOTTOM)));
         } else {
-            topTabsContainer.setTranslationY(-dp(TOP_TABS_HEIGHT + 7) * sidemenuT);
+            topTabsContainer.setTranslationY(lerp(-dp(TOP_TABS_HEIGHT + 7), 0, getTabsVisibility(Position.TOP)));
         }
     }
 
@@ -635,6 +641,8 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
 
     private long currentTopicId;
     private void updateTabs() {
+        checkTopicsVisibility(true);
+
         boolean wasOnLeft = !topTabs.canScrollHorizontally(-1);
         topTabs.adapter.update(true);
         if (wasOnLeft) {
@@ -713,6 +721,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         if (!bot) {
             items.add(VerticalTabView.Factory.asAll(bot, mono).setChecked(currentTopicId == 0));
         }
+
         boolean reorder = false;
         if (topics != null) {
             for (TLRPC.TL_forumTopic topic : topics) {
@@ -747,6 +756,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         final TopicsController controller = MessagesController.getInstance(currentAccount).getTopicsController();
         final ArrayList<TLRPC.TL_forumTopic> topics = controller.getTopics(-dialogId);
         items.add(HorizontalTabView.Factory.asAll(bot, mono).setChecked(currentTopicId == 0));
+
         boolean reorder = false;
         if (topics != null) {
             for (TLRPC.TL_forumTopic topic : topics) {
@@ -833,8 +843,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 final long topicId = DialogObject.getPeerDialogId(topic.from_id);
                 if (topicId == 0 || !ChatObject.canManageMonoForum(currentAccount, currentChat)) {
                     return false;
-                };
-
+                }
                 options.add(
                     R.drawable.msg_clear,
                     getString(R.string.ClearHistory),
@@ -1621,18 +1630,20 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                 @Override
                 protected void dispatchDraw(@NonNull Canvas canvas) {
                     final float counterAlpha = counterText.isNotEmpty();
-                    final float counterScale = lerp(.6f, 1.0f, counterAlpha);
-                    final float width = Math.max(dp(16.66f), counterText.getCurrentWidth() + dp(10));
-                    AndroidUtilities.rectTmp.set(0, 0, width, getHeight());
-                    canvas.save();
-                    canvas.scale(counterScale, counterScale, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8.33f), dp(8.33f), backgroundPaint.setByKey(counterBackgroundColorKey).blendTo(getTextColor(), selectT).multAlpha(counterAlpha));
-                    // canvas.translate(0, -dp(1));
-                    counterText.setBounds(AndroidUtilities.rectTmp);
-                    counterText.setAlpha((int) (0xFF * counterAlpha));
-                    counterText.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText, resourcesProvider));
-                    counterText.draw(canvas);
-                    canvas.restore();
+                    if (counterAlpha > 0) {
+                        final float counterScale = lerp(.6f, 1.0f, counterAlpha);
+                        final float width = Math.max(dp(16.66f), counterText.getCurrentWidth() + dp(10));
+                        AndroidUtilities.rectTmp.set(0, 0, width, getHeight());
+                        canvas.save();
+                        canvas.scale(counterScale, counterScale, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(8.33f), dp(8.33f), backgroundPaint.setByKey(counterBackgroundColorKey).blendTo(getTextColor(), selectT).multAlpha(counterAlpha));
+                        // canvas.translate(0, -dp(1));
+                        counterText.setBounds(AndroidUtilities.rectTmp);
+                        counterText.setAlpha((int) (0xFF * counterAlpha));
+                        counterText.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText, resourcesProvider));
+                        counterText.draw(canvas);
+                        canvas.restore();
+                    }
                     super.dispatchDraw(canvas);
                 }
 
@@ -2026,12 +2037,22 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         checkUi_topicsVerticalPosition();
     }
 
+    private boolean allTopicsHidden;
+
+    public void setAllTopicsHidden(boolean allTopicsHidden) {
+        if (this.allTopicsHidden != allTopicsHidden) {
+            this.allTopicsHidden = allTopicsHidden;
+            checkTopicsVisibility(true);
+        }
+    }
+
 
     private final HashSet<Integer> excludeTopics = new HashSet<>();
     private void deleteTopics(HashSet<Integer> selectedTopics, Runnable runnable) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(LocaleController.getPluralString("DeleteTopics", selectedTopics.size()));
         ArrayList<Integer> topicsToRemove = new ArrayList<>(selectedTopics);
+        final long currentTopic = currentTopicId;
         if (selectedTopics.size() == 1) {
             TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-dialogId, topicsToRemove.get(0));
             builder.setMessage(formatString(R.string.DeleteSelectedTopic, topic.title));
@@ -2039,11 +2060,23 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             builder.setMessage(getString(R.string.DeleteSelectedTopics));
         }
         builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog, which) -> {
+            for (int topicId : topicsToRemove) {
+                if (currentTopic == topicId) {
+                    selectTopic(0, false);
+                }
+            }
+
             excludeTopics.addAll(selectedTopics);
             updateTabs();
             BulletinFactory.of(fragment).createUndoBulletin(LocaleController.getPluralString("TopicsDeleted", selectedTopics.size()), () -> {
                 excludeTopics.removeAll(selectedTopics);
                 updateTabs();
+                for (int topicId : topicsToRemove) {
+                    if (currentTopic == topicId) {
+                        selectTopic(topicId, false);
+                        break;
+                    }
+                }
             }, () -> {
                 MessagesController.getInstance(currentAccount).getTopicsController().deleteTopics(-dialogId, topicsToRemove);
                 runnable.run();
@@ -2123,12 +2156,23 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         return dp(position == Position.LEFT ? SIDE_TABS_WIDTH : TOP_TABS_HEIGHT);
     }
 
+    public float getSideMenuT() {
+        return sidemenuT * animatorTopicsVisibility.getFloatValue();
+    }
+
+    public boolean isSideMenuEnabled() {
+        return sidemenuEnabled && animatorTopicsVisibility.getValue();
+    }
+
+
     private float getTabsVisibility(Position position) {
+        final float visibility = animatorTopicsVisibility.getFloatValue();
+
         if (position == Position.LEFT) {
-            return sidemenuT;
+            return sidemenuT * visibility;
         }
         if (position == Position.TOP && !topicBottom || position == Position.BOTTOM && topicBottom) {
-            return (1.0f - sidemenuT);
+            return (1.0f - sidemenuT) * visibility;
         }
         return 0;
     }
@@ -2141,5 +2185,11 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         final float visibility = getTabsVisibility(position);
         final int size = getTabsSize(position);
         return (size + padding) * visibility;
+    }
+
+
+    @Override
+    public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+        updateSidemenuPosition();
     }
 }

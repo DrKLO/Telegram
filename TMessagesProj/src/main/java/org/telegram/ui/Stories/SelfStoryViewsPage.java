@@ -124,6 +124,8 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
     SelfStoryViewsView.StoryItemInternal storyItem;
     ViewsModel currentModel;
     ViewsModel defaultModel;
+    private StoriesController.StoryRepostsList currentRepostsList;
+    private int repostsListConsumedCount;
     private boolean isAttachedToWindow;
     RecyclerItemsEnterAnimator recyclerItemsEnterAnimator;
     StoryViewer storyViewer;
@@ -247,7 +249,41 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             } else if (item.reaction instanceof TL_stories.TL_storyReaction) {
                 storyViewer.presentFragment(ProfileActivity.of(DialogObject.getPeerDialogId(item.reaction.peer_id)));
             } else if (item.reaction instanceof TL_stories.TL_storyReactionPublicRepost) {
-                storyViewer.fragment.createOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyReactionPublicRepost) item.reaction).story, StoriesListPlaceProvider.of(recyclerListView));
+                ArrayList<TL_stories.StoryItem> repostStories = new ArrayList<>();
+                int clickedIndex = -1;
+                int consumed = 0;
+                if (currentModel != null && currentModel.reactions != null) {
+                    consumed = currentModel.reactions.size();
+                    for (int i = 0; i < currentModel.reactions.size(); i++) {
+                        TL_stories.StoryReaction r = currentModel.reactions.get(i);
+                        if (r instanceof TL_stories.TL_storyReactionPublicRepost) {
+                            TL_stories.TL_storyReactionPublicRepost repost = (TL_stories.TL_storyReactionPublicRepost) r;
+                            TL_stories.StoryItem story = repost.story;
+                            if (story == null) continue;
+                            story.dialogId = DialogObject.getPeerDialogId(repost.peer_id);
+                            if (r == item.reaction) {
+                                clickedIndex = repostStories.size();
+                            }
+                            repostStories.add(story);
+                        }
+                    }
+                }
+                if (clickedIndex >= 0 && repostStories.size() > 1) {
+                    currentRepostsList = new StoriesController.StoryRepostsList(currentAccount, repostStories);
+                    repostsListConsumedCount = consumed;
+                    final ViewsModel modelRef = currentModel;
+                    storyViewer.fragment.createOverlayStoryViewer().open(
+                        getContext(), clickedIndex, currentRepostsList,
+                        StoriesListPlaceProvider.of(recyclerListView).with(forward -> {
+                            if (modelRef != null) {
+                                modelRef.loadNext();
+                            }
+                        })
+                    );
+                } else {
+                    currentRepostsList = null;
+                    storyViewer.fragment.createOverlayStoryViewer().open(getContext(), ((TL_stories.TL_storyReactionPublicRepost) item.reaction).story, StoriesListPlaceProvider.of(recyclerListView));
+                }
             } else if (item.reaction instanceof TL_stories.TL_storyReactionPublicForward || item.view instanceof TL_stories.TL_storyViewPublicForward) {
                 TLRPC.Message message;
                 if (item.reaction instanceof TL_stories.TL_storyReactionPublicForward) {
@@ -694,7 +730,60 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             listAdapter.updateRows();
             recyclerItemsEnterAnimator.showItemsAnimated(oldCount - 1);
             checkLoadMore();
+            appendNewRepostsToList(model);
      //   });
+    }
+
+    public boolean scrollToRepostCell(long dialogId, int storyId) {
+        if (listAdapter == null || listAdapter.items == null || layoutManager == null) {
+            return false;
+        }
+        int position = -1;
+        for (int i = 0; i < listAdapter.items.size(); i++) {
+            Item it = listAdapter.items.get(i);
+            if (it == null || !(it.reaction instanceof TL_stories.TL_storyReactionPublicRepost)) continue;
+            TL_stories.TL_storyReactionPublicRepost rp = (TL_stories.TL_storyReactionPublicRepost) it.reaction;
+            if (rp.story != null
+                && DialogObject.getPeerDialogId(rp.peer_id) == dialogId
+                && rp.story.id == storyId) {
+                position = i;
+                break;
+            }
+        }
+        if (position < 0) {
+            return false;
+        }
+        int first = layoutManager.findFirstVisibleItemPosition();
+        int last = layoutManager.findLastVisibleItemPosition();
+        if (position >= first && position <= last) {
+            return false;
+        }
+        layoutManager.scrollToPositionWithOffset(position, AndroidUtilities.dp(60));
+        return true;
+    }
+
+    private void appendNewRepostsToList(ViewsModel model) {
+        if (currentRepostsList == null || model == null || model != currentModel || model.reactions == null) {
+            return;
+        }
+        if (repostsListConsumedCount >= model.reactions.size()) {
+            return;
+        }
+        ArrayList<TL_stories.StoryItem> newStories = new ArrayList<>();
+        for (int i = repostsListConsumedCount; i < model.reactions.size(); i++) {
+            TL_stories.StoryReaction r = model.reactions.get(i);
+            if (r instanceof TL_stories.TL_storyReactionPublicRepost) {
+                TL_stories.TL_storyReactionPublicRepost repost = (TL_stories.TL_storyReactionPublicRepost) r;
+                TL_stories.StoryItem story = repost.story;
+                if (story == null) continue;
+                story.dialogId = DialogObject.getPeerDialogId(repost.peer_id);
+                newStories.add(story);
+            }
+        }
+        repostsListConsumedCount = model.reactions.size();
+        if (!newStories.isEmpty()) {
+            currentRepostsList.append(newStories);
+        }
     }
 
     public void setListBottomPadding(float bottomPadding) {

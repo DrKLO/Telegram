@@ -23,11 +23,11 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
-import android.media.MediaMetadata;
 import android.media.MediaMetadataRetriever;
 import android.media.RemoteControlClient;
-import android.media.session.MediaSession;
-import android.media.session.PlaybackState;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
@@ -43,6 +43,7 @@ import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.LaunchActivity;
 
@@ -56,6 +57,8 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     public static final String NOTIFY_PLAY = "org.telegram.android.musicplayer.play";
     public static final String NOTIFY_NEXT = "org.telegram.android.musicplayer.next";
     public static final String NOTIFY_SEEK = "org.telegram.android.musicplayer.seek";
+    public static final String NOTIFY_REPEAT = "org.telegram.android.musicplayer.repeat";
+    public static final String NOTIFY_SHUFFLE = "org.telegram.android.musicplayer.shuffle";
 
     private static final int ID_NOTIFICATION = 5;
 
@@ -65,8 +68,8 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     private static boolean supportBigNotifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     private static boolean supportLockScreenControls = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || !TextUtils.isEmpty(AndroidUtilities.getSystemProperty("ro.miui.ui.version.code"));
 
-    private MediaSession mediaSession;
-    private PlaybackState.Builder playbackState;
+    private MediaSessionCompat mediaSession;
+    private PlaybackStateCompat.Builder playbackState;
     private Bitmap albumArtPlaceholder;
     private int notificationMessageID;
     private ImageReceiver imageReceiver;
@@ -109,13 +112,13 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mediaSession = new MediaSession(this, "telegramAudioPlayer");
-            playbackState = new PlaybackState.Builder();
+            mediaSession = new MediaSessionCompat(this, "telegramAudioPlayer");
+            playbackState = new PlaybackStateCompat.Builder();
             albumArtPlaceholder = Bitmap.createBitmap(AndroidUtilities.dp(102), AndroidUtilities.dp(102), Bitmap.Config.ARGB_8888);
             Drawable placeholder = getResources().getDrawable(R.drawable.nocover_big);
             placeholder.setBounds(0, 0, albumArtPlaceholder.getWidth(), albumArtPlaceholder.getHeight());
             placeholder.draw(new Canvas(albumArtPlaceholder));
-            mediaSession.setCallback(new MediaSession.Callback() {
+            mediaSession.setCallback(new MediaSessionCompat.Callback() {
                 @Override
                 public void onPlay() {
                     MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
@@ -152,11 +155,79 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 }
 
                 @Override
+                public void onSetRepeatMode(int repeatMode) {
+                    int newMode;
+                    switch (repeatMode) {
+                        case PlaybackStateCompat.REPEAT_MODE_ONE:
+                            newMode = 2;
+                            break;
+                        case PlaybackStateCompat.REPEAT_MODE_ALL:
+                        case PlaybackStateCompat.REPEAT_MODE_GROUP:
+                            newMode = 1;
+                            break;
+                        default:
+                            newMode = 0;
+                            break;
+                    }
+                    SharedConfig.setRepeatMode(newMode);
+                    updateRepeatMode();
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
+                public void onSetShuffleMode(int shuffleMode) {
+                    if (shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL || shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_GROUP) {
+                        if (!SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(2);
+                        }
+                    } else {
+                        if (SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(0);
+                        }
+                    }
+                    updateShuffleMode();
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
+                public void onCustomAction(String action, android.os.Bundle extras) {
+                    if (NOTIFY_REPEAT.equals(action)) {
+                        SharedConfig.setRepeatMode((SharedConfig.repeatMode + 1) % 3);
+                        updateRepeatMode();
+                        if (AudioPlayerAlert.instance != null) {
+                            AudioPlayerAlert.instance.updateRepeatButton();
+                        }
+                    } else if (NOTIFY_SHUFFLE.equals(action)) {
+                        if (SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(0);
+                        } else {
+                            MediaController.getInstance().setPlaybackOrderType(2);
+                        }
+                        updateShuffleMode();
+                        if (AudioPlayerAlert.instance != null) {
+                            AudioPlayerAlert.instance.updateRepeatButton();
+                        }
+                    }
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
                 public void onStop() {
                     //stopSelf();
                 }
             });
             mediaSession.setActive(true);
+            updateRepeatMode();
+            updateShuffleMode();
         }
 
         registerReceiver(headsetPlugReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
@@ -202,11 +273,6 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     }
 
     private Bitmap loadArtworkFromUrl(String artworkUrl, boolean big, boolean tryLoad) {
-        String name = ImageLoader.getHttpFileName(artworkUrl);
-        /*BitmapDrawable drawable = ImageLoader.getInstance().getAnyImageFromMemory(name);
-        if (drawable != null) {
-            return drawable.getBitmap();
-        }*/
         File path = ImageLoader.getHttpFilePath(artworkUrl, "jpg");
         if (path.exists()) {
             return ImageLoader.loadBitmap(path.getAbsolutePath(), null, big ? 600 : 100, big ? 600 : 100, false);
@@ -238,7 +304,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                     if (big) {
                         if (tryLoad) {
                             loadingFilePath = FileLoader.getAttachFileName(photoPath);
-                            ImageLocation photoLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_BIG);
+                            ImageLocation photoLocation = ImageLocation.getForUser(UserConfig.selectedAccount, user, ImageLocation.TYPE_BIG);
                             imageReceiver.setImage(photoLocation, "", null, null, null, 0);
                         } else {
                             loadingFilePath = null;
@@ -373,10 +439,12 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             PendingIntent pendingPlaypause = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(isPlaying ? NOTIFY_PAUSE : NOTIFY_PLAY).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), fixIntentFlags(PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT));
             PendingIntent pendingNext = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_NEXT).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), fixIntentFlags(PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT));
             PendingIntent pendingSeek = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_SEEK).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), fixIntentFlags(PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT));
+            PendingIntent pendingRepeat = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_REPEAT).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), fixIntentFlags(PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT));
+            PendingIntent pendingShuffle = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(NOTIFY_SHUFFLE).setComponent(new ComponentName(this, MusicPlayerReceiver.class)), fixIntentFlags(PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT));
 
-            Notification.MediaStyle mediaStyle = new Notification.MediaStyle().setMediaSession(mediaSession.getSessionToken());
+            Notification.MediaStyle mediaStyle = new Notification.MediaStyle().setMediaSession((android.media.session.MediaSession.Token) mediaSession.getSessionToken().getToken());
             if (messageObject.isMusic()) {
-                mediaStyle.setShowActionsInCompactView(0, 1, 2);
+                mediaStyle.setShowActionsInCompactView(0, 1, 2, 3, 4);
             } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
                 mediaStyle.setShowActionsInCompactView(0);
             }
@@ -405,8 +473,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             final String nextDescription = LocaleController.getString(R.string.Next);
             final String previousDescription = LocaleController.getString(R.string.AccDescrPrevious);
 
+            playbackState = new PlaybackStateCompat.Builder();
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
-                playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
+                playbackState.setState(PlaybackStateCompat.STATE_BUFFERING, 0, 1).setActions(0);
                 if (messageObject.isMusic()) {
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build());
                 }
@@ -415,33 +484,59 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
                 }
             } else {
-                long actions = PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO;
+                long actions = PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_SET_REPEAT_MODE | PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE;
                 if (messageObject.isMusic()) {
-                    actions |= PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT;
+                    actions |= PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS | PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
                 }
-                playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                if (messageObject.isMusic()) {
+                    int shuffleIcon = SharedConfig.shuffleMusic ? R.drawable.player_new_shuffle : R.drawable.player_new_shuffle_off;
+                    playbackState.addCustomAction(new PlaybackStateCompat.CustomAction.Builder(
+                            NOTIFY_SHUFFLE, LocaleController.getString(R.string.ShuffleList), shuffleIcon).build());
+                }
+                playbackState.setState(isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED,
                                 MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                                 getPlaybackSpeed(isPlaying, messageObject))
                         .setActions(actions);
+                if (messageObject.isMusic()) {
+                    int repeatIcon;
+                    switch (SharedConfig.repeatMode) {
+                        case 1: repeatIcon = R.drawable.player_new_repeatall; break;
+                        case 2: repeatIcon = R.drawable.player_new_repeatone; break;
+                        default: repeatIcon = R.drawable.player_new_repeat_off; break;
+                    }
+                    playbackState.addCustomAction(new PlaybackStateCompat.CustomAction.Builder(
+                            NOTIFY_REPEAT, LocaleController.getString(R.string.RepeatSong), repeatIcon).build());
+                }
                 final String playPauseTitle = isPlaying ? LocaleController.getString(R.string.AccActionPause) : LocaleController.getString(R.string.AccActionPlay);
                 if (messageObject.isMusic()) {
+                    int shuffleIcon = SharedConfig.shuffleMusic ? R.drawable.player_new_shuffle : R.drawable.player_new_shuffle_off;
+                    bldr.addAction(new Notification.Action.Builder(shuffleIcon, LocaleController.getString(R.string.ShuffleList), pendingShuffle).build());
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build());
                 }
                 bldr.addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, playPauseTitle, pendingPlaypause).build());
                 if (messageObject.isMusic()) {
                     bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
+                    int repeatIcon;
+                    switch (SharedConfig.repeatMode) {
+                        case 1: repeatIcon = R.drawable.player_new_repeatall; break;
+                        case 2: repeatIcon = R.drawable.player_new_repeatone; break;
+                        default: repeatIcon = R.drawable.player_new_repeat_off; break;
+                    }
+                    bldr.addAction(new Notification.Action.Builder(repeatIcon, LocaleController.getString(R.string.RepeatSong), pendingRepeat).build());
                 }
             }
 
             mediaSession.setPlaybackState(playbackState.build());
-            MediaMetadata.Builder meta = new MediaMetadata.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, contentText)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, contentText)
-                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, contentTitle)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, audioInfo != null && messageObject.isMusic() ? audioInfo.getAlbum() : null);
+            updateRepeatMode();
+            updateShuffleMode();
+            MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ARTIST, contentText)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, contentText)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, contentTitle)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, audioInfo != null && messageObject.isMusic() ? audioInfo.getAlbum() : null);
             if (fullAlbumArt != null && !fullAlbumArt.isRecycled()) {
-                meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt);
+                meta.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, fullAlbumArt);
             }
 
             mediaSession.setMetadata(meta.build());
@@ -626,21 +721,59 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         if (Build.VERSION.SDK_INT < 21) {
             return;
         }
+        playbackState = new PlaybackStateCompat.Builder();
         boolean isPlaying = !MediaController.getInstance().isMessagePaused();
         if (MediaController.getInstance().isDownloadingCurrentMessage()) {
-            playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
+            playbackState.setState(PlaybackStateCompat.STATE_BUFFERING, 0, 1).setActions(0);
         } else {
-            long actions = PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO;
+            long actions = PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_SET_REPEAT_MODE | PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE;
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject != null && messageObject.isMusic()) {
-                actions |= PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT;
+                actions |= PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS | PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
+                int shuffleIcon = SharedConfig.shuffleMusic ? R.drawable.player_new_shuffle : R.drawable.player_new_shuffle_off;
+                playbackState.addCustomAction(new PlaybackStateCompat.CustomAction.Builder(
+                        NOTIFY_SHUFFLE, LocaleController.getString(R.string.ShuffleList), shuffleIcon).build());
             }
-            playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+            playbackState.setState(isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED,
                             seekTo,
                             getPlaybackSpeed(isPlaying, messageObject))
                     .setActions(actions);
+            if (messageObject != null && messageObject.isMusic()) {
+                int repeatIcon;
+                switch (SharedConfig.repeatMode) {
+                    case 1: repeatIcon = R.drawable.player_new_repeatall; break;
+                    case 2: repeatIcon = R.drawable.player_new_repeatone; break;
+                    default: repeatIcon = R.drawable.player_new_repeat_off; break;
+                }
+                playbackState.addCustomAction(new PlaybackStateCompat.CustomAction.Builder(
+                        NOTIFY_REPEAT, LocaleController.getString(R.string.RepeatSong), repeatIcon).build());
+            }
         }
         mediaSession.setPlaybackState(playbackState.build());
+    }
+
+    private void updateRepeatMode() {
+        if (mediaSession != null) {
+            int sessionRepeatMode;
+            switch (SharedConfig.repeatMode) {
+                case 1:
+                    sessionRepeatMode = PlaybackStateCompat.REPEAT_MODE_ALL;
+                    break;
+                case 2:
+                    sessionRepeatMode = PlaybackStateCompat.REPEAT_MODE_ONE;
+                    break;
+                default:
+                    sessionRepeatMode = PlaybackStateCompat.REPEAT_MODE_NONE;
+                    break;
+            }
+            mediaSession.setRepeatMode(sessionRepeatMode);
+        }
+    }
+
+    private void updateShuffleMode() {
+        if (mediaSession != null) {
+            mediaSession.setShuffleMode(SharedConfig.shuffleMusic ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
+        }
     }
 
     private float getPlaybackSpeed(boolean isPlaying, MessageObject messageObject) {
@@ -686,7 +819,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             metadataEditor.apply();
             audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (mediaSession != null) {
             mediaSession.release();
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {

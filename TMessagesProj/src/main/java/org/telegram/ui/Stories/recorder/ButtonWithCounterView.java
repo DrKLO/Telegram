@@ -116,7 +116,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(backgroundColor);
+        paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
 
         text = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
         text.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -188,7 +188,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
         subText.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
         countText.setTextColor(backgroundColor);
-        paint.setColor(backgroundColor);
+        paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
     }
 
     public void setCounterColor(int color) {
@@ -563,36 +563,38 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
             );
             AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
 
-            if (countScale != 1) {
-                canvas.save();
-                canvas.scale(countScale, countScale, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
-            }
-            if (countFilled) {
-                paint.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * countAlpha * AndroidUtilities.lerp(.5f, 1f, enabledT)));
-                int radius = withCounterIcon ? dp(4) : dp(10);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
-            }
+            // if (countAlpha > 0) {
+                if (countScale != 1) {
+                    canvas.save();
+                    canvas.scale(countScale, countScale, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
+                }
+                if (countFilled) {
+                    paint.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * countAlpha * AndroidUtilities.lerp(.5f, 1f, enabledT)));
+                    int radius = withCounterIcon ? dp(4) : dp(10);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
+                }
 
-            int countLength = countText.getText() != null ? countText.getText().length() : 0;
-            AndroidUtilities.rectTmp2.offset(-dp(countLength > 1 ? .3f : 0), -dp(.4f));
-            countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
-            countText.setBounds(AndroidUtilities.rectTmp2);
-            canvas.save();
-            if (countFilled && withCounterIcon) {
-                counterDrawable.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * 1));
-                counterDrawable.setBounds(
-                        dp(1) + AndroidUtilities.rectTmp2.left,
-                        dp(2) + AndroidUtilities.rectTmp2.top,
-                        dp(1) + AndroidUtilities.rectTmp2.left + counterDrawable.getIntrinsicWidth(),
-                        dp(2) + AndroidUtilities.rectTmp2.top + counterDrawable.getIntrinsicHeight());
-                counterDrawable.draw(canvas);
-                canvas.translate(lightningWidth / 2, 0);
-            }
-            countText.draw(canvas);
-            canvas.restore();
-            if (countScale != 1) {
+                int countLength = countText.getText() != null ? countText.getText().length() : 0;
+                AndroidUtilities.rectTmp2.offset(-dp(countLength > 1 ? .3f : 0), -dp(.4f));
+                countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
+                countText.setBounds(AndroidUtilities.rectTmp2);
+                canvas.save();
+                if (countFilled && withCounterIcon) {
+                    counterDrawable.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * 1));
+                    counterDrawable.setBounds(
+                            dp(1) + AndroidUtilities.rectTmp2.left,
+                            dp(2) + AndroidUtilities.rectTmp2.top,
+                            dp(1) + AndroidUtilities.rectTmp2.left + counterDrawable.getIntrinsicWidth(),
+                            dp(2) + AndroidUtilities.rectTmp2.top + counterDrawable.getIntrinsicHeight());
+                    counterDrawable.draw(canvas);
+                    canvas.translate(lightningWidth / 2, 0);
+                }
+                countText.draw(canvas);
                 canvas.restore();
-            }
+                if (countScale != 1) {
+                    canvas.restore();
+                }
+            // }
             if (restore) {
                 canvas.restore();
             }

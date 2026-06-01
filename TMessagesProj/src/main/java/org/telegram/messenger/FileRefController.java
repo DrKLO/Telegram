@@ -1951,26 +1951,43 @@ public class FileRefController extends BaseController {
 
     private boolean getPeerReferenceReplacement(TLRPC.User user, TLRPC.Chat chat, boolean big, TLRPC.InputFileLocation location, TLRPC.InputFileLocation[] replacement, boolean[] needReplacement) {
         if (needReplacement != null && needReplacement[0]) {
-            TLRPC.TL_inputPeerPhotoFileLocation inputPeerPhotoFileLocation = new TLRPC.TL_inputPeerPhotoFileLocation();
+            final TLRPC.TL_inputPeerPhotoFileLocation inputPeerPhotoFileLocation = new TLRPC.TL_inputPeerPhotoFileLocation();
             inputPeerPhotoFileLocation.id = location.volume_id;
             inputPeerPhotoFileLocation.volume_id = location.volume_id;
             inputPeerPhotoFileLocation.local_id = location.local_id;
             inputPeerPhotoFileLocation.big = big;
-            TLRPC.InputPeer peer;
+            final TLRPC.InputPeer peer;
             if (user != null) {
-                TLRPC.TL_inputPeerUser inputPeerUser = new TLRPC.TL_inputPeerUser();
-                inputPeerUser.user_id = user.id;
-                inputPeerUser.access_hash = user.access_hash;
-                inputPeerPhotoFileLocation.photo_id = user.photo.photo_id;
-                peer = inputPeerUser;
+                if (user.access_hash == 0 && user.fromMessageId != 0 && user.fromMessageDialogId != 0) {
+                    final TLRPC.TL_inputPeerUserFromMessage inputPeerUserFromMessage = new TLRPC.TL_inputPeerUserFromMessage();
+                    inputPeerUserFromMessage.user_id = user.id;
+                    inputPeerUserFromMessage.peer = getMessagesController().getInputPeer(user.fromMessageDialogId);
+                    inputPeerUserFromMessage.msg_id = user.fromMessageId;
+                    inputPeerPhotoFileLocation.photo_id = user.photo.photo_id;
+                    peer = inputPeerUserFromMessage;
+                } else {
+                    final TLRPC.TL_inputPeerUser inputPeerUser = new TLRPC.TL_inputPeerUser();
+                    inputPeerUser.user_id = user.id;
+                    inputPeerUser.access_hash = user.access_hash;
+                    inputPeerPhotoFileLocation.photo_id = user.photo.photo_id;
+                    peer = inputPeerUser;
+                }
             } else {
                 if (ChatObject.isChannel(chat)) {
-                    TLRPC.TL_inputPeerChannel inputPeerChannel = new TLRPC.TL_inputPeerChannel();
-                    inputPeerChannel.channel_id = chat.id;
-                    inputPeerChannel.access_hash = chat.access_hash;
-                    peer = inputPeerChannel;
+                    if (chat.access_hash == 0 && chat.fromMessageDialogId != 0 && chat.fromMessageId != 0) {
+                        final TLRPC.TL_inputPeerChannelFromMessage inputPeerChannelFromMessage = new TLRPC.TL_inputPeerChannelFromMessage();
+                        inputPeerChannelFromMessage.channel_id = chat.id;
+                        inputPeerChannelFromMessage.peer = getMessagesController().getInputPeer(chat.fromMessageDialogId);
+                        inputPeerChannelFromMessage.msg_id = chat.fromMessageId;
+                        peer = inputPeerChannelFromMessage;
+                    } else {
+                        final TLRPC.TL_inputPeerChannel inputPeerChannel = new TLRPC.TL_inputPeerChannel();
+                        inputPeerChannel.channel_id = chat.id;
+                        inputPeerChannel.access_hash = chat.access_hash;
+                        peer = inputPeerChannel;
+                    }
                 } else {
-                    TLRPC.TL_inputPeerChat inputPeerChat = new TLRPC.TL_inputPeerChat();
+                    final TLRPC.TL_inputPeerChat inputPeerChat = new TLRPC.TL_inputPeerChat();
                     inputPeerChat.chat_id = chat.id;
                     peer = inputPeerChat;
                 }

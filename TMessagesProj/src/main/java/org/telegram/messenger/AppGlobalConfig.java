@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class AppGlobalConfig {
@@ -62,6 +63,7 @@ public class AppGlobalConfig {
     public final ConfigString musicSearchUsername = ofString("music_search_username", null);
 
     public final ConfigInt pollAnswersMax = ofInt("poll_answers_max", 12);
+    public final ConfigInt pollCountriesMax = ofInt("poll_countries_max", 12);
     public final ConfigInt pollAnswerLengthMax = ofInt("poll_answer_length_max", 100);
     public final ConfigInt pollQuestionLengthMax = ofInt("poll_question_length_max", 255);
     public final ConfigInt pollSolutionLengthMax = ofInt("poll_solution_length_max", 200);
@@ -71,6 +73,14 @@ public class AppGlobalConfig {
 
     public final ConfigInt botsCreateLimitDefault = ofInt("bots_create_limit_default", 20);
     public final ConfigInt botsCreateLimitPremium = ofInt("bots_create_limit_premium", 40);
+
+    public final ConfigString phoneCountryIso2 = ofString("phone_country_iso2", "en");
+
+    public final ConfigInt aicomposeToneExamplesNum = ofInt("aicompose_tone_examples_num", 3);
+    public final ConfigInt aicomposeToneTitleLengthMax = ofInt("aicompose_tone_title_length_max", 12);
+    public final ConfigInt aicomposeTonePromptLengthMax = ofInt("aicompose_tone_prompt_length_max", 1024);
+    public final ConfigInt aicomposeToneSavedLimitDefault = ofInt("aicompose_tone_saved_limit_default", 5);
+    public final ConfigInt aicomposeToneSavedLimitPremium = ofInt("aicompose_tone_saved_limit_premium", 20);
 
     /* * */
 

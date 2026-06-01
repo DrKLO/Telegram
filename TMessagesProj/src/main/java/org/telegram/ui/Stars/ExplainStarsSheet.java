@@ -169,6 +169,14 @@ public class ExplainStarsSheet extends BottomSheetWithRecyclerListView {
             subtitleView.setText(text);
         }
 
+        public void setTitle(CharSequence text) {
+            titleView.setText(text);
+        }
+
+        public void setSubtitle(CharSequence text) {
+            subtitleView.setText(text);
+        }
+
         public static class Factory extends UItem.UItemFactory<FeatureCell> {
             static { setup(new Factory()); }
 

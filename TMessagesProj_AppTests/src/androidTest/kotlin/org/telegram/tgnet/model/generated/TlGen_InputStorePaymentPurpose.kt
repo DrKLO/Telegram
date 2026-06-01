@@ -185,34 +185,6 @@ public sealed class TlGen_InputStorePaymentPurpose : TlGen_Object {
     }
   }
 
-  public data class TL_inputStorePaymentAuthCode(
-    public val restore: Boolean,
-    public val phone_number: String,
-    public val phone_code_hash: String,
-    public val currency: String,
-    public val amount: Long,
-  ) : TlGen_InputStorePaymentPurpose() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (restore) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeString(phone_number)
-      stream.writeString(phone_code_hash)
-      stream.writeString(currency)
-      stream.writeInt64(amount)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x9BB2636DU
-    }
-  }
-
   public data class TL_inputStorePaymentStarsTopup(
     public val stars: Long,
     public val currency: String,
@@ -237,6 +209,36 @@ public sealed class TlGen_InputStorePaymentPurpose : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xF9A2A6CBU
+    }
+  }
+
+  public data class TL_inputStorePaymentAuthCode(
+    public val restore: Boolean,
+    public val phone_number: String,
+    public val phone_code_hash: String,
+    public val premium_days: Int,
+    public val currency: String,
+    public val amount: Long,
+  ) : TlGen_InputStorePaymentPurpose() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (restore) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeString(phone_number)
+      stream.writeString(phone_code_hash)
+      stream.writeInt32(premium_days)
+      stream.writeString(currency)
+      stream.writeInt64(amount)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3FC18057U
     }
   }
 
@@ -341,6 +343,34 @@ public sealed class TlGen_InputStorePaymentPurpose : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0xDDDD0F56U
+    }
+  }
+
+  public data class TL_inputStorePaymentAuthCode_layer224(
+    public val restore: Boolean,
+    public val phone_number: String,
+    public val phone_code_hash: String,
+    public val currency: String,
+    public val amount: Long,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (restore) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeString(phone_number)
+      stream.writeString(phone_code_hash)
+      stream.writeString(currency)
+      stream.writeInt64(amount)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9BB2636DU
     }
   }
 }

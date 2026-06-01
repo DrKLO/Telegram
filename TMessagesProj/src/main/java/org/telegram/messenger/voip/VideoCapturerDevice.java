@@ -85,6 +85,9 @@ public class VideoCapturerDevice {
     }
 
     private static Point getScreenCaptureSize() {
+        return getScreenCaptureSize(/* 4 */ 16);
+    }
+    private static Point getScreenCaptureSize(int roundBy) {
         WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
         Point size = new Point();
@@ -112,7 +115,7 @@ public class VideoCapturerDevice {
             }
         }
         if (dx != -1 && aspect != 1) {
-            while (size.x > 1000 || size.y > 1000 || size.x % 4 != 0 || size.y % 4 != 0) {
+            while (size.x > 1000 || size.y > 1000 || size.x % roundBy != 0 || size.y % roundBy != 0) {
                 size.x -= dx;
                 size.y -= dy;
                 if (size.x < 800 && size.y < 800) {
@@ -123,8 +126,8 @@ public class VideoCapturerDevice {
         }
         if (dx == -1 || aspect == 1) {
             float scale = Math.max(size.x / 970.0f, size.y / 970.0f);
-            size.x = (int) Math.ceil((size.x / scale) / 4.0f) * 4;
-            size.y = (int) Math.ceil((size.y / scale) / 4.0f) * 4;
+            size.x = (int) Math.ceil((size.x / scale) / (float) roundBy) * roundBy;
+            size.y = (int) Math.ceil((size.y / scale) / (float) roundBy) * roundBy;
         }
         return size;
     }

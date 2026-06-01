@@ -31,6 +31,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatSearchTabs;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.UItem;
@@ -90,6 +91,8 @@ public class TimezoneSelector extends BaseFragment implements NotificationCenter
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -149,25 +152,33 @@ public class TimezoneSelector extends BaseFragment implements NotificationCenter
         final boolean filter = searching && !TextUtils.isEmpty(query);
         final TimezonesController controller = TimezonesController.getInstance(currentAccount);
         if (!filter) {
+            adapter.whiteSectionStart();
             items.add(UItem.asRippleCheck(BUTTON_DETECT, getString(R.string.TimezoneDetectAutomatically)).setChecked(useSystem));
+            adapter.whiteSectionEnd();
             items.add(UItem.asShadow(formatString(R.string.TimezoneDetectAutomaticallyInfo, controller.getTimezoneName(currentTimezone, true))));
+        }
+        adapter.whiteSectionStart();
+        if (!filter) {
             items.add(UItem.asHeader(getString(R.string.TimezoneHeader)));
         }
         boolean empty = true;
         for (int i = 0; i < controller.getTimezones().size(); ++i) {
             TLRPC.TL_timezone timezone = controller.getTimezones().get(i);
+            CharSequence name = controller.getTimezoneName(timezone, false);
             if (filter) {
                 String timezoneQuery = AndroidUtilities.translitSafe(timezone.name).toLowerCase().replace("/", " ");
                 String q = AndroidUtilities.translitSafe(query).toLowerCase();
                 if (!(timezoneQuery.contains(" " + q) || timezoneQuery.startsWith(q))) {
                     continue;
                 }
+                name = AndroidUtilities.highlightText(name, query, resourceProvider);
             }
-            items.add(UItem.asRadio(i, controller.getTimezoneName(timezone, false), controller.getTimezoneOffsetName(timezone)).setChecked(TextUtils.equals(timezone.id, currentTimezone)).setEnabled(!useSystem || filter));
+            items.add(UItem.asRadio(i, name, controller.getTimezoneOffsetName(timezone)).setChecked(TextUtils.equals(timezone.id, currentTimezone)).setEnabled(!useSystem || filter));
             empty = false;
         }
+        adapter.whiteSectionEnd();
         if (empty) {
-            items.add(UItem.asCustom(emptyView));
+            items.add(UItem.asCustomShadow(emptyView));
         } else {
             items.add(UItem.asShadow(null));
         }
@@ -216,5 +227,16 @@ public class TimezoneSelector extends BaseFragment implements NotificationCenter
     public void onFragmentDestroy() {
         getNotificationCenter().removeObserver(this, NotificationCenter.timezonesUpdated);
         super.onFragmentDestroy();
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
     }
 }

@@ -295,6 +295,7 @@ public class PollItemMenu extends Dialog {
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
         params.flags &=~ WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
                 | WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
                 | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION
@@ -566,7 +567,7 @@ public class PollItemMenu extends Dialog {
                 final long currentTime = ConnectionsManager.getInstance(messageObject.currentAccount).getCurrentTime();
                 final long deadlineTime = task.date + MessagesController.getInstance(messageObject.currentAccount).config.pollAnswerDeletePeriod.get(TimeUnit.SECONDS);
 
-                if (!messageObject.isForwarded() && (media.poll.creator || dialogId == selfId && currentTime < deadlineTime)) {
+                if (!messageObject.isForwarded() && !media.poll.closed && (media.poll.creator || dialogId == selfId && currentTime < deadlineTime)) {
                     taskOptions.add(R.drawable.msg_delete, getString(R.string.Delete), true, () -> {
                         SendMessagesHelper.getInstance(messageObject.currentAccount).deletePollOption(messageObject, taskId);
                         dismiss(true);

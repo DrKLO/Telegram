@@ -29,7 +29,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
@@ -65,7 +64,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SnowflakesEffect;
-import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 
@@ -83,6 +81,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
         }
     }
 
+    private Drawable glassDrawable;
     private INavigationLayout.BackButtonState backButtonState = INavigationLayout.BackButtonState.BACK;
     public ImageView backButtonImageView;
     private BackupImageView avatarSearchImageView;
@@ -182,6 +181,10 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
         });
     }
 
+    public void setGlassDrawable(Drawable drawable) {
+        glassDrawable = drawable;
+    }
+
     public INavigationLayout.BackButtonState getBackButtonState() {
         if (backButtonDrawable instanceof INavigationLayout.IBackButtonDrawable) {
             return ((INavigationLayout.IBackButtonDrawable) backButtonDrawable).getBackButtonState();
@@ -232,6 +235,25 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
             menuDrawable.setIconColor(itemsColor);
         } else if (drawable instanceof BitmapDrawable) {
             backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.SRC_IN));
+        }
+        checkBackButtonLayerType();
+    }
+
+    private void checkBackButtonLayerType() {
+        if (backButtonImageView == null) {
+            return;
+        }
+
+        // BackDrawable is expensive for render thread because it uses PathStencilCoverOp
+
+        final Drawable drawable = backButtonImageView.getDrawable();
+        final int layerToSet = (drawable instanceof BackDrawable || drawable instanceof MenuDrawable) ?
+            View.LAYER_TYPE_HARDWARE :
+            View.LAYER_TYPE_NONE;
+
+        if (backButtonImageView.getLayerType() != layerToSet) {
+            backButtonImageView.setLayerType(layerToSet, null);
+            backButtonImageView.invalidate();
         }
     }
 
@@ -364,6 +386,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
         backButtonImageView.setVisibility(resource == 0 ? GONE : VISIBLE);
         backButtonImageView.setImageResource(resource);
         backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.SRC_IN));
+        checkBackButtonLayerType();
     }
 
     private void createSubtitleTextView() {
@@ -1599,7 +1622,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
             titleTextView[0].setAlpha(0);
             titleTextView[0].setTranslationY(-dp(20));
             titleTextView[0].animate()
-                    .alpha(1f)
+                    .alpha(adaptiveBackgroundHideTitle ? 1.0f - onTopAnimated : 1f)
                     .translationY(0)
                     .setDuration(220).start();
             ViewPropertyAnimator animator = titleTextView[1].animate()
@@ -1953,6 +1976,13 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (glassDrawable != null) {
+            final int t = getHeight() - getCurrentActionBarHeight() / 2 - dp(26) - dp(7);
+            final int b = t + dp(52) + dp(7) + dp(7);
+            glassDrawable.setBounds(0, t, getWidth(), b);
+            glassDrawable.draw(canvas);
+        }
+
         if (blurredBackground && actionBarColor != Color.TRANSPARENT) {
             rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
             blurScrimPaint.setColor(actionBarColor);
@@ -2028,16 +2058,19 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
         return additionalSubTitleOverlayContainer;
     }
 
-    private boolean adaptiveBackground;
+    private boolean adaptiveBackground, adaptiveBackgroundHideTitle;
     private int adaptive_topColorKey;
     private int adaptive_lowerColorKey;
     private boolean onTop = true;
     private float onTopAnimated = 1.0f;
     private ValueAnimator adaptive_animator;
     public void setAdaptiveBackground(RecyclerView list) {
-        setAdaptiveBackground(list, Theme.key_windowBackgroundGray, Theme.key_actionBarDefault);
+        setAdaptiveBackground(list, false, Theme.key_windowBackgroundGray, Theme.key_actionBarDefault);
     }
-    public void setAdaptiveBackground(RecyclerView list, final int topColorKey, final int lowerColorKey) {
+    public void setAdaptiveBackground(RecyclerView list, boolean hideTitle) {
+        setAdaptiveBackground(list, hideTitle, Theme.key_windowBackgroundGray, Theme.key_actionBarDefault);
+    }
+    public void setAdaptiveBackground(RecyclerView list, boolean hideTitle, final int topColorKey, final int lowerColorKey) {
         this.adaptive_topColorKey = topColorKey;
         this.adaptive_lowerColorKey = lowerColorKey;
         final Runnable checkScroll = () -> {
@@ -2067,6 +2100,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
                 checkScroll.run();
             }
         });
+        this.adaptiveBackgroundHideTitle = hideTitle;
         if (this.adaptiveBackground) {
             checkScroll.run();
         } else {
@@ -2114,6 +2148,13 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
     }
     private void adaptive_updateColor() {
         if (!adaptiveBackground) return;
+        if (adaptiveBackgroundHideTitle) {
+            if (titlesContainer != null) {
+                titlesContainer.setAlpha(1.0f - onTopAnimated);
+            } else if (titleTextView[0] != null) {
+                titleTextView[0].setAlpha(1.0f - onTopAnimated);
+            }
+        }
         setBackgroundColor(ColorUtils.blendARGB(
             adaptive_topColorKey == -1 ? 0 : Theme.getColor(adaptive_lowerColorKey, resourcesProvider),
             adaptive_topColorKey == -1 ? 0 : Theme.getColor(adaptive_topColorKey, resourcesProvider),

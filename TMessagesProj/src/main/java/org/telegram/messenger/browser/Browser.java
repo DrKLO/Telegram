@@ -379,7 +379,7 @@ public class Browser {
                     .appendQueryParameter("autologin_token", autologin_token)
                     .build();
             }
-            if (allowCustom && !SharedConfig.inappBrowser && SharedConfig.customTabs && !internalUri && !scheme.equals("tel") && !isTonsite(uri.toString())) {
+            if (allowCustom && !(SharedConfig.inappBrowser || isInstantViewOpen()) && SharedConfig.customTabs && !internalUri && !scheme.equals("tel") && !isTonsite(uri.toString())) {
                 if (forceBrowser[0] || !openInExternalApp(context, uri.toString(), false) || !hasAppToOpen(context, uri.toString())) {
                     if (MessagesController.getInstance(currentAccount).authDomains.contains(host)) {
                         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -413,7 +413,7 @@ public class Browser {
         try {
             final boolean inappBrowser = (
                 allowInAppBrowser && BubbleActivity.instance == null &&
-                SharedConfig.inappBrowser &&
+                (SharedConfig.inappBrowser || isInstantViewOpen()) &&
                 TextUtils.isEmpty(browserPackage) &&
                 !RestrictedDomainsList.getInstance().isRestricted(AndroidUtilities.getHostAuthority(uri, true)) &&
                 (uri.getScheme() == null || "https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) || "tonsite".equals(uri.getScheme()))
@@ -475,6 +475,16 @@ public class Browser {
         return true;
     }
 
+    public static boolean isInstantViewOpen() {
+        BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+        if (fragment != null && fragment.getParentLayout() instanceof ActionBarLayout) {
+            BaseFragment sheetFragment = ((ActionBarLayout) fragment.getParentLayout()).getSheetFragment();
+            if (sheetFragment != null && sheetFragment.getArticleViewer() != null)
+                return true;
+        }
+        return fragment != null && fragment.getArticleViewer() != null;
+    }
+
     public static boolean openInTelegramBrowser(Context context, String url, Browser.Progress progress) {
         if (LaunchActivity.instance != null) {
             BottomSheetTabs tabs = LaunchActivity.instance.getBottomSheetTabs();
@@ -483,12 +493,14 @@ public class Browser {
             }
         }
         BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+        if (fragment != null && fragment.getArticleViewer() != null) {
+            fragment.getArticleViewer().open(url, progress);
+            return true;
+        }
         if (fragment != null && fragment.getParentLayout() instanceof ActionBarLayout) {
             fragment = ((ActionBarLayout) fragment.getParentLayout()).getSheetFragment();
         }
-        if (fragment == null) {
-            return false;
-        }
+        if (fragment == null) return false;
         fragment.createArticleViewer(false).open(url, progress);
         return true;
     }

@@ -807,7 +807,7 @@ public class ThemeColors {
         defaultColors[key_code_keyword] = 0xFFE05356;
         defaultColors[key_code_operator] = 0xFF4DBBFF;
         defaultColors[key_code_constant] = 0xFF7F79F3;
-        defaultColors[key_code_string] = 0xFF61C752;
+        defaultColors[key_code_string] = 0xFF37C123;
         defaultColors[key_code_number] = 0xFF327FE5;
         defaultColors[key_code_comment] = 0x80000000;
         defaultColors[key_code_function] = 0xFFF28C39;

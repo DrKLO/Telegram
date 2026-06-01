@@ -150,6 +150,7 @@ import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.RectOld;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.ThanosEffect;
@@ -2041,6 +2042,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             });
         }
         windowView.setFocusable(true);
+        windowView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
 
         flashViews = new FlashViews(context, windowManager, windowView, windowLayoutParams);
         flashViews.add(new FlashViews.Invertable() {
@@ -2366,7 +2368,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 for (int i = 0; i < paintView.entitiesView.getChildCount(); ++i) {
                     View view = paintView.entitiesView.getChildAt(i);
                     if (view instanceof EntityView) {
-                        org.telegram.ui.Components.Rect rect = ((EntityView) view).getSelectionBounds();
+                        RectOld rect = ((EntityView) view).getSelectionBounds();
                         AndroidUtilities.rectTmp.set(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height);
                         if (AndroidUtilities.rectTmp.contains(x, y)) {
                             return true;
@@ -2829,12 +2831,14 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         actionBarContainer.addView(flashButton, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
 
         dualButton = new ToggleButton(context, R.drawable.media_dual_camera2_shadow, R.drawable.media_dual_camera2);
+        dualButton.setContentDescription(getString(R.string.AccDescrDualCameraOn));
         dualButton.setOnClickListener(v -> {
             if (cameraView == null || currentPage != PAGE_CAMERA) {
                 return;
             }
             cameraView.toggleDual();
             dualButton.setValue(cameraView.isDual());
+            dualButton.setContentDescription(getString(cameraView.isDual() ? R.string.AccDescrDualCameraOn : R.string.AccDescrDualCameraOff));
 
             dualHint.hide();
             MessagesController.getGlobalMainSettings().edit().putInt("storydualhint", 2).apply();
@@ -2850,6 +2854,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         actionBarContainer.addView(dualButton, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
 
         collageButton = new CollageLayoutButton(context);
+        collageButton.setContentDescription(getString(R.string.AccDescrCollage));
         collageButton.setBackground(Theme.createSelectorDrawable(0x20ffffff));
         if (lastCollageLayout == null) {
             lastCollageLayout = CollageLayout.getLayouts().get(6);
@@ -2884,6 +2889,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         actionBarContainer.addView(collageButton, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
 
         collageRemoveButton = new ToggleButton2(context);
+        collageRemoveButton.setContentDescription(getString(R.string.AccDescrCollageClose));
         collageRemoveButton.setBackground(Theme.createSelectorDrawable(0x20ffffff));
         collageRemoveButton.setIcon(new CollageLayoutButton.CollageLayoutDrawable(new CollageLayout("../../.."), true), false);
         collageRemoveButton.setVisibility(View.GONE);
@@ -3067,6 +3073,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         flashViews.add(modeSwitcherView);
 
         rotateButton = new FlashViews.ImageViewInvertable(context);
+        rotateButton.setContentDescription(getString(R.string.AccDescrSwitchCamera));
         rotateButton.setImageResource(R.drawable.stream_flip);
         rotateButton.setScaleType(ImageView.ScaleType.CENTER);
         rotateButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
@@ -3088,6 +3095,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         });
 
         liveSettingsButton = new FlashViews.ImageViewInvertable(context);
+        liveSettingsButton.setContentDescription(getString(R.string.LiveStorySettings));
         liveSettingsButton.setImageResource(R.drawable.stream_settings);
         liveSettingsButton.setScaleType(ImageView.ScaleType.CENTER);
         liveSettingsButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
@@ -3108,7 +3116,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         navbarContainer.addView(collageHintTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.CENTER, 8, 0, 8, 8));
         flashViews.add(collageHintTextView);
 
-        coverButton = new ButtonWithCounterView(context, resourcesProvider);
+        coverButton = new ButtonWithCounterView(context, resourcesProvider).setRound();
         coverButton.setVisibility(View.GONE);
         coverButton.setAlpha(0f);
         coverButton.setText(LocaleController.getString(R.string.StoryCoverSave), false);
@@ -4791,7 +4799,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 animateGalleryListView(false);
                 if (entry instanceof MediaController.PhotoEntry) {
                     MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) entry;
-                    mode = photoEntry.isVideo && !photoEntry.isLivePhoto ? MODE_VIDEO : MODE_PHOTO;
+                    mode = photoEntry.isVideo && !photoEntry.isLivePhoto() ? MODE_VIDEO : MODE_PHOTO;
                     storyEntry = StoryEntry.fromPhotoEntry(photoEntry);
                     storyEntry.blurredVideoThumb = blurredBitmap;
                     storyEntry.botId = botId;
@@ -5007,6 +5015,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             draftSavedHint.hide(true);
         }
 
+        if (containerView != null) {
+            containerView.setImportantForAccessibility(open ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+        }
+        galleryListView.setImportantForAccessibility(open ? View.IMPORTANT_FOR_ACCESSIBILITY_AUTO : View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+
         galleryListViewOpening = open;
 
         float from = galleryListView.getTranslationY();
@@ -5169,29 +5182,27 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 storiesSelector.setSelected(entries.indexOf(outputEntry));
             }
             timelineView.setMaxCount(!isBot && !isEdit && entries == null && (outputEntry == null || !outputEntry.isCollage() && outputEntry.isVideo) ? 3 : 1);
-            if (outputEntry != null && (outputEntry.isDraft || outputEntry.isEdit || isReposting)) {
-                if (outputEntry.paintFile != null) {
-                    destroyPhotoPaintView();
-                    createPhotoPaintView();
-                    hidePhotoPaintView();
-                }
-//                if (outputEntry.filterState != null) {
-//                    destroyPhotoFilterView();
-//                    createFilterPhotoView();
-//                }
-                if (outputEntry.isVideo && outputEntry.filterState != null) {
-                    VideoEditTextureView textureView = previewView.getTextureView();
-                    if (textureView != null) {
-                        textureView.setDelegate(eglThread -> {
-                            if (eglThread != null && outputEntry != null && outputEntry.filterState != null) {
-                                eglThread.setFilterGLThreadDelegate(FilterShaders.getFilterShadersDelegate(outputEntry.filterState));
-                            }
-                        });
+            if (fromPage != PAGE_COVER) {
+                if (outputEntry != null && (outputEntry.isDraft || outputEntry.isEdit || isReposting)) {
+                    if (outputEntry.paintFile != null) {
+                        destroyPhotoPaintView();
+                        createPhotoPaintView();
+                        hidePhotoPaintView();
                     }
+                    if (outputEntry.isVideo && outputEntry.filterState != null) {
+                        VideoEditTextureView textureView = previewView.getTextureView();
+                        if (textureView != null) {
+                            textureView.setDelegate(eglThread -> {
+                                if (eglThread != null && outputEntry != null && outputEntry.filterState != null) {
+                                    eglThread.setFilterGLThreadDelegate(FilterShaders.getFilterShadersDelegate(outputEntry.filterState));
+                                }
+                            });
+                        }
+                    }
+                    captionEdit.setText(outputEntry.caption);
+                } else if (fromPage != PAGE_COVER) {
+                    captionEdit.clear();
                 }
-                captionEdit.setText(outputEntry.caption);
-            } else {
-                captionEdit.clear();
             }
             previewButtons.setButtonVisible(PreviewButtons.BUTTON_ADJUST, outputEntry == null || (!outputEntry.isRepostMessage || outputEntry.isVideo) && !outputEntry.isCollage());
             previewButtons.setButtonVisible(PreviewButtons.BUTTON_CROP, BuildVars.DEBUG_PRIVATE_VERSION && outputEntry != null && !outputEntry.isRepostMessage && !outputEntry.isCollage());
@@ -6910,6 +6921,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             public void toggleDual() {
                 super.toggleDual();
                 dualButton.setValue(isDual());
+                dualButton.setContentDescription(getString(isDual() ? R.string.AccDescrDualCameraOn : R.string.AccDescrDualCameraOff));
 //                recordControl.setDual(isDual());
                 setCameraFlashModeIcon(getCurrentFlashMode(), true);
             }
@@ -6931,6 +6943,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     }, 340);
                 }
                 dualButton.setValue(isDual());
+                dualButton.setContentDescription(getString(isDual() ? R.string.AccDescrDualCameraOn : R.string.AccDescrDualCameraOff));
             }
 
             @Override

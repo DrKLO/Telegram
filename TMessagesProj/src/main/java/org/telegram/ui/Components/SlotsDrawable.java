@@ -29,12 +29,12 @@ public class SlotsDrawable extends RLottieDrawable {
     private ReelValue center;
     private ReelValue right;
 
-    private long[] nativePtrs = new long[5];
-    private int[] frameCounts = new int[5];
-    private int[] frameNums = new int[5];
-    private long[] secondNativePtrs = new long[3];
-    private int[] secondFrameCounts = new int[3];
-    private int[] secondFrameNums = new int[3];
+    private final long[] nativePtrs = new long[5];
+    private final int[] frameCounts = new int[5];
+    private final int[] frameNums = new int[5];
+    private final long[] secondNativePtrs = new long[3];
+    private final int[] secondFrameCounts = new int[3];
+    private final int[] secondFrameNums = new int[3];
 
     private boolean playWinAnimation;
 
@@ -65,7 +65,7 @@ public class SlotsDrawable extends RLottieDrawable {
                     if (isDice == 1) {
                         result = -1;
                         for (int a = 0; a < nativePtrs.length; a++) {
-                            result = getFrame(nativePtrs[a], frameNums[a], backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), a == 0);
+                            result = getFrame(nativePtrs[a], frameNums[a], backgroundBitmap, a == 0);
                             if (a == 0) {
                                 continue;
                             }
@@ -92,9 +92,9 @@ public class SlotsDrawable extends RLottieDrawable {
                                 frameNums[0] = -1;
                             }
                         }
-                        getFrame(nativePtrs[0], Math.max(frameNums[0], 0), backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
+                        getFrame(nativePtrs[0], Math.max(frameNums[0], 0), backgroundBitmap, true);
                         for (int a = 0; a < secondNativePtrs.length; a++) {
-                            getFrame(secondNativePtrs[a], secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), false);
+                            getFrame(secondNativePtrs[a], secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmap, false);
                             if (!nextFrameIsLast) {
                                 if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
                                     secondFrameNums[a]++;
@@ -103,7 +103,7 @@ public class SlotsDrawable extends RLottieDrawable {
                                 }
                             }
                         }
-                        result = getFrame(nativePtrs[4], frameNums[4], backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), false);
+                        result = getFrame(nativePtrs[4], frameNums[4], backgroundBitmap, false);
                         if (frameNums[4] + 1 < frameCounts[4]) {
                             frameNums[4]++;
                         }

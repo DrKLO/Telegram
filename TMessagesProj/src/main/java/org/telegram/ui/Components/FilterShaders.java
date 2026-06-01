@@ -775,7 +775,7 @@ public class FilterShaders {
         float getBlurExcludeSize();
         float getBlurExcludeBlurSize();
         float getBlurAngle();
-        Point getBlurExcludePoint();
+        PointF getBlurExcludePoint();
         boolean shouldDrawCurvesPass();
         ByteBuffer fillAndGetCurveBuffer();
     }
@@ -1913,7 +1913,7 @@ public class FilterShaders {
             GLES20.glUniform1i(radialBlurSourceImage2Handle, 1);
             GLES20.glUniform1f(radialBlurExcludeSizeHandle, delegate.getBlurExcludeSize());
             GLES20.glUniform1f(radialBlurExcludeBlurSizeHandle, delegate.getBlurExcludeBlurSize());
-            Point blurExcludePoint = delegate.getBlurExcludePoint();
+            PointF blurExcludePoint = delegate.getBlurExcludePoint();
             GLES20.glUniform2f(radialBlurExcludePointHandle, blurExcludePoint.x, blurExcludePoint.y);
             GLES20.glUniform1f(radialBlurAspectRatioHandle, (float) renderBufferHeight / (float) renderBufferWidth);
             GLES20.glEnableVertexAttribArray(radialBlurInputTexCoordHandle);
@@ -1927,7 +1927,7 @@ public class FilterShaders {
             GLES20.glUniform1f(linearBlurExcludeSizeHandle, delegate.getBlurExcludeSize());
             GLES20.glUniform1f(linearBlurExcludeBlurSizeHandle, delegate.getBlurExcludeBlurSize());
             GLES20.glUniform1f(linearBlurAngleHandle, delegate.getBlurAngle());
-            Point blurExcludePoint = delegate.getBlurExcludePoint();
+            PointF blurExcludePoint = delegate.getBlurExcludePoint();
             GLES20.glUniform2f(linearBlurExcludePointHandle, blurExcludePoint.x, blurExcludePoint.y);
             GLES20.glUniform1f(linearBlurAspectRatioHandle, (float) renderBufferHeight / (float) renderBufferWidth);
             GLES20.glEnableVertexAttribArray(linearBlurInputTexCoordHandle);
@@ -2174,7 +2174,7 @@ public class FilterShaders {
             }
 
             @Override
-            public Point getBlurExcludePoint() {
+            public PointF getBlurExcludePoint() {
                 return lastState.blurExcludePoint;
             }
 

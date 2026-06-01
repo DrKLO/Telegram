@@ -6,14 +6,16 @@ import android.graphics.Canvas;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.ViewTreeObserver;
 
 import androidx.annotation.NonNull;
 
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
-public class OnPostDrawView extends View {
+public class OnPostDrawView extends View implements ViewTreeObserver.OnPreDrawListener {
     private final InvalidateCallback callback;
+    private final boolean onPreDrawMode;
     
     public interface InvalidateCallback {
         void onPostDraw(int invalidateFlags);
@@ -27,9 +29,10 @@ public class OnPostDrawView extends View {
         invalidateFlags |= flags;
     }
 
-    public OnPostDrawView(Context context, InvalidateCallback callback) {
+    public OnPostDrawView(Context context, boolean onPreDrawMode, InvalidateCallback callback) {
         super(context);
         this.callback = callback;
+        this.onPreDrawMode = onPreDrawMode;
     }
 
     @Override
@@ -40,8 +43,10 @@ public class OnPostDrawView extends View {
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
-        callback.onPostDraw(invalidateFlags);
-        invalidateFlags = 0;
+        if (!onPreDrawMode) {
+            callback.onPostDraw(invalidateFlags);
+            invalidateFlags = 0;
+        }
     }
 
     public void bringToFrontIfNeeded() {
@@ -53,5 +58,36 @@ public class OnPostDrawView extends View {
                 viewGroup.bringChildToFront(this);
             }
         }
+    }
+
+
+
+    private ViewTreeObserver observer;
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (onPreDrawMode) {
+            observer = getViewTreeObserver();
+            observer.addOnPreDrawListener(this);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (observer != null && observer.isAlive()) {
+            observer.removeOnPreDrawListener(this);
+        }
+        observer = null;
+    }
+
+    @Override
+    public boolean onPreDraw() {
+        if (onPreDrawMode && invalidateFlags != 0) {
+            callback.onPostDraw(invalidateFlags);
+            invalidateFlags = 0;
+        }
+        return true;
     }
 }

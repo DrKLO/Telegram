@@ -3151,6 +3151,17 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             }
 
             if (stringBuilder.length() > 0) {
+                ReplaceCopyTextSpannable[] repl = stringBuilder.getSpans(0, stringBuilder.length() - 1, ReplaceCopyTextSpannable.class);
+                if (repl != null && repl.length > 0) {
+                    java.util.Arrays.sort(repl, (a, b) -> stringBuilder.getSpanStart(b) - stringBuilder.getSpanStart(a));
+                    for (ReplaceCopyTextSpannable s : repl) {
+                        final int start = stringBuilder.getSpanStart(s);
+                        final int end = stringBuilder.getSpanEnd(s);
+                        if (start >= 0 && end > start) {
+                            stringBuilder.replace(start, end, s.replacement == null ? "" : s.replacement);
+                        }
+                    }
+                }
                 IgnoreCopySpannable[] spans = stringBuilder.getSpans(0, stringBuilder.length() - 1, IgnoreCopySpannable.class);
                 for (IgnoreCopySpannable span : spans) {
                     int end = stringBuilder.getSpanEnd(span);
@@ -3279,6 +3290,13 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     public static class IgnoreCopySpannable {
 
+    }
+
+    public static class ReplaceCopyTextSpannable {
+        public final CharSequence replacement;
+        public ReplaceCopyTextSpannable(CharSequence replacement) {
+            this.replacement = replacement;
+        }
     }
 
     private static class PathCopyTo extends Path {

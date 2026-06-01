@@ -1041,7 +1041,7 @@ public class VoIPFragment implements
         callingUserPhotoViewMini = new ImageWithWavesView(context);
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setInfo(callingUser);
-        callingUserPhotoViewMini.setImage(ImageLocation.getForUserOrChat(callingUser, ImageLocation.TYPE_BIG), null, avatarDrawable, callingUser);
+        callingUserPhotoViewMini.setImage(ImageLocation.getForUserOrChat(currentAccount, callingUser, ImageLocation.TYPE_BIG), null, avatarDrawable, callingUser);
         callingUserPhotoViewMini.setRoundRadius(AndroidUtilities.dp(135) / 2);
 
         callingUserTitle = new TextView(context);

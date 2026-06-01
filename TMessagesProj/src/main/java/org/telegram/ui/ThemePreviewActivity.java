@@ -1098,7 +1098,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 }
             } else if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
                 ActionBarMenu menu2 = actionBar2.createMenu();
-                saveItem = menu2.addItem(4, LocaleController.getString(R.string.Save).toUpperCase());
+                saveItem = menu2.addItem(4, LocaleController.getString(R.string.Save));
 
                 dropDownContainer = new ActionBarMenuItem(context, menu2, 0, 0) {
                     @Override
@@ -1913,7 +1913,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         patternsCancelButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                         patternsCancelButton[a].setTypeface(AndroidUtilities.bold());
                         patternsCancelButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
-                        patternsCancelButton[a].setText(LocaleController.getString(R.string.Cancel).toUpperCase());
+                        patternsCancelButton[a].setText(LocaleController.getString(R.string.Cancel));
                         patternsCancelButton[a].setGravity(Gravity.CENTER);
                         patternsCancelButton[a].setPadding(dp(21), 0, dp(21), 0);
                         patternsCancelButton[a].setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 0));
@@ -1962,7 +1962,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         patternsSaveButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                         patternsSaveButton[a].setTypeface(AndroidUtilities.bold());
                         patternsSaveButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
-                        patternsSaveButton[a].setText(LocaleController.getString(R.string.ApplyTheme).toUpperCase());
+                        patternsSaveButton[a].setText(LocaleController.getString(R.string.ApplyTheme));
                         patternsSaveButton[a].setGravity(Gravity.CENTER);
                         patternsSaveButton[a].setPadding(dp(21), 0, dp(21), 0);
                         patternsSaveButton[a].setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 0));
@@ -2298,7 +2298,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             cancelButton.setGravity(Gravity.CENTER);
             cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
             cancelButton.setPadding(dp(29), 0, dp(29), 0);
-            cancelButton.setText(LocaleController.getString(R.string.Cancel).toUpperCase());
+            cancelButton.setText(LocaleController.getString(R.string.Cancel));
             cancelButton.setTypeface(AndroidUtilities.bold());
             saveButtonsContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             cancelButton.setOnClickListener(v -> cancelThemeApply(false));
@@ -2309,7 +2309,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             doneButton.setGravity(Gravity.CENTER);
             doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
             doneButton.setPadding(dp(29), 0, dp(29), 0);
-            doneButton.setText(LocaleController.getString(R.string.ApplyTheme).toUpperCase());
+            doneButton.setText(LocaleController.getString(R.string.ApplyTheme));
             doneButton.setTypeface(AndroidUtilities.bold());
             saveButtonsContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             doneButton.setOnClickListener(v -> {
@@ -5977,7 +5977,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
         @Override
         protected void onDraw(Canvas canvas) {
-            final float r = dp(8);
+            final float r = getHeight() / 2f;
             AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
 
             Theme.applyServiceShaderMatrixForView(this, backgroundImage, themeDelegate);

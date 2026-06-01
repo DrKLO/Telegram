@@ -101,18 +101,21 @@ public class ButtonSpan extends ReplacementSpan {
 
         public ButtonSpan findSpan(float x, int y) {
             if (!(getText() instanceof Spanned)) return null;
-            Layout layout = getLayout();
+            final Layout layout = getLayout();
             if (layout == null) return null;
-            int line = layout.getLineForVertical(y);
-            int offset = layout.getOffsetForHorizontal(line, x);
-            Spanned spanned = (Spanned) getText();
-            ButtonSpan[] spans = spanned.getSpans(layout.getLineStart(line), layout.getLineEnd(line), ButtonSpan.class);
+            final int line = layout.getLineForVertical(y);
+            final Spanned spanned = (Spanned) getText();
+            final ButtonSpan[] spans = spanned.getSpans(layout.getLineStart(line), layout.getLineEnd(line), ButtonSpan.class);
             for (int i = 0; i < spans.length; ++i) {
-                ButtonSpan span = spans[i];
-                if (
-                    spanned.getSpanStart(span) <= offset && spanned.getSpanEnd(span) >= offset &&
-                    layout.getPrimaryHorizontal(spanned.getSpanStart(span)) <= x && layout.getPrimaryHorizontal(spanned.getSpanEnd(span)) >= x
-                ) {
+                final ButtonSpan span = spans[i];
+                float begin = layout.getPrimaryHorizontal(spanned.getSpanStart(span));
+                float end   = layout.getPrimaryHorizontal(spanned.getSpanEnd(span));
+                if (end < begin) {
+                    final float tmp = begin;
+                    begin = end;
+                    end = tmp;
+                }
+                if (x >= begin && x <= end) {
                     return span;
                 }
             }

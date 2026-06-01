@@ -14,6 +14,7 @@ public sealed class TlGen_PollResults : TlGen_Object {
   public data class TL_pollResults(
     public val min: Boolean,
     public val has_unread_votes: Boolean,
+    public val can_view_stats: Boolean,
     public val results: List<TlGen_PollAnswerVoters>?,
     public val total_voters: Int?,
     public val recent_voters: List<TlGen_Peer>?,
@@ -30,6 +31,7 @@ public sealed class TlGen_PollResults : TlGen_Object {
         if (multiflags_4 != null) result = result or 16U
         if (solution_media != null) result = result or 32U
         if (has_unread_votes) result = result or 64U
+        if (can_view_stats) result = result or 128U
         return result
       }
 

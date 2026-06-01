@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.Layout;
@@ -32,6 +33,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -47,6 +49,8 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.FilteredSearchView;
+
+import java.io.File;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
 
@@ -253,17 +257,24 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     public void setMessageObject(MessageObject messageObject, boolean divider) {
         needDivider = divider;
         currentMessageObject = messageObject;
-        TLRPC.Document document = messageObject.getDocument();
-
-        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
+        final TLRPC.Document document = messageObject.getDocument();
+        final TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
         if (thumb instanceof TLRPC.TL_photoSize || thumb instanceof TLRPC.TL_photoSizeProgressive) {
             radialProgress.setImageOverlay(thumb, document, messageObject);
         } else {
-            String artworkUrl = messageObject.getArtworkUrl(true);
-            if (!TextUtils.isEmpty(artworkUrl)) {
-                radialProgress.setImageOverlay(artworkUrl);
+            Bitmap cover = null;
+            if (messageObject.audioCover != null) {
+                cover = messageObject.audioCover;
+            }
+            if (cover != null) {
+                radialProgress.setImageOverlay(cover);
             } else {
-                radialProgress.setImageOverlay(null, null, null);
+                final String artworkUrl = messageObject.getArtworkUrl(true);
+                if (!TextUtils.isEmpty(artworkUrl)) {
+                    radialProgress.setImageOverlay(artworkUrl);
+                } else {
+                    radialProgress.setImageOverlay(null, null, null);
+                }
             }
         }
         updateButtonState(false, false);

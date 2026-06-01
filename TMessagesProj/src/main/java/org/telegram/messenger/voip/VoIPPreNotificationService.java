@@ -142,7 +142,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         final Intent intent = new Intent(context, LaunchActivity.class).setAction("voip");
         final Notification.Builder builder = new Notification.Builder(context)
             .setContentTitle(LocaleController.getString(video ? R.string.VoipInVideoCallBranding : R.string.VoipInCallBranding))
-            .setSmallIcon(R.drawable.ic_call)
+            .setSmallIcon(R.drawable.call)
             .setContentIntent(
                 PendingIntent.getActivity(
                     context, 0,
@@ -271,41 +271,6 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         builder.setStyle(notificationStyle);
         return builder.build();
     }
-
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//        instance = this;
-//        startRinging();
-//        return START_NOT_STICKY;
-//    }
-
-//    @Override
-//    public void onCreate() {
-//        if (pendingVoIP != null) {
-//            account = pendingVoIP.getIntExtra("account", UserConfig.selectedAccount);
-//            user_id = pendingVoIP.getLongExtra("user_id", 0);
-//            call_id = pendingVoIP.getLongExtra("call_id", 0);
-//            video = pendingVoIP.getBooleanExtra("video", false);
-//        }
-//        if (Build.VERSION.SDK_INT >= 33) {
-//            startForeground(VoIPService.ID_INCOMING_CALL_PRENOTIFICATION, getNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-//        } else {
-//            startForeground(VoIPService.ID_INCOMING_CALL_PRENOTIFICATION, getNotification());
-//        }
-//    }
-//
-//    @Nullable
-//    @Override
-//    public IBinder onBind(Intent intent) {
-//        return null;
-//    }
-//
-//    @Override
-//    public void onDestroy() {
-//        stopForeground(true);
-//        stopRinging();
-//        super.onDestroy();
-//    }
 
     private static final Object sync = new Object();
     private static MediaPlayer ringtonePlayer;
@@ -617,11 +582,18 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
                 MessagesController.getInstance(i).ignoreSetOnline = false;
             }
+            AndroidUtilities.runOnUIThread(() -> {
+                final LaunchActivity activity = LaunchActivity.instance;
+                if (activity != null && activity.voipLaunchedInBackground && VoIPService.getSharedInstance() == null) {
+                    activity.voipLaunchedInBackground = false;
+                    final VoIPFragment fragment = VoIPFragment.getInstance();
+                    if (fragment != null) {
+                        fragment.finish();
+                    }
+                    activity.moveTaskToBack(true);
+                }
+            });
         }
-//        if (pendingNotificationService != null) {
-//            context.stopService(pendingNotificationService);
-//        }
-//        pendingNotificationService = null;
     }
 
 }

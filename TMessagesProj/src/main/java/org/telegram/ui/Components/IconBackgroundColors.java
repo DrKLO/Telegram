@@ -10,12 +10,10 @@ public enum IconBackgroundColors {
     ORANGE_DEEP(0xFFF28B31, 0xFFE26314),
 
     GREEN(0xFF55CA47, 0xFF27B434),
-
     RED(0xFFF45255, 0xFFDF3955),
-
     CYAN(0xFF32C0CE, 0xFF1D9CC6),
-
-    PURPLE(0xFFC46EF4, 0xFF9F55DF);
+    PURPLE(0xFFC46EF4, 0xFF9F55DF),
+    GRAY(0xFF8699AA, 0xFF6E8397);
 
     public final int top;
     public final int bottom;

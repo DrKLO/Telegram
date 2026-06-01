@@ -23,7 +23,7 @@ import java.io.File
 
 abstract class GenerateSchemeTask : DefaultTask() {
     companion object {
-        const val LAYER = 224;
+        const val LAYER = 225;
     }
 
 
@@ -222,13 +222,20 @@ abstract class GenerateSchemeTask : DefaultTask() {
 
         val lt = linkedTypes.groupBy { it.first }.mapValues { it.value.map { it.second } }
 
-        for (constructor in constructors) {
+        val constructorsSorted = constructors.sortedWith(
+            compareByDescending<TlObjectWithLayer> { it.layerLast }
+                .thenBy { it.tl.key.name.type }
+                .thenBy { it.tl.key.name.predicate })
+
+        var testIndex = 0;
+
+        for (constructor in constructorsSorted) {
             if (!RULES.rules.filterConstructor(constructor.tl.key.name)) continue
 
             val isEncrypted = constructor in encrypted
             val isLegacy = constructor.layerLast < LAYER
             val type = constructor.tl.key.name.type.replace('.', '_')
-            val name = "test_" + type + "_" + constructor.codegenDataClassName
+            val name = "test_${(testIndex++).toString().padStart(6, '0')}_${type}_${constructor.codegenDataClassName}"
 
             val lines = lt[constructor.tl.key.name.type]?.map { clz ->
                 val clz2 = clz.packageName + "." + clz.fullName

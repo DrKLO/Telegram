@@ -60,6 +60,7 @@ public class ReactedUsersListView extends FrameLayout {
 
     private OnHeightChangedListener onHeightChangedListener;
     private OnProfileSelectedListener onProfileSelectedListener;
+    private OnProfileSelectedListener onProfileSelectedLongListener;
     private OnCustomEmojiSelectedListener onCustomEmojiSelectedListener;
     ArrayList<ReactionsLayoutInBubble.VisibleReaction> customReactionsEmoji = new ArrayList<>();
     ArrayList<TLRPC.InputStickerSet> customEmojiStickerSets = new ArrayList<>();
@@ -159,6 +160,15 @@ public class ReactedUsersListView extends FrameLayout {
                     onCustomEmojiSelectedListener.showCustomEmojiAlert(this, customEmojiStickerSets);
                 }
             }
+        });
+        listView.setOnItemLongClickListener((view, position) -> {
+            int itemViewType = adapter.getItemViewType(position);
+            if (itemViewType == USER_VIEW_TYPE) {
+                if (onProfileSelectedLongListener != null) {
+                    onProfileSelectedLongListener.onProfileSelected(this, MessageObject.getPeerId(userReactions.get(position).peer_id), userReactions.get(position));
+                }
+            }
+            return true;
         });
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -381,6 +391,11 @@ public class ReactedUsersListView extends FrameLayout {
 
     public ReactedUsersListView setOnProfileSelectedListener(OnProfileSelectedListener onProfileSelectedListener) {
         this.onProfileSelectedListener = onProfileSelectedListener;
+        return this;
+    }
+
+    public ReactedUsersListView setOnProfileLongSelectedListener(OnProfileSelectedListener onProfileSelectedListener) {
+        this.onProfileSelectedLongListener = onProfileSelectedListener;
         return this;
     }
 

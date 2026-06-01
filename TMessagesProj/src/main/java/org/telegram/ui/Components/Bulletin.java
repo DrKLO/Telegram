@@ -85,6 +85,7 @@ import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.WeakHashMap;
 
 public class Bulletin {
 
@@ -160,8 +161,8 @@ public class Bulletin {
         }
     }
 
-    private static final HashMap<FrameLayout, Delegate> delegates = new HashMap<>();
-    private static final HashMap<BaseFragment, Delegate> fragmentDelegates = new HashMap<>();
+    private static final WeakHashMap<FrameLayout, Delegate> delegates = new WeakHashMap<>();
+    private static final WeakHashMap<BaseFragment, Delegate> fragmentDelegates = new WeakHashMap<>();
 
     @SuppressLint("StaticFieldLeak")
     private static Bulletin visibleBulletin;
@@ -1453,7 +1454,6 @@ public class Bulletin {
 
             titleTextView = new LinkSpanDrawable.LinksTextView(context);
             titleTextView.setPadding(dp(4), 0, dp(4), 0);
-            titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             titleTextView.setTypeface(AndroidUtilities.bold());
@@ -1491,6 +1491,56 @@ public class Bulletin {
             for (String layer : layers) {
                 imageView.setLayerColor(layer + ".**", textColor);
             }
+        }
+
+        public CharSequence getAccessibilityText() {
+            return titleTextView.getText() + ".\n" + subtitleTextView.getText();
+        }
+
+        public void hideImage() {
+            imageView.setVisibility(GONE);
+            ((MarginLayoutParams) linearLayout.getLayoutParams()).setMarginStart(dp(10));
+        }
+    }
+
+    public static class TwoLineBackupLayout extends ButtonLayout {
+
+        public final BackupImageView imageView;
+        public final LinkSpanDrawable.LinksTextView titleTextView;
+        public final LinkSpanDrawable.LinksTextView subtitleTextView;
+        private final LinearLayout linearLayout;
+
+        private final int textColor;
+
+        public TwoLineBackupLayout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+            this.textColor = getThemedColor(Theme.key_undo_infoColor);
+            setBackground(getThemedColor(Theme.key_undo_background));
+
+            imageView = new BackupImageView(context);
+            addView(imageView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 12, 0, 12, 0));
+
+            final int undoInfoColor = getThemedColor(Theme.key_undo_infoColor);
+            final int undoLinkColor = getThemedColor(Theme.key_undo_cancelColor);
+
+            linearLayout = new LinearLayout(context);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+            addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 52, 8, 8, 8));
+
+            titleTextView = new LinkSpanDrawable.LinksTextView(context);
+            titleTextView.setPadding(dp(4), 0, dp(4), 0);
+            titleTextView.setTextColor(undoInfoColor);
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            titleTextView.setTypeface(AndroidUtilities.bold());
+            linearLayout.addView(titleTextView);
+
+            subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
+            subtitleTextView.setPadding(dp(4), 0, dp(4), 0);
+            subtitleTextView.setTextColor(undoInfoColor);
+            subtitleTextView.setLinkTextColor(undoLinkColor);
+            subtitleTextView.setTypeface(Typeface.SANS_SERIF);
+            subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            linearLayout.addView(subtitleTextView);
         }
 
         public CharSequence getAccessibilityText() {

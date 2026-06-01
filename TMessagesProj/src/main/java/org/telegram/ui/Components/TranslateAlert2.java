@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.telegram.messenger.TranslateController.normalizeLanguage;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -309,7 +310,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             req.flags |= 1;
             req.peer = reqPeer;
             req.id = reqMessageId;
-            req.to_lang = lang;
+            req.to_lang = normalizeLanguage(lang);
             reqId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
                 reqId = null;
                 if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
@@ -347,7 +348,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 //            req.flags |= 4;
 //            req.from_lang = fromLanguage;
 //        }
-        req.to_lang = lang;
+        req.to_lang = normalizeLanguage(lang);
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             AndroidUtilities.runOnUIThread(() -> {
                 reqId = null;

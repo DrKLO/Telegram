@@ -644,21 +644,25 @@ public:
     virtual void OnFrame(const webrtc::VideoFrame& frame) override {
         std::unique_lock<std::mutex> lock{ _mutex };
         int64_t timestamp = rtc::TimeMillis();
-        if (_lastFrame) {
-            if (_lastFrame->video_frame_buffer()->width() != frame.video_frame_buffer()->width()) {
+        const int width = frame.video_frame_buffer()->width();
+        const int height = frame.video_frame_buffer()->height();
+        if (_hasLastFrameSize) {
+            if (_lastFrameWidth != width) {
                 int64_t deltaTime = std::abs(_lastFrameSizeChangeTimestamp - timestamp);
                 if (deltaTime < 200) {
-                    RTC_LOG(LS_WARNING) << "VideoSinkImpl: frequent frame size change detected for " << _endpointId << ": " << _lastFrameSizeChangeHeight << " -> " << _lastFrame->video_frame_buffer()->height() << " -> " << frame.video_frame_buffer()->height() << " in " << deltaTime << " ms";
+                    RTC_LOG(LS_WARNING) << "VideoSinkImpl: frequent frame size change detected for " << _endpointId << ": " << _lastFrameSizeChangeHeight << " -> " << _lastFrameHeight << " -> " << height << " in " << deltaTime << " ms";
                 }
 
-                _lastFrameSizeChangeHeight = _lastFrame->video_frame_buffer()->height();
+                _lastFrameSizeChangeHeight = _lastFrameHeight;
                 _lastFrameSizeChangeTimestamp = timestamp;
             }
         } else {
             _lastFrameSizeChangeHeight = 0;
             _lastFrameSizeChangeTimestamp = timestamp;
         }
-        _lastFrame = frame;
+        _lastFrameWidth = width;
+        _lastFrameHeight = height;
+        _hasLastFrameSize = true;
         for (int i = (int)(_sinks.size()) - 1; i >= 0; i--) {
             auto strong = _sinks[i].lock();
             if (!strong) {
@@ -685,9 +689,6 @@ public:
         if (const auto strong = impl.lock()) {
             std::unique_lock<std::mutex> lock{ _mutex };
             _sinks.push_back(impl);
-            if (_lastFrame) {
-                strong->OnFrame(_lastFrame.value());
-            }
         }
     }
 
@@ -697,7 +698,9 @@ public:
 
 private:
     std::vector<std::weak_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>>> _sinks;
-    absl::optional<webrtc::VideoFrame> _lastFrame;
+    bool _hasLastFrameSize = false;
+    int _lastFrameWidth = 0;
+    int _lastFrameHeight = 0;
     std::mutex _mutex;
     int64_t _lastFrameSizeChangeTimestamp = 0;
     int _lastFrameSizeChangeHeight = 0;

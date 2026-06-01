@@ -155,13 +155,9 @@ public class SearchAdsInfoBottomSheet extends BottomSheetWithRecyclerListView {
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setText(LocaleController.getString(R.string.SearchAdsAboutUnderstood));
-        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 6));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 24));
         buttonTextView.setOnClickListener(e -> dismiss());
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 14, 22, 14, 14));
-
-//        ScrollView scrollView = new ScrollView(getContext());
-//        scrollView.addView(linearLayout);
-//        setCustomView(scrollView);
 
         adapter.update(false);
     }

@@ -200,9 +200,9 @@ public class BlurredBackgroundWithFadeDrawable extends Drawable {
         if (opacity) {
             return new LinearGradient(0, 0, 0, 1, new int[]{
                 ColorUtils.setAlphaComponent(color, 0),
-                ColorUtils.setAlphaComponent(color, 0x60 * alpha / 255),
-                ColorUtils.setAlphaComponent(color, 0xB0 * alpha / 255),
-                ColorUtils.setAlphaComponent(color, 0xE8 * alpha / 255),
+                ColorUtils.setAlphaComponent(color, 0x60 * alpha / 280),
+                ColorUtils.setAlphaComponent(color, 0xB0 * alpha / 280),
+                ColorUtils.setAlphaComponent(color, 0xE8 * alpha / 280),
             }, null, Shader.TileMode.CLAMP);
         }
 

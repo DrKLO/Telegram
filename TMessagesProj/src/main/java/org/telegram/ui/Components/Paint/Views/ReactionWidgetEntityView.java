@@ -6,10 +6,9 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.view.ViewGroup;
-
-import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaDataController;
@@ -17,10 +16,9 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Reactions.ReactionImageHolder;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.Rect;
+import org.telegram.ui.Components.RectOld;
 import org.telegram.ui.Components.Size;
 import org.telegram.ui.Stories.StoryReactionWidgetBackground;
 
@@ -42,7 +40,7 @@ public class ReactionWidgetEntityView extends EntityView {
 
     int filterColor;
 
-    public ReactionWidgetEntityView(Context context, Point pos, Size baseSize) {
+    public ReactionWidgetEntityView(Context context, PointF pos, Size baseSize) {
         super(context, pos);
         this.baseSize = baseSize;
 
@@ -129,15 +127,15 @@ public class ReactionWidgetEntityView extends EntityView {
     }
 
     @Override
-    public Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
 
         float side = getMeasuredWidth() * (getScale() + 0.4f);
-        return new Rect((getPositionX() - side / 2.0f) * scale, (getPositionY() - side / 2.0f) * scale, side * scale, side * scale);
+        return new RectOld((getPositionX() - side / 2.0f) * scale, (getPositionY() - side / 2.0f) * scale, side * scale, side * scale);
     }
 
     @Override

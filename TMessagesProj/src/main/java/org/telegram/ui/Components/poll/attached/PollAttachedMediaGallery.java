@@ -30,7 +30,7 @@ public class PollAttachedMediaGallery extends PollAttachedMedia {
         } else if (photoEntry.thumbPath != null) {
             location = ImageLocation.getForPath(photoEntry.thumbPath);
         } else if (photoEntry.path != null) {
-            if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
+            if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                 location = ImageLocation.getForPath("vthumb://" + photoEntry.imageId + ":" + photoEntry.path);
             } else {
                 location = ImageLocation.getForPath("thumb://" + photoEntry.imageId + ":" + photoEntry.path);

@@ -27,15 +27,6 @@ import java.lang.reflect.Constructor;
 
 public class StaticLayoutEx {
 
-    private static final String TEXT_DIR_CLASS = "android.text.TextDirectionHeuristic";
-    private static final String TEXT_DIRS_CLASS = "android.text.TextDirectionHeuristics";
-    private static final String TEXT_DIR_FIRSTSTRONG_LTR = "FIRSTSTRONG_LTR";
-    private static boolean initialized;
-
-    private static Constructor<StaticLayout> sConstructor;
-    private static Object[] sConstructorArgs;
-    private static Object sTextDirection;
-
     public static Layout.Alignment[] alignments = Layout.Alignment.values();
     public static Layout.Alignment ALIGN_RIGHT() {
         return alignments.length >= 5 ? alignments[4] : Layout.Alignment.ALIGN_OPPOSITE;
@@ -45,45 +36,7 @@ public class StaticLayoutEx {
     }
 
     public static void init() {
-        if (initialized) {
-            return;
-        }
 
-        try {
-            final Class<?> textDirClass;
-            if (Build.VERSION.SDK_INT >= 18) {
-                textDirClass = TextDirectionHeuristic.class;
-                sTextDirection = TextDirectionHeuristics.FIRSTSTRONG_LTR;
-            } else {
-                ClassLoader loader = StaticLayoutEx.class.getClassLoader();
-                textDirClass = loader.loadClass(TEXT_DIR_CLASS);
-                Class<?> textDirsClass = loader.loadClass(TEXT_DIRS_CLASS);
-                sTextDirection = textDirsClass.getField(TEXT_DIR_FIRSTSTRONG_LTR).get(textDirsClass);
-            }
-
-            final Class<?>[] signature = new Class[]{
-                    CharSequence.class,
-                    int.class,
-                    int.class,
-                    TextPaint.class,
-                    int.class,
-                    Layout.Alignment.class,
-                    textDirClass,
-                    float.class,
-                    float.class,
-                    boolean.class,
-                    TextUtils.TruncateAt.class,
-                    int.class,
-                    int.class
-            };
-
-            sConstructor = StaticLayout.class.getDeclaredConstructor(signature);
-            sConstructor.setAccessible(true);
-            sConstructorArgs = new Object[signature.length];
-            initialized = true;
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
     }
 
     public static StaticLayout createStaticLayout2(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
@@ -108,27 +61,6 @@ public class StaticLayoutEx {
     }
 
     public static StaticLayout createStaticLayout(CharSequence source, TextPaint paint, int outerWidth, Layout.Alignment align, float spacingMult, float spacingAdd, boolean includePad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines, boolean canContainUrl) {
-        /*if (Build.VERSION.SDK_INT >= 14) {
-            init();
-            try {
-                sConstructorArgs[0] = source;
-                sConstructorArgs[1] = bufstart;
-                sConstructorArgs[2] = bufend;
-                sConstructorArgs[3] = paint;
-                sConstructorArgs[4] = outerWidth;
-                sConstructorArgs[5] = align;
-                sConstructorArgs[6] = sTextDirection;
-                sConstructorArgs[7] = spacingMult;
-                sConstructorArgs[8] = spacingAdd;
-                sConstructorArgs[9] = includePad;
-                sConstructorArgs[10] = ellipsize;
-                sConstructorArgs[11] = ellipsisWidth;
-                sConstructorArgs[12] = maxLines;
-                return sConstructor.newInstance(sConstructorArgs);
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }*/
         try {
             if (maxLines == 1) {
                 int index = TextUtils.indexOf(source, "\n") - 1;

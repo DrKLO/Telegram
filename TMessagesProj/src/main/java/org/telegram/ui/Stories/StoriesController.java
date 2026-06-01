@@ -3188,6 +3188,85 @@ public class StoriesController {
         }
     }
 
+    public static class StoryRepostsList extends StoriesList {
+
+        private final ArrayList<ArrayList<Integer>> fakeDays = new ArrayList<>();
+
+        public StoryRepostsList(int currentAccount, ArrayList<TL_stories.StoryItem> stories) {
+            super(currentAccount, 0, TYPE_SEARCH, -1, null);
+            append(stories);
+        }
+
+        public int append(ArrayList<TL_stories.StoryItem> stories) {
+            if (stories == null) return -1;
+            final int firstAdded = messageObjects.size();
+            int added = 0;
+            for (int i = 0; i < stories.size(); i++) {
+                TL_stories.StoryItem storyItem = stories.get(i);
+                if (storyItem == null) continue;
+                storyItem.messageId = messageObjects.size();
+                MessageObject msg = new MessageObject(currentAccount, storyItem);
+                msg.generateThumbs(false);
+                ArrayList<Integer> day = new ArrayList<>();
+                day.add(messageObjects.size());
+                fakeDays.add(day);
+                messageObjects.add(msg);
+                added++;
+            }
+            if (added > 0) {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.storiesListUpdated, this);
+            }
+            return firstAdded;
+        }
+
+        @Override
+        public boolean isOnlyCache() {
+            return false;
+        }
+        @Override
+        protected void invalidateCache() {}
+        @Override
+        protected void preloadCache() {}
+        @Override
+        protected void saveCache() {}
+
+        @Override
+        protected boolean markAsRead(int storyId) {
+            return false;
+        }
+
+        @Override
+        public boolean load(boolean force, int count, List<Integer> ids) {
+            return false;
+        }
+
+        @Override
+        public int getCount() {
+            return messageObjects.size();
+        }
+
+        @Override
+        public int getLoadedCount() {
+            return messageObjects.size();
+        }
+
+        @Override
+        public boolean isLoading() {
+            return false;
+        }
+
+        @Override
+        protected ArrayList<ArrayList<Integer>> getDays() {
+            return new ArrayList<>(fakeDays);
+        }
+
+        @Override
+        public MessageObject findMessageObject(int id) {
+            if (id < 0 || id >= messageObjects.size()) return null;
+            return messageObjects.get(id);
+        }
+    }
+
     public static class StoriesList {
 
         private static HashMap<Integer, Long> lastLoadTime;
@@ -4651,6 +4730,20 @@ public class StoriesController {
 
     public boolean canEditStoryAlbums(long dialogId) {
         return UserConfig.getInstance(currentAccount).getClientUserId() == dialogId || canEditStories(dialogId);
+    }
+
+    public boolean canPostStories(TLRPC.Chat chat) {
+        if (chat == null || !ChatObject.isBoostSupported(chat)) {
+            return false;
+        }
+        return chat.creator || chat.admin_rights != null && chat.admin_rights.post_stories;
+    }
+
+    public boolean canEditStories(TLRPC.Chat chat) {
+        if (chat == null || !ChatObject.isBoostSupported(chat)) {
+            return false;
+        }
+        return chat.creator || chat.admin_rights != null && chat.admin_rights.edit_stories;
     }
 
     public boolean canPostStories(long dialogId) {

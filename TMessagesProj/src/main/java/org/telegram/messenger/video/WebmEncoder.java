@@ -188,7 +188,7 @@ public class WebmEncoder {
                 if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
                     return;
                 }
-                RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, entity.W, entity.H, entity.bitmap.getRowBytes(), true);
+                RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, true);
                 applyRoundRadius(entity, entity.bitmap, (entity.subType & 8) != 0 ? textColor : 0);
 
                 canvas.drawBitmap(entity.bitmap, entity.matrix, bitmapPaint);

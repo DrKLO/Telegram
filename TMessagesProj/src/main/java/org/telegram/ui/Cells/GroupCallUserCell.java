@@ -507,7 +507,7 @@ public class GroupCallUserCell extends FrameLayout {
                 hasAvatar = true;
                 avatarImageView.setImage(ImageLocation.getForLocal(uploadingAvatar), "50_50", avatarDrawable, null);
             } else {
-                ImageLocation imageLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_SMALL);
+                ImageLocation imageLocation = ImageLocation.getForUser(account.getCurrentAccount(), currentUser, ImageLocation.TYPE_SMALL);
                 hasAvatar = imageLocation != null;
                 avatarImageView.setImage(imageLocation, "50_50", avatarDrawable, currentUser);
             }

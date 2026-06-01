@@ -32,6 +32,8 @@ public class PollSendParams {
         inputMediaPoll.poll.open_answers = poll.poll.open_answers;
         inputMediaPoll.poll.revoting_disabled = poll.poll.revoting_disabled;
         inputMediaPoll.poll.shuffle_answers = poll.poll.shuffle_answers;
+        inputMediaPoll.poll.subscribers_only = poll.poll.subscribers_only;
+        inputMediaPoll.poll.countries_iso2 = poll.poll.countries_iso2;
         inputMediaPoll.poll.hide_results_until_close = poll.poll.hide_results_until_close;
         inputMediaPoll.poll.creator = poll.poll.creator;
         inputMediaPoll.poll.quiz = poll.poll.quiz;

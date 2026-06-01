@@ -38,6 +38,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -3350,6 +3351,20 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                 canvas.drawPath(arrowPath, arrowPaint);
             }
         }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            try {
+                boolean checkboxVisible = checkBox != null && checkBox.getVisibility() == View.VISIBLE;
+                boolean radioVisible = radioButton != null && radioButton.getVisibility() == View.VISIBLE;
+                if (checkboxVisible || radioVisible) {
+                    info.setCheckable(true);
+                    info.setChecked(checkboxVisible ? checkBox.isChecked() : radioButton.isChecked());
+                    info.setClassName(checkboxVisible ? "android.widget.CheckBox" : "android.widget.RadioButton");
+                }
+            } catch (Exception ignored) {}
+        }
     }
 
     private static class HeaderCell2 extends LinearLayout {
@@ -3506,7 +3521,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             editText.setCursorColor(Theme.getColor(Theme.key_groupcreate_cursor, resourcesProvider));
             editText.setHandlesColor(Theme.getColor(Theme.key_groupcreate_cursor, resourcesProvider));
             editText.setCursorWidth(1.5f);
-            editText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            editText.setInputType(editText.getInputType() | InputType.TYPE_TEXT_VARIATION_FILTER);
             editText.setSingleLine(true);
             editText.setBackgroundDrawable(null);
             editText.setVerticalScrollBarEnabled(false);

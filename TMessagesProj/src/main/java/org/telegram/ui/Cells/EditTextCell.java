@@ -139,7 +139,8 @@ public class EditTextCell extends FrameLayout {
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
                 limit.setTextColor(limitColor.set(Theme.getColor(limitCount <= 0 ? Theme.key_text_RedRegular : Theme.key_dialogSearchHint, resourceProvider)));
-                limit.setBounds(getScrollX(), 0, getScrollX() + getWidth() - getPaddingRight() + dp(42), getHeight());
+                final int h = Math.min(dp(52), getHeight());
+                limit.setBounds(getScrollX(), getHeight() - h, getScrollX() + getWidth() - getPaddingRight() + dp(42), getHeight());
                 limit.draw(canvas);
             }
 
@@ -191,7 +192,7 @@ public class EditTextCell extends FrameLayout {
         editText.setPadding(dp(21), dp(15), dp((maxLength > 0 ? 42 : 0) + 21), dp(15));
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         editText.setHint(hint);
         editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
         editText.setCursorSize(dp(19));
@@ -217,7 +218,7 @@ public class EditTextCell extends FrameLayout {
                     EditTextCell.this.onTextChanged(editable);
                 }
 
-                if (multiline) {
+                if (!multiline) {
                     int pos;
                     while ((pos = editable.toString().indexOf("\n")) >= 0) {
                         editable.delete(pos, pos + 1);

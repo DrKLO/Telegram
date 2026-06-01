@@ -19,6 +19,8 @@ public class CubicBezierInterpolator implements Interpolator {
     public static final Interpolator EmphasizedDecelerate = new PathInterpolator(0.05f, 0.7f, 0.1f, 1f);
     public static final Interpolator EmphasizedAccelerate = new PathInterpolator(0.3f, 0f, 0.8f, 0.15f);
 
+    public static final Interpolator StandardDecelerate = new PathInterpolator(0f, 0f, 0f, 1f);
+
     protected PointF start;
     protected PointF end;
     protected PointF a = new PointF();

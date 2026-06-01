@@ -80,142 +80,142 @@
  */
 
 .macro pixldst1 op, elem_size, reg1, mem_operand, abits
-    op {v&reg1&.&elem_size}, [&mem_operand&], #8
+    \op {v\()\reg1\().\()\elem_size}, [\()\mem_operand\()], #8
 .endm
 
 .macro pixldst2 op, elem_size, reg1, reg2, mem_operand, abits
-    op {v&reg1&.&elem_size, v&reg2&.&elem_size}, [&mem_operand&], #16
+    \op {v\()\reg1\().\()\elem_size, v\()\reg2\().\()\elem_size}, [\()\mem_operand\()], #16
 .endm
 
 .macro pixldst4 op, elem_size, reg1, reg2, reg3, reg4, mem_operand, abits
-    op {v&reg1&.&elem_size, v&reg2&.&elem_size, v&reg3&.&elem_size, v&reg4&.&elem_size}, [&mem_operand&], #32
+    \op {v\()\reg1\().\()\elem_size, v\()\reg2\().\()\elem_size, v\()\reg3\().\()\elem_size, v\()\reg4\().\()\elem_size}, [\()\mem_operand\()], #32
 .endm
 
 .macro pixldst0 op, elem_size, reg1, idx, mem_operand, abits, bytes
-    op {v&reg1&.&elem_size}[idx], [&mem_operand&], #&bytes&
+    \op {v\()\reg1\().\()\elem_size}[\idx], [\()\mem_operand\()], #\()\bytes\()
 .endm
 
 .macro pixldst3 op, elem_size, reg1, reg2, reg3, mem_operand
-    op {v&reg1&.&elem_size, v&reg2&.&elem_size, v&reg3&.&elem_size}, [&mem_operand&], #24
+    \op {v\()\reg1\().\()\elem_size, v\()\reg2\().\()\elem_size, v\()\reg3\().\()\elem_size}, [\()\mem_operand\()], #24
 .endm
 
 .macro pixldst30 op, elem_size, reg1, reg2, reg3, idx, mem_operand
-    op {v&reg1&.&elem_size, v&reg2&.&elem_size, v&reg3&.&elem_size}[idx], [&mem_operand&], #3
+    \op {v\()\reg1\().\()\elem_size, v\()\reg2\().\()\elem_size, v\()\reg3\().\()\elem_size}[\idx], [\()\mem_operand\()], #3
 .endm
 
 .macro pixldst numbytes, op, elem_size, basereg, mem_operand, abits
-.if numbytes == 32
-    .if elem_size==32
-        pixldst4 op, 2s, %(basereg+4), %(basereg+5), \
-                              %(basereg+6), %(basereg+7), mem_operand, abits
-    .elseif elem_size==16
-        pixldst4 op, 4h, %(basereg+4), %(basereg+5), \
-                              %(basereg+6), %(basereg+7), mem_operand, abits
+.if \numbytes == 32
+    .if \elem_size==32
+        pixldst4 \op, 2s, %(\basereg+4), %(\basereg+5), \
+                              %(\basereg+6), %(\basereg+7), \mem_operand, \abits
+    .elseif \elem_size==16
+        pixldst4 \op, 4h, %(\basereg+4), %(\basereg+5), \
+                              %(\basereg+6), %(\basereg+7), \mem_operand, \abits
     .else
-        pixldst4 op, 8b, %(basereg+4), %(basereg+5), \
-                              %(basereg+6), %(basereg+7), mem_operand, abits
+        pixldst4 \op, 8b, %(\basereg+4), %(\basereg+5), \
+                              %(\basereg+6), %(\basereg+7), \mem_operand, \abits
     .endif
-.elseif numbytes == 16
-    .if elem_size==32
-          pixldst2 op, 2s, %(basereg+2), %(basereg+3), mem_operand, abits
-    .elseif elem_size==16
-          pixldst2 op, 4h, %(basereg+2), %(basereg+3), mem_operand, abits
+.elseif \numbytes == 16
+    .if \elem_size==32
+          pixldst2 \op, 2s, %(\basereg+2), %(\basereg+3), \mem_operand, \abits
+    .elseif \elem_size==16
+          pixldst2 \op, 4h, %(\basereg+2), %(\basereg+3), \mem_operand, \abits
     .else
-          pixldst2 op, 8b, %(basereg+2), %(basereg+3), mem_operand, abits
+          pixldst2 \op, 8b, %(\basereg+2), %(\basereg+3), \mem_operand, \abits
     .endif
-.elseif numbytes == 8
-    .if elem_size==32
-        pixldst1 op, 2s, %(basereg+1), mem_operand, abits
-    .elseif elem_size==16
-        pixldst1 op, 4h, %(basereg+1), mem_operand, abits
+.elseif \numbytes == 8
+    .if \elem_size==32
+        pixldst1 \op, 2s, %(\basereg+1), \mem_operand, \abits
+    .elseif \elem_size==16
+        pixldst1 \op, 4h, %(\basereg+1), \mem_operand, \abits
     .else
-        pixldst1 op, 8b, %(basereg+1), mem_operand, abits
+        pixldst1 \op, 8b, %(\basereg+1), \mem_operand, \abits
     .endif
-.elseif numbytes == 4
-    .if !RESPECT_STRICT_ALIGNMENT || (elem_size == 32)
-        pixldst0 op, s, %(basereg+0), 1, mem_operand, abits, 4
-    .elseif elem_size == 16
-        pixldst0 op, h, %(basereg+0), 2, mem_operand, abits, 2
-        pixldst0 op, h, %(basereg+0), 3, mem_operand, abits, 2
+.elseif \numbytes == 4
+    .if !RESPECT_STRICT_ALIGNMENT || (\elem_size == 32)
+        pixldst0 \op, s, %(\basereg+0), 1, \mem_operand, \abits, 4
+    .elseif \elem_size == 16
+        pixldst0 \op, h, %(\basereg+0), 2, \mem_operand, \abits, 2
+        pixldst0 \op, h, %(\basereg+0), 3, \mem_operand, \abits, 2
     .else
-        pixldst0 op, b, %(basereg+0), 4, mem_operand, abits, 1
-        pixldst0 op, b, %(basereg+0), 5, mem_operand, abits, 1
-        pixldst0 op, b, %(basereg+0), 6, mem_operand, abits, 1
-        pixldst0 op, b, %(basereg+0), 7, mem_operand, abits, 1
+        pixldst0 \op, b, %(\basereg+0), 4, \mem_operand, \abits, 1
+        pixldst0 \op, b, %(\basereg+0), 5, \mem_operand, \abits, 1
+        pixldst0 \op, b, %(\basereg+0), 6, \mem_operand, \abits, 1
+        pixldst0 \op, b, %(\basereg+0), 7, \mem_operand, \abits, 1
     .endif
-.elseif numbytes == 2
-    .if !RESPECT_STRICT_ALIGNMENT || (elem_size == 16)
-        pixldst0 op, h, %(basereg+0), 1, mem_operand, abits, 2
+.elseif \numbytes == 2
+    .if !RESPECT_STRICT_ALIGNMENT || (\elem_size == 16)
+        pixldst0 \op, h, %(\basereg+0), 1, \mem_operand, \abits, 2
     .else
-        pixldst0 op, b, %(basereg+0), 2, mem_operand, abits, 1
-        pixldst0 op, b, %(basereg+0), 3, mem_operand, abits, 1
+        pixldst0 \op, b, %(\basereg+0), 2, \mem_operand, \abits, 1
+        pixldst0 \op, b, %(\basereg+0), 3, \mem_operand, \abits, 1
     .endif
-.elseif numbytes == 1
-        pixldst0 op, b, %(basereg+0), 1, mem_operand, abits, 1
+.elseif \numbytes == 1
+        pixldst0 \op, b, %(\basereg+0), 1, \mem_operand, \abits, 1
 .else
     .error "unsupported size: numbytes"
 .endif
 .endm
 
 .macro pixld numpix, bpp, basereg, mem_operand, abits=0
-.if bpp > 0
-.if (bpp == 32) && (numpix == 8) && (DEINTERLEAVE_32BPP_ENABLED != 0)
-    pixldst4 ld4, 8b, %(basereg+4), %(basereg+5), \
-                      %(basereg+6), %(basereg+7), mem_operand, abits
-.elseif (bpp == 24) && (numpix == 8)
-    pixldst3 ld3, 8b, %(basereg+3), %(basereg+4), %(basereg+5), mem_operand
-.elseif (bpp == 24) && (numpix == 4)
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 4, mem_operand
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 5, mem_operand
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 6, mem_operand
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 7, mem_operand
-.elseif (bpp == 24) && (numpix == 2)
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 2, mem_operand
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 3, mem_operand
-.elseif (bpp == 24) && (numpix == 1)
-    pixldst30 ld3, b, %(basereg+0), %(basereg+1), %(basereg+2), 1, mem_operand
+.if \bpp > 0
+.if (\bpp == 32) && (\numpix == 8) && (DEINTERLEAVE_32BPP_ENABLED != 0)
+    pixldst4 ld4, 8b, %(\basereg+4), %(\basereg+5), \
+                      %(\basereg+6), %(\basereg+7), \mem_operand, \abits
+.elseif (\bpp == 24) && (\numpix == 8)
+    pixldst3 ld3, 8b, %(\basereg+3), %(\basereg+4), %(\basereg+5), \mem_operand
+.elseif (\bpp == 24) && (\numpix == 4)
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 4, \mem_operand
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 5, \mem_operand
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 6, \mem_operand
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 7, \mem_operand
+.elseif (\bpp == 24) && (\numpix == 2)
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 2, \mem_operand
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 3, \mem_operand
+.elseif (\bpp == 24) && (\numpix == 1)
+    pixldst30 ld3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 1, \mem_operand
 .else
-    pixldst %(numpix * bpp / 8), ld1, %(bpp), basereg, mem_operand, abits
+    pixldst %(\numpix * \bpp / 8), ld1, %(\bpp), \basereg, \mem_operand, \abits
 .endif
 .endif
 .endm
 
 .macro pixst numpix, bpp, basereg, mem_operand, abits=0
-.if bpp > 0
-.if (bpp == 32) && (numpix == 8) && (DEINTERLEAVE_32BPP_ENABLED != 0)
-    pixldst4 st4, 8b, %(basereg+4), %(basereg+5), \
-                      %(basereg+6), %(basereg+7), mem_operand, abits
-.elseif (bpp == 24) && (numpix == 8)
-    pixldst3 st3, 8b, %(basereg+3), %(basereg+4), %(basereg+5), mem_operand
-.elseif (bpp == 24) && (numpix == 4)
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 4, mem_operand
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 5, mem_operand
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 6, mem_operand
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 7, mem_operand
-.elseif (bpp == 24) && (numpix == 2)
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 2, mem_operand
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 3, mem_operand
-.elseif (bpp == 24) && (numpix == 1)
-    pixldst30 st3, b, %(basereg+0), %(basereg+1), %(basereg+2), 1, mem_operand
+.if \bpp > 0
+.if (\bpp == 32) && (\numpix == 8) && (DEINTERLEAVE_32BPP_ENABLED != 0)
+    pixldst4 st4, 8b, %(\basereg+4), %(\basereg+5), \
+                      %(\basereg+6), %(\basereg+7), \mem_operand, \abits
+.elseif (\bpp == 24) && (\numpix == 8)
+    pixldst3 st3, 8b, %(\basereg+3), %(\basereg+4), %(\basereg+5), \mem_operand
+.elseif (\bpp == 24) && (\numpix == 4)
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 4, \mem_operand
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 5, \mem_operand
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 6, \mem_operand
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 7, \mem_operand
+.elseif (\bpp == 24) && (\numpix == 2)
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 2, \mem_operand
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 3, \mem_operand
+.elseif (\bpp == 24) && (\numpix == 1)
+    pixldst30 st3, b, %(\basereg+0), %(\basereg+1), %(\basereg+2), 1, \mem_operand
 .else
-    pixldst %(numpix * bpp / 8), st1, %(bpp), basereg, mem_operand, abits
+    pixldst %(\numpix * \bpp / 8), st1, %(\bpp), \basereg, \mem_operand, \abits
 .endif
 .endif
 .endm
 
 .macro pixld_a numpix, bpp, basereg, mem_operand
-.if (bpp * numpix) <= 128
-    pixld numpix, bpp, basereg, mem_operand, %(bpp * numpix)
+.if (\bpp * \numpix) <= 128
+    pixld \numpix, \bpp, \basereg, \mem_operand, %(\bpp * \numpix)
 .else
-    pixld numpix, bpp, basereg, mem_operand, 128
+    pixld \numpix, \bpp, \basereg, \mem_operand, 128
 .endif
 .endm
 
 .macro pixst_a numpix, bpp, basereg, mem_operand
-.if (bpp * numpix) <= 128
-    pixst numpix, bpp, basereg, mem_operand, %(bpp * numpix)
+.if (\bpp * \numpix) <= 128
+    pixst \numpix, \bpp, \basereg, \mem_operand, %(\bpp * \numpix)
 .else
-    pixst numpix, bpp, basereg, mem_operand, 128
+    pixst \numpix, \bpp, \basereg, \mem_operand, 128
 .endif
 .endm
 
@@ -224,56 +224,56 @@
  * aliases to be defined)
  */
 .macro pixld1_s elem_size, reg1, mem_operand
-.if elem_size == 16
+.if \elem_size == 16
     asr     TMP1, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP1, mem_operand, TMP1, lsl #1
+    add     TMP1, \mem_operand, TMP1, lsl #1
     asr     TMP2, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP2, mem_operand, TMP2, lsl #1
-    ld1     {v&reg1&.h}[0], [TMP1]
+    add     TMP2, \mem_operand, TMP2, lsl #1
+    ld1     {v\()\reg1\().h}[0], [TMP1]
     asr     TMP1, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP1, mem_operand, TMP1, lsl #1
-    ld1     {v&reg1&.h}[1], [TMP2]
+    add     TMP1, \mem_operand, TMP1, lsl #1
+    ld1     {v\()\reg1\().h}[1], [TMP2]
     asr     TMP2, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP2, mem_operand, TMP2, lsl #1
-    ld1     {v&reg1&.h}[2], [TMP1]
-    ld1     {v&reg1&.h}[3], [TMP2]
-.elseif elem_size == 32
+    add     TMP2, \mem_operand, TMP2, lsl #1
+    ld1     {v\()\reg1\().h}[2], [TMP1]
+    ld1     {v\()\reg1\().h}[3], [TMP2]
+.elseif \elem_size == 32
     asr     TMP1, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP1, mem_operand, TMP1, lsl #2
+    add     TMP1, \mem_operand, TMP1, lsl #2
     asr     TMP2, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP2, mem_operand, TMP2, lsl #2
-    ld1     {v&reg1&.s}[0], [TMP1]
-    ld1     {v&reg1&.s}[1], [TMP2]
+    add     TMP2, \mem_operand, TMP2, lsl #2
+    ld1     {v\()\reg1\().s}[0], [TMP1]
+    ld1     {v\()\reg1\().s}[1], [TMP2]
 .else
     .error "unsupported"
 .endif
@@ -283,37 +283,37 @@
 .if 0 /* elem_size == 32 */
     mov     TMP1, VX, asr #16
     add     VX, VX, UNIT_X, asl #1
-    add     TMP1, mem_operand, TMP1, asl #2
+    add     TMP1, \mem_operand, TMP1, asl #2
     mov     TMP2, VX, asr #16
     sub     VX, VX, UNIT_X
-    add     TMP2, mem_operand, TMP2, asl #2
-    ld1     {v&reg1&.s}[0], [TMP1]
+    add     TMP2, \mem_operand, TMP2, asl #2
+    ld1     {v\()\reg1\().s}[0], [TMP1]
     mov     TMP1, VX, asr #16
     add     VX, VX, UNIT_X, asl #1
-    add     TMP1, mem_operand, TMP1, asl #2
-    ld1     {v&reg2&.s}[0], [TMP2, :32]
+    add     TMP1, \mem_operand, TMP1, asl #2
+    ld1     {v\()\reg2\().s}[0], [TMP2, :32]
     mov     TMP2, VX, asr #16
     add     VX, VX, UNIT_X
-    add     TMP2, mem_operand, TMP2, asl #2
-    ld1     {v&reg1&.s}[1], [TMP1]
-    ld1     {v&reg2&.s}[1], [TMP2]
+    add     TMP2, \mem_operand, TMP2, asl #2
+    ld1     {v\()\reg1\().s}[1], [TMP1]
+    ld1     {v\()\reg2\().s}[1], [TMP2]
 .else
-    pixld1_s elem_size, reg1, mem_operand
-    pixld1_s elem_size, reg2, mem_operand
+    pixld1_s \elem_size, \reg1, \mem_operand
+    pixld1_s \elem_size, \reg2, \mem_operand
 .endif
 .endm
 
 .macro pixld0_s elem_size, reg1, idx, mem_operand
-.if elem_size == 16
+.if \elem_size == 16
     asr     TMP1, VX, #16
     adds    VX, VX, UNIT_X
     bmi     55f
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP1, mem_operand, TMP1, lsl #1
-    ld1     {v&reg1&.h}[idx], [TMP1]
-.elseif elem_size == 32
+    add     TMP1, \mem_operand, TMP1, lsl #1
+    ld1     {v\()\reg1\().h}[\idx], [TMP1]
+.elseif \elem_size == 32
     asr     DUMMY, VX, #16
     mov     TMP1, DUMMY
     adds    VX, VX, UNIT_X
@@ -321,85 +321,85 @@
 5:  subs    VX, VX, SRC_WIDTH_FIXED
     bpl     5b
 55:
-    add     TMP1, mem_operand, TMP1, lsl #2
-    ld1     {v&reg1&.s}[idx], [TMP1]
+    add     TMP1, \mem_operand, TMP1, lsl #2
+    ld1     {v\()\reg1\().s}[\idx], [TMP1]
 .endif
 .endm
 
 .macro pixld_s_internal numbytes, elem_size, basereg, mem_operand
-.if numbytes == 32
-    pixld2_s elem_size, %(basereg+4), %(basereg+5), mem_operand
-    pixld2_s elem_size, %(basereg+6), %(basereg+7), mem_operand
-    pixdeinterleave elem_size, %(basereg+4)
-.elseif numbytes == 16
-    pixld2_s elem_size, %(basereg+2), %(basereg+3), mem_operand
-.elseif numbytes == 8
-    pixld1_s elem_size, %(basereg+1), mem_operand
-.elseif numbytes == 4
-    .if elem_size == 32
-        pixld0_s elem_size, %(basereg+0), 1, mem_operand
-    .elseif elem_size == 16
-        pixld0_s elem_size, %(basereg+0), 2, mem_operand
-        pixld0_s elem_size, %(basereg+0), 3, mem_operand
+.if \numbytes == 32
+    pixld2_s \elem_size, %(\basereg+4), %(\basereg+5), \mem_operand
+    pixld2_s \elem_size, %(\basereg+6), %(\basereg+7), \mem_operand
+    pixdeinterleave \elem_size, %(\basereg+4)
+.elseif \numbytes == 16
+    pixld2_s \elem_size, %(\basereg+2), %(\basereg+3), \mem_operand
+.elseif \numbytes == 8
+    pixld1_s \elem_size, %(\basereg+1), \mem_operand
+.elseif \numbytes == 4
+    .if \elem_size == 32
+        pixld0_s \elem_size, %(\basereg+0), 1, \mem_operand
+    .elseif \elem_size == 16
+        pixld0_s \elem_size, %(\basereg+0), 2, \mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 3, \mem_operand
     .else
-        pixld0_s elem_size, %(basereg+0), 4, mem_operand
-        pixld0_s elem_size, %(basereg+0), 5, mem_operand
-        pixld0_s elem_size, %(basereg+0), 6, mem_operand
-        pixld0_s elem_size, %(basereg+0), 7, mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 4, \mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 5, \mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 6, \mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 7, \mem_operand
     .endif
-.elseif numbytes == 2
-    .if elem_size == 16
-        pixld0_s elem_size, %(basereg+0), 1, mem_operand
+.elseif \numbytes == 2
+    .if \elem_size == 16
+        pixld0_s \elem_size, %(\basereg+0), 1, \mem_operand
     .else
-        pixld0_s elem_size, %(basereg+0), 2, mem_operand
-        pixld0_s elem_size, %(basereg+0), 3, mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 2, \mem_operand
+        pixld0_s \elem_size, %(\basereg+0), 3, \mem_operand
     .endif
-.elseif numbytes == 1
-    pixld0_s elem_size, %(basereg+0), 1, mem_operand
+.elseif \numbytes == 1
+    pixld0_s \elem_size, %(\basereg+0), 1, \mem_operand
 .else
-    .error "unsupported size: numbytes"
+    .error "unsupported size: \numbytes"
 .endif
 .endm
 
 .macro pixld_s numpix, bpp, basereg, mem_operand
-.if bpp > 0
-    pixld_s_internal %(numpix * bpp / 8), %(bpp), basereg, mem_operand
+.if \bpp > 0
+    pixld_s_internal %(\numpix * \bpp / 8), %(\bpp), \basereg, \mem_operand
 .endif
 .endm
 
 .macro vuzp8 reg1, reg2
     umov DUMMY, v16.d[0]
-    uzp1 v16.8b,     v&reg1&.8b, v&reg2&.8b
-    uzp2 v&reg2&.8b, v&reg1&.8b, v&reg2&.8b
-    mov  v&reg1&.8b, v16.8b
+    uzp1 v16.8b,     v\()\reg1\().8b, v\()\reg2\().8b
+    uzp2 v\()\reg2\().8b, v\()\reg1\().8b, v\()\reg2\().8b
+    mov  v\()\reg1\().8b, v16.8b
     mov  v16.d[0], DUMMY
 .endm
 
 .macro vzip8 reg1, reg2
     umov DUMMY, v16.d[0]
-    zip1 v16.8b,     v&reg1&.8b, v&reg2&.8b
-    zip2 v&reg2&.8b, v&reg1&.8b, v&reg2&.8b
-    mov  v&reg1&.8b, v16.8b
+    zip1 v16.8b,     v\()\reg1\().8b, v\()\reg2\().8b
+    zip2 v\()\reg2\().8b, v\()\reg1\().8b, v\()\reg2\().8b
+    mov  v\()\reg1\().8b, v16.8b
     mov  v16.d[0], DUMMY
 .endm
 
 /* deinterleave B, G, R, A channels for eight 32bpp pixels in 4 registers */
 .macro pixdeinterleave bpp, basereg
-.if (bpp == 32) && (DEINTERLEAVE_32BPP_ENABLED != 0)
-    vuzp8 %(basereg+0), %(basereg+1)
-    vuzp8 %(basereg+2), %(basereg+3)
-    vuzp8 %(basereg+1), %(basereg+3)
-    vuzp8 %(basereg+0), %(basereg+2)
+.if (\bpp == 32) && (DEINTERLEAVE_32BPP_ENABLED != 0)
+    vuzp8 %(\basereg+0), %(\basereg+1)
+    vuzp8 %(\basereg+2), %(\basereg+3)
+    vuzp8 %(\basereg+1), %(\basereg+3)
+    vuzp8 %(\basereg+0), %(\basereg+2)
 .endif
 .endm
 
 /* interleave B, G, R, A channels for eight 32bpp pixels in 4 registers */
 .macro pixinterleave bpp, basereg
-.if (bpp == 32) && (DEINTERLEAVE_32BPP_ENABLED != 0)
-    vzip8 %(basereg+0), %(basereg+2)
-    vzip8 %(basereg+1), %(basereg+3)
-    vzip8 %(basereg+2), %(basereg+3)
-    vzip8 %(basereg+0), %(basereg+1)
+.if (\bpp == 32) && (DEINTERLEAVE_32BPP_ENABLED != 0)
+    vzip8 %(\basereg+0), %(\basereg+2)
+    vzip8 %(\basereg+1), %(\basereg+3)
+    vzip8 %(\basereg+2), %(\basereg+3)
+    vzip8 %(\basereg+0), %(\basereg+1)
 .endif
 .endm
 
@@ -433,18 +433,18 @@
  */
 .macro PF a, x:vararg
 .if (PREFETCH_TYPE_CURRENT == PREFETCH_TYPE_ADVANCED)
-    a x
+    \a \x
 .endif
 .endm
 
 .macro cache_preload std_increment, boost_increment
 .if (src_bpp_shift >= 0) || (dst_r_bpp != 0) || (mask_bpp_shift >= 0)
-.if std_increment != 0
-    PF add PF_X, PF_X, #std_increment
+.if \std_increment != 0
+    PF add PF_X, PF_X, #\std_increment
 .endif
     PF tst PF_CTL, #0xF
     PF beq 71f
-    PF add PF_X, PF_X, #boost_increment
+    PF add PF_X, PF_X, #\boost_increment
     PF sub PF_CTL, PF_CTL, #1
 71:
     PF cmp PF_X, ORIG_W
@@ -515,21 +515,20 @@
     tst         DST_R, #0xF
     beq         52f
 .irp lowbit, 1, 2, 4, 8, 16
-local skip1
-.if (dst_w_bpp <= (lowbit * 8)) && ((lowbit * 8) < (pixblock_size * dst_w_bpp))
-.if lowbit < 16 /* we don't need more than 16-byte alignment */
-    tst         DST_R, #lowbit
+.if (dst_w_bpp <= (\lowbit * 8)) && ((\lowbit * 8) < (pixblock_size * dst_w_bpp))
+.if \lowbit < 16 /* we don't need more than 16-byte alignment */
+    tst         DST_R, #\lowbit
     beq         51f
 .endif
-    pixld_src   (lowbit * 8 / dst_w_bpp), src_bpp, src_basereg, SRC
-    pixld       (lowbit * 8 / dst_w_bpp), mask_bpp, mask_basereg, MASK
+    pixld_src   (\lowbit * 8 / dst_w_bpp), src_bpp, src_basereg, SRC
+    pixld       (\lowbit * 8 / dst_w_bpp), mask_bpp, mask_basereg, MASK
 .if dst_r_bpp > 0
-    pixld_a     (lowbit * 8 / dst_r_bpp), dst_r_bpp, dst_r_basereg, DST_R
+    pixld_a     (\lowbit * 8 / dst_r_bpp), dst_r_bpp, dst_r_basereg, DST_R
 .else
-    add         DST_R, DST_R, #lowbit
+    add         DST_R, DST_R, #\lowbit
 .endif
-    PF add      PF_X, PF_X, #(lowbit * 8 / dst_w_bpp)
-    sub         W, W, #(lowbit * 8 / dst_w_bpp)
+    PF add      PF_X, PF_X, #(\lowbit * 8 / dst_w_bpp)
+    sub         W, W, #(\lowbit * 8 / dst_w_bpp)
 51:
 .endif
 .endr
@@ -537,20 +536,20 @@ local skip1
     pixdeinterleave mask_bpp, mask_basereg
     pixdeinterleave dst_r_bpp, dst_r_basereg
 
-    process_pixblock_head
+    \process_pixblock_head
     cache_preload 0, pixblock_size
     cache_preload_simple
-    process_pixblock_tail
+    \process_pixblock_tail
 
     pixinterleave dst_w_bpp, dst_w_basereg
 
 .irp lowbit, 1, 2, 4, 8, 16
-.if (dst_w_bpp <= (lowbit * 8)) && ((lowbit * 8) < (pixblock_size * dst_w_bpp))
-.if lowbit < 16 /* we don't need more than 16-byte alignment */
-    tst         DST_W, #lowbit
+.if (dst_w_bpp <= (\lowbit * 8)) && ((\lowbit * 8) < (pixblock_size * dst_w_bpp))
+.if \lowbit < 16 /* we don't need more than 16-byte alignment */
+    tst         DST_W, #\lowbit
     beq         51f
 .endif
-    pixst_a     (lowbit * 8 / dst_w_bpp), dst_w_bpp, dst_w_basereg, DST_W
+    pixst_a     (\lowbit * 8 / dst_w_bpp), dst_w_bpp, dst_w_basereg, DST_W
 51:
 .endif
 .endr
@@ -581,18 +580,18 @@ local skip1
     tst         W, #(pixblock_size - 1)
     beq         52f
 .irp chunk_size, 16, 8, 4, 2, 1
-.if pixblock_size > chunk_size
-    tst         W, #chunk_size
+.if pixblock_size > \chunk_size
+    tst         W, #\chunk_size
     beq         51f
-    pixld_src   chunk_size, src_bpp, src_basereg, SRC
-    pixld       chunk_size, mask_bpp, mask_basereg, MASK
-.if dst_aligned_flag != 0
-    pixld_a     chunk_size, dst_r_bpp, dst_r_basereg, DST_R
+    pixld_src   \chunk_size, src_bpp, src_basereg, SRC
+    pixld       \chunk_size, mask_bpp, mask_basereg, MASK
+.if \dst_aligned_flag != 0
+    pixld_a     \chunk_size, dst_r_bpp, dst_r_basereg, DST_R
 .else
-    pixld       chunk_size, dst_r_bpp, dst_r_basereg, DST_R
+    pixld       \chunk_size, dst_r_bpp, dst_r_basereg, DST_R
 .endif
-.if cache_preload_flag != 0
-    PF add      PF_X, PF_X, #chunk_size
+.if \cache_preload_flag != 0
+    PF add      PF_X, PF_X, #\chunk_size
 .endif
 51:
 .endif
@@ -601,21 +600,21 @@ local skip1
     pixdeinterleave mask_bpp, mask_basereg
     pixdeinterleave dst_r_bpp, dst_r_basereg
 
-    process_pixblock_head
-.if cache_preload_flag != 0
+    \process_pixblock_head
+.if \cache_preload_flag != 0
     cache_preload 0, pixblock_size
     cache_preload_simple
 .endif
-    process_pixblock_tail
+    \process_pixblock_tail
     pixinterleave dst_w_bpp, dst_w_basereg
 .irp chunk_size, 16, 8, 4, 2, 1
-.if pixblock_size > chunk_size
-    tst         W, #chunk_size
+.if pixblock_size > \chunk_size
+    tst         W, #\chunk_size
     beq         51f
-.if dst_aligned_flag != 0
-    pixst_a     chunk_size, dst_w_bpp, dst_w_basereg, DST_W
+.if \dst_aligned_flag != 0
+    pixst_a     \chunk_size, dst_w_bpp, dst_w_basereg, DST_W
 .else
-    pixst       chunk_size, dst_w_bpp, dst_w_basereg, DST_W
+    pixst       \chunk_size, dst_w_bpp, dst_w_basereg, DST_W
 .endif
 51:
 .endif
@@ -648,16 +647,9 @@ local skip1
 .endif
     subs        H, H, #1
     mov         DST_R, DST_W
-    bge         start_of_loop_label
+    bge         \start_of_loop_label
 .endm
 
-/*
- * Registers are allocated in the following way by default:
- * v0, v1, v2, v3     - reserved for loading source pixel data
- * v4, v5, v6, v7     - reserved for loading destination pixel data
- * v24, v25, v26, v27 - reserved for loading mask pixel data
- * v28, v29, v30, v31 - final destination pixel data for writeback to memory
- */
 .macro generate_composite_function fname, \
                                    src_bpp_, \
                                    mask_bpp_, \
@@ -675,10 +667,10 @@ local skip1
                                    src_basereg_   = 0, \
                                    mask_basereg_  = 24
 
-    pixman_asm_function fname
+    pixman_asm_function \fname
     stp         x29, x30, [sp, -16]!
     mov         x29, sp
-    sub         sp,   sp, 232  /* push all registers */
+    sub         sp,   sp, 232
     sub         x29, x29, 64
     st1         {v8.8b, v9.8b, v10.8b, v11.8b}, [x29], #32
     st1         {v12.8b, v13.8b, v14.8b, v15.8b}, [x29], #32
@@ -694,34 +686,25 @@ local skip1
     stp         x26,  x27, [x29, -224]
     str         x28, [x29, -232]
 
-/*
- * Select prefetch type for this function. If prefetch distance is
- * set to 0 or one of the color formats is 24bpp, SIMPLE prefetch
- * has to be used instead of ADVANCED.
- */
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_DEFAULT
-.if prefetch_distance == 0
+.if \prefetch_distance == 0
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_NONE
 .elseif (PREFETCH_TYPE_CURRENT > PREFETCH_TYPE_SIMPLE) && \
-        ((src_bpp_ == 24) || (mask_bpp_ == 24) || (dst_w_bpp_ == 24))
+        ((\src_bpp_ == 24) || (\mask_bpp_ == 24) || (\dst_w_bpp_ == 24))
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_SIMPLE
 .endif
 
-/*
- * Make some macro arguments globally visible and accessible
- * from other macros
- */
-    .set src_bpp, src_bpp_
-    .set mask_bpp, mask_bpp_
-    .set dst_w_bpp, dst_w_bpp_
-    .set pixblock_size, pixblock_size_
-    .set dst_w_basereg, dst_w_basereg_
-    .set dst_r_basereg, dst_r_basereg_
-    .set src_basereg, src_basereg_
-    .set mask_basereg, mask_basereg_
+    .set src_bpp, \src_bpp_
+    .set mask_bpp, \mask_bpp_
+    .set dst_w_bpp, \dst_w_bpp_
+    .set pixblock_size, \pixblock_size_
+    .set dst_w_basereg, \dst_w_basereg_
+    .set dst_r_basereg, \dst_r_basereg_
+    .set src_basereg, \src_basereg_
+    .set mask_basereg, \mask_basereg_
 
     .macro pixld_src x:vararg
-        pixld x
+        pixld \x
     .endm
     .macro fetch_src_pixblock
         pixld_src   pixblock_size, src_bpp, \
@@ -798,18 +781,18 @@ local skip1
     .error "requested dst bpp (dst_w_bpp) is not supported"
 .endif
 
-.if (((flags) & FLAG_DST_READWRITE) != 0)
+.if (((\flags) & FLAG_DST_READWRITE) != 0)
     .set dst_r_bpp, dst_w_bpp
 .else
     .set dst_r_bpp, 0
 .endif
-.if (((flags) & FLAG_DEINTERLEAVE_32BPP) != 0)
+.if (((\flags) & FLAG_DEINTERLEAVE_32BPP) != 0)
     .set DEINTERLEAVE_32BPP_ENABLED, 1
 .else
     .set DEINTERLEAVE_32BPP_ENABLED, 0
 .endif
 
-.if prefetch_distance < 0 || prefetch_distance > 15
+.if \prefetch_distance < 0 || \prefetch_distance > 15
     .error "invalid prefetch distance (prefetch_distance)"
 .endif
 
@@ -838,9 +821,9 @@ local skip1
     /* PF_CTL = prefetch_distance | ((h - 1) << 4) */
     PF lsl      DUMMY, H, #4
     PF mov      PF_CTL, DUMMY
-    PF add      PF_CTL, PF_CTL, #(prefetch_distance - 0x10)
+    PF add      PF_CTL, PF_CTL, #(\prefetch_distance - 0x10)
 
-    init
+    \init
     subs        H, H, #1
     mov         ORIG_W, W
     blt         9f
@@ -851,9 +834,9 @@ local skip1
  * long scanlines
  */
 0:
-    ensure_destination_ptr_alignment process_pixblock_head, \
-                                     process_pixblock_tail, \
-                                     process_pixblock_tail_head
+    ensure_destination_ptr_alignment \process_pixblock_head, \
+                                     \process_pixblock_tail, \
+                                     \process_pixblock_tail_head
 
     /* Implement "head (tail_head) ... (tail_head) tail" loop pattern */
     pixld_a     pixblock_size, dst_r_bpp, \
@@ -862,31 +845,31 @@ local skip1
     pixld       pixblock_size, mask_bpp, \
                 (mask_basereg - pixblock_size * mask_bpp / 64), MASK
     PF add      PF_X, PF_X, #pixblock_size
-    process_pixblock_head
+    \process_pixblock_head
     cache_preload 0, pixblock_size
     cache_preload_simple
     subs        W, W, #(pixblock_size * 2)
     blt         200f
 
 100:
-    process_pixblock_tail_head
+    \process_pixblock_tail_head
     cache_preload_simple
     subs        W, W, #pixblock_size
     bge         100b
 
 200:
-    process_pixblock_tail
+    \process_pixblock_tail
     pixst_a     pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 
     /* Process the remaining trailing pixels in the scanline */
     process_trailing_pixels 1, 1, \
-                            process_pixblock_head, \
-                            process_pixblock_tail, \
-                            process_pixblock_tail_head
+                            \process_pixblock_head, \
+                            \process_pixblock_tail, \
+                            \process_pixblock_tail_head
     advance_to_next_scanline 0b
 
-    cleanup
+    \cleanup
 1000:
     /* pop all registers */
     sub         x29, x29, 64
@@ -904,13 +887,8 @@ local skip1
     ldp         x26,  x27, [x29, -224]
     ldr         x28, [x29, -232]
     mov         sp, x29
-    ldp         x29, x30, [sp], 16 
-    ret  /* exit */
-/*
- * This is the start of the loop, designed to process images with small width
- * (less than pixblock_size * 2 pixels). In this case neither pipelining
- * nor prefetch are used.
- */
+    ldp         x29, x30, [sp], 16
+    ret
 800:
     /* Process exactly pixblock_size pixels if needed */
     tst         W, #pixblock_size
@@ -920,20 +898,19 @@ local skip1
     fetch_src_pixblock
     pixld       pixblock_size, mask_bpp, \
                 (mask_basereg - pixblock_size * mask_bpp / 64), MASK
-    process_pixblock_head
-    process_pixblock_tail
+    \process_pixblock_head
+    \process_pixblock_tail
     pixst       pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 100:
     /* Process the remaining trailing pixels in the scanline */
     process_trailing_pixels 0, 0, \
-                            process_pixblock_head, \
-                            process_pixblock_tail, \
-                            process_pixblock_tail_head
+                            \process_pixblock_head, \
+                            \process_pixblock_tail, \
+                            \process_pixblock_tail_head
     advance_to_next_scanline 800b
 9:
-    cleanup
-    /* pop all registers */
+    \cleanup
     sub         x29, x29, 64
     ld1         {v8.8b, v9.8b, v10.8b, v11.8b}, [x29], 32
     ld1         {v12.8b, v13.8b, v14.8b, v15.8b}, [x29], 32
@@ -971,7 +948,6 @@ local skip1
     .unreq      PF_DST
     .unreq      PF_MASK
     .unreq      DUMMY
-    .endfunc
 .endm
 
 /*
@@ -995,23 +971,22 @@ local skip1
                                                    src_basereg_   = 0, \
                                                    mask_basereg_  = 24
 
-    pixman_asm_function fname
+    pixman_asm_function \fname
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_NONE
-
 /*
  * Make some macro arguments globally visible and accessible
  * from other macros
  */
-    .set src_bpp, src_bpp_
-    .set mask_bpp, mask_bpp_
-    .set dst_w_bpp, dst_w_bpp_
-    .set pixblock_size, pixblock_size_
-    .set dst_w_basereg, dst_w_basereg_
-    .set dst_r_basereg, dst_r_basereg_
-    .set src_basereg, src_basereg_
-    .set mask_basereg, mask_basereg_
-    
-.if use_nearest_scaling != 0
+    .set src_bpp, \src_bpp_
+    .set mask_bpp, \mask_bpp_
+    .set dst_w_bpp, \dst_w_bpp_
+    .set pixblock_size, \pixblock_size_
+    .set dst_w_basereg, \dst_w_basereg_
+    .set dst_r_basereg, \dst_r_basereg_
+    .set src_basereg, \src_basereg_
+    .set mask_basereg, \mask_basereg_
+
+.if \use_nearest_scaling != 0
     /*
      * Assign symbolic names to registers for nearest scaling
      */
@@ -1028,7 +1003,7 @@ local skip1
     DUMMY       .req        x30
 
     .macro pixld_src x:vararg
-        pixld_s x
+        pixld_s \x
     .endm
 
     sxtw        x0, w0
@@ -1056,7 +1031,7 @@ local skip1
     DUMMY       .req        x30
 
     .macro pixld_src x:vararg
-        pixld x
+        pixld \x
     .endm
 
     sxtw        x0, w0
@@ -1069,12 +1044,12 @@ local skip1
     st1         {v12.8b, v13.8b, v14.8b, v15.8b}, [x29], 32
 .endif
 
-.if (((flags) & FLAG_DST_READWRITE) != 0)
+.if (((\flags) & FLAG_DST_READWRITE) != 0)
     .set dst_r_bpp, dst_w_bpp
 .else
     .set dst_r_bpp, 0
 .endif
-.if (((flags) & FLAG_DEINTERLEAVE_32BPP) != 0)
+.if (((\flags) & FLAG_DEINTERLEAVE_32BPP) != 0)
     .set DEINTERLEAVE_32BPP_ENABLED, 1
 .else
     .set DEINTERLEAVE_32BPP_ENABLED, 0
@@ -1085,15 +1060,15 @@ local skip1
                     (src_basereg - pixblock_size * src_bpp / 64), SRC
     .endm
 
-    init
+    \init
     mov         DST_R, DST_W
 
     cmp         W, #pixblock_size
     blt         800f
 
-    ensure_destination_ptr_alignment process_pixblock_head, \
-                                     process_pixblock_tail, \
-                                     process_pixblock_tail_head
+    ensure_destination_ptr_alignment \process_pixblock_head, \
+                                     \process_pixblock_tail, \
+                                     \process_pixblock_tail_head
 
     subs        W, W, #pixblock_size
     blt         700f
@@ -1104,26 +1079,26 @@ local skip1
     fetch_src_pixblock
     pixld       pixblock_size, mask_bpp, \
                 (mask_basereg - pixblock_size * mask_bpp / 64), MASK
-    process_pixblock_head
+    \process_pixblock_head
     subs        W, W, #pixblock_size
     blt         200f
 100:
-    process_pixblock_tail_head
+    \process_pixblock_tail_head
     subs        W, W, #pixblock_size
     bge         100b
 200:
-    process_pixblock_tail
+    \process_pixblock_tail
     pixst_a     pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 700:
     /* Process the remaining trailing pixels in the scanline (dst aligned) */
     process_trailing_pixels 0, 1, \
-                            process_pixblock_head, \
-                            process_pixblock_tail, \
-                            process_pixblock_tail_head
+                            \process_pixblock_head, \
+                            \process_pixblock_tail, \
+                            \process_pixblock_tail_head
 
-    cleanup
-.if use_nearest_scaling != 0
+    \cleanup
+.if \use_nearest_scaling != 0
     sub         x29, x29, 64
     ld1         {v8.8b, v9.8b, v10.8b, v11.8b}, [x29], 32
     ld1         {v12.8b, v13.8b, v14.8b, v15.8b}, [x29], 32
@@ -1143,12 +1118,12 @@ local skip1
 800:
     /* Process the remaining trailing pixels in the scanline (dst unaligned) */
     process_trailing_pixels 0, 0, \
-                            process_pixblock_head, \
-                            process_pixblock_tail, \
-                            process_pixblock_tail_head
+                            \process_pixblock_head, \
+                            \process_pixblock_tail, \
+                            \process_pixblock_tail_head
 
-    cleanup
-.if use_nearest_scaling != 0
+    \cleanup
+.if \use_nearest_scaling != 0
     sub         x29, x29, 64
     ld1         {v8.8b, v9.8b, v10.8b, v11.8b}, [x29], 32
     ld1         {v12.8b, v13.8b, v14.8b, v15.8b}, [x29], 32
@@ -1189,15 +1164,14 @@ local skip1
     .purgem     fetch_src_pixblock
     .purgem     pixld_src
 
-    .endfunc
 .endm
 
 .macro generate_composite_function_single_scanline x:vararg
-    generate_composite_function_scanline 0, x
+    generate_composite_function_scanline 0, \x
 .endm
 
 .macro generate_composite_function_nearest_scanline x:vararg
-    generate_composite_function_scanline 1, x
+    generate_composite_function_scanline 1, \x
 .endm
 
 /* Default prologue/epilogue, nothing special needs to be done */

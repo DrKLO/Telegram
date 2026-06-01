@@ -12,12 +12,12 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.RecordingCanvas;
 import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.RequiresApi;
@@ -29,7 +29,6 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ProfileActivity;
 
 public class ProfileMetaballView extends View {
@@ -61,9 +60,9 @@ public class ProfileMetaballView extends View {
 
     private final Path path = new Path();
     private final Path clipPath = new Path();
-    private final Point p1 = new Point(), p2 = new Point(), p3 = new Point(), p4 = new Point(), p5 = new Point();
-    private final Point h1 = new Point(), h2 = new Point(), h3 = new Point(), h4 = new Point();
-    private final Point c1 = new Point(), c2 = new Point(), a1 = new Point(), a2 = new Point();
+    private final PointF p1 = new PointF(), p2 = new PointF(), p3 = new PointF(), p4 = new PointF(), p5 = new PointF();
+    private final PointF h1 = new PointF(), h2 = new PointF(), h3 = new PointF(), h4 = new PointF();
+    private final PointF c1 = new PointF(), c2 = new PointF(), a1 = new PointF(), a2 = new PointF();
 
     private volatile boolean isBluring = false;
     private int bgColor = Color.BLACK;
@@ -640,15 +639,15 @@ public class ProfileMetaballView extends View {
         return true;
     }
 
-    private float dist(Point a, Point b) {
+    private float dist(PointF a, PointF b) {
         return MathUtils.distance(a.x, a.y, b.x, b.y);
     }
 
-    private float angle(Point a, Point b) {
+    private float angle(PointF a, PointF b) {
         return (float) Math.atan2(a.y - b.y, a.x - b.x);
     }
 
-    private void getVector(Point center, float angle, float radius, Point out) {
+    private void getVector(PointF center, float angle, float radius, PointF out) {
         out.x = (float) (center.x + radius * Math.cos(angle));
         out.y = (float) (center.y + radius * Math.sin(angle));
     }

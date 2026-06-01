@@ -84,7 +84,7 @@ public class BusinessLinksActivity extends UniversalFragment implements Notifica
 
         listView.setSections();
         listView.adapter.setApplyBackground(false);
-        actionBar.setAdaptiveBackground(listView);
+        actionBar.setAdaptiveBackground(listView, true);
 
         return fragmentView;
     }
@@ -329,7 +329,7 @@ public class BusinessLinksActivity extends UniversalFragment implements Notifica
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asTopView(getString(R.string.BusinessLinksInfo), R.raw.biz_links));
+        items.add(UItem.asTopView(getString(R.string.BusinessLinks), getString(R.string.BusinessLinksInfo), R.raw.biz_links));
         adapter.whiteSectionStart();
         if (BusinessLinksController.getInstance(currentAccount).canAddNew()) {
             items.add(UItem.asButton(BUTTON_ADD, R.drawable.menu_link_create, getString(R.string.BusinessLinksAdd)).accent());

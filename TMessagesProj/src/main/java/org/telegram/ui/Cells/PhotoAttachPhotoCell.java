@@ -70,7 +70,7 @@ import org.telegram.ui.PhotoViewer;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
 
-    private BackupImageView imageView;
+    public BackupImageView imageView;
     private FrameLayout container;
     private FrameLayout checkFrame;
     private CheckBox2 checkBox;
@@ -215,9 +215,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     invalidate();
                 }
 
-                if (photoEntry != null && photoEntry.isLivePhoto && allowLivePhotos) {
+                if (photoEntry != null && photoEntry.isLivePhoto() && allowLivePhotos) {
                     Drawable icon;
-                    if (photoEntry.discardLivePhoto) {
+                    if (photoEntry.isUnalivePhoto()) {
                         if (livePhotoIconOff == null) {
                             livePhotoIconOff = getContext().getResources().getDrawable(R.drawable.media_live_off).mutate();
                         }
@@ -316,7 +316,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             this.highQuality = highQuality;
 
             if (photoEntry != null) {
-                if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
+                if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                     imageView.setOrientation(0, true);
                     videoInfoContainer.setVisibility(VISIBLE);
                     videoPlayImageView.setVisibility(VISIBLE);
@@ -502,7 +502,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         photoEntry = entry;
         isLast = last;
         this.allowLivePhotos = allowLivePhotos;
-        if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
+        if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
             imageView.setOrientation(0, true);
             videoInfoContainer.setVisibility(VISIBLE);
             videoPlayImageView.setVisibility(VISIBLE);
@@ -522,7 +522,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         } else if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
         } else if (photoEntry.path != null) {
-            if (photoEntry.isVideo && !photoEntry.isLivePhoto) {
+            if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             } else {
                 imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
@@ -732,7 +732,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
         StringBuilder sb = new StringBuilder();
-        if (photoEntry != null && photoEntry.isLivePhoto) {
+        if (photoEntry != null && photoEntry.isLivePhoto()) {
             sb.append(getString(R.string.AttachLivePhoto));
         } else if (photoEntry != null && photoEntry.isVideo) {
             sb.append(getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));

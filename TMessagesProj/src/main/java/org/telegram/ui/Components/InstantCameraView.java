@@ -49,7 +49,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -935,9 +934,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         cameraContainer.setTranslationY(animationTranslationY + panTranslationY);
     }
 
-    public Rect getCameraRect() {
+    public RectOld getCameraRect() {
         cameraContainer.getLocationOnScreen(position);
-        return new Rect(position[0], position[1], cameraContainer.getWidth(), cameraContainer.getHeight());
+        return new RectOld(position[0], position[1], cameraContainer.getWidth(), cameraContainer.getHeight());
     }
 
     public void changeVideoPreviewState(int state, float progress) {

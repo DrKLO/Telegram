@@ -131,6 +131,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     private boolean hasGestureSelectedOverride;
     private float gestureSelectedOverride;
+    private boolean skipDrawSelector;
 
     public void setGestureSelectedOverride(float gestureSelectedOverride, boolean allow) {
         this.gestureSelectedOverride = gestureSelectedOverride;
@@ -138,11 +139,18 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         invalidate();
     }
 
+    public void setSkipDrawSelector(boolean skipDrawSelector) {
+        if (this.skipDrawSelector != skipDrawSelector) {
+            this.skipDrawSelector = skipDrawSelector;
+            invalidate();
+        }
+    }
+
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         final float viewWidth = hasVisualWidth ? visualWidth : getWidth();
         final float selectedFactor = hasGestureSelectedOverride ? gestureSelectedOverride : isSelectedAnimator.getFloatValue();
-        if (selectedFactor > 0) {
+        if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
             paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
@@ -228,7 +236,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
     }
 
-    public boolean isSelected() {
+    public boolean isTabSelected() {
         return isSelectedAnimator.getValue();
     }
 

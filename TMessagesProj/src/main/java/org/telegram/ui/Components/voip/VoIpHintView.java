@@ -30,10 +30,10 @@ public class VoIpHintView extends HintView2 {
         super.dispatchDraw(canvas);
     }
 
-    protected void drawBgPath(Canvas canvas) {
+    protected void drawBgPath(Canvas canvas, float alpha) {
         mainPaint.setShader(backgroundProvider.getDarkPaint().getShader());
-        int alpha = Math.min(backgroundPaint.getAlpha(), backgroundProvider.getDarkPaint().getAlpha());
-        canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), alpha, Canvas.ALL_SAVE_FLAG);
+        int thisAlpha = (int) (Math.min(backgroundPaint.getAlpha(), backgroundProvider.getDarkPaint().getAlpha()) * alpha);
+        canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), thisAlpha, Canvas.ALL_SAVE_FLAG);
         canvas.drawPath(path, mainPaint);
         if (backgroundProvider.isReveal()) {
             mainPaint.setShader(backgroundProvider.getRevealDarkPaint().getShader());

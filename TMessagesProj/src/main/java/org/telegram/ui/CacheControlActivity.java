@@ -110,15 +110,12 @@ import org.telegram.ui.Components.SlideChooseView;
 import org.telegram.ui.Components.StorageDiagramView;
 import org.telegram.ui.Components.StorageUsageView;
 import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Storage.CacheModel;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -1426,7 +1423,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             return;
         }
 
-        bottomSheet = new DilogCacheBottomSheet(CacheControlActivity.this, entities, entities.createCacheModel(), new DilogCacheBottomSheet.Delegate() {
+        bottomSheet = new DialogCacheBottomSheet(CacheControlActivity.this, entities, entities.createCacheModel(), new DialogCacheBottomSheet.Delegate() {
             @Override
             public void onAvatarClick() {
                 bottomSheet.dismiss();
@@ -2468,7 +2465,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                         }
                     });
                     cachedMediaLayout.setCacheModel(cacheModel);
-                    nestedSizeNotifierLayout.setChildLayout(cachedMediaLayout);
+                    nestedSizeNotifierLayout.setChildLayout(cachedMediaLayout, dp(12 + 12 + 16));
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                     break;
                 case VIEW_TYPE_CLEAR_CACHE_BUTTON:

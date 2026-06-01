@@ -2,8 +2,8 @@ package org.telegram.tgnet.tl;
 
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
+import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 
@@ -843,6 +843,51 @@ public class TL_stats {
             stream.writeInt32(constructor);
             stream.writeDouble(part);
             stream.writeDouble(total);
+        }
+    }
+
+    public static class TL_statsPollStats extends TLObject {
+        public static int constructor = 0x2999beed;
+
+        public StatsGraph votes_graph;
+
+        public static TL_statsPollStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_statsPollStats result = constructor != TL_statsPollStats.constructor ? null : new TL_statsPollStats();
+            return TLdeserialize(TL_statsPollStats.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            votes_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            votes_graph.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_statsGetPollStats extends TLMethod<TL_statsPollStats> {
+        public static int constructor = 0xc27dfa68;
+
+        public int flags;
+        public boolean dark;
+        public TLRPC.InputPeer peer;
+        public int msg_id;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, dark);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeInt32(msg_id);
+        }
+
+        @Override
+        public TL_statsPollStats deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_statsPollStats.TLdeserialize(stream, constructor, exception);
         }
     }
 }

@@ -1127,14 +1127,14 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                 if (DialogObject.isUserDialog(peerId)) {
                     TLRPC.User currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
                     noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentUser);
-                    imageLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_BIG);
-                    thumbLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_SMALL);
+                    imageLocation = ImageLocation.getForUser(currentAccount, currentUser, ImageLocation.TYPE_BIG);
+                    thumbLocation = ImageLocation.getForUser(currentAccount, currentUser, ImageLocation.TYPE_SMALL);
                     parentObject = currentUser;
                 } else {
                     TLRPC.Chat currentChat = AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().getChat(-peerId);
                     noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentChat);
-                    imageLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_BIG);
-                    thumbLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_SMALL);
+                    imageLocation = ImageLocation.getForChat(currentAccount, currentChat, ImageLocation.TYPE_BIG);
+                    thumbLocation = ImageLocation.getForChat(currentAccount, currentChat, ImageLocation.TYPE_SMALL);
                     parentObject = currentChat;
                 }
 
@@ -1274,13 +1274,13 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
             } else {
                 if (peerId > 0) {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
-                    ImageLocation imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
+                    ImageLocation imageLocation = ImageLocation.getForUser(currentAccount, user, ImageLocation.TYPE_SMALL);
                     int color = user != null ? AvatarDrawable.getColorForId(user.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     imageReceiver.setImage(imageLocation, "50_50_b", gradientDrawable, null, user, 0);
                 } else {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
-                    ImageLocation imageLocation = ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL);
+                    ImageLocation imageLocation = ImageLocation.getForChat(currentAccount, chat, ImageLocation.TYPE_SMALL);
                     int color = chat != null ? AvatarDrawable.getColorForId(chat.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     imageReceiver.setImage(imageLocation, "50_50_b", gradientDrawable, null, chat, 0);

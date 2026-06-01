@@ -2242,6 +2242,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             craftView.setVisibility(View.GONE);
 
             optionsView = new ImageView(context);
+            optionsView.setContentDescription(getString(R.string.AccDescrGoBack));
             optionsView.setImageResource(R.drawable.media_more);
             optionsView.setScaleType(ImageView.ScaleType.CENTER);
             optionsView.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_CIRCLE_20DP));
@@ -9479,7 +9480,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
             public boolean isReplaceIcon;
             public void setReplaceIcon(boolean replaceIcon) {
-                final float scale = replaceIcon ? 1 : 0.8f;
+                final float scale = replaceIcon ? 0.8f : 0.8f;
                 closeIcon.setScaleX(scale);
                 closeIcon.setScaleY(scale);
                 closeIcon.setImageResource((isReplaceIcon = replaceIcon) ? R.drawable.mini_replace2 : R.drawable.msg_close);

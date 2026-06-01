@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -71,6 +72,8 @@ public class AlbumButton extends View {
         } else {
             imageReceiver.setImageBitmap(noGalleryDrawable);
         }
+
+        setContentDescription(title + (count > 0 ? " " + LocaleController.formatPluralStringComma("Media", count) : ""));
     }
 
     @Override

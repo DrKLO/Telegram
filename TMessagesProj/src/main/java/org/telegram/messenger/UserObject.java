@@ -159,9 +159,6 @@ public class UserObject {
         if (emojiStatus == null) {
             return null;
         }
-        if (MessagesController.getInstance(UserConfig.selectedAccount).premiumFeaturesBlocked()) {
-            return null;
-        }
         if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
             final TLRPC.TL_emojiStatus status = (TLRPC.TL_emojiStatus) emojiStatus;
             if ((status.flags & 1) != 0 && status.until <= (int) (System.currentTimeMillis() / 1000)) {

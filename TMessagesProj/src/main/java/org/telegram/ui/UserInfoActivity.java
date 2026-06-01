@@ -1,9 +1,12 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.replaceArrows;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleTag;
+import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
+import static org.telegram.ui.Cells.TextCell.applyNewSpan;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
 
 import android.content.Context;
@@ -44,6 +47,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Business.ChatbotsActivity;
 import org.telegram.ui.Business.LocationActivity;
 import org.telegram.ui.Business.OpeningHoursActivity;
 import org.telegram.ui.Cells.EditTextCell;
@@ -51,6 +55,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CrossfadeDrawable;
+import org.telegram.ui.Components.IconBackgroundColors;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
@@ -62,6 +67,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Objects;
 
 public class UserInfoActivity extends UniversalFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -69,6 +75,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private EditTextCell lastNameEdit;
     private EditTextCell bioEdit;
 
+    private int bioInfoHash = Integer.MIN_VALUE;
     private CharSequence bioInfo;
     private CharSequence birthdayInfo;
 
@@ -103,6 +110,112 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         }
     }
 
+    private void openBioSettings() {
+        presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIO, true));
+    }
+
+    private void updateBioInfo() {
+        final int oldBioInfoHash = bioInfoHash;
+        final boolean hasBio = bioEdit != null && !TextUtils.isEmpty(bioEdit.getText());
+        if (!hasBio) {
+            bioInfo = getString(R.string.EditProfileBioInfo2);
+            bioInfoHash = Objects.hash(0);
+        } else {
+            final ArrayList<TLRPC.PrivacyRule> bioRules = getContactsController().getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_BIO);
+            if (bioRules == null) {
+                bioInfo = getString(R.string.Loading);
+                bioInfoHash = Objects.hash(1);
+            } else {
+                int type = -1, currentType = -1;
+                Boolean premium = null, miniapps = null;
+                boolean hadAllowContacts = false;
+                int currentPlus = 0, currentMinus = 0;
+                for (int a = 0; a < bioRules.size(); a++) {
+                    final TLRPC.PrivacyRule rule = bioRules.get(a);
+                    if (rule instanceof TLRPC.TL_privacyValueAllowChatParticipants) {
+                        final TLRPC.TL_privacyValueAllowChatParticipants privacyValueAllowChatParticipants = (TLRPC.TL_privacyValueAllowChatParticipants) rule;
+                        for (int b = 0, N = privacyValueAllowChatParticipants.chats.size(); b < N; b++) {
+                            final TLRPC.Chat chat = getMessagesController().getChat(privacyValueAllowChatParticipants.chats.get(b));
+                            if (chat != null) {
+                                currentPlus += Math.max(0, chat.participants_count - 1);
+                            }
+                        }
+                    } else if (rule instanceof TLRPC.TL_privacyValueDisallowChatParticipants) {
+                        final TLRPC.TL_privacyValueDisallowChatParticipants privacyValueDisallowChatParticipants = (TLRPC.TL_privacyValueDisallowChatParticipants) rule;
+                        for (int b = 0, N = privacyValueDisallowChatParticipants.chats.size(); b < N; b++) {
+                            final TLRPC.Chat chat = getMessagesController().getChat(privacyValueDisallowChatParticipants.chats.get(b));
+                            if (chat != null) {
+                                currentMinus += Math.max(0, chat.participants_count - 1);
+                            }
+                        }
+                    } else if (rule instanceof TLRPC.TL_privacyValueAllowUsers) {
+                        final TLRPC.TL_privacyValueAllowUsers privacyValueAllowUsers = (TLRPC.TL_privacyValueAllowUsers) rule;
+                        currentPlus += privacyValueAllowUsers.users.size();
+                    } else if (rule instanceof TLRPC.TL_privacyValueDisallowUsers) {
+                        final TLRPC.TL_privacyValueDisallowUsers privacyValueDisallowUsers = (TLRPC.TL_privacyValueDisallowUsers) rule;
+                        currentMinus += privacyValueDisallowUsers.users.size();
+                    } else if (rule instanceof TLRPC.TL_privacyValueAllowAll) {
+                        type = 0;
+                    } else if (rule instanceof TLRPC.TL_privacyValueDisallowAll && !hadAllowContacts) {
+                        type = 1;
+                    } else if (rule instanceof TLRPC.TL_privacyValueAllowContacts) {
+                        hadAllowContacts = true;
+                        type = 2;
+                    } else if (type == -1) {
+                        if (rule instanceof TLRPC.TL_privacyValueAllowAll) {
+                            type = 0;
+                        } else if (rule instanceof TLRPC.TL_privacyValueDisallowAll && !hadAllowContacts) {
+                            type = 1;
+                        } else {
+                            type = 2;
+                        }
+                    }
+                }
+                if (type == PrivacyControlActivity.TYPE_EVERYBODY || type == -1 && (currentMinus > 0 || miniapps != null && !miniapps)) {
+                    currentType = PrivacyControlActivity.TYPE_EVERYBODY;
+                } else if (type == PrivacyControlActivity.TYPE_CONTACTS || type == -1 && currentMinus > 0 && currentPlus > 0) {
+                    currentType = PrivacyControlActivity.TYPE_CONTACTS;
+                } else if (type == PrivacyControlActivity.TYPE_NOBODY || type == -1 && (currentPlus > 0 || miniapps != null && miniapps)) {
+                    currentType = PrivacyControlActivity.TYPE_NOBODY;
+                }
+
+                if (currentType == PrivacyControlActivity.TYPE_EVERYBODY) {
+                    if (currentMinus <= 0) {
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfoEveryone), this::openBioSettings), true);
+                    } else {
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.EditProfileBioInfoEveryoneExcept, currentMinus), this::openBioSettings), true);
+                    }
+                } else if (currentType == PrivacyControlActivity.TYPE_CONTACTS) {
+                    if (currentMinus <= 0 && currentPlus <= 0) {
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfoContacts), this::openBioSettings), true);
+                    } else {
+                        String extra = "";
+                        if (currentPlus > 0) {
+                            extra += "+" + currentPlus;
+                        }
+                        if (currentMinus > 0) {
+                            if (extra.length() > 0) extra += ", ";
+                            extra += "-" + currentMinus;
+                        }
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.EditProfileBioInfoContactsExtra, extra), this::openBioSettings), true);
+                    }
+                } else if (currentType == PrivacyControlActivity.TYPE_EVERYBODY) {
+                    if (currentPlus <= 0) {
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfoNobody), this::openBioSettings), true);
+                    } else {
+                        bioInfo = replaceArrows(AndroidUtilities.replaceSingleTag(formatString(R.string.EditProfileBioInfoNobodyExcept, currentPlus), this::openBioSettings), true);
+                    }
+                } else {
+                    bioInfo = AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfoUnknown), this::openBioSettings);
+                }
+                bioInfoHash = Objects.hash(10 + currentType, currentPlus, currentMinus);
+            }
+        }
+        if (oldBioInfoHash != bioInfoHash && listView != null) {
+            listView.adapter.update(true);
+        }
+    }
+
     @Override
     public View createView(Context context) {
         firstNameEdit = new EditTextCell(context, getString(R.string.EditProfileFirstName), false, false, -1, resourceProvider) {
@@ -122,18 +235,17 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             }
         };
         lastNameEdit.hideKeyboardOnEnter();
-        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint), true, false, getMessagesController().getAboutLimit(), resourceProvider) {
+        bioEdit = new EditTextCell(context, getString(R.string.EditProfileBioHint2), true, false, getMessagesController().getAboutLimit(), resourceProvider) {
             @Override
             protected void onTextChanged(CharSequence newText) {
                 super.onTextChanged(newText);
                 checkDone(true);
+                updateBioInfo();
             }
         };
         bioEdit.setShowLimitWhenEmpty(true);
-
-        bioInfo = AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfo), () -> {
-            presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIO, true));
-        });
+        updateBioInfo();
+        bioInfo = AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfo2), this::openBioSettings);
 
         super.createView(context);
         this.listView = super.listView;
@@ -169,11 +281,12 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private static final int BUTTON_CHANNEL = 3;
     private static final int BUTTON_HOURS = 4;
     private static final int BUTTON_LOCATION = 5;
-    private static final int INFO_PHONE = 6;
-    private static final int INFO_USERNAME = 7;
-    private static final int INFO_BIRTHDAY = 8;
-    private static final int BUTTON_ADD_ACCOUNT = 9;
-    private static final int BUTTON_LOGOUT = 10;
+    private static final int BUTTON_AI = 6;
+    private static final int INFO_PHONE = 7;
+    private static final int INFO_USERNAME = 8;
+    private static final int INFO_BIRTHDAY = 9;
+    private static final int BUTTON_ADD_ACCOUNT = 10;
+    private static final int BUTTON_LOGOUT = 11;
 
     private final ArrayList<Integer> accountNumbers = new ArrayList<>();
     private void updateAccounts() {
@@ -220,23 +333,33 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         numberRow = -1;
         updateAccounts();
 
+        items.add(UItem.asHeader(getString(R.string.EditProfileName)));
+        firstNameRow = items.size();
+        items.add(UItem.asCustom(firstNameEdit));
+        lastNameRow = items.size();
+        items.add(UItem.asCustom(lastNameEdit));
+        items.add(UItem.asShadow(-1, null));
+        bioRow = items.size();
+        items.add(UItem.asCustom(bioEdit));
+        items.add(UItem.asShadow(bioInfo));
+
         final TLRPC.User user = getUserConfig().getCurrentUser();
         items.add(UItem.asHeader(getString(R.string.EditAccountInfoHeader)));
         if (user != null) {
             numberRow = items.size();
-            items.add(InfoCell.Factory.of(INFO_PHONE, R.drawable.menu_phone, PhoneFormat.getInstance().format("+" + user.phone), getString(R.string.TapToChangePhone), 0));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_PHONE, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_calls, PhoneFormat.getInstance().format("+" + user.phone), getString(R.string.TapToChangePhone)));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
-            items.add(InfoCell.Factory.of(INFO_USERNAME, R.drawable.menu_username_change, "@" + UserObject.getPublicUsername(user), getString(R.string.Username), 0));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_USERNAME, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.filled_chatlist_mention, "@" + UserObject.getPublicUsername(user), getString(R.string.Username)));
         } else {
-            items.add(InfoCell.Factory.of(INFO_USERNAME, R.drawable.menu_username_set, getString(R.string.AddUsername), null, 0).accent());
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_USERNAME, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.filled_chatlist_mention, getString(R.string.AddUsername), null));
         }
         birthdayRow = items.size();
         if (birthday != null) {
-            items.add(InfoCell.Factory.of(INFO_BIRTHDAY, R.drawable.menu_birthday, birthdayString(birthday), getString(R.string.ContactBirthday), 0));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.filled_birthday, birthdayString(birthday), getString(R.string.ContactBirthday)));
         } else {
-            items.add(InfoCell.Factory.of(INFO_BIRTHDAY, R.drawable.menu_birthday, getString(R.string.AddBirthday), null, 0).accent());
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.filled_birthday, getString(R.string.AddBirthday), null));
         }
         if (!getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY)) {
             ArrayList<TLRPC.PrivacyRule> rules = getContactsController().getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
@@ -260,37 +383,20 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         }
         items.add(UItem.asShadow(birthdayInfo));
 
-        items.add(UItem.asHeader(getString(R.string.EditProfileName)));
-        firstNameRow = items.size();
-        items.add(UItem.asCustom(firstNameEdit));
-        lastNameRow = items.size();
-        items.add(UItem.asCustom(lastNameEdit));
-        items.add(UItem.asShadow(-1, null));
-        items.add(UItem.asHeader(getString(R.string.EditProfileBio)));
-        bioRow = items.size();
-        items.add(UItem.asCustom(bioEdit));
-        items.add(UItem.asShadow(bioInfo));
-//        items.add(UItem.asHeader(getString(R.string.EditProfileChannel)));
-//        items.add(UItem.asButton(BUTTON_CHANNEL, getString(R.string.EditProfileChannelTitle), channel == null ? getString(R.string.EditProfileChannelAdd) : channel.title));
-        items.add(UItem.asShadow(-2, null));
         channelRow = items.size();
         if (channel == null) {
-            items.add(InfoCell.Factory.of(BUTTON_CHANNEL, R.drawable.msg_channel_create, getString(R.string.EditProfileChannelTitleAdd), null, 0).accent());
+            items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_CHANNEL, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.msg_filled_menu_channels, getString(R.string.EditProfileChannelTitle), null, getString(R.string.EditProfileChannelAdd)));
         } else {
-            items.add(UItem.asButton(BUTTON_CHANNEL, getString(R.string.EditProfileChannelTitle), channel.title));
+            items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_CHANNEL, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.msg_filled_menu_channels, getString(R.string.EditProfileChannelTitle), channel.title));
         }
-//        items.add(UItem.asHeader(getString(R.string.EditProfileBirthday)));
-//        items.add(UItem.asButton(BUTTON_BIRTHDAY, getString(R.string.EditProfileBirthdayText), birthday == null ? getString(R.string.EditProfileBirthdayAdd) : birthdayString(birthday)));
-//        if (birthday != null) {
-//            items.add(UItem.asButton(BUTTON_REMOVE_BIRTHDAY, getString(R.string.EditProfileBirthdayRemove)).red());
-//        }
-        if (hadLocation) {
-            items.add(UItem.asButton(BUTTON_HOURS, R.drawable.menu_premium_clock, getString(R.string.EditProfileHours)));
+        if (hadHours) {
+            items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_HOURS, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.filled_premium_hours, getString(R.string.EditProfileHours)));
         }
         if (hadLocation) {
-            items.add(UItem.asButton(BUTTON_LOCATION, R.drawable.msg_map, getString(R.string.EditProfileLocation)));
+            items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_LOCATION, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.filled_location, getString(R.string.EditProfileLocation)));
         }
-        items.add(UItem.asShadow(-3, null));
+        items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_AI, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.premium_ai_editor, applyNewSpan(getString(R.string.EditProfileChatAutomation))));
+        items.add(UItem.asShadow(-3, getString(R.string.EditProfileChatAutomationInfo)));
         final boolean hasAddAccount = UserConfig.getActivatedAccountsCount() < UserConfig.MAX_ACCOUNT_COUNT;
         if (hasAddAccount) {
             addAccountRow = items.size();
@@ -318,7 +424,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             }
         }
         logoutRow = items.size();
-        items.add(UItem.asButton(BUTTON_LOGOUT, R.drawable.msg_leave, getString(R.string.LogOut)).red());
+        items.add(InfoCell.Factory.of(BUTTON_LOGOUT, R.drawable.msg_leave, getString(R.string.LogOut), null, 0).red());
         items.add(UItem.asShadow(-4, null));
     }
 
@@ -415,6 +521,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             presentFragment(new LocationActivity());
         } else if (item.id == BUTTON_HOURS) {
             presentFragment(new OpeningHoursActivity());
+        } else if (item.id == BUTTON_AI) {
+            presentFragment(new ChatbotsActivity());
         } else if (item.id == INFO_PHONE) {
             presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
         } else if (item.id == INFO_USERNAME) {
@@ -438,6 +546,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
                 listView.adapter.update(true);
             }
         } else if (id == NotificationCenter.privacyRulesUpdated) {
+            updateBioInfo();
             if (listView != null) {
                 listView.adapter.update(true);
             }
@@ -724,6 +833,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         private final ImageView icon2View;
 
         private boolean accent;
+        private boolean red;
 
         public InfoCell(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -762,14 +872,15 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         }
 
         private void updateColors() {
-            iconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            icon2View.setColorFilter(new PorterDuffColorFilter(Theme.getColor(accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            titleView.setTextColor(Theme.getColor(accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            subtitleView.setTextColor(Theme.getColor(accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            iconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(red ? Theme.key_text_RedBold : accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            icon2View.setColorFilter(new PorterDuffColorFilter(Theme.getColor(red ? Theme.key_text_RedBold : accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            titleView.setTextColor(Theme.getColor(red ? Theme.key_text_RedRegular : accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            subtitleView.setTextColor(Theme.getColor(red ? Theme.key_text_RedRegular : accent ? Theme.key_windowBackgroundWhiteBlueText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
         }
 
-        public void set(int icon, CharSequence title, CharSequence subtitle, boolean accent, int icon2) {
+        public void set(int icon, CharSequence title, CharSequence subtitle, boolean accent, boolean red, int icon2) {
             this.accent = accent;
+            this.red = red;
             iconView.setImageResource(icon);
             if (icon2 != 0) {
                 icon2View.setVisibility(View.VISIBLE);
@@ -795,7 +906,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                ((InfoCell) view).set(item.iconResId, item.text, item.subtext, item.accent, item.intValue);
+                ((InfoCell) view).set(item.iconResId, item.text, item.subtext, item.accent, item.red, item.intValue);
             }
 
             public static UItem of(int id, int icon, CharSequence title, CharSequence subtitle, int icon2) {

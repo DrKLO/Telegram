@@ -127,7 +127,7 @@ public class BackButtonMenu {
                 if (chat.photo != null && chat.photo.strippedBitmap != null) {
                     thumb = chat.photo.strippedBitmap;
                 }
-                imageView.setImage(ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
+                imageView.setImage(ImageLocation.getForChat(thisFragment.getCurrentAccount(), chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
                 titleView.setText(chat.title);
             } else if (user != null) {
                 hadDialogs = true;
@@ -146,11 +146,11 @@ public class BackButtonMenu {
                 } else if (UserObject.isDeleted(user)) {
                     name = LocaleController.getString(R.string.HiddenName);
                     avatarDrawable.setInfo(thisFragment.getCurrentAccount(), user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
+                    imageView.setImage(ImageLocation.getForUser(thisFragment.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
                 } else {
                     name = UserObject.getUserName(user);
                     avatarDrawable.setInfo(thisFragment.getCurrentAccount(), user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
+                    imageView.setImage(ImageLocation.getForUser(thisFragment.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
                 }
                 titleView.setText(name);
             } else {

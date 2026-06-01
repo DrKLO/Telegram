@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -698,9 +700,9 @@ public class AnimatedEmojiDrawable extends Drawable {
         imageReceiver.setAllowDecodeSingleFrame(true);
         int roundRadius = 0;
         if (cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_TAB_STRIP) {
-            roundRadius = AndroidUtilities.dp(6);
+            roundRadius = dp(6);
         } else if (cacheType == CACHE_TYPE_ALERT_PREVIEW_LARGE_140) {
-            roundRadius = AndroidUtilities.dp(14);
+            roundRadius = dp(14);
         }
         imageReceiver.setRoundRadius(roundRadius);
         updateAttachState();
@@ -713,7 +715,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         disabledToggleableAnimations = !enabled;
         if (globalEmojiCache == null) return;
         final int key = Objects.hash(currentAccount, CACHE_TYPE_TOGGLEABLE_EDIT);
-        LongSparseArray<AnimatedEmojiDrawable> emojis = globalEmojiCache.get(key);
+        final LongSparseArray<AnimatedEmojiDrawable> emojis = globalEmojiCache.get(key);
         if (emojis != null) {
             for (int i = 0; i < emojis.size(); ++i) {
                 AnimatedEmojiDrawable drawable = emojis.valueAt(i);
@@ -790,6 +792,16 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (placeholderPaint != null) {
             placeholderPaint.setColor(Theme.isCurrentThemeDark() ? 0x0fffffff : 0x0f000000);
         }
+    }
+
+    @Override
+    public int getIntrinsicWidth() {
+        return dp(sizedp);
+    }
+
+    @Override
+    public int getIntrinsicHeight() {
+        return dp(sizedp);
     }
 
     @Override
@@ -913,15 +925,33 @@ public class AnimatedEmojiDrawable extends Drawable {
                 }
                 Log.d("animatedDrawable", "attached count " + attachedCount);
             }
-        }
 
-//        if (globalEmojiCache != null && (views == null || views.size() <= 0) && (holders == null || holders.size() <= 0) && globalEmojiCache.size() > 50) {
-//            HashMap<Long, AnimatedEmojiDrawable> cache = globalEmojiCache.get(currentAccount);
-//            if (cache != null) {
-//                cache.remove(documentId);
-//            }
-//        }
+            if (!attached) {
+                AndroidUtilities.cancelRunOnUIThread(cleanup);
+                AndroidUtilities.runOnUIThread(cleanup, 5000);
+            }
+        }
     }
+
+    private static final Runnable cleanup = () -> {
+        AndroidUtilities.cancelRunOnUIThread(AnimatedEmojiDrawable.cleanup);
+        try {
+            for (int i = 0; i < globalEmojiCache.size(); ++i) {
+                final LongSparseArray<AnimatedEmojiDrawable> array = globalEmojiCache.valueAt(i);
+                for (int j = 0; j < array.size(); ++j) {
+                    final AnimatedEmojiDrawable drawable = array.valueAt(j);
+                    if (!drawable.attached) {
+                        array.removeAt(j);
+                        j--;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                FileLog.e(e);
+            }
+        }
+    };
 
     private Boolean canOverrideColorCached = null;
 
@@ -1232,7 +1262,7 @@ public class AnimatedEmojiDrawable extends Drawable {
                 int dh = drawables[0].getIntrinsicHeight() < 0 ? getIntrinsicHeight() : drawables[0].getIntrinsicHeight();
                 if (drawables[0] instanceof AnimatedEmojiDrawable) {
                     if (((AnimatedEmojiDrawable) drawables[0]).imageReceiver != null) {
-                        ((AnimatedEmojiDrawable) drawables[0]).imageReceiver.setRoundRadius(AndroidUtilities.dp(4));
+                        ((AnimatedEmojiDrawable) drawables[0]).imageReceiver.setRoundRadius(dp(4));
                     }
                     if (progress < 1) {
                         float scale = overshootInterpolator.getInterpolation(progress);

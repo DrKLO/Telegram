@@ -58,6 +58,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -370,18 +371,12 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
 
         public void bind(boolean isCollection, StarsController.GiftsList list) {
-            if (this.list != null) {
-                NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
-            }
             this.isCollection = isCollection;
             this.list = list;
             if (list != null) {
                 list.load();
             }
             update(false);
-            if (this.list != null) {
-                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
-            }
             if (emptyView2Layout != null) {
                 emptyView2Layout.setVisibility(parent.collections.isMine() ? View.VISIBLE : View.GONE);
             }
@@ -419,17 +414,13 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            if (list != null) {
-                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
-            }
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
-            if (list != null) {
-                NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
-            }
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
         }
 
         @Override
@@ -1740,10 +1731,10 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         if (gifts.isEmpty()) return "";
         final SpannableStringBuilder ssb = new SpannableStringBuilder(" ");
         for (int i = 0; i < gifts.size(); ++i) {
-            final SpannableStringBuilder emoji = new SpannableStringBuilder("x");
             final TLRPC.Document sticker = gifts.get(i);
+            final SpannableStringBuilder emoji = new SpannableStringBuilder(MessageObject.getEmoji(sticker));
             final AnimatedEmojiSpan span = new AnimatedEmojiSpan(sticker, .9f, fontMetricsInt);
-            emoji.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            emoji.setSpan(span, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             ssb.append(emoji);
         }
 

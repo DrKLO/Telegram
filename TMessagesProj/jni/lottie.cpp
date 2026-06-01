@@ -292,16 +292,24 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_replaceColors(JNI
 }
 
 
-JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jint w, jint h, jint stride, jboolean clear) {
+JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jboolean clear) {
     if (!ptr || bitmap == nullptr) {
         return 0;
     }
     auto info = (LottieInfo *) (intptr_t) ptr;
 
+    AndroidBitmapInfo bitmapInfo;
+    if (__builtin_expect(AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return 0;
+    }
+
     void *pixels;
     bool result = false;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
-        Surface surface((uint32_t *) pixels, (size_t) w, (size_t) h, (size_t) stride);
+        Surface surface((uint32_t *) pixels,
+                        static_cast<size_t>(bitmapInfo.width),
+                        static_cast<size_t>(bitmapInfo.height),
+                        static_cast<size_t>(bitmapInfo.stride));
         info->animation->renderSync((size_t) frame, surface, clear, &result);
         AndroidBitmap_unlockPixels(env, bitmap);
     }

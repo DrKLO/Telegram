@@ -490,7 +490,7 @@ public class StakedDiceSheet extends BottomSheetWithRecyclerListView {
 
         final SpannableStringBuilder sb = new SpannableStringBuilder(getString(R.string.StakeDiceToast));
         sb.append(StarsIntroActivity.formatTON(stake));
-        sb.append("  ").append(ButtonSpan.make("change", () -> {
+        sb.append("  ").append(ButtonSpan.make(getString(R.string.StakeDiceToastChange), () -> {
             new StakedDiceSheet(f.getContext(), f.getCurrentAccount(), f.getResourceProvider(), send).show();
         }, fragment.getResourceProvider()));
         AndroidUtilities.removeFromParent(layout.textView);

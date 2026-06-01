@@ -30,6 +30,15 @@ public class ViewOutlineProviderImpl {
         };
     }
 
+    public static ViewOutlineProvider boundsWithPaddingFromViewAndRoundRect(float radius) {
+        return new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(view.getPaddingLeft(), view.getPaddingTop(), view.getMeasuredWidth() - view.getPaddingRight(), view.getMeasuredHeight() - view.getPaddingBottom(), radius);
+            }
+        };
+    }
+
     public static ViewOutlineProvider boundsWithPaddingRoundRect(int padding, float radius) {
         return new ViewOutlineProvider() {
             @Override
