@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.inset;
+package org.Tajgram.ui.Components.inset;
 
 import android.view.View;
 
@@ -7,9 +7,9 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.ui.ActionBar.AdjustPanLayoutHelper;
 
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.VariableFloat;

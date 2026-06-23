@@ -1,20 +1,20 @@
-package org.telegram.ui.Charts.view_data;
+package org.Tajgram.ui.Charts.view_data;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChannelMonetizationLayout;
-import org.telegram.ui.Charts.data.ChartData;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChannelMonetizationLayout;
+import org.Tajgram.ui.Charts.data.ChartData;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;

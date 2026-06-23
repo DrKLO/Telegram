@@ -1,8 +1,8 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -30,30 +30,30 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LoadingDrawable;
-import org.telegram.ui.Components.Scroller;
-import org.telegram.ui.Components.StaticLayoutEx;
-import org.telegram.ui.Components.Text;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LoadingDrawable;
+import org.Tajgram.ui.Components.Scroller;
+import org.Tajgram.ui.Components.StaticLayoutEx;
+import org.Tajgram.ui.Components.Text;
 
 import java.util.ArrayList;
 

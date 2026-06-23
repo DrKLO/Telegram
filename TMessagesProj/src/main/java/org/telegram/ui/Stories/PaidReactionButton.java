@@ -1,10 +1,10 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.ilerp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.ui.Stories.HighlightMessageSheet.TIER_COLOR1;
-import static org.telegram.ui.Stories.HighlightMessageSheet.getTierOption;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.ilerp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.TIER_COLOR1;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.getTierOption;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -31,28 +31,28 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedColor;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.Text;
-import org.telegram.ui.Components.blur3.StrokeDrawable;
-import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stars.StarsReactionsSheet;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedColor;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.Text;
+import org.Tajgram.ui.Components.blur3.StrokeDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stars.StarsReactionsSheet;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import android.Manifest;
 import android.app.KeyguardManager;
@@ -24,23 +24,23 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.XiaomiUtilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.ui.Components.PermissionRequest;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.VoIPFragment;
-import org.telegram.ui.VoIPPermissionActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.XiaomiUtilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.ui.Components.PermissionRequest;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.VoIPFragment;
+import org.Tajgram.ui.VoIPPermissionActivity;
 
 import java.util.ArrayList;
 

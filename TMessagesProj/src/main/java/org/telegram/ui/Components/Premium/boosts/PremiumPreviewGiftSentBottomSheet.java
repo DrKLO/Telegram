@@ -1,11 +1,11 @@
-package org.telegram.ui.Components.Premium.boosts;
+package org.Tajgram.ui.Components.Premium.boosts;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.replaceTags;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getPluralString;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.replaceTags;
+import static org.Tajgram.messenger.LocaleController.formatPluralString;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getPluralString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -22,20 +22,20 @@ import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.PremiumGradient;
-import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
-import org.telegram.ui.Components.Premium.boosts.cells.ActionBtnCell;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Premium.PremiumGradient;
+import org.Tajgram.ui.Components.Premium.PremiumPreviewBottomSheet;
+import org.Tajgram.ui.Components.Premium.boosts.cells.ActionBtnCell;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.List;

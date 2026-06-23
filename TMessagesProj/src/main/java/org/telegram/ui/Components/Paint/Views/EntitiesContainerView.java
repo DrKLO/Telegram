@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
 
 import com.google.zxing.common.detector.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 public class EntitiesContainerView extends FrameLayout {
 

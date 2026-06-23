@@ -1,8 +1,8 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.MessagesController.findUpdatesAndRemove;
 
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -10,48 +10,48 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BirthdayController;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_aicompose;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.Components.AIEditorAlert;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CreateBotAlert;
-import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
-import org.telegram.ui.Components.SharedMediaLayout;
-import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.Gifts.GiftSheet;
-import org.telegram.ui.Stars.BotStarsActivity;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stories.recorder.StoryRecorder;
-import org.telegram.ui.TON.TONIntroActivity;
-import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
-import org.telegram.ui.web.WebBrowserSettings;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BirthdayController;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_aicompose;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.Components.AIEditorAlert;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CreateBotAlert;
+import org.Tajgram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
+import org.Tajgram.ui.Components.SharedMediaLayout;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.ui.Gifts.GiftSheet;
+import org.Tajgram.ui.Stars.BotStarsActivity;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.Stories.recorder.StoryRecorder;
+import org.Tajgram.ui.TON.TONIntroActivity;
+import org.Tajgram.ui.bots.ChannelAffiliateProgramsFragment;
+import org.Tajgram.ui.web.WebBrowserSettings;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -104,7 +104,7 @@ public class LinkManager {
         if (host == null) return false;
         final Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host.toLowerCase());
         final boolean isPrefix = prefixMatcher.find();
-        if (!"telegram.me".equalsIgnoreCase(host) && !"t.me".equalsIgnoreCase(host) && !"telegram.dog".equalsIgnoreCase(host) && !isPrefix)
+        if (!"Tajgram.me".equalsIgnoreCase(host) && !"t.me".equalsIgnoreCase(host) && !"Tajgram.dog".equalsIgnoreCase(host) && !isPrefix)
             return false;
 
         if (isPrefix) {
@@ -1515,7 +1515,7 @@ public class LinkManager {
                     String host = uri.getHost().toLowerCase();
                     Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
                     boolean isPrefix = prefixMatcher.find();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
+                    if (host.equals("Tajgram.me") || host.equals("t.me") || host.equals("Tajgram.dog") || isPrefix) {
                         ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
                         if (segments.size() > 0 && segments.get(0).equals("s")) {
                             segments.remove(0);

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -16,8 +16,8 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class SlideChooseView extends View {
 

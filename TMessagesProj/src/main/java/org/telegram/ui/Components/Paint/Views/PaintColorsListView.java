@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -14,10 +14,10 @@ import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Paint.PersistColorPalette;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.Paint.PersistColorPalette;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 public class PaintColorsListView extends RecyclerListView {
     private static Paint checkerboardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

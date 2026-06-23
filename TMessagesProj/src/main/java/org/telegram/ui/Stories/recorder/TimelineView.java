@@ -1,8 +1,8 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -36,18 +36,18 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.Components.Scroller;
-import org.telegram.ui.Components.Text;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.BlurringShader;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.Components.Scroller;
+import org.Tajgram.ui.Components.Text;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

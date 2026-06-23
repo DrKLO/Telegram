@@ -1,15 +1,15 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DocumentObject;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class StickerImageView extends BackupImageView implements NotificationCenter.NotificationCenterDelegate {
 

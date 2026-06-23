@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,13 +12,13 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
 
 public class SponsoredMessageInfoView extends FrameLayout {
 

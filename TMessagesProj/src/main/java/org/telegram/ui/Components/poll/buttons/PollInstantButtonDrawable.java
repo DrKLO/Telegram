@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.poll.buttons;
+package org.Tajgram.ui.Components.poll.buttons;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -10,12 +10,12 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.utils.DrawableUtils;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.RadialProgress;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.utils.DrawableUtils;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.RadialProgress;
 
 import me.vkryl.android.animator.BoolAnimator;
 

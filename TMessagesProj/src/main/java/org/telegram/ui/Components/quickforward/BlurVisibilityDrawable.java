@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.quickforward;
+package org.Tajgram.ui.Components.quickforward;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 public class BlurVisibilityDrawable extends Drawable {
 

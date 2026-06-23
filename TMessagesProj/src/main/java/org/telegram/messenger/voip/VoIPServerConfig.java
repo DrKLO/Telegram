@@ -1,9 +1,9 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
 
 /**
  * Created by grishka on 01.03.17.

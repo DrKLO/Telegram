@@ -1,19 +1,19 @@
 /*
- * This is the source code of Telegram for Android v. 6.x.x.
+ * This is the source code of Tajgram for Android v. 6.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2020.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.LocaleController.formatPluralString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -73,48 +73,48 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.messenger.camera.CameraView;
-import org.telegram.messenger.utils.DrawableUtils;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BasePermissionsActivity;
-import org.telegram.ui.Cells.PhotoAttachCameraCell;
-import org.telegram.ui.Cells.PhotoAttachPermissionCell;
-import org.telegram.ui.Cells.PhotoAttachPhotoCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
-import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stories.recorder.AlbumButton;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.VideoEditedInfo;
+import org.Tajgram.messenger.camera.CameraController;
+import org.Tajgram.messenger.camera.CameraView;
+import org.Tajgram.messenger.utils.DrawableUtils;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenu;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BasePermissionsActivity;
+import org.Tajgram.ui.Cells.PhotoAttachCameraCell;
+import org.Tajgram.ui.Cells.PhotoAttachPermissionCell;
+import org.Tajgram.ui.Cells.PhotoAttachPhotoCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.blur3.capture.IBlur3Capture;
+import org.Tajgram.ui.Components.blur3.capture.IBlur3Hash;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PhotoViewer;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.Stories.recorder.AlbumButton;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

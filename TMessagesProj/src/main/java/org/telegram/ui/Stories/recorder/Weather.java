@@ -1,6 +1,6 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -15,26 +15,26 @@ import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.AbstractSerializedData;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.PermissionRequest;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.AbstractSerializedData;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.PermissionRequest;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.DarkThemeResourceProvider;
 
 
 import java.util.Calendar;

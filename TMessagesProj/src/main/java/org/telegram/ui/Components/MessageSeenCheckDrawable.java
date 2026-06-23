@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -9,9 +9,9 @@ import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.DialogCell;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.DialogCell;
 
 public class MessageSeenCheckDrawable {
 

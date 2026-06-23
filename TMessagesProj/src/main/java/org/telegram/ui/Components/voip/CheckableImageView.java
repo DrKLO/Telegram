@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Grishka, 2013-2016.
  */
 
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.content.Context;
 import android.util.AttributeSet;

@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
 import android.content.Context;
@@ -29,24 +29,24 @@ import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MessageBackgroundDrawable;
-import org.telegram.ui.Components.RectOld;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Stories.recorder.PreviewView;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Components.BlurringShader;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MessageBackgroundDrawable;
+import org.Tajgram.ui.Components.RectOld;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Stories.recorder.PreviewView;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
 import java.util.ArrayList;

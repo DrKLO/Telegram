@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -21,14 +21,14 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 

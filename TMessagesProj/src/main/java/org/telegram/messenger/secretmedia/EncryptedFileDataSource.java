@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger.secretmedia;
+package org.Tajgram.messenger.secretmedia;
 
 import static java.lang.Math.min;
 
@@ -22,9 +22,9 @@ import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.EOFException;
 import java.io.File;

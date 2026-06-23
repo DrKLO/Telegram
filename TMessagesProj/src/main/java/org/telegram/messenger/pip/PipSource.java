@@ -1,4 +1,4 @@
-package org.telegram.messenger.pip;
+package org.Tajgram.messenger.pip;
 
 import android.app.Activity;
 import android.app.PictureInPictureParams;
@@ -11,15 +11,15 @@ import androidx.annotation.RequiresApi;
 
 import com.google.android.exoplayer2.Player;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.pip.activity.IPipActivity;
-import org.telegram.messenger.pip.activity.IPipActivityActionListener;
-import org.telegram.messenger.pip.source.IPipSourceDelegate;
-import org.telegram.messenger.pip.source.PipSourceHandlerState2;
-import org.telegram.messenger.pip.utils.PipPositionObserver;
-import org.telegram.messenger.pip.utils.PipSourceParams;
-import org.telegram.messenger.pip.utils.PipUtils;
-import org.telegram.ui.Stories.LiveStoryPipOverlay;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.pip.activity.IPipActivity;
+import org.Tajgram.messenger.pip.activity.IPipActivityActionListener;
+import org.Tajgram.messenger.pip.source.IPipSourceDelegate;
+import org.Tajgram.messenger.pip.source.PipSourceHandlerState2;
+import org.Tajgram.messenger.pip.utils.PipPositionObserver;
+import org.Tajgram.messenger.pip.utils.PipSourceParams;
+import org.Tajgram.messenger.pip.utils.PipUtils;
+import org.Tajgram.ui.Stories.LiveStoryPipOverlay;
 import org.webrtc.TextureViewRenderer;
 
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
-package org.telegram.ui.bots;
+package org.Tajgram.ui.bots;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -18,17 +18,17 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedColor;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.CircularProgressDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedColor;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.CircularProgressDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.voip.CellFlickerDrawable;
 
 public class BotButtons extends FrameLayout {
 

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -10,17 +10,17 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Reactions.ReactionImageHolder;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.RectOld;
-import org.telegram.ui.Components.Size;
-import org.telegram.ui.Stories.StoryReactionWidgetBackground;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.Reactions.ReactionImageHolder;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Components.RectOld;
+import org.Tajgram.ui.Components.Size;
+import org.Tajgram.ui.Stories.StoryReactionWidgetBackground;
 
 import java.util.List;
 import java.util.Objects;

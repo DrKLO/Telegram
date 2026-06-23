@@ -1,14 +1,14 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 public class RichTableCellHost extends FrameLayout {
 

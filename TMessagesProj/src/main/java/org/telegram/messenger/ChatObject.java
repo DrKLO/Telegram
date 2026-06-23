@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -19,14 +19,14 @@ import androidx.collection.LongSparseArray;
 
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.messenger.voip.Instance;
-import org.telegram.messenger.voip.VoIPService;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.GroupCallActivity;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.messenger.voip.Instance;
+import org.Tajgram.messenger.voip.VoIPService;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.GroupCallActivity;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

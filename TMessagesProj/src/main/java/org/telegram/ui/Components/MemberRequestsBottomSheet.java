@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
@@ -8,15 +8,15 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Delegates.MemberRequestsDelegate;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Delegates.MemberRequestsDelegate;
+import org.Tajgram.ui.LaunchActivity;
 
 public class MemberRequestsBottomSheet extends UsersAlertBase {
 

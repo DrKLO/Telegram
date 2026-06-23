@@ -1,6 +1,6 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -23,10 +23,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.tgnet.AbstractSerializedData;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.TextStyleSpan;
+import org.Tajgram.tgnet.AbstractSerializedData;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.TextStyleSpan;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;

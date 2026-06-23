@@ -1,6 +1,6 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
-import org.telegram.tgnet.tl.TL_iv;
+import org.Tajgram.tgnet.tl.TL_iv;
 
 public class BlockRow {
 

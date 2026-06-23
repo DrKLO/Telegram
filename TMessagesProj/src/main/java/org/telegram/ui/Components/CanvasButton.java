@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
@@ -18,9 +18,9 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.BaseCell;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.BaseCell;
 
 import java.util.ArrayList;
 

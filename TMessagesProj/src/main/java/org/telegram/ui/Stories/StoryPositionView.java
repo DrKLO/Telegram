@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,10 +8,10 @@ import android.widget.FrameLayout;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Components.AnimatedTextView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.Cells.DialogCell;
+import org.Tajgram.ui.Components.AnimatedTextView;
 
 public class StoryPositionView {
 

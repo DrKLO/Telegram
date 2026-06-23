@@ -1,4 +1,4 @@
-package org.telegram.ui.bots;
+package org.Tajgram.ui.bots;
 
 
 import android.net.Uri;
@@ -6,9 +6,9 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
 
 public class WebViewRequestProps {
 

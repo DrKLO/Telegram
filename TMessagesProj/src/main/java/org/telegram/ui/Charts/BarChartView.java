@@ -1,4 +1,4 @@
-package org.telegram.ui.Charts;
+package org.Tajgram.ui.Charts;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -7,8 +7,8 @@ import android.util.Log;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.ui.Charts.data.ChartData;
-import org.telegram.ui.Charts.view_data.BarViewData;
+import org.Tajgram.ui.Charts.data.ChartData;
+import org.Tajgram.ui.Charts.view_data.BarViewData;
 
 public class BarChartView extends BaseChartView<ChartData, BarViewData> {
 

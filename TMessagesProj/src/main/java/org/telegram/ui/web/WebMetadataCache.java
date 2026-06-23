@@ -1,20 +1,20 @@
-package org.telegram.ui.web;
+package org.Tajgram.ui.web;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.text.TextUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

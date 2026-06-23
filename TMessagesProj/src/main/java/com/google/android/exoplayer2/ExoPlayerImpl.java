@@ -103,7 +103,7 @@ import com.google.android.exoplayer2.video.spherical.SphericalGLSurfaceView;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
-import org.telegram.messenger.DispatchQueue;
+import org.Tajgram.messenger.DispatchQueue;
 
 import java.util.ArrayList;
 import java.util.Collections;

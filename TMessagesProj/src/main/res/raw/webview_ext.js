@@ -1,5 +1,5 @@
 /*
- *  Telegram-Android browser extension
+ *  Tajgram-Android browser extension
  *
  *  # Gestures
  *  This script captures whether touch event is consumed by a website, to otherwise apply

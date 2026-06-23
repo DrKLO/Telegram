@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -8,7 +8,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 public class BitmapShaderTools {
 

@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.Manifest;
 import android.content.Context;
@@ -36,25 +36,25 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.LocationController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.URLSpanNoUnderline;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.LocationController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.URLSpanNoUnderline;
+import org.Tajgram.ui.Components.voip.CellFlickerDrawable;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

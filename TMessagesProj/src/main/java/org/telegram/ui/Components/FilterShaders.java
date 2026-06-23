@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -7,13 +7,13 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

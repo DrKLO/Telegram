@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -65,59 +65,59 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.IMapsProvider;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.LocationController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.utils.ViewOutlineProviderImpl;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Adapters.LocationActivityAdapter;
-import org.telegram.ui.Adapters.LocationActivitySearchAdapter;
-import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LocationCell;
-import org.telegram.ui.Cells.LocationDirectionCell;
-import org.telegram.ui.Cells.LocationLoadingCell;
-import org.telegram.ui.Cells.LocationPoweredCell;
-import org.telegram.ui.Cells.SendLocationCell;
-import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.SharingLiveLocationCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MapPlaceholderDrawable;
-import org.telegram.ui.Components.ProximitySheet;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.SharedMediaLayout;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.UndoView;
-import org.telegram.ui.Stories.recorder.HintView2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.IMapsProvider;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.LocationController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.utils.ViewOutlineProviderImpl;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenu;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Adapters.LocationActivityAdapter;
+import org.Tajgram.ui.Adapters.LocationActivitySearchAdapter;
+import org.Tajgram.ui.Cells.GraySectionCell;
+import org.Tajgram.ui.Cells.HeaderCell;
+import org.Tajgram.ui.Cells.LocationCell;
+import org.Tajgram.ui.Cells.LocationDirectionCell;
+import org.Tajgram.ui.Cells.LocationLoadingCell;
+import org.Tajgram.ui.Cells.LocationPoweredCell;
+import org.Tajgram.ui.Cells.SendLocationCell;
+import org.Tajgram.ui.Cells.ShadowSectionCell;
+import org.Tajgram.ui.Cells.SharingLiveLocationCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.ChatAttachAlertLocationLayout;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MapPlaceholderDrawable;
+import org.Tajgram.ui.Components.ProximitySheet;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.SharedMediaLayout;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.Components.UndoView;
+import org.Tajgram.ui.Stories.recorder.HintView2;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

@@ -1,16 +1,16 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.AlertDialog;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.AlertDialog;
 
 import java.io.InputStream;
 import java.util.ArrayList;

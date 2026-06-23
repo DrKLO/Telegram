@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -20,23 +20,23 @@ import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.EmojiThemes;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Components.ChatThemeBottomSheet;
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ThemeSmallPreviewView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.EmojiThemes;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Components.ChatThemeBottomSheet;
+import org.Tajgram.ui.Components.FlickerLoadingView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ThemeSmallPreviewView;
 
 import java.util.ArrayList;
 

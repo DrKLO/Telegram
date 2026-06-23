@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.util.TypedValue;
@@ -12,12 +12,12 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Stories.recorder.HintView2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Stories.recorder.HintView2;
 
 public class TopViewCell extends LinearLayout implements Theme.Colorable {
 

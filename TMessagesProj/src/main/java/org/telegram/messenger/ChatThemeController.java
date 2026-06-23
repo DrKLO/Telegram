@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,20 +9,20 @@ import android.util.LongSparseArray;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.wallpaper.WallpaperBitmapHolder;
-import org.telegram.messenger.wallpaper.WallpaperGiftPatternPosition;
-import org.telegram.messenger.wallpaper.pgm.PGMImage;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.ResultCallback;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.EmojiThemes;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.theme.ThemeKey;
-import org.telegram.ui.ChatBackgroundDrawable;
+import org.Tajgram.messenger.wallpaper.WallpaperBitmapHolder;
+import org.Tajgram.messenger.wallpaper.WallpaperGiftPatternPosition;
+import org.Tajgram.messenger.wallpaper.pgm.PGMImage;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.ResultCallback;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.EmojiThemes;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.theme.ThemeKey;
+import org.Tajgram.ui.ChatBackgroundDrawable;
 
 import java.io.File;
 import java.io.FileInputStream;

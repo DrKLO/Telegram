@@ -1,4 +1,4 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.content.Context;
 import android.text.SpannableStringBuilder;
@@ -10,19 +10,19 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.URLSpanNoUnderline;
 
 public class SettingsSuggestionCell extends LinearLayout {
 

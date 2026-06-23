@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -16,12 +16,12 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package org.telegram.ui.Charts.view_data;
+package org.Tajgram.ui.Charts.view_data;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -13,12 +13,12 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Charts.BaseChartView;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Charts.BaseChartView;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

@@ -1,9 +1,9 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.content.Context;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 public class FixedHeightEmptyCell extends View {
 

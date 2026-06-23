@@ -1,4 +1,4 @@
-package org.telegram.tlrpc.schema
+package org.Tajgram.tlrpc.schema
 
 data class TlSchema(
     val constructors: List<TlSchemaObject>,

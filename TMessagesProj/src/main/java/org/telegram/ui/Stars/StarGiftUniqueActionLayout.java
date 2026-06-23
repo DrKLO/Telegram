@@ -1,10 +1,10 @@
-package org.telegram.ui.Stars;
+package org.Tajgram.ui.Stars;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.formatPluralStringComma;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.Stars.StarsController.findAttribute;
-import static org.telegram.ui.Stars.StarsIntroActivity.setGiftImage;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.formatPluralStringComma;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.ui.Stars.StarsController.findAttribute;
+import static org.Tajgram.ui.Stars.StarsIntroActivity.setGiftImage;
 
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -16,26 +16,26 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.Text;
-import org.telegram.ui.Gifts.GiftSheet;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.Text;
+import org.Tajgram.ui.Gifts.GiftSheet;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 

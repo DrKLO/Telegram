@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -42,18 +42,18 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BlurSettingsBottomSheet;
-import org.telegram.ui.ChatBackgroundDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.AdjustPanLayoutHelper;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BlurSettingsBottomSheet;
+import org.Tajgram.ui.ChatBackgroundDrawable;
 
 import java.util.ArrayList;
 import java.util.HashSet;

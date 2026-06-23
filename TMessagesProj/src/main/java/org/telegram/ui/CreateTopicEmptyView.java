@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.graphics.Paint;
@@ -8,18 +8,18 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DocumentObject;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 public class CreateTopicEmptyView extends LinearLayout {
 

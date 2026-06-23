@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <share-target android:targetClass="org.telegram.ui.LaunchActivity">
+    <share-target android:targetClass="org.Tajgram.ui.LaunchActivity">
         <data android:mimeType="*/*" />
-        <category android:name="org.telegram.messenger.SHORTCUT_SHARE" />
+        <category android:name="org.Tajgram.messenger.SHORTCUT_SHARE" />
     </share-target>
 
     <capability android:name="actions.intent.GET_THING">

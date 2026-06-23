@@ -1,9 +1,9 @@
-package org.telegram.ui.web;
+package org.Tajgram.ui.web;
 
 
 import android.os.AsyncTask;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

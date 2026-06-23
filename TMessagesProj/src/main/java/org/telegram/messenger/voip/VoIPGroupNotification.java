@@ -1,4 +1,4 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -19,24 +19,24 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.DragAndDropPermissions;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.GroupCallSheet;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.VoIPFragment;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.ui.GroupCallSheet;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.VoIPFragment;
 
 import java.util.ArrayList;
 import java.util.HashSet;

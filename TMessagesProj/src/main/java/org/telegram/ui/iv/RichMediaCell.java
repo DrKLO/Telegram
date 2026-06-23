@@ -1,6 +1,6 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -21,20 +21,20 @@ import java.io.File;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RadialProgress2;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RadialProgress2;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 
@@ -73,7 +73,7 @@ public class RichMediaCell extends FrameLayout
         radialProgress = new RadialProgress2(this, resourcesProvider);
         radialProgress.setProgressColor(0xffffffff);
         radialProgress.setColors(0x66000000, 0x7f000000, 0xffffffff, 0xffd9d9d9);
-        radialProgress.setIcon(org.telegram.ui.Components.MediaActionDrawable.ICON_CANCEL, false, false);
+        radialProgress.setIcon(org.Tajgram.ui.Components.MediaActionDrawable.ICON_CANCEL, false, false);
 
         placeholderIcon = getContext().getResources().getDrawable(R.drawable.msg_filled_data_photos).mutate();
 
@@ -127,7 +127,7 @@ public class RichMediaCell extends FrameLayout
             }
             android.util.Log.d("RICHED", "RichMediaCell.applyMedia VIDEO mediaLoc=" + (mediaLoc != null) + " imageLoc=" + (imageLoc != null) + " thumbLoc=" + (thumbLoc != null) + " localBitmap=" + (localThumbDrawable != null) + " path=" + ms.localPath);
             imageReceiver.setImage(
-                mediaLoc, org.telegram.messenger.ImageLoader.AUTOPLAY_FILTER,
+                mediaLoc, org.Tajgram.messenger.ImageLoader.AUTOPLAY_FILTER,
                 imageLoc, filter,
                 thumbLoc, filter,
                 localThumbDrawable, 0, null, ms.document, 0

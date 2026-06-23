@@ -1,6 +1,6 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -33,14 +33,14 @@ import androidx.core.graphics.ColorUtils;
 
 import com.google.android.gms.vision.Frame;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 

@@ -1,6 +1,6 @@
-package org.telegram.ui.Business;
+package org.Tajgram.ui.Business;
 
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -10,29 +10,29 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CircularProgressDrawable;
-import org.telegram.ui.Components.CrossfadeDrawable;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BotWebViewVibrationEffect;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Cells.TextCheckCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CircularProgressDrawable;
+import org.Tajgram.ui.Components.CrossfadeDrawable;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 

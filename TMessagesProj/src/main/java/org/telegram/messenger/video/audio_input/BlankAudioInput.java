@@ -1,6 +1,6 @@
-package org.telegram.messenger.video.audio_input;
+package org.Tajgram.messenger.video.audio_input;
 
-import org.telegram.messenger.video.AudioConversions;
+import org.Tajgram.messenger.video.AudioConversions;
 
 public class BlankAudioInput extends AudioInput {
 

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -7,18 +7,18 @@ import android.graphics.RectF;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.AnimatedFileDrawable;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RectOld;
-import org.telegram.ui.Components.Size;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.AnimatedFileDrawable;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RectOld;
+import org.Tajgram.ui.Components.Size;
 
 public class StickerView extends EntityView {
 

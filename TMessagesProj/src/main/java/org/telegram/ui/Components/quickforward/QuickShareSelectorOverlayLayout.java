@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.quickforward;
+package org.Tajgram.ui.Components.quickforward;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -8,16 +8,16 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.Bulletin;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Components.Bulletin;
 
 import java.util.ArrayList;
 import java.util.HashMap;

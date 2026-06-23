@@ -1,8 +1,8 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.TranslateController.normalizeLanguage;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.TranslateController.normalizeLanguage;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -51,25 +51,25 @@ import com.google.common.base.Charsets;
 
 import org.json.JSONArray;
 import org.json.JSONTokener;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LanguageDetector;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.TranslateController;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.XiaomiUtilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.LanguageDetector;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.TranslateController;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.XiaomiUtilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.Premium.boosts.cells;
+package org.Tajgram.ui.Components.Premium.boosts.cells;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -16,19 +16,19 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LoadingSpan;
-import org.telegram.ui.Components.RadioButton;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LoadingSpan;
+import org.Tajgram.ui.Components.RadioButton;
 
 public class StarGiveawayOptionCell extends FrameLayout {
 

@@ -1,23 +1,23 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.find;
-import static org.telegram.messenger.AndroidUtilities.findDocument;
-import static org.telegram.messenger.AndroidUtilities.replaceTags;
-import static org.telegram.messenger.LocaleController.formatPluralSpannable;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.formatPluralStringComma;
-import static org.telegram.messenger.LocaleController.formatSpannable;
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.find;
+import static org.Tajgram.messenger.AndroidUtilities.findDocument;
+import static org.Tajgram.messenger.AndroidUtilities.replaceTags;
+import static org.Tajgram.messenger.LocaleController.formatPluralSpannable;
+import static org.Tajgram.messenger.LocaleController.formatPluralString;
+import static org.Tajgram.messenger.LocaleController.formatPluralStringComma;
+import static org.Tajgram.messenger.LocaleController.formatSpannable;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -50,58 +50,58 @@ import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.ringtone.RingtoneDataStore;
-import org.telegram.messenger.utils.tlutils.AmountUtils;
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Business.QuickRepliesController;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.MultiLayoutTypingAnimator;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.EllipsizeSpanAnimator;
-import org.telegram.ui.Components.FormattedDateSpan;
-import org.telegram.ui.Components.Forum.ForumBubbleDrawable;
-import org.telegram.ui.Components.Forum.ForumUtilities;
-import org.telegram.ui.Components.LatexInliner;
-import org.telegram.ui.Components.QuoteSpan;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.Reactions.ReactionsUtils;
-import org.telegram.ui.Components.SquigglyLinesSpan;
-import org.telegram.ui.Components.Text;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.TranscribeButton;
-import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.URLSpanBotCommand;
-import org.telegram.ui.Components.URLSpanBrowser;
-import org.telegram.ui.Components.URLSpanMono;
-import org.telegram.ui.Components.URLSpanNoUnderline;
-import org.telegram.ui.Components.URLSpanNoUnderlineBold;
-import org.telegram.ui.Components.URLSpanReplacement;
-import org.telegram.ui.Components.URLSpanUserMention;
-import org.telegram.ui.Components.VideoPlayer;
-import org.telegram.ui.Components.WebPlayerView;
-import org.telegram.ui.Components.poll.PollAttachedMediaPack;
-import org.telegram.ui.Components.spoilers.SpoilerEffect;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PeerColorActivity;
-import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stories.StoriesController;
-import org.telegram.ui.web.BotWebViewContainer;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.messenger.ringtone.RingtoneDataStore;
+import org.Tajgram.messenger.utils.tlutils.AmountUtils;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Business.QuickRepliesController;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.MultiLayoutTypingAnimator;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.EllipsizeSpanAnimator;
+import org.Tajgram.ui.Components.FormattedDateSpan;
+import org.Tajgram.ui.Components.Forum.ForumBubbleDrawable;
+import org.Tajgram.ui.Components.Forum.ForumUtilities;
+import org.Tajgram.ui.Components.LatexInliner;
+import org.Tajgram.ui.Components.QuoteSpan;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Components.Reactions.ReactionsUtils;
+import org.Tajgram.ui.Components.SquigglyLinesSpan;
+import org.Tajgram.ui.Components.Text;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.TranscribeButton;
+import org.Tajgram.ui.Components.TypefaceSpan;
+import org.Tajgram.ui.Components.URLSpanBotCommand;
+import org.Tajgram.ui.Components.URLSpanBrowser;
+import org.Tajgram.ui.Components.URLSpanMono;
+import org.Tajgram.ui.Components.URLSpanNoUnderline;
+import org.Tajgram.ui.Components.URLSpanNoUnderlineBold;
+import org.Tajgram.ui.Components.URLSpanReplacement;
+import org.Tajgram.ui.Components.URLSpanUserMention;
+import org.Tajgram.ui.Components.VideoPlayer;
+import org.Tajgram.ui.Components.WebPlayerView;
+import org.Tajgram.ui.Components.poll.PollAttachedMediaPack;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PeerColorActivity;
+import org.Tajgram.ui.PhotoViewer;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.Stories.StoriesController;
+import org.Tajgram.ui.web.BotWebViewContainer;
 
 import java.io.BufferedReader;
 import java.io.File;

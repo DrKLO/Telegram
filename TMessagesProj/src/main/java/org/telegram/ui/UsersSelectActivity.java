@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -45,39 +45,39 @@ import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Adapters.SearchAdapterHelper;
-import org.telegram.ui.Business.BusinessRecipientsHelper;
-import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.GroupCreateUserCell;
-import org.telegram.ui.Components.AnimatedAvatarContainer;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.FragmentFloatingButton;
-import org.telegram.ui.Components.GroupCreateSpan;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.StickerEmptyView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Adapters.SearchAdapterHelper;
+import org.Tajgram.ui.Business.BusinessRecipientsHelper;
+import org.Tajgram.ui.Cells.GraySectionCell;
+import org.Tajgram.ui.Cells.GroupCreateUserCell;
+import org.Tajgram.ui.Components.AnimatedAvatarContainer;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.FlickerLoadingView;
+import org.Tajgram.ui.Components.FragmentFloatingButton;
+import org.Tajgram.ui.Components.GroupCreateSpan;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.StickerEmptyView;
 
 import java.util.ArrayList;
 

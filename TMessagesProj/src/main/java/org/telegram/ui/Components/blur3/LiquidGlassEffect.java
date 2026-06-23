@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.blur3;
+package org.Tajgram.ui.Components.blur3;
 
 import android.graphics.Color;
 import android.graphics.RenderEffect;
@@ -7,8 +7,8 @@ import android.graphics.RuntimeShader;
 
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
 
 @RequiresApi(api = 33)
 public class LiquidGlassEffect {

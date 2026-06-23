@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Tajgram for Android v. 1.3.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.ImageLoader.getHttpUrlExtension;
+import static org.Tajgram.messenger.ImageLoader.getHttpUrlExtension;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -35,19 +35,19 @@ import androidx.annotation.Keep;
 
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AnimatedFileDrawable;
-import org.telegram.ui.Components.AttachableDrawable;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ClipRoundedDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LoadingStickerDrawable;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RecyclableDrawable;
-import org.telegram.ui.Components.VectorAvatarThumbDrawable;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.AnimatedFileDrawable;
+import org.Tajgram.ui.Components.AttachableDrawable;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.ClipRoundedDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LoadingStickerDrawable;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RecyclableDrawable;
+import org.Tajgram.ui.Components.VectorAvatarThumbDrawable;
 
 import java.io.File;
 import java.util.ArrayList;

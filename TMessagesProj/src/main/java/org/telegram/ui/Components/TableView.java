@@ -1,8 +1,8 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.ui.Stars.StarsIntroActivity.StarsTransactionView.getPlatformDrawable;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -29,27 +29,27 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
-import org.telegram.ui.ActionBar.TextViewWithLoading;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.AvatarSpan;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.spoilers.SpoilersTextView;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.recorder.HintView2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.SimpleTextView;
+import org.Tajgram.ui.ActionBar.TextViewWithLoading;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.AvatarSpan;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.spoilers.SpoilersTextView;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.Date;

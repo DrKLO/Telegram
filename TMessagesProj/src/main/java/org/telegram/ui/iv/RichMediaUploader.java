@@ -1,12 +1,12 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
 import android.graphics.BitmapFactory;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
 
 public class RichMediaUploader implements NotificationCenter.NotificationCenterDelegate {
 

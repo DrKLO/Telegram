@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,16 +19,16 @@ import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.ChatActivityEnterViewAnimatedIconView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.PaintTypeface;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.ChatActivityEnterViewAnimatedIconView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Paint.PaintTypeface;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
 
 import java.util.Arrays;
 import java.util.List;

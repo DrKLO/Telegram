@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x
+ * This is the source code of Tajgram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -43,19 +43,19 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Cells.PhotoEditRadioCell;
-import org.telegram.ui.Cells.PhotoEditToolCell;
-import org.telegram.ui.Stories.recorder.StoryRecorder;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.Cells.PhotoEditRadioCell;
+import org.Tajgram.ui.Cells.PhotoEditToolCell;
+import org.Tajgram.ui.Stories.recorder.StoryRecorder;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

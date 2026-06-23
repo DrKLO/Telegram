@@ -3,14 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
-    <application android:name="org.telegram.messenger.ApplicationLoaderImpl" tools:replace="name">
+    <application android:name="org.Tajgram.messenger.ApplicationLoaderImpl" tools:replace="name">
         <service
-            android:name="org.telegram.messenger.GoogleVoiceClientService"
+            android:name="org.Tajgram.messenger.GoogleVoiceClientService"
             android:exported="true"
             android:foregroundServiceType="dataSync"
         />
         <activity
-            android:name="org.telegram.messenger.GoogleVoiceClientActivity"
+            android:name="org.Tajgram.messenger.GoogleVoiceClientActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.voicesearch.SEND_MESSAGE_TO_CONTACTS" />
@@ -20,7 +20,7 @@
         </activity>
 
         <service
-            android:name="org.telegram.messenger.SMSJobsNotification"
+            android:name="org.Tajgram.messenger.SMSJobsNotification"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="dataSync|remoteMessaging"

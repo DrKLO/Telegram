@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -60,25 +60,25 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Adapters.FiltersView;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CloseProgressDrawable2;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Adapters.FiltersView;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.CloseProgressDrawable2;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 import java.util.ArrayList;
 import java.util.HashMap;

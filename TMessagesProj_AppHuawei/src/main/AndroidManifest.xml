@@ -10,14 +10,14 @@
         <package android:name="com.huawei.maps.app"/>
     </queries>
 
-    <application android:name="org.telegram.messenger.HuaweiApplicationLoader" tools:replace="name">
+    <application android:name="org.Tajgram.messenger.HuaweiApplicationLoader" tools:replace="name">
         <service
-            android:name="org.telegram.messenger.GoogleVoiceClientService"
+            android:name="org.Tajgram.messenger.GoogleVoiceClientService"
             android:exported="true"
             android:foregroundServiceType="dataSync"
         />
         <activity
-            android:name="org.telegram.messenger.GoogleVoiceClientActivity"
+            android:name="org.Tajgram.messenger.GoogleVoiceClientActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.voicesearch.SEND_MESSAGE_TO_CONTACTS" />
@@ -27,7 +27,7 @@
         </activity>
 
         <service
-            android:name="org.telegram.messenger.HuaweiPushListenerService"
+            android:name="org.Tajgram.messenger.HuaweiPushListenerService"
             android:exported="false"
             android:foregroundServiceType="dataSync|remoteMessaging"
         >

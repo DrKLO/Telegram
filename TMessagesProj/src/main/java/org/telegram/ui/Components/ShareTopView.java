@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -14,20 +14,20 @@ import android.widget.LinearLayout;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.SimpleTextView;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.SimpleTextView;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.HashMap;

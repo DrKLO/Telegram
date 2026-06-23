@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.blur3.source;
+package org.Tajgram.ui.Components.blur3.source;
 
 import android.graphics.Canvas;
 import android.graphics.RecordingCanvas;
@@ -10,10 +10,10 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
-import org.telegram.ui.Components.blur3.RenderNodeWithHash;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
+import org.Tajgram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
+import org.Tajgram.ui.Components.blur3.RenderNodeWithHash;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
 
 import java.util.List;
 

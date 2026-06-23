@@ -1,13 +1,13 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.os.Looper;
 import android.util.LongSparseArray;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.SQLite.SQLiteDatabase;
-import org.telegram.SQLite.SQLiteException;
-import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.ui.Storage.CacheModel;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.SQLite.SQLiteDatabase;
+import org.Tajgram.SQLite.SQLiteException;
+import org.Tajgram.SQLite.SQLitePreparedStatement;
+import org.Tajgram.ui.Storage.CacheModel;
 
 import java.io.File;
 import java.io.IOException;

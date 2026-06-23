@@ -1,4 +1,4 @@
-package org.telegram.ui.Adapters;
+package org.Tajgram.ui.Adapters;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 /**
  * PaddedListAdapter wraps list adapter and adds transparent padding view at the start

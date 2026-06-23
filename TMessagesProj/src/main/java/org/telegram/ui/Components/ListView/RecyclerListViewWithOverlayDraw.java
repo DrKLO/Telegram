@@ -1,10 +1,10 @@
-package org.telegram.ui.Components.ListView;
+package org.Tajgram.ui.Components.ListView;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 public class RecyclerListViewWithOverlayDraw extends RecyclerListView {
 

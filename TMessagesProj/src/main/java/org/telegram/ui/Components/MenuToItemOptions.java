@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -10,11 +10,11 @@ import android.view.SubMenu;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.FloatingToolbar;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.FloatingToolbar;
 
 public class MenuToItemOptions implements Menu {
 

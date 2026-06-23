@@ -1,16 +1,16 @@
-package org.telegram.messenger.ringtone;
+package org.Tajgram.messenger.ringtone;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.Components.Bulletin;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.Components.Bulletin;
 
 import java.io.File;
 

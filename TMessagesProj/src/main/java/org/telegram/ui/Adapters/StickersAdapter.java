@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 2.0.x.
+ * This is the source code of Tajgram for Android v. 2.0.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Adapters;
+package org.Tajgram.ui.Adapters;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -14,18 +14,18 @@ import android.view.ViewGroup;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.EmojiReplacementCell;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.EmojiReplacementCell;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;

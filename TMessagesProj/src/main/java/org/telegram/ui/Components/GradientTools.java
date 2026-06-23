@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -10,8 +10,8 @@ import android.graphics.Shader;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Utilities;
 
 public class GradientTools {
 

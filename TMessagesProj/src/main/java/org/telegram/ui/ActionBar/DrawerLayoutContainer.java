@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -24,9 +24,9 @@ import androidx.core.view.DisplayCutoutCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
 
 public class DrawerLayoutContainer extends FrameLayout {
 

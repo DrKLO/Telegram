@@ -1,20 +1,20 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.messenger.DocumentObject;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 import java.util.Objects;
 

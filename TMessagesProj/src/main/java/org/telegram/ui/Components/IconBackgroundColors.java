@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 public enum IconBackgroundColors {
     BLUE(0xFF1CA5ED, 0xFF1488E1),

@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -78,23 +78,23 @@ import com.google.android.exoplayer2.video.SurfaceNotValidException;
 import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoSize;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.FourierTransform;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.chromecast.ChromecastMedia;
-import org.telegram.messenger.chromecast.ChromecastMediaVariations;
-import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.FourierTransform;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.chromecast.ChromecastMedia;
+import org.Tajgram.messenger.chromecast.ChromecastMediaVariations;
+import org.Tajgram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
 import java.io.IOException;

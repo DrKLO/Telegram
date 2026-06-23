@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -26,18 +26,18 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Components.ColorSpanUnderline;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ProgressButton;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Components.ColorSpanUnderline;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.ProgressButton;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package org.telegram.tlrpc.models
+package org.Tajgram.tlrpc.models
 
-import org.telegram.tlrpc.schema.TlSchemaParamType
+import org.Tajgram.tlrpc.schema.TlSchemaParamType
 
 data class TlSchemeChangelog(
     val constructors: List<TlConstructorChangelog>,

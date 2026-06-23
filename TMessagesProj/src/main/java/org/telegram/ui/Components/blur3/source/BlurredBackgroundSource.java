@@ -1,8 +1,8 @@
-package org.telegram.ui.Components.blur3.source;
+package org.Tajgram.ui.Components.blur3.source;
 
 import android.graphics.Canvas;
 
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
 public interface BlurredBackgroundSource {
     BlurredBackgroundDrawable createDrawable();

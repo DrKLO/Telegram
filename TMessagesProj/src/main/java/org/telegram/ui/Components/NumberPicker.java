@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -40,9 +40,9 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.Locale;
 

@@ -1,4 +1,4 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 
 import static com.googlecode.mp4parser.authoring.tracks.h265.NalUnitTypes.NAL_TYPE_PPS_NUT;
@@ -18,7 +18,7 @@ import com.googlecode.mp4parser.authoring.tracks.h265.H265TrackImpl;
 import com.googlecode.mp4parser.authoring.tracks.h265.NalUnitHeader;
 import com.googlecode.mp4parser.util.ByteBufferByteChannel;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

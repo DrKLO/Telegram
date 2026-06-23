@@ -1,12 +1,12 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.AbstractSerializedData;
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stories;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.AbstractSerializedData;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stories;
 
 public class MessageMediaStoryFull extends TLRPC.TL_messageMediaStory {
 

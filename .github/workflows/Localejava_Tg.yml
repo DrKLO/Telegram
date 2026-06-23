@@ -28,7 +28,7 @@ jobs:
           python3 - <<EOF
           import os
 
-          lc_path = "TMessagesProj/src/main/java/org/telegram/messenger/LocaleController.java"
+          lc_path = "TMessagesProj/src/main/java/org/Tajgram/messenger/LocaleController.java"
           
           if os.path.exists(lc_path):
               with open(lc_path, "r", encoding="utf-8") as f:

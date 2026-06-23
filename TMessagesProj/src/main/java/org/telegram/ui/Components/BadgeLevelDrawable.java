@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -17,8 +17,8 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
 
 public class BadgeLevelDrawable extends Drawable implements Drawable.Callback {
     private final Context context;

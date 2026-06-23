@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -14,26 +14,26 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.SimpleTextView;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.PremiumButtonView;
-import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PremiumPreviewFragment;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.SimpleTextView;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Premium.PremiumButtonView;
+import org.Tajgram.ui.Components.Premium.PremiumFeatureBottomSheet;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PremiumPreviewFragment;
 
 import java.util.Locale;
 

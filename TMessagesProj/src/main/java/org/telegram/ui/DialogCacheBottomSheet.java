@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
@@ -11,20 +11,20 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.StorageDiagramView;
-import org.telegram.ui.Storage.CacheModel;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.CheckBoxCell;
+import org.Tajgram.ui.Cells.TextInfoPrivacyCell;
+import org.Tajgram.ui.Components.BottomSheetWithRecyclerListView;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.StorageDiagramView;
+import org.Tajgram.ui.Storage.CacheModel;
 
 public class DialogCacheBottomSheet extends BottomSheetWithRecyclerListView {
 

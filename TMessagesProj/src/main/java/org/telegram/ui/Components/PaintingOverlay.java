@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -18,17 +18,17 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.Paint.Views.EditTextOutline;
-import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.VideoEditedInfo;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.Paint.Views.EditTextOutline;
+import org.Tajgram.ui.Components.Paint.Views.PaintTextOptionsView;
 
 import java.util.ArrayList;
 import java.util.HashMap;

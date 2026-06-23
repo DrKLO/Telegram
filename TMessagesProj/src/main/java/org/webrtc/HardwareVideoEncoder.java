@@ -30,7 +30,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 import org.webrtc.ThreadUtils.ThreadChecker;
 
 /**

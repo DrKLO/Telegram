@@ -28,12 +28,12 @@ jobs:
           import os
           import re
           # 1. Патчи BaseFragment
-          bf_path = "TMessagesProj/src/main/java/org/telegram/ui/ActionBar/BaseFragment.java"
+          bf_path = "TMessagesProj/src/main/java/org/Tajgram/ui/ActionBar/BaseFragment.java"
           bf_code = """
           // === TAJGRAM SECURITY START ===
-          if (org.telegram.messenger.BuildVars.ANTI_FRAUD_DEVICE_LOCK) {
-              String currentSignature = org.telegram.messenger.AndroidUtilities.getCurrentAppSignature(org.telegram.messenger.ApplicationLoader.applicationContext);
-              if (!org.telegram.messenger.BuildVars.SHA256_SECURITY_LOCK.equalsIgnoreCase(currentSignature)) {
+          if (org.Tajgram.messenger.BuildVars.ANTI_FRAUD_DEVICE_LOCK) {
+              String currentSignature = org.Tajgram.messenger.AndroidUtilities.getCurrentAppSignature(org.Tajgram.messenger.ApplicationLoader.applicationContext);
+              if (!org.Tajgram.messenger.BuildVars.SHA256_SECURITY_LOCK.equalsIgnoreCase(currentSignature)) {
                   return false;
               }
           }
@@ -45,10 +45,10 @@ jobs:
                   content = content.replace("public boolean onFragmentCreate() {", "public boolean onFragmentCreate() {\n" + bf_code)
                   with open(bf_path, "w", encoding="utf-8") as f: f.write(content)
           # 2. Патчи ChatActivity
-          ca_path = "TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java"
+          ca_path = "TMessagesProj/src/main/java/org/Tajgram/ui/ChatActivity.java"
           ca_code = """
               // === TAJGRAM SCREENSHOT LOCK START ===
-              if (org.telegram.messenger.BuildVars.ANTI_SPY_SCREENSHOT_LOCK) {
+              if (org.Tajgram.messenger.BuildVars.ANTI_SPY_SCREENSHOT_LOCK) {
                   if (getParentActivity() != null) {
                       getParentActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
                   }
@@ -61,7 +61,7 @@ jobs:
                   content = content.replace("public void onResume() {", "public void onResume() {\n" + ca_code)
                   with open(ca_path, "w", encoding="utf-8") as f: f.write(content)
           # 3. Навсозии BuildVars.java (Ҷои API_ID ва API_HASH)
-          bv_path = "TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java"
+          bv_path = "TMessagesProj/src/main/java/org/Tajgram/messenger/BuildVars.java"
           if os.path.exists(bv_path):
               with open(bv_path, "r", encoding="utf-8") as f: content = f.read()
               # Regex барои иваз кардани APP_ID

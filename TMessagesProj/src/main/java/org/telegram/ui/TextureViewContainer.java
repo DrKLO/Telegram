@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -8,7 +8,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.ImageReceiver;
+import org.Tajgram.messenger.ImageReceiver;
 
 public class TextureViewContainer extends FrameLayout {
 

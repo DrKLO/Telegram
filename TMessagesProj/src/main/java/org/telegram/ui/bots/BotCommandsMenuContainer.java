@@ -1,6 +1,6 @@
-package org.telegram.ui.bots;
+package org.Tajgram.ui.bots;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -25,12 +25,12 @@ import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
 public class BotCommandsMenuContainer extends FrameLayout implements NestedScrollingParent {
 

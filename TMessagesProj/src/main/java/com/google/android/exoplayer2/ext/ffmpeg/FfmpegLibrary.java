@@ -22,7 +22,7 @@ import com.google.android.exoplayer2.util.LibraryLoader;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.MimeTypes;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.telegram.messenger.NativeLoader;
+import org.Tajgram.messenger.NativeLoader;
 
 /** Configures and queries the underlying native library. */
 public final class FfmpegLibrary {

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -11,12 +11,12 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LiteMode;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 public class ImageWithWavesView extends FrameLayout {
     private final AvatarWavesDrawable avatarWavesDrawable;

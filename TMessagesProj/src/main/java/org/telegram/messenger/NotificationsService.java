@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Tajgram for Android v. 1.3.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Service;
 import android.content.Intent;
@@ -35,7 +35,7 @@ public class NotificationsService extends Service {
         super.onDestroy();
         SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
         if (preferences.getBoolean("pushService", true)) {
-            Intent intent = new Intent("org.telegram.start");
+            Intent intent = new Intent("org.Tajgram.start");
             intent.setPackage(getPackageName());
             sendBroadcast(intent);
         }

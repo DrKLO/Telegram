@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.boosts.adapters;
+package org.Tajgram.ui.Components.Premium.boosts.adapters;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -8,35 +8,35 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
-import org.telegram.ui.Components.Premium.boosts.BoostRepository;
-import org.telegram.ui.Components.Premium.boosts.cells.AddChannelCell;
-import org.telegram.ui.Components.Premium.boosts.cells.BoostTypeCell;
-import org.telegram.ui.Components.Premium.boosts.cells.BoostTypeSingleCell;
-import org.telegram.ui.Components.Premium.boosts.cells.ChatCell;
-import org.telegram.ui.Components.Premium.boosts.cells.DateEndCell;
-import org.telegram.ui.Components.Premium.boosts.cells.EnterPrizeCell;
-import org.telegram.ui.Components.Premium.boosts.cells.HeaderCell;
-import org.telegram.ui.Components.Premium.boosts.cells.ParticipantsTypeCell;
-import org.telegram.ui.Components.Premium.boosts.cells.DurationCell;
-import org.telegram.ui.Components.Premium.boosts.cells.SliderCell;
-import org.telegram.ui.Components.Premium.boosts.cells.StarGiveawayOptionCell;
-import org.telegram.ui.Components.Premium.boosts.cells.SubtitleWithCounterCell;
-import org.telegram.ui.Components.Premium.boosts.cells.SwitcherCell;
-import org.telegram.ui.Components.Premium.boosts.cells.TextInfoCell;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SlideChooseView;
-import org.telegram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ShadowSectionCell;
+import org.Tajgram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.Tajgram.ui.Components.Premium.boosts.BoostRepository;
+import org.Tajgram.ui.Components.Premium.boosts.cells.AddChannelCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.BoostTypeCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.BoostTypeSingleCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.ChatCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.DateEndCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.EnterPrizeCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.HeaderCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.ParticipantsTypeCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.DurationCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.SliderCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.StarGiveawayOptionCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.SubtitleWithCounterCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.SwitcherCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.TextInfoCell;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.SlideChooseView;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -260,7 +260,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 view = new SliderCell(context, resourcesProvider);
                 break;
             case HOLDER_TYPE_SUBTITLE:
-                view = new org.telegram.ui.Cells.HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 3, false, resourcesProvider);
+                view = new org.Tajgram.ui.Cells.HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 3, false, resourcesProvider);
                 view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
                 break;
             case HOLDER_TYPE_SUBTITLE_WITH_COUNTER:
@@ -321,7 +321,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 break;
             }
             case HOLDER_TYPE_SUBTITLE: {
-                org.telegram.ui.Cells.HeaderCell cell = (org.telegram.ui.Cells.HeaderCell) holder.itemView;
+                org.Tajgram.ui.Cells.HeaderCell cell = (org.Tajgram.ui.Cells.HeaderCell) holder.itemView;
                 cell.setText(item.text);
                 break;
             }

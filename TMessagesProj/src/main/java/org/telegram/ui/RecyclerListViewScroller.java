@@ -1,12 +1,12 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.view.animation.Interpolator;
 
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 public class RecyclerListViewScroller {
 

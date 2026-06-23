@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
 import android.content.Context;
 import android.view.View;
@@ -6,11 +6,11 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.voip.NativeInstance;
-import org.telegram.messenger.voip.VideoCapturerDevice;
-import org.telegram.messenger.voip.VoIPService;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.voip.NativeInstance;
+import org.Tajgram.messenger.voip.VideoCapturerDevice;
+import org.Tajgram.messenger.voip.VoIPService;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.LayoutHelper;
 import org.webrtc.EglBase;
 import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;

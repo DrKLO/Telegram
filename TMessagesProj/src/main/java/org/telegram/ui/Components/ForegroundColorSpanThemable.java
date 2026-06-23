@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.text.TextPaint;
 import android.text.style.CharacterStyle;
@@ -6,7 +6,7 @@ import android.text.style.UpdateAppearance;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class ForegroundColorSpanThemable extends CharacterStyle implements UpdateAppearance {
 

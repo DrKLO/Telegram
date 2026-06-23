@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.boosts.cells.selector;
+package org.Tajgram.ui.Components.Premium.boosts.cells.selector;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -6,10 +6,10 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.widget.LinearLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 @SuppressLint("ViewConstructor")
 public class SelectorBtnCell extends LinearLayout {

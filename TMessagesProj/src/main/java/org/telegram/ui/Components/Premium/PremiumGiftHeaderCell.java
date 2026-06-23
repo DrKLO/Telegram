@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,14 +11,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 public class PremiumGiftHeaderCell extends LinearLayout {
     private TLRPC.User user;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -18,11 +18,11 @@ import android.graphics.drawable.Drawable;
 
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class PremiumGradient {
 

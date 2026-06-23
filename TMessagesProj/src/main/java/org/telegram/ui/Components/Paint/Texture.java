@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
@@ -6,8 +6,8 @@ import android.opengl.GLUtils;
 import android.os.Build;
 import android.util.Log;
 
-import org.telegram.messenger.FileLog;
-import org.telegram.ui.Components.Size;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.ui.Components.Size;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

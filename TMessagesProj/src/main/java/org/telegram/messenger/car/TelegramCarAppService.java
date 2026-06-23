@@ -1,11 +1,11 @@
-package org.telegram.messenger.car;
+package org.Tajgram.messenger.car;
 
 import androidx.annotation.NonNull;
 import androidx.car.app.CarAppService;
 import androidx.car.app.Session;
 import androidx.car.app.validation.HostValidator;
 
-import org.telegram.messenger.BuildVars;
+import org.Tajgram.messenger.BuildVars;
 
 public class TelegramCarAppService extends CarAppService {
 

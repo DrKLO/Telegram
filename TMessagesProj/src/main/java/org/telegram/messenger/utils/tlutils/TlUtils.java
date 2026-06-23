@@ -1,14 +1,14 @@
-package org.telegram.messenger.utils.tlutils;
+package org.Tajgram.messenger.utils.tlutils;
 
 import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLObject;
 
-import org.telegram.messenger.MediaDataController;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stars;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stars;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

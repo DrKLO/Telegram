@@ -1,8 +1,8 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.Utilities.clamp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.Utilities.clamp;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -24,12 +24,12 @@ import androidx.annotation.RequiresApi;
 
 import com.google.zxing.common.detector.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ProfileActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ProfileActivity;
 
 public class ProfileMetaballView extends View {
 

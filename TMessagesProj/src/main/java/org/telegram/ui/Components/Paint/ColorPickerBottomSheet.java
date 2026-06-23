@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -35,17 +35,17 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 import androidx.core.util.Consumer;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Paint.Views.PaintColorsListView;
-import org.telegram.ui.Components.Paint.Views.PipettePickerView;
-import org.telegram.ui.Components.ViewPagerFixed;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Paint.Views.PaintColorsListView;
+import org.Tajgram.ui.Components.Paint.Views.PipettePickerView;
+import org.Tajgram.ui.Components.ViewPagerFixed;
 
 import java.util.HashMap;
 import java.util.Map;

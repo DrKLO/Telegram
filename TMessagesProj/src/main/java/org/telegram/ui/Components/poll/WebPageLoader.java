@@ -1,14 +1,14 @@
-package org.telegram.ui.Components.poll;
+package org.Tajgram.ui.Components.poll;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
 
 import java.util.ArrayList;
 import java.util.HashMap;

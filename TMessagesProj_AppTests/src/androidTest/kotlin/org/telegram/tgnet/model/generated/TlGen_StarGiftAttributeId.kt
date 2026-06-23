@@ -1,11 +1,11 @@
-package org.telegram.tgnet.model.generated
+package org.Tajgram.tgnet.model.generated
 
 import kotlin.Int
 import kotlin.Long
 import kotlin.UInt
-import org.telegram.tgnet.OutputSerializedData
-import org.telegram.tgnet.model.TlGen_Object
-import org.telegram.tgnet.model.TlGen_Vector
+import org.Tajgram.tgnet.OutputSerializedData
+import org.Tajgram.tgnet.model.TlGen_Object
+import org.Tajgram.tgnet.model.TlGen_Vector
 
 public sealed class TlGen_StarGiftAttributeId : TlGen_Object {
   public data class TL_starGiftAttributeIdModel(

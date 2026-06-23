@@ -1,4 +1,4 @@
-package org.telegram.tgnet;
+package org.Tajgram.tgnet;
 
 public abstract class TLMethod<T extends TLObject> extends TLObject {
 

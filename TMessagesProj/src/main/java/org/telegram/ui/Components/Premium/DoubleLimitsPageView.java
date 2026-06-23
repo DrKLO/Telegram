@@ -1,11 +1,11 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.content.Context;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class DoubleLimitsPageView extends BaseListPageView {
 

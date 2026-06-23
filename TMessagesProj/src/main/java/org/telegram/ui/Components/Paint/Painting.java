@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -13,12 +13,12 @@ import android.opengl.GLES20;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Size;
+import org.Tajgram.messenger.BotWebViewVibrationEffect;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.Components.BlurringShader;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.Size;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

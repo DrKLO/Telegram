@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Crop;
+package org.Tajgram.ui.Components.Crop;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -28,8 +28,8 @@ import android.view.animation.Interpolator;
 import androidx.annotation.Keep;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.BubbleActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.BubbleActivity;
 
 public class CropAreaView extends ViewGroup {
 

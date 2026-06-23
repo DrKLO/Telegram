@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.boosts.cells;
+package org.Tajgram.ui.Components.Premium.boosts.cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -7,14 +7,14 @@ import android.graphics.PorterDuffColorFilter;
 import android.view.Gravity;
 import android.widget.ImageView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
 public class ChatCell extends BaseCell {

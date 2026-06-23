@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.quickforward;
+package org.Tajgram.ui.Components.quickforward;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
@@ -13,19 +13,19 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.AvatarDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Components.AvatarDrawable;
 
 class QuickShareAvatarCell implements ValueAnimator.AnimatorUpdateListener {
     private static final long DURATION = 180L;

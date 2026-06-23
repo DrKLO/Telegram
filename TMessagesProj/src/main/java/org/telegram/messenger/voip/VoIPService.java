@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Grishka, 2013-2016.
  */
 
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
-import static org.telegram.messenger.MessagesController.findUpdates;
-import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import static org.Tajgram.messenger.MessagesController.findUpdates;
+import static org.Tajgram.messenger.MessagesController.findUpdatesAndRemove;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -93,54 +93,54 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import org.json.JSONObject;
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.StatsController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.XiaomiUtilities;
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.JoinCallAlert;
-import org.telegram.ui.Components.PermissionRequest;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.DarkBlueThemeResourcesProvider;
-import org.telegram.ui.GroupCallActivity;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.VoIPFeedbackActivity;
-import org.telegram.ui.VoIPFragment;
-import org.telegram.ui.VoIPPermissionActivity;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.StatsController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.XiaomiUtilities;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.JoinCallAlert;
+import org.Tajgram.ui.Components.PermissionRequest;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.ui.DarkBlueThemeResourcesProvider;
+import org.Tajgram.ui.GroupCallActivity;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.VoIPFeedbackActivity;
+import org.Tajgram.ui.VoIPFragment;
+import org.Tajgram.ui.VoIPPermissionActivity;
 import org.webrtc.VideoFrame;
 import org.webrtc.VideoSink;
 import org.webrtc.voiceengine.WebRtcAudioTrack;
@@ -4645,7 +4645,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				Instance.setBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
 			}
 
-			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
+			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Tajgram-voip");
 			cpuWakelock.acquire();
 
 			btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
@@ -4902,7 +4902,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		try {
 			if (proximity != null) {
-				proximityWakelock = ((PowerManager) getSystemService(Context.POWER_SERVICE)).newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "telegram-voip-prx");
+				proximityWakelock = ((PowerManager) getSystemService(Context.POWER_SERVICE)).newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "Tajgram-voip-prx");
 				sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_NORMAL);
 			}
 		} catch (Exception x) {

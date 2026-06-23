@@ -1,18 +1,18 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
-import static org.telegram.messenger.voip.VoIPService.getStringFromFile;
+import static org.Tajgram.messenger.voip.VoIPService.getStringFromFile;
 
 import android.text.TextUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
 
 import java.io.File;
 import java.util.HashMap;

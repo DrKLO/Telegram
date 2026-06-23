@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -12,12 +12,12 @@ import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
 
 public class VoipCoverEmoji {
 

@@ -1,20 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.replaceArrows;
-import static org.telegram.messenger.AndroidUtilities.replaceSingleTag;
-import static org.telegram.messenger.LocaleController.formatPluralStringComma;
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.replaceArrows;
+import static org.Tajgram.messenger.AndroidUtilities.replaceSingleTag;
+import static org.Tajgram.messenger.LocaleController.formatPluralStringComma;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.MessagesController.findUpdatesAndRemove;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -118,86 +118,86 @@ import com.google.android.play.core.integrity.IntegrityTokenResponse;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.AuthTokensHelper;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.CallReceiver;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.PasskeysController;
-import org.telegram.messenger.PushListenerController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SRPHelper;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedPhoneNumberEditText;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.CustomPhoneKeyboardView;
-import org.telegram.ui.Components.Easings;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.FragmentFloatingButton;
-import org.telegram.ui.Components.ImageUpdater;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkPath;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.LoadingDrawable;
-import org.telegram.ui.Components.LoginOrView;
-import org.telegram.ui.Components.OutlineTextContainerView;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
-import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
-import org.telegram.ui.Components.Premium.StarParticlesView;
-import org.telegram.ui.Components.ProxyDrawable;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.SimpleThemeDescription;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.SlideView;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.TextViewSwitcher;
-import org.telegram.ui.Components.TransformableLoginButtonView;
-import org.telegram.ui.Components.URLSpanNoUnderline;
-import org.telegram.ui.Components.VerticalPositionAutoAnimator;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
-import org.telegram.ui.Components.spoilers.SpoilersTextView;
-import org.telegram.ui.Stars.ExplainStarsSheet;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.bots.BotWebViewSheet;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.AuthTokensHelper;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.CallReceiver;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.PasskeysController;
+import org.Tajgram.messenger.PushListenerController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SRPHelper;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.RequestDelegate;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Cells.CheckBoxCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AnimatedPhoneNumberEditText;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.CustomPhoneKeyboardView;
+import org.Tajgram.ui.Components.Easings;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.FragmentFloatingButton;
+import org.Tajgram.ui.Components.ImageUpdater;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkPath;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.LoadingDrawable;
+import org.Tajgram.ui.Components.LoginOrView;
+import org.Tajgram.ui.Components.OutlineTextContainerView;
+import org.Tajgram.ui.Components.Premium.GLIcon.GLIconRenderer;
+import org.Tajgram.ui.Components.Premium.GLIcon.GLIconTextureView;
+import org.Tajgram.ui.Components.Premium.GLIcon.Icon3D;
+import org.Tajgram.ui.Components.Premium.StarParticlesView;
+import org.Tajgram.ui.Components.ProxyDrawable;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Components.RadialProgressView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.SimpleThemeDescription;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.Components.SlideView;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.TextViewSwitcher;
+import org.Tajgram.ui.Components.TransformableLoginButtonView;
+import org.Tajgram.ui.Components.URLSpanNoUnderline;
+import org.Tajgram.ui.Components.VerticalPositionAutoAnimator;
+import org.Tajgram.ui.Components.chat.ViewPositionWatcher;
+import org.Tajgram.ui.Components.spoilers.SpoilersTextView;
+import org.Tajgram.ui.Stars.ExplainStarsSheet;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.ui.bots.BotWebViewSheet;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -1256,13 +1256,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                 Intent mailer = new Intent(Intent.ACTION_SENDTO);
                 mailer.setData(Uri.parse("mailto:"));
-                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{banned ? "recover@telegram.org" : "login@stel.com"});
+                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{banned ? "recover@Tajgram.org" : "login@stel.com"});
                 if (banned) {
                     mailer.putExtra(Intent.EXTRA_SUBJECT, "Banned phone number: " + phoneNumber);
-                    mailer.putExtra(Intent.EXTRA_TEXT, "I'm trying to use my mobile phone number: " + phoneNumber + "\nBut Telegram says it's banned. Please help.\n\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault());
+                    mailer.putExtra(Intent.EXTRA_TEXT, "I'm trying to use my mobile phone number: " + phoneNumber + "\nBut Tajgram says it's banned. Please help.\n\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault());
                 } else {
                     mailer.putExtra(Intent.EXTRA_SUBJECT, "Invalid phone number: " + phoneNumber);
-                    mailer.putExtra(Intent.EXTRA_TEXT, "I'm trying to use my mobile phone number: " + phoneNumber + "\nBut Telegram says it's invalid. Please help.\n\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault());
+                    mailer.putExtra(Intent.EXTRA_TEXT, "I'm trying to use my mobile phone number: " + phoneNumber + "\nBut Tajgram says it's invalid. Please help.\n\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault());
                 }
                 fragment.getParentActivity().startActivity(Intent.createChooser(mailer, "Send email..."));
             } catch (Exception e) {
@@ -3986,7 +3986,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                                         Intent mailer = new Intent(Intent.ACTION_SENDTO);
                                         mailer.setData(Uri.parse("mailto:"));
-                                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
+                                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@Tajgram.org"});
                                         mailer.putExtra(Intent.EXTRA_SUBJECT, emailPhone + " Android Registration/Login Issue " + version + (paid ? " #paidauth" : ""));
 
                                         StringBuilder body = new StringBuilder();
@@ -9890,7 +9890,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             if (!TextUtils.isEmpty(support_email_email)) {
                                 mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{support_email_email});
                             } else {
-                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
+                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@Tajgram.org"});
                             }
                             if (!TextUtils.isEmpty(support_email_subject)) {
                                 mailer.putExtra(Intent.EXTRA_SUBJECT, support_email_subject);

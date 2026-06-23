@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -10,10 +10,10 @@ import android.graphics.PorterDuffXfermode;
 import android.view.Gravity;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RectOld;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RectOld;
 
 public class LinkView extends EntityView {
 

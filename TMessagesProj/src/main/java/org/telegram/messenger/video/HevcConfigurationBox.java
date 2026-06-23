@@ -1,4 +1,4 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import com.googlecode.mp4parser.AbstractBox;
 

@@ -1,4 +1,4 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -17,17 +17,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.ProfileActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.ui.ProfileActivity;
 
 public class SettingsSearchCell extends FrameLayout {
 

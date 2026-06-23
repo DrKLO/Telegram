@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 2.0.x.
+ * This is the source code of Tajgram for Android v. 2.0.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -29,31 +29,31 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DownloadController;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CheckBox2;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.DotDividerSpan;
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LineProgressView;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.FilteredSearchView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DownloadController;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.CheckBox2;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.DotDividerSpan;
+import org.Tajgram.ui.Components.FlickerLoadingView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LineProgressView;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.FilteredSearchView;
 
 import java.io.File;
 import java.util.Date;

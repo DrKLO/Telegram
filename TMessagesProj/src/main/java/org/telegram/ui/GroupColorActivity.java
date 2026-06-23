@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -13,21 +13,21 @@ import android.view.ViewTreeObserver;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChannelBoostsController;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChannelBoostsController;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ThemePreviewMessagesCell;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ThemePreviewMessagesCell;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 public class GroupColorActivity extends ChannelColorActivity {
 

@@ -1,23 +1,23 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.util.Log;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.Stories.recorder.GallerySheet;
-import org.telegram.ui.Stories.recorder.TimelineView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.PhotoViewer;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.ui.Stories.recorder.GallerySheet;
+import org.Tajgram.ui.Stories.recorder.TimelineView;
 
 public class PhotoViewerCoverEditor extends FrameLayout {
 

@@ -1,6 +1,6 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.CacheByChatsController.KEEP_MEDIA_TYPE_STORIES;
+import static org.Tajgram.messenger.CacheByChatsController.KEEP_MEDIA_TYPE_STORIES;
 
 import android.util.SparseArray;
 

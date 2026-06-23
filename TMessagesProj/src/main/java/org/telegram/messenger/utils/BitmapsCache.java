@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,14 +8,14 @@ import android.os.SystemClock;
 import com.google.android.exoplayer2.util.Log;
 import com.google.common.util.concurrent.AtomicDouble;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.DispatchQueuePoolBackground;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.RLottieDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.DispatchQueuePoolBackground;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.Components.RLottieDrawable;
 
 import java.io.File;
 import java.io.FileNotFoundException;

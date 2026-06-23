@@ -23,7 +23,7 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 
-import org.telegram.messenger.BuildVars;
+import org.Tajgram.messenger.BuildVars;
 
 /**
  * {@link RecyclerView.SmoothScroller} implementation which uses a {@link LinearInterpolator} until

@@ -1,6 +1,6 @@
-package org.telegram.ui.Stars;
+package org.Tajgram.ui.Stars;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.util.TypedValue;
@@ -11,17 +11,17 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.utils.tlutils.AmountUtils;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.utils.tlutils.AmountUtils;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
 
 public class BalanceCloud extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
 

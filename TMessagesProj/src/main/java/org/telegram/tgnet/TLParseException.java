@@ -1,9 +1,9 @@
-package org.telegram.tgnet;
+package org.Tajgram.tgnet;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.NotificationCenter;
 
 public class TLParseException extends RuntimeException {
     private TLParseException(String message) {

@@ -1,4 +1,4 @@
-package org.telegram.messenger.pip.source;
+package org.Tajgram.messenger.pip.source;
 
 import android.graphics.Canvas;
 import android.graphics.Picture;
@@ -6,7 +6,7 @@ import android.graphics.RenderNode;
 import android.os.Build;
 import android.view.View;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 class PipSourceSnapshot {
     private final Picture picture;

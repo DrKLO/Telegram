@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -10,7 +10,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.widget.RemoteViews;
 
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 public class FeedWidgetProvider extends AppWidgetProvider {
 

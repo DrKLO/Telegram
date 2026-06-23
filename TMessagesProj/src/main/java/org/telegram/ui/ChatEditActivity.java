@@ -1,18 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.ChannelMonetizationLayout.replaceTON;
-import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmount;
-import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmountShort;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.ui.ChannelMonetizationLayout.replaceTON;
+import static org.Tajgram.ui.Stars.StarsIntroActivity.formatStarsAmount;
+import static org.Tajgram.ui.Stars.StarsIntroActivity.formatStarsAmountShort;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -49,64 +49,64 @@ import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_bots;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.RadioButtonCell;
-import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextDetailCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.EditTextEmoji;
-import org.telegram.ui.Components.ImageUpdater;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LoadingSpan;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Components.Reactions.ChatCustomReactionsEditActivity;
-import org.telegram.ui.Components.Reactions.ReactionsUtils;
-import org.telegram.ui.Components.SectionsScrollView;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.UndoView;
-import org.telegram.ui.Stars.BotStarsActivity;
-import org.telegram.ui.Stars.BotStarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.bots.AffiliateProgramFragment;
-import org.telegram.ui.bots.BotVerifySheet;
-import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_bots;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenu;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Cells.HeaderCell;
+import org.Tajgram.ui.Cells.RadioButtonCell;
+import org.Tajgram.ui.Cells.ShadowSectionCell;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Cells.TextDetailCell;
+import org.Tajgram.ui.Cells.TextInfoPrivacyCell;
+import org.Tajgram.ui.Cells.TextSettingsCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.EditTextEmoji;
+import org.Tajgram.ui.Components.ImageUpdater;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LoadingSpan;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RadialProgressView;
+import org.Tajgram.ui.Components.Reactions.ChatCustomReactionsEditActivity;
+import org.Tajgram.ui.Components.Reactions.ReactionsUtils;
+import org.Tajgram.ui.Components.SectionsScrollView;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.Components.UndoView;
+import org.Tajgram.ui.Stars.BotStarsActivity;
+import org.Tajgram.ui.Stars.BotStarsController;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.bots.AffiliateProgramFragment;
+import org.Tajgram.ui.bots.BotVerifySheet;
+import org.Tajgram.ui.bots.ChannelAffiliateProgramsFragment;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;

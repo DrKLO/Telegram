@@ -1,10 +1,10 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.ui.ActionBar.Theme.RIPPLE_MASK_CIRCLE_20DP;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.ui.ActionBar.Theme.RIPPLE_MASK_CIRCLE_20DP;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -24,18 +24,18 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
-import org.telegram.ui.Stories.recorder.CaptionContainerView;
-import org.telegram.ui.Stories.recorder.HintView2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.Tajgram.ui.Stories.DarkThemeResourceProvider;
+import org.Tajgram.ui.Stories.recorder.CaptionContainerView;
+import org.Tajgram.ui.Stories.recorder.HintView2;
 
 public class CaptionPhotoViewer extends CaptionContainerView {
 

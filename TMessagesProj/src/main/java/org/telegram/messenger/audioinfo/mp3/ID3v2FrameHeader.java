@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.telegram.messenger.audioinfo.mp3;
+package org.Tajgram.messenger.audioinfo.mp3;
 
 import java.io.IOException;
 

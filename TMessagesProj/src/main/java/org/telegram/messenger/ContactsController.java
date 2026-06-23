@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Tajgram for Android v. 1.3.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.Manifest;
 import android.accounts.Account;
@@ -31,14 +31,14 @@ import android.util.SparseArray;
 import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.Bulletin;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.Bulletin;
 
 import java.text.CollationKey;
 import java.text.Collator;
@@ -374,7 +374,7 @@ public class ContactsController extends BaseController {
     }
 
     public String getInviteText(int contacts) {
-        String link = inviteLink == null ? "https://telegram.org/dl" : inviteLink;
+        String link = inviteLink == null ? "https://Tajgram.org/dl" : inviteLink;
         if (contacts <= 1) {
             return LocaleController.formatString(R.string.InviteText2, link);
         } else {
@@ -391,7 +391,7 @@ public class ContactsController extends BaseController {
         Utilities.globalQueue.postRunnable(() -> {
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
             try {
-                Account[] accounts = am.getAccountsByType("org.telegram.messenger");
+                Account[] accounts = am.getAccountsByType("org.Tajgram.messenger");
                 for (int a = 0; a < accounts.length; a++) {
                     Account acc = accounts[a];
                     boolean found = false;
@@ -423,7 +423,7 @@ public class ContactsController extends BaseController {
                 readContacts();
                 if (systemAccount == null) {
                     try {
-                        systemAccount = new Account("" + getUserConfig().getClientUserId(), "org.telegram.messenger");
+                        systemAccount = new Account("" + getUserConfig().getClientUserId(), "org.Tajgram.messenger");
                         am.addAccountExplicitly(systemAccount, "", null);
                     } catch (Exception ignore) {
 
@@ -437,7 +437,7 @@ public class ContactsController extends BaseController {
         try {
             systemAccount = null;
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-            Account[] accounts = am.getAccountsByType("org.telegram.messenger");
+            Account[] accounts = am.getAccountsByType("org.Tajgram.messenger");
             for (int a = 0; a < accounts.length; a++) {
                 Account acc = accounts[a];
                 boolean found = false;
@@ -513,7 +513,7 @@ public class ContactsController extends BaseController {
                 AndroidUtilities.runOnUIThread(() -> {
                     AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
                     try {
-                        Account[] accounts = am.getAccountsByType("org.telegram.messenger");
+                        Account[] accounts = am.getAccountsByType("org.Tajgram.messenger");
                         systemAccount = null;
                         for (int a = 0; a < accounts.length; a++) {
                             Account acc = accounts[a];
@@ -531,7 +531,7 @@ public class ContactsController extends BaseController {
 
                     }
                     try {
-                        systemAccount = new Account("" + getUserConfig().getClientUserId(), "org.telegram.messenger");
+                        systemAccount = new Account("" + getUserConfig().getClientUserId(), "org.Tajgram.messenger");
                         am.addAccountExplicitly(systemAccount, "", null);
                     } catch (Exception ignore) {
 
@@ -1010,12 +1010,12 @@ public class ContactsController extends BaseController {
             /*if (schedule) {
                 try {
                     AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-                    Account[] accounts = am.getAccountsByType("org.telegram.account");
+                    Account[] accounts = am.getAccountsByType("org.Tajgram.account");
                     boolean recreateAccount = false;
                     if (getUserConfig().isClientActivated()) {
                         if (accounts.length != 1) {
                             FileLog.e("detected account deletion!");
-                            currentAccount = new Account(getUserConfig().getCurrentUser().phone, "org.telegram.account");
+                            currentAccount = new Account(getUserConfig().getCurrentUser().phone, "org.Tajgram.account");
                             am.addAccountExplicitly(currentAccount, "", null);
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
@@ -2298,27 +2298,27 @@ public class ContactsController extends BaseController {
 
         builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
         builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile");
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.profile");
         builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Profile");
+        builder.withValue(ContactsContract.Data.DATA2, "Tajgram Profile");
         builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutMessage", R.string.ContactShortcutMessage, phoneOrName));
         builder.withValue(ContactsContract.Data.DATA4, user.id);
         query.add(builder.build());
 
         builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
         builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call");
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call");
         builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Voice Call");
+        builder.withValue(ContactsContract.Data.DATA2, "Tajgram Voice Call");
         builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVoiceCall", R.string.ContactShortcutVoiceCall, phoneOrName));
         builder.withValue(ContactsContract.Data.DATA4, user.id);
         query.add(builder.build());
 
         builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
         builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactId);
-        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video");
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call.video");
         builder.withValue(ContactsContract.Data.DATA1, user.id);
-        builder.withValue(ContactsContract.Data.DATA2, "Telegram Video Call");
+        builder.withValue(ContactsContract.Data.DATA2, "Tajgram Video Call");
         builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVideoCall", R.string.ContactShortcutVideoCall, phoneOrName));
         builder.withValue(ContactsContract.Data.DATA4, user.id);
         query.add(builder.build());

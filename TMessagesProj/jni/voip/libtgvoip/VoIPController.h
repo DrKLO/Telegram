@@ -233,7 +233,7 @@ namespace tgvoip{
 		 * Set the initial endpoints (relays)
 		 * @param endpoints Endpoints converted from phone.PhoneConnection TL objects
 		 * @param allowP2p Whether p2p connectivity is allowed
-		 * @param connectionMaxLayer The max_layer field from the phoneCallProtocol object returned by Telegram server.
+		 * @param connectionMaxLayer The max_layer field from the phoneCallProtocol object returned by Tajgram server.
 		 * DO NOT HARDCODE THIS VALUE, it's extremely important for backwards compatibility.
 		 */
 		void SetRemoteEndpoints(std::vector<Endpoint> endpoints, bool allowP2p, int32_t connectionMaxLayer);

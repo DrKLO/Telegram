@@ -1,7 +1,7 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.GradientTools;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.GradientTools;
 
 public class StoriesGradientTools extends GradientTools {
 

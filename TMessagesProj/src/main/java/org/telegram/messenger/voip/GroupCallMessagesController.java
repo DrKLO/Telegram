@@ -1,24 +1,24 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import android.util.LongSparseArray;
 
 import androidx.annotation.Nullable;
 
 import org.json.JSONObject;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BaseController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.json.TLJsonBuilder;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.json.TLJsonParser;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.tgnet.tl.TL_update;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BaseController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.json.TLJsonBuilder;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.json.TLJsonParser;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.tgnet.tl.TL_update;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

@@ -1,15 +1,15 @@
-package org.telegram.ui.Components.Reactions;
+package org.Tajgram.ui.Components.Reactions;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 @SuppressLint("ViewConstructor")
 public class UpdateReactionsButton extends ButtonWithCounterView {

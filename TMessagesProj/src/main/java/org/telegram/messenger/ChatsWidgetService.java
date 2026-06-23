@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
@@ -23,12 +23,12 @@ import android.widget.RemoteViewsService;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.ForegroundColorSpanThemable;
-import org.telegram.ui.Components.Forum.ForumUtilities;
-import org.telegram.ui.EditWidgetActivity;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.ForegroundColorSpanThemable;
+import org.Tajgram.ui.Components.Forum.ForumUtilities;
+import org.Tajgram.ui.EditWidgetActivity;
 
 import java.io.File;
 import java.util.ArrayList;

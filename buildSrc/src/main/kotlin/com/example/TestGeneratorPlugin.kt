@@ -12,8 +12,8 @@ class TestGeneratorPlugin : Plugin<Project> {
             "generateScheme",
             GenerateSchemeTask::class.java
         ) {
-            tlSourcesDir = File(project.rootDir, "TMessagesProj/src/main/java/org/telegram/tgnet")
-            tlSourcesDirectDir = File(project.rootDir, "TMessagesProj_AppStandalone/src/main/java/org/telegram/tgnet")
+            tlSourcesDir = File(project.rootDir, "TMessagesProj/src/main/java/org/Tajgram/tgnet")
+            tlSourcesDirectDir = File(project.rootDir, "TMessagesProj_AppStandalone/src/main/java/org/Tajgram/tgnet")
             resourcesDir = project.file("tlscheme")
             outputDir = project.file("src/androidTest/kotlin")
         }

@@ -1,12 +1,12 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.SharedConfig;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.SharedConfig;
 
 public class BlurredRecyclerView extends RecyclerListView {
 

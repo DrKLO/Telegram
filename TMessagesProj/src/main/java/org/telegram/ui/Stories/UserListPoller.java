@@ -1,22 +1,22 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.LongSparseLongArray;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.support.LongSparseLongArray;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.Cells.DialogCell;
+import org.Tajgram.ui.Cells.UserCell;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 

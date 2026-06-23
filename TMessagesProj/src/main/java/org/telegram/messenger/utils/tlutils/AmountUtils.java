@@ -1,15 +1,15 @@
-package org.telegram.messenger.utils.tlutils;
+package org.Tajgram.messenger.utils.tlutils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.tl.TL_stars;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.tl.TL_stars;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

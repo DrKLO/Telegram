@@ -1,16 +1,16 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -77,59 +77,59 @@ import androidx.core.math.MathUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Bitmaps;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.time.SunDate;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.BlurSettingsBottomSheet;
-import org.telegram.ui.Cells.BaseCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AudioVisualizerDrawable;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ChoosingStickerStatusDrawable;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.FragmentContextViewWavesDrawable;
-import org.telegram.ui.Components.LinkPath;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.MsgClockDrawable;
-import org.telegram.ui.Components.PathAnimator;
-import org.telegram.ui.Components.PlayingGameDrawable;
-import org.telegram.ui.Components.Premium.PremiumGradient;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RecordStatusDrawable;
-import org.telegram.ui.Components.RoundStatusDrawable;
-import org.telegram.ui.Components.ScamDrawable;
-import org.telegram.ui.Components.SendingFileDrawable;
-import org.telegram.ui.Components.StatusDrawable;
-import org.telegram.ui.Components.ThemeEditorView;
-import org.telegram.ui.Components.TypingDotsDrawable;
-import org.telegram.ui.Components.blur3.utils.NinePatchBuilder;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.RoundVideoProgressShadow;
-import org.telegram.ui.ThemeActivity;
-import org.telegram.ui.ThemePreviewActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.Bitmaps;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.time.SunDate;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.BlurSettingsBottomSheet;
+import org.Tajgram.ui.Cells.BaseCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.AudioVisualizerDrawable;
+import org.Tajgram.ui.Components.BackgroundGradientDrawable;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.ChoosingStickerStatusDrawable;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.FragmentContextViewWavesDrawable;
+import org.Tajgram.ui.Components.LinkPath;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.MsgClockDrawable;
+import org.Tajgram.ui.Components.PathAnimator;
+import org.Tajgram.ui.Components.PlayingGameDrawable;
+import org.Tajgram.ui.Components.Premium.PremiumGradient;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RecordStatusDrawable;
+import org.Tajgram.ui.Components.RoundStatusDrawable;
+import org.Tajgram.ui.Components.ScamDrawable;
+import org.Tajgram.ui.Components.SendingFileDrawable;
+import org.Tajgram.ui.Components.StatusDrawable;
+import org.Tajgram.ui.Components.ThemeEditorView;
+import org.Tajgram.ui.Components.TypingDotsDrawable;
+import org.Tajgram.ui.Components.blur3.utils.NinePatchBuilder;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.RoundVideoProgressShadow;
+import org.Tajgram.ui.ThemeActivity;
+import org.Tajgram.ui.ThemePreviewActivity;
 
 import java.io.File;
 import java.io.FileInputStream;

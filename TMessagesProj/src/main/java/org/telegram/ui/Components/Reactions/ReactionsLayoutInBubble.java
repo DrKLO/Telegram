@@ -1,7 +1,7 @@
-package org.telegram.ui.Components.Reactions;
+package org.Tajgram.ui.Components.Reactions;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -26,41 +26,41 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BotForumHelper;
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.IMessageCell;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AnimatedFileDrawable;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.AvatarsDrawable;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.CounterView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Stars.StarsReactionsSheet;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BotForumHelper;
+import org.Tajgram.messenger.DocumentObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.IMessageCell;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.AnimatedFileDrawable;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.AvatarsDrawable;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.CounterView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Stars.StarsReactionsSheet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1484,7 +1484,7 @@ public class ReactionsLayoutInBubble {
         }
         float eventX = event.getX();
         float eventY = event.getY();
-        if (parentView instanceof org.telegram.ui.Cells.IMessageCell) {
+        if (parentView instanceof org.Tajgram.ui.Cells.IMessageCell) {
             eventY -= parentView.getPaddingTop();
             if (parentView instanceof ChatActionCell) {
                 eventX -= ((ChatActionCell) parentView).sideMenuWidth / 2f;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.GLIcon;
+package org.Tajgram.ui.Components.Premium.GLIcon;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -12,10 +12,10 @@ import android.graphics.Shader;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
-import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
@@ -7,17 +7,17 @@ import android.text.TextUtils;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.messenger.support.LongSparseIntArray;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_forum;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.Forum.ForumUtilities;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.messenger.support.LongSparseIntArray;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.RequestDelegate;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_forum;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.Forum.ForumUtilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -95,14 +95,14 @@
     </queries>
 
     <application
-        android:name="org.telegram.messenger.ApplicationLoader"
+        android:name="org.Tajgram.messenger.ApplicationLoader"
         android:allowBackup="true"
         android:restoreAnyVersion="true"
         android:backupAgent=".BackupAgent"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
-        android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
+        android:manageSpaceActivity="org.Tajgram.ui.ExternalActionActivity"
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"
         android:preserveLegacyExternalStorage="true"
@@ -115,8 +115,8 @@
 
         <activity-alias
             android:enabled="true"
-            android:name="org.telegram.messenger.DefaultIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.DefaultIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:exported="true">
 
             <intent-filter>
@@ -129,8 +129,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.VintageIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.VintageIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_6_launcher"
             android:roundIcon="@mipmap/icon_6_launcher_round"
             android:exported="true">
@@ -145,8 +145,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.AquaIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.AquaIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_4_launcher"
             android:roundIcon="@mipmap/icon_4_launcher_round"
             android:exported="true">
@@ -161,8 +161,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.PremiumIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.PremiumIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_3_launcher"
             android:roundIcon="@mipmap/icon_3_launcher_round"
             android:exported="true">
@@ -177,8 +177,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.TurboIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.TurboIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_5_launcher"
             android:roundIcon="@mipmap/icon_5_launcher_round"
             android:exported="true">
@@ -193,8 +193,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.NoxIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.NoxIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_2_launcher"
             android:roundIcon="@mipmap/icon_2_launcher_round"
             android:exported="true">
@@ -208,7 +208,7 @@
         </activity-alias>
 
         <activity
-            android:name="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.ui.LaunchActivity"
             android:theme="@style/Theme.TMessages.Start"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode|smallestScreenSize|screenLayout"
             android:supportsPictureInPicture="true"
@@ -252,16 +252,16 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.profile"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:host="telegram.me" android:scheme="http" />
-                <data android:host="telegram.me" android:scheme="https" />
-                <data android:host="telegram.dog" android:scheme="http" />
-                <data android:host="telegram.dog" android:scheme="https" />
+                <data android:host="Tajgram.me" android:scheme="http" />
+                <data android:host="Tajgram.me" android:scheme="https" />
+                <data android:host="Tajgram.dog" android:scheme="http" />
+                <data android:host="Tajgram.dog" android:scheme="https" />
                 <data android:host="t.me" android:scheme="http" />
                 <data android:host="t.me" android:scheme="https" />
             </intent-filter>
@@ -278,7 +278,7 @@
                 <data android:scheme="tg" />
             </intent-filter>
             <intent-filter>
-                <action android:name="org.telegram.messenger.CREATE_STICKER_PACK"/>
+                <action android:name="org.Tajgram.messenger.CREATE_STICKER_PACK"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="*/*"/>
             </intent-filter>
@@ -289,19 +289,19 @@
                 android:value="subject_segment" />
         </activity>
         <activity-alias
-            android:name="org.telegram.ui.CallsActivity"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.ui.CallsActivity"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:permission="android.permission.CALL_PHONE"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call.video"/>
             </intent-filter>
         </activity-alias>
         <activity
-            android:name="org.telegram.ui.BubbleActivity"
+            android:name="org.Tajgram.ui.BubbleActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
@@ -309,7 +309,7 @@
             android:documentLaunchMode="always"
             android:resizeableActivity="true"/>
         <activity
-            android:name="org.telegram.ui.ShareActivity"
+            android:name="org.Tajgram.ui.ShareActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
@@ -325,18 +325,18 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.ExternalActionActivity"
+            android:name="org.Tajgram.ui.ExternalActionActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
             <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
-                <action android:name="org.telegram.passport.AUTHORIZE"/>
+                <action android:name="org.Tajgram.passport.AUTHORIZE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.ChatsWidgetConfigActivity"
+            android:name="org.Tajgram.ui.ChatsWidgetConfigActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
@@ -346,7 +346,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.telegram.ui.ContactsWidgetConfigActivity"
+            android:name="org.Tajgram.ui.ContactsWidgetConfigActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustPan"
@@ -356,7 +356,7 @@
             </intent-filter>
         </activity>
 <!--        <activity-->
-<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
+<!--            android:name="org.Tajgram.ui.FeedWidgetConfigActivity"-->
 <!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
 <!--            android:hardwareAccelerated="true"-->
 <!--            android:windowSoftInputMode="adjustPan">-->
@@ -365,17 +365,17 @@
 <!--            </intent-filter>-->
 <!--        </activity>-->
         <activity
-            android:name="org.telegram.messenger.OpenChatReceiver"
+            android:name="org.Tajgram.messenger.OpenChatReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:exported="true">
         </activity>
         <activity
-            android:name="org.telegram.messenger.OpenAttachedMenuBotReceiver"
+            android:name="org.Tajgram.messenger.OpenAttachedMenuBotReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
             android:exported="true">
         </activity>
         <activity
-            android:name="org.telegram.ui.PopupNotificationActivity"
+            android:name="org.Tajgram.ui.PopupNotificationActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
@@ -384,12 +384,12 @@
             android:resizeableActivity="false"
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
-        <activity android:name="org.telegram.ui.VoIPPermissionActivity"
+        <activity android:name="org.Tajgram.ui.VoIPPermissionActivity"
                   android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
                   android:taskAffinity="${applicationId}.voip"
                   android:excludeFromRecents="true"
                 android:theme="@style/Theme.TMessages.Transparent"/>
-        <activity android:name="org.telegram.ui.VoIPFeedbackActivity"
+        <activity android:name="org.Tajgram.ui.VoIPFeedbackActivity"
                   android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
 				  android:taskAffinity="${applicationId}.voip_feedback"
                   android:excludeFromRecents="true"
@@ -399,7 +399,7 @@
             android:name=".AutoMessageHeardReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.messenger.ACTION_MESSAGE_HEARD"/>
+                <action android:name="org.Tajgram.messenger.ACTION_MESSAGE_HEARD"/>
             </intent-filter>
         </receiver>
 
@@ -407,7 +407,7 @@
             android:name=".CopyCodeReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.messenger.ACTION_COPY_CODE"/>
+                <action android:name="org.Tajgram.messenger.ACTION_COPY_CODE"/>
             </intent-filter>
         </receiver>
 
@@ -489,7 +489,7 @@
             android:foregroundServiceType="dataSync"
         />
         <service
-            android:name="org.telegram.ui.Stories.recorder.StoryUploadingService"
+            android:name="org.Tajgram.ui.Stories.recorder.StoryUploadingService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="dataSync"
@@ -540,11 +540,11 @@
 
 		<receiver android:name=".MusicPlayerReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.android.musicplayer.close" />
-                <action android:name="org.telegram.android.musicplayer.pause" />
-                <action android:name="org.telegram.android.musicplayer.next" />
-                <action android:name="org.telegram.android.musicplayer.play" />
-                <action android:name="org.telegram.android.musicplayer.previous" />
+                <action android:name="org.Tajgram.android.musicplayer.close" />
+                <action android:name="org.Tajgram.android.musicplayer.pause" />
+                <action android:name="org.Tajgram.android.musicplayer.next" />
+                <action android:name="org.Tajgram.android.musicplayer.play" />
+                <action android:name="org.Tajgram.android.musicplayer.previous" />
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
                 <action android:name="android.media.AUDIO_BECOMING_NOISY" />
             </intent-filter>
@@ -557,7 +557,7 @@
 
         <receiver android:name=".AppStartReceiver" android:enabled="true" android:exported="false">
             <intent-filter>
-                <action android:name="org.telegram.start" />
+                <action android:name="org.Tajgram.start" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
@@ -677,7 +677,7 @@
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
         <service
-            android:name="org.telegram.messenger.car.TelegramCarAppService"
+            android:name="org.Tajgram.messenger.car.TelegramCarAppService"
             android:exported="true"
             android:foregroundServiceType="connectedDevice">
             <intent-filter>
@@ -696,7 +696,7 @@
         <meta-data android:name="android.max_aspect" android:value="2.5" />
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="org.telegram.messenger.chromecast.ChromecastOptionsProvider" />
+            android:value="org.Tajgram.messenger.chromecast.ChromecastOptionsProvider" />
 
     </application>
 

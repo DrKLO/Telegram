@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.poll.attached;
+package org.Tajgram.ui.Components.poll.attached;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -18,16 +18,16 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.MediaActionDrawable;
-import org.telegram.ui.Components.RadialProgress2;
-import org.telegram.ui.Components.poll.PollAttachedMedia;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.MediaActionDrawable;
+import org.Tajgram.ui.Components.RadialProgress2;
+import org.Tajgram.ui.Components.poll.PollAttachedMedia;
 
 import java.io.File;
 

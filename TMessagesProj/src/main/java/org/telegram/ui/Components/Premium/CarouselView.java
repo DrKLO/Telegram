@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -13,8 +13,8 @@ import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.OverScroller;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Utilities;
 
 import java.util.ArrayList;
 import java.util.Collections;

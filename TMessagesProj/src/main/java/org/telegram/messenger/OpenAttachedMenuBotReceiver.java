@@ -1,10 +1,10 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 public class OpenAttachedMenuBotReceiver extends Activity {
 

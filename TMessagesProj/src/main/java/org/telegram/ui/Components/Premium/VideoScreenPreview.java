@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -24,24 +24,24 @@ import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.video.VideoPlayerHolderBase;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.VideoPlayer;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
-import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.Stories.StoryViewer;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.video.VideoPlayerHolderBase;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.VideoPlayer;
+import org.Tajgram.ui.Components.voip.CellFlickerDrawable;
+import org.Tajgram.ui.PremiumPreviewFragment;
+import org.Tajgram.ui.Stories.StoryViewer;
 
 import java.io.File;
 import java.net.URLEncoder;

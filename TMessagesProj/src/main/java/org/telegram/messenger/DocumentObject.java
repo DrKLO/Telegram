@@ -1,10 +1,10 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.graphics.Paint;
 import android.graphics.Path;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 

@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -48,46 +48,46 @@ import androidx.core.graphics.drawable.IconCompat;
 
 import com.android.billingclient.api.ProductDetails;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.SQLite.SQLiteDatabase;
-import org.telegram.SQLite.SQLiteException;
-import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.messenger.ringtone.RingtoneDataStore;
-import org.telegram.messenger.ringtone.RingtoneUploader;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLMethod;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_bots;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.EmojiThemes;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.ChatThemeBottomSheet;
-import org.telegram.ui.Components.FormattedDateSpan;
-import org.telegram.ui.Components.QuoteSpan;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.StickerSetBulletinLayout;
-import org.telegram.ui.Components.StickersAlert;
-import org.telegram.ui.Components.StickersArchiveAlert;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.URLSpanReplacement;
-import org.telegram.ui.Components.URLSpanUserMention;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.messenger.utils.tlutils.AmountUtils;
-import org.telegram.ui.Stories.StoriesStorage;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.SQLite.SQLiteDatabase;
+import org.Tajgram.SQLite.SQLiteException;
+import org.Tajgram.SQLite.SQLitePreparedStatement;
+import org.Tajgram.messenger.ringtone.RingtoneDataStore;
+import org.Tajgram.messenger.ringtone.RingtoneUploader;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.RequestDelegate;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLMethod;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_bots;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.EmojiThemes;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.ChatThemeBottomSheet;
+import org.Tajgram.ui.Components.FormattedDateSpan;
+import org.Tajgram.ui.Components.QuoteSpan;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Components.StickerSetBulletinLayout;
+import org.Tajgram.ui.Components.StickersAlert;
+import org.Tajgram.ui.Components.StickersArchiveAlert;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.URLSpanReplacement;
+import org.Tajgram.ui.Components.URLSpanUserMention;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PremiumPreviewFragment;
+import org.Tajgram.messenger.utils.tlutils.AmountUtils;
+import org.Tajgram.ui.Stories.StoriesStorage;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -126,7 +126,7 @@ public class MediaDataController extends BaseController {
             SPOILER_PATTERN = Pattern.compile("\\|\\|(.+?)\\|\\|"),
             STRIKE_PATTERN = Pattern.compile("~~(.+?)~~");
 
-    public static String SHORTCUT_CATEGORY = "org.telegram.messenger.SHORTCUT_SHARE";
+    public static String SHORTCUT_CATEGORY = "org.Tajgram.messenger.SHORTCUT_SHARE";
 
     private static volatile MediaDataController[] Instance = new MediaDataController[UserConfig.MAX_ACCOUNT_COUNT];
     private static final Object[] lockObjects = new Object[UserConfig.MAX_ACCOUNT_COUNT];

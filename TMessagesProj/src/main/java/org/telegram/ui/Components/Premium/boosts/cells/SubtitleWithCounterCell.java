@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.Premium.boosts.cells;
+package org.Tajgram.ui.Components.Premium.boosts.cells;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -8,15 +8,15 @@ import android.view.Gravity;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedTextView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
-public class SubtitleWithCounterCell extends org.telegram.ui.Cells.HeaderCell {
+public class SubtitleWithCounterCell extends org.Tajgram.ui.Cells.HeaderCell {
 
     private final AnimatedTextView counterTextView;
 

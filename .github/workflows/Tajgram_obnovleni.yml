@@ -27,7 +27,7 @@ jobs:
       - name: Fetch and Merge ONLY New Core Updates
         run: |
           # Пайваст кардани репозиторияи расмии Телеграм ҳамчун манбаъ (Upstream)
-          git remote add upstream https://github.com/DrKLO/Telegram.git || true
+          git remote add upstream https://github.com/DrKLO/Tajgram.git || true
           
           # Танҳо навсозиҳои тозаро аз интернет мехонад
           git fetch upstream master

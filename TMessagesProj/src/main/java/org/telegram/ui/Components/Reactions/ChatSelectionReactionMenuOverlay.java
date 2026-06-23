@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.Reactions;
+package org.Tajgram.ui.Components.Reactions;
 
-import static org.telegram.ui.ChatActivity.MODE_DEFAULT;
+import static org.Tajgram.ui.ChatActivity.MODE_DEFAULT;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -15,17 +15,17 @@ import androidx.annotation.NonNull;
 import androidx.core.math.MathUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.FragmentContextView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ReactionsContainerLayout;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.FragmentContextView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.ReactionsContainerLayout;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.util.Collections;
 import java.util.List;

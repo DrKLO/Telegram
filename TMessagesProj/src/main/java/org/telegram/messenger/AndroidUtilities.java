@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -149,48 +149,48 @@ import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.utils.CustomHtml;
-import org.telegram.messenger.utils.DebugRecordingCanvas;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.ChatBackgroundDrawable;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.ButtonSpan;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.ForegroundColorSpanThemable;
-import org.telegram.ui.Components.ForegroundDetector;
-import org.telegram.ui.Components.HideViewAfterAnimation;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.PipRoundVideoView;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ShareAlert;
-import org.telegram.ui.Components.TableView;
-import org.telegram.ui.Components.TextHelper;
-import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.URLSpanReplacement;
-import org.telegram.ui.Components.UndoView;
-import org.telegram.ui.Components.spoilers.SpoilersTextView;
-import org.telegram.ui.DebugRecordingCanvasReplayFragment;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.PeerStoriesView;
-import org.telegram.ui.Stories.StoryMediaAreasView;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
-import org.telegram.ui.ThemePreviewActivity;
-import org.telegram.ui.WallpapersListActivity;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.messenger.utils.CustomHtml;
+import org.Tajgram.messenger.utils.DebugRecordingCanvas;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.ChatBackgroundDrawable;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.BackgroundGradientDrawable;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.ButtonSpan;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.ForegroundColorSpanThemable;
+import org.Tajgram.ui.Components.ForegroundDetector;
+import org.Tajgram.ui.Components.HideViewAfterAnimation;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.PipRoundVideoView;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ShareAlert;
+import org.Tajgram.ui.Components.TableView;
+import org.Tajgram.ui.Components.TextHelper;
+import org.Tajgram.ui.Components.TypefaceSpan;
+import org.Tajgram.ui.Components.URLSpanReplacement;
+import org.Tajgram.ui.Components.UndoView;
+import org.Tajgram.ui.Components.spoilers.SpoilersTextView;
+import org.Tajgram.ui.DebugRecordingCanvasReplayFragment;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.PeerStoriesView;
+import org.Tajgram.ui.Stories.StoryMediaAreasView;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.ui.ThemePreviewActivity;
+import org.Tajgram.ui.WallpapersListActivity;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -3660,7 +3660,7 @@ public class AndroidUtilities {
         }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");
+            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Tajgram");
             if (!storageDir.mkdirs()) {
                 if (!storageDir.exists()) {
                     if (BuildVars.LOGS_ENABLED) {
@@ -4596,7 +4596,7 @@ public class AndroidUtilities {
                 if (scheme != null) {
                     if ((scheme.equals("http") || scheme.equals("https"))) {
                         String host = data.getHost().toLowerCase();
-                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
+                        if (host.equals("Tajgram.me") || host.equals("t.me") || host.equals("Tajgram.dog")) {
                             String path = data.getPath();
                             if (path != null) {
                                 if (path.startsWith("/socks") || path.startsWith("/proxy")) {
@@ -4614,7 +4614,7 @@ public class AndroidUtilities {
                     } else if (scheme.equals("tg")) {
                         String url = data.toString();
                         if (url.startsWith("tg:proxy") || url.startsWith("tg://proxy") || url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
-                            url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org").replace("tg://socks", "tg://telegram.org").replace("tg:socks", "tg://telegram.org");
+                            url = url.replace("tg:proxy", "tg://Tajgram.org").replace("tg://proxy", "tg://Tajgram.org").replace("tg://socks", "tg://Tajgram.org").replace("tg:socks", "tg://Tajgram.org");
                             data = Uri.parse(url);
                             address = data.getQueryParameter("server");
                             if (AndroidUtilities.checkHostForPunycode(address)) {

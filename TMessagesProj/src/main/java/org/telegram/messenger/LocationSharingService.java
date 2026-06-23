@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -16,8 +16,8 @@ import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 

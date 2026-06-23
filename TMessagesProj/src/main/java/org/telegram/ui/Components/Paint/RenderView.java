@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -13,12 +13,12 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.FileLog;
-import org.telegram.ui.Components.BlurringShader;
-import org.telegram.ui.Components.Size;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.ui.Components.BlurringShader;
+import org.Tajgram.ui.Components.Size;
 
 import java.util.concurrent.CountDownLatch;
 

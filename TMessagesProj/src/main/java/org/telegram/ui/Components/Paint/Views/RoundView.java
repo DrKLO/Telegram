@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -16,12 +16,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RectOld;
-import org.telegram.ui.Components.Size;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RectOld;
+import org.Tajgram.ui.Components.Size;
 
 public class RoundView extends EntityView {
 

@@ -1,6 +1,6 @@
-package org.telegram;
+package org.Tajgram;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 
 import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;

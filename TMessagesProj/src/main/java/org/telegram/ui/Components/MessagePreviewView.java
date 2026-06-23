@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -40,29 +40,29 @@ import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatMessageSharedResources;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagePreviewParams;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.IMessageCell;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
-import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChatMessageSharedResources;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MessagePreviewParams;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.IMessageCell;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.Tajgram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
 import java.util.ArrayList;
 
@@ -1200,7 +1200,7 @@ public class MessagePreviewView extends FrameLayout {
                 if (textSelectionOverlay.getParent() instanceof ViewGroup) {
                     ((ViewGroup) textSelectionOverlay.getParent()).removeView(textSelectionOverlay);
                 }
-                addView(textSelectionOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, org.telegram.ui.ActionBar.ActionBar.getCurrentActionBarHeight() / AndroidUtilities.density, 0, 0));
+                addView(textSelectionOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, org.Tajgram.ui.ActionBar.ActionBar.getCurrentActionBarHeight() / AndroidUtilities.density, 0, 0));
             }
             textSelectionHelper.setParentView(chatListView);
 
@@ -1360,7 +1360,7 @@ public class MessagePreviewView extends FrameLayout {
             menu.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.UNSPECIFIED));
             buttonsHeight = Math.max(buttonsHeight, menu.getMeasuredHeight() + rect.top + rect.bottom);
 
-            ((MarginLayoutParams) chatListView.getLayoutParams()).topMargin = org.telegram.ui.ActionBar.ActionBar.getCurrentActionBarHeight();
+            ((MarginLayoutParams) chatListView.getLayoutParams()).topMargin = org.Tajgram.ui.ActionBar.ActionBar.getCurrentActionBarHeight();
             if (isLandscapeMode) {
                 chatPreviewContainer.getLayoutParams().height = LayoutHelper.MATCH_PARENT;
                 ((MarginLayoutParams) chatPreviewContainer.getLayoutParams()).topMargin = dp(8);

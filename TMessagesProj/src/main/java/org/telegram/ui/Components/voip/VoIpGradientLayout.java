@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
-import static org.telegram.ui.Components.voip.VoIPBackgroundProvider.REVEAL_SCALE_FACTOR;
+import static org.Tajgram.ui.Components.voip.VoIPBackgroundProvider.REVEAL_SCALE_FACTOR;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -23,9 +23,9 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LiteMode;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
 
 @SuppressLint("ViewConstructor")
 public class VoIpGradientLayout extends FrameLayout {

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -13,12 +13,12 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextSettingsCell;
+import org.Tajgram.ui.Components.voip.CellFlickerDrawable;
 
 public class StorageUsageView extends FrameLayout {
 

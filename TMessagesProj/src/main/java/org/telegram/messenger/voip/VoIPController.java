@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Tajgram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Grishka, 2013-2016.
  */
 
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import android.content.SharedPreferences;
 import android.media.audiofx.AcousticEchoCanceler;
@@ -14,10 +14,10 @@ import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.SystemClock;
 
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.MessagesController;
-import org.telegram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Stories.DarkThemeResourceProvider;
 
 public class DarkBlueThemeResourcesProvider extends DarkThemeResourceProvider {
 

@@ -1,10 +1,10 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.SharedConfig;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.SharedConfig;
 import org.webrtc.ContextUtils;
 import org.webrtc.VideoSink;
 

@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.blur3.drawable;
+package org.Tajgram.ui.Components.blur3.drawable;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -14,9 +14,9 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.blur3.LiquidGlassEffect;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.blur3.LiquidGlassEffect;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSource;
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawable {

@@ -1,7 +1,7 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -23,19 +23,19 @@ import androidx.annotation.NonNull;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.checkerframework.checker.units.qual.C;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.Crop.CropAreaView;
-import org.telegram.ui.Components.Crop.CropRotationWheel;
-import org.telegram.ui.Components.Crop.CropTransform;
-import org.telegram.ui.Components.Crop.CropView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.Crop.CropAreaView;
+import org.Tajgram.ui.Components.Crop.CropRotationWheel;
+import org.Tajgram.ui.Components.Crop.CropTransform;
+import org.Tajgram.ui.Components.Crop.CropView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

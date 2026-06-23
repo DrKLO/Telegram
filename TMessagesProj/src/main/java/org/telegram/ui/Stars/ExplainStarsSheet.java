@@ -1,7 +1,7 @@
-package org.telegram.ui.Stars;
+package org.Tajgram.ui.Stars;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -16,22 +16,22 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
-import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
-import org.telegram.ui.Components.Premium.StarParticlesView;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.StarAppsSheet;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.BottomSheetWithRecyclerListView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.Premium.GLIcon.GLIconRenderer;
+import org.Tajgram.ui.Components.Premium.GLIcon.GLIconTextureView;
+import org.Tajgram.ui.Components.Premium.GLIcon.Icon3D;
+import org.Tajgram.ui.Components.Premium.StarParticlesView;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.StarAppsSheet;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 

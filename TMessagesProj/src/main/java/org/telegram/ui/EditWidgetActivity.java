@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 7.x.x.
+ * This is the source code of Tajgram for Android v. 7.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -7,7 +7,7 @@
  */
 
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
@@ -45,39 +45,39 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ChatsWidgetProvider;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.ContactsWidgetProvider;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Cells.GroupCreateUserCell;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.ForegroundColorSpanThemable;
-import org.telegram.ui.Components.InviteMembersBottomSheet;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ChatsWidgetProvider;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.ContactsWidgetProvider;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenu;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Cells.GroupCreateUserCell;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Cells.TextInfoPrivacyCell;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackgroundGradientDrawable;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.ForegroundColorSpanThemable;
+import org.Tajgram.ui.Components.InviteMembersBottomSheet;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;

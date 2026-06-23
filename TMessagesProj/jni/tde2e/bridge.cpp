@@ -71,7 +71,7 @@ Java_org_telegram_messenger_voip_ConferenceCall_key_1from_1public_1key(JNIEnv *e
 }
 
 jobject java_CallParticipant(JNIEnv* env, tde2e_api::CallParticipant o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallParticipant");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallParticipant");
     jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
 
     jobject obj = env->NewObject(cls, constructor);
@@ -83,7 +83,7 @@ jobject java_CallParticipant(JNIEnv* env, tde2e_api::CallParticipant o) {
 }
 
 tde2e_api::CallParticipant jni_CallParticipant(JNIEnv* env, jobject o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallParticipant");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallParticipant");
 
     return {
         env->GetLongField(o, env->GetFieldID(cls, "user_id", "J")),
@@ -93,7 +93,7 @@ tde2e_api::CallParticipant jni_CallParticipant(JNIEnv* env, jobject o) {
 }
 
 jobject java_CallState(JNIEnv* env, tde2e_api::CallState o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallState");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallState");
     const jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
 
     const jobject obj = env->NewObject(cls, constructor);
@@ -101,7 +101,7 @@ jobject java_CallState(JNIEnv* env, tde2e_api::CallState o) {
 
     const jobjectArray array = env->NewObjectArray(
         o.participants.size(),
-        env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallParticipant"),
+        env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallParticipant"),
         nullptr
     );
     for (jsize i = 0; i < o.participants.size(); ++i) {
@@ -109,15 +109,15 @@ jobject java_CallState(JNIEnv* env, tde2e_api::CallState o) {
         env->SetObjectArrayElement(array, i, participant);
         env->DeleteLocalRef(participant);
     }
-    env->SetObjectField(obj, env->GetFieldID(cls, "participants", "[Lorg/telegram/messenger/voip/ConferenceCall$CallParticipant;"), array);
+    env->SetObjectField(obj, env->GetFieldID(cls, "participants", "[Lorg/Tajgram/messenger/voip/ConferenceCall$CallParticipant;"), array);
 
     return obj;
 }
 
 tde2e_api::CallState jni_CallState(JNIEnv* env, jobject o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallState");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallState");
 
-    const jobjectArray array = (jobjectArray) env->GetObjectField(o, env->GetFieldID(cls, "participants", "[Lorg/telegram/messenger/voip/ConferenceCall$CallParticipant;"));
+    const jobjectArray array = (jobjectArray) env->GetObjectField(o, env->GetFieldID(cls, "participants", "[Lorg/Tajgram/messenger/voip/ConferenceCall$CallParticipant;"));
     const int arraySize = env->GetArrayLength(array);
     std::vector<tde2e_api::CallParticipant> participants;
     for (int i = 0; i < arraySize; ++i) {
@@ -235,7 +235,7 @@ Java_org_telegram_messenger_voip_ConferenceCall_call_1get_1state(JNIEnv *env, jc
 }
 
 jobject java_CallVerificationState(JNIEnv* env, tde2e_api::CallVerificationState o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallVerificationState");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallVerificationState");
     const jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
 
     const jobject obj = env->NewObject(cls, constructor);
@@ -298,7 +298,7 @@ Java_org_telegram_messenger_voip_ConferenceCall_call_1pull_1outbound_1messages(J
 }
 
 jobject java_CallVerificationWords(JNIEnv* env, tde2e_api::CallVerificationWords o) {
-    const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallVerificationWords");
+    const jclass cls = env->FindClass("org/Tajgram/messenger/voip/ConferenceCall$CallVerificationWords");
     const jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
 
     const jobject obj = env->NewObject(cls, constructor);

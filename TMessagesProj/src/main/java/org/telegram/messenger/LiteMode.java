@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,9 +10,9 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 import androidx.core.math.MathUtils;
 
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
 
 import java.util.ArrayList;
 import java.util.HashSet;

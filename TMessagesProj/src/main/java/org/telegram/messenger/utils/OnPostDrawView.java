@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,7 +10,7 @@ import android.view.ViewTreeObserver;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
 public class OnPostDrawView extends View implements ViewTreeObserver.OnPreDrawListener {

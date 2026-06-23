@@ -1,9 +1,9 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -28,7 +28,7 @@ public class AppGlobalConfig {
 
     public final ConfigDouble tonUsdRate = ofDouble("ton_usd_rate", 3);
 
-    public final ConfigString starsRatingLearnMoreUrl = ofString("stars_rating_learnmore_url", "https://telegram.org/blog/telegram-stars");
+    public final ConfigString starsRatingLearnMoreUrl = ofString("stars_rating_learnmore_url", "https://Tajgram.org/blog/Tajgram-stars");
     public final ConfigBoolean needAgeVideoVerification = ofBoolean("need_age_video_verification", false);
 
     public final ConfigInt starsStarGiftResaleCommissionPermille = ofInt("stars_stargift_resale_commission_permille", 800);

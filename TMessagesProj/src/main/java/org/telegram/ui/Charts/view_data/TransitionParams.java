@@ -1,4 +1,4 @@
-package org.telegram.ui.Charts.view_data;
+package org.Tajgram.ui.Charts.view_data;
 
 public class TransitionParams {
     public float pickerStartOut;

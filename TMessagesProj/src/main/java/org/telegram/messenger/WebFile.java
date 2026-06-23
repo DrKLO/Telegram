@@ -1,7 +1,7 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.Locale;

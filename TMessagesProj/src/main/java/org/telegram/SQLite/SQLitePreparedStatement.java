@@ -1,21 +1,21 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.SQLite;
+package org.Tajgram.SQLite;
 
 import android.os.SystemClock;
 
 import com.google.android.exoplayer2.util.Log;
 
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.TLObject;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.TLObject;
 
 import java.nio.ByteBuffer;
 

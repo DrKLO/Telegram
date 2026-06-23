@@ -1,12 +1,12 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.SharedConfig;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.SharedConfig;
 
 import java.util.Random;
 

@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.graphics.Typeface;
 import android.os.Build;
@@ -14,13 +14,13 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 
-import org.telegram.messenger.CodeHighlighting;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.QuoteSpan;
-import org.telegram.ui.Components.URLSpanReplacement;
+import org.Tajgram.messenger.CodeHighlighting;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.QuoteSpan;
+import org.Tajgram.ui.Components.URLSpanReplacement;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;

@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -20,14 +20,14 @@ import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.SQLite.SQLitePreparedStatement;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.io.File;
 import java.lang.ref.WeakReference;

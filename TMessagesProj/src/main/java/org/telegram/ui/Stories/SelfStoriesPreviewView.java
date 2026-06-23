@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -21,13 +21,13 @@ import android.widget.Scroller;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.StaticLayoutEx;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.StaticLayoutEx;
 
 import java.util.ArrayList;
 

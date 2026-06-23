@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.PointF;
 import android.view.animation.Interpolator;

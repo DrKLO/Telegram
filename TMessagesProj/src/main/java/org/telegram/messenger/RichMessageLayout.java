@@ -1,8 +1,8 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.tgnet.TLObject.hasFlag;
-import static org.telegram.tgnet.TLObject.setFlag;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.tgnet.TLObject.hasFlag;
+import static org.Tajgram.tgnet.TLObject.setFlag;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -52,43 +52,43 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ArticleViewer;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.Components.AnimatedArrowDrawable;
-import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.CheckBoxBase;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LoadingDrawable;
-import org.telegram.ui.Components.ReplyMessageLine;
-import org.telegram.ui.Components.URLSpanBotCommand;
-import org.telegram.ui.Components.URLSpanMono;
-import org.telegram.ui.Components.URLSpanUserMention;
-import org.telegram.ui.GradientClip;
-import org.telegram.ui.MultiLayoutTypingAnimator;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.FormattedDateSpan;
-import org.telegram.ui.Components.LinkPath;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.MediaActionDrawable;
-import org.telegram.ui.Components.RadialProgress2;
-import org.telegram.ui.Components.SeekBar;
-import org.telegram.ui.Components.TableLayout;
-import org.telegram.ui.Components.TextPaintImageReceiverSpan;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.URLSpanNoUnderline;
-import org.telegram.ui.Components.URLSpanReplacement;
-import org.telegram.ui.Components.spoilers.SpoilerEffect;
-import org.telegram.ui.web.WebInstantView;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ArticleViewer;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.Components.AnimatedArrowDrawable;
+import org.Tajgram.ui.Components.ButtonBounce;
+import org.Tajgram.ui.Components.CheckBoxBase;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LoadingDrawable;
+import org.Tajgram.ui.Components.ReplyMessageLine;
+import org.Tajgram.ui.Components.URLSpanBotCommand;
+import org.Tajgram.ui.Components.URLSpanMono;
+import org.Tajgram.ui.Components.URLSpanUserMention;
+import org.Tajgram.ui.GradientClip;
+import org.Tajgram.ui.MultiLayoutTypingAnimator;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.FormattedDateSpan;
+import org.Tajgram.ui.Components.LinkPath;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.MediaActionDrawable;
+import org.Tajgram.ui.Components.RadialProgress2;
+import org.Tajgram.ui.Components.SeekBar;
+import org.Tajgram.ui.Components.TableLayout;
+import org.Tajgram.ui.Components.TextPaintImageReceiverSpan;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.TypefaceSpan;
+import org.Tajgram.ui.Components.URLSpanNoUnderline;
+import org.Tajgram.ui.Components.URLSpanReplacement;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect;
+import org.Tajgram.ui.web.WebInstantView;
 
 import java.io.File;
 import java.net.URLDecoder;
@@ -143,7 +143,7 @@ public class RichMessageLayout {
 
     private ButtonBounce showMoreBounce;
     private Paint showMorePaint;
-    private org.telegram.ui.Components.Text showMoreText;
+    private org.Tajgram.ui.Components.Text showMoreText;
     private LoadingDrawable showMoreLoading;
     private final RectF showMoreRect = new RectF();
     private boolean showMorePressed;
@@ -902,7 +902,7 @@ public class RichMessageLayout {
         final int color = getThemedColor(isOut() ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText);
 
         if (showMoreText == null) {
-            showMoreText = new org.telegram.ui.Components.Text(LocaleController.getString(R.string.ShowMore), 16, AndroidUtilities.bold());
+            showMoreText = new org.Tajgram.ui.Components.Text(LocaleController.getString(R.string.ShowMore), 16, AndroidUtilities.bold());
         }
         if (showMoreBounce == null) {
             showMoreBounce = new ButtonBounce(view, 1.5f, 2.0f);
@@ -4945,8 +4945,8 @@ public class RichMessageLayout {
                 mediaBgPaint.setColor(0x0f000000);
             }
             if (slideDotDrawable == null && view != null) {
-                slideDotDrawable = view.getResources().getDrawable(org.telegram.messenger.R.drawable.slide_dot_small);
-                slideDotBigDrawable = view.getResources().getDrawable(org.telegram.messenger.R.drawable.slide_dot_big);
+                slideDotDrawable = view.getResources().getDrawable(org.Tajgram.messenger.R.drawable.slide_dot_small);
+                slideDotBigDrawable = view.getResources().getDrawable(org.Tajgram.messenger.R.drawable.slide_dot_big);
             }
 
             final int padL = root.padLeft;

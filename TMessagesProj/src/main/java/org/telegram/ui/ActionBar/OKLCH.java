@@ -1,10 +1,10 @@
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
 import android.graphics.Color;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 // https://gist.github.com/dkaraush/65d19d61396f5f3cd8ba7d1b4b3c9432
 public class OKLCH {

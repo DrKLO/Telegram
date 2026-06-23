@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -14,12 +14,12 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.VoIPFragment;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.VoIPFragment;
 import org.webrtc.OrientationHelper;
 
 public class VoIPWindowView extends FrameLayout {

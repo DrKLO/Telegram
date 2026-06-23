@@ -1,8 +1,8 @@
-package org.telegram.ui.Components.Paint.Views;
+package org.Tajgram.ui.Components.Paint.Views;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.AndroidUtilities.rectTmp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.rectTmp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -18,12 +18,12 @@ import android.view.View;
 import androidx.core.math.MathUtils;
 import androidx.core.view.GestureDetectorCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Paint.RenderView;
-import org.telegram.ui.Components.Paint.Swatch;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.Paint.RenderView;
+import org.Tajgram.ui.Components.Paint.Swatch;
 
 public class PaintWeightChooserView extends View {
     private Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

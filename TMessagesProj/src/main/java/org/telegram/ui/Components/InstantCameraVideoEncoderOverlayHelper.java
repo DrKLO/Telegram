@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -7,9 +7,9 @@ import android.opengl.GLUtils;
 
 import androidx.annotation.RawRes;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.R;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

@@ -1,11 +1,11 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
 
 import java.util.Arrays;
 import java.util.List;

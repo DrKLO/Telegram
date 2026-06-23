@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -14,9 +14,9 @@ import android.view.View;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.messenger.voip.VoIPService;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.voip.VoIPService;
 
 public class VoIPTimerView extends View {
 

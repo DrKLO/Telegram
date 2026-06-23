@@ -14,7 +14,7 @@ import android.graphics.Bitmap;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 
 import androidx.annotation.Nullable;
 

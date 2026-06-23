@@ -69,7 +69,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
-import org.telegram.messenger.DispatchQueue;
+import org.Tajgram.messenger.DispatchQueue;
 
 import java.util.List;
 

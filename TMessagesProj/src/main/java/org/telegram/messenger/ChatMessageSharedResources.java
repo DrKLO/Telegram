@@ -1,10 +1,10 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 
-import org.telegram.ui.ArticleViewer;
+import org.Tajgram.ui.ArticleViewer;
 
 public class ChatMessageSharedResources {
 

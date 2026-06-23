@@ -3,5 +3,5 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
-    <application android:name="org.telegram.messenger.ApplicationLoaderImpl" tools:replace="name"/>
+    <application android:name="org.Tajgram.messenger.ApplicationLoaderImpl" tools:replace="name"/>
 </manifest>

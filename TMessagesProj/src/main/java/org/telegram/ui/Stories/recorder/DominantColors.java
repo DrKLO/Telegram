@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -7,7 +7,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.palette.graphics.Palette;
 import androidx.palette.graphics.Target;
 
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.Utilities;
 
 public class DominantColors {
 

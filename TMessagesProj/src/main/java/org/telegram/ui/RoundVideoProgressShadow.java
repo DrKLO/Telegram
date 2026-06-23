@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.graphics.Canvas;
 import android.graphics.Color;

@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.view.View;
@@ -8,11 +8,11 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.ui.GroupCallActivity;
-import org.telegram.ui.GroupCallTabletGridAdapter;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.ui.GroupCallActivity;
+import org.Tajgram.ui.GroupCallTabletGridAdapter;
 
 public class GroupCallGridCell extends FrameLayout {
 

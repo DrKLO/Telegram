@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -11,12 +11,12 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.GenericProvider;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.GenericProvider;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -17,8 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.SvgHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.SvgHelper;
 
 public class CellFlickerDrawable {
 

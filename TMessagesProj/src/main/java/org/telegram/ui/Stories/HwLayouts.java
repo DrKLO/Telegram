@@ -1,7 +1,7 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import static org.telegram.messenger.SharedConfig.PERFORMANCE_CLASS_HIGH;
-import static org.telegram.messenger.SharedConfig.getDevicePerformanceClass;
+import static org.Tajgram.messenger.SharedConfig.PERFORMANCE_CLASS_HIGH;
+import static org.Tajgram.messenger.SharedConfig.getDevicePerformanceClass;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,13 +10,13 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.ImageReceiver;
+import org.Tajgram.messenger.ImageReceiver;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarsImageView;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarsImageView;
 
 import java.util.HashSet;
 import java.util.Set;

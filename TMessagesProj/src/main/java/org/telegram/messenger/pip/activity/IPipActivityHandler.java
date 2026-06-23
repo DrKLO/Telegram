@@ -1,4 +1,4 @@
-package org.telegram.messenger.pip.activity;
+package org.Tajgram.messenger.pip.activity;
 
 import android.app.PictureInPictureParams;
 import android.content.res.Configuration;

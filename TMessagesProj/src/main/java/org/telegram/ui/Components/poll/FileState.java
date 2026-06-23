@@ -1,15 +1,15 @@
-package org.telegram.ui.Components.poll;
+package org.Tajgram.ui.Components.poll;
 
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.Text;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.Text;
 
 import java.io.File;
 

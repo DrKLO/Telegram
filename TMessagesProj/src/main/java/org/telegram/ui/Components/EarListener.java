@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -12,14 +12,14 @@ import android.os.PowerManager;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.voip.VoIPService;
-import org.telegram.ui.PhotoViewer;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.voip.VoIPService;
+import org.Tajgram.ui.PhotoViewer;
 
 public class EarListener implements SensorEventListener {
 
@@ -51,7 +51,7 @@ public class EarListener implements SensorEventListener {
         }
 
         powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-        proximityWakeLock = powerManager.newWakeLock(0x00000020, "telegram:proximity_lock2");
+        proximityWakeLock = powerManager.newWakeLock(0x00000020, "Tajgram:proximity_lock2");
 
         audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
     }

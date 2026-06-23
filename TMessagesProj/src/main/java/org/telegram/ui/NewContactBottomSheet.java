@@ -1,17 +1,17 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import static android.widget.LinearLayout.HORIZONTAL;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.Manifest;
 import android.accounts.Account;
@@ -56,47 +56,47 @@ import android.widget.TextView;
 
 import androidx.core.app.ActivityCompat;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedPhoneNumberEditText;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CheckBox2;
-import org.telegram.ui.Components.CircularProgressDrawable;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.ContextProgressView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.OutlineEditText;
-import org.telegram.ui.Components.OutlineTextContainerView;
-import org.telegram.ui.Components.PermissionRequest;
-import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.TextHelper;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.Cells.CheckBoxCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AnimatedPhoneNumberEditText;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CheckBox2;
+import org.Tajgram.ui.Components.CircularProgressDrawable;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.ContextProgressView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.OutlineEditText;
+import org.Tajgram.ui.Components.OutlineTextContainerView;
+import org.Tajgram.ui.Components.PermissionRequest;
+import org.Tajgram.ui.Components.RadialProgressView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.TextHelper;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -941,10 +941,10 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         final Utilities.Callback<TLRPC.User> onUser = user -> {
             if (user == null) {
                 phoneStatusView.setImageDrawable(null);
-                underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is not on Telegram. **Invite >**", () -> {
+                underPhoneTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag("This phone number is not on Tajgram. **Invite >**", () -> {
                     final Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse("sms:+" + phone));
-                    intent.putExtra("sms_body", LocaleController.formatString(R.string.InviteText2, "https://telegram.org/dl"));
+                    intent.putExtra("sms_body", LocaleController.formatString(R.string.InviteText2, "https://Tajgram.org/dl"));
                     getContext().startActivity(intent);
                 }), true, dp(8f / 3f), dp(1)));
             } else {
@@ -961,7 +961,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
                         }
                     }), true, dp(8f / 3f), dp(1)));
                 } else {
-                    underPhoneTextView.setText("This phone number is on Telegram.");
+                    underPhoneTextView.setText("This phone number is on Tajgram.");
                 }
             }
             updateBottomTranslation(false);

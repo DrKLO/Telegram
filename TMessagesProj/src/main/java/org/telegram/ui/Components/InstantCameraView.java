@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -69,41 +69,41 @@ import androidx.core.graphics.ColorUtils;
 
 import com.google.android.exoplayer2.ExoPlayer;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.AutoDeleteMediaTask;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.camera.Camera2Session;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.messenger.camera.CameraInfo;
-import org.telegram.messenger.camera.CameraSession;
-import org.telegram.messenger.camera.Size;
-import org.telegram.messenger.video.MP4Builder;
-import org.telegram.messenger.video.Mp4Movie;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
-import org.telegram.ui.Stories.recorder.DualCameraView;
-import org.telegram.ui.Stories.recorder.FlashViews;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.AutoDeleteMediaTask;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.VideoEditedInfo;
+import org.Tajgram.messenger.camera.Camera2Session;
+import org.Tajgram.messenger.camera.CameraController;
+import org.Tajgram.messenger.camera.CameraInfo;
+import org.Tajgram.messenger.camera.CameraSession;
+import org.Tajgram.messenger.camera.Size;
+import org.Tajgram.messenger.video.MP4Builder;
+import org.Tajgram.messenger.video.Mp4Movie;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.Tajgram.ui.Components.voip.CellFlickerDrawable;
+import org.Tajgram.ui.Stories.recorder.DualCameraView;
+import org.Tajgram.ui.Stories.recorder.FlashViews;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
 import java.io.FileOutputStream;

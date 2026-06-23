@@ -14,7 +14,7 @@ import android.graphics.Matrix;
 import android.opengl.GLES20;
 import java.nio.ByteBuffer;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 import org.webrtc.VideoFrame.I420Buffer;
 import org.webrtc.VideoFrame.TextureBuffer;
 

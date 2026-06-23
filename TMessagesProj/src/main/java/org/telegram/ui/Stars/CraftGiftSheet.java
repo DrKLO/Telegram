@@ -1,4 +1,4 @@
-package org.telegram.ui.Stars;
+package org.Tajgram.ui.Stars;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -9,7 +9,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.BottomSheet;
 
 public class CraftGiftSheet extends BottomSheet {
 

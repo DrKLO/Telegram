@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -39,26 +39,26 @@ import androidx.core.app.NotificationCompat;
 
 import com.google.android.exoplayer2.C;
 
-import org.telegram.messenger.audioinfo.AudioInfo;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AudioPlayerAlert;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.audioinfo.AudioInfo;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AudioPlayerAlert;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.io.File;
 
 public class MusicPlayerService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
-    public static final String NOTIFY_PREVIOUS = "org.telegram.android.musicplayer.previous";
-    public static final String NOTIFY_CLOSE = "org.telegram.android.musicplayer.close";
-    public static final String NOTIFY_PAUSE = "org.telegram.android.musicplayer.pause";
-    public static final String NOTIFY_PLAY = "org.telegram.android.musicplayer.play";
-    public static final String NOTIFY_NEXT = "org.telegram.android.musicplayer.next";
-    public static final String NOTIFY_SEEK = "org.telegram.android.musicplayer.seek";
-    public static final String NOTIFY_REPEAT = "org.telegram.android.musicplayer.repeat";
-    public static final String NOTIFY_SHUFFLE = "org.telegram.android.musicplayer.shuffle";
+    public static final String NOTIFY_PREVIOUS = "org.Tajgram.android.musicplayer.previous";
+    public static final String NOTIFY_CLOSE = "org.Tajgram.android.musicplayer.close";
+    public static final String NOTIFY_PAUSE = "org.Tajgram.android.musicplayer.pause";
+    public static final String NOTIFY_PLAY = "org.Tajgram.android.musicplayer.play";
+    public static final String NOTIFY_NEXT = "org.Tajgram.android.musicplayer.next";
+    public static final String NOTIFY_SEEK = "org.Tajgram.android.musicplayer.seek";
+    public static final String NOTIFY_REPEAT = "org.Tajgram.android.musicplayer.repeat";
+    public static final String NOTIFY_SHUFFLE = "org.Tajgram.android.musicplayer.shuffle";
 
     private static final int ID_NOTIFICATION = 5;
 

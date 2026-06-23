@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.app.Activity;
 import android.view.ViewGroup;

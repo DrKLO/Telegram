@@ -1,9 +1,9 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import static com.google.zxing.common.detector.MathUtils.distance;
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
-import static org.telegram.ui.ActionBar.Theme.key_chat_inTextSelectionHighlight;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
+import static org.Tajgram.ui.ActionBar.Theme.key_chat_inTextSelectionHighlight;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -42,28 +42,28 @@ import androidx.annotation.NonNull;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LanguageDetector;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.R;
-import org.telegram.messenger.RichMessageLayout;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.FloatingActionMode;
-import org.telegram.ui.ActionBar.FloatingToolbar;
-import org.telegram.ui.iv.RichTextCell;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ArticleViewer;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.CornerPath;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.RestrictedLanguagesSelectActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LanguageDetector;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.RichMessageLayout;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.FloatingActionMode;
+import org.Tajgram.ui.ActionBar.FloatingToolbar;
+import org.Tajgram.ui.iv.RichTextCell;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ArticleViewer;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.CornerPath;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.RestrictedLanguagesSelectActivity;
 
 import java.util.ArrayList;
 

@@ -46,8 +46,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.VintageIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.VintageIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_6_launcher_sa"
             android:roundIcon="@mipmap/icon_6_launcher_sa"
             android:exported="true"
@@ -62,8 +62,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.AquaIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.AquaIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_4_launcher_sa"
             android:roundIcon="@mipmap/icon_4_launcher_sa"
             android:exported="true"
@@ -78,8 +78,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.PremiumIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.PremiumIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_3_launcher_sa"
             android:roundIcon="@mipmap/icon_3_launcher_sa"
             android:exported="true"
@@ -94,8 +94,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.TurboIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.TurboIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_5_launcher_sa"
             android:roundIcon="@mipmap/icon_5_launcher_sa"
             android:exported="true"
@@ -110,8 +110,8 @@
 
         <activity-alias
             android:enabled="false"
-            android:name="org.telegram.messenger.NoxIcon"
-            android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:name="org.Tajgram.messenger.NoxIcon"
+            android:targetActivity="org.Tajgram.ui.LaunchActivity"
             android:icon="@mipmap/icon_2_launcher_sa"
             android:roundIcon="@mipmap/icon_2_launcher_sa"
             android:exported="true"
@@ -127,7 +127,7 @@
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
 
         <service
-            android:name="org.telegram.messenger.GcmPushListenerService" android:exported="true">
+            android:name="org.Tajgram.messenger.GcmPushListenerService" android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
@@ -149,7 +149,7 @@
         </receiver>
 
         <receiver
-            android:name="org.telegram.messenger.SMSResultService"
+            android:name="org.Tajgram.messenger.SMSResultService"
             android:exported="false">
         </receiver>
 

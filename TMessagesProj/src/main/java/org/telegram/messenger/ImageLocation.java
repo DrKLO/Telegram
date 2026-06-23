@@ -1,9 +1,9 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.web.WebInstantView;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.web.WebInstantView;
 
 public class ImageLocation {
 

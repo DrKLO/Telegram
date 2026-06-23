@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -59,19 +59,19 @@ import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.FingerprintController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.recorder.KeyboardNotifier;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BotWebViewVibrationEffect;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.FingerprintController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.support.fingerprint.FingerprintManagerCompat;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1703,7 +1703,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             title.setTextColor(0xFFFFFFFF);
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
             title.setTypeface(AndroidUtilities.bold());
-            title.setText("Unlock to use Telegram");
+            title.setText("Unlock to use Tajgram");
             title.setGravity(Gravity.CENTER);
             container1.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 8));
 

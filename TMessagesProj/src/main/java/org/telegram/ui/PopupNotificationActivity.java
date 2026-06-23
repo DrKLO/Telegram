@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -37,46 +37,46 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.DownloadController;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.WebFile;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.MessageObject;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChatActivityEnterView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PlayingGameDrawable;
-import org.telegram.ui.Components.PopupAudioView;
-import org.telegram.ui.Components.RecordStatusDrawable;
-import org.telegram.ui.Components.RoundStatusDrawable;
-import org.telegram.ui.Components.SendingFileDrawable;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.StatusDrawable;
-import org.telegram.ui.Components.TypingDotsDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.DownloadController;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.WebFile;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.ActionBarMenu;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.ChatActivityEnterView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.PlayingGameDrawable;
+import org.Tajgram.ui.Components.PopupAudioView;
+import org.Tajgram.ui.Components.RecordStatusDrawable;
+import org.Tajgram.ui.Components.RoundStatusDrawable;
+import org.Tajgram.ui.Components.SendingFileDrawable;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.StatusDrawable;
+import org.Tajgram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
 import java.util.ArrayList;

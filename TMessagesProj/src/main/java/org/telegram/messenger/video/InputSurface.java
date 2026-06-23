@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import android.annotation.TargetApi;
 import android.opengl.EGL14;

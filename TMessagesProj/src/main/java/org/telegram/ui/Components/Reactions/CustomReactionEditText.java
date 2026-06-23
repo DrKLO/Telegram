@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Reactions;
+package org.Tajgram.ui.Components.Reactions;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -17,11 +17,11 @@ import android.view.MotionEvent;
 import androidx.annotation.NonNull;
 import androidx.core.view.GestureDetectorCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.EditTextCaption;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.EditTextCaption;
 
 @SuppressLint("ViewConstructor")
 public class CustomReactionEditText extends EditTextCaption {

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.poll.buttons;
+package org.Tajgram.ui.Components.poll.buttons;
 
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
@@ -10,7 +10,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public abstract class PollButtonDrawableBase extends Drawable {
     protected final Theme.ResourcesProvider resourcesProvider;

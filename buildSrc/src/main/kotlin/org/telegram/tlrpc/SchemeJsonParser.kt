@@ -1,9 +1,9 @@
-package org.telegram.tlrpc
+package org.Tajgram.tlrpc
 
-import org.telegram.tlrpc.models.*
-import org.telegram.tlrpc.schema.TlSchemaJson
-import org.telegram.tlrpc.schema.TlSchemaJsonParser
-import org.telegram.tlrpc.schema.TlSchemaObject
+import org.Tajgram.tlrpc.models.*
+import org.Tajgram.tlrpc.schema.TlSchemaJson
+import org.Tajgram.tlrpc.schema.TlSchemaJsonParser
+import org.Tajgram.tlrpc.schema.TlSchemaObject
 
 object SchemeJsonParser {
     fun parse(version: TlSchemeVersion, json: String): TlScheme {

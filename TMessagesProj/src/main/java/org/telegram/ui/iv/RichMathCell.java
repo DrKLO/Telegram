@@ -1,6 +1,6 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -16,15 +16,15 @@ import android.widget.FrameLayout;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 

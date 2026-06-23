@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
@@ -30,11 +30,11 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -264,8 +264,8 @@ public class BlurringShader {
         }
         GLES20.glUniform1f(p.hasVideoMatrixHandle, oes ? 1 : 0);
 
-        org.telegram.ui.Components.Paint.Shader.SetColorUniform(p.gradientTopHandle, gradientTop);
-        org.telegram.ui.Components.Paint.Shader.SetColorUniform(p.gradientBottomHandle, gradientBottom);
+        org.Tajgram.ui.Components.Paint.Shader.SetColorUniform(p.gradientTopHandle, gradientTop);
+        org.Tajgram.ui.Components.Paint.Shader.SetColorUniform(p.gradientBottomHandle, gradientBottom);
 
         synchronized (matrixLock) {
             GLES20.glUniformMatrix4fv(p.matrixHandle, 1, false, this.matrix, 0);
@@ -288,8 +288,8 @@ public class BlurringShader {
             GLES20.glUniform2f(p.texSzHandle, textureWidth, textureHeight);
             GLES20.glUniform1i(p.stepHandle, 0);
 
-            org.telegram.ui.Components.Paint.Shader.SetColorUniform(p.gradientTopHandle, gradientTop);
-            org.telegram.ui.Components.Paint.Shader.SetColorUniform(p.gradientBottomHandle, gradientBottom);
+            org.Tajgram.ui.Components.Paint.Shader.SetColorUniform(p.gradientTopHandle, gradientTop);
+            org.Tajgram.ui.Components.Paint.Shader.SetColorUniform(p.gradientBottomHandle, gradientBottom);
 
             GLES20.glUniform1f(p.flipyHandle, 0f);
 

@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger.browser;
+package org.Tajgram.messenger.browser;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -21,36 +21,36 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.CustomTabsCopyReceiver;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.ShareBroadcastReceiver;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.support.customtabs.CustomTabsCallback;
-import org.telegram.messenger.support.customtabs.CustomTabsClient;
-import org.telegram.messenger.support.customtabs.CustomTabsIntent;
-import org.telegram.messenger.support.customtabs.CustomTabsServiceConnection;
-import org.telegram.messenger.support.customtabs.CustomTabsSession;
-import org.telegram.messenger.support.customtabsclient.shared.CustomTabsHelper;
-import org.telegram.messenger.support.customtabsclient.shared.ServiceConnection;
-import org.telegram.messenger.support.customtabsclient.shared.ServiceConnectionCallback;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheetTabs;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.CustomTabsCopyReceiver;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.ShareBroadcastReceiver;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.support.customtabs.CustomTabsCallback;
+import org.Tajgram.messenger.support.customtabs.CustomTabsClient;
+import org.Tajgram.messenger.support.customtabs.CustomTabsIntent;
+import org.Tajgram.messenger.support.customtabs.CustomTabsServiceConnection;
+import org.Tajgram.messenger.support.customtabs.CustomTabsSession;
+import org.Tajgram.messenger.support.customtabsclient.shared.CustomTabsHelper;
+import org.Tajgram.messenger.support.customtabsclient.shared.ServiceConnection;
+import org.Tajgram.messenger.support.customtabsclient.shared.ServiceConnectionCallback;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.ActionBarLayout;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheetTabs;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.IDN;
@@ -224,7 +224,7 @@ public class Browser {
         return (
             isTelegraphUrl(url, false, true) ||
             url.matches("^(https://)?t\\.me/iv\\??(/.*|$)") || // t.me/iv?
-            url.matches("^(https://)?telegram\\.org/(blog|tour)(/.*|$)") || // telegram.org/blog, telegram.org/tour
+            url.matches("^(https://)?Tajgram\\.org/(blog|tour)(/.*|$)") || // Tajgram.org/blog, Tajgram.org/tour
             url.matches("^(https://)?fragment\\.com(/.*|$)") // fragment.com
         );
     }
@@ -304,7 +304,7 @@ public class Browser {
         if (tryTelegraph) {
             try {
                 String host = AndroidUtilities.getHostAuthority(uri);
-                if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser() != null && (isTelegraphUrl(host, true) || "telegram.org".equalsIgnoreCase(host) && (uri.toString().toLowerCase().contains("telegram.org/faq") || uri.toString().toLowerCase().contains("telegram.org/privacy") || uri.toString().toLowerCase().contains("telegram.org/blog")))) {
+                if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser() != null && (isTelegraphUrl(host, true) || "Tajgram.org".equalsIgnoreCase(host) && (uri.toString().toLowerCase().contains("Tajgram.org/faq") || uri.toString().toLowerCase().contains("Tajgram.org/privacy") || uri.toString().toLowerCase().contains("Tajgram.org/blog")))) {
                     final AlertDialog[] progressDialog = new AlertDialog[] {
                         new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER)
                     };
@@ -709,7 +709,7 @@ public class Browser {
             return true;
         } else if ("tg".equals(uri.getScheme())) {
             return true;
-        } else if ("telegram.dog".equals(host)) {
+        } else if ("Tajgram.dog".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 if (all) {
@@ -724,7 +724,7 @@ public class Browser {
                 }
                 return true;
             }
-        } else if ("telegram.me".equals(host) || "t.me".equals(host)) {
+        } else if ("Tajgram.me".equals(host) || "t.me".equals(host)) {
             String path = uri.getPath();
             if (path != null && path.length() > 1) {
                 if (all) {
@@ -739,10 +739,10 @@ public class Browser {
                 }
                 return true;
             }
-        } else if ("telegram.org".equals(host) && uri != null && uri.getPath() != null && uri.getPath().startsWith("/blog/")) {
+        } else if ("Tajgram.org".equals(host) && uri != null && uri.getPath() != null && uri.getPath().startsWith("/blog/")) {
             return true;
         } else if (all) {
-            if (host.endsWith("telegram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe")) {
+            if (host.endsWith("Tajgram.org") || host.endsWith("telegra.ph") || host.endsWith("telesco.pe")) {
                 return true;
             }
         }

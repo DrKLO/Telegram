@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;

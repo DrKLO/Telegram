@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -18,11 +18,11 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.widget.EditText;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.spoilers.SpoilerEffect;
-import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect;
+import org.Tajgram.ui.Components.spoilers.SpoilersClickDetector;
 
 import java.util.ArrayList;
 import java.util.List;

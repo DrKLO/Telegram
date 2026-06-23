@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -36,14 +36,14 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.json.JSONObject;
-import org.telegram.messenger.voip.VideoCapturerDevice;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.ForegroundDetector;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.IUpdateLayout;
-import org.telegram.ui.LauncherIconController;
+import org.Tajgram.messenger.voip.VideoCapturerDevice;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.ForegroundDetector;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.IUpdateLayout;
+import org.Tajgram.ui.LauncherIconController;
 
 import java.io.File;
 import java.util.Locale;
@@ -171,7 +171,7 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        return new File("/data/data/org.telegram.messenger/files");
+        return new File("/data/data/org.Tajgram.messenger/files");
     }
 
     public static File getFilesDirFixed(String child) {

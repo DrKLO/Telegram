@@ -1,7 +1,7 @@
-package org.telegram.ui.Components.spoilers;
+package org.Tajgram.ui.Components.spoilers;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -37,19 +37,19 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.Choreographer60FpsContent;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.CachedStaticLayout;
-import org.telegram.ui.Cells.BaseCell;
-import org.telegram.ui.Components.Easings;
-import org.telegram.ui.Components.QuoteSpan;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.TextStyleSpan;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.utils.Choreographer60FpsContent;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.CachedStaticLayout;
+import org.Tajgram.ui.Cells.BaseCell;
+import org.Tajgram.ui.Components.Easings;
+import org.Tajgram.ui.Components.QuoteSpan;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.Components.TextStyleSpan;
 
 import java.util.ArrayList;
 import java.util.Arrays;

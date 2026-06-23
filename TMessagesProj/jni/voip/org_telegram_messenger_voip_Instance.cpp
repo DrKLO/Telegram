@@ -52,7 +52,7 @@ public:
     void call(JNIEnv *env, jobjectArray audioSsrcs) {
         std::vector<MediaChannelDescription> descriptions;
 
-        jclass clz = env->FindClass("org/telegram/messenger/voip/VoIPService$RequestedParticipant");
+        jclass clz = env->FindClass("org/Tajgram/messenger/voip/VoIPService$RequestedParticipant");
         jsize size = env->GetArrayLength(audioSsrcs);
         for (int i = 0; i < size; i++) {
             auto obj = env->GetObjectArrayElement(audioSsrcs, i);
@@ -391,14 +391,14 @@ void initWebRTC(JNIEnv *env) {
     webrtcLoaded = true;
 
     DEBUG_REF("NativeInstanceClass");
-    NativeInstanceClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/NativeInstance")));
+    NativeInstanceClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/Tajgram/messenger/voip/NativeInstance")));
     DEBUG_REF("TrafficStatsClass");
-    TrafficStatsClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$TrafficStats")));
+    TrafficStatsClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/Tajgram/messenger/voip/Instance$TrafficStats")));
     DEBUG_REF("FingerprintClass");
-    FingerprintClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$Fingerprint")));
+    FingerprintClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/Tajgram/messenger/voip/Instance$Fingerprint")));
     DEBUG_REF("FinalStateClass");
-    FinalStateClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$FinalState")));
-    FinalStateInitMethod = env->GetMethodID(FinalStateClass, "<init>", "([BLjava/lang/String;Lorg/telegram/messenger/voip/Instance$TrafficStats;Z)V");
+    FinalStateClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/Tajgram/messenger/voip/Instance$FinalState")));
+    FinalStateInitMethod = env->GetMethodID(FinalStateClass, "<init>", "([BLjava/lang/String;Lorg/Tajgram/messenger/voip/Instance$TrafficStats;Z)V");
 }
 
 extern "C"
@@ -1021,7 +1021,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_stopNativ
         jobject globalRef = ((AndroidContext *) instance->_platformContext.get())->getJavaPeerInstance();
         const std::string &path = tgvoip::jni::JavaStringToStdString(env, JavaObject(env, globalRef).getStringField("persistentStateFilePath"));
         savePersistentState(path.c_str(), finalState.persistentState);
-        env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onStop", "(Lorg/telegram/messenger/voip/Instance$FinalState;)V"), asJavaFinalState(env, finalState));
+        env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onStop", "(Lorg/Tajgram/messenger/voip/Instance$FinalState;)V"), asJavaFinalState(env, finalState));
         delete instance;
     });
 }

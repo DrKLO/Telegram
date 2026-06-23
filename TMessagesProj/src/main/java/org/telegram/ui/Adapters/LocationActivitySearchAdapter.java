@@ -1,25 +1,25 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x
+ * This is the source code of Tajgram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Adapters;
+package org.Tajgram.ui.Adapters;
 
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.LocationCell;
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.GraySectionCell;
+import org.Tajgram.ui.Cells.LocationCell;
+import org.Tajgram.ui.Components.FlickerLoadingView;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import androidx.recyclerview.widget.RecyclerView;
 

@@ -41,7 +41,7 @@ struct ImplDataAndroid{
 };
 
 #ifndef TGVOIP_PACKAGE_PATH
-#define TGVOIP_PACKAGE_PATH "org/telegram/messenger/voip"
+#define TGVOIP_PACKAGE_PATH "org/Tajgram/messenger/voip"
 #endif
 
 using namespace tgvoip;

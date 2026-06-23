@@ -1,4 +1,4 @@
-package org.telegram.ui.web;
+package org.Tajgram.ui.web;
 
 import android.util.Base64;
 import android.util.Base64InputStream;

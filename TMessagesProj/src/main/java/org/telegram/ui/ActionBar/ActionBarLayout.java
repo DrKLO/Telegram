@@ -1,17 +1,17 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.Utilities.clamp01;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.Utilities.clamp01;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -62,32 +62,32 @@ import androidx.core.math.MathUtils;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.ViewOutlineProviderImpl;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.BackButtonMenu;
-import org.telegram.ui.EmptyBaseFragment;
-import org.telegram.ui.GradientHeaderActivity;
-import org.telegram.ui.MainTabsActivity;
-import org.telegram.ui.bots.BotWebViewSheet;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.ChatAttachAlert;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
-import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
-import org.telegram.ui.Components.GroupCallPip;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.StoryViewer;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.utils.ViewOutlineProviderImpl;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.BackButtonMenu;
+import org.Tajgram.ui.EmptyBaseFragment;
+import org.Tajgram.ui.GradientHeaderActivity;
+import org.Tajgram.ui.MainTabsActivity;
+import org.Tajgram.ui.bots.BotWebViewSheet;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.ChatAttachAlert;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.FloatingDebug.FloatingDebugController;
+import org.Tajgram.ui.Components.FloatingDebug.FloatingDebugProvider;
+import org.Tajgram.ui.Components.GroupCallPip;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.StoryViewer;
 
 import java.util.ArrayList;
 import java.util.Collections;

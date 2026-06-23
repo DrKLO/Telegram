@@ -1,4 +1,4 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -17,19 +17,19 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewOutlineProvider;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DownloadController;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.MediaActionDrawable;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.RadialProgress2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DownloadController;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.ImageLoader;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.BackgroundGradientDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.MediaActionDrawable;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.RadialProgress2;
 
 import java.io.File;
 

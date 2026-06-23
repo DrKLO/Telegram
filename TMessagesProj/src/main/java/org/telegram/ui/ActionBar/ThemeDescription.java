@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -30,34 +30,34 @@ import android.widget.TextView;
 
 import androidx.viewpager.widget.ViewPager;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.ui.Components.AnimatedArrowDrawable;
-import org.telegram.ui.Components.AudioPlayerAlert;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.ChatBigEmptyView;
-import org.telegram.ui.Components.CheckBox;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.ContextProgressView;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.EditTextCaption;
-import org.telegram.ui.Components.EditTextEmoji;
-import org.telegram.ui.Components.EmptyTextProgressView;
-import org.telegram.ui.Components.GroupCreateCheckBox;
-import org.telegram.ui.Components.GroupCreateSpan;
-import org.telegram.ui.Components.LetterDrawable;
-import org.telegram.ui.Components.LineProgressView;
-import org.telegram.ui.Components.MessageBackgroundDrawable;
-import org.telegram.ui.Components.NumberTextView;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Components.RadioButton;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScamDrawable;
-import org.telegram.ui.Components.SeekBarView;
-import org.telegram.ui.Components.TypefaceSpan;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.ui.Components.AnimatedArrowDrawable;
+import org.Tajgram.ui.Components.AudioPlayerAlert;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.ChatBigEmptyView;
+import org.Tajgram.ui.Components.CheckBox;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.ContextProgressView;
+import org.Tajgram.ui.Components.EditTextBoldCursor;
+import org.Tajgram.ui.Components.EditTextCaption;
+import org.Tajgram.ui.Components.EditTextEmoji;
+import org.Tajgram.ui.Components.EmptyTextProgressView;
+import org.Tajgram.ui.Components.GroupCreateCheckBox;
+import org.Tajgram.ui.Components.GroupCreateSpan;
+import org.Tajgram.ui.Components.LetterDrawable;
+import org.Tajgram.ui.Components.LineProgressView;
+import org.Tajgram.ui.Components.MessageBackgroundDrawable;
+import org.Tajgram.ui.Components.NumberTextView;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Components.RadialProgressView;
+import org.Tajgram.ui.Components.RadioButton;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ScamDrawable;
+import org.Tajgram.ui.Components.SeekBarView;
+import org.Tajgram.ui.Components.TypefaceSpan;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

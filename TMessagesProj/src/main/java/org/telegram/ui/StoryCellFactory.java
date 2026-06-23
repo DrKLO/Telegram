@@ -1,15 +1,15 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.view.View;
 
-import org.telegram.messenger.MessageObject;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.SharedPhotoVideoCell2;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.SharedPhotoVideoCell2;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
 
 public class StoryCellFactory extends UItem.UItemFactory<SharedPhotoVideoCell2> {
     static {

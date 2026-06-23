@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.blur3;
+package org.Tajgram.ui.Components.blur3;
 
 import android.os.Build;
 import android.view.View;
@@ -6,11 +6,11 @@ import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
-import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
+import org.Tajgram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSource;
+import org.Tajgram.ui.Components.chat.ViewPositionWatcher;
 
 import me.vkryl.core.reference.ReferenceList;
 

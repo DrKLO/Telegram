@@ -14,14 +14,14 @@
  * limitations under the License
  */
 
-package org.telegram.messenger.support.fingerprint;
+package org.Tajgram.messenger.support.fingerprint;
 
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Handler;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 
 import java.security.Signature;
 

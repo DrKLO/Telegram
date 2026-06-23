@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Crop;
+package org.Tajgram.ui.Components.Crop;
 
 import android.content.Context;
 import androidx.core.view.MotionEventCompat;
@@ -9,7 +9,7 @@ import android.view.ScaleGestureDetector;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 public class CropGestureDetector {
     private ScaleGestureDetector mDetector;

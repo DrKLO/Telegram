@@ -1,13 +1,13 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.util.Log;
 
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.video.audio_input.AudioInput;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.video.audio_input.AudioInput;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

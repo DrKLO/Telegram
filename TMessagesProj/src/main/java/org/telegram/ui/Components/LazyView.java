@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;

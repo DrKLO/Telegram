@@ -1,11 +1,11 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.ui.Components.Paint.Views.PaintTextOptionsView;
 
 import java.util.ArrayList;
 import java.util.Arrays;

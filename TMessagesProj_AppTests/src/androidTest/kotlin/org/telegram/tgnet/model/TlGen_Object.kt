@@ -1,6 +1,6 @@
-package org.telegram.tgnet.model
+package org.Tajgram.tgnet.model
 
-import org.telegram.tgnet.OutputSerializedData
+import org.Tajgram.tgnet.OutputSerializedData
 
 public interface TlGen_Object {
     fun serializeToStream(stream: OutputSerializedData)

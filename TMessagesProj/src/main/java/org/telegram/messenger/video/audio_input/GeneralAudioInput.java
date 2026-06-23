@@ -1,10 +1,10 @@
-package org.telegram.messenger.video.audio_input;
+package org.Tajgram.messenger.video.audio_input;
 
 import android.util.Log;
 
-import org.telegram.messenger.video.AudioBufferConverter;
-import org.telegram.messenger.video.AudioConversions;
-import org.telegram.messenger.video.AudioDecoder;
+import org.Tajgram.messenger.video.AudioBufferConverter;
+import org.Tajgram.messenger.video.AudioConversions;
+import org.Tajgram.messenger.video.AudioDecoder;
 
 import java.io.IOException;
 import java.nio.ShortBuffer;

@@ -1,4 +1,4 @@
-package org.telegram.ui.bots;
+package org.Tajgram.ui.bots;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -8,8 +8,8 @@ import android.hardware.SensorManager;
 import android.util.Log;
 
 import org.json.JSONObject;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.web.BotWebViewContainer;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.web.BotWebViewContainer;
 
 public class BotSensors {
 
@@ -281,7 +281,7 @@ public class BotSensors {
                 eventData.put("x", -xyz[0]);
                 eventData.put("y", -xyz[1]);
                 eventData.put("z", -xyz[2]);
-                webView.evaluateJS("window.Telegram.WebView.receiveEvent('" + "accelerometer_changed" + "', " + eventData + ");");
+                webView.evaluateJS("window.Tajgram.WebView.receiveEvent('" + "accelerometer_changed" + "', " + eventData + ");");
             } catch (Exception e) {}
         }
 
@@ -330,7 +330,7 @@ public class BotSensors {
 //                eventData.put("x", xyz[2]);
 //                eventData.put("y", xyz[0]);
 //                eventData.put("z", xyz[1]);
-                webView.evaluateJS("window.Telegram.WebView.receiveEvent('" + "gyroscope_changed" + "', " + eventData + ");");
+                webView.evaluateJS("window.Tajgram.WebView.receiveEvent('" + "gyroscope_changed" + "', " + eventData + ");");
             } catch (Exception e) {}
             captured[0] = 0;
             captured[1] = 0;
@@ -385,7 +385,7 @@ public class BotSensors {
                     eventData.put("alpha", -orientation[0]);
                     eventData.put("beta",  -orientation[1]);
                     eventData.put("gamma", orientation[2]);
-                    webView.evaluateJS("window.Telegram.WebView.receiveEvent('" + "device_orientation_changed" + "', " + eventData + ");");
+                    webView.evaluateJS("window.Tajgram.WebView.receiveEvent('" + "device_orientation_changed" + "', " + eventData + ");");
                 } catch (Exception e) {}
             }
         }
@@ -450,7 +450,7 @@ public class BotSensors {
                 eventData.put("alpha", -orientation[0]);
                 eventData.put("beta",  -orientation[1]);
                 eventData.put("gamma", orientation[2]);
-                webView.evaluateJS("window.Telegram.WebView.receiveEvent('" + "device_orientation_changed" + "', " + eventData + ");");
+                webView.evaluateJS("window.Tajgram.WebView.receiveEvent('" + "device_orientation_changed" + "', " + eventData + ");");
             } catch (Exception e) {}
         }
 

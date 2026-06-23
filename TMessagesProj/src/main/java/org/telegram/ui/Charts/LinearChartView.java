@@ -1,11 +1,11 @@
-package org.telegram.ui.Charts;
+package org.Tajgram.ui.Charts;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
-import org.telegram.ui.Charts.data.ChartData;
-import org.telegram.ui.Charts.view_data.LineViewData;
+import org.Tajgram.ui.Charts.data.ChartData;
+import org.Tajgram.ui.Charts.view_data.LineViewData;
 
 public class LinearChartView extends BaseChartView<ChartData, LineViewData> {
     public LinearChartView(Context context) {

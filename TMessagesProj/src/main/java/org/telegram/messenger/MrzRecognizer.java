@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;

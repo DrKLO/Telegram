@@ -1,4 +1,4 @@
-package org.telegram.messenger.car;
+package org.Tajgram.messenger.car;
 
 import android.support.v4.media.session.MediaControllerCompat;
 
@@ -16,11 +16,11 @@ import androidx.core.graphics.drawable.IconCompat;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.TelegramMediaSession;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.TelegramMediaSession;
 
 import java.util.ArrayList;
 

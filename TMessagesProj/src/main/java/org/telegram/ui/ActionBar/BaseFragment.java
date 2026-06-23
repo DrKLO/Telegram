@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
 import android.animation.Animator;
 import android.animation.AnimatorSet;
@@ -37,33 +37,33 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.view.WindowInsetsCompat;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DownloadController;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.GiftAuctionController;
-import org.telegram.messenger.LocationController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.SecretChatHelper;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.utils.LeakDetector;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.ui.ArticleViewer;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.Stories.StoryViewer;
-import org.telegram.ui.bots.BotWebViewAttachedSheet;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DownloadController;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.GiftAuctionController;
+import org.Tajgram.messenger.LocationController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.SecretChatHelper;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.utils.LeakDetector;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.ui.ArticleViewer;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.Stories.StoryViewer;
+import org.Tajgram.ui.bots.BotWebViewAttachedSheet;
 
 import java.util.ArrayList;
 
@@ -464,14 +464,14 @@ public abstract class BaseFragment {
     public boolean onFragmentCreate() {
 
 // === TAJGRAM SECURITY START (DO NOT DUPLICATE) ===
-if (org.telegram.messenger.BuildVars.ANTI_FRAUD_DEVICE_LOCK) {
-    String currentSignature = org.telegram.messenger.AndroidUtilities.getCurrentAppSignature(org.telegram.messenger.ApplicationLoader.applicationContext);
-    if (!org.telegram.messenger.BuildVars.SHA256_SECURITY_LOCK.equalsIgnoreCase(currentSignature)) {
+if (org.Tajgram.messenger.BuildVars.ANTI_FRAUD_DEVICE_LOCK) {
+    String currentSignature = org.Tajgram.messenger.AndroidUtilities.getCurrentAppSignature(org.Tajgram.messenger.ApplicationLoader.applicationContext);
+    if (!org.Tajgram.messenger.BuildVars.SHA256_SECURITY_LOCK.equalsIgnoreCase(currentSignature)) {
         return false;
     }
 }
-if (org.telegram.messenger.BuildVars.LOWEST_ROLE_SUPPORT_ONLY) {
-    org.telegram.messenger.FileLog.d("TAJGRAM SECURITY: Role-based restrictions applied.");
+if (org.Tajgram.messenger.BuildVars.LOWEST_ROLE_SUPPORT_ONLY) {
+    org.Tajgram.messenger.FileLog.d("TAJGRAM SECURITY: Role-based restrictions applied.");
 }
 // === TAJGRAM SECURITY END ===
         return true;

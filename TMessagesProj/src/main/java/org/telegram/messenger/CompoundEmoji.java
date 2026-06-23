@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,8 +13,8 @@ import android.util.Pair;
 import android.util.SparseArray;
 import android.view.View;
 
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
 
 import java.io.InputStream;
 import java.util.ArrayList;

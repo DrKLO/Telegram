@@ -1,4 +1,4 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -19,29 +19,29 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.ChatBackgroundDrawable;
-import org.telegram.ui.Components.AnimatedColor;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.ChatBackgroundDrawable;
+import org.Tajgram.ui.Components.AnimatedColor;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.BackgroundGradientDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.Reactions.ReactionsEffectOverlay;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 public class ThemePreviewMessagesCell extends LinearLayout {
 
@@ -128,7 +128,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             message.replyMessage.message = LocaleController.getString(isChannel ? R.string.ChannelColorPreviewReply : R.string.UserColorPreviewReply);
             message.media = new TLRPC.TL_messageMediaWebPage();
             message.media.webpage = new TLRPC.TL_webPage();
-            message.media.webpage.embed_url = "https://telegram.org/";
+            message.media.webpage.embed_url = "https://Tajgram.org/";
             message.media.webpage.flags |= 2;
             message.media.webpage.site_name = LocaleController.getString(R.string.AppName);
             message.media.webpage.flags |= 4;
@@ -223,7 +223,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                     TLRPC.TL_messageEntityTextUrl entityUrl = new TLRPC.TL_messageEntityTextUrl();
                     entityUrl.offset = index1;
                     entityUrl.length = index2 - index1 - 1;
-                    entityUrl.url = "https://telegram.org";
+                    entityUrl.url = "https://Tajgram.org";
                     message.entities.add(entityUrl);
                 }
                 message.message = builder.toString();

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -8,10 +8,10 @@ import android.graphics.PorterDuffColorFilter;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
 
 @SuppressLint("ViewConstructor")
 public class SelectSendAsPremiumHintBulletinLayout extends Bulletin.MultiLineLayout {

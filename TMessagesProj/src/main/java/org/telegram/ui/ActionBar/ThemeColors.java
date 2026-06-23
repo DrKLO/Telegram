@@ -1,6 +1,6 @@
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
-import static org.telegram.ui.ActionBar.Theme.*;
+import static org.Tajgram.ui.ActionBar.Theme.*;
 
 import android.graphics.Color;
 import android.util.SparseArray;

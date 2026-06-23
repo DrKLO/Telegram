@@ -1,11 +1,11 @@
-package org.telegram.ui.Charts.view_data;
+package org.Tajgram.ui.Charts.view_data;
 
 import android.graphics.Paint;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Charts.data.ChartData;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Charts.data.ChartData;
 
 public class BarViewData extends LineViewData {
 

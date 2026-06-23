@@ -1,4 +1,4 @@
-package org.telegram.messenger.camera;
+package org.Tajgram.messenger.camera;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -30,12 +30,12 @@ import android.view.WindowManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.File;
 import java.io.FileOutputStream;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -10,12 +10,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.AppIconsSelectorCell;
-import org.telegram.ui.LauncherIconController;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.AppIconsSelectorCell;
+import org.Tajgram.ui.LauncherIconController;
 
 @SuppressLint("ViewConstructor")
 public class AppIconBulletinLayout extends Bulletin.ButtonLayout {

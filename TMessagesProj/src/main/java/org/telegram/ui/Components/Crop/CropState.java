@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Crop;
+package org.Tajgram.ui.Components.Crop;
 
 import android.graphics.Bitmap;
 import android.graphics.Matrix;

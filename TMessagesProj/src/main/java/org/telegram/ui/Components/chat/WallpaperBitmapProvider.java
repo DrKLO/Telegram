@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.chat;
+package org.Tajgram.ui.Components.chat;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,14 +8,14 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ChatBackgroundDrawable;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
-import org.telegram.ui.Components.blur3.utils.BitmapMemoizedMetadata;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ChatBackgroundDrawable;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSource;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
+import org.Tajgram.ui.Components.blur3.utils.BitmapMemoizedMetadata;
 
 public class WallpaperBitmapProvider {
 

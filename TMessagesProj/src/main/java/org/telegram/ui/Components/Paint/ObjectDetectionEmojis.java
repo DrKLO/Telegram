@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 public class ObjectDetectionEmojis {
     private static String[] labelEmojis;
     public static String labelToEmoji(int labelId) {

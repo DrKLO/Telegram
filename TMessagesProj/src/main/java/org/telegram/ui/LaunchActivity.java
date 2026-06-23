@@ -1,18 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.formatString;
-import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.replaceSingleLinkBold;
+import static org.Tajgram.messenger.LocaleController.formatPluralString;
+import static org.Tajgram.messenger.LocaleController.formatString;
+import static org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_BOOSTS_FOR_USERS;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -90,146 +90,146 @@ import com.google.firebase.appindexing.Action;
 import com.google.firebase.appindexing.FirebaseUserActions;
 import com.google.firebase.appindexing.builders.AssistActionBuilder;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationNotificationsLocker;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.AutoDeleteMediaTask;
-import org.telegram.messenger.BackupAgent;
-import org.telegram.messenger.BetaUpdate;
-import org.telegram.messenger.BirthdayController;
-import org.telegram.messenger.BotGuardHelper;
-import org.telegram.messenger.BotWebViewVibrationEffect;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChannelBoostsController;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.ContactsLoadingObserver;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.FingerprintController;
-import org.telegram.messenger.FlagSecureReason;
-import org.telegram.messenger.GenericProvider;
-import org.telegram.messenger.GiftAuctionController;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.LocationController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.OpenAttachedMenuBotReceiver;
-import org.telegram.messenger.PushListenerController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.SharedPrefsHelper;
-import org.telegram.messenger.TopicsController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.pip.PipActivityController;
-import org.telegram.messenger.pip.activity.IPipActivity;
-import org.telegram.messenger.pip.activity.IPipActivityHandler;
-import org.telegram.messenger.pip.activity.IPipActivityListener;
-import org.telegram.messenger.utils.FrameMetricsOverlayView;
-import org.telegram.messenger.utils.LeakDetector;
-import org.telegram.messenger.utils.WindowVisibilityManager;
-import org.telegram.messenger.voip.VideoCapturerDevice;
-import org.telegram.messenger.voip.VoIPGroupNotification;
-import org.telegram.messenger.voip.VoIPPendingCall;
-import org.telegram.messenger.voip.VoIPPreNotificationService;
-import org.telegram.messenger.voip.VoIPService;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLParseException;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_chatlists;
-import org.telegram.tgnet.tl.TL_forum;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheetTabs;
-import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
-import org.telegram.ui.ActionBar.DrawerLayoutContainer;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.LanguageCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AppIconBulletinLayout;
-import org.telegram.ui.Components.AttachBotIntroTopView;
-import org.telegram.ui.Components.AudioPlayerAlert;
-import org.telegram.ui.Components.BatteryDrawable;
-import org.telegram.ui.Components.BlockingUpdateView;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Easings;
-import org.telegram.ui.Components.EmbedBottomSheet;
-import org.telegram.ui.Components.EmojiPacksAlert;
-import org.telegram.ui.Components.FireworksOverlay;
-import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
-import org.telegram.ui.Components.FolderBottomSheet;
-import org.telegram.ui.Components.Forum.ForumUtilities;
-import org.telegram.ui.Components.GroupCallPip;
-import org.telegram.ui.Components.JoinGroupAlert;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PasscodeView;
-import org.telegram.ui.Components.PasscodeViewDialog;
-import org.telegram.ui.Components.PhonebookShareAlert;
-import org.telegram.ui.Components.PipRoundVideoView;
-import org.telegram.ui.Components.PipVideoOverlay;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.Premium.boosts.BoostPagerBottomSheet;
-import org.telegram.ui.Components.Premium.boosts.GiftInfoBottomSheet;
-import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
-import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.SearchTagsList;
-import org.telegram.ui.Components.ShareTopView;
-import org.telegram.ui.Components.SharingLocationsAlert;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
-import org.telegram.ui.Components.StickerSetBulletinLayout;
-import org.telegram.ui.Components.StickersAlert;
-import org.telegram.ui.Components.TermsOfServiceView;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.ThemeEditorView;
-import org.telegram.ui.Components.UndoView;
-import org.telegram.ui.Components.inset.WindowAnimatedInsetsProvider;
-import org.telegram.ui.Components.poll.PollAttachedMediaPack;
-import org.telegram.ui.Components.spoilers.SpoilerEffect2;
-import org.telegram.ui.Components.voip.RTMPStreamPipOverlay;
-import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.Gifts.GiftSheet;
-import org.telegram.ui.Stars.ISuperRipple;
-import org.telegram.ui.Gifts.AuctionJoinSheet;
-import org.telegram.ui.Stars.StarGiftPreviewSheet;
-import org.telegram.ui.Stars.StarGiftSheet;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stars.SuperRipple;
-import org.telegram.ui.Stories.StoriesController;
-import org.telegram.ui.Stories.StoriesListPlaceProvider;
-import org.telegram.ui.Stories.StoryViewer;
-import org.telegram.ui.Stories.recorder.StoryEntry;
-import org.telegram.ui.Stories.recorder.StoryRecorder;
-import org.telegram.ui.Stories.LiveStoryPipOverlay;
-import org.telegram.ui.TON.TONIntroActivity;
-import org.telegram.ui.bots.BotWebViewAttachedSheet;
-import org.telegram.ui.bots.BotWebViewSheet;
-import org.telegram.ui.bots.WebViewRequestProps;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AnimationNotificationsLocker;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.AutoDeleteMediaTask;
+import org.Tajgram.messenger.BackupAgent;
+import org.Tajgram.messenger.BetaUpdate;
+import org.Tajgram.messenger.BirthdayController;
+import org.Tajgram.messenger.BotGuardHelper;
+import org.Tajgram.messenger.BotWebViewVibrationEffect;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChannelBoostsController;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.ContactsLoadingObserver;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.FingerprintController;
+import org.Tajgram.messenger.FlagSecureReason;
+import org.Tajgram.messenger.GenericProvider;
+import org.Tajgram.messenger.GiftAuctionController;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.LocationController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.NotificationsController;
+import org.Tajgram.messenger.OpenAttachedMenuBotReceiver;
+import org.Tajgram.messenger.PushListenerController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.SharedPrefsHelper;
+import org.Tajgram.messenger.TopicsController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.messenger.pip.PipActivityController;
+import org.Tajgram.messenger.pip.activity.IPipActivity;
+import org.Tajgram.messenger.pip.activity.IPipActivityHandler;
+import org.Tajgram.messenger.pip.activity.IPipActivityListener;
+import org.Tajgram.messenger.utils.FrameMetricsOverlayView;
+import org.Tajgram.messenger.utils.LeakDetector;
+import org.Tajgram.messenger.utils.WindowVisibilityManager;
+import org.Tajgram.messenger.voip.VideoCapturerDevice;
+import org.Tajgram.messenger.voip.VoIPGroupNotification;
+import org.Tajgram.messenger.voip.VoIPPendingCall;
+import org.Tajgram.messenger.voip.VoIPPreNotificationService;
+import org.Tajgram.messenger.voip.VoIPService;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLParseException;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_chatlists;
+import org.Tajgram.tgnet.tl.TL_forum;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.ActionBarLayout;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheetTabs;
+import org.Tajgram.ui.ActionBar.BottomSheetTabsOverlay;
+import org.Tajgram.ui.ActionBar.DrawerLayoutContainer;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.LanguageCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AppIconBulletinLayout;
+import org.Tajgram.ui.Components.AttachBotIntroTopView;
+import org.Tajgram.ui.Components.AudioPlayerAlert;
+import org.Tajgram.ui.Components.BatteryDrawable;
+import org.Tajgram.ui.Components.BlockingUpdateView;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.Easings;
+import org.Tajgram.ui.Components.EmbedBottomSheet;
+import org.Tajgram.ui.Components.EmojiPacksAlert;
+import org.Tajgram.ui.Components.FireworksOverlay;
+import org.Tajgram.ui.Components.FloatingDebug.FloatingDebugController;
+import org.Tajgram.ui.Components.FolderBottomSheet;
+import org.Tajgram.ui.Components.Forum.ForumUtilities;
+import org.Tajgram.ui.Components.GroupCallPip;
+import org.Tajgram.ui.Components.JoinGroupAlert;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.PasscodeView;
+import org.Tajgram.ui.Components.PasscodeViewDialog;
+import org.Tajgram.ui.Components.PhonebookShareAlert;
+import org.Tajgram.ui.Components.PipRoundVideoView;
+import org.Tajgram.ui.Components.PipVideoOverlay;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.Premium.boosts.BoostPagerBottomSheet;
+import org.Tajgram.ui.Components.Premium.boosts.GiftInfoBottomSheet;
+import org.Tajgram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
+import org.Tajgram.ui.Components.RLottieDrawable;
+import org.Tajgram.ui.Components.RLottieImageView;
+import org.Tajgram.ui.Components.SearchTagsList;
+import org.Tajgram.ui.Components.ShareTopView;
+import org.Tajgram.ui.Components.SharingLocationsAlert;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.Components.StickerSetBulletinLayout;
+import org.Tajgram.ui.Components.StickersAlert;
+import org.Tajgram.ui.Components.TermsOfServiceView;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.ThemeEditorView;
+import org.Tajgram.ui.Components.UndoView;
+import org.Tajgram.ui.Components.inset.WindowAnimatedInsetsProvider;
+import org.Tajgram.ui.Components.poll.PollAttachedMediaPack;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect2;
+import org.Tajgram.ui.Components.voip.RTMPStreamPipOverlay;
+import org.Tajgram.ui.Components.voip.VoIPHelper;
+import org.Tajgram.ui.Gifts.GiftSheet;
+import org.Tajgram.ui.Stars.ISuperRipple;
+import org.Tajgram.ui.Gifts.AuctionJoinSheet;
+import org.Tajgram.ui.Stars.StarGiftPreviewSheet;
+import org.Tajgram.ui.Stars.StarGiftSheet;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.Stars.SuperRipple;
+import org.Tajgram.ui.Stories.StoriesController;
+import org.Tajgram.ui.Stories.StoriesListPlaceProvider;
+import org.Tajgram.ui.Stories.StoryViewer;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.ui.Stories.recorder.StoryRecorder;
+import org.Tajgram.ui.Stories.LiveStoryPipOverlay;
+import org.Tajgram.ui.TON.TONIntroActivity;
+import org.Tajgram.ui.bots.BotWebViewAttachedSheet;
+import org.Tajgram.ui.bots.BotWebViewSheet;
+import org.Tajgram.ui.bots.WebViewRequestProps;
 import org.webrtc.voiceengine.WebRtcAudioTrack;
 
 import java.io.BufferedReader;
@@ -1764,7 +1764,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     if (error) {
                         Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                     }
-                } else if ("org.telegram.messenger.CREATE_STICKER_PACK".equals(intent.getAction())) {
+                } else if ("org.Tajgram.messenger.CREATE_STICKER_PACK".equals(intent.getAction())) {
                     try {
                         importingStickers = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
                         importingStickersEmoji = intent.getStringArrayListExtra("STICKER_EMOJIS");
@@ -1980,7 +1980,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
-                                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
+                                    if (host.equals("Tajgram.me") || host.equals("t.me") || host.equals("Tajgram.dog") || isPrefix) {
                                         if (isPrefix) {
                                             data = Uri.parse("https://t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery()));
                                         }
@@ -2297,7 +2297,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             fragment.presentFragment(new PremiumPreviewFragment(uri.getQueryParameter("ref")));
                                         }});
                                     } else if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                                        url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
+                                        url = url.replace("tg:resolve", "tg://Tajgram.org").replace("tg://resolve", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         username = data.getQueryParameter("domain");
                                         if (username == null) {
@@ -2402,7 +2402,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         data = Uri.parse(url);
                                         contactToken = data.getQueryParameter("token");
                                     } else if (url.startsWith("tg:privatepost") || url.startsWith("tg://privatepost")) {
-                                        url = url.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
+                                        url = url.replace("tg:privatepost", "tg://Tajgram.org").replace("tg://privatepost", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         messageId = Utilities.parseInt(data.getQueryParameter("post"));
                                         channelId = Utilities.parseLong(data.getQueryParameter("channel"));
@@ -2425,7 +2425,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             commentId = null;
                                         }
                                     } else if (url.startsWith("tg:bg") || url.startsWith("tg://bg")) {
-                                        url = url.replace("tg:bg", "tg://telegram.org").replace("tg://bg", "tg://telegram.org");
+                                        url = url.replace("tg:bg", "tg://Tajgram.org").replace("tg://bg", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         wallPaper = new TLRPC.TL_wallPaper();
                                         wallPaper.settings = new TLRPC.TL_wallPaperSettings();
@@ -2509,19 +2509,19 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             }
                                         }
                                     } else if (url.startsWith("tg:join") || url.startsWith("tg://join")) {
-                                        url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
+                                        url = url.replace("tg:join", "tg://Tajgram.org").replace("tg://join", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         group = data.getQueryParameter("invite");
                                     } else if (url.startsWith("tg:addstickers") || url.startsWith("tg://addstickers")) {
-                                        url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
+                                        url = url.replace("tg:addstickers", "tg://Tajgram.org").replace("tg://addstickers", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         sticker = data.getQueryParameter("set");
                                     } else if (url.startsWith("tg:addemoji") || url.startsWith("tg://addemoji")) {
-                                        url = url.replace("tg:addemoji", "tg://telegram.org").replace("tg://addemoji", "tg://telegram.org");
+                                        url = url.replace("tg:addemoji", "tg://Tajgram.org").replace("tg://addemoji", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         emoji = data.getQueryParameter("set");
                                     } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg") || url.startsWith("tg://share") || url.startsWith("tg:share")) {
-                                        url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org").replace("tg://share", "tg://telegram.org").replace("tg:share", "tg://telegram.org");
+                                        url = url.replace("tg:msg", "tg://Tajgram.org").replace("tg://msg", "tg://Tajgram.org").replace("tg://share", "tg://Tajgram.org").replace("tg:share", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         message = data.getQueryParameter("url");
                                         if (message == null) {
@@ -2541,13 +2541,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             message = message.substring(0, message.length() - 1);
                                         }
                                     } else if (url.startsWith("tg:confirmphone") || url.startsWith("tg://confirmphone")) {
-                                        url = url.replace("tg:confirmphone", "tg://telegram.org").replace("tg://confirmphone", "tg://telegram.org");
+                                        url = url.replace("tg:confirmphone", "tg://Tajgram.org").replace("tg://confirmphone", "tg://Tajgram.org");
                                         data = Uri.parse(url);
 
                                         phone = data.getQueryParameter("phone");
                                         phoneHash = data.getQueryParameter("hash");
                                     } else if (url.startsWith("tg:login") || url.startsWith("tg://login")) {
-                                        url = url.replace("tg:login", "tg://telegram.org").replace("tg://login", "tg://telegram.org");
+                                        url = url.replace("tg:login", "tg://Tajgram.org").replace("tg://login", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         login = data.getQueryParameter("token");
                                         int intCode = Utilities.parseInt(data.getQueryParameter("code"));
@@ -2555,7 +2555,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             code = "" + intCode;
                                         }
                                     } else if (url.startsWith("tg:openmessage") || url.startsWith("tg://openmessage")) {
-                                        url = url.replace("tg:openmessage", "tg://telegram.org").replace("tg://openmessage", "tg://telegram.org");
+                                        url = url.replace("tg:openmessage", "tg://Tajgram.org").replace("tg://openmessage", "tg://Tajgram.org");
                                         data = Uri.parse(url);
 
                                         String userID = data.getQueryParameter("user_id");
@@ -2590,7 +2590,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             } catch (NumberFormatException ignore) {}
                                         }
                                     } else if (url.startsWith("tg:passport") || url.startsWith("tg://passport") || url.startsWith("tg:secureid")) {
-                                        url = url.replace("tg:passport", "tg://telegram.org").replace("tg://passport", "tg://telegram.org").replace("tg:secureid", "tg://telegram.org");
+                                        url = url.replace("tg:passport", "tg://Tajgram.org").replace("tg://passport", "tg://Tajgram.org").replace("tg:secureid", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         auth = new HashMap<>();
                                         String scope = data.getQueryParameter("scope");
@@ -2604,11 +2604,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         auth.put("public_key", data.getQueryParameter("public_key"));
                                         auth.put("callback_url", data.getQueryParameter("callback_url"));
                                     } else if (url.startsWith("tg:setlanguage") || url.startsWith("tg://setlanguage")) {
-                                        url = url.replace("tg:setlanguage", "tg://telegram.org").replace("tg://setlanguage", "tg://telegram.org");
+                                        url = url.replace("tg:setlanguage", "tg://Tajgram.org").replace("tg://setlanguage", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         lang = data.getQueryParameter("lang");
                                     } else if (url.startsWith("tg:addtheme") || url.startsWith("tg://addtheme")) {
-                                        url = url.replace("tg:addtheme", "tg://telegram.org").replace("tg://addtheme", "tg://telegram.org");
+                                        url = url.replace("tg:addtheme", "tg://Tajgram.org").replace("tg://addtheme", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         theme = data.getQueryParameter("slug");
                                     } else if (url.startsWith("tg:settings") || url.startsWith("tg://settings")) {
@@ -2642,7 +2642,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             open_settings = 1;
                                         }
                                     } else if ((url.startsWith("tg:search") || url.startsWith("tg://search"))) {
-                                        url = url.replace("tg:search", "tg://telegram.org").replace("tg://search", "tg://telegram.org");
+                                        url = url.replace("tg:search", "tg://Tajgram.org").replace("tg://search", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         searchQuery = data.getQueryParameter("query");
                                         if (searchQuery != null) {
@@ -2695,7 +2695,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     } else if ((url.startsWith("tg:scanqr") || url.startsWith("tg://scanqr"))) {
                                         scanQr = true;
                                     } else if ((url.startsWith("tg:addcontact") || url.startsWith("tg://addcontact"))) {
-                                        url = url.replace("tg:addcontact", "tg://telegram.org").replace("tg://addcontact", "tg://telegram.org");
+                                        url = url.replace("tg:addcontact", "tg://Tajgram.org").replace("tg://addcontact", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         newContactName = data.getQueryParameter("name");
 
@@ -2706,15 +2706,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                         }
                                         newContact = true;
                                     } else if (url.startsWith("tg:addlist") || url.startsWith("tg://addlist")) {
-                                        url = url.replace("tg:addlist", "tg://telegram.org").replace("tg://addlist", "tg://telegram.org");
+                                        url = url.replace("tg:addlist", "tg://Tajgram.org").replace("tg://addlist", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         folderSlug = data.getQueryParameter("slug");
                                     } else if (url.startsWith("tg:message") || url.startsWith("tg://message")) {
-                                        url = url.replace("tg:message", "tg://telegram.org").replace("tg://message", "tg://telegram.org");
+                                        url = url.replace("tg:message", "tg://Tajgram.org").replace("tg://message", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         chatLinkSlug = data.getQueryParameter("slug");
                                     } else if (url.startsWith("tg:stars_topup") || url.startsWith("tg://stars_topup")) {
-                                        url = url.replace("tg:stars_topup", "tg://telegram.org").replace("tg://stars_topup", "tg://telegram.org");
+                                        url = url.replace("tg:stars_topup", "tg://Tajgram.org").replace("tg://stars_topup", "tg://Tajgram.org");
                                         data = Uri.parse(url);
                                         long balance = 0;
                                         try {
@@ -2870,9 +2870,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             NotificationCenter.getInstance(intentAccount[0]).postNotificationName(NotificationCenter.closeChats);
                                             push_user_id = userId;
                                             String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
-                                            if (TextUtils.equals(mimeType, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call")) {
+                                            if (TextUtils.equals(mimeType, "vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call")) {
                                                 audioCallUser = true;
-                                            } else if (TextUtils.equals(mimeType, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video")) {
+                                            } else if (TextUtils.equals(mimeType, "vnd.android.cursor.item/vnd.org.Tajgram.messenger.android.call.video")) {
                                                 videoCallUser = true;
                                             }
                                         }
@@ -2883,7 +2883,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                         }
                     }
-                } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
+                } else if (intent.getAction().equals("org.Tajgram.messenger.OPEN_ACCOUNT")) {
                     open_settings = 1;
                 } else if (intent.getAction().equals("new_dialog")) {
                     open_new_dialog = 1;

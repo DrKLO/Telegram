@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.GLIcon;
+package org.Tajgram.ui.Components.Premium.GLIcon;
 
 import android.content.Context;
 

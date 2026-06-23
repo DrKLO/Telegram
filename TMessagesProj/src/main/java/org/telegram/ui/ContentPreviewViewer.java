@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
@@ -53,61 +53,61 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.WebFile;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ContextLinkCell;
-import org.telegram.ui.Cells.StickerCell;
-import org.telegram.ui.Cells.StickerEmojiCell;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EmojiPacksAlert;
-import org.telegram.ui.Components.EmojiView;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PaintingOverlay;
-import org.telegram.ui.Components.Reactions.CustomEmojiReactionsWindow;
-import org.telegram.ui.Components.ReactionsContainerLayout;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScrimOptions;
-import org.telegram.ui.Components.StickersAlert;
-import org.telegram.ui.Components.StickersDialogs;
-import org.telegram.ui.Components.SuggestEmojiView;
-import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
-import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.utils.Blur3Utils;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
-import org.telegram.ui.Components.poll.RecentVotersCell;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.DocumentObject;
+import org.Tajgram.messenger.Emoji;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.VideoEditedInfo;
+import org.Tajgram.messenger.WebFile;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.SimpleTextView;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ContextLinkCell;
+import org.Tajgram.ui.Cells.StickerCell;
+import org.Tajgram.ui.Cells.StickerEmojiCell;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.BackupImageView;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.EmojiPacksAlert;
+import org.Tajgram.ui.Components.EmojiView;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.PaintingOverlay;
+import org.Tajgram.ui.Components.Reactions.CustomEmojiReactionsWindow;
+import org.Tajgram.ui.Components.ReactionsContainerLayout;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ScrimOptions;
+import org.Tajgram.ui.Components.StickersAlert;
+import org.Tajgram.ui.Components.StickersDialogs;
+import org.Tajgram.ui.Components.SuggestEmojiView;
+import org.Tajgram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.Tajgram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.Tajgram.ui.Components.blur3.utils.Blur3Utils;
+import org.Tajgram.ui.Components.chat.ViewPositionWatcher;
+import org.Tajgram.ui.Components.poll.RecentVotersCell;
+import org.Tajgram.ui.Stories.DarkThemeResourceProvider;
 
 import java.util.ArrayList;
 import java.util.List;

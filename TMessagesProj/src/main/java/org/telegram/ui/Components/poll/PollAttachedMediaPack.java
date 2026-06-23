@@ -1,14 +1,14 @@
-package org.telegram.ui.Components.poll;
+package org.Tajgram.ui.Components.poll;
 
 import android.net.Uri;
 import android.util.Base64;
 import android.util.SparseArray;
 
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.poll.attached.PollAttachedMediaLink;
-import org.telegram.ui.Components.poll.attached.PollAttachedMediaLocation;
-import org.telegram.ui.Components.poll.attached.PollAttachedMediaSticker;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.poll.attached.PollAttachedMediaLink;
+import org.Tajgram.ui.Components.poll.attached.PollAttachedMediaLocation;
+import org.Tajgram.ui.Components.poll.attached.PollAttachedMediaSticker;
 
 public class PollAttachedMediaPack {
     public static final int INDEX_EXPLANATION = -3;

@@ -11,14 +11,14 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.telegram.tlrpc.SchemeAllLayersParser
-import org.telegram.tlrpc.SchemeCodeGen
-import org.telegram.tlrpc.SchemeTlValidator
-import org.telegram.tlrpc.models.RULES
-import org.telegram.tlrpc.models.TlObjectWithLayer
-import org.telegram.tlrpc.schema.TlSchemaJsonParser
-import org.telegram.tlrpc.telegram.TelegramCodeParser
-import org.telegram.tlrpc.telegram.TelegramTlClass
+import org.Tajgram.tlrpc.SchemeAllLayersParser
+import org.Tajgram.tlrpc.SchemeCodeGen
+import org.Tajgram.tlrpc.SchemeTlValidator
+import org.Tajgram.tlrpc.models.RULES
+import org.Tajgram.tlrpc.models.TlObjectWithLayer
+import org.Tajgram.tlrpc.schema.TlSchemaJsonParser
+import org.Tajgram.tlrpc.Tajgram.TelegramCodeParser
+import org.Tajgram.tlrpc.Tajgram.TelegramTlClass
 import java.io.File
 
 abstract class GenerateSchemeTask : DefaultTask() {
@@ -164,14 +164,14 @@ abstract class GenerateSchemeTask : DefaultTask() {
         constructors: List<TlObjectWithLayer>,
         encrypted: List<TlObjectWithLayer>
     ) {
-        val packageName = "org.telegram.tgnet.model.generated"
+        val packageName = "org.Tajgram.tgnet.model.generated"
         val x = constructors.groupBy { it.tl.key.name.type }
             .filter { it.value.any { c -> c.layerLast == LAYER } }.keys
 
         val sealedClassName = "TlGen_" + type.replace('.', '_')
         val sealedClassBuilder = TypeSpec.classBuilder(sealedClassName)
             .addModifiers(KModifier.SEALED)
-            .addSuperinterface(ClassName("org.telegram.tgnet.model", "TlGen_Object"))
+            .addSuperinterface(ClassName("org.Tajgram.tgnet.model", "TlGen_Object"))
 
         for (constructor in constructors) {
             var needSuper = true
@@ -192,7 +192,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         }
 
         FileSpec.builder(packageName, sealedClassName)
-            .addImport("org.telegram.tgnet.model", "TlGen_Object", "TlGen_Vector")
+            .addImport("org.Tajgram.tgnet.model", "TlGen_Object", "TlGen_Vector")
             .addType(sealedClassBuilder.build())
             .build()
             .writeTo(outputDir)
@@ -204,7 +204,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         linkedTypes: Set<Pair<String, TelegramTlClass>>,
         comments: List<Map<String, List<List<String>>>>
     ) {
-        val packageName = "org.telegram.tgnet.test.generated"
+        val packageName = "org.Tajgram.tgnet.test.generated"
 
         val runWithAnnotation = AnnotationSpec.builder(
             ClassName("org.junit.runner", "RunWith")
@@ -214,11 +214,11 @@ abstract class GenerateSchemeTask : DefaultTask() {
         val testAllBuilder = TypeSpec.classBuilder("Test_All")
             .addAnnotation(runWithAnnotation)
         val testActualBuilder = TypeSpec.classBuilder("Test_Actual")
-            .superclass(ClassName("org.telegram.tgnet.test", "BaseSchemeTest"))
+            .superclass(ClassName("org.Tajgram.tgnet.test", "BaseSchemeTest"))
         val testLegacyBuilder = TypeSpec.classBuilder("Test_Legacy")
-            .superclass(ClassName("org.telegram.tgnet.test", "BaseSchemeTest"))
+            .superclass(ClassName("org.Tajgram.tgnet.test", "BaseSchemeTest"))
         val testEncryptedBuilder = TypeSpec.classBuilder("Test_Encrypred")
-            .superclass(ClassName("org.telegram.tgnet.test", "BaseSchemeTest"))
+            .superclass(ClassName("org.Tajgram.tgnet.test", "BaseSchemeTest"))
 
         val lt = linkedTypes.groupBy { it.first }.mapValues { it.value.map { it.second } }
 
@@ -239,7 +239,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
 
             val lines = lt[constructor.tl.key.name.type]?.map { clz ->
                 val clz2 = clz.packageName + "." + clz.fullName
-                "test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_${type}.${constructor.codegenDataClassName}::class, " +
+                "test_TLdeserialize(org.Tajgram.tgnet.model.generated.TlGen_${type}.${constructor.codegenDataClassName}::class, " +
                         "${clz2}::TLdeserialize, ${if (isLegacy && !isEncrypted) constructor.layerLast.toString() else "null"})"
             } ?: listOf("assumeTrue(\"Test skipped, link error\", false)")
 
@@ -266,7 +266,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         }
 
         FileSpec.builder(packageName, "Test_All")
-            .addImport("org.telegram.tgnet.model", "TlGen_Object", "TlGen_Vector")
+            .addImport("org.Tajgram.tgnet.model", "TlGen_Object", "TlGen_Vector")
             .addImport("org.junit.Assume", "assumeTrue")
             .addType(
                 testAllBuilder

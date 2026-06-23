@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.app.Activity;
 import android.content.Context;
@@ -13,17 +13,17 @@ import com.google.android.exoplayer2.util.Util;
 import com.google.common.base.Charsets;
 
 import org.json.JSONObject;
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLParseException;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLParseException;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.io.InputStream;
 import java.util.Iterator;

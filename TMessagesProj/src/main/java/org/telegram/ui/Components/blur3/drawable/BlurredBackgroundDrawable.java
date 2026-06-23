@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.blur3.drawable;
+package org.Tajgram.ui.Components.blur3.drawable;
 
-import static org.telegram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -28,16 +28,16 @@ import androidx.annotation.RequiresApi;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.blur3.Blur3HashImpl;
-import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
-import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
-import org.telegram.ui.Components.blur3.utils.NinePatchBuilder;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.blur3.Blur3HashImpl;
+import org.Tajgram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.Tajgram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSource;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
+import org.Tajgram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
+import org.Tajgram.ui.Components.blur3.utils.NinePatchBuilder;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;

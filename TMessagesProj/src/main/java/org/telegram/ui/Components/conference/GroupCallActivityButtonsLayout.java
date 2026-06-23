@@ -1,7 +1,7 @@
-package org.telegram.ui.Components.conference;
+package org.Tajgram.ui.Components.conference;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.lerp;
 
 import android.content.Context;
 import android.view.View;
@@ -10,8 +10,8 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.voip.VoIPToggleButton;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.voip.VoIPToggleButton;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

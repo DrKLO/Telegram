@@ -1,8 +1,8 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.dpf2;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dpf2;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -31,30 +31,30 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.Cells.EditTextCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.Components.ChatAttachAlert;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SendMessagesHelper;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.Cells.EditTextCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.Components.ChatAttachAlert;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Components.UItem;
+import org.Tajgram.ui.Components.UniversalAdapter;
+import org.Tajgram.ui.Components.UniversalRecyclerView;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.text.BreakIterator;
 import java.util.ArrayList;
@@ -87,8 +87,8 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
     private RichTableCell activeCellSelectionTable;
     private boolean pressMoved;
     private boolean longPressConsumed;
-    private org.telegram.ui.ActionBar.ActionBarPopupWindow cellPopupWindow;
-    private org.telegram.ui.ActionBar.ActionBarPopupWindow.ActionBarPopupWindowLayout cellPopupLayout;
+    private org.Tajgram.ui.ActionBar.ActionBarPopupWindow cellPopupWindow;
+    private org.Tajgram.ui.ActionBar.ActionBarPopupWindow.ActionBarPopupWindowLayout cellPopupLayout;
     private LinearLayout cellPopupRow;
     private TextView headerAction, mergeAction, unmergeAction, delRowAction, delColAction;
 
@@ -205,7 +205,7 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     private void buildCellPopup(Context context) {
-        cellPopupLayout = new org.telegram.ui.ActionBar.ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
+        cellPopupLayout = new org.Tajgram.ui.ActionBar.ActionBarPopupWindow.ActionBarPopupWindowLayout(context);
         cellPopupLayout.setPadding(dp(1), dp(1), dp(1), dp(1));
         cellPopupLayout.setBackgroundDrawable(context.getResources().getDrawable(R.drawable.menu_copy));
         cellPopupLayout.setAnimationEnabled(false);
@@ -228,7 +228,7 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
 
         cellPopupLayout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
 
-        cellPopupWindow = new org.telegram.ui.ActionBar.ActionBarPopupWindow(cellPopupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+        cellPopupWindow = new org.Tajgram.ui.ActionBar.ActionBarPopupWindow(cellPopupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
         cellPopupWindow.setAnimationEnabled(false);
         cellPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
         cellPopupWindow.setOutsideTouchable(true);
@@ -2008,8 +2008,8 @@ public class ChatAttachAlertRichLayout extends ChatAttachAlert.AttachAlertLayout
                 if (!selectedPhotos.isEmpty() && !selectedPhotosOrder.isEmpty()) {
                     Object key = selectedPhotosOrder.get(0);
                     Object entryObj = selectedPhotos.get(key);
-                    if (entryObj instanceof org.telegram.messenger.MediaController.PhotoEntry) {
-                        org.telegram.messenger.MediaController.PhotoEntry photoEntry = (org.telegram.messenger.MediaController.PhotoEntry) entryObj;
+                    if (entryObj instanceof org.Tajgram.messenger.MediaController.PhotoEntry) {
+                        org.Tajgram.messenger.MediaController.PhotoEntry photoEntry = (org.Tajgram.messenger.MediaController.PhotoEntry) entryObj;
                         Log.d(TAG, "picker.didPressed isVideo=" + photoEntry.isVideo
                             + " path=" + photoEntry.path
                             + " imagePath=" + photoEntry.imagePath

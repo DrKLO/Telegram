@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
@@ -7,7 +7,7 @@ import android.view.View;
 
 import android.util.SparseArray;
 
-import org.telegram.messenger.BuildConfig;
+import org.Tajgram.messenger.BuildConfig;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

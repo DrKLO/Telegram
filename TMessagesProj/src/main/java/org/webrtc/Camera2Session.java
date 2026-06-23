@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.telegram.ui.Stories.LivePlayer;
+import org.Tajgram.ui.Stories.LivePlayer;
 import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
 
 @TargetApi(21)

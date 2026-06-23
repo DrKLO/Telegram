@@ -1,11 +1,11 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.SizeNotifierFrameLayout;
 
 public class EmptyBaseFragment extends BaseFragment {
 

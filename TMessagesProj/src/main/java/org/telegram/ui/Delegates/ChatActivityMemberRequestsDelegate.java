@@ -1,4 +1,4 @@
-package org.telegram.ui.Delegates;
+package org.Tajgram.ui.Delegates;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -15,17 +15,17 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AvatarsImageView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MemberRequestsBottomSheet;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.AvatarsImageView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MemberRequestsBottomSheet;
 
 import java.util.List;
 

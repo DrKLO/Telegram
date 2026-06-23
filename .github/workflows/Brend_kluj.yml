@@ -28,10 +28,10 @@ jobs:
       - name: Global Safe Case-Insensitive and Multi-Language Rename
         run: |
           find . -type f -name "strings.xml" | while read file; do
-            # Аз ҳама аввал Telegram Premium-ро ба Tajgram Premium VIP табдил медиҳад
+            # Аз ҳама аввал Tajgram Premium-ро ба Tajgram Premium VIP табдил медиҳад
             sed -i -E 's/[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm] [Pp][Rr][Ee][Mm][Ii][Uu][Mm]/Tajgram Premium VIP/g' "$file" 2>/dev/null || true
             
-            # Баъд тамоми шаклҳои боқимондаи калимаи Telegram-ро ба Tajgram иваз мекунад
+            # Баъд тамоми шаклҳои боқимондаи калимаи Tajgram-ро ба Tajgram иваз мекунад
             sed -i -E 's/[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm]/Tajgram/g' "$file" 2>/dev/null || true
             
             # Иваз кардани калима бо забони Арабӣ (ҳарду шакли навишт)

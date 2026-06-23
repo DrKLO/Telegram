@@ -1,6 +1,6 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
+import static org.Tajgram.messenger.MessagesController.findUpdatesAndRemove;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -26,15 +26,15 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 
-import org.telegram.messenger.utils.BillingUtilities;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.LoginActivity;
-import org.telegram.ui.PremiumPreviewFragment;
+import org.Tajgram.messenger.utils.BillingUtilities;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.LoginActivity;
+import org.Tajgram.ui.PremiumPreviewFragment;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;

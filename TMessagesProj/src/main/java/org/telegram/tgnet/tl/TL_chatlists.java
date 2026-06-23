@@ -1,11 +1,11 @@
-package org.telegram.tgnet.tl;
+package org.Tajgram.tgnet.tl;
 
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLParseException;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLParseException;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
 
 import java.util.ArrayList;
 

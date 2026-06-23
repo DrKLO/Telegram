@@ -1,15 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Tajgram for Android v. 1.3.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.formatWholeNumber;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.formatWholeNumber;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -33,14 +33,14 @@ import android.util.Xml;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 
-import org.telegram.messenger.time.FastDateFormat;
-import org.telegram.tgnet.Vector;
-import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.RestrictedLanguagesSelectActivity;
+import org.Tajgram.messenger.time.FastDateFormat;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.ui.Components.TypefaceSpan;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.RestrictedLanguagesSelectActivity;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.BufferedWriter;

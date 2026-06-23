@@ -21,7 +21,7 @@ import android.util.Log;
 
 import androidx.core.util.Pools;
 
-import org.telegram.messenger.BuildVars;
+import org.Tajgram.messenger.BuildVars;
 
 import java.util.ArrayList;
 import java.util.Collections;

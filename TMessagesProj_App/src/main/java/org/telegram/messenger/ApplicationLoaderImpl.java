@@ -1,6 +1,6 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import org.telegram.messenger.regular.BuildConfig;
+import org.Tajgram.messenger.regular.BuildConfig;
 
 public class ApplicationLoaderImpl extends ApplicationLoader {
     @Override

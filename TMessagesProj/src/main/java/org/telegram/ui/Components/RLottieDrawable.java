@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import static org.telegram.messenger.AndroidUtilities.readRes;
+import static org.Tajgram.messenger.AndroidUtilities.readRes;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -28,18 +28,18 @@ import android.util.JsonReader;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DispatchQueue;
-import org.telegram.messenger.DispatchQueuePool;
-import org.telegram.messenger.DispatchQueuePoolBackground;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.BitmapsCache;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.DispatchQueue;
+import org.Tajgram.messenger.DispatchQueuePool;
+import org.Tajgram.messenger.DispatchQueuePoolBackground;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.utils.BitmapsCache;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.io.File;
 import java.io.FileReader;

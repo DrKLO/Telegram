@@ -1,4 +1,4 @@
-package org.telegram.messenger.video.remix;
+package org.Tajgram.messenger.video.remix;
 
 import androidx.annotation.NonNull;
 

@@ -1,7 +1,7 @@
 // FrameMetricsOverlayView.java
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -24,7 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;

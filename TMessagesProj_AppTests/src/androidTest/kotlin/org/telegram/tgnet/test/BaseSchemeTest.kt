@@ -1,4 +1,4 @@
-package org.telegram.tgnet.test
+package org.Tajgram.tgnet.test
 
 import com.appmattus.kotlinfixture.Fixture
 import com.appmattus.kotlinfixture.config.Configuration
@@ -11,11 +11,11 @@ import com.appmattus.kotlinfixture.decorator.nullability.nullabilityStrategy
 import com.appmattus.kotlinfixture.decorator.recursion.RecursionStrategy
 import com.appmattus.kotlinfixture.decorator.recursion.recursionStrategy
 import org.junit.BeforeClass
-import org.telegram.tgnet.ConnectionsManager
-import org.telegram.tgnet.InputSerializedData
-import org.telegram.tgnet.NativeByteBuffer
-import org.telegram.tgnet.TLObject
-import org.telegram.tgnet.model.TlGen_Object
+import org.Tajgram.tgnet.ConnectionsManager
+import org.Tajgram.tgnet.InputSerializedData
+import org.Tajgram.tgnet.NativeByteBuffer
+import org.Tajgram.tgnet.TLObject
+import org.Tajgram.tgnet.model.TlGen_Object
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.memberProperties

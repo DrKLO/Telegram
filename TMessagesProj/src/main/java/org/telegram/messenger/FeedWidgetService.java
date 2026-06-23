@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
@@ -16,8 +16,8 @@ import android.widget.RemoteViewsService;
 
 import androidx.core.content.FileProvider;
 
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.io.File;
 import java.util.ArrayList;

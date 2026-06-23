@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x
+ * This is the source code of Tajgram for Android v. 5.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Adapters;
+package org.Tajgram.ui.Adapters;
 
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
@@ -17,26 +17,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.LocationController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LocationCell;
-import org.telegram.ui.Cells.LocationDirectionCell;
-import org.telegram.ui.Cells.LocationLoadingCell;
-import org.telegram.ui.Cells.LocationPoweredCell;
-import org.telegram.ui.Cells.SendLocationCell;
-import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.SharingLiveLocationCell;
-import org.telegram.ui.Components.ChatAttachAlertLocationLayout;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SharedMediaLayout;
-import org.telegram.ui.LocationActivity;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.LocationController;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.HeaderCell;
+import org.Tajgram.ui.Cells.LocationCell;
+import org.Tajgram.ui.Cells.LocationDirectionCell;
+import org.Tajgram.ui.Cells.LocationLoadingCell;
+import org.Tajgram.ui.Cells.LocationPoweredCell;
+import org.Tajgram.ui.Cells.SendLocationCell;
+import org.Tajgram.ui.Cells.ShadowSectionCell;
+import org.Tajgram.ui.Cells.SharingLiveLocationCell;
+import org.Tajgram.ui.Components.ChatAttachAlertLocationLayout;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.SharedMediaLayout;
+import org.Tajgram.ui.LocationActivity;
 
 import java.util.ArrayList;
 import java.util.Locale;

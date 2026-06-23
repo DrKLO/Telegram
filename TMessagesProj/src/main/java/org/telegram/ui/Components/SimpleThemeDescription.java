@@ -1,6 +1,6 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
-import org.telegram.ui.ActionBar.ThemeDescription;
+import org.Tajgram.ui.ActionBar.ThemeDescription;
 
 import java.util.ArrayList;
 

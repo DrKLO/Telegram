@@ -1,4 +1,4 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -15,13 +15,13 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.inputmethod.EditorInfo;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.EditTextCaption;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.TypefaceSpan;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.EditTextCaption;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.TypefaceSpan;
 
 public class RichEditText extends EditTextCaption {
 

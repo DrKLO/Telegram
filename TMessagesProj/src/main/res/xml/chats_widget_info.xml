@@ -16,5 +16,5 @@
     android:previewImage="@drawable/chats_widget_preview"
     android:previewLayout="@layout/shortcut_widget_layout_preview"
     android:widgetFeatures="reconfigurable|configuration_optional"
-    android:configure="org.telegram.ui.ChatsWidgetConfigActivity">
+    android:configure="org.Tajgram.ui.ChatsWidgetConfigActivity">
 </appwidget-provider>

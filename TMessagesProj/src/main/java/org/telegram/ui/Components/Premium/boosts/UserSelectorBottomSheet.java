@@ -1,9 +1,9 @@
-package org.telegram.ui.Components.Premium.boosts;
+package org.Tajgram.ui.Components.Premium.boosts;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.formatPluralString;
-import static org.telegram.messenger.LocaleController.formatPluralStringComma;
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.formatPluralString;
+import static org.Tajgram.messenger.LocaleController.formatPluralStringComma;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -33,54 +33,54 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BirthdayController;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CheckBox2;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.boosts.adapters.SelectorAdapter;
-import org.telegram.ui.Components.Premium.boosts.adapters.SelectorAdapter.Item;
-import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorBtnCell;
-import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorHeaderCell;
-import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorSearchCell;
-import org.telegram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Gifts.GiftSheet;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PrivacyControlActivity;
-import org.telegram.ui.ProfileActivity;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stars.StarsIntroActivity;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BirthdayController;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaDataController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.MessagesStorage;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.BottomSheetWithRecyclerListView;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.CheckBox2;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.Premium.boosts.adapters.SelectorAdapter;
+import org.Tajgram.ui.Components.Premium.boosts.adapters.SelectorAdapter.Item;
+import org.Tajgram.ui.Components.Premium.boosts.cells.selector.SelectorBtnCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.selector.SelectorHeaderCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.selector.SelectorSearchCell;
+import org.Tajgram.ui.Components.Premium.boosts.cells.selector.SelectorUserCell;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.ScaleStateListAnimator;
+import org.Tajgram.ui.Gifts.GiftSheet;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PrivacyControlActivity;
+import org.Tajgram.ui.ProfileActivity;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -143,7 +143,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             if (scheme != null) {
                 if ((scheme.equals("http") || scheme.equals("https"))) {
                     String host = data.getHost().toLowerCase();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
+                    if (host.equals("Tajgram.me") || host.equals("t.me") || host.equals("Tajgram.dog")) {
                         String path = data.getPath();
                         if (path != null) {
                             if (path.startsWith("/premium_multigift")) {

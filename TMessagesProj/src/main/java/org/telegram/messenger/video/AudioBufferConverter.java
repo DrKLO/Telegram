@@ -1,13 +1,13 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.video.remix.AudioRemixer;
-import org.telegram.messenger.video.remix.DefaultAudioRemixer;
-import org.telegram.messenger.video.resample.AudioResampler;
-import org.telegram.messenger.video.resample.DefaultAudioResampler;
+import org.Tajgram.messenger.video.remix.AudioRemixer;
+import org.Tajgram.messenger.video.remix.DefaultAudioRemixer;
+import org.Tajgram.messenger.video.resample.AudioResampler;
+import org.Tajgram.messenger.video.resample.DefaultAudioResampler;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

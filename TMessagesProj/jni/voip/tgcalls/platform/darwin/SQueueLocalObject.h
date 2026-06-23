@@ -3,7 +3,7 @@
 //  SSignalKit
 //
 //  Created by Mikhail Filimonov on 13.01.2021.
-//  Copyright © 2021 Telegram. All rights reserved.
+//  Copyright © 2021 Tajgram. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

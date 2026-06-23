@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -9,7 +9,7 @@ import android.graphics.Paint;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
-import org.telegram.ui.Components.BitmapShaderTools;
+import org.Tajgram.ui.Components.BitmapShaderTools;
 
 import java.util.ArrayList;
 import java.util.List;

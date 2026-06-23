@@ -1,4 +1,4 @@
-package org.telegram.messenger.pip;
+package org.Tajgram.messenger.pip;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -9,8 +9,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.pip.activity.IPipActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.pip.activity.IPipActivity;
 
 @SuppressLint("ViewConstructor")
 class PipActivityContentLayout extends FrameLayout {

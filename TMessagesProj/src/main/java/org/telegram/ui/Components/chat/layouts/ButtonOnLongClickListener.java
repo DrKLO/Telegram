@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.chat.layouts;
+package org.Tajgram.ui.Components.chat.layouts;
 
 import android.view.View;
 

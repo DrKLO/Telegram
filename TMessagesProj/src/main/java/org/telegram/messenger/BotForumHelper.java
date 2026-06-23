@@ -1,6 +1,6 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -15,16 +15,16 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_forum;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.TypingDotsDrawable;
-import org.telegram.ui.MultiLayoutTypingAnimator;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_forum;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.ColoredImageSpan;
+import org.Tajgram.ui.Components.TypingDotsDrawable;
+import org.Tajgram.ui.MultiLayoutTypingAnimator;
 
 import java.util.ArrayList;
 import java.util.Collections;

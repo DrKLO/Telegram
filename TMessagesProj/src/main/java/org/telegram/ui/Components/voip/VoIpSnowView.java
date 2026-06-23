@@ -1,12 +1,12 @@
-package org.telegram.ui.Components.voip;
+package org.Tajgram.ui.Components.voip;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
-import org.telegram.messenger.LiteMode;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.SnowflakesEffect;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.SnowflakesEffect;
 
 public class VoIpSnowView extends View {
     private SnowflakesEffect snowflakesEffect;

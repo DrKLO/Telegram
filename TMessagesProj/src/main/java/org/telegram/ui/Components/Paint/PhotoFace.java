@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Paint;
+package org.Tajgram.ui.Components.Paint;
 
 import android.graphics.Bitmap;
 import android.graphics.PointF;
@@ -6,7 +6,7 @@ import android.graphics.PointF;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.Landmark;
 
-import org.telegram.ui.Components.Size;
+import org.Tajgram.ui.Components.Size;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
-import static org.telegram.ui.CacheControlActivity.KEEP_MEDIA_TYPE_STORIES;
+import static org.Tajgram.ui.CacheControlActivity.KEEP_MEDIA_TYPE_STORIES;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -11,20 +11,20 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.CacheByChatsController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AvatarsDrawable;
-import org.telegram.ui.Components.AvatarsImageView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.CacheByChatsController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.ActionBarMenuSubItem;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.SimpleTextView;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AvatarsDrawable;
+import org.Tajgram.ui.Components.AvatarsImageView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
 
 import java.util.ArrayList;
 

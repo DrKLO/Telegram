@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -10,7 +10,7 @@ import android.util.SparseIntArray;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.HashSet;
 import java.util.Objects;

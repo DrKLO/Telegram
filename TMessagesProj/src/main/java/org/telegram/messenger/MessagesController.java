@@ -1,24 +1,24 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.LocaleController.getString;
-import static org.telegram.messenger.NotificationsController.TYPE_CHANNEL;
-import static org.telegram.messenger.NotificationsController.TYPE_PRIVATE;
-import static org.telegram.messenger.NotificationsController.TYPE_REACTIONS_MESSAGES;
-import static org.telegram.messenger.Utilities.tryParseLong;
-import static org.telegram.ui.Stars.StarsController.findAttribute;
-import static org.telegram.ui.Stories.HighlightMessageSheet.parseTiers;
-import static org.telegram.ui.Stories.HighlightMessageSheet.parseTiersString;
-import static org.telegram.ui.Stories.HighlightMessageSheet.tiersEqual;
-import static org.telegram.ui.Stories.HighlightMessageSheet.tiersToString;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.NotificationsController.TYPE_CHANNEL;
+import static org.Tajgram.messenger.NotificationsController.TYPE_PRIVATE;
+import static org.Tajgram.messenger.NotificationsController.TYPE_REACTIONS_MESSAGES;
+import static org.Tajgram.messenger.Utilities.tryParseLong;
+import static org.Tajgram.ui.Stars.StarsController.findAttribute;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.parseTiers;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.parseTiersString;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.tiersEqual;
+import static org.Tajgram.ui.Stories.HighlightMessageSheet.tiersToString;
 
 import android.Manifest;
 import android.app.Activity;
@@ -51,68 +51,68 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.SQLite.SQLiteDatabase;
-import org.telegram.SQLite.SQLiteException;
-import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.support.LongSparseIntArray;
-import org.telegram.messenger.support.LongSparseLongArray;
-import org.telegram.messenger.voip.GroupCallMessagesController;
-import org.telegram.messenger.voip.VoIPDebugToSend;
-import org.telegram.messenger.voip.VoIPPreNotificationService;
-import org.telegram.messenger.voip.VoIPService;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLMethod;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.Vector;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.tgnet.tl.TL_bots;
-import org.telegram.tgnet.tl.TL_forum;
-import org.telegram.tgnet.tl.TL_phone;
-import org.telegram.tgnet.tl.TL_stars;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.tgnet.tl.TL_chatlists;
-import org.telegram.tgnet.tl.TL_update;
-import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Business.QuickRepliesController;
-import org.telegram.ui.Cells.CheckBoxCell;
-import org.telegram.ui.ChatActivity;
-import org.telegram.ui.ChatReactionsEditActivity;
-import org.telegram.ui.ChatRightsEditActivity;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.AnimatedEmojiDrawable;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ImageUpdater;
-import org.telegram.ui.Components.JoinCallAlert;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.SwipeGestureSettingsView;
-import org.telegram.ui.Components.TranscribeButton;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.EditWidgetActivity;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.MainTabsActivity;
-import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.ProfileActivity;
-import org.telegram.ui.SecretMediaViewer;
-import org.telegram.ui.Stars.BotStarsController;
-import org.telegram.ui.Stars.StarsController;
-import org.telegram.ui.Stories.StoriesController;
-import org.telegram.ui.ThemeActivity;
-import org.telegram.ui.TopicsFragment;
-import org.telegram.ui.bots.BotWebViewAttachedSheet;
-import org.telegram.ui.bots.BotWebViewSheet;
-import org.telegram.ui.bots.WebViewRequestProps;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.SQLite.SQLiteDatabase;
+import org.Tajgram.SQLite.SQLiteException;
+import org.Tajgram.SQLite.SQLitePreparedStatement;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.messenger.support.LongSparseIntArray;
+import org.Tajgram.messenger.support.LongSparseLongArray;
+import org.Tajgram.messenger.voip.GroupCallMessagesController;
+import org.Tajgram.messenger.voip.VoIPDebugToSend;
+import org.Tajgram.messenger.voip.VoIPPreNotificationService;
+import org.Tajgram.messenger.voip.VoIPService;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.RequestDelegate;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLMethod;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.Vector;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.tgnet.tl.TL_bots;
+import org.Tajgram.tgnet.tl.TL_forum;
+import org.Tajgram.tgnet.tl.TL_phone;
+import org.Tajgram.tgnet.tl.TL_stars;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.tgnet.tl.TL_chatlists;
+import org.Tajgram.tgnet.tl.TL_update;
+import org.Tajgram.ui.ActionBar.ActionBarLayout;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Business.QuickRepliesController;
+import org.Tajgram.ui.Cells.CheckBoxCell;
+import org.Tajgram.ui.ChatActivity;
+import org.Tajgram.ui.ChatReactionsEditActivity;
+import org.Tajgram.ui.ChatRightsEditActivity;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.AnimatedEmojiDrawable;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.ImageUpdater;
+import org.Tajgram.ui.Components.JoinCallAlert;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.MotionBackgroundDrawable;
+import org.Tajgram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Components.SwipeGestureSettingsView;
+import org.Tajgram.ui.Components.TranscribeButton;
+import org.Tajgram.ui.DialogsActivity;
+import org.Tajgram.ui.EditWidgetActivity;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.MainTabsActivity;
+import org.Tajgram.ui.PremiumPreviewFragment;
+import org.Tajgram.ui.ProfileActivity;
+import org.Tajgram.ui.SecretMediaViewer;
+import org.Tajgram.ui.Stars.BotStarsController;
+import org.Tajgram.ui.Stars.StarsController;
+import org.Tajgram.ui.Stories.StoriesController;
+import org.Tajgram.ui.ThemeActivity;
+import org.Tajgram.ui.TopicsFragment;
+import org.Tajgram.ui.bots.BotWebViewAttachedSheet;
+import org.Tajgram.ui.bots.BotWebViewSheet;
+import org.Tajgram.ui.bots.WebViewRequestProps;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1734,7 +1734,7 @@ public class MessagesController extends BaseController implements NotificationCe
         channelRevenueWithdrawalEnabled = mainPreferences.getBoolean("channelRevenueWithdrawalEnabled", false);
         newNoncontactPeersRequirePremiumWithoutOwnpremium = mainPreferences.getBoolean("newNoncontactPeersRequirePremiumWithoutOwnpremium", false);
         reactionsUniqMax = mainPreferences.getInt("reactionsUniqMax", 11);
-        premiumManageSubscriptionUrl = mainPreferences.getString("premiumManageSubscriptionUrl", ApplicationLoader.isStandaloneBuild() ? "https://t.me/premiumbot?start=status" : "https://play.google.com/store/account/subscriptions?sku=telegram_premium&package=org.telegram.messenger");
+        premiumManageSubscriptionUrl = mainPreferences.getString("premiumManageSubscriptionUrl", ApplicationLoader.isStandaloneBuild() ? "https://t.me/premiumbot?start=status" : "https://play.google.com/store/account/subscriptions?sku=telegram_premium&package=org.Tajgram.messenger");
         androidDisableRoundCamera2 = mainPreferences.getBoolean("androidDisableRoundCamera2", true);
         storiesPinnedToTopCountMax = mainPreferences.getInt("storiesPinnedToTopCountMax", 3);
         showAnnualPerMonth = mainPreferences.getBoolean("showAnnualPerMonth", false);
@@ -5708,7 +5708,7 @@ public class MessagesController extends BaseController implements NotificationCe
             Theme.checkCurrentRemoteTheme(false);
 
             if (config.static_maps_provider == null) {
-                config.static_maps_provider = "telegram";
+                config.static_maps_provider = "Tajgram";
             }
 
             mapKey = null;
@@ -5737,7 +5737,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                             }
                             availableMapProviders |= 1;
-                        } else if ("telegram".equals(typeAndKey[0])) {
+                        } else if ("Tajgram".equals(typeAndKey[0])) {
                             if (a == 0) {
                                 mapProvider = 2;
                             }
@@ -5800,7 +5800,7 @@ public class MessagesController extends BaseController implements NotificationCe
         TLRPC.TL_userForeign_old2 user = new TLRPC.TL_userForeign_old2();
         user.phone = "333";
         user.id = 333000;
-        user.first_name = "Telegram";
+        user.first_name = "Tajgram";
         user.last_name = "";
         user.status = null;
         user.photo = new TLRPC.TL_userProfilePhotoEmpty();
@@ -5810,7 +5810,7 @@ public class MessagesController extends BaseController implements NotificationCe
         user.phone = "42777";
         user.id = 777000;
         user.verified = true;
-        user.first_name = "Telegram";
+        user.first_name = "Tajgram";
         user.last_name = "Notifications";
         user.status = null;
         user.photo = new TLRPC.TL_userProfilePhotoEmpty();
@@ -8047,7 +8047,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (dialogId == getUserConfig().getClientUserId()) {
             settings.business_bot_id = UserObject.REPLY_BOT;
-            settings.business_bot_manage_url = "https://telegram.org/";
+            settings.business_bot_manage_url = "https://Tajgram.org/";
         }
         editor.apply();
         userPeerSettings.put(dialogId, settings);

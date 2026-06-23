@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.view.MotionEvent;
@@ -10,14 +10,14 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.WallpaperCell;
-import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.WallpapersListActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.WallpaperCell;
+import org.Tajgram.ui.PhotoViewer;
+import org.Tajgram.ui.WallpapersListActivity;
 
 import java.util.ArrayList;
 

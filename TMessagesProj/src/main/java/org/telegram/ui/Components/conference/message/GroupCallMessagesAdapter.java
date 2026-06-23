@@ -1,6 +1,6 @@
-package org.telegram.ui.Components.conference.message;
+package org.Tajgram.ui.Components.conference.message;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
 import android.view.ViewGroup;
@@ -9,9 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.voip.GroupCallMessage;
-import org.telegram.messenger.voip.GroupCallMessagesController;
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.messenger.voip.GroupCallMessage;
+import org.Tajgram.messenger.voip.GroupCallMessagesController;
+import org.Tajgram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.chat;
+package org.Tajgram.ui.Components.chat;
 
 import android.graphics.PointF;
 import android.graphics.RectF;

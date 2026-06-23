@@ -1,12 +1,12 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -66,20 +66,20 @@ import androidx.core.graphics.drawable.IconCompat;
 
 import com.google.common.collect.Lists;
 
-import org.telegram.messenger.support.LongSparseIntArray;
-import org.telegram.messenger.utils.tlutils.TlUtils;
-import org.telegram.messenger.voip.VoIPGroupNotification;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_account;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.Forum.ForumUtilities;
-import org.telegram.ui.Components.spoilers.SpoilerEffect;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PopupNotificationActivity;
-import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.Tajgram.messenger.support.LongSparseIntArray;
+import org.Tajgram.messenger.utils.tlutils.TlUtils;
+import org.Tajgram.messenger.voip.VoIPGroupNotification;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_account;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.Components.AvatarDrawable;
+import org.Tajgram.ui.Components.Forum.ForumUtilities;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PopupNotificationActivity;
+import org.Tajgram.ui.Stories.recorder.StoryEntry;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -223,7 +223,7 @@ public class NotificationsController extends BaseController implements Notificat
 
         try {
             PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
-            notificationDelayWakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram:notification_delay_lock");
+            notificationDelayWakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Tajgram:notification_delay_lock");
             notificationDelayWakelock.setReferenceCounted(false);
         } catch (Exception e) {
             FileLog.e(e);
@@ -3403,7 +3403,7 @@ public class NotificationsController extends BaseController implements Notificat
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
             SharedPreferences.Editor editor = preferences.edit();
             if (what == 0 || what == -1) {
-                String key = "org.telegram.key" + dialogId;
+                String key = "org.Tajgram.key" + dialogId;
                 if (topicId != 0) {
                     key += ".topic" + topicId;
                 }
@@ -3421,7 +3421,7 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
             if (what == 1 || what == -1) {
-                String key = "org.telegram.keyia" + dialogId;
+                String key = "org.Tajgram.keyia" + dialogId;
                 String channelId = preferences.getString(key, null);
                 if (channelId != null) {
                     editor.remove(key).remove(key + "_s");
@@ -3549,7 +3549,7 @@ public class NotificationsController extends BaseController implements Notificat
                 SharedPreferences.Editor editor = preferences.edit();
                 for (Map.Entry<String, ?> entry : values.entrySet()) {
                     String key = entry.getKey();
-                    if (key.startsWith("org.telegram.key")) {
+                    if (key.startsWith("org.Tajgram.key")) {
                         if (!key.endsWith("_s")) {
                             String id = (String) entry.getValue();
                             systemNotificationManager.deleteNotificationChannel(id);
@@ -3830,7 +3830,7 @@ public class NotificationsController extends BaseController implements Notificat
                 name = LocaleController.formatString(R.string.NotificationsChatInApp, name);
             }
             //TODO notifications
-            key = (isInApp ? "org.telegram.keyia" : "org.telegram.key") + dialogId + "_" + topicId;
+            key = (isInApp ? "org.Tajgram.keyia" : "org.Tajgram.key") + dialogId + "_" + topicId;
         }
         key += "_" + soundHash;
         String channelId = preferences.getString(key, null);
@@ -5518,7 +5518,7 @@ public class NotificationsController extends BaseController implements Notificat
             }
             Intent msgHeardIntent = new Intent(ApplicationLoader.applicationContext, AutoMessageHeardReceiver.class);
             msgHeardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            msgHeardIntent.setAction("org.telegram.messenger.ACTION_MESSAGE_HEARD");
+            msgHeardIntent.setAction("org.Tajgram.messenger.ACTION_MESSAGE_HEARD");
             msgHeardIntent.putExtra("dialog_id", dialogId);
             msgHeardIntent.putExtra("max_id", maxId);
             msgHeardIntent.putExtra("currentAccount", currentAccount);
@@ -5612,7 +5612,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (copybutton != null) {
                 Intent copyIntent = new Intent(ApplicationLoader.applicationContext, CopyCodeReceiver.class);
                 copyIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-                copyIntent.setAction("org.telegram.messenger.ACTION_COPY_CODE");
+                copyIntent.setAction("org.Tajgram.messenger.ACTION_COPY_CODE");
                 copyIntent.putExtra("text", copybutton.copy_text);
                 PendingIntent copyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, internalId, copyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
                 NotificationCompat.Action copyAction = new NotificationCompat.Action.Builder(R.drawable.msg_copy, copybutton.text, copyPendingIntent)

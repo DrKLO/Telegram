@@ -20,7 +20,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -43,9 +43,9 @@ import android.util.SparseArray;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.wallpaper.WallpaperGiftPatternPosition;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.DrawingInBackgroundThreadDrawable;
+import org.Tajgram.messenger.wallpaper.WallpaperGiftPatternPosition;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.DrawingInBackgroundThreadDrawable;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;

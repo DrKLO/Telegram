@@ -1,4 +1,4 @@
-package org.telegram.ui.Charts.view_data;
+package org.Tajgram.ui.Charts.view_data;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -17,18 +17,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChannelMonetizationLayout;
-import org.telegram.ui.Charts.data.ChartData;
-import org.telegram.ui.Components.AnimatedEmojiSpan;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Stars.StarsIntroActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ChannelMonetizationLayout;
+import org.Tajgram.ui.Charts.data.ChartData;
+import org.Tajgram.ui.Components.AnimatedEmojiSpan;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RadialProgressView;
+import org.Tajgram.ui.Stars.StarsIntroActivity;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.blur3.capture;
+package org.Tajgram.ui.Components.blur3.capture;
 
 import android.graphics.ColorMatrix;
 import android.os.Build;

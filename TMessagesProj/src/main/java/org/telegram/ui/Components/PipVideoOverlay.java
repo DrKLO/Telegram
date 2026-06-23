@@ -1,8 +1,8 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -45,18 +45,18 @@ import androidx.dynamicanimation.animation.SpringForce;
 
 import com.google.android.exoplayer2.C;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.pip.source.IPipSourceDelegate;
-import org.telegram.messenger.pip.utils.PipPermissions;
-import org.telegram.messenger.pip.PipSource;
-import org.telegram.messenger.pip.utils.PipUtils;
-import org.telegram.messenger.utils.ViewOutlineProviderImpl;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.PhotoViewer;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.pip.source.IPipSourceDelegate;
+import org.Tajgram.messenger.pip.utils.PipPermissions;
+import org.Tajgram.messenger.pip.PipSource;
+import org.Tajgram.messenger.pip.utils.PipUtils;
+import org.Tajgram.messenger.utils.ViewOutlineProviderImpl;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.PhotoViewer;
 
 import java.util.ArrayList;
 import java.util.List;

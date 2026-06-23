@@ -1,11 +1,11 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.widget.EditText;
 
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.Tajgram.ui.ActionBar.ActionBarMenuItem;
 
 public class SearchTextWatcher implements TextWatcher {
     public final ActionBarMenuItem.ActionBarMenuItemSearchListener listener;

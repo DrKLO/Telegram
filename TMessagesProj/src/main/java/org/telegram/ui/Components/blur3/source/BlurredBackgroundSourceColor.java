@@ -1,10 +1,10 @@
-package org.telegram.ui.Components.blur3.source;
+package org.Tajgram.ui.Components.blur3.source;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
 
 public class BlurredBackgroundSourceColor implements BlurredBackgroundSource {
     @Override

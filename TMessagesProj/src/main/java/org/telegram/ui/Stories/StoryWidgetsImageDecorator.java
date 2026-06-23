@@ -1,20 +1,20 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import static org.telegram.ui.Stories.StoryMediaAreasView.rgbaToArgb;
+import static org.Tajgram.ui.Stories.StoryMediaAreasView.rgbaToArgb;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.Components.Paint.Views.LocationMarker;
-import org.telegram.ui.Components.Reactions.ReactionImageHolder;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Stories.recorder.Weather;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.Components.Paint.Views.LocationMarker;
+import org.Tajgram.ui.Components.Reactions.ReactionImageHolder;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.ui.Stories.recorder.Weather;
 
 import java.util.ArrayList;
 

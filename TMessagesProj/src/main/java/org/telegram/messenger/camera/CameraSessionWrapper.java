@@ -1,10 +1,10 @@
-package org.telegram.messenger.camera;
+package org.Tajgram.messenger.camera;
 
 import android.hardware.Camera;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 import java.util.concurrent.CountDownLatch;
 

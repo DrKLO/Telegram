@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Crop;
+package org.Tajgram.ui.Components.Crop;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -17,19 +17,19 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.BubbleActivity;
-import org.telegram.ui.Components.PaintingOverlay;
-import org.telegram.ui.Components.VideoEditTextureView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.FileLoader;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MediaController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.VideoEditedInfo;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.BubbleActivity;
+import org.Tajgram.ui.Components.PaintingOverlay;
+import org.Tajgram.ui.Components.VideoEditTextureView;
 
 import java.io.File;
 import java.io.FileOutputStream;

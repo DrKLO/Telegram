@@ -1,7 +1,7 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.ui.Components.Paint.PersistColorPalette;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.ui.Components.Paint.PersistColorPalette;
 
 public class BaseController {
 

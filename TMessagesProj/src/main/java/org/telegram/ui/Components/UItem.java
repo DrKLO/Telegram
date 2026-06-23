@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 
 import android.content.Context;
@@ -7,19 +7,19 @@ import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.view.View;
 
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_stats;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Business.BusinessLinksActivity;
-import org.telegram.ui.Business.QuickRepliesController;
-import org.telegram.ui.Cells.SlideIntChooseView;
-import org.telegram.ui.ChannelMonetizationLayout;
-import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
-import org.telegram.ui.StatisticActivity;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_stats;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Business.BusinessLinksActivity;
+import org.Tajgram.ui.Business.QuickRepliesController;
+import org.Tajgram.ui.Cells.SlideIntChooseView;
+import org.Tajgram.ui.ChannelMonetizationLayout;
+import org.Tajgram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.Tajgram.ui.StatisticActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.FloatingDebug;
+package org.Tajgram.ui.Components.FloatingDebug;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -41,24 +41,24 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.INavigationLayout;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.BlurSettingsBottomSheet;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Components.AnimationProperties;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SeekBarView;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.ProfileActivity;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.INavigationLayout;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.BlurSettingsBottomSheet;
+import org.Tajgram.ui.Cells.HeaderCell;
+import org.Tajgram.ui.Components.AnimationProperties;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.SeekBarView;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 import java.util.List;

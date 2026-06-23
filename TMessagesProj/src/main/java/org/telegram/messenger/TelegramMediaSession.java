@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
@@ -26,11 +26,11 @@ import android.text.TextUtils;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
-import org.telegram.SQLite.SQLiteCursor;
-import org.telegram.messenger.audioinfo.AudioInfo;
-import org.telegram.tgnet.NativeByteBuffer;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.SQLite.SQLiteCursor;
+import org.Tajgram.messenger.audioinfo.AudioInfo;
+import org.Tajgram.tgnet.NativeByteBuffer;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.io.File;
 import java.util.ArrayList;

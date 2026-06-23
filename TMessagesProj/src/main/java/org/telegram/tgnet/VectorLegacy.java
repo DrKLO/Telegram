@@ -1,4 +1,4 @@
-package org.telegram.tgnet;
+package org.Tajgram.tgnet;
 
 import java.util.ArrayList;
 

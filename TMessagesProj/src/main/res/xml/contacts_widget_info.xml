@@ -16,5 +16,5 @@
     android:previewImage="@drawable/contacts_widget_preview"
     android:previewLayout="@layout/contacts_widget_layout_preview"
     android:widgetFeatures="reconfigurable|configuration_optional"
-    android:configure="org.telegram.ui.ContactsWidgetConfigActivity">
+    android:configure="org.Tajgram.ui.ContactsWidgetConfigActivity">
 </appwidget-provider>

@@ -1,4 +1,4 @@
-package org.telegram.messenger.utils;
+package org.Tajgram.messenger.utils;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -17,7 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.WindowInsetsCompat;
 
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class GradientProtectionDrawable extends Drawable {
     private final Interpolator mInterpolator;

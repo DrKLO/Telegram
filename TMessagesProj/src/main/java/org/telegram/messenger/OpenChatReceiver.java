@@ -1,18 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 public class OpenChatReceiver extends Activity {
 

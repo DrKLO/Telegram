@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.os.Build;
 import android.os.Looper;
@@ -7,7 +7,7 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.UiThread;
 
-import org.telegram.ui.Components.Reactions.HwEmojis;
+import org.Tajgram.ui.Components.Reactions.HwEmojis;
 
 import java.util.LinkedList;
 

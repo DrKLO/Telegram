@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -9,9 +9,9 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;

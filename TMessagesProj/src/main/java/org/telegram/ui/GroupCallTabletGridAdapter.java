@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,15 +7,15 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.voip.GroupCallGridCell;
-import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
-import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.voip.GroupCallGridCell;
+import org.Tajgram.ui.Components.voip.GroupCallMiniTextureView;
+import org.Tajgram.ui.Components.voip.GroupCallRenderersContainer;
 
 import java.util.ArrayList;
 

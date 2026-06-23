@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -27,20 +27,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 
-import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.messenger.web.R;
-import org.telegram.tgnet.AbstractSerializedData;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.InputSerializedData;
-import org.telegram.tgnet.OutputSerializedData;
-import org.telegram.tgnet.SerializedData;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TL_smsjobs;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.SMSSubscribeSheet;
+import org.Tajgram.PhoneFormat.PhoneFormat;
+import org.Tajgram.messenger.web.R;
+import org.Tajgram.tgnet.AbstractSerializedData;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.InputSerializedData;
+import org.Tajgram.tgnet.OutputSerializedData;
+import org.Tajgram.tgnet.SerializedData;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TL_smsjobs;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.Bulletin;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.SMSSubscribeSheet;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

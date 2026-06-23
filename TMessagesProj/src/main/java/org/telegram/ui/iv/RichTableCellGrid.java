@@ -1,4 +1,4 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -8,12 +8,12 @@ import android.graphics.RectF;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.Components.AnimatedFloat;
-import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.Components.AnimatedFloat;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class RichTableCellGrid extends ViewGroup {
 

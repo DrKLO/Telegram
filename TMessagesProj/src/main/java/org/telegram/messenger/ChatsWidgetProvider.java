@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -11,8 +11,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
-import org.telegram.ui.EditWidgetActivity;
-import org.telegram.ui.LaunchActivity;
+import org.Tajgram.ui.EditWidgetActivity;
+import org.Tajgram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 

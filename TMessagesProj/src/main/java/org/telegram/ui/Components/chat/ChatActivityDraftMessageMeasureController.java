@@ -1,12 +1,12 @@
-package org.telegram.ui.Components.chat;
+package org.Tajgram.ui.Components.chat;
 
 import android.view.View;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.MessageObject;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Cells.ChatMessageCell;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Cells.ChatMessageCell;
 
 public class ChatActivityDraftMessageMeasureController {
     private RecyclerView recyclerView;

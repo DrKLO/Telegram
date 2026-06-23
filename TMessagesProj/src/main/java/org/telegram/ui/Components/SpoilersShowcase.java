@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -9,10 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.spoilers.SpoilerEffect;
-import org.telegram.ui.Components.spoilers.SpoilerEffect2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect2;
 
 public class SpoilersShowcase extends BaseFragment {
 

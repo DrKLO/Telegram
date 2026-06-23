@@ -1,16 +1,16 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.utils.Choreographer60FpsContent;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Stars.StarsReactionsSheet;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.LiteMode;
+import org.Tajgram.messenger.utils.Choreographer60FpsContent;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Stars.StarsReactionsSheet;
 
 public class ProfilePremiumCell extends TextCell {
 

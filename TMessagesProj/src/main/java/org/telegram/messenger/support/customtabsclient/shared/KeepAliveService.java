@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.telegram.messenger.support.customtabsclient.shared;
+package org.Tajgram.messenger.support.customtabsclient.shared;
 
 import android.app.Service;
 import android.content.Intent;

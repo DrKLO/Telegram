@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.Gson;

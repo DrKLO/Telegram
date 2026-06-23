@@ -1,7 +1,7 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import static org.telegram.messenger.AndroidUtilities.isInAirplaneMode;
-import static org.telegram.ui.PremiumPreviewFragment.applyNewSpan;
+import static org.Tajgram.messenger.AndroidUtilities.isInAirplaneMode;
+import static org.Tajgram.ui.PremiumPreviewFragment.applyNewSpan;
 
 import android.app.Activity;
 import android.content.Context;
@@ -14,22 +14,22 @@ import android.view.ViewGroup;
 import androidx.core.content.FileProvider;
 
 import org.json.JSONObject;
-import org.telegram.messenger.web.BuildConfig;
-import org.telegram.messenger.web.R;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TL_smsjobs;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.ItemOptions;
-import org.telegram.ui.Components.UpdateAppAlertDialog;
-import org.telegram.ui.Components.UpdateLayout;
-import org.telegram.ui.IUpdateLayout;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.SMSStatsActivity;
-import org.telegram.ui.SMSSubscribeSheet;
+import org.Tajgram.messenger.web.BuildConfig;
+import org.Tajgram.messenger.web.R;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TL_smsjobs;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.AlertDialog;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.Components.BulletinFactory;
+import org.Tajgram.ui.Components.ItemOptions;
+import org.Tajgram.ui.Components.UpdateAppAlertDialog;
+import org.Tajgram.ui.Components.UpdateLayout;
+import org.Tajgram.ui.IUpdateLayout;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.SMSStatsActivity;
+import org.Tajgram.ui.SMSSubscribeSheet;
 
 import java.io.File;
 

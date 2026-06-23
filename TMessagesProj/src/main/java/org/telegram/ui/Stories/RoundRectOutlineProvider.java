@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
 import android.graphics.Outline;
 import android.os.Build;
@@ -7,7 +7,7 @@ import android.view.ViewOutlineProvider;
 
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class RoundRectOutlineProvider extends ViewOutlineProvider {

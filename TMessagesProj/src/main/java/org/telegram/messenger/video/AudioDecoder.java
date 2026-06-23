@@ -1,4 +1,4 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -10,7 +10,7 @@ import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Build;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 
 import java.io.File;
 import java.io.FileDescriptor;

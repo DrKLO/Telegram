@@ -1,13 +1,13 @@
-package org.telegram.tgnet.json;
+package org.Tajgram.tgnet.json;
 
 import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.BuildConfig;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.Utilities;
 
 import java.util.ArrayList;
 

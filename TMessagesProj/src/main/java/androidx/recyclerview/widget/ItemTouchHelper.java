@@ -39,7 +39,7 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView.OnItemTouchListener;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 
-import org.telegram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.AndroidUtilities;
 
 import java.util.ArrayList;
 import java.util.List;

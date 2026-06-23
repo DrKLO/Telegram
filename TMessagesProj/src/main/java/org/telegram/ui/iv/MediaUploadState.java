@@ -1,6 +1,6 @@
-package org.telegram.ui.iv;
+package org.Tajgram.ui.iv;
 
-import org.telegram.tgnet.TLRPC;
+import org.Tajgram.tgnet.TLRPC;
 
 public class MediaUploadState {
 

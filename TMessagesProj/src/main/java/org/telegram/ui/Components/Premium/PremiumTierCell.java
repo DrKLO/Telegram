@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium;
+package org.Tajgram.ui.Components.Premium;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -18,17 +18,17 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BillingController;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.GenericProvider;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CheckBox2;
-import org.telegram.ui.Components.CheckBoxBase;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.PremiumPreviewFragment;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BillingController;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.GenericProvider;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.CheckBox2;
+import org.Tajgram.ui.Components.CheckBoxBase;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.PremiumPreviewFragment;
 
 public class PremiumTierCell extends ViewGroup {
     private CheckBox2 checkBox;

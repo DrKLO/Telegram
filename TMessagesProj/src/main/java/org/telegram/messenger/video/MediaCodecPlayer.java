@@ -1,4 +1,4 @@
-package org.telegram.messenger.video;
+package org.Tajgram.messenger.video;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;

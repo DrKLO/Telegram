@@ -1,4 +1,4 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -9,7 +9,7 @@ import android.security.keystore.KeyProperties;
 
 import androidx.annotation.RequiresApi;
 
-import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
+import org.Tajgram.messenger.support.fingerprint.FingerprintManagerCompat;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;

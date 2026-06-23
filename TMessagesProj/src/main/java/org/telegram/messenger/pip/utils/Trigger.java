@@ -1,9 +1,9 @@
-package org.telegram.messenger.pip.utils;
+package org.Tajgram.messenger.pip.utils;
 
 import android.os.Handler;
 import android.os.Looper;
 
-import org.telegram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ApplicationLoader;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

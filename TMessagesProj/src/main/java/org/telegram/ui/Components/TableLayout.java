@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,11 +19,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.customview.widget.ExploreByTouchHelper;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ArticleViewer;
-import org.telegram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ArticleViewer;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import static android.view.Gravity.RELATIVE_LAYOUT_DIRECTION;
 import static android.view.Gravity.VERTICAL_GRAVITY_MASK;
 import static android.view.View.MeasureSpec.EXACTLY;
 import static android.view.View.MeasureSpec.makeMeasureSpec;
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 

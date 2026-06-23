@@ -21,7 +21,7 @@ import android.os.Process;
 import androidx.annotation.Nullable;
 import java.nio.ByteBuffer;
 
-import org.telegram.messenger.FileLog;
+import org.Tajgram.messenger.FileLog;
 import org.webrtc.CalledByNative;
 import org.webrtc.Logging;
 import org.webrtc.ThreadUtils;

@@ -1,11 +1,11 @@
-package org.telegram.ui.Cells;
+package org.Tajgram.ui.Cells;
 
 import android.view.View;
 
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MessageObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.Tajgram.messenger.ImageReceiver;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 public interface IMessageCell {
 

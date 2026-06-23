@@ -1,15 +1,15 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
-import org.telegram.messenger.support.LongSparseLongArray;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheetTabs;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AlertsCreator;
-import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.bots.BotWebViewAttachedSheet;
-import org.telegram.ui.bots.BotWebViewSheet;
-import org.telegram.ui.bots.WebViewRequestProps;
+import org.Tajgram.messenger.support.LongSparseLongArray;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.BottomSheetTabs;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.AlertsCreator;
+import org.Tajgram.ui.LaunchActivity;
+import org.Tajgram.ui.bots.BotWebViewAttachedSheet;
+import org.Tajgram.ui.bots.BotWebViewSheet;
+import org.Tajgram.ui.bots.WebViewRequestProps;
 
 public class BotGuardHelper extends BaseController {
     private BotGuardHelper(int num) {

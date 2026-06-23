@@ -1,14 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
+ * This is the source code of Tajgram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
  * Copyright Nikolai Kudashov, 2013-2018.
  */
 
-package org.telegram.ui.Adapters;
+package org.Tajgram.ui.Adapters;
 
-import static org.telegram.messenger.LocaleController.getString;
+import static org.Tajgram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -30,52 +30,52 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.messenger.support.LongSparseIntArray;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_chatlists;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ArchiveHintCell;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Cells.DialogMeUrlCell;
-import org.telegram.ui.Cells.DialogsEmptyCell;
-import org.telegram.ui.Cells.DialogsHintCell;
-import org.telegram.ui.Cells.DialogsRequestedEmptyCell;
-import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.ProfileSearchCell;
-import org.telegram.ui.Cells.RequestPeerRequirementsCell;
-import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Components.ArchiveHelp;
-import org.telegram.ui.Components.BlurredRecyclerView;
-import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
-import org.telegram.ui.Components.PullForegroundDrawable;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.Stories.DialogStoriesCell;
-import org.telegram.ui.Stories.StoriesController;
-import org.telegram.ui.Stories.StoriesListPlaceProvider;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ContactsController;
+import org.Tajgram.messenger.DialogObject;
+import org.Tajgram.messenger.FileLog;
+import org.Tajgram.messenger.LocaleController;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SharedConfig;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.messenger.support.LongSparseIntArray;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_chatlists;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ArchiveHintCell;
+import org.Tajgram.ui.Cells.DialogCell;
+import org.Tajgram.ui.Cells.DialogMeUrlCell;
+import org.Tajgram.ui.Cells.DialogsEmptyCell;
+import org.Tajgram.ui.Cells.DialogsHintCell;
+import org.Tajgram.ui.Cells.DialogsRequestedEmptyCell;
+import org.Tajgram.ui.Cells.GraySectionCell;
+import org.Tajgram.ui.Cells.HeaderCell;
+import org.Tajgram.ui.Cells.ProfileSearchCell;
+import org.Tajgram.ui.Cells.RequestPeerRequirementsCell;
+import org.Tajgram.ui.Cells.ShadowSectionCell;
+import org.Tajgram.ui.Cells.TextCell;
+import org.Tajgram.ui.Cells.TextInfoPrivacyCell;
+import org.Tajgram.ui.Cells.UserCell;
+import org.Tajgram.ui.Components.ArchiveHelp;
+import org.Tajgram.ui.Components.BlurredRecyclerView;
+import org.Tajgram.ui.Components.CombinedDrawable;
+import org.Tajgram.ui.Components.FlickerLoadingView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.ListView.AdapterWithDiffUtils;
+import org.Tajgram.ui.Components.PullForegroundDrawable;
+import org.Tajgram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.DialogsActivity;
+import org.Tajgram.ui.Stories.DialogStoriesCell;
+import org.Tajgram.ui.Stories.StoriesController;
+import org.Tajgram.ui.Stories.StoriesListPlaceProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;

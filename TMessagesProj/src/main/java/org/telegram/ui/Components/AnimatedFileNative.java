@@ -1,9 +1,9 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.os.Build;
 
-import org.telegram.messenger.AnimatedFileDrawableStream;
+import org.Tajgram.messenger.AnimatedFileDrawableStream;
 
 public class AnimatedFileNative {
 

@@ -1,10 +1,10 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.tl.TL_stories;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.tgnet.ConnectionsManager;
+import org.Tajgram.tgnet.tl.TL_stories;
 
 import java.util.ArrayList;
 

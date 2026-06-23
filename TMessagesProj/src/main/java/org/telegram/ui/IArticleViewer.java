@@ -1,21 +1,21 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.collection.LongSparseArray;
 
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.video.VideoPlayerHolderBase;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.tl.TL_iv;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextSelectionHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.LoadingDrawable;
-import org.telegram.ui.Components.TextPaintUrlSpan;
+import org.Tajgram.messenger.browser.Browser;
+import org.Tajgram.messenger.video.VideoPlayerHolderBase;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.tgnet.tl.TL_iv;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.ActionBar.BottomSheet;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.TextSelectionHelper;
+import org.Tajgram.ui.Components.LinkSpanDrawable;
+import org.Tajgram.ui.Components.LoadingDrawable;
+import org.Tajgram.ui.Components.TextPaintUrlSpan;
 
 import java.util.ArrayList;
 

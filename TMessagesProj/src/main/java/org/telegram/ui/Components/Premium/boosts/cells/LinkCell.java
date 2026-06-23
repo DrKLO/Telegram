@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Premium.boosts.cells;
+package org.Tajgram.ui.Components.Premium.boosts.cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -17,16 +17,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.EffectsTextView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.TextStyleSpan;
-import org.telegram.ui.Components.spoilers.SpoilerEffect2;
-import org.telegram.ui.Components.spoilers.SpoilersTextView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.Utilities;
+import org.Tajgram.ui.ActionBar.BaseFragment;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.EffectsTextView;
+import org.Tajgram.ui.Components.LayoutHelper;
+import org.Tajgram.ui.Components.TextStyleSpan;
+import org.Tajgram.ui.Components.spoilers.SpoilerEffect2;
+import org.Tajgram.ui.Components.spoilers.SpoilersTextView;
 
 @SuppressLint("ViewConstructor")
 public class LinkCell extends FrameLayout {

@@ -1564,7 +1564,7 @@ static void process_alpha(
 // ---------------------------------------------------------------------------
 // JNI entry point
 //
-// Kotlin: external fun applySoftLight(input: Bitmap, output: Bitmap, color: Int): Boolean  [org.telegram.messenger.Utilities]
+// Kotlin: external fun applySoftLight(input: Bitmap, output: Bitmap, color: Int): Boolean  [org.Tajgram.messenger.Utilities]
 //
 // color  — Android packed ARGB (0xAARRGGBB), straight (non-premultiplied) alpha.
 // Returns true on success, false on error (size mismatch or unsupported format).

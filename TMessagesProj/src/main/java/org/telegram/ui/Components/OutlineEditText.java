@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -7,8 +7,8 @@ import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class OutlineEditText extends OutlineTextContainerView {
 

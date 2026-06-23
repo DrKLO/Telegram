@@ -1,6 +1,6 @@
-package org.telegram.ui.Stories;
+package org.Tajgram.ui.Stories;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.Tajgram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -9,23 +9,23 @@ import android.graphics.Region;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.tl.TL_stories;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatActionCell;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.Cells.ManageChatUserCell;
-import org.telegram.ui.Cells.ProfileChannelCell;
-import org.telegram.ui.Cells.ProfileSearchCell;
-import org.telegram.ui.Cells.ReactedUserHolderView;
-import org.telegram.ui.Cells.SharedPhotoVideoCell2;
-import org.telegram.ui.Cells.StatisticPostInfoCell;
-import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Components.BlurredRecyclerView;
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.messenger.UserConfig;
+import org.Tajgram.tgnet.tl.TL_stories;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Cells.ChatActionCell;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.DialogCell;
+import org.Tajgram.ui.Cells.ManageChatUserCell;
+import org.Tajgram.ui.Cells.ProfileChannelCell;
+import org.Tajgram.ui.Cells.ProfileSearchCell;
+import org.Tajgram.ui.Cells.ReactedUserHolderView;
+import org.Tajgram.ui.Cells.SharedPhotoVideoCell2;
+import org.Tajgram.ui.Cells.StatisticPostInfoCell;
+import org.Tajgram.ui.Cells.UserCell;
+import org.Tajgram.ui.Components.BlurredRecyclerView;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
 

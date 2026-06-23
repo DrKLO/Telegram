@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.blur3.source;
+package org.Tajgram.ui.Components.blur3.source;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -9,8 +9,8 @@ import android.graphics.Shader;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.Tajgram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
 
 public class BlurredBackgroundSourceBitmap implements BlurredBackgroundSource {
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);

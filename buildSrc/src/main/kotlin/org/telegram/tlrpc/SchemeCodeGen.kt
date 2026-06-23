@@ -1,4 +1,4 @@
-package org.telegram.tlrpc
+package org.Tajgram.tlrpc
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -8,15 +8,15 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import org.telegram.tlrpc.models.TlObjectWithLayer
-import org.telegram.tlrpc.models.TlParam
-import org.telegram.tlrpc.models.TlParamOptionalKey
-import org.telegram.tlrpc.schema.TlSchemaParamType
-import org.telegram.tlrpc.models.TlParams
-import org.telegram.tlrpc.schema.TlSchemaPrimitiveType
+import org.Tajgram.tlrpc.models.TlObjectWithLayer
+import org.Tajgram.tlrpc.models.TlParam
+import org.Tajgram.tlrpc.models.TlParamOptionalKey
+import org.Tajgram.tlrpc.schema.TlSchemaParamType
+import org.Tajgram.tlrpc.models.TlParams
+import org.Tajgram.tlrpc.schema.TlSchemaPrimitiveType
 
 object SchemeCodeGen {
-    private val CLASS_OUTPUT = ClassName("org.telegram.tgnet", "OutputSerializedData")
+    private val CLASS_OUTPUT = ClassName("org.Tajgram.tgnet", "OutputSerializedData")
 
     fun generateDataClass(tl: TlObjectWithLayer, superclass: TypeName?): TypeSpec {
         val className = tl.codegenDataClassName
@@ -50,7 +50,7 @@ object SchemeCodeGen {
         superclass?.let { builder.superclass(it) }
 
         if (superclass == null) {
-            builder.addSuperinterface(ClassName("org.telegram.tgnet.model", "TlGen_Object"))
+            builder.addSuperinterface(ClassName("org.Tajgram.tgnet.model", "TlGen_Object"))
         }
 
         return builder.build()
@@ -354,7 +354,7 @@ object SchemeCodeGen {
                 if (type.name == "Bool") {
                     com.squareup.kotlinpoet.BOOLEAN
                 } else {
-                    ClassName("org.telegram.tgnet.model.generated", "TlGen_" + type.name.replace('.', '_'))
+                    ClassName("org.Tajgram.tgnet.model.generated", "TlGen_" + type.name.replace('.', '_'))
                 }
             }
 
@@ -362,7 +362,7 @@ object SchemeCodeGen {
 
             is TlSchemaParamType.Flag.True -> com.squareup.kotlinpoet.BOOLEAN
 
-            is TlSchemaParamType.Primary.X -> ClassName("org.telegram.tgnet.model", "TlGen_Object")
+            is TlSchemaParamType.Primary.X -> ClassName("org.Tajgram.tgnet.model", "TlGen_Object")
             is TlSchemaParamType.Flags -> null
         }
     }

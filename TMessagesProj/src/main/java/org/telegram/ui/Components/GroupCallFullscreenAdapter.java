@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -23,18 +23,18 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
-import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
-import org.telegram.ui.Components.voip.GroupCallStatusIcon;
-import org.telegram.ui.GroupCallActivity;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.ChatObject;
+import org.Tajgram.messenger.ImageLocation;
+import org.Tajgram.messenger.MessageObject;
+import org.Tajgram.messenger.UserObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.ui.ActionBar.Theme;
+import org.Tajgram.ui.Components.voip.GroupCallMiniTextureView;
+import org.Tajgram.ui.Components.voip.GroupCallRenderersContainer;
+import org.Tajgram.ui.Components.voip.GroupCallStatusIcon;
+import org.Tajgram.ui.GroupCallActivity;
 
 import java.util.ArrayList;
 
@@ -178,7 +178,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
 
         GroupCallStatusIcon statusIcon;
 
-        org.telegram.ui.Cells.GroupCallUserCell.AvatarWavesDrawable avatarWavesDrawable = new org.telegram.ui.Cells.GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(26), AndroidUtilities.dp(29));
+        org.Tajgram.ui.Cells.GroupCallUserCell.AvatarWavesDrawable avatarWavesDrawable = new org.Tajgram.ui.Cells.GroupCallUserCell.AvatarWavesDrawable(AndroidUtilities.dp(26), AndroidUtilities.dp(29));
 
         public GroupCallUserCell(@NonNull Context context) {
             super(context);

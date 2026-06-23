@@ -1,4 +1,4 @@
-package org.telegram.ui.Stories.recorder;
+package org.Tajgram.ui.Stories.recorder;
 
 import android.graphics.RectF;
 import android.text.TextUtils;
@@ -6,7 +6,7 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.BuildVars;
+import org.Tajgram.messenger.BuildVars;
 
 import java.util.ArrayList;
 

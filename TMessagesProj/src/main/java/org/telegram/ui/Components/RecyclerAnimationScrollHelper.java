@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -9,10 +9,10 @@ import android.view.View;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.MessagesController;
-import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Cells.IMessageCell;
+import org.Tajgram.messenger.BuildVars;
+import org.Tajgram.messenger.MessagesController;
+import org.Tajgram.ui.Cells.ChatMessageCell;
+import org.Tajgram.ui.Cells.IMessageCell;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -15,9 +15,9 @@ import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class LoadingStickerDrawable extends Drawable {
 

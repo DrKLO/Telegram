@@ -1,4 +1,4 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -17,10 +17,10 @@ import android.os.SystemClock;
 import android.text.TextPaint;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.ProfileGalleryView;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.ActionBar;
+import org.Tajgram.ui.Components.CubicBezierInterpolator;
+import org.Tajgram.ui.Components.ProfileGalleryView;
 
 import java.util.Arrays;
 

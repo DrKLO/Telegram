@@ -1,13 +1,13 @@
-package org.telegram.ui;
+package org.Tajgram.ui;
 
 import android.graphics.Rect;
 import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.Components.GestureDetector2;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.ui.ActionBar.ActionBarPopupWindow;
+import org.Tajgram.ui.Components.GestureDetector2;
 
 
 public class LongPressListenerWithMovingGesture implements View.OnTouchListener {

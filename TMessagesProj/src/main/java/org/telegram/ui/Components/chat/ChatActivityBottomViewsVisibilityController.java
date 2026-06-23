@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.chat;
+package org.Tajgram.ui.Components.chat;
 
 import java.util.Arrays;
 

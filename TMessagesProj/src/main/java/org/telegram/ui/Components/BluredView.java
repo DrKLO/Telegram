@@ -1,10 +1,10 @@
-package org.telegram.ui.Components;
+package org.Tajgram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.ui.ActionBar.Theme;
 
 public class BluredView extends View {
 

@@ -1,10 +1,10 @@
-package org.telegram.ui.Components.ListView;
+package org.Tajgram.ui.Components.ListView;
 
 import android.util.Log;
 
 import androidx.recyclerview.widget.DiffUtil;
 
-import org.telegram.ui.Components.RecyclerListView;
+import org.Tajgram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 

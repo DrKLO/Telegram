@@ -111,8 +111,8 @@ jobs:
                         translated = translated.replace(f"_PH_{i}_", ph)
                         translated = translated.replace(f" _PH_{i}_ ", ph)
 
-                    # БРЕНДИНГИ ЗИРЕҲПӮШ: Иваз кардани ҳамаи шаклҳои номи Telegram ба Tajgram
-                    translated = re.sub(r'Telegram(ma|ro|бо|хо)?', 'Tajgram', translated, flags=re.IGNORECASE)
+                    # БРЕНДИНГИ ЗИРЕҲПӮШ: Иваз кардани ҳамаи шаклҳои номи Tajgram ба Tajgram
+                    translated = re.sub(r'Tajgram(ma|ro|бо|хо)?', 'Tajgram', translated, flags=re.IGNORECASE)
                     translated = re.sub(r'Телеграм(ма|ro|бо|хо)?', 'Таҷграм', translated, flags=re.IGNORECASE)
                     
                     # Танзими ниҳонии нохунакҳо барои синтаксиси Android

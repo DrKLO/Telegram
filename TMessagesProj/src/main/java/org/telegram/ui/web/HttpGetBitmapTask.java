@@ -1,12 +1,12 @@
-package org.telegram.ui.web;
+package org.Tajgram.ui.web;
 
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 
-import org.telegram.messenger.SvgHelper;
-import org.telegram.messenger.Utilities;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.messenger.Utilities;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;

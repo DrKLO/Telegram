@@ -1,4 +1,4 @@
-package org.telegram.messenger.voip;
+package org.Tajgram.messenger.voip;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -8,12 +8,12 @@ import android.os.ParcelFileDescriptor;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.ApplicationLoader;
+import org.Tajgram.messenger.ApplicationLoader;
 
 import java.io.FileNotFoundException;
 
 /**
- * This is a very dirty hack to allow Telegram calls to respect user's DND settings.
+ * This is a very dirty hack to allow Tajgram calls to respect user's DND settings.
  * URIs to this content provider are specified as the sound for the incoming call notifications.
  * We then assume that the system will only try opening these if it actually wants to make a sound
  * for this particular call - that's how we know whether the call went through DND and start

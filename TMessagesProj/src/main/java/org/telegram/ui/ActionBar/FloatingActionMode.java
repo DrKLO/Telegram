@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.telegram.ui.ActionBar;
+package org.Tajgram.ui.ActionBar;
 
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
@@ -33,10 +33,10 @@ import android.view.WindowManager;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 
-import org.telegram.messenger.AccountInstance;
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
+import org.Tajgram.messenger.AccountInstance;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.NotificationCenter;
+import org.Tajgram.messenger.UserConfig;
 
 import java.util.Arrays;
 

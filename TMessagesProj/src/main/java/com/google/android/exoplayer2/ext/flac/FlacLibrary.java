@@ -18,7 +18,7 @@ package com.google.android.exoplayer2.ext.flac;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import com.google.android.exoplayer2.util.LibraryLoader;
 
-import org.telegram.messenger.NativeLoader;
+import org.Tajgram.messenger.NativeLoader;
 
 /** Configures and queries the underlying native library. */
 public final class FlacLibrary {

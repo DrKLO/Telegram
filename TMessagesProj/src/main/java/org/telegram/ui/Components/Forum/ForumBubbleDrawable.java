@@ -1,4 +1,4 @@
-package org.telegram.ui.Components.Forum;
+package org.Tajgram.ui.Components.Forum;
 
 
 import android.animation.ValueAnimator;
@@ -17,10 +17,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SvgHelper;
-import org.telegram.ui.ActionBar.Theme;
+import org.Tajgram.messenger.AndroidUtilities;
+import org.Tajgram.messenger.R;
+import org.Tajgram.messenger.SvgHelper;
+import org.Tajgram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 

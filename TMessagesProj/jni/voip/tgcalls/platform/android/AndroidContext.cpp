@@ -6,7 +6,7 @@
 namespace tgcalls {
 
 AndroidContext::AndroidContext(JNIEnv *env, jobject peerInstance, jobject groupInstance, bool screencast) {
-    VideoCapturerDeviceClass = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/VideoCapturerDevice"));
+    VideoCapturerDeviceClass = (jclass) env->NewGlobalRef(env->FindClass("org/Tajgram/messenger/voip/VideoCapturerDevice"));
     jmethodID initMethodId = env->GetMethodID(VideoCapturerDeviceClass, "<init>", "(Z)V");
     javaCapturer = env->NewGlobalRef(env->NewObject(VideoCapturerDeviceClass, initMethodId, screencast));
     if (peerInstance) {

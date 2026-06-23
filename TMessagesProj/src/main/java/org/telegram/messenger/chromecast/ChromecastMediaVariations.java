@@ -1,4 +1,4 @@
-package org.telegram.messenger.chromecast;
+package org.Tajgram.messenger.chromecast;
 
 import java.util.ArrayList;
 

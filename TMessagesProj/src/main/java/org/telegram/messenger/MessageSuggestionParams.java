@@ -1,10 +1,10 @@
-package org.telegram.messenger;
+package org.Tajgram.messenger;
 
 import androidx.annotation.Nullable;
 
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.utils.tlutils.AmountUtils;
+import org.Tajgram.tgnet.TLObject;
+import org.Tajgram.tgnet.TLRPC;
+import org.Tajgram.messenger.utils.tlutils.AmountUtils;
 
 public class MessageSuggestionParams {
     public final @Nullable AmountUtils.Amount amount;
