@@ -1,0 +1,116 @@
+name: Build
+
+on:
+  push:
+    branches: [ "Master", "dev", "assets" ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - '!.github/workflows/build.yml'
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_HARDLINK: "true"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_MAXSIZE: "10G"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "build-tools;36.1.0 ndk;27.3.13750724 platforms;android-36"
+
+      - name: Configure Gradle
+        run: |
+          mkdir -p ~/.gradle
+          echo 'org.gradle.caching=true' >> ~/.gradle/gradle.properties
+          echo 'org.gradle.parallel=true' >> ~/.gradle/gradle.properties
+          echo 'org.gradle.jvmargs=-Xmx8192m -Dfile.encoding=UTF-8 -XX:+UseParallelGC' >> ~/.gradle/gradle.properties
+          echo 'android.native.buildOutput=verbose' >> ~/.gradle/gradle.properties
+      - name: Configure Signing
+        run: |
+          echo "storeFile=${{ github.workspace }}/keystore.base64" >> local.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
+          
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.base64
+      - name: Configure Secrets
+        run: |
+          echo "apiId=${{ secrets.TELEGRAM_API_ID }}" >> local.properties
+          echo "apiHash=${{ secrets.TELEGRAM_API_HASH }}" >> local.properties    
+      - name: Build with Gradle
+        run: |
+          ./gradlew assembleRelease
+          ./gradlew bundlePlay
+          ./gradlew sentryUploadSourceBundlePlay
+      - name: Attest
+        uses: actions/attest@v4
+        with:
+          subject-path: '${{ github.workspace }}/TMessagesProj_App/build/outputs'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: outputs
+          path: TMessagesProj_App/build/outputs
+
+      - name: Upload arm64-v8a build apk
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/apk/release/*-arm64-v8a.apk
+          archive: false
+
+      - name: Upload armeabi-v7a build apk
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/apk/release/*-armeabi-v7a.apk
+          archive: false
+
+      - name: Upload universal build apk
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/apk/release/*-universal.apk
+          archive: false
+
+      - name: Upload x86 build apk
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/apk/release/*-x86.apk
+          archive: false
+
+      - name: Upload x86_64 build apk
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/apk/release/*-x86_64.apk
+          archive: false
+
+      - name: Upload build bundle
+        uses: actions/upload-artifact@v7
+        with:
+          path: TMessagesProj_App/build/outputs/bundle/play/*-play.aab
+          archive: false
