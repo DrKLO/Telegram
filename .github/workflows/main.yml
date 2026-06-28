@@ -135,10 +135,15 @@ jobs:
         run: pip install python-telegram-bot python-telegram-bot[httpx]
       - name: Define multiline caption
         run: |
+          COMMIT_MSG="${{ github.event.commits[0].message }}"
+          if [ ${#COMMIT_MSG} -gt 512 ]; then
+            COMMIT_MSG="${COMMIT_MSG:0:512}..."
+          fi
+          
           echo "CAPTION<<EOF" >> $GITHUB_ENV
           echo "🚀Release Custom Telegram Client ${{ env.VERSION }}" >> $GITHUB_ENV
           echo "" >> $GITHUB_ENV
-          echo "📄Commit message: ${{ github.event.commits[0].message }}" >> $GITHUB_ENV
+          echo "📄Commit message: $COMMIT_MSG" >> $GITHUB_ENV
           echo "" >> $GITHUB_ENV
           echo "Repository: ${{ github.repository }}" >> $GITHUB_ENV
           echo "" >> $GITHUB_ENV
