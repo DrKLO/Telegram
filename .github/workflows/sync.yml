@@ -11,11 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync@v1.8
+      - uses: tgymnich/fork-sync@v2.0
         with:
           owner: DrKLO
           repo: Telegram
           base: master
-          head: master
+          head: main
+          merge_method: rebase
           auto_approve: true
           ignore_fail: true
