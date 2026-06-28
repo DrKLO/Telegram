@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import static org.telegram.messenger.AndroidUtilities.find;
+
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -129,7 +131,7 @@ public class MediaDataController extends BaseController {
             SPOILER_PATTERN = Pattern.compile("\\|\\|(.+?)\\|\\|"),
             STRIKE_PATTERN = Pattern.compile("~~(.+?)~~");
 
-    public static String SHORTCUT_CATEGORY = "org.telegram.messenger.SHORTCUT_SHARE";
+    public static String SHORTCUT_CATEGORY = "org.freegram.messenger.SHORTCUT_SHARE";
 
     private static volatile MediaDataController[] Instance = new MediaDataController[UserConfig.MAX_ACCOUNT_COUNT];
     private static final Object[] lockObjects = new Object[UserConfig.MAX_ACCOUNT_COUNT];

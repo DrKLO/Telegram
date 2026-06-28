@@ -176,6 +176,8 @@ android {
         versionName APP_VERSION_NAME
         ndkVersion "27.2.12479018"
 
+        manifestPlaceholders = [ MAPS_API_KEY: MAPS_API_KEY ]
+
         multiDexEnabled true
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']

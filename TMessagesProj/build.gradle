@@ -81,6 +81,9 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
+def proj_tg_app_id = Integer.parseInt(APP_ID)
+def proj_tg_app_hash = APP_HASH
+
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 android {
     compileSdkVersion 35
@@ -112,6 +115,10 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 35
+
+        buildConfigField 'int', 'APP_ID', "$proj_tg_app_id"
+        buildConfigField 'String', 'APP_HASH', "\"$proj_tg_app_hash\""
+        buildConfigField 'String', 'GOOGLE_AUTH_CLIENT_ID', "\"$GOOGLE_AUTH_CLIENT_ID\""
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

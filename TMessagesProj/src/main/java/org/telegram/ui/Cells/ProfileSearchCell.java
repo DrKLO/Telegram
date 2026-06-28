@@ -203,7 +203,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     }
 
     public void setAd(TLRPC.TL_sponsoredPeer sponsoredPeer) {
-        ad = sponsoredPeer;
+        ad = null;
     }
 
     private boolean allowEmojiStatus = true;
