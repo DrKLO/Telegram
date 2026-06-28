@@ -1,0 +1,155 @@
+name: Build Client
+
+on: [push]
+
+jobs:
+  linux:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        type: [release]
+        include:
+          - type: release
+            afat: assembleAfatRelease
+            name: ""
+            updates: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Free up some disk space.
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: nttld/setup-ndk@v1.4.2
+        id: setup-ndk-r21e
+        with:
+          ndk-version: r21e
+          link-to-sdk: true
+
+      - uses: nttld/setup-ndk@v1.4.2
+        id: setup-ndk-r23c
+        with:
+          ndk-version: r23c
+          link-to-sdk: true
+      - name: Build.
+        run: |
+          ###
+          vars=gradle.properties
+
+          echo "org.gradle.workers.max=1" >> $vars
+          echo "APP_ID=${{ secrets.APP_ID }}" >> $vars
+          echo "APP_HASH=${{ secrets.APP_HASH }}" >> $vars
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.ALIAS_PASS }}" >> $vars
+          echo "RELEASE_KEY_ALIAS=${{ secrets.ALIAS_NAME }}" >> $vars
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASS }}" >> $vars
+          echo "GOOGLE_AUTH_CLIENT_ID=${{ secrets.GOOGLE_AUTH_CLIENT_ID }}" >> $vars
+          echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> $vars
+
+          # Decode google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES }}" | base64 -d > TMessagesProj_App/google-services.json
+
+          ###
+          sudo apt update
+          sudo apt -y install ninja-build meson unzip pip gperf
+          ./gradlew :TMessagesProj_App:${{ matrix.afat }}
+
+          #grep BUILD_VERSION_STRING TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java | cut -d'"' -f 2 > ver.txt
+          grep BUILD_VERSION_STRING TMessagesProj/build/generated/source/buildConfig/${{ matrix.type }}/org/telegram/messenger/BuildConfig.java | cut -d'"' -f 2 > ver.txt
+
+
+          mkdir -p artifact
+          mv TMessagesProj_App/build/outputs/apk/afat/${{ matrix.type }}/app.apk app.apk
+          cp app.apk "artifact/TelegramClient $(cat ver.txt)${{ matrix.name }}.apk"
+          mkdir -p tag_asset
+          cp app.apk "tag_asset/TelegramClient_$(cat ver.txt)${{ matrix.name }}.apk"
+          ###
+
+          echo "NEW_TAG_TEXT=$(cat ver.txt)" >> $GITHUB_ENV
+
+          tempVer=$(cat ver.txt)
+          tempVer=${tempVer::-2}
+          echo "NEW_OFFICIAL_TAG_TEXT=$tempVer" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v4
+        name: Upload artifact
+        with:
+          name: TelegramClient-${{ matrix.type }}
+          path: artifact/
+
+
+  release:
+    name: Create Release.
+    needs: linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download release artifact
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: TelegramClient-release
+          path: release_asset
+      - name: Get version info
+        run: |
+          find release_asset -name "*.apk" | head -1 | sed 's/.*TelegramClient //;s/\.apk//' > version.txt
+          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+          echo "OFFICIAL_VERSION=$(cat version.txt | sed 's/..$//')" >> $GITHUB_ENV
+      - name: Create Release
+        uses: softprops/action-gh-release@v0.1.15
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+        with:
+          draft: true
+          files: |
+            release_asset/*
+          tag_name: ${{ env.VERSION }}
+          name: "TelegramClient ${{ env.VERSION }}"
+          body: "— Updated to ${{ env.OFFICIAL_VERSION }} build of the official Telegram."
+
+  notify:
+    name: Send message to Telegram
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download release artifact
+        uses: actions/download-artifact@v4.3.0
+        with:
+          name: TelegramClient-release
+          path: release_asset
+      - name: Get version info
+        run: |
+          find release_asset -name "*.apk" | head -1 | sed 's/.*TelegramClient //;s/\.apk//' > version.txt
+          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+          echo "OFFICIAL_VERSION=$(cat version.txt | sed 's/..$//')" >> $GITHUB_ENV
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: pip install python-telegram-bot python-telegram-bot[httpx]
+      - name: Define multiline caption
+        run: |
+          echo "CAPTION<<EOF" >> $GITHUB_ENV
+          echo "🚀Release Custom Telegram Client ${{ env.VERSION }}" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "📄Commit message: ${{ github.event.commits[0].message }}" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "Repository: ${{ github.repository }}" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "See changes: https://github.com/${{ github.repository }}/commit/${{github.sha}}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: Send notification
+        run: |
+          python Tools/upload.py "${{ env.TELEGRAM_BOT_TOKEN }}" "${{ env.TELEGRAM_CHAT_ID }}" "release_asset/TelegramClient ${{ env.VERSION }}.apk" "${{ env.TELEGRAM_BOT_ENDPOINT }}" "$CAPTION"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VERSION: ${{ env.VERSION }}
+          TELEGRAM_BOT_ENDPOINT: ${{ secrets.TELEGRAM_BOT_ENDPOINT }}
+          CAPTION: ${{ env.CAPTION }}
