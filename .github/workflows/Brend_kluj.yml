@@ -53,4 +53,4 @@ jobs:
           git add gradle.properties
           git add **/strings.xml 2>/dev/null || true
           git commit -m "🚀 TAJGRAM BRANDING OVERHAUL: Safe renaming without formatting changes" || echo "Ҳеҷ тағйироте нест"
-          git push assets origin HEAD:${{ github.ref }}
+          git push origin HEAD:${{ github.ref }}
