@@ -24,22 +24,25 @@ jobs:
             sed -i 's|^RELEASE_STORE_PASSWORD=.*|RELEASE_STORE_PASSWORD=android|g' gradle.properties
           fi
 
-      # 2. ИВАЗ КАРДАНИ ТАМОМИ ЗАБОНҲО ДАР STRINGS.XML (БЕХАТАР ВА УМУМӢ)
+      # 2. ИВАЗ КАРДАНИ ТАМОМИ ЗАБОНҲО ДАР STRINGS.XML (БЕХАТАР ВА ТАНҲО МАТН, БЕ КЛУЧ БО ЗАШИТА)
       - name: Global Safe Case-Insensitive and Multi-Language Rename
         run: |
           find . -type f -name "strings.xml" | while read file; do
-            # Аз ҳама аввал Tajgram Premium-ро ба Tajgram Premium VIP табдил медиҳад
-            sed -i -E 's/[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm] [Pp][Rr][Ee][Mm][Ii][Uu][Mm]/Tajgram Premium VIP/g' "$file" 2>/dev/null || true
+            # 1. ЗАШИТА АЗ ДУБЛИКАТ: Агар аллакай "Tajgram Premium VIP" бошад, даст намерасонад (Танҳо дар матн, бе клуч)
+            sed -i -E '/Tajgram Premium VIP/! s/(<string[^>]*>.*)[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm]\s+[Pp][Rr][Ee][Mm][Ii][Uu][Mm](.*<\/string>)/\1Tajgram Premium VIP\2/g' "$file" 2>/dev/null || true
             
-            # Баъд тамоми шаклҳои боқимондаи калимаи Tajgram-ро ба Tajgram иваз мекунад
-            sed -i -E 's/[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm]/Tajgram/g' "$file" 2>/dev/null || true
+            # 2. ЗАШИТА АЗ ДУБЛИКАТ: Агар аллакай "Tajgram" бошад, дубора иваз намекунад (Клучҳо 100% заводиву солим мемонанд)
+            sed -i -E '/Tajgram/! s/(<string[^>]*>[^<]*)[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm]([^<]*<\/string>)/\1Tajgram\2/g' "$file" 2>/dev/null || true
             
-            # Иваз кардани калима бо забони Арабӣ (ҳарду шакли навишт)
-            sed -i 's/تيليجرام/Tajgram/g' "$file" 2>/dev/null || true
-            sed -i 's/تيليغрам/Tajgram/g' "$file" 2>/dev/null || true
+            # 3. ИСЛОҲШУДАИ МУТЛАҚ: Иваз бо забони Арабӣ ва Афғонӣ (Маҳз бо ҳарфҳои тоза, бе "pam/рам" ва бо зашита)
+            sed -i -E '/Tajgram/! s/(<string[^>]*>[^<]*)تيليجرام([^<]*<\/string>)/\1Tajgram\2/g' "$file" 2>/dev/null || true
+            sed -i -E '/Tajgram/! s/(<string[^>]*>[^<]*)(تيليغرام[^<]*<\/string>)/\1Tajgram\2/g' "$file" 2>/dev/null || true
             
-            # Иваз кардани калима бо забони Форсӣ
-            sed -i 's/تلگرام/Tajgram/g' "$file" 2>/dev/null || true
+            # 4. ИСЛОҲШУДАИ МУТЛАҚ: Иваз бо забони Форсӣ (Танҳо дар дохили матн бо зашита)
+            sed -i -E '/Tajgram/! s/(<string[^>]*>[^<]*)تلگرام([^<]*<\/string>)/\1Tajgram\2/g' "$file" 2>/dev/null || true
+
+            # 5. ИЛОВАИ НАВ: Иваз бо забони Хитоӣ / Чини (Танҳо дар дохили матн бо зашита)
+            sed -i -E '/Tajgram/! s/(<string[^>]*>[^<]*)电报([^<]*<\/string>)/\1Tajgram\2/g' "$file" 2>/dev/null || true
           done
 
       # 3. САБТ ВА ПУШ КАРДАНИ ТАҒЙИРОТҲО БА РЕПОЗИТОРИЯ
@@ -49,5 +52,5 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add gradle.properties
           git add **/strings.xml 2>/dev/null || true
-          git commit -m "🚀 TAJGRAM BRANDING OVERHAUL: Ивази комили пакет, калидҳо ва тарҷумаи умумии забонҳо" || echo "Ҳеҷ тағйироте нест"
+          git commit -m "🚀 TAJGRAM BRANDING OVERHAUL: Safe renaming without formatting changes" || echo "Ҳеҷ тағйироте нест"
           git push origin HEAD:${{ github.ref }}
