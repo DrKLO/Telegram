@@ -1,7 +1,12 @@
 name: Tajgram Pure XML Fixer Only (Assets Branch)
 
+# Дигар ба тугмача ниёз нест! Ҳамин ки файлро ба бранчи assets пуш кунӣ, худаш автоматӣ рун мешавад.
 on:
-  workflow_dispatch: # Танҳо бо пахши дастӣ мустақим дар бранчи assets
+  push:
+    branches:
+      - assets
+    paths:
+      - '.github/workflows/pure_xml_fixer.yml' # Танҳо ҳангоми навсозии ҳамин файл кор мекунад, то беҳуда такрор нашавад
 
 permissions:
   contents: write
@@ -14,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.MY_TOKEN }}
-          ref: assets # Маҳз бранчи assets-ро нишон медиҳем, то ба дигар бранчҳо наравад
+          ref: assets # Маҳз бранчи assets-ро нишон медиҳем
 
       - name: 🧹 Танзими профили Гит
         run: |
@@ -36,13 +41,13 @@ jobs:
             sed -i '/name="SuggestionAgreementReached/d' "$TG_XML"
             sed -i '/name="UnconfirmedAuthMultipleFrom/d' "$TG_XML"
 
-            # Навиштани шакли 100% дурусти фоизҳо (%1$d, %2$s) ба охири файл
+            # Навиштани шакли 100% duрусти фоизҳо (%1$d, %2$s) ба охири файл
             sed -i '/<\/resources>/i\    <string name="NotificationTopicExceptionsDesctription_other">Истисноҳо барои %1$d мавзӯъ<\/string>\n    <string name="StarRatingDescription1">Шумо ба %1$s ситора бо арзиши %2$s фиристодед<\/string>\n    <string name="StarRatingDescription2">Барои %1$s ситора бо арзиши %2$s фиристода шуд<\/string>\n    <string name="StarRatingDescription3">Арзиши %1$s ситора %2$s мебошад<\/string>\n    <string name="StoryAddedToAlbumTitle_one">%1$d таърих ба албом илова шуд<\/string>\n    <string name="StoryAddedToAlbumTitle_other">%1$d таърих ба албом илова шуданд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_one">%1$d таърих аз албом тоза шуд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_other">%1$d таърих аз албом тоза шуданд<\/string>\n    <string name="SuggestAPostBelowSubtitleStarsAndTime">Пешниҳоди пост бо %1$s ситора дар вақти %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1">Админ %1$s розигӣ дод ба %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1PastSimple">Админ %1$s қабул кард %2$s<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_one">Вуруди тасдиқнашуда аз %1$s (%2$s)<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_other">Вурудҳои тасдиқнашуда аз %1$s (%2$s)<\/string>' "$TG_XML"
             
-            echo "✅ Файли тоҷикӣ дар бранчи assets бо фоизҳои дуруст навсозӣ шуд!"
+            echo "✅ Файли тоҷикӣ бо фоизҳои дуруст навсозӣ шуд!"
           fi
 
-      - name: 📝 Иловаи 3 annotations (калидҳо)-и нави англисии Дуров
+      - name: 📝 Иловаи 3 калиди нави англисии Дуров
         run: |
           EN_XML="TMessagesProj/src/main/res/values/strings.xml"
           if [ -f "$EN_XML" ]; then
@@ -51,7 +56,7 @@ jobs:
             sed -i '/NumberNotOnTelegram/d' "$EN_XML"
             
             sed -i '/<\/resources>/i\    <string name="UseProxyTelegramInfo2">This proxy is secure.<\/string>\n    <string name="InviteToTelegramShort">Invite to Tajgram<\/string>\n    <string name="NumberNotOnTelegram">This number is not on Tajgram<\/string>' "$EN_XML"
-            echo "✅ Калидҳои нави англисӣ бехатар ба бранчи assets илова шуданд!"
+            echo "✅ Калидҳои нави англисӣ бехатар илова шуданд!"
           fi
 
       - name: 📤 Push ТАНҲО ба бранчи assets
