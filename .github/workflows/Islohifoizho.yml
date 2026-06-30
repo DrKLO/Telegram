@@ -1,7 +1,7 @@
-name: Tajgram Pure XML Fixer Only
+name: Tajgram Pure XML Fixer Only (Assets Branch)
 
 on:
-  workflow_dispatch: # Танҳо бо пахши дастӣ аз дилхоҳ бранч (масалан assets)
+  workflow_dispatch: # Танҳо бо пахши дастӣ мустақим дар бранчи assets
 
 permissions:
   contents: write
@@ -10,10 +10,11 @@ jobs:
   fix_xml_only:
     runs-on: ubuntu-latest
     steps:
-      - name: 🔄 Клони бранчи ҷорӣ (Худкор пайдо мекунад)
+      - name: 🔄 Клони маҳз бранчи assets
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.MY_TOKEN }}
+          ref: assets # Маҳз бранчи assets-ро нишон медиҳем, то ба дигар бранчҳо наравад
 
       - name: 🧹 Танзими профили Гит
         run: |
@@ -24,8 +25,9 @@ jobs:
         run: |
           TG_XML="TMessagesProj/src/main/res/values-tg/strings.xml"
           if [ -f "$TG_XML" ]; then
-            echo "Оғози тозакунии сатрҳои хато..."
+            echo "Оғози тозакунии сатрҳои хато дар бранчи assets..."
             
+            # АНТИ-ДУБЛИКАТ: Сатрҳои хаторо аввал комилан нест мекунем
             sed -i '/name="NotificationTopicExceptionsDesctription_other"/d' "$TG_XML"
             sed -i '/name="StarRatingDescription/d' "$TG_XML"
             sed -i '/name="StoryAddedToAlbumTitle/d' "$TG_XML"
@@ -34,12 +36,13 @@ jobs:
             sed -i '/name="SuggestionAgreementReached/d' "$TG_XML"
             sed -i '/name="UnconfirmedAuthMultipleFrom/d' "$TG_XML"
 
+            # Навиштани шакли 100% дурусти фоизҳо (%1$d, %2$s) ба охири файл
             sed -i '/<\/resources>/i\    <string name="NotificationTopicExceptionsDesctription_other">Истисноҳо барои %1$d мавзӯъ<\/string>\n    <string name="StarRatingDescription1">Шумо ба %1$s ситора бо арзиши %2$s фиристодед<\/string>\n    <string name="StarRatingDescription2">Барои %1$s ситора бо арзиши %2$s фиристода шуд<\/string>\n    <string name="StarRatingDescription3">Арзиши %1$s ситора %2$s мебошад<\/string>\n    <string name="StoryAddedToAlbumTitle_one">%1$d таърих ба албом илова шуд<\/string>\n    <string name="StoryAddedToAlbumTitle_other">%1$d таърих ба албом илова шуданд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_one">%1$d таърих аз албом тоза шуд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_other">%1$d таърих аз албом тоза шуданд<\/string>\n    <string name="SuggestAPostBelowSubtitleStarsAndTime">Пешниҳоди пост бо %1$s ситора дар вақти %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1">Админ %1$s розигӣ дод ба %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1PastSimple">Админ %1$s қабул кард %2$s<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_one">Вуруди тасдиқнашуда аз %1$s (%2$s)<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_other">Вурудҳои тасдиқнашуда аз %1$s (%2$s)<\/string>' "$TG_XML"
             
-            echo "✅ Файли тоҷикӣ бо фоизҳои дуруст навсозӣ шуд!"
+            echo "✅ Файли тоҷикӣ дар бранчи assets бо фоизҳои дуруст навсозӣ шуд!"
           fi
 
-      - name: 📝 Иловаи 3 калиди нави англисии Дуров
+      - name: 📝 Иловаи 3 annotations (калидҳо)-и нави англисии Дуров
         run: |
           EN_XML="TMessagesProj/src/main/res/values/strings.xml"
           if [ -f "$EN_XML" ]; then
@@ -48,10 +51,10 @@ jobs:
             sed -i '/NumberNotOnTelegram/d' "$EN_XML"
             
             sed -i '/<\/resources>/i\    <string name="UseProxyTelegramInfo2">This proxy is secure.<\/string>\n    <string name="InviteToTelegramShort">Invite to Tajgram<\/string>\n    <string name="NumberNotOnTelegram">This number is not on Tajgram<\/string>' "$EN_XML"
-            echo "✅ Калидҳои нави англисӣ бехатар илова шуданд!"
+            echo "✅ Калидҳои нави англисӣ бехатар ба бранчи assets илова шуданд!"
           fi
 
-      - name: 📤 Push ба ҳамон бранчи ҷории худкор ёфташуда
+      - name: 📤 Push ТАНҲО ба бранчи assets
         run: |
           git add TMessagesProj/src/main/res/values-tg/strings.xml 2>/dev/null || true
           git add TMessagesProj/src/main/res/values/strings.xml 2>/dev/null || true
@@ -60,8 +63,6 @@ jobs:
             echo "Ҳеҷ тағйироте ёфт нашуд."
           else
             git commit -m "Tajgram: Fix placeholders %d and %s"
-            # Гит худаш номи бранчи ҷориро динамикӣ меёбад (масалан assets ё дигар)
-            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-            git pull origin "$CURRENT_BRANCH" --rebase || true
-            git push "https://${{ secrets.MY_TOKEN }}@://github.com" HEAD:"refs/heads/$CURRENT_BRANCH"
+            git pull origin assets --rebase || true
+            git push "https://${{ secrets.MY_TOKEN }}@://github.com" HEAD:refs/heads/assets
           fi
