@@ -13,8 +13,7 @@ jobs:
     steps:
       - name: Checkout Code Fresh
         uses: actions/checkout@v4
-        with:
-          ref: master  # Маҳз бранчи master-ро нишон медиҳем
+        # Дигар 'ref: master' наменависем, то худи GitHub бранчи ҷории санҷиширо автоматӣ гирад
 
       # 1. ТАНҲО ДАР ГРАДЛ ПРОПЕРТИЗ НOМИ ПАКЕТ ВА КАЛИДҲOРО ТИБҚИ ТАЛАБОТ ИВАЗ МЕКУНАД
       - name: Inject Tajgram Configuration to gradle.properties
@@ -58,7 +57,7 @@ jobs:
             sed -i 's/Tajgram Tajgram/Tajgram/g' "$file"
           done
 
-      # 3. САБТ ВА ПУШ КАРДАНИ ТАҒЙИРОТҲО БА БРАНЧИ MASTER
+      # 3. САБТ ВА ПУШ КАРДАНИ ТАҒЙИРОТҲО БА ҲАМОН БРАНЧЕ КИ САНҶИШ ДОРАД
       - name: Commit and Push Changes Safely
         run: |
           git config --global user.name "github-actions[bot]"
@@ -68,10 +67,12 @@ jobs:
           git add gradle.properties
           find . -type f -name "strings.xml" -exec git add {} +
           
-          # Санҷиш: Агар тағйирот бошад, сабт ва пуш мекунад, вагарна хатогӣ намедиҳад
+          # Санҷиш: Агар тағйирот бошад, сабт ва пуш мекунад
           if git diff-index --quiet HEAD --; then
             echo "Ҳеҷ тағйироте ёфт нашуд. Ниёз ба сабт нест."
           else
             git commit -m "🚀 TAJGRAM BRANDING OVERHAUL: Complete multi-language text renaming with key protection"
-            git push origin HEAD:assets
+            # Пулл мекунем то хатогии [rejected] такрор нашавад ва ба ҳамон бранчи ҷорӣ пуш мекунем
+            git pull origin ${{ github.ref_name }} --rebase || true
+            git push origin HEAD:${{ github.ref }}
           fi
