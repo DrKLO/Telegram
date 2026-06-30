@@ -1,0 +1,70 @@
+name: Tajgram Pure XML Fixer Only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix_xml_only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔄 Клони бранчи ҷорӣ (Санҷишӣ)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_TOKEN }}
+
+      - name: 🧹 Танзими профили Гит
+        run: |
+          git config --global user.name "TajgramRobot"
+          git config --global user.email "robot@tajgram.tj"
+
+      - name: 🧼 Ислоҳи стандартии фоизҳои %d ва %s дар файли Тоҷикӣ
+        run: |
+          TG_XML="TMessagesProj/src/main/res/values-tg/strings.xml"
+          if [ -f "$TG_XML" ]; then
+            echo "Оғози тозакунии сатрҳои хато..."
+            
+            # АНТИ-ДУБЛИКАТ: Сатрҳои хатои фоиздорро аввал комилан нест мекунем
+            sed -i '/name="NotificationTopicExceptionsDesctription_other"/d' "$TG_XML"
+            sed -i '/name="StarRatingDescription/d' "$TG_XML"
+            sed -i '/name="StoryAddedToAlbumTitle/d' "$TG_XML"
+            sed -i '/name="StoryRemovedFromAlbumTitle/d' "$TG_XML"
+            sed -i '/name="SuggestAPostBelowSubtitleStarsAndTime"/d' "$TG_XML"
+            sed -i '/name="SuggestionAgreementReached/d' "$TG_XML"
+            sed -i '/name="UnconfirmedAuthMultipleFrom/d' "$TG_XML"
+
+            # Навиштани шакли 100% дуруст ва рақамии фоизҳо (%1$d, %2$s) рост ба охири файл
+            sed -i '/<\/resources>/i\    <string name="NotificationTopicExceptionsDesctription_other">Истисноҳо барои %1$d мавзӯъ<\/string>\n    <string name="StarRatingDescription1">Шумо ба %1$s ситора бо арзиши %2$s фиристодед<\/string>\n    <string name="StarRatingDescription2">Барои %1$s ситора бо арзиши %2$s фиристода шуд<\/string>\n    <string name="StarRatingDescription3">Арзиши %1$s ситора %2$s мебошад<\/string>\n    <string name="StoryAddedToAlbumTitle_one">%1$d таърих ба албом илова шуд<\/string>\n    <string name="StoryAddedToAlbumTitle_other">%1$d таърих ба албом илова шуданд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_one">%1$d таърих аз албом тоза шуд<\/string>\n    <string name="StoryRemovedFromAlbumTitle_other">%1$d таърих аз албом тоза шуданд<\/string>\n    <string name="SuggestAPostBelowSubtitleStarsAndTime">Пешниҳоди пост бо %1$s ситора дар вақти %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1">Админ %1$s розигӣ дод ба %2$s<\/string>\n    <string name="SuggestionAgreementReachedAdmin1PastSimple">Админ %1$s қабул кард %2$s<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_one">Вуруди тасдиқнашуда аз %1$s (%2$s)<\/string>\n    <string name="UnconfirmedAuthMultipleFrom_other">Вурудҳои тасдиқнашуда аз %1$s (%2$s)<\/string>' "$TG_XML"
+            
+            echo "✅ Файли тоҷикӣ бо фоизҳои дуруст навсозӣ шуд!"
+          fi
+
+      - name: 📝 Иловаи 3 калиди нави англисии Дуров (Барои нест кардани хатои Java)
+        run: |
+          EN_XML="TMessagesProj/src/main/res/values/strings.xml"
+          if [ -f "$EN_XML" ]; then
+            # Агар ин калидҳо аз дафъаи пеш монда бошанд, тоза мекунем, ки дубликат нашаванд
+            sed -i '/UseProxyTelegramInfo2/d' "$EN_XML"
+            sed -i '/InviteToTelegramShort/d' "$EN_XML"
+            sed -i '/NumberNotOnTelegram/d' "$EN_XML"
+            
+            # Навиштани калидҳои тоза ба охири файл
+            sed -i '/<\/resources>/i\    <string name="UseProxyTelegramInfo2">This proxy is secure.<\/string>\n    <string name="InviteToTelegramShort">Invite to Tajgram<\/string>\n    <string name="NumberNotOnTelegram">This number is not on Tajgram<\/string>' "$EN_XML"
+            echo "✅ Калидҳои нави англисӣ бехатар илова шуданд!"
+          fi
+
+      - name: 📤 Push ба ҳамон бранчи санҷишии ҷорӣ
+        run: |
+          git add TMessagesProj/src/main/res/values-tg/strings.xml 2>/dev/null || true
+          git add TMessagesProj/src/main/res/values/strings.xml 2>/dev/null || true
+          
+          if git diff-index --quiet HEAD --; then
+            echo "Ҳеҷ тағйироте ёфт нашуд, файлҳо аллакай тозаанд."
+          else
+            # Номи коммит маҳз тибқи хоҳиши ту барои шинохти фоизҳо танзим шуд
+            git commit -m "Tajgram: Fix placeholders %d and %s"
+            git pull origin ${{ github.ref_name }} --rebase || true
+            git push "https://${{ secrets.MY_TOKEN }}@://github.com" HEAD:${{ github.ref }}
+          fi
