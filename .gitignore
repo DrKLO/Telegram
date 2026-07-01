@@ -1,15 +1,92 @@
+# =====================================
+# Android Studio / IntelliJ
+# =====================================
 .idea/
-.gradle/
-build/
-obj/
 *.iml
 local.properties
+
+# =====================================
+# Gradle
+# =====================================
+.gradle/
+build/
+**/build/
+
+# =====================================
+# Native build
+# =====================================
+obj/
 TMessagesProj/.cxx/
+
+# =====================================
+# Generated folders (Telegram)
+# =====================================
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/
-**/.DS_Store
+
 TMessagesProj/afat/
 TMessagesProj_App/afat/
 TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
+
+# =====================================
+# Operating systems
+# =====================================
+**/.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =====================================
+# Logs
+# =====================================
+*.log
+
+# =====================================
+# Archives
+# =====================================
+*.zip
+*.7z
+
+# =====================================
+# Android signing
+# =====================================
+*.jks
+*.keystore
+keystore.properties
+
+# =====================================
+# Firebase
+# =====================================
+google-services.json
+
+# =====================================
+# Temporary
+# =====================================
+tmp/
+temp/
+
+# =====================================
+# Local AI / Agent
+# =====================================
+agent/
+
+# =====================================
+# Local development
+# =====================================
+agent/
+docs/
+tmp/
+temp/
+*.log
+*.zip
+*.7z
+
+# Android signing
+*.jks
+*.keystore
+keystore.properties
+
+# IDE
+.idea/
+*.iml
