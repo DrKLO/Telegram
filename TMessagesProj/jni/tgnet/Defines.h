@@ -75,6 +75,11 @@ enum ConnectionType {
     ConnectionTypeGenericMedia = 64
 };
 
+enum MTProxyTlsFingerprint {
+    MTProxyTlsFingerprintDefault = 0,
+    MTProxyTlsFingerprintFirefox = 1,
+};
+
 enum TcpAddressFlag {
     TcpAddressFlagIpv6 = 1,
     TcpAddressFlagDownload = 2,

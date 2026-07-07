@@ -53,9 +53,11 @@ import java.util.Locale;
 public class SharedConfig {
     /**
      * V2: Ping and check time serialized
+     * V3: MTProxy TLS fingerprint serialized
      */
     private final static int PROXY_SCHEMA_V2 = 2;
-    private final static int PROXY_CURRENT_SCHEMA_VERSION = PROXY_SCHEMA_V2;
+    private final static int PROXY_SCHEMA_V3 = 3;
+    private final static int PROXY_CURRENT_SCHEMA_VERSION = PROXY_SCHEMA_V3;
 
     public final static int PASSCODE_TYPE_PIN = 0,
             PASSCODE_TYPE_PASSWORD = 1;
@@ -378,6 +380,7 @@ public class SharedConfig {
         public String username;
         public String password;
         public String secret;
+        public int tlsFingerprint;
 
         public long proxyCheckPingId;
         public long ping;
@@ -403,6 +406,7 @@ public class SharedConfig {
             if (this.secret == null) {
                 this.secret = "";
             }
+            this.tlsFingerprint = ConnectionsManager.MTProxyTlsFingerprintDefault;
         }
 
         public String getLink() {
@@ -1416,6 +1420,7 @@ public class SharedConfig {
         String proxyUsername = preferences.getString("proxy_user", "");
         String proxyPassword = preferences.getString("proxy_pass", "");
         String proxySecret = preferences.getString("proxy_secret", "");
+        int proxyTlsFingerprint = preferences.getInt("proxy_tls_fingerprint", ConnectionsManager.MTProxyTlsFingerprintDefault);
         int proxyPort = preferences.getInt("proxy_port", 1080);
 
         proxyListLoaded = true;
@@ -1429,7 +1434,7 @@ public class SharedConfig {
             if (count == -1) { // V2 or newer
                 int version = data.readByte(false);
 
-                if (version == PROXY_SCHEMA_V2) {
+                if (version == PROXY_SCHEMA_V2 || version == PROXY_SCHEMA_V3) {
                     count = data.readInt32(false);
 
                     for (int i = 0; i < count; i++) {
@@ -1442,10 +1447,13 @@ public class SharedConfig {
 
                         info.ping = data.readInt64(false);
                         info.availableCheckTime = data.readInt64(false);
+                        if (version >= PROXY_SCHEMA_V3) {
+                            info.tlsFingerprint = data.readInt32(false);
+                        }
 
                         proxyList.add(0, info);
                         if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-                            if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
+                            if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password) && proxySecret.equals(info.secret) && proxyTlsFingerprint == info.tlsFingerprint) {
                                 currentProxy = info;
                             }
                         }
@@ -1463,7 +1471,7 @@ public class SharedConfig {
                             data.readString(false));
                     proxyList.add(0, info);
                     if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
-                        if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password)) {
+                        if (proxyAddress.equals(info.address) && proxyPort == info.port && proxyUsername.equals(info.username) && proxyPassword.equals(info.password) && proxySecret.equals(info.secret)) {
                             currentProxy = info;
                         }
                     }
@@ -1473,6 +1481,7 @@ public class SharedConfig {
         }
         if (currentProxy == null && !TextUtils.isEmpty(proxyAddress)) {
             ProxyInfo info = currentProxy = new ProxyInfo(proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
+            info.tlsFingerprint = proxyTlsFingerprint;
             proxyList.add(0, info);
         }
     }
@@ -1505,6 +1514,7 @@ public class SharedConfig {
 
             serializedData.writeInt64(info.ping);
             serializedData.writeInt64(info.availableCheckTime);
+            serializedData.writeInt32(info.tlsFingerprint);
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         preferences.edit().putString("proxy_list", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP)).apply();
@@ -1516,7 +1526,7 @@ public class SharedConfig {
         int count = proxyList.size();
         for (int a = 0; a < count; a++) {
             ProxyInfo info = proxyList.get(a);
-            if (proxyInfo.address.equals(info.address) && proxyInfo.port == info.port && proxyInfo.username.equals(info.username) && proxyInfo.password.equals(info.password) && proxyInfo.secret.equals(info.secret)) {
+            if (proxyInfo.address.equals(info.address) && proxyInfo.port == info.port && proxyInfo.username.equals(info.username) && proxyInfo.password.equals(info.password) && proxyInfo.secret.equals(info.secret) && proxyInfo.tlsFingerprint == info.tlsFingerprint) {
                 return info;
             }
         }
@@ -1540,6 +1550,7 @@ public class SharedConfig {
             editor.putString("proxy_user", "");
             editor.putString("proxy_secret", "");
             editor.putInt("proxy_port", 1080);
+            editor.putInt("proxy_tls_fingerprint", ConnectionsManager.MTProxyTlsFingerprintDefault);
             editor.putBoolean("proxy_enabled", false);
             editor.putBoolean("proxy_enabled_calls", false);
             editor.apply();

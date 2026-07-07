@@ -3705,16 +3705,17 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     }
 }
 
-void ConnectionsManager::setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret) {
-    scheduleTask([&, address, port, username, password, secret] {
+void ConnectionsManager::setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret, int32_t tlsFingerprint) {
+    scheduleTask([&, address, port, username, password, secret, tlsFingerprint] {
         std::string newSecret = decodeSecret(secret);
         bool secretChanged = proxySecret != newSecret;
-        bool reconnect = proxyAddress != address || proxyPort != port || username != proxyUser || proxyPassword != password || secretChanged;
+        bool reconnect = proxyAddress != address || proxyPort != port || username != proxyUser || proxyPassword != password || secretChanged || proxyTlsFingerprint != tlsFingerprint;
         proxyAddress = address;
         proxyPort = port;
         proxyUser = username;
         proxyPassword = password;
         proxySecret = std::move(newSecret);
+        proxyTlsFingerprint = tlsFingerprint;
         if (!proxyAddress.empty() && connectionState == ConnectionStateConnecting) {
             connectionState = ConnectionStateConnectingViaProxy;
             if (delegate != nullptr) {
@@ -3864,13 +3865,14 @@ void ConnectionsManager::setIpStrategy(uint8_t value) {
     });
 }
 
-int64_t ConnectionsManager::checkProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, onRequestTimeFunc requestTimeFunc, jobject ptr1) {
+int64_t ConnectionsManager::checkProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, int32_t tlsFingerprint, onRequestTimeFunc requestTimeFunc, jobject ptr1) {
     auto proxyCheckInfo = new ProxyCheckInfo();
     proxyCheckInfo->address = address;
     proxyCheckInfo->port = port;
     proxyCheckInfo->username = username;
     proxyCheckInfo->password = password;
     proxyCheckInfo->secret = decodeSecret(secret);
+    proxyCheckInfo->tlsFingerprint = tlsFingerprint;
     proxyCheckInfo->onRequestTime = requestTimeFunc;
     proxyCheckInfo->pingId = ++lastPingProxyId;
     proxyCheckInfo->instanceNum = instanceNum;
@@ -3911,7 +3913,7 @@ void ConnectionsManager::checkProxyInternal(ProxyCheckInfo *proxyCheckInfo) {
         Datacenter *datacenter = getDatacenterWithId(DEFAULT_DATACENTER_ID);
         Connection *connection = datacenter->getProxyConnection((uint8_t) freeConnectionNum, true, false);
         if (connection != nullptr) {
-            connection->setOverrideProxy(proxyCheckInfo->address, proxyCheckInfo->port, proxyCheckInfo->username, proxyCheckInfo->password, proxyCheckInfo->secret);
+            connection->setOverrideProxy(proxyCheckInfo->address, proxyCheckInfo->port, proxyCheckInfo->username, proxyCheckInfo->password, proxyCheckInfo->secret, proxyCheckInfo->tlsFingerprint);
             connection->suspendConnection();
             proxyCheckInfo->connectionNum = freeConnectionNum;
             auto request = new TL_ping();

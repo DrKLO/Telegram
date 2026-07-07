@@ -95,6 +95,7 @@ public class ProxySettingsActivity extends BaseFragment {
     private TextSettingsCell pasteCell;
     private ActionBarMenuItem doneItem;
     private RadioCell[] typeCell = new RadioCell[2];
+    private RadioCell[] tlsFingerprintCell = new RadioCell[2];
     private int currentType = -1;
 
     private int pasteType = -1;
@@ -217,6 +218,7 @@ public class ProxySettingsActivity extends BaseFragment {
                         currentProxyInfo.secret = "";
                         currentProxyInfo.username = inputFields[FIELD_USER].getText().toString();
                         currentProxyInfo.password = inputFields[FIELD_PASSWORD].getText().toString();
+                        currentProxyInfo.tlsFingerprint = ConnectionsManager.MTProxyTlsFingerprintDefault;
                     } else {
                         currentProxyInfo.secret = inputFields[FIELD_SECRET].getText().toString();
                         currentProxyInfo.username = "";
@@ -241,7 +243,8 @@ public class ProxySettingsActivity extends BaseFragment {
                         editor.putString("proxy_user", currentProxyInfo.username);
                         editor.putInt("proxy_port", currentProxyInfo.port);
                         editor.putString("proxy_secret", currentProxyInfo.secret);
-                        ConnectionsManager.setProxySettings(enabled, currentProxyInfo.address, currentProxyInfo.port, currentProxyInfo.username, currentProxyInfo.password, currentProxyInfo.secret);
+                        editor.putInt("proxy_tls_fingerprint", currentProxyInfo.tlsFingerprint);
+                        ConnectionsManager.setProxySettings(enabled, currentProxyInfo.address, currentProxyInfo.port, currentProxyInfo.username, currentProxyInfo.password, currentProxyInfo.secret, currentProxyInfo.tlsFingerprint);
                     }
                     editor.commit();
 
@@ -446,6 +449,17 @@ public class ProxySettingsActivity extends BaseFragment {
                 bottomCells[i].setVisibility(View.GONE);
             }
             linearLayout2.addView(bottomCells[i], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        final View.OnClickListener tlsFingerprintClickListener = view -> setProxyTlsFingerprint((Integer) view.getTag(), true);
+        for (int a = 0; a < 2; a++) {
+            tlsFingerprintCell[a] = new RadioCell(context);
+            tlsFingerprintCell[a].setBackground(Theme.getSelectorDrawable(true));
+            tlsFingerprintCell[a].setTag(a);
+            tlsFingerprintCell[a].setText(a == ConnectionsManager.MTProxyTlsFingerprintFirefox ? "Firefox TLS fingerprint" : "Default TLS fingerprint", currentProxyInfo.tlsFingerprint == a, a == 0);
+            tlsFingerprintCell[a].setOnClickListener(tlsFingerprintClickListener);
+            tlsFingerprintCell[a].setVisibility(View.GONE);
+            linearLayout2.addView(tlsFingerprintCell[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
         }
 
         pasteCell = new TextSettingsCell(fragmentView.getContext());
@@ -746,16 +760,29 @@ public class ProxySettingsActivity extends BaseFragment {
                 ((View) inputFields[FIELD_SECRET].getParent()).setVisibility(View.GONE);
                 ((View) inputFields[FIELD_PASSWORD].getParent()).setVisibility(View.VISIBLE);
                 ((View) inputFields[FIELD_USER].getParent()).setVisibility(View.VISIBLE);
+                tlsFingerprintCell[0].setVisibility(View.GONE);
+                tlsFingerprintCell[1].setVisibility(View.GONE);
             } else if (currentType == 1) {
                 bottomCells[0].setVisibility(View.GONE);
                 bottomCells[1].setVisibility(View.VISIBLE);
                 ((View) inputFields[FIELD_SECRET].getParent()).setVisibility(View.VISIBLE);
                 ((View) inputFields[FIELD_PASSWORD].getParent()).setVisibility(View.GONE);
                 ((View) inputFields[FIELD_USER].getParent()).setVisibility(View.GONE);
+                tlsFingerprintCell[0].setVisibility(View.VISIBLE);
+                tlsFingerprintCell[1].setVisibility(View.VISIBLE);
             }
             typeCell[0].setChecked(currentType == 0, animated);
             typeCell[1].setChecked(currentType == 1, animated);
         }
+    }
+
+    private void setProxyTlsFingerprint(int tlsFingerprint, boolean animated) {
+        if (currentProxyInfo.tlsFingerprint == tlsFingerprint) {
+            return;
+        }
+        currentProxyInfo.tlsFingerprint = tlsFingerprint;
+        tlsFingerprintCell[0].setChecked(tlsFingerprint == ConnectionsManager.MTProxyTlsFingerprintDefault, animated);
+        tlsFingerprintCell[1].setChecked(tlsFingerprint == ConnectionsManager.MTProxyTlsFingerprintFirefox, animated);
     }
 
     @Override
@@ -807,6 +834,13 @@ public class ProxySettingsActivity extends BaseFragment {
             arrayList.add(new ThemeDescription(typeCell[a], 0, new Class[]{RadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
             arrayList.add(new ThemeDescription(typeCell[a], ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground));
             arrayList.add(new ThemeDescription(typeCell[a], ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked));
+        }
+        for (int a = 0; a < tlsFingerprintCell.length; a++) {
+            arrayList.add(new ThemeDescription(tlsFingerprintCell[a], ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_windowBackgroundWhite));
+            arrayList.add(new ThemeDescription(tlsFingerprintCell[a], ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_listSelector));
+            arrayList.add(new ThemeDescription(tlsFingerprintCell[a], 0, new Class[]{RadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+            arrayList.add(new ThemeDescription(tlsFingerprintCell[a], ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground));
+            arrayList.add(new ThemeDescription(tlsFingerprintCell[a], ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked));
         }
 
         if (inputFields != null) {

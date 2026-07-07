@@ -4772,6 +4772,7 @@ public class AndroidUtilities {
             SharedConfig.ProxyInfo info;
             if (TextUtils.isEmpty(secret)) {
                 editor.remove("proxy_secret");
+                editor.putInt("proxy_tls_fingerprint", ConnectionsManager.MTProxyTlsFingerprintDefault);
                 if (TextUtils.isEmpty(password)) {
                     editor.remove("proxy_pass");
                 } else {
@@ -4787,6 +4788,7 @@ public class AndroidUtilities {
                 editor.remove("proxy_pass");
                 editor.remove("proxy_user");
                 editor.putString("proxy_secret", secret);
+                editor.putInt("proxy_tls_fingerprint", ConnectionsManager.MTProxyTlsFingerprintDefault);
                 info = new SharedConfig.ProxyInfo(address, p, "", "", secret);
             }
             editor.commit();

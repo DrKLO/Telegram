@@ -28,6 +28,7 @@ public:
     std::string username;
     std::string password;
     std::string secret;
+    int32_t tlsFingerprint = MTProxyTlsFingerprintDefault;
     int64_t pingId = 0;
     onRequestTimeFunc onRequestTime;
     int32_t instanceNum = 0;

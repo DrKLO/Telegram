@@ -336,6 +336,80 @@ public:
         return result;
     }
 
+    static const TlsHello &getFirefoxDesktop() {
+        static TlsHello result = [] {
+            TlsHello res;
+            res.ops = {
+                    Op::string("\x16\x03\x01", 3),
+                    Op::begin_scope(),
+                    Op::string("\x01\x00", 2),
+                    Op::begin_scope(),
+                    Op::string("\x03\x03", 2),
+                    Op::zero(32),
+                    Op::string("\x20", 1),
+                    Op::random(32),
+                    Op::string("\x00\x22", 2),
+                    Op::grease(0),
+                    Op::string("\x13\x01\x13\x03\x13\x02\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xc0\x2c\xc0\x30\xc0\x0a\xc0\x13\xc0\x14\x00\x9c\x00\x9d\x00\x2f\x00\x35\x01\x00", 34),
+                    Op::begin_scope(),
+                    Op::grease(1),
+                    Op::string("\x00\x00", 2),
+                    Op::string("\x00\x00", 2),
+                    Op::begin_scope(),
+                    Op::begin_scope(),
+                    Op::string("\x00", 1),
+                    Op::begin_scope(),
+                    Op::domain(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::string("\x00\x17\x00\x00", 4),
+                    Op::string("\xff\x01\x00\x01\x00", 5),
+                    Op::string("\x00\x0a\x00\x10\x00\x0e", 6),
+                    Op::grease(2),
+                    Op::string("\x00\x1d\x00\x17\x00\x18\x00\x19\x01\x00\x01\x01", 12),
+                    Op::string("\x00\x0b\x00\x02\x01\x00", 6),
+                    Op::string("\x00\x23\x00\x00", 4),
+                    Op::string("\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08\x68\x74\x74\x70\x2f\x31\x2e\x31", 18),
+                    Op::string("\x00\x05\x00\x05\x01\x00\x00\x00\x00", 9),
+                    Op::string("\x00\x22\x00\x08\x00\x06\x04\x03\x05\x03\x06\x03", 12),
+                    Op::string("\x00\x12\x00\x00", 4),
+                    Op::string("\x00\x33\x04\xea\x04\xe8\x11\xec\x04\xc0", 10),
+                    Op::M(),
+                    Op::K(),
+                    Op::string("\x00\x1d\x00\x20", 4),
+                    Op::K(),
+                    Op::string("\x00\x2b\x00\x05\x04\x03\x04\x03\x03", 9),
+                    Op::string("\x00\x0d\x00\x18\x00\x16\x04\x03\x05\x03\x06\x03\x08\x04\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x02\x03\x02\x01", 28),
+                    Op::string("\x00\x2d\x00\x02\x01\x01", 6),
+                    Op::string("\x00\x1c\x00\x02\x40\x01", 6),
+                    Op::string("\x00\x1b\x00\x03\x02\x00\x02", 7),
+                    Op::string("\xfe\x0d", 2),
+                    Op::begin_scope(),
+                    Op::string("\x00\x00\x01\x00\x01", 5),
+                    Op::random(1),
+                    Op::string("\x00\x20", 2),
+                    Op::random(32),
+                    Op::begin_scope(),
+                    Op::E(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope(),
+                    Op::end_scope()
+            };
+            return res;
+        }();
+        return result;
+    }
+
+    static const TlsHello &getForFingerprint(int32_t fingerprint) {
+        if (fingerprint == MTProxyTlsFingerprintFirefox) {
+            return getFirefoxDesktop();
+        }
+        return getDefault();
+    }
+
     uint32_t writeToBuffer(uint8_t *data) {
         uint32_t offset = 0;
         for (auto op : ops) {
@@ -488,10 +562,12 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
     std::string *proxyAddress = &overrideProxyAddress;
     std::string *proxySecret = &overrideProxySecret;
     uint16_t proxyPort = overrideProxyPort;
+    currentTlsFingerprint = overrideProxyTlsFingerprint;
     if (proxyAddress->empty()) {
         proxyAddress = &ConnectionsManager::getInstance(instanceNum).proxyAddress;
         proxyPort = ConnectionsManager::getInstance(instanceNum).proxyPort;
         proxySecret = &ConnectionsManager::getInstance(instanceNum).proxySecret;
+        currentTlsFingerprint = ConnectionsManager::getInstance(instanceNum).proxyTlsFingerprint;
     }
 
     if (!proxyAddress->empty()) {
@@ -920,7 +996,7 @@ void ConnectionSocket::onEvent(uint32_t events) {
                         lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
                         tlsHashMismatch = false;
                         proxyAuthState = 11;
-                        TlsHello hello = TlsHello::getDefault();
+                        TlsHello hello = TlsHello::getForFingerprint(currentTlsFingerprint);
                         hello.setDomain(currentSecretDomain);
                         uint32_t size = hello.writeToBuffer(tempBuffer->bytes);
                         uint32_t outLength;
@@ -1141,12 +1217,13 @@ void ConnectionSocket::dropConnection() {
     closeSocket(0, 0);
 }
 
-void ConnectionSocket::setOverrideProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret) {
+void ConnectionSocket::setOverrideProxy(std::string address, uint16_t port, std::string username, std::string password, std::string secret, int32_t tlsFingerprint) {
     overrideProxyAddress = address;
     overrideProxyPort = port;
     overrideProxyUser = username;
     overrideProxyPassword = password;
     overrideProxySecret = secret;
+    overrideProxyTlsFingerprint = tlsFingerprint;
 }
 
 void ConnectionSocket::onHostNameResolved(std::string host, std::string ip, bool ipv6) {

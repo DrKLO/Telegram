@@ -31,7 +31,7 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
             }
             startedCheck = true;
             proxyInfo.checking = true;
-            proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret, time -> AndroidUtilities.runOnUIThread(() -> {
+            proxyInfo.proxyCheckPingId = ConnectionsManager.getInstance(currentAccount).checkProxy(proxyInfo.address, proxyInfo.port, proxyInfo.username, proxyInfo.password, proxyInfo.secret, proxyInfo.tlsFingerprint, time -> AndroidUtilities.runOnUIThread(() -> {
                 proxyInfo.availableCheckTime = SystemClock.elapsedRealtime();
                 proxyInfo.checking = false;
                 if (time == -1) {
@@ -76,6 +76,7 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
             editor.putString("proxy_user", info.username);
             editor.putInt("proxy_port", info.port);
             editor.putString("proxy_secret", info.secret);
+            editor.putInt("proxy_tls_fingerprint", info.tlsFingerprint);
             editor.putBoolean("proxy_enabled", true);
 
             if (!info.secret.isEmpty()) {
@@ -86,7 +87,7 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
             SharedConfig.currentProxy = info;
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxyChangedByRotation);
-            ConnectionsManager.setProxySettings(true, SharedConfig.currentProxy.address, SharedConfig.currentProxy.port, SharedConfig.currentProxy.username, SharedConfig.currentProxy.password, SharedConfig.currentProxy.secret);
+            ConnectionsManager.setProxySettings(true, SharedConfig.currentProxy.address, SharedConfig.currentProxy.port, SharedConfig.currentProxy.username, SharedConfig.currentProxy.password, SharedConfig.currentProxy.secret, SharedConfig.currentProxy.tlsFingerprint);
             break;
         }
     }

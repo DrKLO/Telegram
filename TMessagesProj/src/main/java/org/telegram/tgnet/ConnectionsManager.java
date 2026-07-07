@@ -84,6 +84,9 @@ public class ConnectionsManager extends BaseController {
     public final static int ConnectionTypePush = 8;
     public final static int ConnectionTypeDownload2 = ConnectionTypeDownload | (1 << 16);
 
+    public final static int MTProxyTlsFingerprintDefault = 0;
+    public final static int MTProxyTlsFingerprintFirefox = 1;
+
     public final static int FileTypePhoto = 0x01000000;
     public final static int FileTypeVideo = 0x02000000;
     public final static int FileTypeAudio = 0x03000000;
@@ -613,10 +616,11 @@ public class ConnectionsManager extends BaseController {
         String proxyUsername = preferences.getString("proxy_user", "");
         String proxyPassword = preferences.getString("proxy_pass", "");
         String proxySecret = preferences.getString("proxy_secret", "");
+        int proxyTlsFingerprint = preferences.getInt("proxy_tls_fingerprint", MTProxyTlsFingerprintDefault);
         int proxyPort = preferences.getInt("proxy_port", 1080);
 
         if (preferences.getBoolean("proxy_enabled", false) && !TextUtils.isEmpty(proxyAddress)) {
-            native_setProxySettings(currentAccount, proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret);
+            native_setProxySettings(currentAccount, proxyAddress, proxyPort, proxyUsername, proxyPassword, proxySecret, proxyTlsFingerprint);
         }
         String installer = "";
         try {
@@ -710,6 +714,10 @@ public class ConnectionsManager extends BaseController {
     }
 
     public long checkProxy(String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate) {
+        return checkProxy(address, port, username, password, secret, MTProxyTlsFingerprintDefault, requestTimeDelegate);
+    }
+
+    public long checkProxy(String address, int port, String username, String password, String secret, int tlsFingerprint, RequestTimeDelegate requestTimeDelegate) {
         if (TextUtils.isEmpty(address)) {
             return 0;
         }
@@ -725,7 +733,7 @@ public class ConnectionsManager extends BaseController {
         if (secret == null) {
             secret = "";
         }
-        return native_checkProxy(currentAccount, address, port, username, password, secret, requestTimeDelegate);
+        return native_checkProxy(currentAccount, address, port, username, password, secret, tlsFingerprint, requestTimeDelegate);
     }
 
     public void setAppPaused(final boolean value, final boolean byScreenState) {
@@ -929,6 +937,10 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static void setProxySettings(boolean enabled, String address, int port, String username, String password, String secret) {
+        setProxySettings(enabled, address, port, username, password, secret, MTProxyTlsFingerprintDefault);
+    }
+
+    public static void setProxySettings(boolean enabled, String address, int port, String username, String password, String secret, int tlsFingerprint) {
         if (address == null) {
             address = "";
         }
@@ -944,9 +956,9 @@ public class ConnectionsManager extends BaseController {
 
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (enabled && !TextUtils.isEmpty(address)) {
-                native_setProxySettings(a, address, port, username, password, secret);
+                native_setProxySettings(a, address, port, username, password, secret, tlsFingerprint);
             } else {
-                native_setProxySettings(a, "", 1080, "", "", "");
+                native_setProxySettings(a, "", 1080, "", "", "", MTProxyTlsFingerprintDefault);
             }
             AccountInstance accountInstance = AccountInstance.getInstance(a);
             if (accountInstance.getUserConfig().isClientActivated()) {
@@ -978,14 +990,14 @@ public class ConnectionsManager extends BaseController {
     public static native int native_getConnectionState(int currentAccount);
     public static native void native_setUserId(int currentAccount, long id);
     public static native void native_init(int currentAccount, int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String systemLangCode, String configPath, String logPath, String regId, String cFingerprint, String installer, String packageId, int timezoneOffset, long userId, boolean userPremium, boolean enablePushConnection, boolean hasNetwork, int networkType, int performanceClass);
-    public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret);
+    public static native void native_setProxySettings(int currentAccount, String address, int port, String username, String password, String secret, int tlsFingerprint);
     public static native void native_setLangCode(int currentAccount, String langCode);
     public static native void native_setRegId(int currentAccount, String regId);
     public static native void native_setSystemLangCode(int currentAccount, String langCode);
     public static native void native_setJava(boolean useJavaByteBuffers);
     public static native void native_setPushConnectionEnabled(int currentAccount, boolean value);
     public static native void native_applyDnsConfig(int currentAccount, long address, String phone, int date);
-    public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, RequestTimeDelegate requestTimeDelegate);
+    public static native long native_checkProxy(int currentAccount, String address, int port, String username, String password, String secret, int tlsFingerprint, RequestTimeDelegate requestTimeDelegate);
     public static native void native_onHostNameResolved(String host, long address, String ip);
     public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
     public static native void native_failNotRunningRequest(int currentAccount, int token);

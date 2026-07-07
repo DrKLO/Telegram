@@ -1,3 +1,8 @@
+## Fork from the original Telegram client for Android
+
+Add and option allowing to select TLS Fingerprint at the MTPRoto proxy tab
+
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
