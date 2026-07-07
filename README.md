@@ -2,6 +2,22 @@
 
 Add and option allowing to select TLS Fingerprint at the MTPRoto proxy tab
 
+### Build instruction
+
+1. Install Android Studio with Android SDK 35, Build Tools 35.0.0, and a compatible Android NDK. Or use lighter version of SDK without the Studio package creating the local.properties file in the root of the project with the sdk.dir=<path to sdk> parameter (skip step 2 in this case).
+2. Open the project from the repository root in Android Studio. Open it as an existing project, do not import it as a new project.
+3. Get your Telegram developer credentials:
+   - Go to https://my.telegram.org
+   - Log in with your Telegram account.
+   - Open **API development tools**.
+   - Create an application if you do not already have one.
+   - Copy the generated `api_id` and `api_hash`.
+4. Insert those credentials in `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java`:
+   ```java
+   public static int APP_ID = 123456;
+   public static String APP_HASH = "your_api_hash_here";
+5. Build the app from Android Studio, or run one of the Gradle tasks from the repository root with `./gradlew :TMessagesProj_App:assembleDebug`.
+6. The generated APK will be placed under TMessagesProj_App/build/outputs/apk/
 
 ## Telegram messenger for Android
 
