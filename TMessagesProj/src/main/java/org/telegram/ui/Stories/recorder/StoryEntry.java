@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -34,12 +35,12 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -47,15 +48,15 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.PhotoFilterView;
-import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieNative;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class StoryEntry {
@@ -76,6 +77,7 @@ public class StoryEntry {
     public ArrayList<TL_stories.MediaArea> editedMediaAreas;
 
     public boolean isRepost;
+    public boolean isShare;
     public CharSequence repostPeerName;
     public TLRPC.Peer repostPeer;
     public int repostStoryId;
@@ -89,6 +91,7 @@ public class StoryEntry {
     public TLRPC.TL_error error;
 
     public String audioPath;
+    public TLRPC.InputDocument audioDocument;
     public String audioAuthor, audioTitle;
     public long audioDuration;
     public long audioOffset;
@@ -141,6 +144,7 @@ public class StoryEntry {
     public float roundVolume = 1;
 
     public TLRPC.InputPeer peer;
+    public HashSet<Integer> albums;
 
     public Drawable backgroundDrawable;
     public boolean isDark = Theme.isCurrentThemeDark();
@@ -233,7 +237,7 @@ public class StoryEntry {
     public static boolean isAnimated(TLRPC.Document document, String path) {
         return document != null && (
             "video/webm".equals(document.mime_type) || "video/mp4".equals(document.mime_type) ||
-            MessageObject.isAnimatedStickerDocument(document, true) && RLottieDrawable.getFramesCount(path, null) > 1
+            MessageObject.isAnimatedStickerDocument(document, true) && RLottieNative.getFramesCount(path, null) > 1
         );
     }
 
@@ -937,7 +941,7 @@ public class StoryEntry {
         entry.file = new File(photoEntry.path);
         entry.orientation = photoEntry.orientation;
         entry.invert = photoEntry.invert;
-        entry.isVideo = photoEntry.isVideo;
+        entry.isVideo = !photoEntry.isLivePhoto() && photoEntry.isVideo;
         entry.thumbPath = photoEntry.thumbPath;
         entry.duration = photoEntry.duration * 1000L;
         entry.left = 0;
@@ -1020,6 +1024,25 @@ public class StoryEntry {
         }
         entry.setupMatrix();
         return entry;
+    }
+
+    @Nullable
+    public static StoryEntry fromMedia(ArrayList<SendMessagesHelper.SendingMediaInfo> photoPathes) {
+        final ArrayList<MediaController.PhotoEntry> entries = ChatActivity.createEntriesFromMedia(photoPathes, false, null);
+        if (entries.isEmpty()) {
+            return null;
+        }
+
+        //if (entries.size() == 1) {
+            return fromPhotoEntry(entries.get(0));
+        /*}
+
+        final ArrayList<StoryEntry> entries1 = new ArrayList<>(entries.size());
+        for (MediaController.PhotoEntry entry: entries) {
+            entries1.add(fromPhotoEntry(entry));
+        }
+
+        return asCollage(CollageLayout.of(entries1.size()), entries1);*/
     }
 
     public void decodeBounds(String path) {
@@ -1402,14 +1425,14 @@ public class StoryEntry {
             Utilities.globalQueue.postRunnable(() -> {
                 for (int i = 0; i < paths.length; ++i)
                     if (paths[i] != null)
-                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i]);
+                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         } else if (file == null) {
             fill.run();
         } else {
             Utilities.globalQueue.postRunnable(() -> {
-                AnimatedFileDrawable.getVideoInfo(videoPath, params[0]);
+                AnimatedFileDrawable.getVideoInfo(videoPath, params[0], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         }
@@ -1611,6 +1634,7 @@ public class StoryEntry {
         newEntry.isError = isError;
         newEntry.error = error;
         newEntry.audioPath = audioPath;
+        newEntry.audioDocument = audioDocument;
         newEntry.audioAuthor = audioAuthor;
         newEntry.audioTitle = audioTitle;
         newEntry.audioDuration = audioDuration;
@@ -1655,6 +1679,7 @@ public class StoryEntry {
         newEntry.scheduleDate = scheduleDate;
         newEntry.blurredVideoThumb = blurredVideoThumb;
         newEntry.uploadThumbFile = uploadThumbFile;
+        newEntry.albums = albums;
         if (uploadThumbFile != null && uploadThumbFile.exists()) {
             newEntry.uploadThumbFile = StoryEntry.makeCacheFile(currentAccount, ext(uploadThumbFile));
             AndroidUtilities.copyFileSafe(uploadThumbFile, newEntry.uploadThumbFile);
@@ -1708,6 +1733,7 @@ public class StoryEntry {
         newEntry.fromCamera = fromCamera;
         newEntry.thumbPathBitmap = thumbPathBitmap;
         newEntry.isRepost = isRepost;
+        newEntry.isShare = isShare;
         newEntry.round = round;
         newEntry.roundLeft = roundLeft;
         newEntry.roundRight = roundRight;

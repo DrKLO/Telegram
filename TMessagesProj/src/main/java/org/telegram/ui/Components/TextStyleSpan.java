@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import static me.vkryl.core.BitwiseUtils.hasFlag;
+
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.TextPaint;
@@ -30,16 +32,16 @@ public class TextStyleSpan extends MetricAffectingSpan {
         public int end;
         public TLRPC.MessageEntity urlEntity;
         public String lng;
+        public boolean header;
 
-        public TextStyleRun() {
-
-        }
+        public TextStyleRun() {}
 
         public TextStyleRun(TextStyleRun run) {
             flags = run.flags;
             start = run.start;
             end = run.end;
             urlEntity = run.urlEntity;
+            header = run.header;
         }
 
         public void merge(TextStyleRun run) {
@@ -64,7 +66,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
             } else {
                 p.setFlags(p.getFlags() &~ Paint.UNDERLINE_TEXT_FLAG);
             }
-            if ((flags & FLAG_STYLE_STRIKE) != 0) {
+            if ((flags & FLAG_STYLE_STRIKE) != 0 || (flags & FLAG_STYLE_STRIKE_RED) != 0) {
                 p.setFlags(p.getFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             } else {
                 p.setFlags(p.getFlags() &~ Paint.STRIKE_THRU_TEXT_FLAG);
@@ -73,13 +75,24 @@ public class TextStyleSpan extends MetricAffectingSpan {
             if ((flags & FLAG_STYLE_SPOILER_REVEALED) != 0) {
                 p.bgColor = Theme.getColor(Theme.key_chats_archivePullDownBackground);
             }
+            if ((flags & FLAG_STYLE_STRIKE_RED) != 0) {
+                p.setColor(Theme.getColor(Theme.key_text_RedBold));
+            } else if ((flags & FLAG_STYLE_ACCENT) != 0) {
+                p.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+            }
         }
 
         public Typeface getTypeface() {
+            if (header) {
+                if ((flags & FLAG_STYLE_ITALIC) != 0) {
+                    return AndroidUtilities.getTypeface("fonts/mw_bolditalic.ttf");
+                }
+                return AndroidUtilities.getTypeface("fonts/mw_bold.ttf");
+            }
             if ((flags & FLAG_STYLE_MONO) != 0 || (flags & FLAG_STYLE_CODE) != 0) {
                 return Typeface.MONOSPACE;
             } else if ((flags & FLAG_STYLE_BOLD) != 0 && (flags & FLAG_STYLE_ITALIC) != 0) {
-                return AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
+                return AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC);
             } else if ((flags & FLAG_STYLE_BOLD) != 0) {
                 return AndroidUtilities.bold();
             } else if ((flags & FLAG_STYLE_ITALIC) != 0) {
@@ -90,19 +103,23 @@ public class TextStyleSpan extends MetricAffectingSpan {
         }
     }
 
-    public final static int FLAG_STYLE_BOLD = 1;
-    public final static int FLAG_STYLE_ITALIC = 2;
-    public final static int FLAG_STYLE_MONO = 4;
-    public final static int FLAG_STYLE_STRIKE = 8;
-    public final static int FLAG_STYLE_UNDERLINE = 16;
-    public final static int FLAG_STYLE_QUOTE = 32;
-    public final static int FLAG_STYLE_MENTION = 64;
-    public final static int FLAG_STYLE_URL = 128;
-    public final static int FLAG_STYLE_SPOILER = 256;
-    public final static int FLAG_STYLE_SPOILER_REVEALED = 512;
-    public final static int FLAG_STYLE_TEXT_URL = 1024;
-    public final static int FLAG_STYLE_CODE = 2048;
-
+    public final static int FLAG_STYLE_BOLD        = 1 << 0;
+    public final static int FLAG_STYLE_ITALIC      = 1 << 1;
+    public final static int FLAG_STYLE_MONO        = 1 << 2;
+    public final static int FLAG_STYLE_STRIKE      = 1 << 3;
+    public final static int FLAG_STYLE_UNDERLINE   = 1 << 4;
+    public final static int FLAG_STYLE_QUOTE       = 1 << 5;
+    public final static int FLAG_STYLE_MENTION     = 1 << 6;
+    public final static int FLAG_STYLE_URL         = 1 << 7;
+    public final static int FLAG_STYLE_SPOILER     = 1 << 8;
+    public final static int FLAG_STYLE_SPOILER_REVEALED = 1 << 9;
+    public final static int FLAG_STYLE_TEXT_URL    = 1 << 10;
+    public final static int FLAG_STYLE_CODE        = 1 << 11;
+    public final static int FLAG_STYLE_ACCENT      = 1 << 12;
+    public final static int FLAG_STYLE_STRIKE_RED  = 1 << 13;
+    public final static int FLAG_STYLE_SUBSCRIPT   = 1 << 14;
+    public final static int FLAG_STYLE_SUPERSCRIPT = 1 << 15;
+    public final static int FLAG_STYLE_MARKED = 1 << 16;
 
     public TextStyleSpan(TextStyleRun run) {
         this(run, 0, 0);
@@ -166,11 +183,25 @@ public class TextStyleSpan extends MetricAffectingSpan {
         return style.getTypeface() == AndroidUtilities.getTypeface("fonts/rmediumitalic.ttf");
     }
 
+    private void applySubSuper(TextPaint p) {
+        if (!hasFlag(style.flags, FLAG_STYLE_SUBSCRIPT | FLAG_STYLE_SUPERSCRIPT)) {
+            return;
+        }
+        float base = p.getTextSize();
+        p.setTextSize(base * 0.75f);
+        if (hasFlag(style.flags, FLAG_STYLE_SUPERSCRIPT)) {
+            p.baselineShift -= (int) (base * 0.35f);
+        } else if (hasFlag(style.flags, FLAG_STYLE_SUBSCRIPT)) {
+            p.baselineShift += (int) (base * 0.12f);
+        }
+    }
+
     @Override
     public void updateMeasureState(TextPaint p) {
         if (textSize != 0) {
             p.setTextSize(textSize);
         }
+        applySubSuper(p);
         p.setFlags(p.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
         style.applyStyle(p);
     }
@@ -180,6 +211,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
         if (textSize != 0) {
             p.setTextSize(textSize);
         }
+        applySubSuper(p);
         if (color != 0) {
             p.setColor(color);
         }

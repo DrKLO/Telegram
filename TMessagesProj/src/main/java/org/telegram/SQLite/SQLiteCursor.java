@@ -11,6 +11,8 @@ package org.telegram.SQLite;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.Vector;
 
 public class SQLiteCursor {
 
@@ -68,6 +70,20 @@ public class SQLiteCursor {
 			return NativeByteBuffer.wrap(ptr);
 		}
 		return null;
+	}
+
+	public <T extends TLObject> T tlObjectValue(int columnIndex, Vector.TLDeserializer<T> deserializer, boolean exception) throws SQLiteException {
+		NativeByteBuffer data = byteBufferValue(columnIndex);
+		if (data == null) {
+			return null;
+		}
+
+		try {
+			int constructor = data.readInt32(exception);
+			return deserializer.deserialize(data, constructor, exception);
+		} finally {
+			data.reuse();
+		}
 	}
 
 	public int getTypeOf(int columnIndex) throws SQLiteException {

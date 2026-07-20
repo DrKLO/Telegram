@@ -97,7 +97,7 @@ public class PublicStoriesList extends FrameLayout {
 
 
 
-        sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(null), 0, null, null, null, SharedMediaLayout.TAB_STORIES, fragment, new SharedMediaLayout.Delegate() {
+        sharedMediaLayout = new SharedMediaLayout(context, 0, new SharedMediaLayout.SharedMediaPreloader(null), 0, null, null, null, SharedMediaLayout.TAB_STORIES, 0, fragment, new SharedMediaLayout.Delegate() {
             @Override
             public void scrollToSharedMedia() {
 

@@ -37,7 +37,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.Paint.Views.EditTextOutline;
 import org.telegram.ui.Components.Paint.Views.PaintTextOptionsView;
-import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieNative;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -188,7 +188,7 @@ public class WebmEncoder {
                 if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
                     return;
                 }
-                RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, entity.W, entity.H, entity.bitmap.getRowBytes(), true);
+                RLottieNative.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, true);
                 applyRoundRadius(entity, entity.bitmap, (entity.subType & 8) != 0 ? textColor : 0);
 
                 canvas.drawBitmap(entity.bitmap, entity.matrix, bitmapPaint);
@@ -374,7 +374,7 @@ public class WebmEncoder {
                 }
                 entity.bitmap = Bitmap.createBitmap(entity.W, entity.H, Bitmap.Config.ARGB_8888);
                 entity.metadata = new int[3];
-                entity.ptr = RLottieDrawable.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
+                entity.ptr = RLottieNative.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
                 entity.framesPerDraw = (float) entity.metadata[1] / fps;
             } else if ((entity.subType & 4) != 0) {
                 entity.looped = false;

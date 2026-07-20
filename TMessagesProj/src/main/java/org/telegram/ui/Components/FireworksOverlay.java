@@ -333,13 +333,11 @@ public class FireworksOverlay extends View {
             invalidate();
         } else {
             started = false;
-            if (Build.VERSION.SDK_INT >= 18) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (!started) {
-                        setLayerType(View.LAYER_TYPE_NONE, null);
-                    }
-                });
-            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!started) {
+                    setLayerType(View.LAYER_TYPE_NONE, null);
+                }
+            });
             onStop();
         }
     }

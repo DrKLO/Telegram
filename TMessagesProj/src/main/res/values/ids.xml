@@ -8,8 +8,10 @@
     <item name="menu_mono" type="id"/>
     <item name="menu_strike" type="id"/>
     <item name="menu_underline" type="id"/>
+    <item name="menu_date" type="id"/>
     <item name="menu_groupbolditalic" type="id"/>
     <item name="menu_delete" type="id"/>
+    <item name="menu_translate" type="id"/>
     <item name="parent_tag" type="id"/>
     <item name="object_tag" type="id"/>
     <item name="spring_tag" type="id"/>
@@ -19,12 +21,16 @@
     <item name="svg_tag" type="id"/>
     <item name="width_tag" type="id"/>
     <item name="color_key_tag" type="id"/>
+    <item name="bulletin_delegate_tag" type="id"/>
+    <item name="sheet_attached_to_fragment_tag" type="id"/>
     <item name="current_animation" type="id"/>
     <item name="acc_action_small_button" type="id"/>
     <item name="acc_action_msg_options" type="id"/>
     <item name="acc_action_open_photo" type="id"/>
     <item name="acc_action_chat_preview" type="id"/>
     <item name="acc_action_open_forwarded_origin" type="id"/>
+    <item name="acc_action_copy_code" type="id"/>
+    <item name="acc_action_summarize" type="id"/>
     <item name="shake_animation" type="id"/>
 
     <item name="timeout_callback" type="id"/>
@@ -53,4 +59,6 @@
     <item name="passcode_btn_fingerprint" type="id"/>
     <item name="passcode_btn_backspace" type="id"/>
     <item name="passcode_btn_done" type="id"/>
+
+    <item name="dragging" type="id"/>
 </resources>

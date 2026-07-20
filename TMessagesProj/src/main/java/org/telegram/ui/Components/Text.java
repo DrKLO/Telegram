@@ -27,7 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class Text {
 
-    private final TextPaint paint;
+    public final TextPaint paint;
     private StaticLayout layout;
     private float width, left;
     private float maxWidth = 9999;
@@ -81,6 +81,10 @@ public class Text {
         return this;
     }
 
+    public void detach() {
+        AnimatedEmojiSpan.release(parentView, animatedEmojis);
+    }
+
     public Text setEmojiCacheType(int cacheType) {
         if (animatedEmojisCacheType != cacheType) {
             animatedEmojisCacheType = cacheType;
@@ -112,6 +116,14 @@ public class Text {
         if (parentView != null && parentView.isAttachedToWindow()) {
             animatedEmojis = AnimatedEmojiSpan.update(animatedEmojisCacheType, parentView, animatedEmojis, layout);
         }
+    }
+
+    public float calculateRealWidth() {
+        float width = 0;
+        for (int i = 0; i < layout.getLineCount(); ++i) {
+            width = Math.max(width, layout.getLineWidth(i));
+        }
+        return width;
     }
 
     public Text multiline(int maxLines) {
@@ -176,6 +188,11 @@ public class Text {
 
     public Text setColor(int color) {
         paint.setColor(color);
+        return this;
+    }
+
+    public Text setAlpha(int alpha) {
+        paint.setAlpha(alpha);
         return this;
     }
 

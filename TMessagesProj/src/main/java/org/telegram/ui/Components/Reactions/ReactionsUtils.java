@@ -12,6 +12,7 @@ import android.text.TextUtils;
 
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
@@ -149,7 +150,7 @@ public class ReactionsUtils {
         AnimatedEmojiSpan span = createAnimatedEmojiSpan(availableReaction.activate_animation, id, fontMetricsInt);
         selectedEmojis.put(id, span);
         selectedEmojisIds.add(id);
-        editText.append(createSpannableText(span, "e"));
+        editText.append(createSpannableText(span, availableReaction.reaction));
         if (selectAnimatedEmojiDialog != null) {
             selectAnimatedEmojiDialog.setMultiSelected(id, false);
         }

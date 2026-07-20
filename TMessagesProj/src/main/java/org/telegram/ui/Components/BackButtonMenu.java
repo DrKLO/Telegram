@@ -72,16 +72,18 @@ public class BackButtonMenu {
             return null;
         }
 
-        ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, resourcesProvider);
+        ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, R.drawable.popup_fixed_alert4, resourcesProvider);
         android.graphics.Rect backgroundPaddings = new Rect();
-        Drawable shadowDrawable = thisFragment.getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert).mutate();
+        Drawable shadowDrawable = thisFragment.getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert4).mutate();
         shadowDrawable.getPadding(backgroundPaddings);
         layout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
 
         AtomicReference<ActionBarPopupWindow> scrimPopupWindowRef = new AtomicReference<>();
 
         boolean hadDialogs = false;
-        for (int i = 0; i < dialogs.size(); ++i) {
+        for (int i = 0, N = dialogs.size(); i < N; ++i) {
+            final boolean first = i == 0;
+            final boolean last = i == (N - 1);
             final PulledDialog pDialog = dialogs.get(i);
             final TLRPC.Chat chat = pDialog.chat;
             final TLRPC.User user = pDialog.user;
@@ -95,14 +97,14 @@ public class BackButtonMenu {
             } else {
                 imageView.setRoundRadius(chat != null && chat.forum ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16));
             }
-            cell.addView(imageView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 13, 0, 0, 0));
+            cell.addView(imageView, LayoutHelper.createFrameRelatively(32, 32, Gravity.START | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
             TextView titleView = new TextView(context);
             titleView.setLines(1);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
             titleView.setEllipsize(TextUtils.TruncateAt.END);
-            cell.addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 59, 0, 12, 0));
+            cell.addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 52, 0, 8, 0));
 
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setScaleSize(.8f);
@@ -127,7 +129,7 @@ public class BackButtonMenu {
                 if (chat.photo != null && chat.photo.strippedBitmap != null) {
                     thumb = chat.photo.strippedBitmap;
                 }
-                imageView.setImage(ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
+                imageView.setImage(ImageLocation.getForChat(thisFragment.getCurrentAccount(), chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
                 titleView.setText(chat.title);
             } else if (user != null) {
                 hadDialogs = true;
@@ -146,11 +148,11 @@ public class BackButtonMenu {
                 } else if (UserObject.isDeleted(user)) {
                     name = LocaleController.getString(R.string.HiddenName);
                     avatarDrawable.setInfo(thisFragment.getCurrentAccount(), user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
+                    imageView.setImage(ImageLocation.getForUser(thisFragment.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), "50_50", avatarDrawable, user);
                 } else {
                     name = UserObject.getUserName(user);
                     avatarDrawable.setInfo(thisFragment.getCurrentAccount(), user);
-                    imageView.setImage(ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
+                    imageView.setImage(ImageLocation.getForUser(thisFragment.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
                 }
                 titleView.setText(name);
             } else {
@@ -203,7 +205,7 @@ public class BackButtonMenu {
                 }
                 goToPulledDialog(thisFragment, pDialog);
             });
-            layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+            layout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 0, Gravity.NO_GRAVITY, 0, first ? 3 : 0, 0, last ? 3 : 0));
             if (addDivider) {
                 FrameLayout gap = new FrameLayout(context);
                 gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
@@ -228,13 +230,13 @@ public class BackButtonMenu {
         scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
         layout.setFitItems(true);
 
-        int popupX = AndroidUtilities.dp(8) - backgroundPaddings.left;
+        int popupX = AndroidUtilities.dp(7) - backgroundPaddings.left;
         if (AndroidUtilities.isTablet()) {
             int[] location = new int[2];
             fragmentView.getLocationInWindow(location);
             popupX += location[0];
         }
-        int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(8));
+        int popupY = (int) (backButton.getBottom() - backgroundPaddings.top - AndroidUtilities.dp(1));
         scrimPopupWindow.showAtLocation(fragmentView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
 
 //        try {

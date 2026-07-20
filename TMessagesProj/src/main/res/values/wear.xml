@@ -3,5 +3,6 @@
 	<string-array name="android_wear_capabilities" translatable="false">
 		<item>telegram_full_app</item>
 		<item>remote_notifications_provider</item>
+		<item>telegram_wear_auth</item>
 	</string-array>
 </resources>

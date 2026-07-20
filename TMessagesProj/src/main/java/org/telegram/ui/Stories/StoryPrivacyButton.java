@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -65,7 +66,7 @@ public class StoryPrivacyButton extends View {
             setIcon(R.drawable.msg_folders_private, 17.33f);
             setupGradient(0xFFC468F2, 0xFF965CFA);
             crossfadeT.set(animated, true);
-        } else if (storyItem.selected_contacts) {
+        } else if (storyItem.selected_contacts || mine && (storyItem.privacy == null || storyItem.privacy.isEmpty())) {
             setIcon(R.drawable.msg_folders_groups, 17.33f);
             setupGradient(0xFFFFB743, 0xFFF68E34);
             crossfadeT.set(animated, true);
@@ -111,6 +112,15 @@ public class StoryPrivacyButton extends View {
     }
 
     private void setIcon(int resId, float sz) {
+        if (resId == R.drawable.msg_stories_closefriends) {
+            setContentDescription(LocaleController.getString(R.string.StoryPrivacyOptionCloseFriends));
+        } else if (resId == R.drawable.msg_folders_private) {
+            setContentDescription(LocaleController.getString(R.string.StoryPrivacyOptionContacts));
+        } else if (resId == R.drawable.msg_folders_groups) {
+            setContentDescription(LocaleController.getString(R.string.StoryPrivacyOptionSelectedContacts));
+        } else if (resId == R.drawable.msg_folders_channels) {
+            setContentDescription(LocaleController.getString(R.string.StoryPrivacyOptionEveryone));
+        }
         icon[1] = icon[0];
         iconSize[1] = iconSize[0];
         if (icon[0] == null || resId != iconResId) {

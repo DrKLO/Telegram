@@ -617,6 +617,14 @@ public class StickerCategoriesListView extends RecyclerListView {
 
     static int loadedCategoryIcons = 0;
 
+    public boolean isGlassDesign;
+
+    private int getGlassIconColor(float alpha) {
+        return ColorUtils.setAlphaComponent(
+                Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider),
+                (int) (255 * alpha));
+    }
+
     private class CategoryButton extends RLottieImageView {
 
         private int imageColor;
@@ -627,7 +635,7 @@ public class StickerCategoriesListView extends RecyclerListView {
         public CategoryButton(Context context) {
             super(context);
 
-            setImageColor(getThemedColor(Theme.key_chat_emojiPanelIcon));
+            setImageColor(isGlassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelIcon));
             setScaleType(ScaleType.CENTER);
 
             setLayerNum(layerNum);
@@ -635,6 +643,13 @@ public class StickerCategoriesListView extends RecyclerListView {
 
         public void set(EmojiCategory category, int index, boolean selected) {
             this.index = index;
+            if (!TextUtils.isEmpty(category.title)) {
+                setContentDescription(category.title);
+            } else if (!TextUtils.isEmpty(category.emojis)) {
+                setContentDescription(category.emojis);
+            } else {
+                setContentDescription(null);
+            }
             if (loadAnimator != null) {
                 loadAnimator.cancel();
                 loadAnimator = null;
@@ -730,13 +745,17 @@ public class StickerCategoriesListView extends RecyclerListView {
 
         private void updateSelectedT(float t) {
             selectedT = t;
-            setImageColor(
-                ColorUtils.blendARGB(
-                    getThemedColor(Theme.key_chat_emojiPanelIcon),
-                    getThemedColor(Theme.key_chat_emojiPanelIconSelected),
-                    selectedT
-                )
-            );
+            if (isGlassDesign) {
+                setImageColor(getGlassIconColor(AndroidUtilities.lerp(0.4f, 0.8f, selectedT)));
+            } else {
+                setImageColor(
+                        ColorUtils.blendARGB(
+                                getThemedColor(Theme.key_chat_emojiPanelIcon),
+                                getThemedColor(Theme.key_chat_emojiPanelIconSelected),
+                                selectedT
+                        )
+                );
+            }
             invalidate();
         }
 

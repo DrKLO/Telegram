@@ -99,6 +99,10 @@ public class TextCheckbox2Cell extends FrameLayout {
         setClipChildren(false);
     }
 
+    public void setCheckboxGravityTop() {
+        checkbox.setLayoutParams(LayoutHelper.createFrame(20, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 22, 22, 0));
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isMultiline) {

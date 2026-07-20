@@ -282,14 +282,15 @@ public class DialogsBotsAdapter extends UniversalAdapter {
             loadingBots = true;
             TLRPC.TL_contacts_search req2 = new TLRPC.TL_contacts_search();
             req2.limit = 30;
+            req2.bots = true;
             req2.q = this.query;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (res, err) -> {
                 if (!TextUtils.equals(req2.q, this.query) || TextUtils.isEmpty(this.query)) return;
 
                 loadingBots = false;
                 TLRPC.TL_contacts_found response = null;
-                if (res instanceof TLRPC.TL_contacts_found) {
-                    response = (TLRPC.TL_contacts_found) res;
+                if (res != null) {
+                    response = res;
                     MessagesStorage.getInstance(currentAccount).putUsersAndChats(response.users, response.chats, true, true);
                     MessagesController.getInstance(currentAccount).putUsers(response.users, false);
                     MessagesController.getInstance(currentAccount).putChats(response.chats, false);
@@ -352,7 +353,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     listView.scrollToPosition(0);
                 }
                 update(true);
-            }));
+            });
         }
     }
 

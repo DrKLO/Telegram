@@ -100,7 +100,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        textView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 8));
+        textView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 24));
         textView.setOnClickListener(e -> {
             if (this.whenGranted != null) {
                 this.whenGranted.run(true);

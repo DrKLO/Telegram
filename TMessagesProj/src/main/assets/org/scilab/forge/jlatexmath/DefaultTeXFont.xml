@@ -1,0 +1,71 @@
+<?xml version='1.0'?>
+<TeXFont>
+	<Parameters num1="0.676508" num2="0.393732" num3="0.443731" denom1="0.685951" denom2="0.344841"
+	sup1="0.412892" sup2="0.362892" sup3="0.288889" sub1="0.15" sub2="0.247217" supdrop="0.386108"
+	subdrop="0.05" axisheight="0.25" defaultrulethickness="0.039999" bigopspacing1="0.111112"
+	bigopspacing2="0.166667" bigopspacing3="0.2" bigopspacing4="0.6" bigopspacing5="0.1" />
+	<GeneralSettings mufontid="jlm_cmsy10" spacefontid="jlm_cmr10" scriptfactor="0.7" scriptscriptfactor="0.5" />
+	<TextStyleMappings>
+		<TextStyleMapping name="mathnormal">
+			<MapRange code="numbers" fontId="jlm_cmr10" start="48"/>
+			<MapRange code="capitals" fontId="jlm_cmmi10" start="65"/>
+			<MapRange code="small" fontId="jlm_cmmi10" start="97"/>
+			<MapRange code="unicode" fontId="jlm_cmmi10" start="0"/>
+		</TextStyleMapping>
+		<TextStyleMapping name="mathfrak">
+			<MapRange code="numbers" fontId="jlm_eufm10" start="48"/>
+			<MapRange code="capitals" fontId="jlm_eufm10" start="65"/>
+			<MapRange code="small" fontId="jlm_eufm10" start="97"/>
+		</TextStyleMapping>
+		<TextStyleMapping name="mathcal">
+			<MapRange code="capitals" fontId="jlm_cmsy10" start="65"/>
+		</TextStyleMapping>
+		<TextStyleMapping name="mathbb">
+			<MapRange code="capitals" fontId="jlm_msbm10" start="65"/>
+		</TextStyleMapping>
+		<TextStyleMapping name="mathscr">
+			<MapRange code="capitals" fontId="jlm_rsfs10" start="65"/>
+		</TextStyleMapping>
+		<TextStyleMapping name="oldstylenums">
+			<MapRange code="numbers" fontId="jlm_cmmi10" start="48"/>
+		</TextStyleMapping>
+	</TextStyleMappings>
+	<DefaultTextStyleMapping>
+		<MapStyle code="numbers" textStyle="mathnormal"/>
+		<MapStyle code="capitals" textStyle="mathnormal"/>
+		<MapStyle code="small" textStyle="mathnormal"/>
+		<MapStyle code="unicode" textStyle="mathnormal"/>
+	</DefaultTextStyleMapping>
+	<SymbolMappings>
+		<Mapping include="fonts/base/jlm_base.map.xml" />
+		<Mapping include="fonts/base/jlm_amssymb.map.xml" />
+		<Mapping include="fonts/base/jlm_amsfonts.map.xml" />
+		<Mapping include="fonts/maths/jlm_special.map.xml" />
+	</SymbolMappings>
+	<FontDescriptions>
+		<Metrics include="fonts/maths/jlm_msbm10.xml" />
+		<Metrics include="fonts/base/jlm_cmex10.xml" />
+		<Metrics include="fonts/base/jlm_cmmi10.xml" />
+		<Metrics include="fonts/base/jlm_cmmib10.xml" />
+		<Metrics include="fonts/base/jlm_moustache.xml" />
+		<Metrics include="fonts/base/jlm_cmmi10_unchanged.xml" />
+		<Metrics include="fonts/base/jlm_cmmib10_unchanged.xml" />
+		<Metrics include="fonts/maths/jlm_cmsy10.xml" />
+		<Metrics include="fonts/maths/jlm_msam10.xml" />
+		<Metrics include="fonts/maths/jlm_cmbsy10.xml" />
+		<Metrics include="fonts/maths/jlm_rsfs10.xml" />
+		<Metrics include="fonts/euler/jlm_eufm10.xml" />
+		<Metrics include="fonts/latin/jlm_cmr10.xml" />
+		<Metrics include="fonts/maths/jlm_special.xml" />
+		<Metrics include="fonts/latin/jlm_jlmr10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmr10_unchanged.xml" />
+		<Metrics include="fonts/latin/jlm_jlmss10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmsi10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmi10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmbx10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmbi10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmsbi10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmsb10.xml" />
+		<Metrics include="fonts/latin/jlm_jlmtt10.xml" />
+	</FontDescriptions>
+</TeXFont>

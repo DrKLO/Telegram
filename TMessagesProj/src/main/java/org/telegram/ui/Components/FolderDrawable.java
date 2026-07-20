@@ -9,6 +9,8 @@ import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
@@ -32,7 +34,8 @@ public class FolderDrawable extends Drawable {
 
             strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             strokePaint.setStyle(Paint.Style.STROKE);
-            strokePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+            strokePaint.setColor(0xFF000000);
+            strokePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             strokePaint.setPathEffect(new CornerPathEffect(dp(1)));
             strokePaint.setStrokeCap(Paint.Cap.ROUND);
             strokePaint.setStrokeJoin(Paint.Join.ROUND);
@@ -50,9 +53,10 @@ public class FolderDrawable extends Drawable {
 
     @Override
     public void draw(@NonNull Canvas canvas) {
-        drawable.setBounds(getBounds());
-        drawable.draw(canvas);
         if (path != null) {
+            canvas.saveLayerAlpha(getBounds().left, getBounds().top, getBounds().right, getBounds().bottom, 0xFF);
+            drawable.setBounds(getBounds());
+            drawable.draw(canvas);
             if (pathInvalidated) {
                 path.rewind();
                 path.moveTo(x(.4871f), y(.6025f));
@@ -67,6 +71,10 @@ public class FolderDrawable extends Drawable {
             }
             canvas.drawPath(path, strokePaint);
             canvas.drawPath(path, fillPaint);
+            canvas.restore();
+        } else {
+            drawable.setBounds(getBounds());
+            drawable.draw(canvas);
         }
     }
 

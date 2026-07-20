@@ -14,6 +14,7 @@ import java.util.Map;
 public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
     private State currentState;
     private TransitState animatingState;
+    private final int sizeDp;
 
     private Map<TransitState, RLottieDrawable> stateMap = new HashMap<TransitState, RLottieDrawable>() {
         @Nullable
@@ -23,14 +24,19 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             if (obj == null) {
                 TransitState state = (TransitState) key;
                 int res = state.resource;
-                return new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+                return new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
             }
             return obj;
         }
     };
 
     public ChatActivityEnterViewAnimatedIconView(Context context) {
+        this(context, 32);
+    }
+
+    public ChatActivityEnterViewAnimatedIconView(Context context, int sizeDp) {
         super(context);
+        this.sizeDp = sizeDp;
     }
 
     public void setState(State state, boolean animate) {
@@ -43,7 +49,7 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             RLottieDrawable drawable = stateMap.get(getAnyState(currentState));
             drawable.stop();
 
-            drawable.setProgress(0, false);
+            drawable.setProgress(state == State.VOICE ? 0.5f : 0, false);
             setAnimation(drawable);
         } else {
             TransitState transitState = getState(fromState, currentState);
@@ -54,7 +60,15 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             animatingState = transitState;
             RLottieDrawable drawable = stateMap.get(transitState);
             drawable.stop();
-            drawable.setProgress(0, false);
+            if (transitState == TransitState.VIDEO_TO_VOICE) {
+                drawable.setCustomEndFrame(30);
+                drawable.setProgress(0, false);
+            } else if (transitState == TransitState.VOICE_TO_VIDEO) {
+                drawable.setCustomEndFrame(60);
+                drawable.setProgress(0.5f, false);
+            } else {
+                drawable.setProgress(0, false);
+            }
             drawable.setAutoRepeat(0);
             drawable.setOnAnimationEndListener(() -> animatingState = null);
             setAnimation(drawable);
@@ -69,6 +83,10 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
                 setContentDescription(LocaleController.getString(R.string.AccDescrVideoMessage));
                 break;
         }
+    }
+
+    public State getCurrentState() {
+        return currentState;
     }
 
     private TransitState getAnyState(State from) {
@@ -90,10 +108,10 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
     }
 
     private enum TransitState {
-        VOICE_TO_VIDEO(State.VOICE, State.VIDEO, R.raw.voice_to_video),
+        VOICE_TO_VIDEO(State.VOICE, State.VIDEO, R.raw.voice_and_video),
         STICKER_TO_KEYBOARD(State.STICKER, State.KEYBOARD, R.raw.sticker_to_keyboard),
         SMILE_TO_KEYBOARD(State.SMILE, State.KEYBOARD, R.raw.smile_to_keyboard),
-        VIDEO_TO_VOICE(State.VIDEO, State.VOICE, R.raw.video_to_voice),
+        VIDEO_TO_VOICE(State.VIDEO, State.VOICE, R.raw.voice_and_video),
         KEYBOARD_TO_STICKER(State.KEYBOARD, State.STICKER, R.raw.keyboard_to_sticker),
         KEYBOARD_TO_GIF(State.KEYBOARD, State.GIF, R.raw.keyboard_to_gif),
         KEYBOARD_TO_SMILE(State.KEYBOARD, State.SMILE, R.raw.keyboard_to_smile),

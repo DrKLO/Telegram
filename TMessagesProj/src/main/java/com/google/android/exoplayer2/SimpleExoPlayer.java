@@ -59,8 +59,6 @@ import org.telegram.messenger.DispatchQueue;
 
 import java.util.List;
 
-import kotlin.NotImplementedError;
-
 /**
  * @deprecated Use {@link ExoPlayer} instead.
  */
@@ -1336,11 +1334,11 @@ public class SimpleExoPlayer extends BasePlayer
 
   @Override
   public void addVideoListener(VideoListener listener) {
-    throw new NotImplementedError();
+    throw new RuntimeException("NotImplementedError");
   }
 
   @Override
   public void removeVideoListener(VideoListener listener) {
-    throw new NotImplementedError();
+    throw new RuntimeException("NotImplementedError");
   }
 }

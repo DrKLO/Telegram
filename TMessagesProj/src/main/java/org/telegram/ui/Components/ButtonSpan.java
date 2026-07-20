@@ -46,11 +46,18 @@ public class ButtonSpan extends ReplacementSpan {
     }
 
     public static CharSequence make(CharSequence buttonText, Runnable onClick, Theme.ResourcesProvider resourcesProvider) {
+        return make(buttonText, onClick, resourcesProvider, null);
+    }
+
+    public static CharSequence make(CharSequence buttonText, Runnable onClick, Theme.ResourcesProvider resourcesProvider, Integer forcedColor) {
         SpannableString ss = new SpannableString("btn");
         ButtonSpan span1 = new ButtonSpan(buttonText, onClick, resourcesProvider);
         ss.setSpan(span1, 0, ss.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        span1.forcedColor = forcedColor;
         return ss;
     }
+
+    public Integer forcedColor;
 
     public int getSize() {
         return (int) (this.text.getCurrentWidth() + dp(14));
@@ -68,7 +75,7 @@ public class ButtonSpan extends ReplacementSpan {
         final float s = bounce == null ? 1f : bounce.getScale(.025f);
         canvas.save();
         canvas.scale(s, s, AndroidUtilities.rectTmp.centerX(), AndroidUtilities.rectTmp.centerY());
-        final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+        final int color = forcedColor != null ? forcedColor : Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
         backgroundPaint.setColor(Theme.multAlpha(color, .15f));
         canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2, h / 2, backgroundPaint);
         this.text.draw(canvas, x + dp(7), (top + bottom) / 2f, color, 1f);
@@ -94,18 +101,21 @@ public class ButtonSpan extends ReplacementSpan {
 
         public ButtonSpan findSpan(float x, int y) {
             if (!(getText() instanceof Spanned)) return null;
-            Layout layout = getLayout();
+            final Layout layout = getLayout();
             if (layout == null) return null;
-            int line = layout.getLineForVertical(y);
-            int offset = layout.getOffsetForHorizontal(line, x);
-            Spanned spanned = (Spanned) getText();
-            ButtonSpan[] spans = spanned.getSpans(layout.getLineStart(line), layout.getLineEnd(line), ButtonSpan.class);
+            final int line = layout.getLineForVertical(y);
+            final Spanned spanned = (Spanned) getText();
+            final ButtonSpan[] spans = spanned.getSpans(layout.getLineStart(line), layout.getLineEnd(line), ButtonSpan.class);
             for (int i = 0; i < spans.length; ++i) {
-                ButtonSpan span = spans[i];
-                if (
-                    spanned.getSpanStart(span) <= offset && spanned.getSpanEnd(span) >= offset &&
-                    layout.getPrimaryHorizontal(spanned.getSpanStart(span)) <= x && layout.getPrimaryHorizontal(spanned.getSpanEnd(span)) >= x
-                ) {
+                final ButtonSpan span = spans[i];
+                float begin = layout.getPrimaryHorizontal(spanned.getSpanStart(span));
+                float end   = layout.getPrimaryHorizontal(spanned.getSpanEnd(span));
+                if (end < begin) {
+                    final float tmp = begin;
+                    begin = end;
+                    end = tmp;
+                }
+                if (x >= begin && x <= end) {
                     return span;
                 }
             }

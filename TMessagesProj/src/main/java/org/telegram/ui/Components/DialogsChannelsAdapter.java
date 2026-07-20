@@ -251,8 +251,9 @@ public class DialogsChannelsAdapter extends UniversalAdapter {
             loadingChannels = true;
             TLRPC.TL_contacts_search req2 = new TLRPC.TL_contacts_search();
             req2.limit = 20;
+            req2.broadcasts = true;
             req2.q = this.query;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+            ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (res, err) -> {
                 if (!TextUtils.equals(req2.q, this.query) || TextUtils.isEmpty(this.query)) return;
 
                 loadingChannels = false;
@@ -323,7 +324,7 @@ public class DialogsChannelsAdapter extends UniversalAdapter {
                 }
 
                 update(true);
-            }));
+            });
         }
     }
 

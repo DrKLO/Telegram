@@ -344,6 +344,8 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
 
         listView = new RecyclerListView(context);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         adapter = new Adapter();
         adapter.setHasStableIds(true);
@@ -585,7 +587,7 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
     }
 
     @Override
-    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
+    public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<TLRPC.MessageEntity> captionEntities, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
         for (int i = 0; i < files.size(); i++) {
             getMediaDataController().uploadRingtone(files.get(i));
         }
@@ -1023,5 +1025,15 @@ public class NotificationsSoundActivity extends BaseFragment implements ChatAtta
 
             return null;
         }
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setClipToPadding(false);
+        listView.setPadding(0, 0, 0, bottom);
     }
 }

@@ -10,7 +10,7 @@ import android.view.animation.OvershootInterpolator;
 
 public class ButtonBounce {
 
-    private View view;
+    public View view;
     private final float durationPressMultiplier;
     private final float durationReleaseMultiplier;
     private final float overshoot;

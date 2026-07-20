@@ -8,14 +8,12 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -24,8 +22,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
-
-import com.google.android.exoplayer2.DefaultLivePlaybackSpeedControl;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
@@ -50,7 +46,7 @@ public class HintView extends FrameLayout {
 
     public TextView textView;
     private ImageView imageView;
-    private ImageView arrowImageView;
+    public ImageView arrowImageView;
     private ChatMessageCell messageCell;
     private View currentView;
     private AnimatorSet animatorSet;
@@ -109,8 +105,8 @@ public class HintView extends FrameLayout {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
-            textView.setPadding(AndroidUtilities.dp(currentType == TYPE_NOSOUND ? 54 : 8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setPadding(AndroidUtilities.dp(currentType == TYPE_NOSOUND ? 54 : 12), AndroidUtilities.dp(9), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         }
 
@@ -205,10 +201,23 @@ public class HintView extends FrameLayout {
             centerX = x;
             top += y;
             shownY = y;
-            if (count == -1) {
+
+            boolean showed = false;
+            MessageObject messageObject = cell.getMessageObject();
+            if (messageObject != null && MessageObject.getMedia(messageObject) instanceof TLRPC.TL_messageMediaPoll) {
+                TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) MessageObject.getMedia(messageObject);
+                if (MessageObject.isVoted(messageMediaPoll) && !MessageObject.isVoteResultsIsNotEmpty(messageMediaPoll) && !messageMediaPoll.poll.closed && messageMediaPoll.poll.hide_results_until_close) {
+                    textView.setText(LocaleController.getString(R.string.PollResultsWillLater));
+                    showed = true;
+                }
+            }
+            if (showed) {
+
+            } else if (count == -1) {
                 textView.setText(LocaleController.getString(R.string.PollSelectOption));
             } else {
-                if (cell.getMessageObject().isQuiz()) {
+                return false;
+                /*if (cell.getMessageObject().isQuiz()) {
                     if (count == 0) {
                         textView.setText(LocaleController.getString(R.string.NoVotesQuiz));
                     } else {
@@ -220,7 +229,7 @@ public class HintView extends FrameLayout {
                     } else {
                         textView.setText(LocaleController.formatPluralString("Vote", count));
                     }
-                }
+                }*/
             }
             measure(MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST));
         } else {
@@ -380,6 +389,10 @@ public class HintView extends FrameLayout {
         return true;
     }
 
+    protected int offsetCx() {
+        return 0;
+    }
+
     public void updatePosition() {
         if (currentView == null) {
             return;
@@ -428,6 +441,7 @@ public class HintView extends FrameLayout {
         top -= position[1];
 
         top -= bottomOffset;
+        centerX += offsetCx();
 
         int parentWidth = parentView.getMeasuredWidth();
         if (isTopArrow && currentType != 6 && currentType != 7 && currentType != 8) {

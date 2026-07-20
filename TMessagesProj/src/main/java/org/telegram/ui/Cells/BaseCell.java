@@ -11,12 +11,8 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
-import android.graphics.RecordingCanvas;
-import android.graphics.RenderNode;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
-import android.os.Build;
-import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -24,13 +20,8 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LiteMode;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 public abstract class BaseCell extends ViewGroup implements SizeNotifierFrameLayout.IViewWithInvalidateCallback {
@@ -156,79 +147,20 @@ public abstract class BaseCell extends ViewGroup implements SizeNotifierFrameLay
         super.invalidate();
     }
 
-    private boolean cachingTop, cachingBottom;
-    private RenderNode renderNode;
-    public void setCaching(boolean top, boolean caching) {
-        if (top) {
-            this.cachingTop = SharedConfig.useNewBlur && caching;
-        } else {
-            this.cachingBottom = SharedConfig.useNewBlur && caching;
-        }
-    }
-
-    private boolean forceNotCacheNextFrame;
-    public void forceNotCacheNextFrame() {
-        forceNotCacheNextFrame = true;
-    }
-
-    protected boolean updatedContent;
-    public void drawCached(Canvas canvas) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && renderNode != null && renderNode.hasDisplayList() && canvas.isHardwareAccelerated() && !updatedContent) {
-            canvas.drawRenderNode(renderNode);
-        } else {
-            draw(canvas);
-        }
-    }
-
-    @Override
-    public void draw(Canvas canvas) {
-        final boolean cache = (cachingTop || cachingBottom || SharedConfig.useNewBlur) && allowCaching();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cache != (renderNode != null)) {
-            if (cache) {
-                renderNode = new RenderNode("basecell");
-                renderNode.setClipToBounds(false);
-                updatedContent = true;
-            } else {
-                renderNode = null;
-            }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && renderNode != null && !forceNotCacheNextFrame && canvas.isHardwareAccelerated()) {
-            renderNode.setPosition(0, 0, getWidth(), getHeight());
-            RecordingCanvas recordingCanvas = renderNode.beginRecording();
-            super.draw(recordingCanvas);
-            renderNode.endRecording();
-            canvas.drawRenderNode(renderNode);
-        } else {
-            super.draw(canvas);
-        }
-        forceNotCacheNextFrame = false;
-        updatedContent = false;
-    }
-
-    protected boolean allowCaching() {
-        return true;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public static class RippleDrawableSafe extends RippleDrawable {
         public RippleDrawableSafe(@NonNull ColorStateList color, @Nullable Drawable content, @Nullable Drawable mask) {
             super(color, content, mask);
         }
 
         @Override
-        public boolean setState(@NonNull int[] stateSet) {
-            if (getCallback() instanceof BaseCell) {
-                ((BaseCell) getCallback()).forceNotCacheNextFrame();
-            }
-            return super.setState(stateSet);
-        }
-
-        @Override
         public void draw(@NonNull Canvas canvas) {
+            final int save = canvas.save();
             try {
                 super.draw(canvas);
             } catch (Exception e) {
                 FileLog.e("probably forgot to put setCallback", e);
+            } finally {
+                canvas.restoreToCount(save);
             }
         }
     }

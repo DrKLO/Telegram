@@ -24,14 +24,15 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 public class PremiumFeatureCell extends FrameLayout {
 
-    private final SimpleTextView title;
-    private final TextView description;
+    public final SimpleTextView title;
+    public final TextView description;
     public ImageView imageView;
     public final ImageView nextIcon;
     boolean drawDivider;
@@ -163,7 +164,7 @@ public class PremiumFeatureCell extends FrameLayout {
         static { setup(new Factory()); }
 
         @Override
-        public PremiumFeatureCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+        public PremiumFeatureCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             return new PremiumFeatureCell(context, resourcesProvider);
         }
 

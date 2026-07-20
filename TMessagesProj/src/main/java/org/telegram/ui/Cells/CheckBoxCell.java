@@ -13,6 +13,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -459,6 +460,8 @@ public class CheckBoxCell extends FrameLayout {
             linksTextView.setMaxLines(0);
             linksTextView.setSingleLine(false);
             linksTextView.setEllipsize(null);
+            layoutParams1.gravity = Gravity.CENTER_VERTICAL | (layoutParams1.gravity & Gravity.HORIZONTAL_GRAVITY_MASK);
+            layoutParams1.topMargin = 0;
             if (currentType != TYPE_CHECK_BOX_URL) {
 //                layoutParams.height = LayoutParams.WRAP_CONTENT;
 //                layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
@@ -474,6 +477,7 @@ public class CheckBoxCell extends FrameLayout {
 
             layoutParams.height = LayoutParams.MATCH_PARENT;
             layoutParams.topMargin = 0;
+            layoutParams1.gravity = Gravity.TOP | (layoutParams1.gravity & Gravity.HORIZONTAL_GRAVITY_MASK);
             layoutParams1.topMargin = dp(15);
         }
         textView.setLayoutParams(layoutParams);
@@ -543,7 +547,11 @@ public class CheckBoxCell extends FrameLayout {
             if (currentType == TYPE_CHECK_BOX_USER) {
                 offset += dp(39);
             }
-            canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : null;
+            if (paint == null) {
+                paint = Theme.dividerPaint;
+            }
+            canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, paint);
         }
     }
 

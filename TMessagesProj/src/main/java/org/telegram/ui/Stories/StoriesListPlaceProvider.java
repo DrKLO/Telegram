@@ -83,6 +83,13 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
             } else {
                 r.run();
             }
+        } else if (recyclerListView != null && recyclerListView.getParent() instanceof SelfStoryViewsPage) {
+            SelfStoryViewsPage page = (SelfStoryViewsPage) recyclerListView.getParent();
+            if (page.scrollToRepostCell(currentDialogId, messageId)) {
+                recyclerListView.post(r);
+            } else {
+                r.run();
+            }
         } else {
             if (isHiddenArchive) {
                 MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().sortHiddenStories();
@@ -149,6 +156,7 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.clipParent = (View) cell.getParent();
                     if (isHiddenArchive) {
                         holder.crossfadeToAvatarImage = cell.avatarImage;
+                        holder.isLive = cell.storyParams.drawnLive;
                     }
                     holder.alpha = 1;
                     updateClip(holder);

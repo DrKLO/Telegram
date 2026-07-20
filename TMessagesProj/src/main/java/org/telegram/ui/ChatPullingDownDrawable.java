@@ -736,29 +736,13 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     }
 
     public void drawBottomPanel(Canvas canvas, int top, int bottom, int width) {
-        if (showBottomPanel && progressToBottomPanel != 1f) {
-            progressToBottomPanel += 16f / 150f;
-            if (progressToBottomPanel > 1f) {
-                progressToBottomPanel = 1f;
-            } else {
-                fragmentView.invalidate();
-            }
-        } else if (!showBottomPanel && progressToBottomPanel != 0) {
-            progressToBottomPanel -= 16f / 150f;
-            if (progressToBottomPanel < 0) {
-                progressToBottomPanel = 0;
-            } else {
-                fragmentView.invalidate();
-            }
-        }
-
-        textPaint2.setColor(getThemedColor(Theme.key_chat_messagePanelHint));
+        textPaint2.setColor(getThemedColor(Theme.key_glass_defaultText));
         Paint composeBackgroundPaint = getThemedPaint(Theme.key_paint_chatComposeBackground);
         int oldAlpha = composeBackgroundPaint.getAlpha();
         int oldAlphaText = textPaint2.getAlpha();
 
         composeBackgroundPaint.setAlpha((int) (oldAlpha * progressToBottomPanel));
-        canvas.drawRect(0, top, width, bottom, composeBackgroundPaint);
+        // canvas.drawRect(0, top, width, bottom, composeBackgroundPaint);
 
         if (layout1 != null && swipeToReleaseProgress < 1f) {
             textPaint2.setAlpha((int) (oldAlphaText * (1f - swipeToReleaseProgress) * progressToBottomPanel));
@@ -782,15 +766,8 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         composeBackgroundPaint.setAlpha(oldAlpha);
     }
 
-    boolean showBottomPanel;
-
-    public void showBottomPanel(boolean b) {
-        showBottomPanel = b;
-        fragmentView.invalidate();
-    }
-
     public boolean needDrawBottomPanel() {
-        return (showBottomPanel || progressToBottomPanel > 0) && !emptyStub;
+        return (progressToBottomPanel > 0) && !emptyStub;
     }
 
     public boolean animationIsRunning() {

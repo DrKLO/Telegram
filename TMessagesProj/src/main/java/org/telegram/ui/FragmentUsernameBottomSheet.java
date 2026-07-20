@@ -68,7 +68,7 @@ public class FragmentUsernameBottomSheet {
         RLottieImageView imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         int sz = type == TYPE_USERNAME ? 70 : 78;
-        imageView.setAnimation(type == TYPE_USERNAME ? R.raw.fragment_username : R.raw.fragment_phone, sz, sz);
+        imageView.setAnimation(type == TYPE_USERNAME ? R.raw.fragment_username : R.raw.fragment, sz, sz);
         imageView.playAnimation();
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         if (type == TYPE_USERNAME) {
@@ -118,7 +118,7 @@ public class FragmentUsernameBottomSheet {
         CharSequence titleSpanned = AndroidUtilities.replaceSingleTag(title, copy);
 
         final SpannableString tonIcon = new SpannableString("TON");
-        ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_ton);
+        ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_gram_16);
         span.setWidth(dp(13));
         tonIcon.setSpan(span, 0, tonIcon.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         CharSequence messageSpanned = AndroidUtilities.replaceCharSequence("TON", AndroidUtilities.replaceTags(message), tonIcon);
@@ -158,7 +158,7 @@ public class FragmentUsernameBottomSheet {
         descriptionView.setText(messageSpanned);
         layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 19));
 
-        ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider);
+        ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider).setRound();
         button.setText(getString(R.string.FragmentUsernameOpen), false);
         button.setOnClickListener(v -> {
             Browser.openUrl(context, info.url);
@@ -166,7 +166,7 @@ public class FragmentUsernameBottomSheet {
         layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 6, 0, 6, 0));
 
         if (copy != null) {
-            ButtonWithCounterView button2 = new ButtonWithCounterView(context, false, resourcesProvider);
+            ButtonWithCounterView button2 = new ButtonWithCounterView(context, resourcesProvider).setRound().setNeutral();
             button2.setText(getString(type == TYPE_USERNAME ? R.string.FragmentUsernameCopy : R.string.FragmentPhoneCopy), false);
             button2.setOnClickListener(v -> {
                 copy.run();

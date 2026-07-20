@@ -275,7 +275,9 @@ public class CopyUtilities {
                 }
             } else if (tag.equals("pre")) {
                 if (opening) {
-                    String lang = HTMLTagAttributesHandler.getValue(attributes, "lang");
+                    String lang = HTMLTagAttributesHandler.getValue(attributes, "language");
+                    if (lang == null) lang = HTMLTagAttributesHandler.getValue(attributes, "lang");
+                    if (lang == null) lang = HTMLTagAttributesHandler.getValue(attributes, "lng");
                     output.setSpan(new ParsedSpan(TYPE_MONO, lang), output.length(), output.length(), Spanned.SPAN_MARK_MARK);
                     return true;
                 } else {

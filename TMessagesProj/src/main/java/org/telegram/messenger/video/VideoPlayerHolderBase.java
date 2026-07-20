@@ -112,7 +112,7 @@ public class VideoPlayerHolderBase {
             ensurePlayerCreated(audioDisabled);
             videoPlayer.setPlaybackSpeed(speed);
             FileLog.d("videoplayerholderbase.preparePlayer(): preparePlayer new player as preload uri=" + uri);
-            videoPlayer.preparePlayer(uri, "other", FileLoader.PRIORITY_LOW);
+            videoPlayer.preparePlayer(uri, "other", FileLoader.PRIORITY_LOW, 0);
             videoPlayer.setPlayWhenReady(false);
             videoPlayer.setWorkerQueue(dispatchQueue);
         });

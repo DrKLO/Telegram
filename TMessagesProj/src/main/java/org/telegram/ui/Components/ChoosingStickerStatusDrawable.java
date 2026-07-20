@@ -100,15 +100,16 @@ public class ChoosingStickerStatusDrawable extends StatusDrawable {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
-        if (dt > 16) {
-            dt = 16;
+        if (dt > 50) {
+            dt = 50;
         }
         progress += dt / 500f;
         if (progress >= 2f) {
             progress = 0;
             increment = !increment;
         }
-        invalidateSelf();
+
+        invalidateLimited();
     }
 
     @Override

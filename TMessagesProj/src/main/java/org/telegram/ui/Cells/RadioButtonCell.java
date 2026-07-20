@@ -79,6 +79,8 @@ public class RadioButtonCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
     }
 
+    public int itemId;
+
     public void setTextAndValue(String text, String value, boolean divider, boolean checked) {
         textView.setText(text);
         valueTextView.setText(value);

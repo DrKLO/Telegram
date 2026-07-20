@@ -6,50 +6,50 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.Utilities.clamp;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
+import android.graphics.Rect;
 import android.graphics.Shader;
-import android.graphics.SurfaceTexture;
-import android.graphics.Xfermode;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.Point;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class RecordControl extends View implements FlashViews.Invertable {
 
@@ -131,14 +131,20 @@ public class RecordControl extends View implements FlashViews.Invertable {
     private long lastDuration;
 
     private final Path checkPath = new Path();
-    private final Point check1 = new Point(-dpf2(29/3.0f), dpf2(7/3.0f));
-    private final Point check2 = new Point(-dpf2(8.5f/3.0f), dpf2(26/3.0f));
-    private final Point check3 = new Point(dpf2(29/3.0f), dpf2(-11/3.0f));
+    private final PointF check1 = new PointF(-dpf2(29/3.0f), dpf2(7/3.0f));
+    private final PointF check2 = new PointF(-dpf2(8.5f/3.0f), dpf2(26/3.0f));
+    private final PointF check3 = new PointF(dpf2(29/3.0f), dpf2(-11/3.0f));
+
+    private RecordControlAccessibilityHelper accessibilityHelper;
+    private boolean a11yPrevRecording, a11yPrevCheck, a11yPrevDual, a11yPrevStartIsVideo, a11yPrevLoading, a11yPrevShowLock;
 
     public RecordControl(Context context) {
         super(context);
 
         setWillNotDraw(false);
+
+        accessibilityHelper = new RecordControlAccessibilityHelper(this);
+        ViewCompat.setAccessibilityDelegate(this, accessibilityHelper);
 
         redGradient = new RadialGradient(0, 0, dp(30 + 18), new int[] {RED, RED, WHITE}, new float[] {0, .64f, 1f}, Shader.TileMode.CLAMP);
         redGradient.setLocalMatrix(redMatrix);
@@ -278,6 +284,10 @@ public class RecordControl extends View implements FlashViews.Invertable {
         redGradient.setLocalMatrix(redMatrix);
 
         setMeasuredDimension(width, height);
+
+        if (accessibilityHelper != null) {
+            accessibilityHelper.invalidateRoot();
+        }
     }
 
     private static void setDrawableBounds(Drawable drawable, float cx, float cy) {
@@ -652,19 +662,21 @@ public class RecordControl extends View implements FlashViews.Invertable {
 
             canvas.restore();
         }
+
+        notifyAccessibilityIfChanged();
     }
 
     public boolean hasCheck() {
         return collageProgress >= 1.0f;
     }
 
-    private final Point p1 = new Point(), p2 = new Point(), p3 = new Point(), p4 = new Point(), h1 = new Point(), h2 = new Point(), h3 = new Point(), h4 = new Point();
-    private void getVector(float cx, float cy, double a, float r, Point point) {
+    private final PointF p1 = new PointF(), p2 = new PointF(), p3 = new PointF(), p4 = new PointF(), h1 = new PointF(), h2 = new PointF(), h3 = new PointF(), h4 = new PointF();
+    private void getVector(float cx, float cy, double a, float r, PointF point) {
         point.x = (float) (cx + Math.cos(a) * r);
         point.y = (float) (cy + Math.sin(a) * r);
     }
 
-    private float dist(Point a, Point b) {
+    private float dist(PointF a, PointF b) {
         return MathUtils.distance(a.x, a.y, b.x, b.y);
     }
 
@@ -844,5 +856,190 @@ public class RecordControl extends View implements FlashViews.Invertable {
             this.recordingLoadingT.set(false, true);
         }
         invalidate();
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        if (accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+            return true;
+        }
+        return super.dispatchHoverEvent(event);
+    }
+
+    private void notifyAccessibilityIfChanged() {
+        if (accessibilityHelper == null) return;
+        final boolean check = hasCheck();
+        if (a11yPrevRecording != recording
+            || a11yPrevCheck != check
+            || a11yPrevDual != dual
+            || a11yPrevStartIsVideo != startModeIsVideo
+            || a11yPrevLoading != recordingLoading
+            || a11yPrevShowLock != showLock) {
+            a11yPrevRecording = recording;
+            a11yPrevCheck = check;
+            a11yPrevDual = dual;
+            a11yPrevStartIsVideo = startModeIsVideo;
+            a11yPrevLoading = recordingLoading;
+            a11yPrevShowLock = showLock;
+            accessibilityHelper.invalidateRoot();
+        }
+    }
+
+    private static final int VV_LEFT = 0;
+    private static final int VV_CENTER = 1;
+    private static final int VV_RIGHT = 2;
+
+    private class RecordControlAccessibilityHelper extends ExploreByTouchHelper {
+
+        private final Rect tmpRect = new Rect();
+
+        RecordControlAccessibilityHelper(@NonNull View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (Math.abs(x - leftCx) <= dp(30) && Math.abs(y - cy) <= dp(30) && !hasCheck() && !recordingLoading) {
+                return VV_LEFT;
+            }
+            if (Math.abs(x - rightCx) <= dp(30) && Math.abs(y - cy) <= dp(30) && !hasCheck() && !recordingLoading) {
+                return VV_RIGHT;
+            }
+            if (Math.abs(x - cx) <= dp(60) && Math.abs(y - cy) <= dp(60)) {
+                return VV_CENTER;
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            if (!hasCheck() && !recordingLoading) {
+                list.add(VV_LEFT);
+            }
+            list.add(VV_CENTER);
+            if (!hasCheck() && !recordingLoading) {
+                list.add(VV_RIGHT);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            info.setClassName("android.widget.Button");
+            switch (id) {
+                case VV_CENTER: {
+                    final int r = dp(40);
+                    tmpRect.set((int) (cx - r), (int) (cy - r), (int) (cx + r), (int) (cy + r));
+                    info.setBoundsInParent(tmpRect);
+                    final CharSequence desc;
+                    if (hasCheck()) {
+                        desc = LocaleController.getString(R.string.Send);
+                    } else if (recording) {
+                        desc = LocaleController.getString(R.string.AccDescrStopRecording);
+                    } else if (startModeIsVideo) {
+                        desc = LocaleController.getString(R.string.AccDescrStartRecording);
+                    } else {
+                        desc = LocaleController.getString(R.string.AccDescrTakePhoto);
+                    }
+                    info.setContentDescription(desc);
+                    info.setEnabled(!recordingLoading);
+                    if (!recordingLoading) {
+                        info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+                    }
+                    break;
+                }
+                case VV_LEFT: {
+                    final int r = dp(22);
+                    tmpRect.set((int) (leftCx - r), (int) (cy - r), (int) (leftCx + r), (int) (cy + r));
+                    info.setBoundsInParent(tmpRect);
+                    final CharSequence desc;
+                    if (recording && showLock) {
+                        desc = LocaleController.getString(R.string.AccDescrLockRecording);
+                    } else {
+                        desc = LocaleController.getString(R.string.AccDescrCameraGallery);
+                    }
+                    info.setContentDescription(desc);
+                    final boolean enabled = !recordingLoading && !hasCheck();
+                    info.setEnabled(enabled);
+                    if (enabled) {
+                        info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+                    }
+                    break;
+                }
+                case VV_RIGHT: {
+                    final int r = dp(22);
+                    tmpRect.set((int) (rightCx - r), (int) (cy - r), (int) (rightCx + r), (int) (cy + r));
+                    info.setBoundsInParent(tmpRect);
+                    info.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
+                    final boolean enabled = !recordingLoading && !hasCheck();
+                    info.setEnabled(enabled);
+                    if (enabled) {
+                        info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+                    }
+                    break;
+                }
+                default:
+                    tmpRect.set(0, 0, 1, 1);
+                    info.setBoundsInParent(tmpRect);
+                    info.setVisibleToUser(false);
+                    info.setContentDescription("");
+                    break;
+            }
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, Bundle args) {
+            if (delegate == null || recordingLoading) {
+                return false;
+            }
+            if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                return false;
+            }
+            switch (id) {
+                case VV_CENTER:
+                    if (hasCheck()) {
+                        delegate.onCheckClick();
+                    } else if (recording) {
+                        recording = false;
+                        longpressRecording = false;
+                        recordingLoadingStart = SystemClock.elapsedRealtime();
+                        recordingLoading = true;
+                        delegate.onVideoRecordEnd(false);
+                        invalidate();
+                    } else if (startModeIsVideo) {
+                        if (delegate.canRecordAudio()) {
+                            lastDuration = 0;
+                            recordingStart = System.currentTimeMillis();
+                            showLock = false;
+                            delegate.onVideoRecordStart(false, () -> {
+                                recordingStart = System.currentTimeMillis();
+                                lastDuration = 0;
+                                recording = true;
+                                delegate.onVideoDuration(lastDuration);
+                                invalidate();
+                            });
+                        }
+                    } else {
+                        delegate.onPhotoShoot();
+                    }
+                    return true;
+                case VV_LEFT:
+                    if (hasCheck()) return false;
+                    if (recording && showLock) {
+                        longpressRecording = false;
+                        lockedT.set(1, true);
+                        delegate.onVideoRecordLocked();
+                        invalidate();
+                    } else {
+                        delegate.onGalleryClick();
+                    }
+                    return true;
+                case VV_RIGHT:
+                    if (hasCheck()) return false;
+                    rotateFlip(180);
+                    delegate.onFlipClick();
+                    return true;
+            }
+            return false;
+        }
     }
 }

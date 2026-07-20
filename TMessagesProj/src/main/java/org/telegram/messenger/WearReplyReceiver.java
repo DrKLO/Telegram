@@ -18,6 +18,8 @@ import androidx.core.app.RemoteInput;
 
 import org.telegram.tgnet.TLRPC;
 
+import java.util.ArrayList;
+
 public class WearReplyReceiver extends BroadcastReceiver {
 
     @Override
@@ -35,6 +37,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
         int maxId = intent.getIntExtra("max_id", 0);
         long topicId = intent.getLongExtra("topic_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
+        int[] voiceMsgIds = intent.getIntArrayExtra("voice_msg_ids");
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
             return;
         }
@@ -46,7 +49,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        sendMessage(accountInstance, text, dialogId, topicId, maxId);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
                     });
                 });
                 return;
@@ -58,16 +61,16 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        sendMessage(accountInstance, text, dialogId, topicId, maxId);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
                     });
                 });
                 return;
             }
         }
-        sendMessage(accountInstance, text, dialogId, topicId, maxId);
+        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
     }
 
-    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, long topicId, int max_id) {
+    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, long topicId, int max_id, int[] voiceMsgIds) {
         MessageObject replyToMsgId = null;
         MessageObject replyToTopMsgId = null;
         if (max_id != 0) {
@@ -87,7 +90,14 @@ public class WearReplyReceiver extends BroadcastReceiver {
             replyToTopMsgId = new MessageObject(accountInstance.getCurrentAccount(), topicStartMessage, false, false);
         }
 
-        accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialog_id, replyToMsgId, replyToTopMsgId, null, true, null, null, null, true, 0, null, false));
+        accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialog_id, replyToMsgId, replyToTopMsgId, null, true, null, null, null, true, 0, 0, null, false));
+
+        if (voiceMsgIds != null && voiceMsgIds.length > 0) {
+            ArrayList<Integer> ids = new ArrayList<>(voiceMsgIds.length);
+            for (int id : voiceMsgIds) ids.add(id);
+            accountInstance.getMessagesStorage().markVoiceMessageContentAsRead(dialog_id, ids);
+        }
+
         //TODO handle topics
         if (topicId == 0) {
             accountInstance.getMessagesController().markDialogAsRead(dialog_id, max_id, max_id, 0, false, topicId, 0, true, 0);

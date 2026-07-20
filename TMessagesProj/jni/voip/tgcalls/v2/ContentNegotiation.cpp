@@ -309,7 +309,7 @@ std::string ContentNegotiationContext::addOutgoingChannel(signaling::MediaConten
 }
 
 void ContentNegotiationContext::removeOutgoingChannel(std::string const &id) {
-    for (size_t i = 0; i < _outgoingChannels.size(); i++) {
+    for (size_t i = 0; i < _outgoingChannelDescriptions.size(); i++) {
         if (_outgoingChannelDescriptions[i].description.mid == id) {
             _outgoingChannelDescriptions.erase(_outgoingChannelDescriptions.begin() + i);
 

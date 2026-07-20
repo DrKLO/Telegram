@@ -1,5 +1,8 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.lerp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -11,6 +14,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -47,6 +51,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ReplyMessageLine;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
 public class TextMessageEnterTransition implements MessageEnterTransitionContainer.Transition {
@@ -114,6 +119,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     int toColor;
     private final Theme.ResourcesProvider resourcesProvider;
 
+    private final PointF tmpPointF = new PointF();
+
     @SuppressLint("WrongConstant")
     public TextMessageEnterTransition(ChatMessageCell messageView, ChatActivity chatActivity, RecyclerListView listView, MessageEnterTransitionContainer container, Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
@@ -150,7 +157,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         int linesOffset = 0;
         int layoutH = chatActivityEnterView.getEditField().getLayout().getHeight();
         TextPaint textPaint = Theme.chat_msgTextPaint;
-        int emojiSize = AndroidUtilities.dp(20);
+        int emojiSize = dp(20);
         if (messageView.getMessageObject().getEmojiOnlyCount() != 0) {
             boolean large = messageView.getMessageObject().emojiOnlyCount == messageView.getMessageObject().animatedEmojiCount;
             switch (Math.max(messageView.getMessageObject().emojiOnlyCount, messageView.getMessageObject().animatedEmojiCount)) {
@@ -179,7 +186,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                     break;
             }
             if (textPaint != null) {
-                emojiSize = (int) (textPaint.getTextSize() + AndroidUtilities.dp(4));
+                emojiSize = (int) (textPaint.getTextSize() + dp(4));
             }
         }
         boolean containsSpans = false;
@@ -215,9 +222,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             layout = new StaticLayout(text, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
         animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, null, animatedEmojiStack, layout);
-        float textViewY = chatActivityEnterView.getY() + chatActivityEnterView.getEditField().getY() + ((View) chatActivityEnterView.getEditField().getParent()).getY() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getY();
-        fromStartX = chatActivityEnterView.getX() + chatActivityEnterView.getEditField().getX() + ((View) chatActivityEnterView.getEditField().getParent()).getX() + ((View) chatActivityEnterView.getEditField().getParent().getParent()).getX();
-        fromStartY = textViewY + AndroidUtilities.dp(10) - chatActivityEnterView.getEditField().getScrollY() + linesOffset;
+
+        ViewPositionWatcher.computeCoordinatesInParent(chatActivityEnterView.getEditField(), chatActivity.contentView, tmpPointF);
+        float textViewY = tmpPointF.y;
+        fromStartX = tmpPointF.x;
+        fromStartY = textViewY + dp(10) - chatActivityEnterView.getEditField().getScrollY() + linesOffset;
         toXOffset = 0;
         float minX = Float.MAX_VALUE;
         for (int i = 0; i < layout.getLineCount(); i++) {
@@ -232,9 +241,9 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
         scaleY = (layoutH) / (layout.getHeight() * scaleFrom);
 
-        drawableFromTop = textViewY + AndroidUtilities.dp(4);
+        drawableFromTop = textViewY + dp(4);
         if (enterView.isTopViewVisible()) {
-            drawableFromTop -= AndroidUtilities.dp(12);
+            drawableFromTop -= dp(12);
         }
         drawableFromBottom = textViewY + chatActivityEnterView.getEditField().getMeasuredHeight();
         textLayoutBlock = messageView.getMessageObject().textLayoutBlocks.get(0);
@@ -332,23 +341,29 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         hasReply = messageView.getMessageObject().getReplyMsgId() != 0 && messageView.replyNameLayout != null;
 
         if (hasReply) {
-            SimpleTextView replyNameTextView = chatActivity.getReplyNameTextView();
-            replyFromStartX = replyNameTextView.getX() + ((View) replyNameTextView.getParent()).getX();
+            final SimpleTextView replyNameTextView = chatActivity.getReplyNameTextView();
+            ViewPositionWatcher.computeCoordinatesInParent(replyNameTextView, chatActivity.contentView, tmpPointF);
+            replyFromStartX = tmpPointF.x;
+            replyFromStartY = tmpPointF.y;
             replyFromStartWidth = ((View) replyNameTextView.getParent()).getWidth();
-            replyFromStartY = replyNameTextView.getY() + ((View) replyNameTextView.getParent().getParent()).getY() + ((View) replyNameTextView.getParent().getParent().getParent()).getY();
-            replyNameTextView = chatActivity.getReplyObjectTextView();
-            replyFromObjectStartY = replyNameTextView.getY() + ((View) replyNameTextView.getParent().getParent()).getY() + ((View) replyNameTextView.getParent().getParent().getParent()).getY();
 
-            replayFromColor = chatActivity.getReplyNameTextView().getTextColor();
-            replayObjectFromColor = chatActivity.getReplyObjectTextView().getTextColor();
-            drawableFromTop -= AndroidUtilities.dp(46);
+            final SimpleTextView replyObjectTextView = chatActivity.getReplyObjectTextView();
+            ViewPositionWatcher.computeCoordinatesInParent(replyObjectTextView, chatActivity.contentView, tmpPointF);
+            replyFromObjectStartY = tmpPointF.y;
+
+            replayFromColor = replyNameTextView.getTextColor();
+            replayObjectFromColor = replyObjectTextView.getTextColor();
+            drawableFromTop -= dp(46);
         }
+
+        listViewTargetBottomPadding = listView.getPaddingBottom()
+            - (chatActivity.getInputIslandHeightTarget() - dp(44));
 
         gradientMatrix = new Matrix();
         gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         gradientPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
 
-        gradientShader = new LinearGradient(0, AndroidUtilities.dp(12), 0, 0, 0, 0xFF000000, Shader.TileMode.CLAMP);
+        gradientShader = new LinearGradient(0, dp(12), 0, 0, 0, 0xFF000000, Shader.TileMode.CLAMP);
         gradientPaint.setShader(gradientShader);
 
         messageId = messageView.getMessageObject().stableId;
@@ -416,6 +431,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
     private final RectF messageReplySelectorRect = new RectF();
     private Path replyRoundRect;
     private float[] roundRectRadii;
+    private float listViewTargetBottomPadding;
 
     public void onDraw(Canvas canvas) {
         if (drawBitmaps && !initBitmaps && crossfadeTextBitmap != null && messageView.getTransitionParams().wasDraw) {
@@ -444,7 +460,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         } else {
             messageViewX = messageView.getX() + listView.getX() - container.getX();
             messageViewY = messageView.getTop() + messageView.getPaddingTop() + listView.getTop() - container.getY();
-            messageViewY += enterView.getTopViewHeight();
+
+            messageViewY -= (listViewTargetBottomPadding - listView.getPaddingBottom());
 
             lastMessageX = messageViewX;
             lastMessageY = messageViewY;
@@ -460,21 +477,21 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         float toY = messageViewY + textY;
 
         int clipBottom = (int) (container.getMeasuredHeight() * (1f - progressX) + listViewBottom * progressX);
-        boolean messageViewOverscrolled = messageView.getBottom() - AndroidUtilities.dp(4) > listView.getMeasuredHeight();
-        boolean clipBottomWithAlpha = messageViewOverscrolled && (messageViewY + messageView.getMeasuredHeight() - AndroidUtilities.dp(8) > clipBottom) && container.getMeasuredHeight() > 0;
+        boolean messageViewOverscrolled = messageView.getBottom() - dp(4) > listView.getMeasuredHeight();
+        boolean clipBottomWithAlpha = messageViewOverscrolled && (messageViewY + messageView.getMeasuredHeight() - dp(8) > clipBottom) && container.getMeasuredHeight() > 0;
 
         if (clipBottomWithAlpha) {
             canvas.saveLayerAlpha(0, Math.max(0, messageViewY), container.getMeasuredWidth(), container.getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
         }
         canvas.save();
-        canvas.clipRect(0, listView.getY() + chatActivity.getChatListViewPadding() - container.getY() - AndroidUtilities.dp(3), container.getMeasuredWidth(), container.getMeasuredHeight());
+        canvas.clipRect(0, listView.getY() + chatActivity.getChatListViewPadding() - container.getY() - dp(3), container.getMeasuredWidth(), container.getMeasuredHeight());
         canvas.save();
         float drawableX = messageViewX + messageView.getBackgroundDrawableLeft() + (fromX - (toX - toXOffset)) * (1f - progressX);
         float drawableToTop = messageViewY + messageView.getBackgroundDrawableTop();
         float drawableTop = (drawableFromTop - container.getY()) * (1f - progress) + (drawableToTop) * progress;
         float drawableH = messageView.getBackgroundDrawableBottom() - messageView.getBackgroundDrawableTop();
         float drawableBottom = (drawableFromBottom - container.getY()) * (1f - progress) + (drawableToTop + drawableH) * progress;
-        int drawableRight = (int) (messageViewX + messageView.getBackgroundDrawableRight() + AndroidUtilities.dp(4) * (1f - progressX));
+        int drawableRight = (int) (messageViewX + messageView.getBackgroundDrawableRight() + dp(4) * (1f - progressX));
         Theme.MessageDrawable drawable = null;
         if (!currentMessageObject.isAnimatedEmojiStickers()) {
             drawable = messageView.getCurrentBackgroundDrawable(true);
@@ -510,13 +527,13 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         if (drawable != null) {
             if (currentMessageObject.isOutOwner()) {
                 canvas.clipRect(
-                        drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
-                        drawableRight - AndroidUtilities.dp(10), drawableBottom - AndroidUtilities.dp(4)
+                        drawableX + dp(4), drawableTop + dp(4),
+                        drawableRight - dp(10), drawableBottom - dp(4)
                 );
             } else {
                 canvas.clipRect(
-                        drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4),
-                        drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4)
+                        drawableX + dp(4), drawableTop + dp(4),
+                        drawableRight - dp(4), drawableBottom - dp(4)
                 );
             }
         }
@@ -535,8 +552,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             chatActivity.getReplyNameTextView().setAlpha(0f);
             chatActivity.getReplyObjectTextView().setAlpha(0f);
 
-            float replyHeight = AndroidUtilities.lerp(AndroidUtilities.dp(35), messageView.replyHeight, progressX);
-            int offset = AndroidUtilities.dp(10);
+            float replyHeight = lerp(dp(35), messageView.replyHeight, progressX);
+            int offset = dp(10);
 
             float fromReplayX = replyFromStartX - container.getX();
             float fromReplayY = replyFromStartY - container.getY();
@@ -604,26 +621,26 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             Theme.chat_replyNamePaint.setColor(ColorUtils.blendARGB(replayFromColor, replyOwnerMessageColor, progress));
 
             if (messageView.needReplyImage) {
-                fromReplayX -= AndroidUtilities.dp(44);
+                fromReplayX -= dp(44);
             }
-            float replyX = AndroidUtilities.lerp(fromReplayX, toReplayX, progressX);
-            float replyY = AndroidUtilities.lerp(fromReplayY + AndroidUtilities.dp(12) * progress, toReplayY, progress);
+            float replyX = lerp(fromReplayX, toReplayX, progressX);
+            float replyY = lerp(fromReplayY + dp(12) * progress, toReplayY, progress);
 
             if (roundRectRadii == null) {
                 roundRectRadii = new float[8];
-                roundRectRadii[0] = roundRectRadii[1] = roundRectRadii[6] = roundRectRadii[7] = AndroidUtilities.dp(4); // left
+                roundRectRadii[0] = roundRectRadii[1] = roundRectRadii[6] = roundRectRadii[7] = dp(4); // left
                 roundRectRadii[2] = roundRectRadii[3] = roundRectRadii[4] = roundRectRadii[5] = 0; // right
             }
 
             AndroidUtilities.rectTmp.set(
                 fromReplayX, fromReplayY,
                 fromReplayX + replyFromStartWidth,
-                fromReplayY + AndroidUtilities.dp(35)
+                fromReplayY + dp(35)
             );
-            AndroidUtilities.rectTmp.offset(0,  + AndroidUtilities.dp(12) * progress);
+            AndroidUtilities.rectTmp.offset(0,  + dp(12) * progress);
             messageReplySelectorRect.set(messageView.replySelectorRect);
             messageReplySelectorRect.offset(messageViewX, messageViewY + (fromY - toY) * (1f - progress));
-            AndroidUtilities.lerp(
+            lerp(
                 AndroidUtilities.rectTmp,
                 messageReplySelectorRect,
                 progressX,
@@ -636,11 +653,11 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             float replyImageSz = 0;
             if (messageView.needReplyImage) {
                 canvas.save();
-                final float sz = Math.min(replySelectorRect.height() - AndroidUtilities.dp(10), AndroidUtilities.dp(messageView.isReplyQuote ? 3 : 7) + Theme.chat_replyNamePaint.getTextSize() + Theme.chat_replyTextPaint.getTextSize());
-                replyImageSz = AndroidUtilities.lerp(AndroidUtilities.dp(35), sz, progressX);
+                final float sz = Math.min(replySelectorRect.height() - dp(10), dp(messageView.isReplyQuote ? 3 : 7) + Theme.chat_replyNamePaint.getTextSize() + Theme.chat_replyTextPaint.getTextSize());
+                replyImageSz = lerp(dp(35), sz, progressX);
                 messageView.replyImageReceiver.setImageCoords(
-                    AndroidUtilities.lerp(replyX, replySelectorRect.left + AndroidUtilities.dp(8), progressX),
-                    AndroidUtilities.lerp(replyY, replySelectorRect.top + AndroidUtilities.dp((messageView.isReplyQuote && messageView.replyTextLayout != null && messageView.replyTextLayout.getLineCount() <= 1 ? 2 : 0) + 5), progressX),
+                    lerp(replyX, replySelectorRect.left + dp(8), progressX),
+                    lerp(replyY, replySelectorRect.top + dp((messageView.isReplyQuote && messageView.replyTextLayout != null && messageView.replyTextLayout.getLineCount() <= 1 ? 2 : 0) + 5), progressX),
                     replyImageSz, replyImageSz
                 );
                 messageView.replyImageReceiver.draw(canvas);
@@ -650,14 +667,14 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             canvas.save();
             canvas.translate(offset * progressX, 0);
 
-            final float offsetX = currentMessageObject != null && currentMessageObject.shouldDrawWithoutBackground() ? -AndroidUtilities.dp(6) : -AndroidUtilities.dp(1);
-            final float offsetY = currentMessageObject != null && currentMessageObject.shouldDrawWithoutBackground() ? AndroidUtilities.dp(1) : AndroidUtilities.dp(3);
+            final float offsetX = currentMessageObject != null && currentMessageObject.shouldDrawWithoutBackground() ? -dp(6) : -dp(1);
+            final float offsetY = currentMessageObject != null && currentMessageObject.shouldDrawWithoutBackground() ? dp(1) : dp(3);
 
             float replyToMessageX = toReplayX - messageView.replyTextOffset + offsetX;
             float replyToNameX = toReplayX - replyNameDx + offsetX;
 
-            float replyMessageX = AndroidUtilities.lerp(fromReplayX - messageView.replyTextOffset, replyToMessageX, progressX);
-            float replyNameX = AndroidUtilities.lerp(fromReplayX, replyToNameX, progressX) + (messageView.needReplyImage ? replyImageSz + AndroidUtilities.dp(3) : 0);
+            float replyMessageX = lerp(fromReplayX - messageView.replyTextOffset, replyToMessageX, progressX);
+            float replyNameX = lerp(fromReplayX, replyToNameX, progressX) + (messageView.needReplyImage ? replyImageSz + dp(3) : 0);
 
             if (messageView.replyNameLayout != null) {
                 canvas.save();
@@ -680,10 +697,10 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                     messageView.replyQuoteDrawable.setColorFilter(new PorterDuffColorFilter(messageView.replyQuoteDrawableColor = messageView.replyLine.getColor(), PorterDuff.Mode.SRC_IN));
                 }
                 messageView.replyQuoteDrawable.setBounds(
-                    (int) (replySelectorRect.right - offset * progressX - AndroidUtilities.dp(2 + (!messageView.drawPinnedTop ? 1 : 0)) - messageView.replyQuoteDrawable.getIntrinsicWidth()),
-                    (int) (replySelectorRect.top + AndroidUtilities.dp(2 + (!messageView.drawPinnedTop ? 1 : 0))),
-                    (int) (replySelectorRect.right - offset * progressX - AndroidUtilities.dp(2 + (!messageView.drawPinnedTop ? 1 : 0))),
-                    (int) (replySelectorRect.top + AndroidUtilities.dp(2 + (!messageView.drawPinnedTop ? 1 : 0)) + messageView.replyQuoteDrawable.getIntrinsicHeight())
+                    (int) (replySelectorRect.right - offset * progressX - dp(2 + (!messageView.drawPinnedTop ? 1 : 0)) - messageView.replyQuoteDrawable.getIntrinsicWidth()),
+                    (int) (replySelectorRect.top + dp(2 + (!messageView.drawPinnedTop ? 1 : 0))),
+                    (int) (replySelectorRect.right - offset * progressX - dp(2 + (!messageView.drawPinnedTop ? 1 : 0))),
+                    (int) (replySelectorRect.top + dp(2 + (!messageView.drawPinnedTop ? 1 : 0)) + messageView.replyQuoteDrawable.getIntrinsicHeight())
                 );
                 messageView.replyQuoteDrawable.setAlpha((int) (0xFF * progressX));
                 messageView.replyQuoteDrawable.draw(canvas);
@@ -692,16 +709,33 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.replyTextLayout != null) {
                 canvas.save();
                 float left = replyToMessageX;
+                final float top = replyY + lerp(dp(19), Theme.chat_replyNamePaint.getTextSize() + dp(4) + offsetY,progressX);
                 if (messageView.isReplyQuote && messageView.needReplyImage) {
-                    left -= AndroidUtilities.dp(2);
+                    left -= dp(2);
                 }
                 if (messageView.needReplyImage && (!messageView.isReplyQuote || messageView.replyTextRTL)) {
-                    left += replyImageSz + AndroidUtilities.dp(3);
+                    left += replyImageSz + dp(3);
+                }
+                if (messageView.isReplyTaskOrPollOption && messageView.replyTaskCheckbox != null) {
+                    final float x = lerp(fromReplayX - messageView.replyTextOffset, left, progressX);
+                    final int sz = 12;
+                    messageView.replyTaskCheckbox.setBounds((int) x, (int) top + dp(2), dp(sz), dp(sz));
+                    Theme.chat_instantViewRectPaint.setColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outMenu : Theme.key_chat_inMenu));
+                    canvas.drawCircle(x + dp(sz / 2), top + dp(2 + sz / 2), dp(sz / 2 - 1), Theme.chat_instantViewRectPaint);
+                    messageView.replyTaskCheckbox.setColor(-1, currentMessageObject.isOutOwner() ? Theme.key_chat_outAudioSeekbarFill : Theme.key_chat_inAudioSeekbarFill, Theme.key_checkboxCheck);
+                    messageView.replyTaskCheckbox.setAlpha(progress);
+                    messageView.replyTaskCheckbox.draw(canvas);
+                }
+                if (messageView.isReplyTaskOrPollOption) {
+                    left += dp(16);
                 }
                 if (messageView.replyTextRTL && messageView.replyTextOffset > 0) {
-                    left = replySelectorRect.right - AndroidUtilities.dp(8) - messageView.replyTextLayout.getWidth() - offset * progressX;
+                    left = replySelectorRect.right - dp(8) - messageView.replyTextLayout.getWidth() - offset * progressX;
                 }
-                canvas.translate(AndroidUtilities.lerp(fromReplayX - messageView.replyTextOffset, left, progressX), replyY + AndroidUtilities.lerp(AndroidUtilities.dp(19), Theme.chat_replyNamePaint.getTextSize() + AndroidUtilities.dp(4) + offsetY, progressX));
+                canvas.translate(
+                    lerp(fromReplayX - messageView.replyTextOffset, left, progressX),
+                    top
+                );
 
                 canvas.save();
                 SpoilerEffect.clipOutCanvas(canvas, messageView.replySpoilers);
@@ -723,7 +757,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
         canvas.save();
 
         if (messageView.getMessageObject() == null || messageView.getMessageObject().type != MessageObject.TYPE_EMOJIS) {
-            canvas.clipRect(drawableX + AndroidUtilities.dp(4), drawableTop + AndroidUtilities.dp(4), drawableRight - AndroidUtilities.dp(4), drawableBottom - AndroidUtilities.dp(4));
+            canvas.clipRect(drawableX + dp(4), drawableTop + dp(4), drawableRight - dp(4), drawableBottom - dp(4));
         }
 
         float scale = progressX + scaleFrom * (1f - progressX);
@@ -827,9 +861,18 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             enterView.setTextTransitionIsRunning(false);
         }
         if (enterView.getSendButton().getVisibility() == View.VISIBLE && sendProgress < 1f) {
+            ViewPositionWatcher.computeCoordinatesInParent(enterView.getSendButton(), chatActivity.contentView, tmpPointF);
             canvas.save();
-            canvas.translate(enterView.getX() + enterView.getSendButton().getX() + ((View) enterView.getSendButton().getParent()).getX() + ((View) enterView.getSendButton().getParent().getParent()).getX() - container.getX() + AndroidUtilities.dp(52) * sendProgress, enterView.getY() + enterView.getSendButton().getY() + ((View) enterView.getSendButton().getParent()).getY() + ((View) enterView.getSendButton().getParent().getParent()).getY() - container.getY());
-            enterView.getSendButton().draw(canvas);
+            canvas.translate(
+                tmpPointF.x - container.getX() /*+ dp(52) * sendProgress*/,
+                tmpPointF.y - container.getY());
+
+            View sendButton = enterView.getSendButton();
+
+            canvas.saveLayerAlpha(0, 0, sendButton.getWidth(), sendButton.getHeight(), (int) ((1f - sendProgress) * 255));
+            sendButton.draw(canvas);
+            canvas.restore();
+
             canvas.restore();
             canvas.restore();
         }

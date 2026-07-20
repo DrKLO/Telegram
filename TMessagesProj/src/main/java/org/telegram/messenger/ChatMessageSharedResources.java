@@ -4,11 +4,16 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 
+import org.telegram.ui.ArticleViewer;
+
 public class ChatMessageSharedResources {
 
     public Context context;
     public Drawable chat_msgAvatarLiveLocationDrawable;
     public Drawable chat_redLocationIcon;
+
+    public ArticleViewer.Resources inRichMessageResources;
+    public ArticleViewer.Resources outRichMessageResources;
 
     public ChatMessageSharedResources(Context context) {
         this.context = context;

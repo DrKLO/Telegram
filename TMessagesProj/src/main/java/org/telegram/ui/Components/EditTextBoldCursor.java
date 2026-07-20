@@ -9,7 +9,6 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.getWallpaperRotation;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -33,20 +32,17 @@ import android.os.Build;
 import android.os.SystemClock;
 
 import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import android.text.Editable;
 import android.text.Layout;
-import android.text.Selection;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.Menu;
@@ -55,10 +51,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.widget.EditText;
 import android.widget.TextView;
-
-import com.google.common.primitives.Chars;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -67,9 +60,11 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
+import org.telegram.messenger.utils.Choreographer60FpsContent;
 import org.telegram.ui.ActionBar.FloatingActionMode;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -94,15 +89,7 @@ public class EditTextBoldCursor extends EditTextEffects {
     private SubstringLayoutAnimator hintAnimator;
     float rightHintOffset;
 
-    private Runnable invalidateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            invalidate();
-            if (attachedToWindow != null) {
-                AndroidUtilities.runOnUIThread(this, 500);
-            }
-        }
-    };
+    private final Choreographer60FpsContent.FrameCallback invalidateCallback = d -> invalidate();
 
     private Paint linePaint;
     private Paint activeLinePaint;
@@ -760,6 +747,8 @@ public class EditTextBoldCursor extends EditTextEffects {
         } catch (Exception ignore) {};
     }
 
+    public int hintLayoutOffset;
+
     private void drawHint(Canvas canvas) {
         if (length() != 0 && !transformHintToHeader) {
             return;
@@ -820,7 +809,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 float offset = getMeasuredWidth() - hintWidth;
                 canvas.translate(hintLayoutX = left + getScrollX() + offset, hintLayoutY = lineY - hintLayout.getHeight() - dp(7));
             } else {
-                canvas.translate(hintLayoutX = left + getScrollX(), hintLayoutY = lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7));
+                canvas.translate(hintLayoutX = left + getScrollX()+ hintLayoutOffset, hintLayoutY = lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7));
             }
             if (transformHintToHeader) {
                 float scale = 1.0f - 0.3f * headerAnimationProgress;
@@ -946,7 +935,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
             }
         } else {
-            if (cursorDrawn) {
+            if (cursorDrawn && allowDrawCursor) {
                 try {
                     canvas.save();
                     int voffsetCursor = 0;
@@ -1131,14 +1120,20 @@ public class EditTextBoldCursor extends EditTextEffects {
             FileLog.e(e);
         }
         attachedToWindow = getRootView();
-        AndroidUtilities.runOnUIThread(invalidateRunnable);
+        Choreographer60FpsContent.getInstance().addFrameCallback(invalidateCallback, 2);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attachedToWindow = null;
-        AndroidUtilities.cancelRunOnUIThread(invalidateRunnable);
+        Choreographer60FpsContent.getInstance().removeFrameCallback(invalidateCallback);
+    }
+
+    BlurredBackgroundDrawableViewFactory blurredBackgroundDrawableViewFactory;
+
+    public void setBlurredBackgroundDrawableViewFactory(BlurredBackgroundDrawableViewFactory factory) {
+        blurredBackgroundDrawableViewFactory = factory;
     }
 
     @Override
@@ -1148,7 +1143,7 @@ public class EditTextBoldCursor extends EditTextEffects {
                 floatingActionMode.finish();
             }
             cleanupFloatingActionModeViews();
-            floatingToolbar = new FloatingToolbar(getContext(), windowView != null ? windowView : attachedToWindow, getActionModeStyle(), getResourcesProvider());
+            floatingToolbar = new FloatingToolbar(getContext(), windowView != null ? windowView : attachedToWindow, getActionModeStyle(), getResourcesProvider(), blurredBackgroundDrawableViewFactory);
             floatingToolbar.setOnPremiumLockClick(onPremiumMenuLockClickListener);
             floatingToolbar.setQuoteShowVisible(this::shouldShowQuoteButton);
             floatingActionMode = new FloatingActionMode(getContext(), new ActionModeCallback2Wrapper(callback), this, floatingToolbar);
@@ -1280,8 +1275,4 @@ public class EditTextBoldCursor extends EditTextEffects {
         }
     }
 
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        super.dispatchDraw(canvas);
-    }
 }

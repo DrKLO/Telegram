@@ -706,17 +706,18 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
                     VoIPService.getSharedInstance().addRemoteSink(participant, boundPresentation, textureView.renderer, null);
                 }
 
-                MessagesController messagesController = VoIPService.getSharedInstance().groupCall.currentAccount.getMessagesController();
+                AccountInstance account = VoIPService.getSharedInstance().groupCall.currentAccount;
+                MessagesController messagesController = account.getMessagesController();
                 long peerId = MessageObject.getPeerId(participant.peer);
                 if (peerId > 0) {
                     TLRPC.User user = messagesController.getUser(peerId);
-                    ImageLocation imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
+                    ImageLocation imageLocation = ImageLocation.getForUser(account.getCurrentAccount(), user, ImageLocation.TYPE_SMALL);
                     int color = user != null ? AvatarDrawable.getColorForId(user.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     avatarImageView.getImageReceiver().setImage(imageLocation, "50_50_b", gradientDrawable, null, user, 0);
                 } else {
                     TLRPC.Chat chat = messagesController.getChat(-peerId);
-                    ImageLocation imageLocation = ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL);
+                    ImageLocation imageLocation = ImageLocation.getForChat(account.getCurrentAccount(), chat, ImageLocation.TYPE_SMALL);
                     int color = chat != null ? AvatarDrawable.getColorForId(chat.id) : ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f);
                     GradientDrawable gradientDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{ColorUtils.blendARGB(color, Color.BLACK, 0.2f), ColorUtils.blendARGB(color, Color.BLACK, 0.4f)});
                     avatarImageView.getImageReceiver().setImage(imageLocation, "50_50_b", gradientDrawable, null, chat, 0);

@@ -1,6 +1,7 @@
 package org.telegram.ui.Stories;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.find;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.animation.Animator;
@@ -25,6 +26,7 @@ import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -67,7 +69,9 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ButtonBounce;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -87,7 +91,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class StoryCaptionView extends NestedScrollView {
+public class StoryCaptionView extends NestedScrollView implements ItemOptions.ScrimView {
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -172,7 +176,7 @@ public class StoryCaptionView extends NestedScrollView {
         }
     }
 
-    public void onReplyClick(Reply reply) {
+    public void onReplyClick(View view, Panel panel) {
 
     }
 
@@ -272,8 +276,8 @@ public class StoryCaptionView extends NestedScrollView {
 
         final StoryCaptionTextView textView = captionTextview;
         final CharSequence text = textView.state[0].text;
-        final CharSequence replytitle = textView.state[0].reply != null ? textView.state[0].reply.title : null;
-        final CharSequence replytext = textView.state[0].reply != null ? textView.state[0].reply.text : null;
+        final CharSequence replytitle = textView.state[0].topPanel != null ? textView.state[0].topPanel.title : null;
+        final CharSequence replytext = textView.state[0].topPanel != null ? textView.state[0].topPanel.text : null;
 
         final int textHash = text.hashCode();
         final int replytitleHash = replytitle != null ? replytitle.hashCode() : 0;
@@ -575,7 +579,31 @@ public class StoryCaptionView extends NestedScrollView {
         }
     }
 
-    public static class Reply {
+    @Override
+    public void drawScrim(Canvas canvas, float progress) {
+        if (captionTextview.state == null || captionTextview.state[0] == null || captionTextview.state[0].bottomPanel == null) {
+            draw(canvas);
+            return;
+        }
+        canvas.save();
+        canvas.translate(captionTextview.getX() - getScrollX() + captionContainer.getX() + captionTextview.horizontalPadding, captionTextview.getY() - getScrollY() + captionContainer.getY() + captionTextview.verticalPadding + lerp(captionTextview.state[0].collapsedTextHeight, captionTextview.state[0].textHeight, captionTextview.progressToExpand) - captionTextview.state[0].bottomPanel.height());
+        captionTextview.state[0].bottomPanel.draw(canvas, getWidth() - captionTextview.horizontalPadding - captionTextview.horizontalPadding);
+        canvas.restore();
+    }
+
+    @Override
+    public void getBounds(RectF bounds) {
+        if (captionTextview.state == null || captionTextview.state[0] == null || captionTextview.state[0].bottomPanel == null) return;
+        bounds.set(
+            captionTextview.horizontalPadding,
+            captionTextview.verticalPadding + lerp(captionTextview.state[0].collapsedTextHeight, captionTextview.state[0].textHeight, captionTextview.progressToExpand) - captionTextview.state[0].bottomPanel.height(),
+            getWidth() - captionTextview.horizontalPadding,
+            captionTextview.verticalPadding + lerp(captionTextview.state[0].collapsedTextHeight, captionTextview.state[0].textHeight, captionTextview.progressToExpand)
+        );
+        bounds.offset(captionTextview.getX() - getScrollX() + captionContainer.getX(), captionTextview.getY() - getScrollY() + captionContainer.getY());
+    }
+
+    public static class Panel {
         private int currentAccount;
         public Long peerId;
         public Integer storyId;
@@ -584,6 +612,7 @@ public class StoryCaptionView extends NestedScrollView {
         public boolean isRepostMessage;
 
         private boolean small = true;
+        public TLRPC.Document music;
         private final AnimatedFloat animatedSmall = new AnimatedFloat(0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         public final ButtonBounce bounce = new ButtonBounce(null);
         public final Drawable ripple = Theme.createRadSelectorDrawable(0x20ffffff, 0, 0);
@@ -628,31 +657,63 @@ public class StoryCaptionView extends NestedScrollView {
             }
         }
 
-        public static Reply from(int currentAccount, TL_stories.StoryItem storyItem) {
+        public static Panel from(TLRPC.Document music) {
+            if (music == null) return null;
+            final TLRPC.TL_documentAttributeAudio attr = find(music.attributes, TLRPC.TL_documentAttributeAudio.class);
+            if (attr == null) return null;
+
+            final String title = attr.title;
+            final String performer = attr.performer;
+            if (TextUtils.isEmpty(title) && TextUtils.isEmpty(performer)) return null;
+
+            final Panel panel = new Panel();
+            panel.small = true;
+            panel.music = music;
+            if (TextUtils.isEmpty(title)) {
+                panel.title = new SpannableStringBuilder(musicSpan()).append(" ").append(performer);
+            } else if (TextUtils.isEmpty(performer)) {
+                panel.title = new SpannableStringBuilder(musicSpan()).append(" ").append(title);
+            } else {
+                panel.title = new SpannableStringBuilder(musicSpan()).append(" ").append(performer);
+                int index = panel.title.length();
+                ((SpannableStringBuilder) panel.title).append(" ・ ");
+                ((SpannableStringBuilder) panel.title).setSpan(new CharacterStyle() {
+                    @Override
+                    public void updateDrawState(TextPaint tp) {
+                        tp.setAlpha((int) (tp.getAlpha() * 0.66f));
+                    }
+                }, index, panel.title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ((SpannableStringBuilder) panel.title).append(title);
+            }
+
+            return panel;
+        }
+
+        public static Panel from(int currentAccount, TL_stories.StoryItem storyItem) {
             if (storyItem == null) {
                 return null;
             }
             if (storyItem.fwd_from != null) {
-                Reply reply = new Reply();
-                reply.currentAccount = currentAccount;
+                Panel panel = new Panel();
+                panel.currentAccount = currentAccount;
                 if (storyItem.fwd_from.from != null) {
-                    long did = reply.peerId = DialogObject.getPeerDialogId(storyItem.fwd_from.from);
+                    long did = panel.peerId = DialogObject.getPeerDialogId(storyItem.fwd_from.from);
                     if (did >= 0) {
                         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(did);
-                        reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(UserObject.getUserName(user));
+                        panel.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(UserObject.getUserName(user));
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat != null ? chat.title : "");
+                        panel.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat != null ? chat.title : "");
                     }
                 } else if (storyItem.fwd_from.from_name != null) {
-                    reply.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(storyItem.fwd_from.from_name);
+                    panel.title = new SpannableStringBuilder(MessageObject.userSpan()).append(" ").append(storyItem.fwd_from.from_name);
                 }
-                reply.small = true;
+                panel.small = true;
                 if ((storyItem.fwd_from.flags & 4) != 0) {
-                    reply.storyId = storyItem.fwd_from.story_id;
+                    panel.storyId = storyItem.fwd_from.story_id;
                 }
-                reply.load();
-                return reply;
+                panel.load();
+                return panel;
             }
             if (storyItem.media_areas != null) {
                 TL_stories.TL_mediaAreaChannelPost postArea = null;
@@ -664,30 +725,30 @@ public class StoryCaptionView extends NestedScrollView {
                 if (postArea != null) {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(postArea.channel_id);
                     if (chat != null) {
-                        Reply reply = new Reply();
-                        reply.peerId = -chat.id;
-                        reply.isRepostMessage = true;
-                        reply.currentAccount = currentAccount;
-                        reply.small = true;
-                        reply.messageId = postArea.msg_id;
-                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
-                        return reply;
+                        Panel panel = new Panel();
+                        panel.peerId = -chat.id;
+                        panel.isRepostMessage = true;
+                        panel.currentAccount = currentAccount;
+                        panel.small = true;
+                        panel.messageId = postArea.msg_id;
+                        panel.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
+                        return panel;
                     }
                 }
             }
             return null;
         }
 
-        public static Reply from(StoriesController.UploadingStory uploadingStory) {
+        public static Panel from(StoriesController.UploadingStory uploadingStory) {
             if (uploadingStory == null || uploadingStory.entry == null) {
                 return null;
             }
             if (uploadingStory.entry.isRepost) {
-                Reply reply = new Reply();
-                reply.title = uploadingStory.entry.repostPeerName;
-                reply.text = uploadingStory.entry.repostCaption;
-                reply.small = TextUtils.isEmpty(reply.text);
-                return reply;
+                Panel panel = new Panel();
+                panel.title = uploadingStory.entry.repostPeerName;
+                panel.text = uploadingStory.entry.repostCaption;
+                panel.small = TextUtils.isEmpty(panel.text);
+                return panel;
             }
             if (uploadingStory.entry.isRepostMessage && uploadingStory.entry.messageObjects != null && uploadingStory.entry.messageObjects.size() > 0) {
                 MessageObject messageObject = uploadingStory.entry.messageObjects.get(0);
@@ -695,18 +756,39 @@ public class StoryCaptionView extends NestedScrollView {
                 if (dialogId < 0) {
                     TLRPC.Chat chat = MessagesController.getInstance(messageObject.currentAccount).getChat(-dialogId);
                     if (chat != null) {
-                        Reply reply = new Reply();
-                        reply.peerId = dialogId;
-                        reply.isRepostMessage = true;
-                        reply.currentAccount = messageObject.currentAccount;
-                        reply.small = true;
-                        reply.messageId = StoryEntry.getRepostMessageId(messageObject);
-                        reply.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
-                        return reply;
+                        Panel panel = new Panel();
+                        panel.peerId = dialogId;
+                        panel.isRepostMessage = true;
+                        panel.currentAccount = messageObject.currentAccount;
+                        panel.small = true;
+                        panel.messageId = StoryEntry.getRepostMessageId(messageObject);
+                        panel.title = new SpannableStringBuilder(ChatObject.isChannelAndNotMegaGroup(chat) ? MessageObject.channelSpan() : MessageObject.groupSpan()).append(" ").append(chat.title);
+                        return panel;
                     }
                 }
             }
             return null;
+        }
+
+        private static CharSequence[] musicSpan;
+        public static CharSequence musicSpan() {
+            return musicSpan(0);
+        }
+        public static CharSequence musicSpan(int a) {
+            if (musicSpan == null) {
+                musicSpan = new CharSequence[2];
+            }
+            if (musicSpan[a] == null) {
+                musicSpan[a] = new SpannableStringBuilder("u");
+                ColoredImageSpan span = new ColoredImageSpan(R.drawable.filled_widget_music);
+                span.setSize(dp(16));
+                span.spaceScaleX = 1.0f;
+                if (a == 0) {
+                    span.translate(-dp(1), dp(1));
+                }
+                ((SpannableStringBuilder) musicSpan[a]).setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return musicSpan[a];
         }
 
         private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -734,7 +816,7 @@ public class StoryCaptionView extends NestedScrollView {
 
         public void draw(Canvas canvas, float width) {
             if (titleLayout == null) {
-                titleLayout = new Text(title == null ? "" : title, 14, AndroidUtilities.bold());
+                titleLayout = new Text(title == null ? "" : title, music != null ? 12 : 14, music != null ? null : AndroidUtilities.bold());
             }
             if (textLayout == null || updateText) {
                 textLayout = new Text(text == null ? "" : text, 14);
@@ -810,9 +892,10 @@ public class StoryCaptionView extends NestedScrollView {
             private final Stack<SpoilerEffect> spoilersPool = new Stack<>();
             private final SpoilersClickDetector clickDetector;
 
-            int textHeight;
+            int textHeight, collapsedTextHeight;
             CharSequence text = "";
-            public Reply reply;
+            public Panel topPanel;
+            public Panel bottomPanel;
 
             public boolean translating;
             public final AnimatedFloat translateT = new AnimatedFloat(StoryCaptionView.this, 0, 400, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -821,7 +904,7 @@ public class StoryCaptionView extends NestedScrollView {
             private Path loadingPath = new Path();
 
             public int collapsedTextHeight(int height) {
-                final int replyOffset = reply != null ? reply.height() + dp(8) : 0;
+                final int replyOffset = (topPanel != null ? topPanel.height() + dp(8) : 0) + (bottomPanel != null ? bottomPanel.height() + dp(8) : 0);
                 if (fullLayout == null) {
                     return height - (verticalPadding * 2 + textHeight);
                 }
@@ -861,11 +944,20 @@ public class StoryCaptionView extends NestedScrollView {
                 loadingDrawable.setCallback(StoryCaptionTextView.this);
             }
 
-            public void setup(CharSequence text, Reply reply) {
+            public void setup(CharSequence text, Panel panel, Panel panel2) {
                 this.text = text;
-                this.reply = reply;
-                if (this.reply != null) {
-                    this.reply.listen(StoryCaptionTextView.this, () -> {
+                this.topPanel = panel;
+                this.bottomPanel = panel2;
+                if (this.topPanel != null) {
+                    this.topPanel.listen(StoryCaptionTextView.this, () -> {
+                        sizeCached = 0;
+                        requestLayout();
+                        StoryCaptionView.this.updateTopMargin();
+                        StoryCaptionView.this.requestLayout();
+                    });
+                }
+                if (this.bottomPanel != null) {
+                    this.bottomPanel.listen(StoryCaptionTextView.this, () -> {
                         sizeCached = 0;
                         requestLayout();
                         StoryCaptionView.this.updateTopMargin();
@@ -880,9 +972,13 @@ public class StoryCaptionView extends NestedScrollView {
                 if (TextUtils.isEmpty(text)) {
                     fullLayout = null;
                     textHeight = 0;
-                    if (reply != null) {
-                        textHeight += reply.height() + dp(4);
+                    if (topPanel != null) {
+                        textHeight += topPanel.height() + dp(4);
                     }
+                    if (bottomPanel != null) {
+                        textHeight += bottomPanel.height() + dp(4);
+                    }
+                    collapsedTextHeight = textHeight;
                     if (this == state[0]) {
                         showMore = null;
                     }
@@ -894,9 +990,13 @@ public class StoryCaptionView extends NestedScrollView {
                 fullLayout = makeTextLayout(textPaint, text, width);
                 textHeight = fullLayout.getHeight();
                 int replyOffset = 0;
-                if (reply != null) {
-                    textHeight += (replyOffset = reply.height() + dp(8));
+                if (topPanel != null) {
+                    replyOffset += topPanel.height() + dp(8);
                 }
+                if (bottomPanel != null) {
+                    textHeight += bottomPanel.height() + dp(8);
+                }
+                textHeight += replyOffset;
                 float space = textPaint.measureText(" ");
                 shouldCollapse = fullLayout.getLineCount() > 3;
                 if (shouldCollapse && fullLayout.getLineCount() == 4) {
@@ -915,6 +1015,7 @@ public class StoryCaptionView extends NestedScrollView {
                         showMoreY = verticalPadding + replyOffset + collapsedY - AndroidUtilities.dpf2(0.3f);
                         showMoreX = width + horizontalPadding - showMorePaint.measureText(showMoreText);
                     }
+                    collapsedTextHeight = fullLayout.getLineBottom(2) + fullLayout.getTopPadding() + (topPanel != null ? topPanel.height() + dp(8) : 0) + (bottomPanel != null ? bottomPanel.height() + dp(8) : 0);
 
                     firstLayout = makeTextLayout(textPaint, text.subSequence(0, fullLayout.getLineEnd(2)), width);
                     spoilersPool.addAll(spoilers);
@@ -961,6 +1062,7 @@ public class StoryCaptionView extends NestedScrollView {
                         showMore = null;
                     }
                     firstLayout = null;
+                    collapsedTextHeight = textHeight;
                     spoilersPool.addAll(spoilers);
                     spoilers.clear();
                     SpoilerEffect.addSpoilers(StoryCaptionTextView.this, fullLayout, spoilersPool, spoilers);
@@ -1009,11 +1111,11 @@ public class StoryCaptionView extends NestedScrollView {
 
             private void drawInternal(Canvas canvas, float loadingT) {
                 int replyOffset = 0;
-                if (reply != null) {
+                if (topPanel != null) {
                     canvas.save();
                     canvas.translate(horizontalPadding, verticalPadding);
-                    reply.draw(canvas, getWidth() - horizontalPadding - horizontalPadding);
-                    replyOffset = reply.height() + dp(8);
+                    topPanel.draw(canvas, getWidth() - horizontalPadding - horizontalPadding);
+                    replyOffset += topPanel.height() + dp(8);
                     canvas.restore();
                 }
 
@@ -1103,6 +1205,13 @@ public class StoryCaptionView extends NestedScrollView {
                         }
                     }
                 }
+
+                if (bottomPanel != null) {
+                    canvas.save();
+                    canvas.translate(horizontalPadding, verticalPadding + lerp(collapsedTextHeight, textHeight, progressToExpand) - bottomPanel.height());
+                    bottomPanel.draw(canvas, getWidth() - horizontalPadding - horizontalPadding);
+                    canvas.restore();
+                }
             }
 
             final AtomicReference<Layout> patchedLayout = new AtomicReference<>();
@@ -1118,14 +1227,14 @@ public class StoryCaptionView extends NestedScrollView {
             public boolean touch(MotionEvent event) {
                 boolean allowIntercept = true;
                 if (showMore != null) {
-                    AndroidUtilities.rectTmp.set(showMoreX , showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
+                    AndroidUtilities.rectTmp.set(showMoreX, showMoreY, showMoreX + showMore.getWidth(), showMoreY + showMore.getHeight());
                     if (AndroidUtilities.rectTmp.contains(event.getX(), event.getY())) {
                         allowIntercept = false;
                     }
                 }
                 boolean linkResult = false;
                 if (allowIntercept && event.getAction() == MotionEvent.ACTION_DOWN || (pressedLink != null || pressedEmoji != null) && event.getAction() == MotionEvent.ACTION_UP) {
-                    final int replyOffset = reply == null ? 0 : reply.height() + dp(8);
+                    final int replyOffset = (topPanel == null ? 0 : topPanel.height() + dp(8)) + (bottomPanel == null ? 0 : bottomPanel.height() + dp(8));
                     int x = (int) (event.getX() - horizontalPadding);
                     int y = (int) (event.getY() - verticalPadding - replyOffset);
                     final int line = fullLayout.getLineForVertical(y);
@@ -1261,20 +1370,20 @@ public class StoryCaptionView extends NestedScrollView {
 
         @Override
         protected boolean verifyDrawable(@NonNull Drawable who) {
-            if (state[0] != null && (state[0].loadingDrawable == who || state[0].reply != null && state[0].reply.ripple == who)) {
+            if (state[0] != null && (state[0].loadingDrawable == who || state[0].topPanel != null && state[0].topPanel.ripple == who || state[0].bottomPanel != null && state[0].bottomPanel.ripple == who)) {
                 return true;
             }
-            if (state[1] != null && (state[1].loadingDrawable == who || state[1].reply != null && state[1].reply.ripple == who)) {
+            if (state[1] != null && (state[1].loadingDrawable == who || state[1].topPanel != null && state[1].topPanel.ripple == who || state[1].bottomPanel != null && state[1].bottomPanel.ripple == who)) {
                 return true;
             }
             return super.verifyDrawable(who);
         }
 
-        public void setText(CharSequence text, Reply reply, boolean translating, boolean animated) {
+        public void setText(CharSequence text, Panel panel, Panel panel2, boolean translating, boolean animated) {
             if (text == null) {
                 text = "";
             }
-            if (MediaDataController.stringsEqual(state[0].text, text) && state[0].reply == reply) {
+            if (MediaDataController.stringsEqual(state[0].text, text) && state[0].topPanel == panel && state[0].bottomPanel == panel2) {
                 state[0].translating = translating;
                 invalidate();
                 return;
@@ -1288,16 +1397,16 @@ public class StoryCaptionView extends NestedScrollView {
                 if (state[1] == null) {
                     state[1] = new TextState();
                 }
-                state[1].setup(state[0].text, state[0].reply);
+                state[1].setup(state[0].text, state[0].topPanel, state[0].bottomPanel);
                 state[1].translating = state[0].translating;
                 state[1].translateT.set(state[0].translateT.get(), true);
-                state[0].setup(text, reply);
+                state[0].setup(text, panel, panel2);
                 state[0].translating = translating;
                 state[0].translateT.set(0, true);
                 updateT = 1;
                 animateUpdate();
             } else {
-                state[0].setup(text, reply);
+                state[0].setup(text, panel, panel2);
                 state[0].translating = translating;
                 invalidate();
                 updateT = 0;
@@ -1466,24 +1575,51 @@ public class StoryCaptionView extends NestedScrollView {
                 }
             }
             boolean r = false;
-            if (state[0] != null && state[0].reply != null) {
-                AndroidUtilities.rectTmp.set(horizontalPadding, verticalPadding, horizontalPadding + state[0].reply.width(), verticalPadding + state[0].reply.height());
+            int replyOffset = 0;
+            if (!r && state[0] != null && state[0].topPanel != null) {
+                replyOffset += state[0].topPanel.height() + dp(8);
+                AndroidUtilities.rectTmp.set(horizontalPadding, verticalPadding, horizontalPadding + state[0].topPanel.width(), verticalPadding + state[0].topPanel.height());
                 final boolean hit = AndroidUtilities.rectTmp.contains(event.getX(), event.getY());
                 if (hit) {
                     allowIntercept = false;
                 }
                 if (event.getAction() == MotionEvent.ACTION_DOWN && hit) {
-                    state[0].reply.setPressed(true, event.getX(), event.getY());
-                } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                    if (event.getAction() == MotionEvent.ACTION_UP && state[0].reply.bounce.isPressed()) {
-                        onReplyClick(state[0].reply);
+                    state[0].topPanel.setPressed(true, event.getX(), event.getY());
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (state[0].topPanel.bounce.isPressed() && !hit) {
+                        state[0].topPanel.setPressed(false, event.getX(), event.getY());
                     }
-                    state[0].reply.setPressed(false, event.getX(), event.getY());
+                } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    if (event.getAction() == MotionEvent.ACTION_UP && hit && state[0].topPanel.bounce.isPressed()) {
+                        onReplyClick(this, state[0].topPanel);
+                    }
+                    state[0].topPanel.setPressed(false, event.getX(), event.getY());
                 }
                 r = hit;
             }
-            if (allowIntercept && (expanded || state[0].firstLayout == null)) {
-                final int replyOffset = state[0] != null && state[0].reply != null ? state[0].reply.height() + dp(8) : 0;
+            if (!r && state[0] != null && state[0].bottomPanel != null) {
+                AndroidUtilities.rectTmp.set(horizontalPadding, verticalPadding + lerp(state[0].collapsedTextHeight, state[0].textHeight, progressToExpand) - state[0].bottomPanel.height(), horizontalPadding + state[0].bottomPanel.width(), verticalPadding + lerp(state[0].collapsedTextHeight, state[0].textHeight, progressToExpand));
+                final boolean hit = AndroidUtilities.rectTmp.contains(event.getX(), event.getY());
+                if (hit) {
+                    allowIntercept = false;
+                }
+                if (event.getAction() == MotionEvent.ACTION_DOWN && hit) {
+                    state[0].bottomPanel.setPressed(true, event.getX(), event.getY());
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (state[0].bottomPanel.bounce.isPressed() && !hit) {
+                        state[0].bottomPanel.setPressed(false, event.getX(), event.getY());
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    if (event.getAction() == MotionEvent.ACTION_UP && hit && state[0].bottomPanel.bounce.isPressed()) {
+                        onReplyClick(this, state[0].bottomPanel);
+                    }
+                    state[0].bottomPanel.setPressed(false, event.getX(), event.getY());
+                }
+                if (hit) {
+                    return true;
+                }
+            }
+            if (allowIntercept && (expanded || state[0] == null || state[0].firstLayout == null)) {
                 textSelectionHelper.update(horizontalPadding, verticalPadding + replyOffset);
                 textSelectionHelper.onTouchEvent(event);
             }
@@ -1493,6 +1629,10 @@ public class StoryCaptionView extends NestedScrollView {
                 return true;
             }
             return super.dispatchTouchEvent(event) || r;
+        }
+
+        public float getAnimatedHeight() {
+            return verticalPadding * 2 + lerp(state[0].textHeight, state[1] == null ? 0 : state[1].textHeight, updateT);
         }
     }
 }

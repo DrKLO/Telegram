@@ -565,6 +565,8 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
 
 
         listView = new RecyclerListView(context);
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
@@ -761,11 +763,10 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                 case 0:
                 default:
                     view = new HintInnerCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundWhite));
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
                 case 1:
                     view = new HeaderCell(mContext, 23);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 2:
                     LinkActionView linkActionView = new LinkActionView(mContext, ManageLinksActivity.this, null, currentChatId, true, isChannel);
@@ -783,11 +784,9 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                         }
                     });
                     view = linkActionView;
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
                     view = new CreationTextCell(mContext, 64, resourceProvider);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
                     view = new ShadowSectionCell(mContext);
@@ -801,27 +800,22 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     flickerLoadingView.setViewType(FlickerLoadingView.INVITE_LINKS_TYPE);
                     flickerLoadingView.showDate(false);
                     view = flickerLoadingView;
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 7:
                     view = new ShadowSectionCell(mContext);
-                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 8:
                     TextSettingsCell revokeAll = new TextSettingsCell(mContext);
-                    revokeAll.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     revokeAll.setText(getString(R.string.DeleteAllRevokedLinks), false);
                     revokeAll.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                     view = revokeAll;
                     break;
                 case 9:
                     TextInfoPrivacyCell cell = new TextInfoPrivacyCell(mContext);
-                    cell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     view = cell;
                     break;
                 case 10:
                     ManageChatUserCell userCell = new ManageChatUserCell(mContext, 8, 6, false);
-                    userCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     view = userCell;
                     break;
                 case 11:
@@ -927,7 +921,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     break;
                 case 11:
                     TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
-                    infoCell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     if (position == linksInfoRow) {
                         final TLRPC.ChatFull chatFull = getMessagesController().getChatFull(currentChatId);
                         final TLRPC.Chat chat = getMessagesController().getChat(currentChatId);
@@ -1151,6 +1144,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                             .show();
                     });
                 }
+                options.setScrimViewBackground(listView.getClipBackground(LinkCell.this));
                 options.show();
             });
             optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
@@ -1395,18 +1389,20 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     }
                 }
             }
+
+            final SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(joinedString);
             if (invite.permanent && !invite.revoked) {
-                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(joinedString);
                 DotDividerSpan dotDividerSpan = new DotDividerSpan();
                 dotDividerSpan.setTopPadding(dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
                 spannableStringBuilder.append(getString(R.string.Permanent));
-                subtitleView.setText(spannableStringBuilder);
             } else if (invite.expired || invite.revoked) {
                 if (invite.revoked && invite.usage == 0) {
                     joinedString = getString(invite.subscription_pricing != null ? R.string.NoOneSubscribed : R.string.NoOneJoined);
+                    spannableStringBuilder.clear();
+                    spannableStringBuilder.append(joinedString);
                 }
-                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(joinedString);
+
                 DotDividerSpan dotDividerSpan = new DotDividerSpan();
                 dotDividerSpan.setTopPadding(dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
@@ -1415,9 +1411,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                 } else {
                     spannableStringBuilder.append(getString(invite.revoked ? R.string.Revoked : R.string.Expired));
                 }
-                subtitleView.setText(spannableStringBuilder);
             } else if (invite.expire_date > 0) {
-                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(joinedString);
                 DotDividerSpan dotDividerSpan = new DotDividerSpan();
                 dotDividerSpan.setTopPadding(dp(1.5f));
                 spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
@@ -1437,10 +1431,16 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     spannableStringBuilder.append(String.format(Locale.ENGLISH, "%02d", h)).append(String.format(Locale.ENGLISH, ":%02d", m)).append(String.format(Locale.ENGLISH, ":%02d", s));
                     timerRunning = true;
                 }
-                subtitleView.setText(spannableStringBuilder);
-            } else {
-                subtitleView.setText(joinedString);
             }
+
+            if (invite.request_needed) {
+                DotDividerSpan dotDividerSpan = new DotDividerSpan();
+                dotDividerSpan.setTopPadding(dp(1.5f));
+                spannableStringBuilder.append("  .  ").setSpan(dotDividerSpan, spannableStringBuilder.length() - 3, spannableStringBuilder.length() - 2, 0);
+                spannableStringBuilder.append(getString(R.string.ApprovalRequired));
+            }
+
+            subtitleView.setText(spannableStringBuilder);
         }
     }
 
@@ -1707,7 +1707,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundGray));
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhite));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+//        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));

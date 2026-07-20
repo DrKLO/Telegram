@@ -1,8 +1,8 @@
 package org.telegram.tgnet.tl;
 
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
+import org.telegram.tgnet.TLMethod;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
@@ -31,16 +31,8 @@ public class TL_stats {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static TL_megagroupStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_megagroupStats.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_megagroupStats", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_megagroupStats result = new TL_megagroupStats();
-            result.readParams(stream, exception);
-            return result;
+            final TL_megagroupStats result = TL_megagroupStats.constructor != constructor ? null : new TL_megagroupStats();
+            return TLdeserialize(TL_megagroupStats.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -102,13 +94,7 @@ public class TL_stats {
                     result = new TL_statsGraphError();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in StatsGraph", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(StatsGraph.class, result, stream, constructor, exception);
         }
     }
 
@@ -122,7 +108,7 @@ public class TL_stats {
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             json = TLRPC.TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 zoom_token = stream.readString(exception);
             }
         }
@@ -131,7 +117,7 @@ public class TL_stats {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             json.serializeToStream(stream);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(zoom_token);
             }
         }
@@ -179,13 +165,7 @@ public class TL_stats {
                     result = new TL_postInteractionCountersMessage();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PostInteractionCounters", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(PostInteractionCounters.class, result, stream, constructor, exception);
         }
     }
 
@@ -244,16 +224,8 @@ public class TL_stats {
         public StatsGraph reactions_by_emotion_graph;
 
         public static TL_messageStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_messageStats.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_messageStats", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_messageStats result = new TL_messageStats();
-            result.readParams(stream, exception);
-            return result;
+            final TL_messageStats result = TL_messageStats.constructor != constructor ? null : new TL_messageStats();
+            return TLdeserialize(TL_messageStats.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -276,16 +248,8 @@ public class TL_stats {
         public int avg_chars;
 
         public static TL_statsGroupTopPoster TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsGroupTopPoster.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsGroupTopPoster", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsGroupTopPoster result = new TL_statsGroupTopPoster();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsGroupTopPoster result = TL_statsGroupTopPoster.constructor != constructor ? null : new TL_statsGroupTopPoster();
+            return TLdeserialize(TL_statsGroupTopPoster.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -309,16 +273,8 @@ public class TL_stats {
         public int max_date;
 
         public static TL_statsDateRangeDays TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsDateRangeDays.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsDateRangeDays", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsDateRangeDays result = new TL_statsDateRangeDays();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsDateRangeDays result = TL_statsDateRangeDays.constructor != constructor ? null : new TL_statsDateRangeDays();
+            return TLdeserialize(TL_statsDateRangeDays.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -360,16 +316,8 @@ public class TL_stats {
         public ArrayList<PostInteractionCounters> recent_posts_interactions = new ArrayList<>();
 
         public static TL_broadcastStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_broadcastStats.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_broadcastStats", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_broadcastStats result = new TL_broadcastStats();
-            result.readParams(stream, exception);
-            return result;
+            final TL_broadcastStats result = TL_broadcastStats.constructor != constructor ? null : new TL_broadcastStats();
+            return TLdeserialize(TL_broadcastStats.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -458,7 +406,7 @@ public class TL_stats {
             stream.writeInt32(constructor);
             stream.writeInt32(flags);
             stream.writeString(token);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeInt64(x);
             }
         }
@@ -557,23 +505,15 @@ public class TL_stats {
         public ArrayList<TLRPC.User> users = new ArrayList<>();
 
         public static TL_publicForwards TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_publicForwards.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_publicForwards", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_publicForwards result = new TL_publicForwards();
-            result.readParams(stream, exception);
-            return result;
+            final TL_publicForwards result = TL_publicForwards.constructor != constructor ? null : new TL_publicForwards();
+            return TLdeserialize(TL_publicForwards.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             count = stream.readInt32(exception);
             forwards = Vector.deserialize(stream, PublicForward::TLdeserialize, exception);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 next_offset = stream.readString(exception);
             }
             chats = Vector.deserialize(stream, TLRPC.Chat::TLdeserialize, exception);
@@ -585,7 +525,7 @@ public class TL_stats {
             stream.writeInt32(flags);
             stream.writeInt32(count);
             Vector.serialize(stream, forwards);
-            if ((flags & 1) != 0) {
+            if (hasFlag(flags, 1)) {
                 stream.writeString(next_offset);
             }
             Vector.serialize(stream, chats);
@@ -605,13 +545,7 @@ public class TL_stats {
                     result = new TL_stories.TL_publicForwardStory();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in PublicForward", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(PublicForward.class, result, stream, constructor, exception);
         }
     }
 
@@ -639,16 +573,8 @@ public class TL_stats {
         public double usd_rate;
 
         public static TL_broadcastRevenueStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_broadcastRevenueStats.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_broadcastRevenueStats", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_broadcastRevenueStats result = new TL_broadcastRevenueStats();
-            result.readParams(stream, exception);
-            return result;
+            final TL_broadcastRevenueStats result = TL_broadcastRevenueStats.constructor != constructor ? null : new TL_broadcastRevenueStats();
+            return TLdeserialize(TL_broadcastRevenueStats.class, result, stream, constructor, exception);
         }
 
 
@@ -676,16 +602,8 @@ public class TL_stats {
         public String url;
 
         public static TL_broadcastRevenueWithdrawalUrl TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_broadcastRevenueWithdrawalUrl.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_broadcastRevenueWithdrawalUrl", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_broadcastRevenueWithdrawalUrl result = new TL_broadcastRevenueWithdrawalUrl();
-            result.readParams(stream, exception);
-            return result;
+            final TL_broadcastRevenueWithdrawalUrl result = TL_broadcastRevenueWithdrawalUrl.constructor != constructor ? null : new TL_broadcastRevenueWithdrawalUrl();
+            return TLdeserialize(TL_broadcastRevenueWithdrawalUrl.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -714,13 +632,7 @@ public class TL_stats {
                     result = new TL_broadcastRevenueTransactionRefund();
                     break;
             }
-            if (result == null && exception) {
-                throw new RuntimeException(String.format("can't parse magic %x in BroadcastRevenueTransaction", constructor));
-            }
-            if (result != null) {
-                result.readParams(stream, exception);
-            }
-            return result;
+            return TLdeserialize(BroadcastRevenueTransaction.class, result, stream, constructor, exception);
         }
     }
 
@@ -762,12 +674,12 @@ public class TL_stats {
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            pending = (flags & 1) != 0;
-            failed = (flags & 4) != 0;
+            pending = hasFlag(flags, 1);
+            failed = hasFlag(flags, 4);
             amount = stream.readInt64(exception);
             date = stream.readInt32(exception);
             provider = stream.readString(exception);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 transaction_date = stream.readInt32(exception);
                 transaction_url = stream.readString(exception);
             }
@@ -781,7 +693,7 @@ public class TL_stats {
             stream.writeInt64(amount);
             stream.writeInt32(date);
             stream.writeString(provider);
-            if ((flags & 2) != 0) {
+            if (hasFlag(flags, 2)) {
                 stream.writeInt32(transaction_date);
                 stream.writeString(transaction_url);
             }
@@ -818,16 +730,8 @@ public class TL_stats {
         public ArrayList<BroadcastRevenueTransaction> transactions = new ArrayList<>();
 
         public static TL_broadcastRevenueTransactions TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_broadcastRevenueTransactions.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_stats_broadcastRevenueTransactions", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_broadcastRevenueTransactions result = new TL_broadcastRevenueTransactions();
-            result.readParams(stream, exception);
-            return result;
+            final TL_broadcastRevenueTransactions result = TL_broadcastRevenueTransactions.constructor != constructor ? null : new TL_broadcastRevenueTransactions();
+            return TLdeserialize(TL_broadcastRevenueTransactions.class, result, stream, constructor, exception);
         }
 
         @Override
@@ -851,16 +755,8 @@ public class TL_stats {
         public double previous;
 
         public static TL_statsAbsValueAndPrev TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsAbsValueAndPrev.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsAbsValueAndPrev", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsAbsValueAndPrev result = new TL_statsAbsValueAndPrev();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsAbsValueAndPrev result = TL_statsAbsValueAndPrev.constructor != constructor ? null : new TL_statsAbsValueAndPrev();
+            return TLdeserialize(TL_statsAbsValueAndPrev.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -884,16 +780,8 @@ public class TL_stats {
         public int banned;
 
         public static TL_statsGroupTopAdmin TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsGroupTopAdmin.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsGroupTopAdmin", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsGroupTopAdmin result = new TL_statsGroupTopAdmin();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsGroupTopAdmin result = TL_statsGroupTopAdmin.constructor != constructor ? null : new TL_statsGroupTopAdmin();
+            return TLdeserialize(TL_statsGroupTopAdmin.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -919,16 +807,8 @@ public class TL_stats {
         public int invitations;
 
         public static TL_statsGroupTopInviter TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsGroupTopInviter.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsGroupTopInviter", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsGroupTopInviter result = new TL_statsGroupTopInviter();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsGroupTopInviter result = TL_statsGroupTopInviter.constructor != constructor ? null : new TL_statsGroupTopInviter();
+            return TLdeserialize(TL_statsGroupTopInviter.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -950,16 +830,8 @@ public class TL_stats {
         public double total;
 
         public static TL_statsPercentValue TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (TL_statsPercentValue.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in TL_statsPercentValue", constructor));
-                } else {
-                    return null;
-                }
-            }
-            TL_statsPercentValue result = new TL_statsPercentValue();
-            result.readParams(stream, exception);
-            return result;
+            final TL_statsPercentValue result = TL_statsPercentValue.constructor != constructor ? null : new TL_statsPercentValue();
+            return TLdeserialize(TL_statsPercentValue.class, result, stream, constructor, exception);
         }
 
         public void readParams(InputSerializedData stream, boolean exception) {
@@ -971,6 +843,51 @@ public class TL_stats {
             stream.writeInt32(constructor);
             stream.writeDouble(part);
             stream.writeDouble(total);
+        }
+    }
+
+    public static class TL_statsPollStats extends TLObject {
+        public static int constructor = 0x2999beed;
+
+        public StatsGraph votes_graph;
+
+        public static TL_statsPollStats TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_statsPollStats result = constructor != TL_statsPollStats.constructor ? null : new TL_statsPollStats();
+            return TLdeserialize(TL_statsPollStats.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            votes_graph = StatsGraph.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            votes_graph.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_statsGetPollStats extends TLMethod<TL_statsPollStats> {
+        public static int constructor = 0xc27dfa68;
+
+        public int flags;
+        public boolean dark;
+        public TLRPC.InputPeer peer;
+        public int msg_id;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, dark);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeInt32(msg_id);
+        }
+
+        @Override
+        public TL_statsPollStats deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_statsPollStats.TLdeserialize(stream, constructor, exception);
         }
     }
 }

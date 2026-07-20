@@ -190,7 +190,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 layout.setButton(undoButton);
                 Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
             } else {
-                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.Undo), undoAction).show();
+                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createEmojiBulletin(document, LocaleController.getString(R.string.SetAsEmojiStatusInfo), LocaleController.getString(R.string.UndoNoCaps), undoAction).show();
             }
         }
 
@@ -511,10 +511,11 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         addButtonView = new TextView(context);
         addButtonView.setVisibility(View.GONE);
-        addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
+        addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 24));
         addButtonView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
         addButtonView.setTypeface(AndroidUtilities.bold());
         addButtonView.setGravity(Gravity.CENTER);
+        ScaleStateListAnimator.apply(addButtonView, .02f, 1.2f);
         buttonsView.addView(addButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 12, 10, 12, 10));
 
         removeButtonView = new TextView(context);
@@ -981,7 +982,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         boolean openBgLight = AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_dialogBackground)) > .721f;
         boolean closedBgLight = AndroidUtilities.computePerceivedBrightness(Theme.blendOver(getThemedColor(Theme.key_actionBarDefault), 0x33000000)) > .721f;
         boolean isLight = open ? openBgLight : closedBgLight;
-        AndroidUtilities.setLightStatusBar(getWindow(), isLight);
+        AndroidUtilities.setLightStatusBar(this, isLight);
     }
 
     public void updateInstallment() {
@@ -1654,7 +1655,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 addButtonView = new TextView(context);
                 addButtonView.setTypeface(AndroidUtilities.bold());
                 addButtonView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-                addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 4));
+                addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 14));
                 addButtonView.setText(LocaleController.getString(R.string.Add));
                 addButtonView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
                 addButtonView.setGravity(Gravity.CENTER);

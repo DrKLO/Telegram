@@ -21,7 +21,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseIntArray;
 
 import androidx.collection.LongSparseArray;
@@ -32,6 +31,7 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.Components.PermissionRequest;
 
 import java.util.ArrayList;
@@ -421,12 +421,12 @@ public class LocationController extends BaseController implements NotificationCe
                     boolean updated = false;
                     for (int a1 = 0; a1 < updates.updates.size(); a1++) {
                         TLRPC.Update update = updates.updates.get(a1);
-                        if (update instanceof TLRPC.TL_updateEditMessage) {
+                        if (update instanceof TL_update.TL_updateEditMessage) {
                             updated = true;
-                            info.messageObject.messageOwner = ((TLRPC.TL_updateEditMessage) update).message;
-                        } else if (update instanceof TLRPC.TL_updateEditChannelMessage) {
+                            info.messageObject.messageOwner = ((TL_update.TL_updateEditMessage) update).message;
+                        } else if (update instanceof TL_update.TL_updateEditChannelMessage) {
                             updated = true;
-                            info.messageObject.messageOwner = ((TLRPC.TL_updateEditChannelMessage) update).message;
+                            info.messageObject.messageOwner = ((TL_update.TL_updateEditChannelMessage) update).message;
                         }
                     }
                     if (updated) {

@@ -655,7 +655,7 @@ public class SelectorBottomSheet extends BottomSheetWithRecyclerListView {
         }
     }
 
-    private boolean matchLocal(TLObject obj, String q) {
+    public static boolean matchLocal(TLObject obj, String q) {
         if (TextUtils.isEmpty(q)) {
             return true;
         }

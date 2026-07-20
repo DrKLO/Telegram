@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -20,7 +21,9 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BadWayToMakeButtonRound;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CircularProgressDrawable;
@@ -29,6 +32,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Loadable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 public class PremiumButtonView extends FrameLayout implements Loadable {
@@ -108,13 +112,34 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         iconView.setColorFilter(Color.WHITE);
         iconView.setVisibility(View.GONE);
 
-        buttonLayout = new FrameLayout(context);
+        buttonLayout = new FrameLayout(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(@NonNull AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setClassName("android.widget.Button");
+                CharSequence label = null;
+                if (showOverlay && overlayTextView != null) {
+                    label = overlayTextView.getText();
+                }
+                if (label == null && buttonTextView != null) {
+                    label = buttonTextView.getText();
+                }
+                if (label != null) {
+                    info.setText(label);
+                    if (getContentDescription() == null) {
+                        info.setContentDescription(label);
+                    }
+                }
+            }
+        };
         buttonLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         buttonLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 120)));
 
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
         linearLayout.addView(iconView, LayoutHelper.createLinear(24, 24, 0, Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
         addView(buttonLayout);
+        BadWayToMakeButtonRound.round(this);
+        ScaleStateListAnimator.apply(this, 0.02f, 1.2f);
 
         if (createOverlayTextView) {
             overlayTextView = new AnimatedTextView(context, true, true, true) {
@@ -156,6 +181,16 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
             updateOverlayProgress();
         }
+    }
+
+    private boolean nonClickable;
+
+    public void setNonClickable() {
+        this.nonClickable = true;
+        setClickable(false);
+        buttonLayout.setClickable(false);
+        setStateListAnimator(null);
+
     }
 
     public boolean isShowOverlay() {
@@ -275,10 +310,11 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         super.dispatchDraw(canvas);
     }
 
-    public void setOverlayText(String text, boolean drawOverlayColor, boolean animated) {
+    public void setOverlayText(CharSequence text, boolean drawOverlayColor, boolean animated) {
         showOverlay = true;
         this.drawOverlayColor = drawOverlayColor;
         overlayTextView.setText(text, animated);
+        overlayTextView.setContentDescription(text);
         updateOverlay(animated);
     }
 
@@ -372,7 +408,11 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             buttonTextView.cancelAnimation();
         }
         buttonTextView.setText(text, animated);
-        buttonLayout.setOnClickListener(clickListener);
+        buttonLayout.setContentDescription(text);
+
+        if (!nonClickable) {
+            buttonLayout.setOnClickListener(clickListener);
+        }
     }
 
     public void checkCounterView() {

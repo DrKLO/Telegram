@@ -429,7 +429,6 @@
     <string name="Languages_other">%1$d talen</string>
     <string name="ChooseLanguages">Talen kiezen</string>
     <string name="TranslateMessagesInfo1">De vertaalknop zal verschijnen wanneer je één keer tikt op een bericht dat tekst bevat.</string>
-    <string name="TranslateMessagesInfo2">Google heeft mogelijk toegang tot de inhoud van berichten die je vertaalt.</string>
     <string name="Language">Taal</string>
     <string name="LanguageCustom">Aangepast</string>
     <string name="LanguageTitle">Taal wijzigen?</string>

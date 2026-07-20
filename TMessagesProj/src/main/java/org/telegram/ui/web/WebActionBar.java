@@ -2,7 +2,6 @@ package org.telegram.ui.web;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
@@ -41,12 +40,12 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.OKLCH;
@@ -62,7 +61,6 @@ import org.telegram.ui.Components.LineProgressView;
 import org.telegram.ui.GradientClip;
 
 public class WebActionBar extends FrameLayout {
-
     private final Theme.ResourcesProvider resourcesProvider;
 
     public final RectF rect = new RectF();
@@ -160,6 +158,7 @@ public class WebActionBar extends FrameLayout {
         addView(leftmenu, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM));
 
         backButton = new ImageView(context);
+        backButton.setContentDescription(getString(R.string.AccDescrGoBack));
         backButton.setScaleType(ImageView.ScaleType.CENTER);
         backButtonDrawable = new BackDrawable(false);
         backButtonDrawable.setAnimationTime(200.0f);
@@ -181,7 +180,13 @@ public class WebActionBar extends FrameLayout {
 
         forwardButton = new ImageView(context);
         forwardButton.setScaleType(ImageView.ScaleType.CENTER);
-        forwardButton.setImageDrawable(forwardButtonDrawable = new ForwardDrawable());
+        forwardButton.setImageDrawable(forwardButtonDrawable = new ForwardDrawable() {
+            @Override
+            public void setState(boolean state) {
+                super.setState(state);
+                forwardButton.setContentDescription(state ? getString(R.string.PollCollapse) : getString(R.string.Forward));
+            }
+        });
         forwardButtonDrawable.setState(false);
         forwardButton.setBackground(forwardButtonSelector = Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         rightmenu.addView(forwardButton, LayoutHelper.createLinear(54, 56));
@@ -209,7 +214,7 @@ public class WebActionBar extends FrameLayout {
             if (menuType == ArticleViewer.PageLayout.TYPE_ARTICLE) {
                 o.add(R.drawable.msg_openin, getString(R.string.OpenInExternalApp), click.run(open_item));
                 o.add(R.drawable.msg_search, getString(R.string.Search), click.run(search_item));
-                o.add(R.drawable.msg_share, getString(R.string.ShareFile), click.run(share_item));
+                o.addIf(!isLocal, R.drawable.msg_share, getString(R.string.ShareFile), click.run(share_item));
                 o.add(R.drawable.msg_settings_old, getString(R.string.Settings), click.run(settings_item));
             } else if (menuType == ArticleViewer.PageLayout.TYPE_WEB) {
                 if (!isTonsite) {
@@ -494,6 +499,7 @@ public class WebActionBar extends FrameLayout {
     public boolean hasForward;
     public boolean hasLoaded;
     public boolean isTonsite;
+    public boolean isLocal;
 
     public void setHasForward(boolean value) {
         this.hasForward = value;
@@ -513,6 +519,9 @@ public class WebActionBar extends FrameLayout {
 
     public void setIsTonsite(boolean value) {
         this.isTonsite = value;
+    }
+    public void setIsLocal(boolean local) {
+        this.isLocal = local;
     }
 
     public void setColors(int backgroundColor, boolean animated) {
@@ -535,16 +544,6 @@ public class WebActionBar extends FrameLayout {
 
             this.backgroundColor = backgroundColor;
 
-//            double[] lch = OKLCH.rgb2oklch(OKLCH.rgb(backgroundColor));
-//            final boolean isDark = lch[0] < .5f;
-//            if (isDark) {
-//                lch[0] = Utilities.clamp(lch[0], 0.025, 0);
-//            } else {
-//                lch[0] = Utilities.clamp(lch[0], 1, 0.975);
-//            }
-//            lch[1] = Utilities.clamp(lch[1], 0.01, 0);
-//            addressBackgroundColor = OKLCH.rgb(OKLCH.oklch2rgb(lch));
-//            addressTextColor = isDark ? Color.WHITE : Color.BLACK;
             addressBackgroundColor = ColorUtils.blendARGB(Color.WHITE, Color.BLACK, dark);
             addressTextColor = ColorUtils.blendARGB(Color.WHITE, Color.BLACK, 1f - dark);
             onAddressColorsChanged(addressBackgroundColor, addressTextColor);
@@ -1101,5 +1100,4 @@ public class WebActionBar extends FrameLayout {
             return dp(24);
         }
     }
-
 }

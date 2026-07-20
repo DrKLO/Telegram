@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -86,6 +88,7 @@ import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EditTextEmoji;
@@ -104,7 +107,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     public interface PhotoPickerActivityDelegate {
         void selectedPhotosChanged();
-        void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate);
+        void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate, int scheduleRepeatPeriod);
         void onCaptionChanged(CharSequence caption);
         default void onOpenInPressed() {
 
@@ -237,7 +240,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
                     } else if (photoEntry.path != null) {
                         imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
-                        if (photoEntry.isVideo) {
+                        if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                             imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
                         } else {
                             imageView.setImage("thumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
@@ -382,7 +385,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean cancelButtonPressed() {
-            delegate.actionButtonPressed(true, true, 0);
+            delegate.actionButtonPressed(true, true, 0, 0);
             finishFragment();
             return true;
         }
@@ -393,7 +396,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
 
         @Override
-        public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, boolean forceDocument) {
+        public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
             if (selectedPhotos.isEmpty()) {
                 if (selectedAlbum != null) {
                     if (index < 0 || index >= selectedAlbum.photos.size()) {
@@ -411,7 +414,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     addToSelectedPhotos(searchImage, -1);
                 }
             }
-            sendSelectedPhotos(notify, scheduleDate);
+            sendSelectedPhotos(notify, scheduleDate, 0);
         }
 
         @Override
@@ -501,7 +504,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (listSort) {
                         listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
                     } else {
-                        listView.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(50));
+                        listView.setPadding(dp(ChatAttachAlertPhotoLayout.PADDING), AndroidUtilities.dp(ChatAttachAlertPhotoLayout.PADDING), dp(ChatAttachAlertPhotoLayout.PADDING), AndroidUtilities.dp(50));
                     }
                     listView.stopScroll();
                     layoutManager.scrollToPositionWithOffset(0, 0);
@@ -535,7 +538,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         if (selectedAlbum == null) {
             ActionBarMenu menu = actionBar.createMenu();
-            searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            searchItem = menu.addItem(0, R.drawable.outline_header_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
 
@@ -609,7 +612,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
 
                 ignoreLayout = true;
-                itemSize = (availableWidth - AndroidUtilities.dp(6 * 2) - AndroidUtilities.dp(5 * 2)) / itemsPerRow;
+                itemSize = (availableWidth - dp(ChatAttachAlertPhotoLayout.PADDING * 2) - dp(ChatAttachAlertPhotoLayout.GAP * 2)) / itemsPerRow;
 
                 if (lastItemSize != itemSize) {
                     lastItemSize = itemSize;
@@ -618,7 +621,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 if (listSort) {
                     layoutManager.setSpanCount(1);
                 } else {
-                    layoutManager.setSpanCount(itemSize * itemsPerRow + AndroidUtilities.dp(5) * (itemsPerRow - 1));
+                    layoutManager.setSpanCount(Math.max(1, itemSize * itemsPerRow + dp(ChatAttachAlertPhotoLayout.GAP) * (itemsPerRow - 1)));
                 }
 
                 ignoreLayout = false;
@@ -762,7 +765,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         fragmentView = sizeNotifierFrameLayout;
 
         listView = new RecyclerListView(context);
-        listView.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(50));
+        listView.setPadding(dp(ChatAttachAlertPhotoLayout.PADDING), AndroidUtilities.dp(ChatAttachAlertPhotoLayout.PADDING), dp(ChatAttachAlertPhotoLayout.PADDING), AndroidUtilities.dp(50));
         listView.setClipToPadding(false);
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
@@ -780,7 +783,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 if (listAdapter.getItemViewType(position) == 1 || listSort || selectedAlbum == null && TextUtils.isEmpty(lastSearchString)) {
                     return layoutManager.getSpanCount();
                 } else {
-                    return itemSize + (position % itemsPerRow != itemsPerRow - 1 ? AndroidUtilities.dp(5) : 0);
+                    return itemSize + (position % itemsPerRow != itemsPerRow - 1 ? dp(ChatAttachAlertPhotoLayout.GAP) : 0);
                 }
             }
         });
@@ -1064,9 +1067,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             writeButtonContainer.addView(writeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.LEFT | Gravity.TOP, Build.VERSION.SDK_INT >= 21 ? 2 : 0, 0, 0, 0));
             writeButton.setOnClickListener(v -> {
                 if (chatActivity != null && chatActivity.isInScheduleMode()) {
-                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), this::sendSelectedPhotos);
+                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedPhotos(notify, scheduleDate, 0));
                 } else {
-                    sendSelectedPhotos(true, 0);
+                    sendSelectedPhotos(true, 0, 0);
                 }
             });
             writeButton.setOnLongClickListener(view -> {
@@ -1127,9 +1130,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 sendPopupWindow.dismiss();
                             }
                             if (num == 0) {
-                                AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), this::sendSelectedPhotos);
+                                AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedPhotos(notify, scheduleDate, 0));
                             } else {
-                                sendSelectedPhotos(true, 0);
+                                sendSelectedPhotos(true, 0, 0);
                             }
                         });
                     }
@@ -1540,12 +1543,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (commentTextView != null && commentTextView.isPopupShowing()) {
-            commentTextView.hidePopup(true);
+            if (invoked) commentTextView.hidePopup(true);
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     public void updatePhotosButton(int animated) {
@@ -1755,13 +1758,13 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         searchDelegate = photoPickerActivitySearchDelegate;
     }
 
-    private void sendSelectedPhotos(boolean notify, int scheduleDate) {
+    private void sendSelectedPhotos(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
         if (selectedPhotos.isEmpty() || delegate == null || sendPressed) {
             return;
         }
         applyCaption();
         sendPressed = true;
-        delegate.actionButtonPressed(false, notify, scheduleDate);
+        delegate.actionButtonPressed(false, notify, scheduleDate, scheduleRepeatPeriod);
         if (selectPhotoType != PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER && (delegate == null || delegate.canFinishFragment())) {
             finishFragment();
         }
@@ -1909,7 +1912,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                     if (selectedAlbum != null) {
                         MediaController.PhotoEntry photoEntry = selectedAlbum.photos.get(position);
-                        cell.setPhotoEntry(photoEntry, selectedPhotosOrder.size() > 1, true, false);
+                        cell.setPhotoEntry(photoEntry, selectedPhotosOrder.size() > 1, true, false, false);
                         cell.setChecked(allowIndices ? selectedPhotosOrder.indexOf(photoEntry.imageId) : -1, selectedPhotos.containsKey(photoEntry.imageId), false);
                         showing = PhotoViewer.isShowingImage(photoEntry.path);
                     } else {

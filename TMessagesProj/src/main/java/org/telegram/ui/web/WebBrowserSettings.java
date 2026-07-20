@@ -7,23 +7,17 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.Build;
-import android.text.InputType;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
@@ -43,17 +37,21 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
-import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -62,6 +60,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class WebBrowserSettings extends UniversalFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -78,20 +77,31 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
     @Override
     public boolean onFragmentCreate() {
         loadSizes();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webViewResolved);
+        getNotificationCenter().addObserver(this, NotificationCenter.webBrowserSettingsUpdate);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webViewResolved);
+        getNotificationCenter().removeObserver(this, NotificationCenter.webBrowserSettingsUpdate);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.webViewResolved) {
+        if (id == NotificationCenter.webBrowserSettingsUpdate) {
             if (listView != null) {
+                /*
+                if (enableRow != -1) {
+                    View view = listView.findViewByPosition(enableRow);
+                    if (view instanceof TextCheckCell) {
+                        final boolean inAppBrowserEnabled = getMessagesController().isWebBrowserInAppEnabled();
+                        ((TextCheckCell) view).setChecked(inAppBrowserEnabled);
+                        ((TextCheckCell) view).setBackgroundColorAnimated(inAppBrowserEnabled, Theme.getColor(inAppBrowserEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+                    }
+                }
+                */
+
                 listView.adapter.update(true);
             }
         }
@@ -175,7 +185,16 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             }
         };
 
-        return super.createView(context);
+        fragmentView = super.createView(context);
+
+        listView.setSections();
+        actionBar.setAdaptiveBackground(listView);
+
+        // ((ViewGroup) fragmentView).addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+        // listView.setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight(), 0, 0);
+        // actionBar.setAddToContainer(false);
+
+        return fragmentView;
     }
 
     @Override
@@ -194,53 +213,104 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
     public static final int BUTTON_TOGGLE = 1;
     public static final int BUTTON_CLEAR_CACHE = 2;
     public static final int BUTTON_CLEAR_COOKIES = 3;
-    public static final int BUTTON_ADD = 4;
     public static final int BUTTON_CLEAR_LIST = 5;
     public static final int BUTTON_SEARCH_ENGINE = 6;
     public static final int BUTTON_CLEAR_HISTORY = 7;
     public static final int BUTTON_OPEN_HISTORY = 9;
     public static final int BUTTON_CUSTOMTABS_ON = 10;
     public static final int BUTTON_CUSTOMTABS_OFF = 11;
+    public static final int BUTTON_ADD_IN_APP_EXCEPTION = 15;
+    public static final int BUTTON_ADD_EXTERNAL_EXCEPTION = 16;
+    public static final int BUTTON_BROWSER_CLOSE_BUTTON = 17;
+
+    public int enableRow;
+    public int clearCookiesRow;
+    public int clearCacheRow;
+    public int historyRow;
+    public int clearHistoryRow;
+    public int neverOpenRow;
+    public int clearListRow;
+    public int searchRow;
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asRippleCheck(BUTTON_TOGGLE, getString(R.string.BrowserSettingsEnable)).setChecked(SharedConfig.inappBrowser));
+        enableRow = -1;
+        clearCookiesRow = -1;
+        clearCacheRow = -1;
+        historyRow = -1;
+        clearHistoryRow = -1;
+        clearListRow = -1;
+        searchRow = -1;
+
+        final boolean inAppBrowserEnabled = getMessagesController().isWebBrowserInAppEnabled();
+
+        enableRow = items.size();
+        items.add(UItem.asRippleCheck(BUTTON_TOGGLE, getString(R.string.BrowserSettingsEnable)).setChecked(inAppBrowserEnabled));
         items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsEnableInfo)));
-        items.add(UItem.asButton(BUTTON_CLEAR_COOKIES, R.drawable.menu_clear_cookies, LocaleController.getString(R.string.BrowserSettingsCookiesClear), cookiesSize > 0 ? AndroidUtilities.formatFileSize(cookiesSize) : ""));
-        items.add(UItem.asButton(BUTTON_CLEAR_CACHE, R.drawable.menu_clear_cache, LocaleController.getString(R.string.BrowserSettingsCacheClear), cacheSize > 0 ? AndroidUtilities.formatFileSize(cacheSize) : ""));
-        items.add(UItem.asShadow(getString(R.string.BrowserSettingsCookiesInfo)));
-        if (historySize > 0) {
-            items.add(UItem.asButton(BUTTON_OPEN_HISTORY, R.drawable.menu_clear_recent, getString(R.string.BrowserSettingsHistoryShow)));
-            items.add(UItem.asButton(BUTTON_CLEAR_HISTORY, R.drawable.menu_clear_cache, getString(R.string.BrowserSettingsHistoryClear), formatPluralStringComma("BrowserSettingsHistoryPages", (int) historySize, ',')));
-            items.add(UItem.asShadow(null));
-        }
-        items.add(UItem.asHeader(LocaleController.getString(R.string.BrowserSettingsNeverOpenInTitle)));
-        items.add(UItem.asButton(BUTTON_ADD, addIcon, LocaleController.getString(R.string.BrowserSettingsNeverOpenInAdd)).accent());
-        RestrictedDomainsList.getInstance().load();
-        ArrayList<ArrayList<String>> allDomains = RestrictedDomainsList.getInstance().restrictedDomains;
-        for (ArrayList<String> domains : allDomains) {
-            WebMetadataCache.WebMetadata meta = null;
-            for (String domain : domains) {
-                meta = WebMetadataCache.getInstance().get(domain);
-                if (meta != null) break;
-            }
-            items.add(WebsiteView.Factory.as(domains, meta == null ? "" : (TextUtils.isEmpty(meta.sitename) ? (TextUtils.isEmpty(meta.title) ? "" : meta.title) : meta.sitename), meta == null ? null : meta.favicon));
-        }
-        if (!allDomains.isEmpty()) {
-            items.add(UItem.asButton(BUTTON_CLEAR_LIST, R.drawable.msg_clearcache, LocaleController.getString(R.string.BrowserSettingsNeverOpenInClearList)).red());
-        }
-        items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsNeverOpenInInfo)));
-        items.add(UItem.asButton(BUTTON_SEARCH_ENGINE, R.drawable.msg_search, LocaleController.getString(R.string.SearchEngine), SearchEngine.getCurrent().name));
-        items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsSearchEngineInfo)));
-        if (!SharedConfig.inappBrowser) {
+        if (!inAppBrowserEnabled) {
+            final boolean customTabs = getMessagesController().isWebBrowserUseCustomTabs();
+
+            /*
             items.add(UItem.asHeader(getString(R.string.BrowserSettingsCustomTabsTitle)));
-            items.add(UItem.asRadio(BUTTON_CUSTOMTABS_ON, getString(R.string.BrowserSettingsCustomTabs)).setChecked(SharedConfig.customTabs));
-            items.add(UItem.asRadio(BUTTON_CUSTOMTABS_OFF, getString(R.string.BrowserSettingsNoCustomTabs)).setChecked(!SharedConfig.customTabs));
+            items.add(UItem.asRadio(BUTTON_CUSTOMTABS_ON, getString(R.string.BrowserSettingsCustomTabs)).setChecked(customTabs));
+            items.add(UItem.asRadio(BUTTON_CUSTOMTABS_OFF, getString(R.string.BrowserSettingsNoCustomTabs)).setChecked(!customTabs));
             items.add(UItem.asShadow(getString(R.string.BrowserSettingsNoCustomTabsInfo)));
-        }
-        if (BuildVars.DEBUG_PRIVATE_VERSION) {
-            items.add(UItem.asCheck(12, "adaptable colors").setChecked(SharedConfig.adaptableColorInBrowser));
-            items.add(UItem.asCheck(13, "only local IV").setChecked(SharedConfig.onlyLocalInstantView));
+            */
+
+            items.add(UItem.asCheck(BUTTON_BROWSER_CLOSE_BUTTON, getString(R.string.WebBrowserShowCloseButton)).setChecked(getMessagesController().isWebBrowserUseCustomTabs()));
+            items.add(UItem.asShadow(LocaleController.getString(R.string.WebBrowserShowCloseButtonInfo)));
+
+            items.add(UItem.asHeader(LocaleController.getString(R.string.BrowserSettingsAlwaysOpenInTitle2)));
+            neverOpenRow = items.size();
+            items.add(UItem.asButton(BUTTON_ADD_EXTERNAL_EXCEPTION, addIcon, LocaleController.getString(R.string.BrowserSettingsNeverOpenInAdd)).accent());
+            final List<TL_account.WebDomainException> exceptions = getMessagesController().getWebBrowserExceptionsList(false);
+            for (TL_account.WebDomainException exception : exceptions) {
+                items.add(WebsiteView.Factory.as(exception.domain, exception.title, exception.favicon));
+            }
+
+            items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsAlwaysOpenInInfo2)));
+            if (!exceptions.isEmpty()) {
+                clearListRow = items.size();
+                items.add(UItem.asButton(BUTTON_CLEAR_LIST, LocaleController.getString(R.string.BrowserSettingsNeverOpenInClearList2)).red());
+                items.add(UItem.asShadow(null));
+            }
+        } else {
+            clearCookiesRow = items.size();
+            items.add(UItem.asButton(BUTTON_CLEAR_COOKIES, R.drawable.menu_clear_cookies, LocaleController.getString(R.string.BrowserSettingsCookiesClear), cookiesSize > 0 ? AndroidUtilities.formatFileSize(cookiesSize) : ""));
+            clearCacheRow = items.size();
+            items.add(UItem.asButton(BUTTON_CLEAR_CACHE, R.drawable.menu_clear_cache, LocaleController.getString(R.string.BrowserSettingsCacheClear), cacheSize > 0 ? AndroidUtilities.formatFileSize(cacheSize) : ""));
+            items.add(UItem.asShadow(getString(R.string.BrowserSettingsCookiesInfo)));
+            if (historySize > 0) {
+                historyRow = items.size();
+                items.add(UItem.asButton(BUTTON_OPEN_HISTORY, R.drawable.menu_clear_recent, getString(R.string.BrowserSettingsHistoryShow)));
+                clearHistoryRow = items.size();
+                items.add(UItem.asButton(BUTTON_CLEAR_HISTORY, R.drawable.menu_clear_cache, getString(R.string.BrowserSettingsHistoryClear), formatPluralStringComma("BrowserSettingsHistoryPages", (int) historySize, ',')));
+                items.add(UItem.asShadow(null));
+            }
+
+            items.add(UItem.asHeader(LocaleController.getString(R.string.BrowserSettingsNeverOpenInTitle2)));
+            neverOpenRow = items.size();
+            items.add(UItem.asButton(BUTTON_ADD_IN_APP_EXCEPTION, addIcon, LocaleController.getString(R.string.BrowserSettingsNeverOpenInAdd)).accent());
+            final List<TL_account.WebDomainException> exceptions = getMessagesController().getWebBrowserExceptionsList(true);
+            for (TL_account.WebDomainException exception : exceptions) {
+                items.add(WebsiteView.Factory.as(exception.domain, exception.title, exception.favicon));
+            }
+
+            items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsNeverOpenInInfo2)));
+            if (!exceptions.isEmpty()) {
+                clearListRow = items.size();
+                items.add(UItem.asButton(BUTTON_CLEAR_LIST, LocaleController.getString(R.string.BrowserSettingsNeverOpenInClearList2)).red());
+                items.add(UItem.asShadow(null));
+            }
+
+            searchRow = items.size();
+            items.add(UItem.asButton(BUTTON_SEARCH_ENGINE, R.drawable.msg_search, LocaleController.getString(R.string.SearchEngine), SearchEngine.getCurrent().name));
+            items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsSearchEngineInfo)));
+
+            if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                items.add(UItem.asCheck(12, "adaptable colors").setChecked(SharedConfig.adaptableColorInBrowser));
+                items.add(UItem.asCheck(13, "only local IV").setChecked(SharedConfig.onlyLocalInstantView));
+            }
         }
     }
 
@@ -252,16 +322,24 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         } else if (item.id == 13) {
             SharedConfig.toggleLocalInstantView();
             ((TextCheckCell) view).setChecked(SharedConfig.onlyLocalInstantView);
+        } else if (item.id == BUTTON_BROWSER_CLOSE_BUTTON) {
+            final boolean newUseCustomTabs = !getMessagesController().isWebBrowserUseCustomTabs();
+
+            getMessagesController().toggleWebBrowserUseCustomTabs(newUseCustomTabs);
+            ((TextCheckCell) view).setChecked(newUseCustomTabs);
+            listView.adapter.update(true);
         } else if (item.id == BUTTON_TOGGLE) {
-            SharedConfig.toggleInappBrowser();
-            ((TextCheckCell) view).setChecked(SharedConfig.inappBrowser);
-            ((TextCheckCell) view).setBackgroundColorAnimated(SharedConfig.inappBrowser, Theme.getColor(SharedConfig.inappBrowser ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+            getMessagesController().toggleWebBrowserInAppEnabled();
+            final boolean inAppBrowserEnabled = getMessagesController().isWebBrowserInAppEnabled();
+
+            ((TextCheckCell) view).setChecked(inAppBrowserEnabled);
+            ((TextCheckCell) view).setBackgroundColorAnimated(inAppBrowserEnabled, Theme.getColor(inAppBrowserEnabled ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
             listView.adapter.update(true);
         } else if (item.id == BUTTON_CUSTOMTABS_ON) {
-            SharedConfig.toggleCustomTabs(true);
+            getMessagesController().toggleWebBrowserUseCustomTabs(true);
             listView.adapter.update(true);
         } else if (item.id == BUTTON_CUSTOMTABS_OFF) {
-            SharedConfig.toggleCustomTabs(false);
+            getMessagesController().toggleWebBrowserUseCustomTabs(false);
             listView.adapter.update(true);
         } else if (item.id == BUTTON_CLEAR_CACHE) {
             new AlertDialog.Builder(getContext(), getResourceProvider())
@@ -305,10 +383,8 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
                 .setMessage(formatString(R.string.BrowserSettingsCookiesClearText, cookiesSize == 0 ? "" : " (" + AndroidUtilities.formatFileSize(cookiesSize)+")"))
                 .setPositiveButton(getString(R.string.Clear), (di, w) -> {
                     CookieManager cookieManager = CookieManager.getInstance();
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        cookieManager.removeAllCookies(null);
-                        cookieManager.flush();
-                    }
+                    cookieManager.removeAllCookies(null);
+                    cookieManager.flush();
                     try {
                         File dir = new File(ApplicationLoader.applicationContext.getApplicationInfo().dataDir, "app_webview");
                         if (dir.exists()) {
@@ -352,15 +428,23 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             });
             presentFragment(fragment[0]);
         } else if (item.id == BUTTON_CLEAR_LIST) {
-            RestrictedDomainsList.getInstance().restrictedDomains.clear();
-            RestrictedDomainsList.getInstance().scheduleSave();
-            listView.adapter.update(true);
+            new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.WebBrowserDeleteAllExceptionsTitle))
+                .setMessage(getString(R.string.WebBrowserDeleteAllExceptionsMessage))
+                .setPositiveButton(getString(R.string.Delete), (di, w) -> {
+                    getMessagesController().clearAllWebBrowserExceptions();
+                    listView.adapter.update(true);
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .makeRed(AlertDialog.BUTTON_POSITIVE)
+                .show();
         } else if (item.instanceOf(WebsiteView.Factory.class)) {
             final WebsiteView websiteView = (WebsiteView) view;
-            final ArrayList<String> domains = websiteView.domains;
+            final String domain = websiteView.domain;
             ItemOptions.makeOptions((ViewGroup) fragmentView, websiteView)
+                .setDimAlpha(40)
                 .add(R.drawable.menu_delete_old, LocaleController.getString(R.string.Remove), () -> {
-                    RestrictedDomainsList.getInstance().setRestricted(false, domains.toArray(new String[0]));
+                    getMessagesController().removeWebBrowserException(domain);
                     listView.adapter.update(true);
                 })
                 .show();
@@ -397,113 +481,22 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             Dialog dialog = new AlertDialog.Builder(getParentActivity())
                     .setTitle(getString(R.string.SearchEngine))
                     .setView(linearLayout)
-                    .setNegativeButton(getString("Cancel", R.string.Cancel), null)
+                    .setNegativeButton(getString(R.string.Cancel), null)
                     .create();
             dialogRef.set(dialog);
             showDialog(dialog);
-        } else if (item.id == BUTTON_ADD) {
-            final AlertDialog[] dialog = new AlertDialog[1];
-            final AlertDialog.Builder b = new AlertDialog.Builder(getContext(), getResourceProvider());
-            b.setTitle(getString(R.string.BrowserSettingsAddTitle));
-
-            LinearLayout container = new LinearLayout(getContext());
-            container.setOrientation(LinearLayout.VERTICAL);
-
-            TextView textView = new TextView(getContext());
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, getResourceProvider()));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            textView.setText(getString(R.string.BrowserSettingsAddText));
-            container.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 5, 24, 12));
-
-            EditTextBoldCursor editText = new EditTextBoldCursor(getContext()) {
-                @Override
-                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(36), MeasureSpec.EXACTLY));
-                }
-            };
-            final Runnable done = () -> {
-                final String text = editText.getText().toString();
-                Uri uri = Uri.parse(text);
-                if (uri == null || uri.getHost() == null) {
-                    uri = Uri.parse("https://" + text);
-                }
-                if (uri == null || uri.getHost() == null) {
-                    AndroidUtilities.shakeView(editText);
-                    return;
-                }
-                String _domain = uri.getHost().toLowerCase();
-                if (_domain.startsWith("www.")) _domain = _domain.substring(4);
-                final String domain = _domain;
-                RestrictedDomainsList.getInstance().setRestricted(true, domain);
-                final WebMetadataCache.WebMetadata cached_meta = WebMetadataCache.getInstance().get(domain);
-                if (cached_meta != null && !TextUtils.isEmpty(cached_meta.sitename) && cached_meta.favicon != null) {
-                    if (dialog[0] != null) {
-                        dialog[0].dismiss();
-                    }
+        } else if (item.id == BUTTON_ADD_IN_APP_EXCEPTION || item.id == BUTTON_ADD_EXTERNAL_EXCEPTION) {
+            final boolean inAppBrowserEnabled = getMessagesController().isWebBrowserInAppEnabled();
+            if (getMessagesController().isWebBrowserExceptionsLimitReached(inAppBrowserEnabled)) {
+                AlertsCreator.showSimpleAlert(this,
+                    getString(R.string.WebBrowserExceptionsLimitTitle),
+                    getString(R.string.WebBrowserExceptionsLimitMessage));
+            } else {
+                AlertsCreator.showAddBrowserException(getContext(), getResourceProvider(), inAppBrowserEnabled, domain -> {
+                    getMessagesController().addWebBrowserException(domain, inAppBrowserEnabled);
                     listView.adapter.update(true);
-                } else {
-                    final AlertDialog progressDialog = new AlertDialog(getContext(), AlertDialog.ALERT_TYPE_SPINNER);
-                    final Runnable dismiss = () -> {
-                        dialog[0].dismiss();
-                        progressDialog.dismissUnless(800);
-                        listView.adapter.update(true);
-                    };
-                    AndroidUtilities.runOnUIThread(dismiss, 5_000);
-                    progressDialog.showDelayed(300);
-                    WebMetadataCache.retrieveFaviconAndSitename("https://" + text + "/", (sitename, favicon) -> {
-                        AndroidUtilities.cancelRunOnUIThread(dismiss);
-                        progressDialog.dismissUnless(800);
-                        WebMetadataCache.WebMetadata meta = WebMetadataCache.getInstance().get(domain);
-                        if (meta != null) {
-                            listView.adapter.update(true);
-                        }
-                    });
-                }
-            };
-            editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        done.run();
-                        return true;
-                    }
-                    return false;
-                }
-            });
-            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            editText.setText("");
-            editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, getResourceProvider()));
-            editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText, getResourceProvider()));
-            editText.setHintText(LocaleController.getString(R.string.BrowserSettingsAddHint));
-            editText.setSingleLine(true);
-            editText.setFocusable(true);
-            editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, getResourceProvider()), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, getResourceProvider()), Theme.getColor(Theme.key_text_RedRegular, getResourceProvider()));
-            editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-            editText.setBackgroundDrawable(null);
-            editText.setPadding(0, 0, dp(42), 0);
-            container.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 10));
-            b.setView(container);
-            b.setWidth(dp(292));
-
-
-            b.setPositiveButton(LocaleController.getString(R.string.Done), (dialogInterface, i) -> {
-                done.run();
-            });
-            b.setNegativeButton(LocaleController.getString(R.string.Cancel), (dialogInterface, i) -> {
-                dialogInterface.dismiss();
-            });
-
-            dialog[0] = b.create();
-            dialog[0].setOnDismissListener(d -> {
-                AndroidUtilities.hideKeyboard(editText);
-            });
-            dialog[0].setOnShowListener(d -> {
-                editText.requestFocus();
-                AndroidUtilities.showKeyboard(editText);
-            });
-            dialog[0].setDismissDialogByButtons(false);
-            dialog[0].show();
+                });
+            }
         }
     }
 
@@ -522,12 +515,11 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             super(context);
 
             imageView = new ImageView(context);
-            addView(imageView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, 18, 0, 0, 0));
+            addView(imageView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | Gravity.LEFT, 16, 0, 0, 0));
 
             titleView = new TextView(context);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setMaxLines(1);
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 64 + 4, 7, 54, 0));
@@ -549,27 +541,21 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             optionsView = new ImageView(context);
             optionsView.setScaleType(ImageView.ScaleType.CENTER);
             optionsView.setImageResource(R.drawable.ic_ab_other);
-            optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+            optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.SRC_IN));
             addView(optionsView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 18, 0));
         }
 
-        private ArrayList<String> domains;
+        private AnimatedEmojiDrawable animatedEmojiDrawable;
+        private String domain;
         private boolean needDivider;
         public void set(
             CharSequence title,
-            ArrayList<String> domains,
-            Bitmap favicon,
+            String domain,
+            long favicon,
             boolean divider
         ) {
             titleView.setText(title);
-            StringBuilder subtitle = new StringBuilder();
-            for (String domain : domains) {
-                if (subtitle.length() > 0) {
-                    subtitle.append(", ");
-                }
-                subtitle.append(domain);
-            }
-            subtitleView.setText(subtitle);
+            subtitleView.setText(domain);
             if (TextUtils.isEmpty(title)) {
                 subtitleView.setTranslationY(-dp(14));
                 subtitleView.setScaleX(1.3f);
@@ -579,10 +565,18 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
                 subtitleView.setScaleX(1f);
                 subtitleView.setScaleY(1f);
             }
-            this.domains = domains;
-            String s = (TextUtils.isEmpty(title) ? domains.isEmpty() || TextUtils.isEmpty(domains.get(0)) ? "" : domains.get(0) : title).toString();
-            if (favicon != null) {
-                imageView.setImageBitmap(favicon);
+            this.domain = domain;
+            String s = (TextUtils.isEmpty(title) ? domain.isEmpty() || TextUtils.isEmpty(domain) ? "" : domain : title).toString();
+
+            if (animatedEmojiDrawable != null) {
+                animatedEmojiDrawable.removeView(imageView);
+                animatedEmojiDrawable = null;
+            }
+
+            if (favicon != 0) {
+                animatedEmojiDrawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, favicon);
+                animatedEmojiDrawable.addView(imageView);
+                imageView.setImageDrawable(animatedEmojiDrawable);
             } else {
                 CombinedDrawable drawable = new CombinedDrawable(
                     Theme.createRoundRectDrawable(dp(6), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), .1f)),
@@ -605,14 +599,16 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
                 drawable.setCustomSize(dp(28), dp(28));
                 imageView.setImageDrawable(drawable);
             }
-            if (needDivider != divider) invalidate();
-            setWillNotDraw(!(needDivider = divider));
+            needDivider = divider;
+            invalidate();
         }
 
         @Override
-        protected void dispatchDraw(Canvas canvas) {
+        protected void dispatchDraw(@NonNull Canvas canvas) {
             super.dispatchDraw(canvas);
-            canvas.drawRect(dp(64), getHeight() - 1, getWidth(), getHeight(), Theme.dividerPaint);
+            if (needDivider) {
+                canvas.drawRect(dp(64), getHeight() - 1, getWidth(), getHeight(), Theme.dividerPaint);
+            }
         }
 
         @Override
@@ -626,20 +622,21 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         public static class Factory extends UItem.UItemFactory<WebsiteView> {
             static { setup(new Factory()); }
             @Override
-            public WebsiteView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public WebsiteView createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new WebsiteView(context);
             }
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                ((WebsiteView) view).set(item.text, (ArrayList<String>) item.object2, item.object instanceof Bitmap ? ((Bitmap) item.object) : null, divider);
+                final WebsiteView websiteView = (WebsiteView) view;
+                websiteView.set(item.textValue, (String) item.text, item.longValue, divider);
             }
 
-            public static UItem as(ArrayList<String> domains, String sitename, Bitmap favicon) {
+            public static UItem as(String domain, String title, long favicon) {
                 UItem i = UItem.ofFactory(WebsiteView.Factory.class);
-                i.text = sitename;
-                i.object = favicon;
-                i.object2 = domains;
+                i.text = domain;
+                i.textValue = title;
+                i.longValue = favicon;
                 return i;
             }
         }
@@ -693,5 +690,17 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             dir.delete();
         }
         return true;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        super.onInsets(left, top, right, bottom);
+        listView.setPadding(0, listView.getPaddingTop(), 0, bottom);
+        listView.setClipToPadding(false);
     }
 }

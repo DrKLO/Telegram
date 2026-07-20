@@ -11,13 +11,13 @@ package org.telegram.messenger;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.text.TextUtils;
 import android.view.View;
 
 import org.telegram.messenger.video.MediaCodecPlayer;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
-import org.telegram.messenger.video.VideoPlayerHolderBase;
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
@@ -29,9 +29,7 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.Paint.PaintTypeface;
 import org.telegram.ui.Components.Paint.Views.LinkPreview;
 import org.telegram.ui.Components.PhotoFilterView;
-import org.telegram.ui.Components.Point;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
-import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Stories.recorder.CollageLayout;
 import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.Weather;
@@ -40,8 +38,6 @@ import java.io.File;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VideoEditedInfo {
 
@@ -60,6 +56,7 @@ public class VideoEditedInfo {
     public int bitrate;
     public int framerate = 24;
     public String originalPath;
+    public long videoOffset;
     public long estimatedSize;
     public long estimatedDuration;
     public boolean roundVideo;
@@ -549,7 +546,7 @@ public class VideoEditedInfo {
         } else {
             filters = "";
         }
-        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_-%s_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalDuration, framerate, filters, originalPath);
+        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_-%s_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalDuration, framerate, videoOffset, filters, originalPath);
     }
 
     public boolean parseString(String string) {
@@ -558,7 +555,7 @@ public class VideoEditedInfo {
         }
         try {
             String[] args = string.split("_");
-            if (args.length >= 11) {
+            if (args.length >= 12) {
                 startTime = Long.parseLong(args[1]);
                 endTime = Long.parseLong(args[2]);
                 rotationValue = Integer.parseInt(args[3]);
@@ -569,11 +566,12 @@ public class VideoEditedInfo {
                 resultHeight = Integer.parseInt(args[8]);
                 originalDuration = Long.parseLong(args[9]);
                 framerate = Integer.parseInt(args[10]);
+                videoOffset = Long.parseLong(args[11]);
                 muted = bitrate == -1;
                 int start;
-                if (args[11].startsWith("-")) {
-                    start = 12;
-                    String s = args[11].substring(1);
+                if (args[12].startsWith("-")) {
+                    start = 13;
+                    String s = args[12].substring(1);
                     if (s.length() > 0) {
                         SerializedData serializedData = new SerializedData(Utilities.hexToBytes(s));
                         int version = serializedData.readInt32(false);
@@ -602,7 +600,9 @@ public class VideoEditedInfo {
                             filterState.blurType = serializedData.readInt32(false);
                             filterState.sharpenValue = serializedData.readFloat(false);
                             filterState.blurExcludeSize = serializedData.readFloat(false);
-                            filterState.blurExcludePoint = new Point(serializedData.readFloat(false), serializedData.readFloat(false));
+                            float x = serializedData.readFloat(false);
+                            float y = serializedData.readFloat(false);
+                            filterState.blurExcludePoint = new PointF(x, y);
                             filterState.blurExcludeBlurSize = serializedData.readFloat(false);
                             filterState.blurAngle = serializedData.readFloat(false);
 
@@ -693,7 +693,7 @@ public class VideoEditedInfo {
                         serializedData.cleanup();
                     }
                 } else {
-                    start = 11;
+                    start = 12;
                 }
 
                 for (int a = start; a < args.length; a++) {

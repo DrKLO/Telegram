@@ -918,7 +918,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             }
         });
-        backgroundAnimationSpring.addUpdateListener((animation, value, velocity) -> motionBackgroundDrawable.updateAnimation(true));
+        backgroundAnimationSpring.addUpdateListener((animation, value, velocity) -> motionBackgroundDrawable.updateAnimation());
         backgroundAnimationSpring.start();
     }
 

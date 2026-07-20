@@ -38,8 +38,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -136,7 +139,7 @@ public class CodeHighlighting {
             super(text);
         }
 
-        private boolean ready;
+        public boolean ready = false;
         public void unlock() {
             this.ready = true;
         }
@@ -171,14 +174,52 @@ public class CodeHighlighting {
             return super.getSpanFlags(what);
         }
     }
+    public static class LockedWithFallbackSpannableString extends LockedSpannableString {
+        public SpannableStringBuilder fallback;
+        public LockedWithFallbackSpannableString(CharSequence text, SpannableStringBuilder fallback) {
+            super(text);
+            this.fallback = fallback;
+        }
 
-    private static final HashMap<String, Highlighting> processedHighlighting = new HashMap<>();
+        @Override
+        public <T> T[] getSpans(int queryStart, int queryEnd, Class<T> kind) {
+            if (!ready && fallback != null) return fallback.getSpans(queryStart, queryEnd, kind);
+            return super.getSpans(queryStart, queryEnd, kind);
+        }
+
+        @Override
+        public int nextSpanTransition(int start, int limit, Class kind) {
+            if (!ready && fallback != null) return fallback.nextSpanTransition(start, limit, kind);
+            return super.nextSpanTransition(start, limit, kind);
+        }
+
+        @Override
+        public int getSpanStart(Object what) {
+            if (!ready && fallback != null) return fallback.getSpanStart(what);
+            return super.getSpanStart(what);
+        }
+
+        @Override
+        public int getSpanEnd(Object what) {
+            if (!ready && fallback != null) return fallback.getSpanEnd(what);
+            return super.getSpanEnd(what);
+        }
+
+        @Override
+        public int getSpanFlags(Object what) {
+            if (!ready && fallback != null) return fallback.getSpanFlags(what);
+            return super.getSpanFlags(what);
+        }
+    }
+
+    private static final ConcurrentHashMap<String, Highlighting> processedHighlighting = new ConcurrentHashMap<>();
     private static class Highlighting {
-        String text, language;
+        CharSequence text;
+        String language;
         SpannableString result;
     }
 
-    public static SpannableString getHighlighted(String text, String language) {
+    public static SpannableString getHighlighted(CharSequence text, String language) {
         if (TextUtils.isEmpty(language)) {
             return new SpannableString(text);
         }
@@ -192,7 +233,7 @@ public class CodeHighlighting {
 
             highlight(process.result, 0, process.result.length(), language, 0, null, true);
 
-            Iterator<String> keys = processedHighlighting.keySet().iterator();
+            final Iterator<String> keys = processedHighlighting.keySet().iterator();
             while (keys.hasNext() && processedHighlighting.size() > 8) {
                 keys.next();
                 keys.remove();
@@ -201,6 +242,50 @@ public class CodeHighlighting {
             processedHighlighting.put(key, process);
         }
         return process.result;
+    }
+
+    public static void highlightEditable(CharSequence text, String language, Utilities.Callback<SpannableString> whenDone) {
+        if (whenDone == null) {
+            return;
+        }
+        final SpannableString result = new SpannableString(text == null ? "" : text);
+        if (TextUtils.isEmpty(language) || result.length() == 0) {
+            whenDone.run(result);
+            return;
+        }
+        final String source = result.toString();
+        Utilities.searchQueue.postRunnable(() -> {
+            if (compiledPatterns == null) {
+                parse();
+            }
+            final ArrayList<CachedToSpan> spans = new ArrayList<>();
+            try {
+                final StringToken[] tokens = tokenize(source, compiledPatterns == null ? null : compiledPatterns.get(language), 0).toArray();
+                colorize(result, 0, result.length(), tokens, -1, spans);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                for (int i = 0; i < spans.size(); ++i) {
+                    final CachedToSpan span = spans.get(i);
+                    result.setSpan(new ColorSpan(span.group), span.start, span.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                whenDone.run(result);
+            });
+        });
+    }
+
+    public static void prepare() {
+        if (compiledPatterns != null) return;
+        Utilities.searchQueue.postRunnable(() -> {
+            if (compiledPatterns == null)
+                parse();
+        });
+    }
+
+    public static Set<String> getLanguages() {
+        if (languages == null) return null;
+        return languages;
     }
 
     public static void highlight(Spannable text, int start, int end, String lng, int type, TextStyleSpan.TextStyleRun style, boolean smallerSize) {
@@ -564,6 +649,7 @@ public class CodeHighlighting {
     }
 
     private static HashMap<String, TokenPattern[]> compiledPatterns;
+    private static HashSet<String> languages;
     private static void parse() {
         GZIPInputStream zipStream = null;
         BufferedInputStream bufStream = null;
@@ -597,9 +683,10 @@ public class CodeHighlighting {
                 patterns[i].pattern = reader.readString();
             }
 
-            if (compiledPatterns == null) {
+            if (compiledPatterns == null)
                 compiledPatterns = new HashMap<>();
-            }
+            if (CodeHighlighting.languages == null)
+                CodeHighlighting.languages = new HashSet<>();
             for (int i = 0; i < languagesCount; ++i) {
                 int lngid = reader.readUint8();
                 TokenPattern[] tokens = readTokens(reader, patterns, languages);
@@ -607,6 +694,8 @@ public class CodeHighlighting {
                 for (String alias : aliases) {
                     compiledPatterns.put(alias, tokens);
                 }
+                if (aliases.length > 0 && !"plain".equals(aliases[0]) && !aliases[0].endsWith("like") && !aliases[0].startsWith("markup"))
+                    CodeHighlighting.languages.add(aliases[0]);
             }
 
             FileLog.d("[CodeHighlighter] Successfully read " + languagesCount + " languages, " + patternsCount + " patterns in " + (System.currentTimeMillis() - start) + "ms from codelng.gzip");

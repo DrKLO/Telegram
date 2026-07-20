@@ -2,7 +2,6 @@ package org.telegram.messenger.voip;
 
 import android.text.TextUtils;
 import android.util.LongSparseArray;
-import android.util.SparseIntArray;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -12,12 +11,12 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
+import org.telegram.tgnet.tl.TL_update;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -315,7 +314,7 @@ public class ConferenceCall {
         boolean hadBlocks = false;
         if (res instanceof TLRPC.Updates) {
             final TLRPC.Updates u = (TLRPC.Updates) res;
-            for (TLRPC.TL_updateGroupCallChainBlocks update : MessagesController.findUpdatesAndRemove(u, TLRPC.TL_updateGroupCallChainBlocks.class)) {
+            for (TL_update.TL_updateGroupCallChainBlocks update : MessagesController.findUpdatesAndRemove(u, TL_update.TL_updateGroupCallChainBlocks.class)) {
                 final boolean thisHadBlocks = applyUpdate(requested_offset, update, false, requestTime);
                 if (thisHadBlocks) hadBlocks = true;
             }
@@ -424,7 +423,7 @@ public class ConferenceCall {
         }
     }
 
-    public boolean applyUpdate(Integer requested_offset, TLRPC.TL_updateGroupCallChainBlocks update, boolean allowForcePoll, Long requestTime) {
+    public boolean applyUpdate(Integer requested_offset, TL_update.TL_updateGroupCallChainBlocks update, boolean allowForcePoll, Long requestTime) {
         if (destroyed) {
             FileLog.d("[tde2e] conference.applyUpdate but destroyed!");
             return false;

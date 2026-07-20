@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
@@ -102,6 +103,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         super(alert, context, themeDelegate);
 
         this.themeDelegate = themeDelegate;
+        occupyNavigationBar = true;
+
         setWillNotDraw(false);
 
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
@@ -177,7 +180,6 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         listView.setClipToPadding(false);
         listView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(46));
 
         groupsView = new PreviewGroupsView(context);
         groupsView.setClipToPadding(true);
@@ -393,12 +395,10 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                     rotate = false;
                     try {
                         if (photo.isVideo) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                                MediaMetadataRetriever m = new MediaMetadataRetriever();
-                                m.setDataSource(photo.path);
-                                String rotation = m.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-                                rotate = rotation != null && (rotation.equals("90") || rotation.equals("270"));
-                            }
+                            MediaMetadataRetriever m = new MediaMetadataRetriever();
+                            m.setDataSource(photo.path);
+                            String rotation = m.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                            rotate = rotation != null && (rotation.equals("90") || rotation.equals("270"));
                         } else {
                             ExifInterface exif = new ExifInterface(photo.path);
                             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
@@ -818,8 +818,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             paddingTop = 0;
         }
 //        paddingTop -= AndroidUtilities.dp(9);
-        if (listView.getPaddingTop() != paddingTop) {
-            listView.setPadding(listView.getPaddingLeft(), paddingTop, listView.getPaddingRight(), listView.getPaddingBottom());
+        if (listView.getPaddingTop() != paddingTop || listView.getPaddingBottom() != listPaddingBottom) {
+            listView.setPaddingWithoutRequestLayout(listView.getPaddingLeft(), paddingTop, listView.getPaddingRight(), listPaddingBottom);
             invalidate();
         }
 
@@ -1217,7 +1217,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
             if (draggingCell != null) {
                 canvas.save();
-                Point point = dragTranslate();
+                PointF point = dragTranslate();
                 canvas.translate(point.x, point.y);
                 if (draggingCell.draw(canvas, true)) {
                     invalidate();
@@ -1234,8 +1234,8 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
 
         private float draggingT = 0;
         private float savedDragFromX, savedDragFromY, savedDraggingT;
-        private final Point tmpPoint = new Point();
-        Point dragTranslate() {
+        private final PointF tmpPoint = new PointF();
+        PointF dragTranslate() {
             if (draggingCell == null) {
                 tmpPoint.x = 0;
                 tmpPoint.y = 0;
@@ -1277,7 +1277,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 draggingAnimator.cancel();
             }
 
-            Point dragTranslate = dragTranslate();
+            PointF dragTranslate = dragTranslate();
             savedDraggingT = draggingT;
             savedDragFromX = dragTranslate.x;
             savedDragFromY = dragTranslate.y;
@@ -1614,7 +1614,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
             if (draggingCell != null) {
                 groupY = 0;
                 RectF drawingRect = draggingCell.rect();
-                Point dragPoint = dragTranslate();
+                PointF dragPoint = dragTranslate();
                 RectF draggingCellXY = new RectF();
                 float cx = dragPoint.x, cy = dragPoint.y;
                 draggingCellXY.set(
@@ -2525,13 +2525,13 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
                 return getT() >= 0.95f ? this.groupHeight * maxHeight * getPreviewScale() : measure();
             }
 
-            private RectF buttonTextRect = new RectF();
+            private final RectF buttonTextRect = new RectF();
             private Text buttonText;
             private long buttonTextPrice;
-            private Paint buttonTextBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint buttonTextBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-            private Theme.MessageDrawable messageBackground = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMedia);
-            private Theme.MessageDrawable.PathDrawParams backgroundCacheParams = new Theme.MessageDrawable.PathDrawParams();
+            private final Theme.MessageDrawable messageBackground = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMedia);
+            private final Theme.MessageDrawable.PathDrawParams backgroundCacheParams = new Theme.MessageDrawable.PathDrawParams();
             public boolean draw(Canvas canvas) {
                 boolean update = false;
                 final float t = interpolator.getInterpolation(Math.min(1, (SystemClock.elapsedRealtime() - lastMediaUpdate) / (float) updateDuration));

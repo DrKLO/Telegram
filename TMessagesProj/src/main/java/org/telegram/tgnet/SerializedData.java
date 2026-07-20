@@ -431,6 +431,11 @@ public class SerializedData extends AbstractSerializedData {
                 len += 3;
                 sl = 4;
             }
+
+            if (l > remaining() || l < 0) {
+                throw new RuntimeException("string size too big");
+            }
+
             byte[] b = new byte[l];
             in.read(b);
             len++;
@@ -464,6 +469,11 @@ public class SerializedData extends AbstractSerializedData {
                 len += 3;
                 sl = 4;
             }
+
+            if (l > remaining() || l < 0) {
+                throw new RuntimeException("byte array size too big");
+            }
+
             byte[] b = new byte[l];
             in.read(b);
             len++;

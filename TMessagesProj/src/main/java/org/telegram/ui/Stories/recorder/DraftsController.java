@@ -503,6 +503,7 @@ public class DraftsController {
         public TLRPC.TL_error error;
 
         public String audioPath;
+        public TLRPC.InputDocument audioDocument;
         public String audioAuthor, audioTitle;
         public long audioDuration;
         public long audioOffset;
@@ -550,9 +551,9 @@ public class DraftsController {
             entry.matrix.getValues(this.matrixValues);
             this.gradientTopColor = entry.gradientTopColor;
             this.gradientBottomColor = entry.gradientBottomColor;
-            CharSequence caption = entry.caption;
-            this.captionEntities = entry.captionEntitiesAllowed ? MediaDataController.getInstance(entry.currentAccount).getEntities(new CharSequence[]{caption}, true) : null;
-            this.caption = caption == null ? "" : caption.toString();
+            final CharSequence[] caption = new CharSequence[] { entry.caption };
+            this.captionEntities = entry.captionEntitiesAllowed ? MediaDataController.getInstance(entry.currentAccount).getEntities(caption, true) : null;
+            this.caption = caption[0] == null ? "" : caption[0].toString();
             this.privacyRules.addAll(entry.privacyRules);
             this.paintFilePath = entry.paintFile == null ? "" : entry.paintFile.toString();
             this.paintEntitiesFilePath = entry.paintEntitiesFile == null ? "" : entry.paintEntitiesFile.toString();
@@ -566,6 +567,7 @@ public class DraftsController {
             this.error = entry.error;
 
             this.audioPath = entry.audioPath;
+            this.audioDocument = entry.audioDocument;
             this.audioAuthor = entry.audioAuthor;
             this.audioTitle = entry.audioTitle;
             this.audioDuration = entry.audioDuration;
@@ -635,6 +637,7 @@ public class DraftsController {
                 }
                 caption = Emoji.replaceEmoji(caption, Theme.chat_msgTextPaint.getFontMetricsInt(), true);
                 MessageObject.addEntitiesToText(caption, captionEntities, true, false, true, false);
+                caption = MessageObject.replaceAnimatedEmoji(caption, captionEntities, Theme.chat_msgTextPaint.getFontMetricsInt());
                 entry.caption = caption;
             } else {
                 entry.caption = "";
@@ -665,6 +668,7 @@ public class DraftsController {
             entry.error = error;
 
             entry.audioPath = audioPath;
+            entry.audioDocument = audioDocument;
             entry.audioAuthor = audioAuthor;
             entry.audioTitle = audioTitle;
             entry.audioDuration = audioDuration;
@@ -841,6 +845,12 @@ public class DraftsController {
                 stream.writeInt32(TLRPC.TL_null.constructor);
             } else {
                 crop.serializeToStream(stream);
+            }
+
+            if (audioDocument == null) {
+                stream.writeInt32(TLRPC.TL_null.constructor);
+            } else {
+                audioDocument.serializeToStream(stream);
             }
         }
 
@@ -1053,6 +1063,12 @@ public class DraftsController {
                 if (magic == MediaController.CropState.constructor) {
                     crop = new MediaController.CropState();
                     crop.readParams(stream, exception);
+                }
+            }
+            if (stream.remaining() > 0) {
+                magic = stream.readInt32(exception);
+                if (magic == TLRPC.TL_inputDocument.constructor) {
+                    audioDocument = TLRPC.InputDocument.TLdeserialize(stream, magic, exception);
                 }
             }
         }

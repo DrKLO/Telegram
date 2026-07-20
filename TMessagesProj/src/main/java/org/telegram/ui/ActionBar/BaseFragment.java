@@ -15,7 +15,6 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
@@ -32,16 +31,21 @@ import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -52,8 +56,11 @@ import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.utils.LeakDetector;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ArticleViewer;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
@@ -63,7 +70,7 @@ import java.util.ArrayList;
 
 public abstract class BaseFragment {
 
-    protected boolean isFinished;
+    public boolean isFinished;
     protected boolean finishing;
     public Dialog visibleDialog;
     protected int currentAccount = UserConfig.selectedAccount;
@@ -112,6 +119,10 @@ public abstract class BaseFragment {
         public void setOnDismissListener(Runnable onDismiss);
 
         default void setLastVisible(boolean lastVisible) {};
+
+        default public BulletinFactory getBulletinFactory() {
+            return null;
+        }
     }
 
     public static interface AttachedSheetWindow {}
@@ -193,12 +204,22 @@ public abstract class BaseFragment {
     }
 
     public BaseFragment() {
-        classGuid = ConnectionsManager.generateClassGuid();
+        this(null);
     }
 
     public BaseFragment(Bundle args) {
         arguments = args;
         classGuid = ConnectionsManager.generateClassGuid();
+        if (BuildConfig.DEBUG_PRIVATE_VERSION) {
+            LeakDetector.getInstance().add(this);
+        }
+
+        Bulletin.addDelegate(this, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                return isSupportEdgeToEdge() ? AndroidUtilities.navigationBarHeight : 0;
+            }
+        });
     }
 
     public void setCurrentAccount(int account) {
@@ -279,11 +300,7 @@ public abstract class BaseFragment {
     public void setInPreviewMode(boolean value) {
         inPreviewMode = value;
         if (actionBar != null) {
-            if (inPreviewMode) {
-                actionBar.setOccupyStatusBar(false);
-            } else {
-                actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21);
-            }
+            actionBar.setOccupyStatusBar(!inPreviewMode);
         }
     }
 
@@ -388,7 +405,7 @@ public abstract class BaseFragment {
         actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), true);
         actionBar.setItemsColor(getThemedColor(Theme.key_actionBarDefaultIcon), false);
         actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
-        if (inPreviewMode || inBubbleMode) {
+        if (inPreviewMode || inBubbleMode || parentLayout != null && parentLayout.isLayersLayout()) {
             actionBar.setOccupyStatusBar(false);
         }
         return actionBar;
@@ -466,7 +483,7 @@ public abstract class BaseFragment {
         }
 
         if (hasForceLightStatusBar() && !AndroidUtilities.isTablet() && getParentLayout().getLastFragment() == this && getParentActivity() != null && !finishing) {
-            AndroidUtilities.setLightStatusBar(getParentActivity().getWindow(), Theme.getColor(Theme.key_actionBarDefault) == Color.WHITE);
+            AndroidUtilities.setLightStatusBar(getParentActivity(), Theme.getColor(Theme.key_actionBarDefault) == Color.WHITE);
         }
 
         if (sheetsStack != null) {
@@ -550,8 +567,9 @@ public abstract class BaseFragment {
 
     }
 
-    public boolean onBackPressed() {
-        if (closeSheet()) {
+    public boolean onBackPressed(boolean invoked) {
+        if (hasShownSheet()) {
+            if (invoked) closeSheet();
             return false;
         }
         return true;
@@ -600,6 +618,10 @@ public abstract class BaseFragment {
             }
         }
         return null;
+    }
+
+    public FrameLayout getBulletinLayoutContainer() {
+        return getLayoutContainer();
     }
 
     public boolean presentFragmentAsPreview(BaseFragment fragment) {
@@ -688,10 +710,6 @@ public abstract class BaseFragment {
 
     }
 
-    public void onSlideProgressFront(boolean isOpen, float progress) {
-
-    }
-
     public void onTransitionAnimationProgress(boolean isOpen, float progress) {
 
     }
@@ -725,9 +743,17 @@ public abstract class BaseFragment {
             c.run();
         }
         updateSheetsVisibility();
+        checkSystemBarColors();
     }
 
-    private void updateSheetsVisibility() {
+    protected void checkSystemBarColors() {
+        Activity activity = getParentActivity();
+        if (activity instanceof LaunchActivity) {
+            ((LaunchActivity) activity).checkSystemBarColors(true, true, true);
+        }
+    }
+
+    protected void updateSheetsVisibility() {
         if (sheetsStack == null) return;
         for (int i = 0; i < sheetsStack.size(); ++i) {
             AttachedSheet sheet = sheetsStack.get(i);
@@ -846,6 +872,10 @@ public abstract class BaseFragment {
         return getAccountInstance().getMessagesController();
     }
 
+    public GiftAuctionController getGiftAuctionsController() {
+        return getAccountInstance().getGiftAuctionsController();
+    }
+
     protected ContactsController getContactsController() {
         return getAccountInstance().getContactsController();
     }
@@ -912,7 +942,7 @@ public abstract class BaseFragment {
 
     }
 
-    protected Animator getCustomSlideTransition(boolean topFragment, boolean backAnimation, float distanceToMove) {
+    public Animator getCustomSlideTransition(boolean topFragment, boolean backAnimation, float distanceToMove) {
         return null;
     }
 
@@ -921,10 +951,6 @@ public abstract class BaseFragment {
     }
 
     public void prepareFragmentToSlide(boolean topFragment, boolean beginSlide) {
-
-    }
-
-    public void setProgressToDrawerOpened(float v) {
 
     }
 
@@ -968,9 +994,9 @@ public abstract class BaseFragment {
                 if (params == null || !params.occupyNavigationBar) {
                     fixNavigationBar(Theme.getColor(Theme.key_dialogBackgroundGray, fragment.getResourceProvider()));
                 } else {
-                    AndroidUtilities.setLightNavigationBar(bottomSheet[0].getWindow(), true);
+                    AndroidUtilities.setLightNavigationBar(bottomSheet[0], true);
                 }
-                AndroidUtilities.setLightStatusBar(getWindow(), fragment.isLightStatusBar());
+                AndroidUtilities.setLightStatusBar(this, fragment.isLightStatusBar());
                 fragment.onBottomSheetCreated();
             }
 
@@ -1078,20 +1104,26 @@ public abstract class BaseFragment {
     }
 
     public void setNavigationBarColor(int color) {
+        if (isSupportEdgeToEdge()) {
+            return;
+        }
+
         Activity activity = getParentActivity();
         if (activity instanceof LaunchActivity) {
             LaunchActivity launchActivity = (LaunchActivity) activity;
-            launchActivity.setNavigationBarColor(color, true);
+            launchActivity.setNavigationBarColor(color);
         } else {
             if (activity != null) {
                 Window window = activity.getWindow();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && window != null && window.getNavigationBarColor() != color) {
-                    window.setNavigationBarColor(color);
-                    final float brightness = AndroidUtilities.computePerceivedBrightness(color);
-                    AndroidUtilities.setLightNavigationBar(window, brightness >= 0.721f);
+                    // window.setNavigationBarColor(color);
                 }
             }
         }
+
+        final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+        AndroidUtilities.setLightNavigationBar(activity, brightness >= 0.721f);
+
         if (parentLayout != null) {
             parentLayout.setNavigationBarColor(color);
         }
@@ -1140,10 +1172,6 @@ public abstract class BaseFragment {
             color = Theme.getColor(key, null, true);
         }
         return ColorUtils.calculateLuminance(color) > 0.7f;
-    }
-
-    public void drawOverlay(Canvas canvas, View parent) {
-
     }
 
     public void setPreviewOpenedProgress(float progress) {
@@ -1259,6 +1287,43 @@ public abstract class BaseFragment {
         return storyViewer;
     }
 
+    public StoryViewer getOrCreateStoryViewer(int account) {
+        if (sheetsStack == null) {
+            sheetsStack = new ArrayList<>();
+        }
+        StoryViewer storyViewer = null;
+        if (!sheetsStack.isEmpty() && sheetsStack.get(sheetsStack.size() - 1) instanceof StoryViewer) {
+            storyViewer = (StoryViewer) sheetsStack.get(sheetsStack.size() - 1);
+        }
+        if (storyViewer != null && storyViewer.currentAccount != account) {
+            storyViewer.close(true);
+            removeSheet(storyViewer);
+            storyViewer = null;
+        }
+        if (storyViewer == null) {
+            storyViewer = new StoryViewer(this);
+            if (parentLayout != null && parentLayout.isSheet()) {
+                storyViewer.fromBottomSheet = true;
+            }
+            sheetsStack.add(storyViewer);
+            updateSheetsVisibility();
+        }
+        return storyViewer;
+    }
+
+
+    public void setTitleOverlayTextIfActionBarAttached(String title, int titleId, Runnable action) {
+        if (actionBar != null && actionBar.shouldAddToContainer()) {
+            setTitleOverlayText(title, titleId, action);
+        }
+    }
+
+    public void setTitleOverlayText(String title, int titleId, Runnable action) {
+        if (actionBar != null) {
+            actionBar.setTitleOverlayText(title, titleId, action);
+        }
+    }
+
     public void removeSheet(BaseFragment.AttachedSheet sheet) {
         if (sheetsStack == null) return;
         sheetsStack.remove(sheet);
@@ -1288,6 +1353,23 @@ public abstract class BaseFragment {
         sheetsStack.add(storyViewer);
         updateSheetsVisibility();
         return storyViewer;
+    }
+
+    public ArticleViewer getArticleViewer() {
+        if (getLastSheet() instanceof ArticleViewer.Sheet && getLastSheet().isShown()) {
+            return ((ArticleViewer.Sheet) getLastSheet()).getArticleViewer();
+        }
+        if (
+            parentLayout instanceof ActionBarLayout &&
+            ((ActionBarLayout) parentLayout).getSheetFragment(false) != null &&
+            ((ActionBarLayout) parentLayout).getSheetFragment(false).getLastSheet() instanceof ArticleViewer.Sheet
+        ) {
+            ArticleViewer.Sheet lastSheet = (ArticleViewer.Sheet) ((ActionBarLayout) parentLayout).getSheetFragment(false).getLastSheet();
+            if (lastSheet.isShown()) {
+                return lastSheet.getArticleViewer();
+            }
+        }
+        return null;
     }
 
     public ArticleViewer createArticleViewer(boolean forceRecreate) {
@@ -1328,4 +1410,43 @@ public abstract class BaseFragment {
         public boolean occupyNavigationBar;
     }
 
+    public boolean isSupportEdgeToEdge() {
+        // warn: overridden method must return a constant
+        return false;
+    }
+
+    public boolean drawEdgeNavigationBar() {
+        return isSupportEdgeToEdge();
+    }
+
+    public WindowInsetsCompat onInsetsInternal(@NonNull View view, @NonNull WindowInsetsCompat windowInsets) {
+        final Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars() | WindowInsetsCompat.Type.statusBars());
+        onInsets(insets.left, insets.top, insets.right, bottomInset = insets.bottom);
+        return WindowInsetsCompat.CONSUMED;
+    }
+
+    private int bottomInset;
+    public int getBottomInset() {
+        return bottomInset;
+    }
+
+    public void onInsets(int left, int top, int right, int bottom) {
+
+    }
+
+
+    private Bulletin.Delegate bulletinDelegate;
+
+    public void setBulletinDelegate(Bulletin.Delegate bulletinDelegate) {
+        this.bulletinDelegate = bulletinDelegate;
+    }
+
+    public Bulletin.Delegate getBulletinDelegate() {
+        return bulletinDelegate;
+    }
+
+
+    protected void dumpCanvas() {
+        AndroidUtilities.dumpCanvas(fragmentView);
+    }
 }

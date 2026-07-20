@@ -65,52 +65,45 @@ public class ReportBottomSheet extends BottomSheet {
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final boolean sponsored;
     private final boolean stories;
+    private final boolean ephemeral;
     private final ArrayList<Integer> messageIds;
     private final byte[] sponsoredId;
     private final long dialogId;
     private Listener listener;
 
     interface Listener {
-        default void onReported() {};
-        default void onHidden() {};
-        default void onPremiumRequired() {};
+        default void onReported() {}
+        default void onHidden() {}
+        default void onPremiumRequired() {}
     }
 
-    public ReportBottomSheet(
+    private ReportBottomSheet(
         Context context,
         Theme.ResourcesProvider resourcesProvider,
         boolean stories,
-        long dialogId,
-        int messageId
-    ) {
-        this(context, resourcesProvider, stories, dialogId, new ArrayList<>(Arrays.asList(messageId)));
-    }
-
-    public ReportBottomSheet(
-        Context context,
-        Theme.ResourcesProvider resourcesProvider,
-        boolean stories,
+        boolean ephemeral,
         long dialogId,
         ArrayList<Integer> messageIds
     ) {
-        this(false, context, resourcesProvider, dialogId, stories, messageIds, null);
+        this(false, context, resourcesProvider, dialogId, stories, ephemeral, messageIds, null);
     }
 
-    public ReportBottomSheet(
+    private ReportBottomSheet(
         Context context,
         Theme.ResourcesProvider resourcesProvider,
         long dialogId,
         byte[] sponsoredId
     ) {
-        this(true, context, resourcesProvider, dialogId, false, null, sponsoredId);
+        this(true, context, resourcesProvider, dialogId, false, false, null, sponsoredId);
     }
 
-    public ReportBottomSheet(
+    private ReportBottomSheet(
         final boolean sponsored,
         Context context,
         Theme.ResourcesProvider resourcesProvider,
         long dialogId,
         boolean stories,
+        boolean ephemeral,
         ArrayList<Integer> messageIds,
         byte[] sponsoredId
     ) {
@@ -118,6 +111,7 @@ public class ReportBottomSheet extends BottomSheet {
         this.sponsored = sponsored;
         this.messageIds = messageIds;
         this.stories = stories;
+        this.ephemeral = ephemeral;
         this.sponsoredId = sponsoredId;
         this.dialogId = dialogId;
         backgroundPaint.setColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
@@ -185,7 +179,7 @@ public class ReportBottomSheet extends BottomSheet {
         }
     }
 
-    public ReportBottomSheet setReportChooseOption(TLRPC.TL_channels_sponsoredMessageReportResultChooseOption chooseOption) {
+    private ReportBottomSheet setReportChooseOption(TLRPC.TL_channels_sponsoredMessageReportResultChooseOption chooseOption) {
         View[] viewPages = viewPager.getViewPages();
         if (viewPages[0] instanceof Page) {
             ((Page) viewPages[0]).bind(PAGE_TYPE_OPTIONS);
@@ -197,7 +191,7 @@ public class ReportBottomSheet extends BottomSheet {
         return this;
     }
 
-    public ReportBottomSheet setReportChooseOption(TLRPC.TL_reportResultChooseOption chooseOption) {
+    private ReportBottomSheet setReportChooseOption(TLRPC.TL_reportResultChooseOption chooseOption) {
         View[] viewPages = viewPager.getViewPages();
         if (viewPages[0] instanceof Page) {
             ((Page) viewPages[0]).bind(PAGE_TYPE_OPTIONS);
@@ -209,7 +203,7 @@ public class ReportBottomSheet extends BottomSheet {
         return this;
     }
 
-    public ReportBottomSheet setReportChooseOption(TLRPC.TL_reportResultAddComment chooseOption) {
+    private ReportBottomSheet setReportChooseOption(TLRPC.TL_reportResultAddComment chooseOption) {
         View[] viewPages = viewPager.getViewPages();
         if (viewPages[0] instanceof Page) {
             ((Page) viewPages[0]).bind(PAGE_TYPE_OPTIONS);
@@ -221,7 +215,7 @@ public class ReportBottomSheet extends BottomSheet {
         return this;
     }
 
-    public ReportBottomSheet setListener(Listener listener) {
+    private ReportBottomSheet setListener(Listener listener) {
         this.listener = listener;
         return this;
     }
@@ -262,6 +256,15 @@ public class ReportBottomSheet extends BottomSheet {
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             if (messageIds != null) {
                 req.id.addAll(messageIds);
+            }
+            req.message = comment == null ? "" : comment;
+            req.option = option;
+            request = req;
+        } else if (ephemeral) {
+            TLRPC.TL_ephemeral_reportMessage req = new TLRPC.TL_ephemeral_reportMessage();
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+            if (messageIds != null && !messageIds.isEmpty()) {
+                req.id = messageIds.get(0);
             }
             req.message = comment == null ? "" : comment;
             req.option = option;
@@ -752,7 +755,7 @@ public class ReportBottomSheet extends BottomSheet {
         Context context,
         long dialogId
     ) {
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
+        open(currentAccount, context, dialogId, false, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openChat(
@@ -764,7 +767,7 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
+        open(currentAccount, context, dialogId, false, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openChat(
@@ -776,7 +779,7 @@ public class ReportBottomSheet extends BottomSheet {
         final Context context = fragment.getContext();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
+        open(currentAccount, context, dialogId, false, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
     }
 
     public static void openMessage(
@@ -788,21 +791,8 @@ public class ReportBottomSheet extends BottomSheet {
         final Context context = fragment.getContext();
         if (context == null) return;
 
-        final ArrayList<Integer> messageIds = new ArrayList<>(Collections.singleton(message.getId()));
-        open(currentAccount, context,  message.getDialogId(), false, messageIds, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null, null);
-    }
-
-    public static void openMessages(
-        ChatActivity fragment,
-        ArrayList<Integer> ids
-    ) {
-        if (fragment == null) return;
-        final int currentAccount = fragment.getCurrentAccount();
-        final Context context = fragment.getContext();
-        final long dialogId = fragment.getDialogId();
-        if (context == null) return;
-
-        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null, null);
+        final ArrayList<Integer> messageIds = new ArrayList<>(Collections.singleton(message.isEphemeral() ? message.getEphemeralId() : message.getId()));
+        open(currentAccount, context,  message.getDialogId(), false, message.isEphemeral(), messageIds, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), new byte[]{}, null, null);
     }
 
     public static void continueReport(
@@ -818,7 +808,7 @@ public class ReportBottomSheet extends BottomSheet {
         final long dialogId = fragment.getDialogId();
         if (context == null) return;
 
-        open(currentAccount, context, dialogId, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), option, message, whenDone);
+        open(currentAccount, context, dialogId, false, false, ids, BulletinFactory.of(fragment), fragment == null ? null : fragment.getResourceProvider(), option, message, whenDone);
     }
 
     public static void openStory(
@@ -830,14 +820,15 @@ public class ReportBottomSheet extends BottomSheet {
         Utilities.Callback<Boolean> whenDone
     ) {
         final ArrayList<Integer> storyIds = new ArrayList<>(Collections.singleton(storyItem.id));
-        open(currentAccount, context, storyItem.dialogId, true, storyIds, bulletinFactory, resourceProvider, new byte[]{}, null, whenDone);
+        open(currentAccount, context, storyItem.dialogId, true, false, storyIds, bulletinFactory, resourceProvider, new byte[]{}, null, whenDone);
     }
 
-    public static void open(
+    private static void open(
         int currentAccount,
         Context context,
         long dialogId,
         boolean stories,
+        boolean ephemeral,
         ArrayList<Integer> messageIds,
         BulletinFactory bulletinFactory,
         Theme.ResourcesProvider resourceProvider,
@@ -855,6 +846,15 @@ public class ReportBottomSheet extends BottomSheet {
             req.option = option;
             req.message = TextUtils.isEmpty(message) ? "" : message;
             request = req;
+        } else if (ephemeral) {
+            TLRPC.TL_ephemeral_reportMessage req = new TLRPC.TL_ephemeral_reportMessage();
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+            if (!messageIds.isEmpty()) {
+                req.id = messageIds.get(0);
+            }
+            req.message = TextUtils.isEmpty(message) ? "" : message;
+            req.option = option;
+            request = req;
         } else {
             TLRPC.TL_messages_report req = new TLRPC.TL_messages_report();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
@@ -867,7 +867,7 @@ public class ReportBottomSheet extends BottomSheet {
             if (response != null) {
                 if (response instanceof TLRPC.TL_reportResultChooseOption || response instanceof TLRPC.TL_reportResultAddComment) {
                     AndroidUtilities.runOnUIThread(() -> {
-                        final ReportBottomSheet sheet = new ReportBottomSheet(context, resourceProvider, stories, dialogId, messageIds);
+                        final ReportBottomSheet sheet = new ReportBottomSheet(context, resourceProvider, stories, ephemeral, dialogId, messageIds);
                         if (response instanceof TLRPC.TL_reportResultChooseOption) {
                             sheet.setReportChooseOption((TLRPC.TL_reportResultChooseOption) response);
                         } else if (response instanceof TLRPC.TL_reportResultAddComment) {

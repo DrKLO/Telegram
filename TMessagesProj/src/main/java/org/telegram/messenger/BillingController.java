@@ -1,6 +1,5 @@
 package org.telegram.messenger;
 
-import static org.telegram.messenger.MessagesController.findUpdates;
 import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
 
 import android.app.Activity;
@@ -8,7 +7,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,16 +26,15 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.utils.BillingUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LoginActivity;
 import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.Stars.StarsController;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -108,6 +105,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     }
 
     private static NumberFormat currencyInstance;
+    private static NumberFormat currencyInstanceRounded;
     public String formatCurrency(long amount, String currency, int exp, boolean rounded) {
         if (currency == null || currency.isEmpty()) {
             return String.valueOf(amount);
@@ -125,8 +123,13 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             }
             currencyInstance.setCurrency(cur);
             if (rounded) {
+                currencyInstance.setMaximumFractionDigits(0);
+                currencyInstance.setMinimumFractionDigits(0);
                 return currencyInstance.format(Math.round(amount / Math.pow(10, exp)));
             }
+            final int defaultFractionDigits = cur.getDefaultFractionDigits();
+            currencyInstance.setMinimumFractionDigits(defaultFractionDigits);
+            currencyInstance.setMaximumFractionDigits(defaultFractionDigits);
             return currencyInstance.format(amount / Math.pow(10, exp));
         }
         return amount + " " + currency;
@@ -366,7 +369,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                 FileLog.d("BillingController.onPurchasesUpdatedInternal: " + purchase.getOrderId() + " purchase is purchased and now assigned");
 
                                 if (req.purpose instanceof TLRPC.TL_inputStorePaymentAuthCode) {
-                                    for (TLRPC.TL_updateSentPhoneCode u : findUpdatesAndRemove((TLRPC.Updates) response, TLRPC.TL_updateSentPhoneCode.class)) {
+                                    for (TL_update.TL_updateSentPhoneCode u : findUpdatesAndRemove((TLRPC.Updates) response, TL_update.TL_updateSentPhoneCode.class)) {
                                         AndroidUtilities.runOnUIThread(() -> {
                                             LoginActivity fragment = LaunchActivity.findFragment(LoginActivity.class);
                                             if (fragment == null) {

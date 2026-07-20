@@ -26,7 +26,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.SpannableString;
@@ -59,6 +58,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -66,11 +66,10 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilerEffect2;
 import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Stars.StarsIntroActivity;
 
 public class PhotoAttachPhotoCell extends FrameLayout {
 
-    private BackupImageView imageView;
+    public BackupImageView imageView;
     private FrameLayout container;
     private FrameLayout checkFrame;
     private CheckBox2 checkBox;
@@ -79,6 +78,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private FrameLayout videoInfoContainer;
     private AnimatorSet animatorSet;
     private boolean isLast;
+    private boolean allowLivePhotos;
     private boolean pressed;
     private static Rect rect = new Rect();
     private PhotoAttachPhotoCellDelegate delegate;
@@ -154,6 +154,8 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         imageView = new BackupImageView(context) {
             private Paint crossfadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             private long lastUpdate;
+            private Drawable livePhotoIcon;
+            private Drawable livePhotoIconOff;
 
             @Override
             protected void onDraw(Canvas canvas) {
@@ -211,6 +213,28 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                     crossfadeDuration = null;
                     invalidate();
                 }
+
+                if (allowLivePhotos && !isParentDoFastScroll() && photoEntry != null && photoEntry.isLivePhoto()) {
+                    Drawable icon;
+                    if (photoEntry.isUnalivePhoto()) {
+                        if (livePhotoIconOff == null) {
+                            livePhotoIconOff = getContext().getResources().getDrawable(R.drawable.media_live_off).mutate();
+                        }
+                        icon = livePhotoIconOff;
+                    } else {
+                        if (livePhotoIcon == null) {
+                            livePhotoIcon = getContext().getResources().getDrawable(R.drawable.media_live_on).mutate();
+                        }
+                        icon = livePhotoIcon;
+                    }
+                    icon.setBounds(
+                            (int) (imageReceiver.getImageX() + dp(8)),
+                            (int) (imageReceiver.getImageY() + dp(8)),
+                            (int) (imageReceiver.getImageX() + dp(8 + 22)),
+                            (int) (imageReceiver.getImageY() + dp(8 + 18))
+                    );
+                    icon.draw(canvas);
+                }
             }
 
             @Override
@@ -260,6 +284,20 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         itemSize = dp(80);
     }
 
+    public interface ParentFastScrollDelegate {
+        boolean isInFastScroll();
+    }
+
+    private ParentFastScrollDelegate fastScrollDelegate;
+
+    public void setFastScrollDelegate(ParentFastScrollDelegate fastScrollDelegate) {
+        this.fastScrollDelegate = fastScrollDelegate;
+    }
+
+    private boolean isParentDoFastScroll() {
+        return fastScrollDelegate != null && fastScrollDelegate.isInFastScroll();
+    }
+
     public boolean canRevealSpoiler() {
         return hasSpoiler && spoilerRevealProgress == 0f && (photoEntry == null || !photoEntry.isAttachSpoilerRevealed);
     }
@@ -286,17 +324,18 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     }
 
     public void setHighQuality(boolean highQuality) {
+        highQuality = highQuality && isChecked();
         if (this.highQuality != highQuality) {
             this.highQuality = highQuality;
 
             if (photoEntry != null) {
-                if (photoEntry.isVideo) {
+                if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                     imageView.setOrientation(0, true);
                     videoInfoContainer.setVisibility(VISIBLE);
                     videoPlayImageView.setVisibility(VISIBLE);
                     ((LayoutParams) videoTextView.getLayoutParams()).leftMargin = dp(13);
                     videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
-                } else if (photoEntry.highQuality) {
+                } else if (photoEntry.isHighQuality()) {
                     videoInfoContainer.setVisibility(VISIBLE);
                     videoPlayImageView.setVisibility(GONE);
                     ((LayoutParams) videoTextView.getLayoutParams()).leftMargin = dp(0);
@@ -437,7 +476,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (itemSizeChanged) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemSize + dp(5), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemSize + dp(ChatAttachAlertPhotoLayout.GAP), MeasureSpec.EXACTLY));
         } else {
             if (isVertical) {
                 super.onMeasure(MeasureSpec.makeMeasureSpec(dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(80 + (isLast ? 0 : 6)), MeasureSpec.EXACTLY));
@@ -471,17 +510,18 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return videoInfoContainer;
     }
 
-    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean selectedMultiple, boolean needCheckShow, boolean last) {
+    public void setPhotoEntry(MediaController.PhotoEntry entry, boolean selectedMultiple, boolean needCheckShow, boolean last, boolean allowLivePhotos) {
         pressed = false;
         photoEntry = entry;
         isLast = last;
-        if (photoEntry.isVideo) {
+        this.allowLivePhotos = allowLivePhotos;
+        if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
             imageView.setOrientation(0, true);
             videoInfoContainer.setVisibility(VISIBLE);
             videoPlayImageView.setVisibility(VISIBLE);
             ((LayoutParams) videoTextView.getLayoutParams()).leftMargin = dp(13);
             videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
-        } else if (photoEntry.highQuality) {
+        } else if (photoEntry.isHighQuality() && isChecked()) {
             videoInfoContainer.setVisibility(VISIBLE);
             videoPlayImageView.setVisibility(GONE);
             ((LayoutParams) videoTextView.getLayoutParams()).leftMargin = dp(0);
@@ -495,7 +535,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         } else if (photoEntry.thumbPath != null) {
             imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
         } else if (photoEntry.path != null) {
-            if (photoEntry.isVideo) {
+            if (photoEntry.isVideo && !photoEntry.isLivePhoto()) {
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
             } else {
                 imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
@@ -510,7 +550,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         videoInfoContainer.setAlpha(showing ? 0.0f : 1.0f);
         requestLayout();
         setHasSpoiler(entry.hasSpoiler);
-        setHighQuality(entry.highQuality);
+        setHighQuality(entry.isHighQuality() && isChecked());
         setStarsPrice(entry.starsAmount, selectedMultiple);
     }
 
@@ -596,6 +636,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
                 container.setScaleY(checked ? 0.787f : 1.0f);
             }
         }
+        setHighQuality(photoEntry != null && photoEntry.isHighQuality() && isChecked());
     }
 
     public void setNum(int num) {
@@ -704,7 +745,9 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
         StringBuilder sb = new StringBuilder();
-        if (photoEntry != null && photoEntry.isVideo) {
+        if (photoEntry != null && photoEntry.isLivePhoto()) {
+            sb.append(getString(R.string.AttachLivePhoto));
+        } else if (photoEntry != null && photoEntry.isVideo) {
             sb.append(getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
         } else {
             sb.append(getString(R.string.AttachPhoto));
@@ -717,9 +760,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         if (checkBox.isChecked()) {
             info.setSelected(true);
         }
-        if (Build.VERSION.SDK_INT >= 21) {
-            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, getString(R.string.Open)));
-        }
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_photo, getString(R.string.Open)));
     }
 
     @Override

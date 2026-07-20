@@ -28,7 +28,7 @@ public class CustomHtml {
             if (next < 0) {
                 next = end;
             }
-            QuoteSpan[] spans = text.getSpans(i, next, QuoteSpan.class);
+            final QuoteSpan[] spans = text.getSpans(i, next, QuoteSpan.class);
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
@@ -46,6 +46,52 @@ public class CustomHtml {
         }
     }
 
+    private static void textStyleSpanBegin(TextStyleSpan.TextStyleRun run, StringBuilder out) {
+        if (run == null) return;
+        if ((run.flags & (TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_SPOILER_REVEALED)) > 0) {
+            out.append("<spoiler>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_BOLD) > 0) {
+            out.append("<b>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_ITALIC) > 0) {
+            out.append("<i>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) > 0) {
+            out.append("<u>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
+            out.append("<s>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_URL) > 0) {
+            if (run.urlEntity != null) {
+                out.append("<a href=\"").append(run.urlEntity.url).append("\">");
+            }
+        }
+    }
+
+    private static void textStyleSpanEnd(TextStyleSpan.TextStyleRun run, StringBuilder out) {
+        if (run == null) return;
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_URL) > 0 && run != null && run.urlEntity != null) {
+            out.append("</a>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
+            out.append("</s>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) > 0) {
+            out.append("</u>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_ITALIC) > 0) {
+            out.append("</i>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_BOLD) > 0) {
+            out.append("</b>");
+        }
+        if ((run.flags & (TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_SPOILER_REVEALED)) > 0) {
+            out.append("</spoiler>");
+        }
+    }
+
     private static void toHTML_1_wrapTextStyle(StringBuilder out, Spanned text, int start, int end) {
         int next;
         for (int i = start; i < end; i = next) {
@@ -53,34 +99,14 @@ public class CustomHtml {
             if (next < 0) {
                 next = end;
             }
-            TextStyleSpan[] spans = text.getSpans(i, next, TextStyleSpan.class);
+            final TextStyleSpan[] spans = text.getSpans(i, next, TextStyleSpan.class);
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
                     Object spanObject = spans[j];
                     if (spanObject != null) {
-                        TextStyleSpan span = (TextStyleSpan) spanObject;
-                        int flags = span.getStyleFlags();
-                        if ((flags & (TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_SPOILER_REVEALED)) > 0) {
-                            out.append("<spoiler>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_BOLD) > 0) {
-                            out.append("<b>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_ITALIC) > 0) {
-                            out.append("<i>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) > 0) {
-                            out.append("<u>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
-                            out.append("<s>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_URL) > 0) {
-                            if (span.getTextStyleRun() != null && span.getTextStyleRun().urlEntity != null) {
-                                out.append("<a href=\"").append(span.getTextStyleRun().urlEntity.url).append("\">");
-                            }
-                        }
+                        final TextStyleSpan span = (TextStyleSpan) spanObject;
+                        textStyleSpanBegin(span.getTextStyleRun(), out);
                     } else if (spanObject instanceof URLSpanMono) {
                         out.append("<pre>");
                     }
@@ -93,26 +119,8 @@ public class CustomHtml {
                 for (int j = 0; j < spans.length; ++j) {
                     TextStyleSpan spanObject = spans[j];
                     if (spanObject != null) {
-                        TextStyleSpan span = (TextStyleSpan) spanObject;
-                        int flags = span.getStyleFlags();
-                        if ((flags & TextStyleSpan.FLAG_STYLE_URL) > 0 && span.getTextStyleRun() != null && span.getTextStyleRun().urlEntity != null) {
-                            out.append("</a>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
-                            out.append("</s>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_UNDERLINE) > 0) {
-                            out.append("</u>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_ITALIC) > 0) {
-                            out.append("</i>");
-                        }
-                        if ((flags & TextStyleSpan.FLAG_STYLE_BOLD) > 0) {
-                            out.append("</b>");
-                        }
-                        if ((flags & (TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_SPOILER_REVEALED)) > 0) {
-                            out.append("</spoiler>");
-                        }
+                        final TextStyleSpan span = (TextStyleSpan) spanObject;
+                        textStyleSpanEnd(span.getTextStyleRun(), out);
                     }
                 }
             }
@@ -126,11 +134,12 @@ public class CustomHtml {
             if (next < 0) {
                 next = end;
             }
-            URLSpanReplacement[] spans = text.getSpans(i, next, URLSpanReplacement.class);
+            final URLSpanReplacement[] spans = text.getSpans(i, next, URLSpanReplacement.class);
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
-                    URLSpanReplacement span = spans[j];
+                    final URLSpanReplacement span = spans[j];
+                    textStyleSpanBegin(span.getTextStyleRun(), out);
                     out.append("<a href=\"").append(span.getURL()).append("\">");
                 }
             }
@@ -139,7 +148,9 @@ public class CustomHtml {
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
+                    final URLSpanReplacement span = spans[j];
                     out.append("</a>");
+                    textStyleSpanEnd(span.getTextStyleRun(), out);
                 }
             }
         }

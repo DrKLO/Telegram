@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
@@ -42,8 +43,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MessageBackgroundDrawable;
-import org.telegram.ui.Components.Point;
-import org.telegram.ui.Components.Rect;
+import org.telegram.ui.Components.RectOld;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.StoryEntry;
@@ -70,11 +70,11 @@ public class MessageEntityView extends EntityView {
         return false;
     }
 
-    public MessageEntityView(Context context, Point position, ArrayList<MessageObject> messageObjects, BlurringShader.BlurManager blurManager, boolean isRepostVideoPreview, PreviewView.TextureViewHolder videoTextureHolder) {
+    public MessageEntityView(Context context, PointF position, ArrayList<MessageObject> messageObjects, BlurringShader.BlurManager blurManager, boolean isRepostVideoPreview, PreviewView.TextureViewHolder videoTextureHolder) {
         this(context, position, 0.0f, 1.0f, messageObjects, blurManager, isRepostVideoPreview, videoTextureHolder);
     }
 
-    public MessageEntityView(Context context, Point position, float angle, float scale, ArrayList<MessageObject> thisMessageObjects, BlurringShader.BlurManager blurManager, boolean isRepostVideoPreview, PreviewView.TextureViewHolder videoTextureHolder) {
+    public MessageEntityView(Context context, PointF position, float angle, float scale, ArrayList<MessageObject> thisMessageObjects, BlurringShader.BlurManager blurManager, boolean isRepostVideoPreview, PreviewView.TextureViewHolder videoTextureHolder) {
         super(context, position);
         this.blurManager = blurManager;
         setRotation(angle);
@@ -1119,7 +1119,7 @@ public class MessageEntityView extends EntityView {
             if (scale < 1) {
                 setScale(scale);
             }
-            final Point p = getPosition();
+            final PointF p = getPosition();
             if (!isAction) {
                 p.x -= dp(19) * Math.min(1, scale);
             }
@@ -1130,13 +1130,13 @@ public class MessageEntityView extends EntityView {
     }
 
     @Override
-    public Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
-        return new Rect(
+        return new RectOld(
             getPositionX() * scale - getMeasuredWidth() * getScale() / 2.0f * scale - dp(1.0f + 19.5f + 15),
             getPositionY() * scale - getMeasuredHeight() * getScale() / 2.0f * scale - dp(1.0f + 19.5f + 15),
             (getMeasuredWidth() * getScale()) * scale + dp((1.0f + 19.5f + 15) * 2),

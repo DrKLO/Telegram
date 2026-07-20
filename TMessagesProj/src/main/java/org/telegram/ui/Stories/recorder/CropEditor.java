@@ -360,7 +360,7 @@ public class CropEditor extends FrameLayout {
             previewMatrix.preTranslate(previewView.getContentWidth() / 2.0f, previewView.getContentHeight() / 2.0f);
 
             final boolean inBubbleMode = getContext() instanceof BubbleActivity;
-            final float paddingTop = (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
+            final float paddingTop = !inBubbleMode ? AndroidUtilities.statusBarHeight : 0;
 
             cropMatrix.preTranslate((dp(16) + getContainerWidth() / 2.0f), (paddingTop + (getContainerHeight() + dp(32)) / 2.0f));
 //            canvas.translate((dp(16) + getContainerWidth() / 2.0f) * ca, (paddingTop + (getContainerHeight() + dp(32)) / 2.0f) * ca);
@@ -491,7 +491,7 @@ public class CropEditor extends FrameLayout {
 
         private float getContainerHeight() {
             final boolean inBubbleMode = getContext() instanceof BubbleActivity;
-            final float paddingTop = (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
+            final float paddingTop = !inBubbleMode ? AndroidUtilities.statusBarHeight : 0;
             final float paddingBottom = cropView.bottomPadding;
             return getHeight() - paddingTop - paddingBottom - dp(32);
         }

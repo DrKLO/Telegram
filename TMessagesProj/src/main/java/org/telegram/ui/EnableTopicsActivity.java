@@ -29,6 +29,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.UItem;
@@ -89,8 +90,10 @@ public class EnableTopicsActivity extends BaseFragment {
                 return super.getSelectorColor(position);
             }
         };
+        listView.setSections();
         listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView = contentView;
     }
@@ -317,7 +320,7 @@ public class EnableTopicsActivity extends BaseFragment {
             static { setup(new Factory()); }
 
             @Override
-            public TopicsLayoutSwitcher createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public TopicsLayoutSwitcher createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new TopicsLayoutSwitcher(context, resourcesProvider);
             }
 

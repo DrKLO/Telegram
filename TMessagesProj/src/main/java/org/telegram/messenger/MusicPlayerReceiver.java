@@ -70,6 +70,16 @@ public class MusicPlayerReceiver extends BroadcastReceiver {
                 case MusicPlayerService.NOTIFY_PREVIOUS:
                     MediaController.getInstance().playPreviousMessage();
                     break;
+                case MusicPlayerService.NOTIFY_REPEAT:
+                    SharedConfig.setRepeatMode((SharedConfig.repeatMode + 1) % 3);
+                    break;
+                case MusicPlayerService.NOTIFY_SHUFFLE:
+                    if (SharedConfig.shuffleMusic) {
+                        MediaController.getInstance().setPlaybackOrderType(0);
+                    } else {
+                        MediaController.getInstance().setPlaybackOrderType(2);
+                    }
+                    break;
             }
         }
     }

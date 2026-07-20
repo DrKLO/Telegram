@@ -750,4 +750,9 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     public boolean canReuseUpdatedViewHolder(ViewHolder viewHolder, List<Object> payloads) {
         return viewHolder.itemView instanceof DialogsEmptyCell;
     }
+
+    @Override
+    public void listenToAnimationUpdates(Runnable listener) {
+        // NO-OP
+    }
 }

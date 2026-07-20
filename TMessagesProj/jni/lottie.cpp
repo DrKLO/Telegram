@@ -50,7 +50,7 @@ typedef struct LottieInfo {
     volatile uint32_t framesAvailableInCache = 0;
 };
 
-JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps, jint fitzModifier) {
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieNative_nCreate(JNIEnv *env, jclass clazz, jstring src, jstring json, jint w, jint h, jintArray data, jboolean precache, jintArray colorReplacement, jboolean limitFps, jint fitzModifier) {
     auto info = new LottieInfo();
 
     std::map<int32_t, int32_t> *colors = nullptr;
@@ -162,7 +162,7 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *e
     return (jlong) (intptr_t) info;
 }
 
-JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_getFramesCount(JNIEnv *env, jclass clazz, jstring src, jstring json) {
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieNative_nGetFramesCount(JNIEnv *env, jclass clazz, jstring src, jstring json) {
     auto info = new LottieInfo();
     char const *srcString = env->GetStringUTFChars(src, nullptr);
     info->path = srcString;
@@ -187,7 +187,7 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_getFramesCount(J
     return (jlong) framesCount;
 }
 
-JNIEXPORT jdouble Java_org_telegram_ui_Components_RLottieDrawable_getDuration(JNIEnv *env, jclass clazz, jstring src, jstring json) {
+JNIEXPORT jdouble Java_org_telegram_ui_Components_RLottieNative_nGetDuration(JNIEnv *env, jclass clazz, jstring src, jstring json) {
     auto info = new LottieInfo();
     char const *srcString = env->GetStringUTFChars(src, nullptr);
     info->path = srcString;
@@ -212,7 +212,7 @@ JNIEXPORT jdouble Java_org_telegram_ui_Components_RLottieDrawable_getDuration(JN
     return (jdouble) duration;
 }
 
-JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
+JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieNative_nCreateWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
     std::map<int32_t, int32_t> *colors = nullptr;
     if (colorReplacement != nullptr) {
         jint *arr = env->GetIntArrayElements(colorReplacement, nullptr);
@@ -254,7 +254,7 @@ JNIEXPORT jlong Java_org_telegram_ui_Components_RLottieDrawable_createWithJson(J
     return (jlong) (intptr_t) info;
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_destroy(JNIEnv *env, jclass clazz, jlong ptr) {
+JNIEXPORT void Java_org_telegram_ui_Components_RLottieNative_nDestroy(JNIEnv *env, jclass clazz, jlong ptr) {
     if (!ptr) {
         return;
     }
@@ -262,7 +262,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_destroy(JNIEnv *e
     delete info;
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_setLayerColor(JNIEnv *env, jclass clazz, jlong ptr, jstring layer, jint color) {
+JNIEXPORT void Java_org_telegram_ui_Components_RLottieNative_nSetLayerColor(JNIEnv *env, jclass clazz, jlong ptr, jstring layer, jint color) {
     if (!ptr || layer == nullptr) {
         return;
     }
@@ -274,7 +274,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_setLayerColor(JNI
     }
 }
 
-JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_replaceColors(JNIEnv *env, jclass clazz, jlong ptr, jintArray colorReplacement) {
+JNIEXPORT void Java_org_telegram_ui_Components_RLottieNative_nReplaceColors(JNIEnv *env, jclass clazz, jlong ptr, jintArray colorReplacement) {
     if (!ptr || colorReplacement == nullptr) {
         return;
     }
@@ -292,16 +292,24 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_replaceColors(JNI
 }
 
 
-JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jint w, jint h, jint stride, jboolean clear) {
+JNIEXPORT jint Java_org_telegram_ui_Components_RLottieNative_nGetFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jboolean clear) {
     if (!ptr || bitmap == nullptr) {
         return 0;
     }
     auto info = (LottieInfo *) (intptr_t) ptr;
 
+    AndroidBitmapInfo bitmapInfo;
+    if (__builtin_expect(AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return 0;
+    }
+
     void *pixels;
     bool result = false;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
-        Surface surface((uint32_t *) pixels, (size_t) w, (size_t) h, (size_t) stride);
+        Surface surface((uint32_t *) pixels,
+                        static_cast<size_t>(bitmapInfo.width),
+                        static_cast<size_t>(bitmapInfo.height),
+                        static_cast<size_t>(bitmapInfo.stride));
         info->animation->renderSync((size_t) frame, surface, clear, &result);
         AndroidBitmap_unlockPixels(env, bitmap);
     }

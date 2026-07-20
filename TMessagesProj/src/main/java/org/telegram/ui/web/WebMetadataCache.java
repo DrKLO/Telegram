@@ -1,49 +1,25 @@
 package org.telegram.ui.web;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
-import android.app.Activity;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.os.Build;
 import android.text.TextUtils;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
-
-import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.LaunchActivity;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -290,160 +266,5 @@ public class WebMetadataCache {
             cache.clear();
         }
         scheduleSave();
-    }
-
-    private static class SitenameProxy {
-        private final Utilities.Callback<String> whenReceived;
-        public SitenameProxy(Utilities.Callback<String> whenReceived) {
-            this.whenReceived = whenReceived;
-        }
-        @Keep
-        @JavascriptInterface
-        public void post(String type, String data) {
-            AndroidUtilities.runOnUIThread(() -> {
-                switch (type) {
-                    case "siteName": {
-                        whenReceived.run(data);
-                        break;
-                    }
-                    case "siteNameEmpty": {
-                        whenReceived.run(null);
-                        break;
-                    }
-                }
-            });
-        }
-    }
-
-    public static void retrieveFaviconAndSitename(String url, Utilities.Callback2<String, Bitmap> whenDone) {
-        if (whenDone == null) return;
-
-        Context context = LaunchActivity.instance;
-        if (context == null) context = ApplicationLoader.applicationContext;
-
-        final Activity activity = AndroidUtilities.findActivity(context);
-        if (activity == null) {
-            whenDone.run(null, null);
-            return;
-        }
-        final View rootView = activity.findViewById(android.R.id.content).getRootView();
-        if (!(rootView instanceof ViewGroup)) {
-            whenDone.run(null, null);
-            return;
-        }
-        final ViewGroup container = (ViewGroup) rootView;
-        final FrameLayout webViewContainer = new FrameLayout(context) {
-            @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                return false;
-            }
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                return false;
-            }
-            @Override
-            public boolean dispatchTouchEvent(MotionEvent ev) {
-                return false;
-            }
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                super.onMeasure(MeasureSpec.makeMeasureSpec(dp(500), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(500), MeasureSpec.EXACTLY));
-            }
-        };
-        container.addView(webViewContainer);
-
-        final WebView webView = new WebView(context);
-        final WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setGeolocationEnabled(false);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(false);
-        settings.setSupportMultipleWindows(false);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        settings.setSaveFormData(false);
-        settings.setSavePassword(false);
-        webView.setVerticalScrollBarEnabled(false);
-
-        try {
-            settings.setUserAgentString(settings.getUserAgentString().replace("; wv)", ")"));
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-
-        final boolean[] done = new boolean[] { false };
-        final String[] sitename = new String[] { null };
-        final Bitmap[] favicon =  new Bitmap[] { null };
-
-        final Utilities.Callback<Boolean> checkDone = force -> {
-            if (done[0]) return;
-
-            if (
-                force ||
-                !TextUtils.isEmpty(sitename[0]) &&
-                (favicon[0] != null && favicon[0].getWidth() > dp(28) && favicon[0].getHeight() > dp(28))
-            ) {
-                done[0] = true;
-
-                WebMetadataCache.WebMetadata meta = new WebMetadata();
-                meta.domain = AndroidUtilities.getHostAuthority(url, true);
-                meta.sitename = sitename[0];
-                if (favicon[0] != null) {
-                    meta.favicon = Bitmap.createBitmap(favicon[0]);
-                }
-                getInstance().save(meta);
-
-                webView.destroy();
-                AndroidUtilities.removeFromParent(webView);
-                AndroidUtilities.removeFromParent(webViewContainer);
-
-                whenDone.run(sitename[0], favicon[0]);
-
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webViewResolved, url);
-            }
-        };
-
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onReceivedIcon(WebView view, Bitmap icon) {
-                if (icon == null) return;
-                if (favicon[0] == null || favicon[0].getWidth() < icon.getWidth() && favicon[0].getHeight() < icon.getHeight()) {
-                    favicon[0] = icon;
-                    checkDone.run(false);
-                }
-            }
-        });
-        Runnable putJS = () -> {
-            final String js = AndroidUtilities.readRes(R.raw.webview_ext).replace("$DEBUG$", "" + BuildVars.DEBUG_VERSION);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                webView.evaluateJavascript(js, value -> {});
-            } else {
-                try {
-                    webView.loadUrl("javascript:" + URLEncoder.encode(js, "UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    webView.loadUrl("javascript:" + URLEncoder.encode(js));
-                }
-            }
-        };
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                putJS.run();
-            }
-        });
-        webView.addJavascriptInterface(new SitenameProxy(name -> {
-            sitename[0] = name;
-            checkDone.run(false);
-        }), "TelegramWebview");
-
-        webViewContainer.addView(webView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        webView.loadUrl(url);
-        putJS.run();
-
-        AndroidUtilities.runOnUIThread(() -> {
-            checkDone.run(true);
-        }, 10_000);
     }
 }

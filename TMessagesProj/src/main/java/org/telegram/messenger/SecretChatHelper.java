@@ -24,6 +24,7 @@ import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLClassStore;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 
@@ -181,7 +182,7 @@ public class SecretChatHelper extends BaseController {
         performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
-    protected void processUpdateEncryption(TLRPC.TL_updateEncryption update, ConcurrentHashMap<Long, TLRPC.User> usersDict) {
+    protected void processUpdateEncryption(TL_update.TL_updateEncryption update, ConcurrentHashMap<Long, TLRPC.User> usersDict) {
         TLRPC.EncryptedChat newChat = update.chat;
         long dialog_id = DialogObject.makeEncryptedDialogId(newChat.id);
         TLRPC.EncryptedChat existingChat = getMessagesController().getEncryptedChatDB(newChat.id, false);
@@ -1365,6 +1366,9 @@ public class SecretChatHelper extends BaseController {
         if (encryptedChat == null || endSeq - startSeq < 0) {
             return;
         }
+        if (endSeq - startSeq > 10000) {
+            return;
+        }
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 int sSeq = startSeq;
@@ -1556,7 +1560,7 @@ public class SecretChatHelper extends BaseController {
                     updates = new ArrayList<>();
                     pendingSecretMessages.put(chat.id, updates);
                 }
-                TLRPC.TL_updateNewEncryptedMessage updateNewEncryptedMessage = new TLRPC.TL_updateNewEncryptedMessage();
+                TL_update.TL_updateNewEncryptedMessage updateNewEncryptedMessage = new TL_update.TL_updateNewEncryptedMessage();
                 updateNewEncryptedMessage.message = message;
                 updates.add(updateNewEncryptedMessage);
                 return null;

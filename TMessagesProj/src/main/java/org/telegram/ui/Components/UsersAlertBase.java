@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -36,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.utils.TextWatcherImpl;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
@@ -101,14 +104,16 @@ public class UsersAlertBase extends BottomSheet {
 
         frameLayout = new FrameLayout(context);
 
-        searchView = new SearchField(context);
-        frameLayout.addView(searchView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        searchView = new SearchField(context, resourcesProvider);
+        searchView.setWhiteBackground();
+        searchView.setPadding(dp(4), dp(4), dp(4), dp(4));
+        frameLayout.addView(searchView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.LEFT, 7, 7, 7, 7));
 
         flickerLoadingView = new FlickerLoadingView(context);
         flickerLoadingView.setViewType(FlickerLoadingView.USERS_TYPE);
         flickerLoadingView.showDate(false);
         flickerLoadingView.setUseHeaderOffset(true);
-        flickerLoadingView.setColors(keyInviteMembersBackground, keySearchBackground, keyActionBarUnscrolled);
+        // flickerLoadingView.setColors(keyInviteMembersBackground, keySearchBackground, keyActionBarUnscrolled);
 
         emptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_SEARCH);
         emptyView.addView(flickerLoadingView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 2, 0, 0));
@@ -172,7 +177,7 @@ public class UsersAlertBase extends BottomSheet {
         FrameLayout.LayoutParams frameLayoutParams = new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.TOP | Gravity.LEFT);
         frameLayoutParams.topMargin = AndroidUtilities.dp(58);
         shadow = new View(context);
-        shadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+        // shadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
         shadow.setAlpha(0.0f);
         shadow.setTag(1);
         containerView.addView(shadow, frameLayoutParams);
@@ -200,95 +205,20 @@ public class UsersAlertBase extends BottomSheet {
     }
 
     @SuppressWarnings("FieldCanBeLocal")
-    protected class SearchField extends FrameLayout {
+    protected class SearchField extends FragmentSearchField {
 
-        private final View searchBackground;
-        private final ImageView searchIconImageView;
-        private final ImageView clearSearchImageView;
-        private final CloseProgressDrawable2 progressDrawable;
         protected EditTextBoldCursor searchEditText;
 
-        public SearchField(Context context) {
-            super(context);
+        public SearchField(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
 
-            searchBackground = new View(context);
-            searchBackground.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), Theme.getColor(keySearchBackground, resourcesProvider)));
-            addView(searchBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14, 0));
+            searchEditText = editText;
 
-            searchIconImageView = new ImageView(context);
-            searchIconImageView.setScaleType(ImageView.ScaleType.CENTER);
-            searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
-            searchIconImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(keySearchPlaceholder, resourcesProvider), PorterDuff.Mode.MULTIPLY));
-            addView(searchIconImageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 16, 11, 0, 0));
-
-            clearSearchImageView = new ImageView(context);
-            clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
-            clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2() {
-                @Override
-                protected int getCurrentColor() {
-                    return Theme.getColor(keySearchPlaceholder);
-                }
-            });
-            progressDrawable.setSide(AndroidUtilities.dp(7));
-            clearSearchImageView.setScaleX(0.1f);
-            clearSearchImageView.setScaleY(0.1f);
-            clearSearchImageView.setAlpha(0.0f);
-            addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
-            clearSearchImageView.setOnClickListener(v -> {
-                searchEditText.setText("");
-                AndroidUtilities.showKeyboard(searchEditText);
-            });
-
-            searchEditText = new EditTextBoldCursor(context) {
-                @Override
-                public boolean dispatchTouchEvent(MotionEvent event) {
-                    MotionEvent e = MotionEvent.obtain(event);
-                    e.setLocation(e.getRawX(), e.getRawY() - listView.getMeasuredHeight());
-                    if (e.getAction() == MotionEvent.ACTION_UP) {
-                        e.setAction(MotionEvent.ACTION_CANCEL);
-                    }
-                    listView.dispatchTouchEvent(e);
-                    e.recycle();
-                    return super.dispatchTouchEvent(event);
-                }
-            };
-            searchEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            searchEditText.setHintTextColor(Theme.getColor(keySearchPlaceholder));
-            searchEditText.setTextColor(Theme.getColor(keySearchText));
-            searchEditText.setBackgroundDrawable(null);
-            searchEditText.setPadding(0, 0, 0, 0);
-            searchEditText.setMaxLines(1);
-            searchEditText.setLines(1);
-            searchEditText.setSingleLine(true);
             searchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             searchEditText.setHint(LocaleController.getString(R.string.VoipGroupSearchMembers));
-            searchEditText.setCursorColor(Theme.getColor(keySearchText));
-            searchEditText.setCursorSize(AndroidUtilities.dp(20));
-            searchEditText.setCursorWidth(1.5f);
-            addView(searchEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.TOP, 16 + 38, 9, 16 + 30, 0));
-            searchEditText.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                }
-
+            searchEditText.addTextChangedListener(new TextWatcherImpl() {
                 @Override
                 public void afterTextChanged(Editable s) {
-                    boolean show = searchEditText.length() > 0;
-                    boolean showed = clearSearchImageView.getAlpha() != 0;
-                    if (show != showed) {
-                        clearSearchImageView.animate()
-                                .alpha(show ? 1.0f : 0.0f)
-                                .setDuration(150)
-                                .scaleX(show ? 1.0f : 0.1f)
-                                .scaleY(show ? 1.0f : 0.1f)
-                                .start();
-                    }
                     String text = searchEditText.getText().toString();
                     int oldItemsCount = listView.getAdapter() == null ? 0 : listView.getAdapter().getItemCount();
                     search(text);
@@ -322,7 +252,6 @@ public class UsersAlertBase extends BottomSheet {
         }
 
         public void closeSearch() {
-            clearSearchImageView.callOnClick();
             AndroidUtilities.hideKeyboard(searchEditText);
         }
     }
@@ -353,9 +282,11 @@ public class UsersAlertBase extends BottomSheet {
 
     protected void setColorProgress(float progress) {
         colorProgress = progress;
-        backgroundColor = AndroidUtilities.getOffsetColor(Theme.getColor(keyInviteMembersBackground, resourcesProvider), Theme.getColor(keyListViewBackground, resourcesProvider), progress, 1.0f);
+        backgroundColor = AndroidUtilities.getOffsetColor(
+            Theme.getColor(keyInviteMembersBackground, resourcesProvider),
+            Theme.getColor(keyListViewBackground, resourcesProvider), progress, 1.0f);
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
-        frameLayout.setBackgroundColor(backgroundColor);
+        // frameLayout.setBackgroundColor(backgroundColor);
         fixNavigationBar(backgroundColor);
         navBarColor = backgroundColor;
         listView.setGlowColor(backgroundColor);
@@ -627,7 +558,7 @@ public class UsersAlertBase extends BottomSheet {
             }
             if (statusBarHeight > 0) {
                 Theme.dialogs_onlineCirclePaint.setColor(backgroundColor);
-                canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight - statusBarHeight - getTranslationY(), getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight - getTranslationY(), Theme.dialogs_onlineCirclePaint);
+                // canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight - statusBarHeight - getTranslationY(), getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight - getTranslationY(), Theme.dialogs_onlineCirclePaint);
             }
             updateLightStatusBar(statusBarHeight > AndroidUtilities.statusBarHeight / 2);
             canvas.restore();

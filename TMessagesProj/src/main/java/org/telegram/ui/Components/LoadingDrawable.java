@@ -142,18 +142,20 @@ public class LoadingDrawable extends Drawable {
     }
 
     public void setRadiiDp(float allDp) {
+        setRadii(AndroidUtilities.dp(allDp));
+    }
+    public void setRadii(float all) {
         if (usePath != null) {
-            paint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(allDp)));
-            strokePaint.setPathEffect(new CornerPathEffect(AndroidUtilities.dp(allDp)));
+            paint.setPathEffect(new CornerPathEffect(all));
+            strokePaint.setPathEffect(new CornerPathEffect(all));
         } else {
-            setRadiiDp(allDp, allDp, allDp, allDp);
+            setRadii(all, all, all, all);
         }
     }
 
     public void setRadiiDp(float topLeftDp, float topRightDp, float bottomRightDp, float bottomLeftDp) {
         setRadii(AndroidUtilities.dp(topLeftDp), AndroidUtilities.dp(topRightDp), AndroidUtilities.dp(bottomRightDp), AndroidUtilities.dp(bottomLeftDp));
     }
-
     public void setRadii(float topLeft, float topRight, float bottomRight, float bottomLeft) {
         final boolean changed = (
             radii[0] != topLeft ||

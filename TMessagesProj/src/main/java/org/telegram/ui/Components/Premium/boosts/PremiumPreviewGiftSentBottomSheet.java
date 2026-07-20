@@ -57,7 +57,7 @@ public class PremiumPreviewGiftSentBottomSheet extends PremiumPreviewBottomSheet
     }
 
     public PremiumPreviewGiftSentBottomSheet(BaseFragment fragment, int currentAccount, List<TLRPC.User> selectedUsers, Theme.ResourcesProvider resourcesProvider) {
-        super(fragment, currentAccount, null, null, resourcesProvider);
+        super(fragment, currentAccount, null, null, null, resourcesProvider);
         this.selectedUsers.addAll(selectedUsers);
         init();
     }

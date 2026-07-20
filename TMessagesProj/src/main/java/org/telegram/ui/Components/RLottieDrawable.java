@@ -53,21 +53,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     public boolean skipFrameUpdate;
 
-    public static native long create(String src, String json, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps, int fitzModifier);
-
-    public static native long getFramesCount(String src, String json);
-    public static native double getDuration(String src, String json);
-
-    protected static native long createWithJson(String json, String name, int[] params, int[] colorReplacement);
-
-    public static native void destroy(long ptr);
-
-    private static native void setLayerColor(long ptr, String layer, int color);
-
-    private static native void replaceColors(long ptr, int[] colorReplacement);
-
-    public static native int getFrame(long ptr, int frame, Bitmap bitmap, int w, int h, int stride, boolean clear);
-
     protected final int width;
     protected final int height;
     protected final int[] metaData = new int[3];
@@ -114,7 +99,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     private boolean forceFrameRedraw;
     private boolean applyingLayerColors;
     protected int currentFrame;
-    private boolean shouldLimitFps;
+    public boolean shouldLimitFps;
     private boolean createdForFirstFrame;
 
     private float scaleX = 1.0f;
@@ -270,19 +255,19 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             if (uiThread) {
                 DispatchQueuePoolBackground.execute(() -> {
                     if (nativePtrFinal != 0) {
-                        destroy(nativePtrFinal);
+                        RLottieNative.destroy(nativePtrFinal);
                     }
                     if (secondNativePtrFinal != 0) {
-                        destroy(secondNativePtrFinal);
+                        RLottieNative.destroy(secondNativePtrFinal);
                     }
                 });
             } else {
                 Utilities.globalQueue.postRunnable(() ->{
                     if (nativePtrFinal != 0) {
-                        destroy(nativePtrFinal);
+                        RLottieNative.destroy(nativePtrFinal);
                     }
                     if (secondNativePtrFinal != 0) {
-                        destroy(secondNativePtrFinal);
+                        RLottieNative.destroy(secondNativePtrFinal);
                     }
                 });
             }
@@ -331,9 +316,11 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                 uiHandler.post(uiRunnableNoFrame);
                 return;
             }
+            boolean needClearBitmap = true;
             if (backgroundBitmap == null) {
                 try {
                     backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                    needClearBitmap = false;
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
@@ -342,7 +329,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                 try {
                     if (!pendingColorUpdates.isEmpty()) {
                         for (HashMap.Entry<String, Integer> entry : pendingColorUpdates.entrySet()) {
-                            setLayerColor(nativePtr, entry.getKey(), entry.getValue());
+                            RLottieNative.setLayerColor(nativePtr, entry.getKey(), entry.getValue());
                         }
                         pendingColorUpdates.clear();
                     }
@@ -350,7 +337,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
                 }
                 if (pendingReplaceColors != null && nativePtr != 0) {
-                    replaceColors(nativePtr, pendingReplaceColors);
+                    RLottieNative.replaceColors(nativePtr, pendingReplaceColors);
                     pendingReplaceColors = null;
                 }
                 try {
@@ -372,14 +359,14 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                         try {
                             result = bitmapsCache.getFrame(currentFrame / framesPerUpdates, backgroundBitmap);
                             if (!bitmapsCache.needGenCache() && allowDrawFramesWhileCacheGenerating && nativePtr != 0) {
-                                destroy(nativePtr);
+                                RLottieNative.destroy(nativePtr);
                                 nativePtr = 0;
                             }
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
                     } else {
-                        result = getFrame(ptrToUse, currentFrame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
+                        result = RLottieNative.getFrame(ptrToUse, currentFrame, backgroundBitmap, needClearBitmap);
                     }
                     if (bitmapsCache != null && bitmapsCache.needGenCache()) {
                         if (!genCacheSend) {
@@ -388,9 +375,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                         }
                         if (allowDrawFramesWhileCacheGenerating) {
                             if (nativePtr == 0) {
-                                nativePtr = create(args.file.toString(), args.json, width, height, new int[3], false, args.colorReplacement, false, args.fitzModifier);
+                                nativePtr = RLottieNative.create(args.file.toString(), args.json, width, height, new int[3], false, args.colorReplacement, false, args.fitzModifier);
                             }
-                            result = getFrame(nativePtr, currentFrame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
+                            result = RLottieNative.getFrame(nativePtr, currentFrame, backgroundBitmap, needClearBitmap);
                         } else {
                             result = -1;
                         }
@@ -521,7 +508,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             }
            bitmapsCache = new BitmapsCache(file, this, cacheOptions, w, h, !limitFps);
         } else {
-            nativePtr = create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
+            nativePtr = RLottieNative.create(file.getAbsolutePath(), null, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
                 FileLog.d("RLottieDrawable nativePtr == 0 " + file.getAbsolutePath() + " remove file");
                 file.delete();
@@ -559,7 +546,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             }
             bitmapsCache = new BitmapsCache(file, this, options, w, h, !limitFps);
         } else {
-            nativePtr = create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
+            nativePtr = RLottieNative.create(file.getAbsolutePath(), json, w, h, metaData, precache, colorReplacement, shouldLimitFps, fitzModifier);
             if (nativePtr == 0) {
                 FileLog.d("RLottieDrawable nativePtr == 0 " + file.getAbsolutePath() + " remove file");
                 file.delete();
@@ -608,9 +595,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         } catch (Exception e) {
             // ignore app center, try handle by old method
             FileLog.e(e, false);
-            long nativePtr = create(file.getAbsolutePath(), json, width, height, metaData, false, args.colorReplacement, shouldLimitFps, args.fitzModifier);
+            long nativePtr = RLottieNative.create(file.getAbsolutePath(), json, width, height, metaData, false, args.colorReplacement, shouldLimitFps, args.fitzModifier);
             if (nativePtr != 0) {
-                destroy(nativePtr);
+                RLottieNative.destroy(nativePtr);
             }
         }
     }
@@ -637,7 +624,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             timeBetweenFrames = 16;
             return;
         }
-        nativePtr = createWithJson(jsonString, "dice", metaData, null);
+        nativePtr = RLottieNative.createWithJson(jsonString, "dice", metaData, null);
         timeBetweenFrames = Math.max(16, (int) (1000.0f / metaData[1]));
     }
 
@@ -666,7 +653,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         }
         loadingInBackground = true;
         Utilities.globalQueue.postRunnable(() -> {
-            nativePtr = createWithJson(jsonString, "dice", metaData, null);
+            nativePtr = RLottieNative.createWithJson(jsonString, "dice", metaData, null);
             AndroidUtilities.runOnUIThread(() -> {
                 loadingInBackground = false;
                 if (!secondLoadingInBackground && destroyAfterLoading) {
@@ -710,7 +697,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
                 return;
             }
             int[] metaData2 = new int[3];
-            secondNativePtr = createWithJson(jsonString, "dice", metaData2, null);
+            secondNativePtr = RLottieNative.createWithJson(jsonString, "dice", metaData2, null);
             AndroidUtilities.runOnUIThread(() -> {
                 secondLoadingInBackground = false;
                 if (!secondLoadingInBackground && destroyAfterLoading) {
@@ -726,6 +713,21 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
         return true;
     }
 
+    public boolean isDiceRevealed() {
+        if (isDice == 1) {
+            return false;
+        }
+        if (isDice == 2) {
+            if (setLastFrame) return true;
+            float p = getProgress();
+            if (secondNativePtr != 0) {
+                p = currentFrame / (float) secondFramesCount;
+            }
+            return p > 0.95f;
+        }
+        return false;
+    }
+
     public RLottieDrawable(int rawRes, String name, int w, int h, boolean startDecode, int[] colorReplacement) {
         width = w;
         height = h;
@@ -735,7 +737,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             return;
         }
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
-        nativePtr = createWithJson(jsonString, name, metaData, colorReplacement);
+        nativePtr = RLottieNative.createWithJson(jsonString, name, metaData, colorReplacement);
         timeBetweenFrames = Math.max(16, (int) (1000.0f / metaData[1]));
         if (startDecode) {
             setAllowDecodeSingleFrame(true);
@@ -1330,7 +1332,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
 
     @Override
     public void prepareForGenerateCache() {
-        generateCacheNativePtr = create(args.file.toString(), args.json, width, height, createdForFirstFrame ? metaData : new int[3], false, args.colorReplacement, false, args.fitzModifier);
+        generateCacheNativePtr = RLottieNative.create(args.file.toString(), args.json, width, height, createdForFirstFrame ? metaData : new int[3], false, args.colorReplacement, false, args.fitzModifier);
         if (generateCacheNativePtr == 0 && file != null) {
             file.delete();
         }
@@ -1346,7 +1348,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             return -1;
         }
         int framesPerUpdates = shouldLimitFps ? 2 : 1;
-        int result = getFrame(generateCacheNativePtr, generateCacheFramePointer, bitmap, width, height, bitmap.getRowBytes(), true);
+        int result = RLottieNative.getFrame(generateCacheNativePtr, generateCacheFramePointer, bitmap, true);
         if (result == -5) {
             try {
                 Thread.sleep(100);
@@ -1370,7 +1372,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
             if (rawBackgroundBitmap == null) {
                 rawBackgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             }
-            int result = getFrame(nativePtr, rawBackgroundBitmapFrame = frame, rawBackgroundBitmap, width, height, rawBackgroundBitmap.getRowBytes(), true);
+            int result = RLottieNative.getFrame(nativePtr, rawBackgroundBitmapFrame = frame, rawBackgroundBitmap, true);
         }
     }
 
@@ -1385,19 +1387,19 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     @Override
     public void releaseForGenerateCache() {
         if (generateCacheNativePtr != 0) {
-            destroy(generateCacheNativePtr);
+            RLottieNative.destroy(generateCacheNativePtr);
             generateCacheNativePtr = 0;
         }
     }
 
     @Override
     public Bitmap getFirstFrame(Bitmap bitmap) {
-        long nativePtr = create(args.file.toString(), args.json, width, height, new int[3], false, args.colorReplacement, false, args.fitzModifier);
+        long nativePtr = RLottieNative.create(args.file.toString(), args.json, width, height, new int[3], false, args.colorReplacement, false, args.fitzModifier);
         if (nativePtr == 0) {
             return bitmap;
         }
-        getFrame(nativePtr, 0, bitmap, width, height, bitmap.getRowBytes(), true);
-        destroy(nativePtr);
+        RLottieNative.getFrame(nativePtr, 0, bitmap, true);
+        RLottieNative.destroy(nativePtr);
         return bitmap;
     }
 

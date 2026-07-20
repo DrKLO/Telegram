@@ -46,6 +46,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -448,6 +451,30 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
                 setNoCovered.set = ((TLRPC.TL_messages_stickerSet) args[1]).set;
                 setStickersSet(setNoCovered, needDivider, unread, forceInstalled, true);
             }
+        }
+    }
+
+    public static final class Factory extends UItem.UItemFactory<FeaturedStickerSetCell2> {
+        static { setup(new Factory()); }
+
+        @Override
+        public FeaturedStickerSetCell2 createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            return new FeaturedStickerSetCell2(context, resourcesProvider);
+        }
+
+        @Override
+        public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
+            final FeaturedStickerSetCell2 cell = (FeaturedStickerSetCell2) view;
+            final TLRPC.StickerSetCovered set = (TLRPC.StickerSetCovered) item.object;
+            cell.setStickersSet(set, divider, false, item.locked, false);
+            cell.setDrawProgress(item.locked, false);
+            cell.setAddOnClickListener(item.clickCallback);
+        }
+
+        public static UItem of(TLRPC.StickerSetCovered set) {
+            final UItem item = UItem.ofFactory(Factory.class);
+            item.object = set;
+            return item;
         }
     }
 }

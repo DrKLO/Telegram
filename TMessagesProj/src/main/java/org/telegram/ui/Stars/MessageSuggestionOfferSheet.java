@@ -31,7 +31,6 @@ import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -44,7 +43,6 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.HorizontalRoundTabsLayout;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -134,6 +132,8 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             balanceCloud.setScaleX(0.6f);
             balanceCloud.setScaleY(0.6f);
             balanceCloud.setAlpha(0.0f);
+            balanceCloud.setEnabled(false);
+            balanceCloud.setClickable(false);
             container.addView(balanceCloud, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
             ScaleStateListAnimator.apply(balanceCloud);
             balanceCloud.setOnClickListener(v -> {
@@ -177,10 +177,12 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         closeView.setOnClickListener(v -> dismiss());
         headerLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 6, 0));
 
+        starsCountEditField = new EditTextBoldCursor(context);
+
         /* Tabs */
 
         if (allowTON) {
-            currencyTabsView = new HorizontalRoundTabsLayout(context);
+            currencyTabsView = new HorizontalRoundTabsLayout(context, resourcesProvider);
             ArrayList<CharSequence> tabs = new ArrayList<>();
             tabs.add(getString(R.string.SuggestedOfferStars));
             tabs.add(getString(R.string.SuggestedOfferTON));
@@ -189,7 +191,8 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
                         AmountUtils.Currency.STARS :
                         AmountUtils.Currency.TON;
 
-                setAmount(AmountUtils.Amount.fromDecimal(inputAmount.asDecimal(), currency), true, false, true);
+                setAmount(AmountUtils.Amount.fromNano(0, currency), true, false, true);
+                starsCountEditField.setText("");
             });
             layout.addView(currencyTabsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 18, 0, 18, 12));
         } else {
@@ -206,7 +209,6 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
 
         {
             starsCountEditOutline = new OutlineTextContainerView(context);
-            starsCountEditField = new EditTextBoldCursor(context);
             starsCountEditField.setCursorSize(dp(20));
             starsCountEditField.setCursorWidth(1.5f);
             starsCountEditField.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -233,7 +235,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             starsCountEditOutline.addView(iconStars, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
 
             iconTon = new ImageView(context);
-            iconTon.setImageResource(R.drawable.ton);
+            iconTon.setImageResource(R.drawable.mini_gram_72);
             iconTon.setColorFilter(0xFF3391d4);
             starsCountEditOutline.addView(iconTon, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
 
@@ -271,7 +273,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             publishingTimeOutline.attachEditText(publishingTimeField);
             publishingTimeOutline.addView(publishingTimeField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 0, 48, 0));
             ScaleStateListAnimator.apply(publishingTimeOutline, .02f, 1.2f);
-            publishingTimeOutline.setOnClickListener(v -> AlertsCreator.createSuggestedMessageDatePickerDialog(context, selectedTime, (notify, scheduleDate) -> {
+            publishingTimeOutline.setOnClickListener(v -> AlertsCreator.createSuggestedMessageDatePickerDialog(context, selectedTime, (notify, scheduleDate, scheduleRepeatPeriod) -> {
                 if (notify) {
                     setSelectedTime(scheduleDate, true);
                 }
@@ -320,7 +322,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
 
             if (!isMonoForumAdmin && (balance == null || balance.asNano() < inputAmount.asNano())) {
                 if (inputAmount.currency == AmountUtils.Currency.STARS) {
-                    new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount.asDecimal(), StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, ForumUtilities.getMonoForumTitle(currentAccount, dialogId, true), null).show();
+                    new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount.asDecimal(), StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, ForumUtilities.getMonoForumTitle(currentAccount, dialogId, true), null, dialogId).show();
                 } else if (inputAmount.currency == AmountUtils.Currency.TON){
                     new TONIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount, true, null).show();
                 }

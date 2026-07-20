@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.view.Gravity;
@@ -12,8 +13,7 @@ import android.view.ViewGroup;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Point;
-import org.telegram.ui.Components.Rect;
+import org.telegram.ui.Components.RectOld;
 
 public class LinkView extends EntityView {
 
@@ -45,7 +45,7 @@ public class LinkView extends EntityView {
         return marker.pady;
     }
 
-    public LinkView(Context context, Point position, int currentAccount, LinkPreview.WebPagePreview link, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type) {
+    public LinkView(Context context, PointF position, int currentAccount, LinkPreview.WebPagePreview link, TL_stories.MediaArea mediaArea, float density, int maxWidth, int type) {
         super(context, position);
 
         marker = new LinkPreview(context, density);
@@ -119,17 +119,17 @@ public class LinkView extends EntityView {
     }
 
     @Override
-    public Rect getSelectionBounds() {
+    public RectOld getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         if (parentView == null) {
-            return new Rect();
+            return new RectOld();
         }
         float scale = parentView.getScaleX();
         float width = getMeasuredWidth() * getScale() + AndroidUtilities.dp(64) / scale;
         float height = getMeasuredHeight() * getScale() + AndroidUtilities.dp(64) / scale;
         float left = (getPositionX() - width / 2.0f) * scale;
         float right = left + width * scale;
-        return new Rect(left, (getPositionY() - height / 2f) * scale, right - left, height * scale);
+        return new RectOld(left, (getPositionY() - height / 2f) * scale, right - left, height * scale);
     }
 
     protected TextViewSelectionView createSelectionView() {

@@ -110,6 +110,11 @@ public class VideoAds {
 
 //    private static LruCache<VideoAdsLocation, VideoAds> cached = new LruCache<>(3);
     private static HashMap<VideoAdsLocation, VideoAds> cached = new HashMap<>();
+
+    public static void dropCache() {
+        cached.clear();
+    }
+
     public static VideoAds make(
         int currentAccount,
         long dialogId,
@@ -841,7 +846,7 @@ public class VideoAds {
 
         public void hideImage() {
             imageView.setVisibility(GONE);
-            ((MarginLayoutParams) linearLayout.getLayoutParams()).setMarginStart(dp(10));
+            linearLayout.setLayoutParams(LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 10, 8, 54, 8));
         }
     }
 

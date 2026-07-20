@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
+import static org.telegram.messenger.AndroidUtilities.trim;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.Animator;
@@ -14,50 +15,37 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.RadialGradient;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Shader;
-import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Layout;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.view.WindowManager;
-import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.util.Util;
-
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -65,6 +53,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -74,29 +63,25 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.BaseCell;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AudioVisualizerDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EarListener;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MessagePreviewView;
 import org.telegram.ui.Components.MessagePrivateSeenView;
-import org.telegram.ui.Components.PopupSwipeBackLayout;
-import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.ReactionsContainerLayout;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
-import org.telegram.ui.Components.ThanosEffect;
-import org.telegram.ui.Components.TimerParticles;
-import org.telegram.ui.Components.VideoPlayer;
+import org.telegram.ui.Components.ScrimOptions;
 import org.telegram.ui.Components.ViewPagerFixed;
-import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.ui.Components.blur3.utils.Blur3Utils;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,7 +97,7 @@ public class TodoItemMenu extends Dialog {
     private TextView hintTextView;
     private MessagePreviewView.TabsView tabsView;
 
-    private final Rect insets = new Rect();
+    private Insets insets = Insets.NONE;
     private Bitmap blurBitmap;
     private BitmapShader blurBitmapShader;
     private Paint blurBitmapPaint;
@@ -121,6 +106,9 @@ public class TodoItemMenu extends Dialog {
     private boolean open;
     private float openProgress;
     private float openProgress2;
+
+    private final BlurredBackgroundSourceBitmap iBlur3SourceBitmap;
+    private final BlurredBackgroundDrawableViewFactory iBlur3Factory;
 
     public TodoItemMenu(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
@@ -165,10 +153,21 @@ public class TodoItemMenu extends Dialog {
                 super.onLayout(changed, left, top, right, bottom);
                 setupTranslation();
             }
+
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+                checkBitmapMatrix();
+            }
         };
         windowView.setOnClickListener(v -> {
             dismiss();
         });
+
+        iBlur3SourceBitmap = new BlurredBackgroundSourceBitmap();
+        iBlur3Factory = new BlurredBackgroundDrawableViewFactory(iBlur3SourceBitmap);
+        iBlur3Factory.setSourceRootView(new ViewPositionWatcher(windowView), windowView);
+
         containerView = new FrameLayout(context) {
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
@@ -249,6 +248,11 @@ public class TodoItemMenu extends Dialog {
         tabsView.addTab(1, getString(R.string.TodoMenuTabList));
         containerView.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.BOTTOM));
         tabsView.setOnTabClick(viewPager::scrollToPosition);
+        tabsView.setBackground(iBlur3Factory.create(tabsView)
+            .setColorProvider(BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider))
+            .setHasPadding(true)
+            .setPadding(dp(8))
+            .setRadius(dp(16)));
 
         hintTextView = new TextView(context);
         hintTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -257,28 +261,16 @@ public class TodoItemMenu extends Dialog {
         hintTextView.setGravity(Gravity.CENTER);
         containerView.addView(hintTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, 0, 66));
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            windowView.setFitsSystemWindows(true);
-            windowView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @NonNull
-                @Override
-                public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
-                        TodoItemMenu.this.insets.set(r.left, r.top, r.right, r.bottom);
-                    } else {
-                        TodoItemMenu.this.insets.set(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-                    }
-                    containerView.setPadding(TodoItemMenu.this.insets.left, TodoItemMenu.this.insets.top, TodoItemMenu.this.insets.right, TodoItemMenu.this.insets.bottom);
-                    windowView.requestLayout();
-                    if (Build.VERSION.SDK_INT >= 30) {
-                        return WindowInsets.CONSUMED;
-                    } else {
-                        return insets.consumeSystemWindowInsets();
-                    }
-                }
-            });
-        }
+        ViewCompat.setOnApplyWindowInsetsListener(windowView, new OnApplyWindowInsetsListener() {
+            @Override
+            public @NonNull WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat i) {
+                insets = i.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                containerView.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+                windowView.requestLayout();
+
+                return WindowInsetsCompat.CONSUMED;
+            }
+        });
     }
 
     @Override
@@ -296,19 +288,14 @@ public class TodoItemMenu extends Dialog {
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
-        params.flags &=~ WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        if (Build.VERSION.SDK_INT >= 21) {
-            params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
-        }
-        if (!BuildVars.DEBUG_PRIVATE_VERSION) {
-            params.flags |= WindowManager.LayoutParams.FLAG_SECURE;
-            AndroidUtilities.logFlagSecure();
-        }
-        params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-        params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+                | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
+                | WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+                | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION
+                | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                | WindowManager.LayoutParams.FLAG_FULLSCREEN
+                | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         if (Build.VERSION.SDK_INT >= 28) {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
@@ -316,6 +303,11 @@ public class TodoItemMenu extends Dialog {
 
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
         AndroidUtilities.setLightNavigationBar(windowView, !Theme.isCurrentThemeDark());
+    }
+
+    private void checkBitmapMatrix() {
+        Blur3Utils.checkBitmapSourceMatrixScale(iBlur3SourceBitmap, windowView);
+        iBlur3Factory.invalidateAllLinkedViews();
     }
 
     private MessageObject messageObject;
@@ -386,6 +378,13 @@ public class TodoItemMenu extends Dialog {
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     setMeasuredDimension(finalWidth, finalHeight);
                 }
+
+                @Override
+                public void drawOverlays(Canvas canvas) {
+                    firstVisiblePollButton = 0;
+                    lastVisiblePollButton = pollButtons.size() - 1;
+                    super.drawOverlays(canvas);
+                }
             };
             cell.copyParamsTo(myTaskCell);
             myTaskCell.copySpoilerEffect2AttachIndexFrom(cell);
@@ -414,6 +413,13 @@ public class TodoItemMenu extends Dialog {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     setMeasuredDimension(finalWidth, finalHeight);
+                }
+
+                @Override
+                public void drawOverlays(Canvas canvas) {
+                    firstVisiblePollButton = 0;
+                    lastVisiblePollButton = pollButtons.size() - 1;
+                    super.drawOverlays(canvas);
                 }
             };
             cell.copyVisiblePartTo(myCell);
@@ -479,6 +485,21 @@ public class TodoItemMenu extends Dialog {
             }
         }
         if (task != null) {
+            if (chatActivity != null) {
+                taskOptions.add(R.drawable.menu_reply, getString(R.string.TodoItemQuote), () -> {
+                    chatActivity.showFieldPanelForReplyQuote(messageObject, ChatActivity.ReplyQuote.from(messageObject, task.id));
+                    dismiss(false);
+                });
+            }
+            if (messageObject.getDialogId() < 0) {
+                final MessagesController messagesController = MessagesController.getInstance(messageObject.currentAccount);
+                final String username = DialogObject.getPublicUsername(messagesController.getUserOrChat(messageObject.getDialogId()));
+                final String link = "https://" + messagesController.linkPrefix + "/" + (TextUtils.isEmpty(username) ? "c/" + (-messageObject.getDialogId()) : username) + "/" + messageObject.getId() + "?task=" + task.id;
+                taskOptions.add(R.drawable.msg_link, getString(R.string.CopyLink), () -> {
+                    AndroidUtilities.addToClipboard(link);
+                    dismiss(true);
+                });
+            }
             taskOptions.add(R.drawable.msg_copy, getString(R.string.Copy), () -> {
                 AndroidUtilities.addToClipboard(MessageObject.formatTextWithEntities(task.title, false));
                 dismiss(true);
@@ -511,6 +532,9 @@ public class TodoItemMenu extends Dialog {
                         final TLRPC.TodoCompletion c = media.completions.get(i);
                         if (c.id == taskId) {
                             media.completions.remove(i);
+                            if (media.completions.isEmpty()) {
+                                media.flags &=~ 1;
+                            }
                             i--;
                         }
                     }
@@ -523,6 +547,8 @@ public class TodoItemMenu extends Dialog {
             }
         }
 
+        taskOptions.setGapBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+        taskOptions.setBlurBackground(iBlur3Factory, BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider), false);
         taskOptions.setupSelectors();
         taskOptionsView = taskOptions.getLayout();
         taskOptionsView.setPivotX(0);
@@ -654,6 +680,8 @@ public class TodoItemMenu extends Dialog {
             });
         }
 
+        messageOptions.setGapBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+        messageOptions.setBlurBackground(iBlur3Factory, BlurredBackgroundProviderImpl.scrimMenuBackground(resourcesProvider), false);
         messageOptions.setupSelectors();
         messageOptionsView = messageOptions.getLayout();
         messageOptionsView.setPivotX(0);
@@ -846,11 +874,12 @@ public class TodoItemMenu extends Dialog {
         if (withoutView != null) {
             withoutView.setVisibility(View.INVISIBLE);
         }
-        AndroidUtilities.makeGlobalBlurBitmap(bitmap -> {
+
+        ScrimOptions.makeGlobalBlurBitmaps((bitmapBg, bitmapOptions) -> {
             if (withoutView != null) {
                 withoutView.setVisibility(View.VISIBLE);
             }
-            blurBitmap = bitmap;
+            blurBitmap = bitmapBg;
 
             blurBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             blurBitmapPaint.setShader(blurBitmapShader = new BitmapShader(blurBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
@@ -859,7 +888,10 @@ public class TodoItemMenu extends Dialog {
             AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, Theme.isCurrentThemeDark() ? -.02f : -.04f);
             blurBitmapPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
             blurMatrix = new Matrix();
-        }, 14);
+
+            iBlur3SourceBitmap.setBitmap(bitmapOptions);
+            checkBitmapMatrix();
+        });
     }
 
     @Override

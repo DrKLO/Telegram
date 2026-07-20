@@ -30,11 +30,11 @@ public class FlatCheckBox extends View {
 
     int colorTextActive;
 
-    int HEIGHT = AndroidUtilities.dp(37);
+    int HEIGHT = AndroidUtilities.dp(35);
     int INNER_PADDING = AndroidUtilities.dp(22);
     int TRANSLETE_TEXT = AndroidUtilities.dp(8);
 
-    int P = AndroidUtilities.dp(2.5f);
+    int P = AndroidUtilities.dp(3.5f);
 
     RectF rectF = new RectF();
 

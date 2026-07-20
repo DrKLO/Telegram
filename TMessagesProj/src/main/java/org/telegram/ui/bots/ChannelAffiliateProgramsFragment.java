@@ -129,8 +129,8 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
         super.createView(context);
 
         aboveTitleView = new FrameLayout(context);
-        aboveTitleView.setClickable(true);
         iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_DEAL);
+        iconTextureView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         iconTextureView.mRenderer.colorKey1 = Theme.key_starsGradient1;
         iconTextureView.mRenderer.colorKey2 = Theme.key_starsGradient2;
         iconTextureView.mRenderer.updateColors();
@@ -575,7 +575,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
             static { setup(new Factory()); }
 
             @Override
-            public BotCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public BotCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new BotCell(context, currentAccount, resourcesProvider);
             }
 
@@ -613,7 +613,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
             subtextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
             subtextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
             subtextView.setPadding(dp(4), 0, dp(4), 0);
-            addView(subtextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 14 - 4, 20, 14 - 4, 0));
+            addView(subtextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 14 - 4, 14, 14 - 4, 0));
         }
 
         public void set(CharSequence text, CharSequence subtext) {
@@ -625,7 +625,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
             static { setup(new Factory()); }
 
             @Override
-            public HeaderSortCell createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+            public HeaderSortCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new HeaderSortCell(context, resourcesProvider);
             }
 

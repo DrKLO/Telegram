@@ -132,18 +132,15 @@ public class BotBiometry {
     private BiometricPrompt prompt;
 
     public void requestToken(String reason, Utilities.Callback2<Boolean, String> whenDecrypted) {
-        prompt(reason, true, null, (success, result) -> {
+        prompt(reason, true, null, (success, result, cryptoObject) -> {
             String token = null;
             if (result != null) {
                 try {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                         token = encrypted_token;
                     } else {
-                        BiometricPrompt.CryptoObject cryptoObject;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             cryptoObject = makeCryptoObject(true);
-                        } else {
-                            cryptoObject = result.getCryptoObject();
                         }
                         if (cryptoObject != null) {
                             if (!TextUtils.isEmpty(encrypted_token)) {
@@ -168,10 +165,9 @@ public class BotBiometry {
     }
 
     public void updateToken(String reason, String token, Utilities.Callback<Boolean> whenDone) {
-        prompt(reason, false, token, (success, result) -> {
+        prompt(reason, false, token, (success, result, cryptoObject) -> {
             if (result != null) {
                 try {
-                    BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
                     if (TextUtils.isEmpty(token)) {
                         encrypted_token = null;
                         iv = null;
@@ -181,8 +177,6 @@ public class BotBiometry {
                     } else {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             cryptoObject = makeCryptoObject(false);
-                        } else {
-                            cryptoObject = result.getCryptoObject();
                         }
                         if (cryptoObject != null) {
                             encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8)));
@@ -260,14 +254,14 @@ public class BotBiometry {
         String text,
         boolean decrypt,
         String token,
-        Utilities.Callback2<Boolean, BiometricPrompt.AuthenticationResult> whenDone
+        Utilities.Callback3<Boolean, BiometricPrompt.AuthenticationResult, BiometricPrompt.CryptoObject> whenDone
     ) {
-        this.callback = whenDone;
+        this.callback = null;
         try {
             initPrompt();
         } catch (Exception e) {
             FileLog.e(e);
-            whenDone.run(false, null);
+            whenDone.run(false, null, null);
             return;
         }
         BiometricPrompt.CryptoObject cryptoObject = makeCryptoObject(decrypt);
@@ -291,14 +285,15 @@ public class BotBiometry {
                     iv = Utilities.bytesToHex(cryptoObject.getCipher().getIV());
                 }
                 save();
-                this.callback = null;
-                whenDone.run(true, null);
+                whenDone.run(true, null, null);
                 return;
             } catch (Exception e) {
                 FileLog.e(e);
             }
             cryptoObject = makeCryptoObject(decrypt);
         }
+        final BiometricPrompt.CryptoObject capturedCryptoObject = (cryptoObject != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) ? cryptoObject : null;
+        this.callback = (success, result) -> whenDone.run(success, result, capturedCryptoObject);
         if (cryptoObject != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             prompt.authenticate(promptInfo, cryptoObject);
         } else {

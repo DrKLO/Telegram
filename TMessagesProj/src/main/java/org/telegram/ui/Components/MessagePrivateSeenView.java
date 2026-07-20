@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -61,6 +62,7 @@ public class MessagePrivateSeenView extends FrameLayout {
 
     private final long dialogId;
     private final int messageId;
+    private final int sent_date;
     private final int edit_date;
     private final int fwd_date;
     private final Runnable dismiss;
@@ -78,6 +80,7 @@ public class MessagePrivateSeenView extends FrameLayout {
 
         dialogId = messageObject.getDialogId();
         messageId = messageObject.getId();
+        sent_date = messageObject.messageOwner == null ? 0 : messageObject.messageOwner.date;
         edit_date = messageObject.messageOwner == null ? 0 : messageObject.messageOwner.edit_date;
         fwd_date = messageObject.messageOwner == null || messageObject.messageOwner.fwd_from == null ? 0 : messageObject.messageOwner.fwd_from.date;
 
@@ -85,7 +88,9 @@ public class MessagePrivateSeenView extends FrameLayout {
         addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 11, 0, 0, 0));
         int icon;
         if (type == TYPE_EDIT) {
-            icon = R.drawable.menu_edited_stamp;
+            icon = AppGlobalConfig.getInstance(currentAccount).messagePrimaryEditedDate.get() ?
+                R.drawable.outline_message_time_24:
+                R.drawable.menu_edited_stamp;
         } else if (type == TYPE_FORWARD) {
             icon = R.drawable.menu_forward_stamp;
         } else if (messageObject.isVoice()) {
@@ -130,7 +135,9 @@ public class MessagePrivateSeenView extends FrameLayout {
             valueLayout.setAlpha(1f);
             loadingView.setAlpha(0f);
             premiumTextView.setVisibility(View.GONE);
-            valueTextView.setText(LocaleController.formatPmEditedDate(edit_date));
+            valueTextView.setText(AppGlobalConfig.getInstance(currentAccount).messagePrimaryEditedDate.get() ?
+                LocaleController.formatPmSentDate(sent_date):
+                LocaleController.formatPmEditedDate(edit_date));
             return;
         } else if (type == TYPE_FORWARD) {
             valueLayout.setAlpha(1f);
@@ -219,7 +226,7 @@ public class MessagePrivateSeenView extends FrameLayout {
         descriptionView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(lastSeen ? (premiumLocked ? R.string.PremiumLastSeenText1Locked : R.string.PremiumLastSeenText1) : (premiumLocked ? R.string.PremiumReadText1Locked : R.string.PremiumReadText1), username)));
         layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 9, 32, 19));
 
-        ButtonWithCounterView button1 = new ButtonWithCounterView(context, resourcesProvider);
+        ButtonWithCounterView button1 = new ButtonWithCounterView(context, resourcesProvider).setRound();
         button1.setText(LocaleController.getString(lastSeen ? R.string.PremiumLastSeenButton1 : R.string.PremiumReadButton1), false);
         layout.addView(button1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_HORIZONTAL));
         button1.setOnClickListener(v -> {

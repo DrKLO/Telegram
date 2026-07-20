@@ -1,0 +1,22 @@
+uniform shader shaderPattern;
+uniform shader shaderGradient;
+uniform float intensity;
+
+// scaleX, scaleY, translateX, translateY
+uniform float4 transformGradient;
+uniform float4 transformPattern;
+
+float2 transformPoint(float2 p, float4 t) {
+    return float2(p.x * t.x + t.z, p.y * t.y + t.w);
+}
+
+half4 main(float2 p) {
+    float2 pPattern = transformPoint(p, transformPattern);
+    float2 pGradient = transformPoint(p, transformGradient);
+
+    half4 pattern = shaderPattern.eval(pPattern);
+    half4 gradient = shaderGradient.eval(pGradient);
+    half mask = pattern.a * intensity;
+
+    return half4(gradient.rgb * mask, 1.0);
+}

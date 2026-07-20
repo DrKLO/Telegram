@@ -54,7 +54,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
     }
 
     public PremiumPreviewGiftLinkBottomSheet(BaseFragment fragment, int currentAccount, TLRPC.User user, GiftPremiumBottomSheet.GiftTier gift, String slug, boolean isUsed, Theme.ResourcesProvider resourcesProvider) {
-        super(fragment, currentAccount, user, gift, resourcesProvider);
+        super(fragment, currentAccount, user, gift, null, resourcesProvider);
         this.slug = slug;
         this.isUsed = isUsed;
         init();
@@ -91,11 +91,11 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
         args.putBoolean("onlySelect", true);
         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
         DialogsActivity dialogFragment = new DialogsActivity(args);
-        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, topicsFragment) -> {
+        dialogFragment.setDelegate((fragment1, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             long did = 0;
             for (int a = 0; a < dids.size(); a++) {
                 did = dids.get(a).dialogId;
-                getBaseFragment().getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(slugLink, did, null, null, null, true, null, null, null, true, 0, null, false));
+                getBaseFragment().getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(slugLink, did, null, null, null, true, null, null, null, true, 0, 0, null, false));
             }
             fragment1.finishFragment();
             BoostDialogs.showGiftLinkForwardedBulletin(did);
@@ -144,7 +144,7 @@ public class PremiumPreviewGiftLinkBottomSheet extends PremiumPreviewBottomSheet
                     actionBtn.updateLoading(false);
                     dismiss();
                     AndroidUtilities.runOnUIThread(() -> {
-                        PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), UserConfig.selectedAccount, null, null, resourcesProvider)
+                        PremiumPreviewBottomSheet previewBottomSheet = new PremiumPreviewBottomSheet(getBaseFragment(), UserConfig.selectedAccount, null, null, null, resourcesProvider)
                                 .setAnimateConfetti(true)
                                 .setAnimateConfettiWithStars(true)
                                 .setOutboundGift(true);

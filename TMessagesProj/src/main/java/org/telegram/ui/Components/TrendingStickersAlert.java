@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -181,7 +180,7 @@ public class TrendingStickersAlert extends BottomSheet {
 
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
-            final int statusBarHeight = Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0;
+            final int statusBarHeight = AndroidUtilities.statusBarHeight;
             final int height = MeasureSpec.getSize(getMeasuredHeight()) - statusBarHeight;
             final int keyboardHeight = measureKeyboardHeight();
             final int padding = (int) ((height + keyboardHeight) * 0.2f);
@@ -212,13 +211,13 @@ public class TrendingStickersAlert extends BottomSheet {
         }
 
         @Override
-        protected void onDraw(Canvas canvas) {
+        protected void onDraw(@NonNull Canvas canvas) {
             updateLayout();
             super.onDraw(canvas);
 
             final float fraction = getFraction();
             final int offset = (int) (topOffset * (1f - fraction));
-            final int translationY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) - topOffset;
+            final int translationY = AndroidUtilities.statusBarHeight - topOffset;
 
             canvas.save();
             canvas.translate(0, layout.getTranslationY() + translationY);
@@ -257,18 +256,18 @@ public class TrendingStickersAlert extends BottomSheet {
             final float fraction = getFraction();
 
             // status bar
-            setStatusBarVisible(fraction == 0f && Build.VERSION.SDK_INT >= 21 && !isDismissed(), true);
+            setStatusBarVisible(fraction == 0f && !isDismissed(), true);
             updateLightStatusBar(statusBarAlpha > .5f);
             if (statusBarAlpha > 0f) {
                 paint.setColor(getThemedColor(Theme.key_dialogBackground));
-                int bottom = (int) Math.max(0, scrollOffsetY + (topOffset * (1f - getFraction())) + AndroidUtilities.dp(24) + (layout.getTranslationY() + ((Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) - topOffset)));
+                int bottom = (int) Math.max(0, scrollOffsetY + topOffset * (1f - getFraction()) + AndroidUtilities.dp(24) + (layout.getTranslationY() + (AndroidUtilities.statusBarHeight - topOffset)));
                 canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.lerp(bottom, -AndroidUtilities.statusBarHeight, statusBarAlpha), getMeasuredWidth() - backgroundPaddingLeft, bottom, paint);
             }
 
             super.dispatchDraw(canvas);
 
             canvas.save();
-            canvas.translate(0, layout.getTranslationY() + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) - topOffset);
+            canvas.translate(0, layout.getTranslationY() + AndroidUtilities.statusBarHeight - topOffset);
 
             // top icon
             final int w = AndroidUtilities.dp(36);

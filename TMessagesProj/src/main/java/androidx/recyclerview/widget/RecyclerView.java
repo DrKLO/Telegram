@@ -555,7 +555,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     GapWorker.LayoutPrefetchRegistryImpl mPrefetchRegistry =
             ALLOW_THREAD_GAP_WORK ? new GapWorker.LayoutPrefetchRegistryImpl() : null;
 
-    final State mState = new State();
+    public final State mState = new State();
 
     private OnScrollListener mScrollListener;
     private List<OnScrollListener> mScrollListeners;
@@ -4380,7 +4380,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             @NonNull ItemHolderInfo preLayoutInfo, @Nullable ItemHolderInfo postLayoutInfo) {
         addAnimatingView(holder);
         holder.setIsRecyclable(false);
-        if (mItemAnimator.animateDisappearance(holder, preLayoutInfo, postLayoutInfo)) {
+        if (mItemAnimator.animateDisappearance(this, holder, preLayoutInfo, postLayoutInfo)) {
             postAnimationRunner();
         }
     }
@@ -4829,7 +4829,11 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         if (child == null) {
             return null;
         }
-        return ((LayoutParams) child.getLayoutParams()).mViewHolder;
+        final ViewGroup.LayoutParams lp = child.getLayoutParams();
+        if (!(lp instanceof LayoutParams)) {
+            return null;
+        }
+        return ((LayoutParams) lp).mViewHolder;
     }
 
     /**
@@ -5241,6 +5245,13 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                 || mAdapterHelper.hasPendingUpdates();
     }
 
+    public boolean canStopFlinger = true;
+    private boolean isFlingerWorking = false;
+
+    public boolean isFlingerWorking() {
+        return isFlingerWorking;
+    }
+
     class ViewFlinger implements Runnable {
         private int mLastFlingX;
         private int mLastFlingY;
@@ -5260,6 +5271,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         @Override
         public void run() {
             if (mLayout == null) {
+                canStopFlinger = true;
                 stop();
                 return; // no layout, cannot scroll.
             }
@@ -5280,6 +5292,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             // Keep a local reference so that if it is changed during onAnimation method, it won't
             // cause unexpected behaviors
             final OverScroller scroller = mOverScroller;
+            isFlingerWorking = true;
             if (scroller.computeScrollOffset()) {
                 final int x = scroller.getCurrX();
                 final int y = scroller.getCurrY();
@@ -5394,6 +5407,8 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
                 }
             }
 
+            isFlingerWorking = false;
+
             SmoothScroller smoothScroller = mLayout.mSmoothScroller;
             // call this after the onAnimation is complete not to have inconsistent callbacks etc.
             if (smoothScroller != null && smoothScroller.isPendingInitialRun()) {
@@ -5501,6 +5516,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
 
         public void stop() {
+            if (!canStopFlinger) return;
             removeCallbacks(this);
             mOverScroller.abortAnimation();
         }
@@ -10939,6 +10955,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         int mItemViewType = INVALID_TYPE;
         int mPreLayoutPosition = NO_POSITION;
 
+        public int mOldOldPosition = NO_POSITION;
+        public int mOldCompoundPosition = NO_POSITION;
+
         // The item that this holder is shadowing during an item change event/animation
         ViewHolder mShadowedHolder = null;
         // The item that is shadowing this holder during an item change event/animation
@@ -11056,7 +11075,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         // scrap container.
         Recycler mScrapContainer = null;
         // Keeps whether this ViewHolder lives in Change scrap or Attached scrap
-        boolean mInChangeScrap = false;
+        public boolean mInChangeScrap = false;
 
         // Saves isImportantForAccessibility value for the view item while it's in hidden state and
         // marked as unimportant for accessibility.
@@ -11110,6 +11129,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             if (mOldPosition == NO_POSITION) {
                 mOldPosition = mPosition;
             }
+            mOldOldPosition = mPosition;
         }
 
         public boolean shouldIgnore() {
@@ -11245,7 +11265,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             mInChangeScrap = isChangeScrap;
         }
 
-        boolean isInvalid() {
+        public boolean isInvalid() {
             return (mFlags & FLAG_INVALID) != 0;
         }
 
@@ -11257,7 +11277,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             return (mFlags & FLAG_BOUND) != 0;
         }
 
-        boolean isRemoved() {
+        public boolean isRemoved() {
             return (mFlags & FLAG_REMOVED) != 0;
         }
 
@@ -11324,6 +11344,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
         void resetInternal() {
             mFlags = 0;
+            if (mPosition != NO_POSITION) {
+                mOldOldPosition = mPosition;
+            }
             mPosition = NO_POSITION;
             mOldPosition = NO_POSITION;
             mItemId = NO_ID;
@@ -11776,8 +11799,8 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * stop calling SmoothScroller in each animation step.</p>
          */
         void start(RecyclerView recyclerView, LayoutManager layoutManager) {
-
             // Stop any previous ViewFlinger animations now because we are about to start a new one.
+            recyclerView.canStopFlinger = true;
             recyclerView.mViewFlinger.stop();
 
             if (mStarted) {
@@ -13077,7 +13100,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
          * @return true if a later call to {@link #runPendingAnimations()} is requested,
          * false otherwise.
          */
-        public abstract boolean animateDisappearance(@NonNull ViewHolder viewHolder,
+        public abstract boolean animateDisappearance(RecyclerView recyclerView, @NonNull ViewHolder viewHolder,
                 @NonNull ItemHolderInfo preLayoutInfo, @Nullable ItemHolderInfo postLayoutInfo);
 
         /**
@@ -13452,6 +13475,8 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         public ItemHolderInfo obtainHolderInfo() {
             return new ItemHolderInfo();
         }
+
+        public abstract void listenToAnimationUpdates(Runnable listener);
 
         /**
          * The interface to be implemented by listeners to animation events from this

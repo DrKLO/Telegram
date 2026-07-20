@@ -1,10 +1,14 @@
 package org.telegram.ui.Components.Premium.boosts.cells.selector;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
 import android.view.Gravity;
 import android.view.View;
@@ -17,6 +21,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
@@ -26,10 +31,13 @@ public class SelectorCountryCell extends BaseCell {
 
     private final CheckBox2 checkBox;
     private TLRPC.TL_help_country country;
+    private TextPaint paint = new TextPaint();
 
     public SelectorCountryCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
-        titleTextView.setTypeface(AndroidUtilities.bold());
+        paint.setTextSize(dp(20));
+
+        // titleTextView.setTypeface(AndroidUtilities.bold());
         radioButton.setVisibility(View.GONE);
         imageView.setVisibility(View.GONE);
         checkBox = new CheckBox2(context, 21, resourcesProvider);
@@ -59,14 +67,23 @@ public class SelectorCountryCell extends BaseCell {
 
     public void setCountry(TLRPC.TL_help_country country, boolean divider) {
         this.country = country;
-        titleTextView.setText(Emoji.replaceEmoji(getCountryNameWithFlag(country), titleTextView.getPaint().getFontMetricsInt(), false));
+        setCountryInternal();
         setDivider(divider);
     }
 
+    private final Runnable setCountryRunnable = this::setCountryInternal;
+
+    private void setCountryInternal() {
+        titleTextView.setText(getCountryNameWithFlag(country));
+    }
 
     private CharSequence getCountryNameWithFlag(TLRPC.TL_help_country country) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
-        String flag = LocaleController.getLanguageFlag(country.iso2);
+        // String flag = LocaleController.getLanguageFlag(country.iso2);
+
+        final CharSequence flag = Emoji.replaceWithRestrictedEmoji(LocaleController.getLanguageFlag(country.iso2),
+            paint.getFontMetricsInt(), AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, setCountryRunnable);
+
         if (flag != null) {
             sb.append(flag).append(" ");
             sb.setSpan(new SpaceDrawable(16), flag.length(), flag.length() + 1, 0);
@@ -74,7 +91,13 @@ public class SelectorCountryCell extends BaseCell {
             sb.append(" ");
             sb.setSpan(new SpaceDrawable(34), 0, 1, 0);
         }
-        sb.append(country.default_name);
+
+        String countryName = LocaleController.getCountryName(country.iso2);
+        if (TextUtils.isEmpty(countryName)) {
+            countryName = country.default_name;
+        }
+
+        sb.append(countryName);
         return sb;
     }
 
@@ -114,7 +137,7 @@ public class SelectorCountryCell extends BaseCell {
 
         @Override
         public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
-            return AndroidUtilities.dp(size);
+            return dp(size);
         }
 
         @Override

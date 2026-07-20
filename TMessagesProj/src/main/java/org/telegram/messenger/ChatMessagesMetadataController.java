@@ -2,6 +2,7 @@ package org.telegram.messenger;
 
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Stories.StoriesStorage;
 
@@ -135,8 +136,8 @@ public class ChatMessagesMetadataController {
             if (error == null) {
                 TLRPC.Updates updates = (TLRPC.Updates) response;
                 for (int i = 0; i < updates.updates.size(); i++) {
-                    if (updates.updates.get(i) instanceof TLRPC.TL_updateMessageReactions) {
-                        ((TLRPC.TL_updateMessageReactions) updates.updates.get(i)).updateUnreadState = false;
+                    if (updates.updates.get(i) instanceof TL_update.TL_updateMessageReactions) {
+                        ((TL_update.TL_updateMessageReactions) updates.updates.get(i)).updateUnreadState = false;
                     }
                 }
                 chatActivity.getMessagesController().processUpdates(updates, false);

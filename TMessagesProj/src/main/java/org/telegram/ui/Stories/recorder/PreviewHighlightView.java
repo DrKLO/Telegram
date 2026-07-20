@@ -134,6 +134,8 @@ public class PreviewHighlightView extends FrameLayout {
 
         top.setAlpha(0f);
         bottom.setAlpha(0f);
+
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     }
 
     public void updateCount() {
@@ -143,7 +145,7 @@ public class PreviewHighlightView extends FrameLayout {
 
     public void updateCaption(CharSequence caption) {
         caption = AnimatedEmojiSpan.cloneSpans(new SpannableString(caption));
-        storyCaptionView.captionTextview.setText(caption, null, false, false);
+        storyCaptionView.captionTextview.setText(caption, null, null, false, false);
     }
 
     private boolean shownTop = false, shownBottom = false;

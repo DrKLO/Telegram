@@ -9,6 +9,8 @@
 package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.formatString;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -42,6 +44,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -91,6 +94,8 @@ public class SessionCell extends FrameLayout {
             placeholderImageView = new BackupImageView(context);
             placeholderImageView.setRoundRadius(dp(10));
             addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 16), 9, (LocaleController.isRTL ? 16 : 0), 0));
+
+            avatarDrawable = new AvatarDrawable();
 
             imageView = new BackupImageView(context);
             imageView.setRoundRadius(dp(10));
@@ -185,8 +190,23 @@ public class SessionCell extends FrameLayout {
     public void setSession(TLObject object, boolean divider) {
         needDivider = divider;
 
-        if (object instanceof TLRPC.TL_authorization) {
-            TLRPC.TL_authorization session = (TLRPC.TL_authorization) object;
+        imageView.setRoundRadius(dp(10));
+
+        if (object instanceof TL_account.TL_connectedBot) {
+            final TL_account.TL_connectedBot bot = (TL_account.TL_connectedBot) object;
+            final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(bot.bot_id);
+
+            avatarDrawable.setInfo(user);
+            imageView.setRoundRadius(dp(21));
+            imageView.setForUserOrChat(user, avatarDrawable);
+
+            nameTextView.setText(UserObject.getUserName(user));
+            detailTextView.setText(getString(R.string.SessionBot));
+            if (TLObject.hasFlag(bot.flags, TLObject.FLAG_1)) {
+                detailExTextView.setText(formatString(R.string.SessionBotConnectedOn, LocaleController.formatDateTime(bot.date, false)));
+            }
+        } else if (object instanceof TLRPC.TL_authorization) {
+            final TLRPC.TL_authorization session = (TLRPC.TL_authorization) object;
             imageView.setImageDrawable(createDrawable(42, session));
 
             StringBuilder stringBuilder = new StringBuilder();
@@ -209,7 +229,7 @@ public class SessionCell extends FrameLayout {
             String timeText;
             if ((session.flags & 1) != 0) {
                 setTag(Theme.key_windowBackgroundWhiteValueText);
-                timeText = LocaleController.getString(R.string.Online);
+                timeText = getString(R.string.Online);
             } else {
                 setTag(Theme.key_windowBackgroundWhiteGrayText3);
                 timeText = LocaleController.stringForMessageListDate(session.date_active);
@@ -348,6 +368,10 @@ public class SessionCell extends FrameLayout {
             iconId = R.drawable.fragment;
             colorKey = -1;
             colorKey2 = -1;
+        } else if (platform.equalsIgnoreCase("search")) {
+            iconId = R.drawable.msg_search;
+            colorKey = Theme.key_avatar_backgroundBlue;
+            colorKey2 = Theme.key_avatar_background2Blue;
         } else if (platform.contains("anonymous")) {
             iconId = R.drawable.large_hidden;
             colorKey = Theme.key_avatar_backgroundBlue;

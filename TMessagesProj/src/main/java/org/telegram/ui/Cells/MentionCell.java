@@ -8,19 +8,23 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -28,6 +32,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class MentionCell extends LinearLayout {
@@ -47,11 +52,11 @@ public class MentionCell extends LinearLayout {
         setOrientation(HORIZONTAL);
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(18));
+        avatarDrawable.setTextSize(dp(18));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(AndroidUtilities.dp(14));
-        addView(imageView, LayoutHelper.createLinear(28, 28, 12, 4, 0, 0));
+        imageView.setRoundRadius(dp(14));
+        addView(imageView, LayoutHelper.createLinear(28, 28, 8, 4, 0, 0));
 
         nameTextView = new TextView(context) {
             @Override
@@ -83,7 +88,7 @@ public class MentionCell extends LinearLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(36), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(36), MeasureSpec.EXACTLY));
     }
 
     public void setUser(TLRPC.User user) {
@@ -123,7 +128,7 @@ public class MentionCell extends LinearLayout {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (needsDivider) {
-            canvas.drawLine(AndroidUtilities.dp(52), getHeight() - 1, getWidth() - AndroidUtilities.dp(8), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(dp(52), getHeight() - 1, getWidth() - dp(8), getHeight() - 1, Theme.dividerPaint);
         }
     }
 
@@ -200,7 +205,7 @@ public class MentionCell extends LinearLayout {
             nameTextView.setPadding(0, 0, 0, 0);
             nameTextView.setText(new StringBuilder().append(suggestion.emoji).append(":  ").append(suggestion.keyword));
         } else {
-            nameTextView.setPadding(AndroidUtilities.dp(22), 0, 0, 0);
+            nameTextView.setPadding(dp(22), 0, 0, 0);
             nameTextView.setText(new StringBuilder().append(":  ").append(suggestion.keyword));
         }
     }
@@ -210,8 +215,8 @@ public class MentionCell extends LinearLayout {
         super.dispatchDraw(canvas);
 
         if (emojiDrawable != null) {
-            final int sz = AndroidUtilities.dp(emojiDrawable instanceof AnimatedEmojiDrawable ? 24 : 20);
-            final int offsetX = AndroidUtilities.dp(emojiDrawable instanceof AnimatedEmojiDrawable ? -2 : 0);
+            final int sz = dp(emojiDrawable instanceof AnimatedEmojiDrawable ? 24 : 20);
+            final int offsetX = dp(emojiDrawable instanceof AnimatedEmojiDrawable ? -2 : 0);
             emojiDrawable.setBounds(
                 nameTextView.getLeft() + offsetX,
                 (nameTextView.getTop() + nameTextView.getBottom() - sz) / 2,
@@ -225,7 +230,7 @@ public class MentionCell extends LinearLayout {
         }
     }
 
-    public void setBotCommand(String command, String help, TLRPC.User user) {
+    public void setBotCommand(String command, String help, TLRPC.User user, boolean ephemeral) {
         resetEmojiSuggestion();
         if (user != null) {
             imageView.setVisibility(VISIBLE);
@@ -239,7 +244,19 @@ public class MentionCell extends LinearLayout {
             imageView.setVisibility(INVISIBLE);
         }
         usernameTextView.setVisibility(VISIBLE);
-        nameTextView.setText(command);
+
+        if (ephemeral) {
+            final ColoredImageSpan coloredImageSpan = new ColoredImageSpan(R.drawable.mini_ephemeral_hidden_14);
+            coloredImageSpan.setColorKey(Theme.key_windowBackgroundWhiteGrayText3);
+            coloredImageSpan.setTopOffset(1);
+            final SpannableStringBuilder ssb = new SpannableStringBuilder(command);
+            ssb.append(" *");
+            ssb.setSpan(coloredImageSpan, ssb.length() - 1, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            nameTextView.setText(ssb);
+        } else {
+            nameTextView.setText(command);
+        }
+
         usernameTextView.setText(Emoji.replaceEmoji(help, usernameTextView.getPaint().getFontMetricsInt(), false));
     }
 

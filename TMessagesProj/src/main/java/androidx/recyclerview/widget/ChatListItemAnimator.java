@@ -1,13 +1,10 @@
 package androidx.recyclerview.widget;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
-
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
@@ -18,7 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
@@ -739,7 +735,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 dispatchMoveFinished(holder);
                 return false;
             }
-        } else if (holder.itemView instanceof BotHelpCell) {
+        }else if (holder.itemView instanceof BotHelpCell) {
             BotHelpCell botInfo = (BotHelpCell) holder.itemView;
             botInfo.setAnimating(true);
         } else if (holder.itemView instanceof UserInfoCell) {

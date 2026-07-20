@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -57,7 +59,7 @@ public class LetterDrawable extends Drawable {
             if (namePaint == null) {
                 namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             }
-            namePaint.setTextSize(AndroidUtilities.dp(28));
+            namePaint.setTextSize(dp(28));
             paint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholder, resourcesProvider));
             namePaint.setColor(Theme.getColor(Theme.key_sharedMedia_linkPlaceholderText, resourcesProvider));
             textPaint = namePaint;
@@ -66,7 +68,7 @@ public class LetterDrawable extends Drawable {
                 namePaintTopic = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             }
             namePaintTopic.setColor(Color.WHITE);
-            namePaintTopic.setTextSize(AndroidUtilities.dp(13));
+            namePaintTopic.setTextSize(dp(13));
             namePaintTopic.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
             textPaint = namePaintTopic;
         } else {
@@ -97,7 +99,7 @@ public class LetterDrawable extends Drawable {
         if (stringBuilder.length() > 0) {
             String text = stringBuilder.toString().toUpperCase();
             try {
-                textLayout = new StaticLayout(text, textPaint, AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(text, textPaint, dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (textLayout.getLineCount() > 0) {
                     textLeft = textLayout.getLineLeft(0);
                     textWidth = textLayout.getLineWidth(0);
@@ -119,7 +121,7 @@ public class LetterDrawable extends Drawable {
         }
         if (style == STYLE_DEFAULT) {
             rect.set(bounds.left, bounds.top, bounds.right, bounds.bottom);
-            canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+            canvas.drawRoundRect(rect, dp(8), dp(8), paint);
         }
         canvas.save();
         if (scale != 1) {

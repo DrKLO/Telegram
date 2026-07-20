@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.LocaleController.getString;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -71,7 +73,6 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -88,6 +89,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.ActionBar.theme.ThemeKey;
 import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -304,16 +306,16 @@ public class QrActivity extends BaseFragment {
                     }
                 }
                 avatarDrawable = new AvatarDrawable(user);
-                imageLocationSmall = ImageLocation.getForUser(user, ImageLocation.TYPE_SMALL);
-                imageLocation = ImageLocation.getForUser(user, ImageLocation.TYPE_BIG);
+                imageLocationSmall = ImageLocation.getForUser(currentAccount, user, ImageLocation.TYPE_SMALL);
+                imageLocation = ImageLocation.getForUser(currentAccount, user, ImageLocation.TYPE_BIG);
             }
         } else if (chatId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
             if (chat != null) {
                 username = ChatObject.getPublicUsername(chat);
                 avatarDrawable = new AvatarDrawable(chat);
-                imageLocationSmall = ImageLocation.getForChat(chat, ImageLocation.TYPE_SMALL);
-                imageLocation = ImageLocation.getForChat(chat, ImageLocation.TYPE_BIG);
+                imageLocationSmall = ImageLocation.getForChat(currentAccount, chat, ImageLocation.TYPE_SMALL);
+                imageLocation = ImageLocation.getForChat(currentAccount, chat, ImageLocation.TYPE_BIG);
             }
         }
 
@@ -342,6 +344,7 @@ public class QrActivity extends BaseFragment {
         avatarImageView.setImage(imageLocation, "84_84", imageLocationSmall, "50_50", avatarDrawable, null, null, 0, null);
 
         closeImageView = new ImageView(context);
+        closeImageView.setContentDescription(getString(R.string.AccDescrGoBack));
         closeImageView.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(34), 0x28000000, 0x28ffffff));
         closeImageView.setImageResource(R.drawable.ic_ab_back);
         closeImageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -371,7 +374,7 @@ public class QrActivity extends BaseFragment {
 
         themesViewController.onCreate();
         themesViewController.setItemSelectedListener((theme, position) -> QrActivity.this.onItemSelected(theme, position, true));
-        themesViewController.titleView.setText(LocaleController.getString(R.string.QrCode));
+        themesViewController.titleView.setText(getString(R.string.QrCode));
         themesViewController.progressView.setViewType(FlickerLoadingView.QR_TYPE);
         themesViewController.shareButton.setOnClickListener(v -> {
             themesViewController.shareButton.setClickable(false);
@@ -386,7 +389,7 @@ public class QrActivity extends BaseFragment {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE);
                     return;
                 }
-                openCameraScanActivity();
+                openCameraScanActivity(this);
             });
         }
         rootLayout.addView(themeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
@@ -533,7 +536,7 @@ public class QrActivity extends BaseFragment {
 
         int selectedPosition = -1;
         for (int i = 0; i != items.size(); ++i) {
-            if (items.get(i).chatTheme.getEmoticon().equals(currentTheme.getEmoticon())) {
+            if (ThemeKey.equals(items.get(i).chatTheme.getThemeKey(), currentTheme.getThemeKey())) {
                 themesViewController.selectedItem = items.get(i);
                 selectedPosition = i;
                 break;
@@ -621,10 +624,11 @@ public class QrActivity extends BaseFragment {
             currMotionDrawable.setPatternBitmap(wallPaper.settings.intensity);
             final long startedLoading = SystemClock.elapsedRealtime();
             currentTheme.loadWallpaper(isDarkTheme ? 1 : 0, pair -> {
-                if (pair != null && currentTheme.getTlTheme(isDarkTheme ? 1 : 0) != null) {
+                final long currentThemeId = currentTheme.getThemeId(isDarkTheme ? 1 : 0);
+                if (pair != null && currentThemeId != 0) {
                     final long themeId = pair.first;
-                    final Bitmap bitmap = pair.second;
-                    if (themeId == currentTheme.getTlTheme(isDarkTheme ? 1 : 0).id && bitmap != null) {
+                    final Bitmap bitmap = pair.second.bitmap;
+                    if (themeId == currentThemeId && bitmap != null) {
                         long elapsed = SystemClock.elapsedRealtime() - startedLoading;
                         onPatternLoaded(bitmap, currMotionDrawable.getIntensity(), elapsed > 150);
                     }
@@ -728,11 +732,11 @@ public class QrActivity extends BaseFragment {
         });
     }
 
-    private void performShare() {
+    public void performShare() {
         int width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         int height = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         if (height * 1f / width > 1.92f) {
-            height = (int)(width * 1.92f);
+            height = (int) (width * 1.92f);
         }
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -770,7 +774,7 @@ public class QrActivity extends BaseFragment {
                     .setType("image/*")
                     .putExtra(Intent.EXTRA_STREAM, uri);
             try {
-                Intent chooserIntent = Intent.createChooser(intent, LocaleController.getString(R.string.InviteByQRCode));
+                Intent chooserIntent = Intent.createChooser(intent, getString(R.string.InviteByQRCode));
                 getParentActivity().startActivityForResult(chooserIntent, 500);
             } catch (ActivityNotFoundException ex) {
                 ex.printStackTrace();
@@ -785,29 +789,30 @@ public class QrActivity extends BaseFragment {
     }
 
 
-    private void openCameraScanActivity() {
-        CameraScanActivity.showAsSheet(this, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
+    public static void openCameraScanActivity(BaseFragment fragment) {
+        final int currentAccount = fragment.getCurrentAccount();
+        CameraScanActivity.showAsSheet(fragment, false, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
             @Override
             public void didFindQr(String text) {
                 final String username = Browser.extractUsername(text);
                 if (!TextUtils.isEmpty(username)) {
                     MessagesController.getInstance(currentAccount).getUserNameResolver().resolve(username, peerId -> {
-                        if (isFinished) {
+                        if (fragment.isFinished) {
                             return;
                         }
                         if (peerId == null || peerId == Long.MAX_VALUE) {
                             AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
-                                    LocaleController.getString(R.string.ScanQrCode),
-                                    LocaleController.getString(R.string.ErrorOccurred)
+                                    getString(R.string.ScanQrCode),
+                                    getString(R.string.ErrorOccurred)
                             ).show());
                             return;
                         }
-                        presentFragment(ProfileActivity.of(peerId), true);
+                        fragment.presentFragment(ProfileActivity.of(peerId), true);
                     });
                 } else {
                     AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createSimpleBulletin(
-                            LocaleController.getString(R.string.ScanQrCode),
-                            LocaleController.getString(R.string.ErrorOccurred)
+                            getString(R.string.ScanQrCode),
+                            getString(R.string.ErrorOccurred)
                     ).show());
                 }
             }
@@ -821,11 +826,11 @@ public class QrActivity extends BaseFragment {
         }
         if (requestCode == ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openCameraScanActivity();
+                openCameraScanActivity(this);
             } else {
                 new AlertDialog.Builder(getParentActivity())
-                        .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.QRCodePermissionNoCameraWithHint)))
-                        .setPositiveButton(LocaleController.getString(R.string.PermissionOpenSettings), (dialogInterface, i) -> {
+                        .setMessage(AndroidUtilities.replaceTags(getString(R.string.QRCodePermissionNoCameraWithHint)))
+                        .setPositiveButton(getString(R.string.PermissionOpenSettings), (dialogInterface, i) -> {
                             try {
                                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                                 intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
@@ -834,7 +839,7 @@ public class QrActivity extends BaseFragment {
                                 FileLog.e(e);
                             }
                         })
-                        .setNegativeButton(LocaleController.getString(R.string.ContactsPermissionAlertNotNow), null)
+                        .setNegativeButton(getString(R.string.ContactsPermissionAlertNotNow), null)
                         .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
                         .show();
             }
@@ -1047,7 +1052,7 @@ public class QrActivity extends BaseFragment {
                 }
                 if (contentBitmap != null) {
                     canvas.drawBitmap(contentBitmap, 0f, 0f, bitmapGradientPaint);
-                    gradientDrawable.updateAnimation(true);
+                    gradientDrawable.updateAnimation();
                 } else {
                     drawLoading(canvas);
                 }
@@ -1498,9 +1503,9 @@ public class QrActivity extends BaseFragment {
                 public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                     super.onInitializeAccessibilityNodeInfo(info);
                     if (isCurrentThemeDark) {
-                        info.setText(LocaleController.getString(R.string.AccDescrSwitchToDayTheme));
+                        info.setText(getString(R.string.AccDescrSwitchToDayTheme));
                     } else {
-                        info.setText(LocaleController.getString(R.string.AccDescrSwitchToNightTheme));
+                        info.setText(getString(R.string.AccDescrSwitchToNightTheme));
                     }
                 }
             };
@@ -1552,12 +1557,12 @@ public class QrActivity extends BaseFragment {
             rootLayout.addView(bottomShadow);
 
             shareButton = new TextView(context);
-            shareButton.setBackground(Theme.AdaptiveRipple.filledRect(fragment.getThemedColor(Theme.key_featuredStickers_addButton), 6));
+            shareButton.setBackground(Theme.AdaptiveRipple.filledRect(fragment.getThemedColor(Theme.key_featuredStickers_addButton), 24));
             shareButton.setEllipsize(TextUtils.TruncateAt.END);
             shareButton.setGravity(Gravity.CENTER);
             shareButton.setLines(1);
             shareButton.setSingleLine(true);
-            shareButton.setText(LocaleController.getString(R.string.ShareQrCode));
+            shareButton.setText(getString(R.string.ShareQrCode));
             shareButton.setTextColor(fragment.getThemedColor(Theme.key_featuredStickers_buttonText));
             shareButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             shareButton.setTypeface(AndroidUtilities.bold());
@@ -1566,7 +1571,7 @@ public class QrActivity extends BaseFragment {
 
             if (UserConfig.getInstance(currentAccount).getClientUserId() == userId) {
                 scanButtonWrap = new LinearLayout(context);
-                scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton)), 25), 6f));
+                scanButtonWrap.setBackground(Theme.AdaptiveRipple.createRect(ColorUtils.setAlphaComponent(Theme.AdaptiveRipple.calcRippleColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton)), 25), 24f));
                 scanButtonWrap.setOrientation(LinearLayout.HORIZONTAL);
                 scanButtonWrap.setGravity(Gravity.CENTER);
 
@@ -1581,7 +1586,7 @@ public class QrActivity extends BaseFragment {
                 scanButton.setGravity(Gravity.CENTER);
                 scanButton.setLines(1);
                 scanButton.setSingleLine(true);
-                scanButton.setText(LocaleController.getString(R.string.ScanQrCode));
+                scanButton.setText(getString(R.string.ScanQrCode));
                 scanButton.setTextColor(fragment.getThemedColor(Theme.key_featuredStickers_addButton));
                 scanButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 scanButton.setTypeface(AndroidUtilities.bold());

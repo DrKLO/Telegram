@@ -5,23 +5,17 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmount;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -45,12 +39,13 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
@@ -61,18 +56,18 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.LoadingSpan;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
 import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
 import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.GradientHeaderActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stars.BotStarsActivity;
+import org.telegram.ui.Stars.BotStarsController;
 import org.telegram.ui.Stars.ExplainStarsSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -83,8 +78,6 @@ import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
 import java.util.ArrayList;
 
 public class TONIntroActivity extends GradientHeaderActivity implements NotificationCenter.NotificationCenterDelegate {
-
-//    private StarsBalanceView balanceView;
 
     private FrameLayout aboveTitleView;
     private GLIconTextureView iconTextureView;
@@ -99,7 +92,12 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     private SpannableStringBuilder starBalanceIcon;
     private AnimatedTextView starBalanceTextView;
     private AnimatedTextView starBalanceTitleView;
+
+    private FrameLayout oneButtonsLayout;
+    private ButtonWithCounterView buyButton;
+    private LinearLayout twoButtonsLayout;
     private ButtonWithCounterView topUpButton;
+    private ButtonWithCounterView withdrawButton;
 
     public static boolean allowTopUp() {
         return ApplicationLoader.isStandaloneBuild() || BuildVars.isBetaApp() || BuildVars.isHuaweiStoreApp();
@@ -201,9 +199,11 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
             }
         };
-        emptyLayout.setBackgroundColor(Theme.getColor(allowTopUp ? Theme.key_dialogBackgroundGray : Theme.key_dialogBackground));
 
         super.createView(context);
+        if (parentLayout != null && parentLayout.isRightLayout()) {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_close);
+        }
 
         aboveTitleView = new FrameLayout(context);
         aboveTitleView.setClickable(true);
@@ -238,7 +238,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
         balanceLayout = new LinearLayout(getContext());
         balanceLayout.setOrientation(LinearLayout.VERTICAL);
-        balanceLayout.setPadding(0, 0, 0, dp(10));
+        balanceLayout.setPadding(0, dp(20), 0, dp(10));
 
         starBalanceTextView = new AnimatedTextView(getContext(), false, true, false);
         starBalanceTextView.setTypeface(AndroidUtilities.bold());
@@ -247,7 +247,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         starBalanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
 
         starBalanceIcon = new SpannableStringBuilder("S");
-        final ColoredImageSpan starBalanceIconSpan = new ColoredImageSpan(R.drawable.ton);
+        final ColoredImageSpan starBalanceIconSpan = new ColoredImageSpan(R.drawable.mini_gram_72);
         starBalanceIconSpan.setOverrideColor(0xFF3391D4);
         starBalanceIconSpan.setScale(0.5f, 0.5f);
         starBalanceIconSpan.translate(-dp(3), 0);
@@ -261,14 +261,66 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         starBalanceTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourceProvider));
         balanceLayout.addView(starBalanceTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.CENTER, 24, 0, 24, 8));
 
+        FrameLayout buttonsLayout = new FrameLayout(getContext());
+
+        oneButtonsLayout = new FrameLayout(getContext()) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (twoButtons) return false;
+                return super.dispatchTouchEvent(ev);
+            }
+        };
+        buttonsLayout.addView(oneButtonsLayout);
+
         if (allowTopUp) {
-            topUpButton = new ButtonWithCounterView(getContext(), resourceProvider);
-            topUpButton.setText(getString(R.string.TopUpViaFragment), false);
-            topUpButton.setOnClickListener(v -> {
+            buyButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
+            buyButton.setRound();
+            buyButton.setText(getString(R.string.TopUpViaFragment), false);
+            buyButton.setOnClickListener(v -> {
                 Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
             });
-            balanceLayout.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 6, 20, 4));
+            oneButtonsLayout.addView(buyButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL));
         }
+
+        twoButtonsLayout = new LinearLayout(getContext()) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (!twoButtons) return false;
+                return super.dispatchTouchEvent(ev);
+            }
+        };
+        buttonsLayout.addView(twoButtonsLayout);
+
+        topUpButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
+        SpannableStringBuilder ssb = new SpannableStringBuilder("x  ");
+        ssb.setSpan(new ColoredImageSpan(R.drawable.mini_topup, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ssb.append(getString(R.string.TonTopUp));
+        topUpButton.setText(ssb, false);
+        topUpButton.setOnClickListener(v -> {
+            Browser.openUrlInSystemBrowser(getContext(), getString(R.string.TopUpViaFragmentLink));
+        });
+        if (allowTopUp) {
+            twoButtonsLayout.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 1, 0, 0, 8, 0));
+        }
+
+        withdrawButton = new ButtonWithCounterView(getContext(), resourceProvider).setRound();
+        ssb = new SpannableStringBuilder("x  ");
+        ssb.setSpan(new ColoredImageSpan(R.drawable.mini_stats, ColoredImageSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ssb.append(getString(R.string.TonStats));
+        withdrawButton.setText(ssb, false);
+        withdrawButton.setOnClickListener(v -> {
+            presentFragment(new BotStarsActivity(BotStarsActivity.TYPE_TON, getUserConfig().getClientUserId()));
+        });
+        twoButtonsLayout.addView(withdrawButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 1, 0, 0, 0, 0));
+
+        balanceLayout.addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 6, 20, 4));
+
+        oneButtonsLayout.animate().cancel();
+        twoButtonsLayout.animate().cancel();
+        twoButtonsLayout.setAlpha(twoButtons ? 1.0f : 0.0f);
+        oneButtonsLayout.setAlpha(twoButtons ? 0.0f : 1.0f);
+        twoButtonsLayout.setVisibility(twoButtons ? View.VISIBLE : View.GONE);
+        oneButtonsLayout.setVisibility(twoButtons ? View.GONE : View.VISIBLE);
 
         updateBalance();
 
@@ -295,6 +347,42 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             starBalanceTitleView.setText("≈" + BillingController.getInstance().formatCurrency((int) (dollars * 100), "USD"));
         } else {
             starBalanceTitleView.setText(LocaleController.getString(R.string.YourTonBalance));
+        }
+
+        final TLRPC.TL_payments_starsRevenueStats stats = BotStarsController.getInstance(currentAccount).getTONRevenueStats(getUserConfig().getClientUserId(), true);
+        updateButtonsLayouts(stats != null && stats.status != null && stats.status.overall_revenue.positive(), true);
+    }
+
+    private boolean twoButtons;
+    private void updateButtonsLayouts(boolean two, boolean animated) {
+        if (twoButtons == two) return;
+        twoButtons = two;
+        if (animated) {
+            oneButtonsLayout.setVisibility(View.VISIBLE);
+            twoButtonsLayout.setVisibility(View.VISIBLE);
+            oneButtonsLayout.animate()
+                .alpha(two ? 0.0f : 1.0f)
+                .withEndAction(() -> {
+                    if (two) {
+                        oneButtonsLayout.setVisibility(View.GONE);
+                    }
+                })
+                .start();
+            twoButtonsLayout.animate()
+                .alpha(!two ? 0.0f : 1.0f)
+                .withEndAction(() -> {
+                    if (!two) {
+                        twoButtonsLayout.setVisibility(View.GONE);
+                    }
+                })
+                .start();
+        } else {
+            oneButtonsLayout.animate().cancel();
+            twoButtonsLayout.animate().cancel();
+            twoButtonsLayout.setAlpha(two ? 1.0f : 0.0f);
+            oneButtonsLayout.setAlpha(two ? 0.0f : 1.0f);
+            twoButtonsLayout.setVisibility(two ? View.VISIBLE : View.GONE);
+            oneButtonsLayout.setVisibility(two ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -503,7 +591,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     private UniversalAdapter adapter;
     @Override
     protected RecyclerView.Adapter<?> createAdapter() {
-        return adapter = new UniversalAdapter(listView, getContext(), currentAccount, classGuid, true, this::fillItems, getResourceProvider()) {
+        adapter = new UniversalAdapter(listView, getContext(), currentAccount, classGuid, true, this::fillItems, getResourceProvider()) {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -515,6 +603,8 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 return super.onCreateViewHolder(parent, viewType);
             }
         };
+        adapter.setApplyBackground(false);
+        return adapter;
     }
 
     private boolean expanded = false;
@@ -538,9 +628,9 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
         if (hadTransactions = c.hasTransactions()) {
             if (!allowTopUp) items.add(UItem.asShadow(null));
-            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight));
+            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(24) + AndroidUtilities.navigationBarHeight));
         } else {
-            items.add(UItem.asCustom(emptyLayout));
+            items.add(UItem.asCustomShadow(emptyLayout));
         }
     }
 
@@ -580,7 +670,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
                 AmountUtils.Amount balance = StarsController.getTonInstance(currentAccount).getBalanceAmount();
                 headerView.titleView.setText(formatString(R.string.TonNeededTitle,
-                    AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asDecimalString()));
+                    AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asFormatString()));
                 if (actionBar != null) {
                     actionBar.setTitle(getTitle());
                 }
@@ -624,11 +714,11 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         }
 
         public StarsNeededSheet(
-                Context context,
-                Theme.ResourcesProvider resourcesProvider,
-                AmountUtils.Amount requiredAmount,
-                boolean canToUpFragment,
-                Runnable whenPurchased
+            Context context,
+            Theme.ResourcesProvider resourcesProvider,
+            AmountUtils.Amount requiredAmount,
+            boolean canToUpFragment,
+            Runnable whenPurchased
         ) {
             super(context, null, false, false, false, resourcesProvider);
 
@@ -657,7 +747,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
             final AmountUtils.Amount balance = StarsController.getTonInstance(currentAccount).getBalanceAmount();
             headerView.titleView.setText(formatString(R.string.TonNeededTitle,
-                AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asDecimalString()));
+                AmountUtils.Amount.fromNano(requiredAmount.asNano() - balance.asNano(), AmountUtils.Currency.TON).asFormatString()));
 
             headerView.subtitleView.setText(AndroidUtilities.replaceTags(getString(R.string.FragmentAddFunds)));
             headerView.subtitleView.setMaxWidth(HintView2.cutInFancyHalf(headerView.subtitleView.getText(), headerView.subtitleView.getPaint()));
@@ -666,7 +756,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             footerView = new FrameLayout(context);
 
             topUpButton = new ButtonWithCounterView(getContext(), getResourcesProvider());
-            footerView.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 20, 20, 20));
+            footerView.addView(topUpButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 10, 20, 20));
 
             if (canToUpFragment || allowTopUp()) {
                 topUpButton.setText(getString(R.string.TopUpViaFragment), false);
@@ -743,7 +833,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 topView.addView(iconView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
                 iconView.setPaused(false);
 
-                addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150));
+                addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 180));
 
                 titleView = new TextView(context);
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

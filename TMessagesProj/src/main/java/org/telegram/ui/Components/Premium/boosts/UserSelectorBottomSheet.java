@@ -64,7 +64,6 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.adapters.SelectorAdapter;
@@ -909,7 +908,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 if (tonIcon == null) {
                     final CombinedDrawable icon = new CombinedDrawable(
                         Theme.createCircleDrawable(dp(46), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
-                        getContext().getResources().getDrawable(R.drawable.ton).mutate()
+                        getContext().getResources().getDrawable(R.drawable.mini_gram_72).mutate()
                     );
                     icon.setIconSize(dp(24), dp(24));
                     tonIcon = icon;
@@ -1232,6 +1231,6 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             params.transitionFromLeft = true;
             params.allowNestedScroll = false;
             getBaseFragment().showAsSheet(new PrivacyControlActivity(PrivacyControlActivity.PRIVACY_RULES_TYPE_BIRTHDAY), params);
-        }, resourcesProvider).show();
+        }, false, false, resourcesProvider).show();
     }
 }

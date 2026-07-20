@@ -254,11 +254,7 @@ public class SliderView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (currentType == TYPE_DIMMING) {
-            r = dpf2(8);
-        } else {
-            r = dpf2(6.33f);
-        }
+        r = dp(12);
         textPaint.setTextSize(dp(16));
         text.setTextSize(dp(15));
         if (fixWidth > 0) {

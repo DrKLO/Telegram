@@ -777,7 +777,7 @@ public class EditWidgetActivity extends BaseFragment {
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
-        if (AndroidUtilities.isTablet()) {
+        if (parentLayout != null && parentLayout.isLayersLayout()) {
             actionBar.setOccupyStatusBar(false);
         }
 
@@ -1052,12 +1052,12 @@ public class EditWidgetActivity extends BaseFragment {
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (delegate == null) {
-            finishActivity();
+            if (invoked) finishActivity();
             return false;
         } else {
-            return super.onBackPressed();
+            return super.onBackPressed(invoked);
         }
     }
 

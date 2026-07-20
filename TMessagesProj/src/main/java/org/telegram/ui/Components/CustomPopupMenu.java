@@ -48,6 +48,9 @@ public abstract class CustomPopupMenu {
         popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
         popupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
         popupWindow.getContentView().setFocusableInTouchMode(true);
+        if (AndroidUtilities.isAccessibilityTouchExplorationEnabled()) {
+            popupWindow.setFocusable(true);
+        }
         popupWindow.setOnDismissListener(() -> {
             onDismissed();
             isShowing = false;

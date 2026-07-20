@@ -26,7 +26,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.ChatActivity;
 
 public class TopicSeparator {
 
@@ -123,6 +123,10 @@ public class TopicSeparator {
             }
         }
         return text != null;
+    }
+
+    public void setText(String text) {
+        this.text = new Text(text, 14, AndroidUtilities.bold());
     }
 
     public void attach() {
@@ -235,9 +239,11 @@ public class TopicSeparator {
 
         public final TopicSeparator separator;
         private Utilities.Callback<Long> onClickListener;
+        private Theme.ResourcesProvider resourceProvider;
 
         public Cell(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            this.resourceProvider = resourcesProvider;
             separator = new TopicSeparator(currentAccount, this, resourcesProvider, false);
             separator.setOnClickListener(() -> {
                 if (onClickListener != null) {
@@ -282,9 +288,20 @@ public class TopicSeparator {
             );
         }
 
+        private int backgroundHeight;
+
+        public void setBackgroundHeight(int backgroundHeight) {
+            this.backgroundHeight = backgroundHeight;
+        }
+
         @Override
         protected void dispatchDraw(@NonNull Canvas canvas) {
             super.dispatchDraw(canvas);
+            if (resourceProvider != null) {
+                resourceProvider.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, 0, 0);
+            } else {
+                Theme.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, 0, 0);
+            }
             separator.draw(canvas, getWidth(), 0, 0, 0.75f, 1.0f, true);
         }
     }

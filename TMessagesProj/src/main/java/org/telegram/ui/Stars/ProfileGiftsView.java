@@ -1,9 +1,11 @@
 package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.ui.Stars.StarsController.findAttribute;
 
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -13,9 +15,10 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
@@ -34,6 +37,7 @@ import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class ProfileGiftsView extends View implements NotificationCenter.NotificationCenterDelegate {
 
@@ -42,6 +46,11 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     private final View avatarContainer;
     private final ProfileActivity.AvatarImageView avatarImage;
     private final Theme.ResourcesProvider resourcesProvider;
+
+    private boolean active = true;
+    public void setActive(boolean f) {
+        this.active = f;
+    }
 
     public ProfileGiftsView(Context context, int currentAccount, long dialogId, @NonNull View avatarContainer, ProfileActivity.AvatarImageView avatarImage, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -53,10 +62,11 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         this.avatarImage = avatarImage;
 
         this.resourcesProvider = resourcesProvider;
-
     }
 
-    private float expandProgress;
+    public float expandProgress, collapseProgress;
+    public boolean isOpening;
+
     public void setExpandProgress(float progress) {
         if (this.expandProgress != progress) {
             this.expandProgress = progress;
@@ -64,7 +74,17 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         }
     }
 
+    public void setCollapseProgress(float progress, boolean isOpening) {
+        this.isOpening = isOpening;
+        float newProgress = Utilities.clamp01((progress - 0.3f) / 0.7f);
+        if (this.collapseProgress != newProgress) {
+            this.collapseProgress = newProgress;
+            invalidate();
+        }
+    }
+
     private float actionBarProgress;
+
     public void setActionBarActionMode(float progress) {
 //        if (Theme.isCurrentThemeDark()) {
 //            return;
@@ -75,12 +95,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
 
 
     private float left, right, cy;
-    private float expandRight, expandY;
-    private boolean expandRightPad;
-    private final AnimatedFloat expandRightPadAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private float expandY, maxExpandY;
     private final AnimatedFloat rightAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
-    public void setBounds(float left, float right, float cy, boolean animated) {
+    public void setBounds(float left, float right, float cy, boolean animated, int maxExpandY) {
         boolean changed = Math.abs(left - this.left) > 0.1f || Math.abs(right - this.right) > 0.1f || Math.abs(cy - this.cy) > 0.1f;
         this.left = left;
         this.right = right;
@@ -88,19 +106,19 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             this.rightAnimated.set(this.right, true);
         }
         this.cy = cy;
+        this.maxExpandY = maxExpandY + cy;
         if (changed) {
             invalidate();
         }
     }
 
-    public void setExpandCoords(float right, boolean rightPadded, float y) {
-        this.expandRight = right;
-        this.expandRightPad = rightPadded;
+    public void setExpandCoords(float y) {
         this.expandY = y;
         invalidate();
     }
 
     private float progressToInsets = 1f;
+
     public void setProgressToStoriesInsets(float progressToInsets) {
         if (this.progressToInsets == progressToInsets) {
             return;
@@ -149,6 +167,9 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
         public final long documentId;
         public final int color;
         public final String slug;
+        private StarsReactionsSheet.Particles particles;
+
+        public int position = -1;
 
         public Gift(TL_stars.TL_starGiftUnique gift) {
             id = gift.id;
@@ -157,6 +178,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             final TL_stars.starGiftAttributeBackdrop backdrop = findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
             color = backdrop.center_color | 0xFF000000;
             slug = gift.slug;
+            initParticles();
         }
 
         public Gift(TLRPC.TL_emojiStatusCollectible status) {
@@ -165,6 +187,13 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             documentId = status.document_id;
             color = status.center_color | 0xFF000000;
             slug = status.slug;
+            initParticles();
+        }
+
+        private void initParticles() {
+            particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, 6);
+            final float gsz = dp(36);
+            particles.bounds.set(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f);
         }
 
         public boolean equals(Gift b) {
@@ -185,14 +214,16 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             emojiDrawable = b.emojiDrawable;
             gradientPaint = b.gradientPaint;
             animatedFloat = b.animatedFloat;
+            particles = b.particles;
+            position = b.position;
         }
 
         public void draw(
-            Canvas canvas,
-            float cx, float cy,
-            float ascale, float rotate,
-            float alpha,
-            float gradientAlpha
+                Canvas canvas,
+                float cx, float cy,
+                float ascale, float rotate,
+                float alpha,
+                float gradientAlpha
         ) {
             if (alpha <= 0.0f) return;
             final float gsz = dp(45);
@@ -202,6 +233,8 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             canvas.rotate(rotate);
             final float scale = ascale * bounce.getScale(0.1f);
             canvas.scale(scale, scale);
+            particles.process();
+            particles.draw(canvas, color, alpha);
             if (gradientPaint != null) {
                 gradientPaint.setAlpha((int) (0xFF * alpha * gradientAlpha));
                 canvas.drawRect(-gsz / 2.0f, -gsz / 2.0f, gsz / 2.0f, gsz / 2.0f, gradientPaint);
@@ -282,7 +315,7 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             if (oldGift != null) {
                 g.copy(oldGift);
             } else {
-                g.gradient = new RadialGradient(0, 0, dp(22.5f), new int[] { g.color, Theme.multAlpha(g.color, 0.0f) }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
+                g.gradient = new RadialGradient(0, 0, dp(22.5f), new int[]{g.color, Theme.multAlpha(g.color, 0.0f)}, new float[]{0, 1}, Shader.TileMode.CLAMP);
                 g.gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 g.gradientPaint.setShader(g.gradient);
                 if (g.document != null) {
@@ -290,12 +323,17 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 } else {
                     g.emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, g.documentId);
                 }
-                g.animatedFloat = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+                g.animatedFloat = new AnimatedFloat(this, 0, 320, null);
                 g.animatedFloat.force(0.0f);
                 if (isAttachedToWindow()) {
                     g.emojiDrawable.addView(this);
                 }
             }
+        }
+
+        List<Integer> positions = new ArrayList<>();
+        for (int i = 0; i < maxCount; i++) {
+            positions.add(i);
         }
 
         for (int i = 0; i < oldGifts.size(); i++) {
@@ -311,6 +349,18 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
                 g.emojiDrawable.removeView(this);
                 g.emojiDrawable = null;
                 g.gradient = null;
+            } else {
+                positions.remove((Object) g.position);
+            }
+        }
+
+        if (!positions.isEmpty()) {
+            BagRandomizer<Integer> bagRandomizer = new BagRandomizer<>(positions);
+            for (int i = 0; i < gifts.size(); ++i) {
+                final Gift g = gifts.get(i);
+                if (g.position == -1) {
+                    g.position = bagRandomizer.next();
+                }
             }
         }
 
@@ -318,106 +368,100 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
             invalidate();
     }
 
-    public final AnimatedFloat animatedCount = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final TimeInterpolator giftCollapseXInterpolator = new DecelerateInterpolator();
+    private final TimeInterpolator giftCollapseYInterpolator = new LinearInterpolator();
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        if (gifts.isEmpty() || expandProgress >= 1.0f) return;
+        if (gifts.isEmpty() || expandProgress >= 1.0f || collapseProgress <= 0f) return;
 
-        final float ax = avatarContainer.getX();
-        final float ay = avatarContainer.getY();
-        final float aw = (avatarContainer.getWidth()) * avatarContainer.getScaleX();
-        final float ah = (avatarContainer.getHeight()) * avatarContainer.getScaleY();
+        final float realX = avatarContainer.getX();
+        final float realY = avatarContainer.getY();
+        final float realW = (avatarContainer.getWidth()) * avatarContainer.getScaleX();
+        final float realH = (avatarContainer.getHeight()) * avatarContainer.getScaleY();
+
+        final float sz = dpf2(96);
+        final float ax = Math.min(realX, (getWidth() - sz) / 2f);
+        final float ay = Math.max(realY, (maxExpandY - sz) / 2f);
+        final float aw = Math.max(realW, sz);
+        final float ah = Math.max(realH, sz);
+
 
         canvas.save();
         canvas.clipRect(0, 0, getWidth(), expandY);
 
         final float acx = ax + aw / 2.0f;
-        final float cacx = Math.min(acx, dp(48));
         final float acy = ay + ah / 2.0f;
-        final float ar = Math.min(aw, ah) / 2.0f + dp(6);
-        final float cx = getWidth() / 2.0f;
 
-        final float closedAlpha = Utilities.clamp01((float) (expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
+        final float realCX = realX + realW / 2.0f;
+        final float realCY = realY + realH / 2.0f;
+
+        float expandScale = expandY / maxExpandY;
+        float closedAlpha = Utilities.clamp01((expandY - (AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight())) / dp(50));
 
         for (int i = 0; i < gifts.size(); ++i) {
             final Gift gift = gifts.get(i);
-            final float alpha = gift.animatedFloat.set(1.0f);
-            final float scale = lerp(0.5f, 1.0f, alpha);
-            final int index = i; // gifts.size() == maxCount ? i - 1 : i;
-            if (index == 0) {
-                gift.draw(
-                    canvas,
-                    (float) (acx + ar * Math.cos(-65 / 180.0f * Math.PI)),
-                    (float) (acy + ar * Math.sin(-65 / 180.0f * Math.PI)),
-                    scale, -65 + 90,
-                    alpha * (1.0f - expandProgress), lerp(0.9f, 0.25f, actionBarProgress)
-                );
-            } else if (index == 1) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .27f, dp(62)), cx, 0.5f * actionBarProgress), acy - dp(52),
-                    scale, -4.0f,
-                    alpha * alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 2) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .46f, dp(105)), cx, 0.5f * actionBarProgress), acy - dp(72),
-                    scale, 8.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 3) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .60f, dp(136)), cx, 0.5f * actionBarProgress), acy - dp(46),
-                    scale, 3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 4) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .08f, dp(21.6f)), cx, 0.5f * actionBarProgress), acy - dp(82f),
-                    scale, -3.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 5) {
-                gift.draw(
-                    canvas,
-                    lerp(cacx + Math.min(getWidth() * .745f, dp(186)), cx, 0.5f * actionBarProgress), acy - dp(39),
-                    scale, 2.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 6) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .38f, dp(102)), expandY - dp(12),
-                    scale, 0,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 7) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .135f, dp(36)), expandY - dp(17.6f),
-                    scale, -5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
-            } else if (index == 8) {
-                gift.draw(
-                    canvas,
-                    cacx + Math.min(getWidth() * .76f, dp(178)), expandY - dp(21.66f),
-                    scale, 5.0f,
-                    alpha * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha),
-                    1.0f
-                );
+            final float enter = gift.animatedFloat.set(1.0f);
+            float scale = lerp(0.5f, 1.0f, enter);
+            final float alpha = enter * (1.0f - expandProgress) * (1.0f - actionBarProgress) * (closedAlpha);
+
+            float gx, gy;
+            float delayValue;
+
+            switch (gift.position) {
+                case 0: // left
+                    gx = acx / 2f - (dp(20) * expandScale);
+                    gy = acy - dp(13);
+                    delayValue = 1.6f;
+                    break;
+                case 1: // top left
+                    gx = acx * 2f / 3f - (dp(6) * expandScale);
+                    gy = ay - dp(4);
+                    delayValue = 0;
+                    break;
+                case 2: // bottom left
+                    gx = acx * 2f / 3f - (dp(12) * expandScale);
+                    gy = ay + ah - dp(16);
+                    delayValue = 0.9f;
+                    break;
+                case 3: // right
+                    gx = acx * 1.5f + (dp(20) * expandScale);
+                    gy = acy - dp(13);
+                    delayValue = 1.6f;
+                    break;
+                case 4: // top right
+                    gx = acx * 4f / 3f + (dp(12) * expandScale);
+                    gy = ay - dp(4);
+                    delayValue = 0.9f;
+                    break;
+                default: // bottom right
+                    gx = acx * 4f / 3f + (dp(12) * expandScale);
+                    gy = ay + ah - dp(16);
+                    delayValue = 0;
+                    break;
             }
+
+            final float collapseProgressWithEnter;
+            if (isOpening || enter >= 1f) {
+                collapseProgressWithEnter = collapseProgress;
+            } else {
+                collapseProgressWithEnter = Math.min(enter, collapseProgress);
+            }
+
+            final float delayFraction = 0.2f;
+            final float maxDelayFraction = 1.6f * delayFraction;
+            final float intervalFraction = 1f - maxDelayFraction;
+
+            float delay = delayValue * delayFraction;
+            float collapse = collapseProgressWithEnter >= 1f - delay ? 1f
+                    : Utilities.clamp01((collapseProgressWithEnter - maxDelayFraction + delay) / intervalFraction);
+            if (collapse < 1f) {
+                gx = AndroidUtilities.lerp(realCX, gx, giftCollapseXInterpolator.getInterpolation(collapse));
+                gy = AndroidUtilities.lerp(realCY, gy, giftCollapseYInterpolator.getInterpolation(collapse));
+                scale = AndroidUtilities.lerp(scale / 2f, scale, collapse);
+            }
+
+            gift.draw(canvas, gx, gy, scale, 0, alpha, 1f);
         }
 
         canvas.restore();
@@ -432,8 +476,10 @@ public class ProfileGiftsView extends View implements NotificationCenter.Notific
     }
 
     private Gift pressedGift;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!active) return false;
         final Gift hit = getGiftUnder(event.getX(), event.getY());
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             pressedGift = hit;

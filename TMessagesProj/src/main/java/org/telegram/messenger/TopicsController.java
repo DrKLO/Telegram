@@ -14,6 +14,7 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_forum;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.Forum.ForumUtilities;
@@ -117,8 +118,8 @@ public class TopicsController extends BaseController {
 
             request = getForumTopics;
         } else {
-            TLRPC.TL_channels_getForumTopics getForumTopics = new TLRPC.TL_channels_getForumTopics();
-            getForumTopics.channel = getMessagesController().getInputChannel(chatId);
+            TL_forum.TL_messages_getForumTopics getForumTopics = new TL_forum.TL_messages_getForumTopics();
+            getForumTopics.peer = getMessagesController().getInputPeer(-chatId);
             if (loadType == LOAD_TYPE_PRELOAD) {
                 getForumTopics.limit = MAX_PRELOAD_COUNT;
             } else if (loadType == LOAD_TYPE_LOAD_NEXT) {
@@ -238,7 +239,7 @@ public class TopicsController extends BaseController {
     }
 
     public void processTopics(long chatId, ArrayList<TLRPC.TL_forumTopic> newTopics, LongSparseArray<TLRPC.Message> messagesMap, boolean fromCache, int loadType, int totalCount) {
-        if (loadType == LOAD_TYPE_HASH_CHECK) {
+        if (loadType == LOAD_TYPE_HASH_CHECK && getMessagesController().isMonoForum(-chatId)) {
             getUserConfig().getPreferences().edit().remove("topics_end_reached_" + chatId).apply();
             topicsByChatId.remove(chatId);
             topicsMapByChatId.remove(chatId);
@@ -335,7 +336,7 @@ public class TopicsController extends BaseController {
         }
         if (topicsToReload != null && loadType != LOAD_TYPE_LOAD_UNKNOWN) {
             reloadTopics(chatId, topicsToReload, null);
-        } else if (((loadType == LOAD_TYPE_PRELOAD && !fromCache) || loadType == LOAD_TYPE_LOAD_NEXT) && topics.size() >= totalCount && totalCount >= 0) {
+        } else if (((loadType == LOAD_TYPE_PRELOAD && !fromCache) || loadType == LOAD_TYPE_LOAD_NEXT || loadType == LOAD_TYPE_HASH_CHECK) && topics.size() >= totalCount && totalCount >= 0 && !endIsReached(chatId)) {
             endIsReached.put(chatId, 1);
             getUserConfig().getPreferences().edit().putBoolean("topics_end_reached_" + chatId, true).apply();
             changed = true;
@@ -361,7 +362,7 @@ public class TopicsController extends BaseController {
         }
 
         if (changed) {
-            sortTopics(chatId);
+            sortTopics(chatId, false);
         }
 
         getNotificationCenter().postNotificationName(NotificationCenter.topicsDidLoaded, chatId, true);
@@ -524,11 +525,11 @@ public class TopicsController extends BaseController {
             req.parent_peer = getMessagesController().getInputPeer(-chatId);
             request = req;
         } else {
-            TLRPC.TL_channels_getForumTopicsByID req = new TLRPC.TL_channels_getForumTopicsByID();
+            TL_forum.TL_messages_getForumTopicsByID req = new TL_forum.TL_messages_getForumTopicsByID();
             for (int i = 0; i < topicsToReload.size(); i++) {
                 req.topics.add(topicsToReload.get(i).id);
             }
-            req.channel = getMessagesController().getInputChannel(chatId);
+            req.peer = getMessagesController().getInputPeer(-chatId);
             request = req;
         }
         getConnectionsManager().sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
@@ -645,7 +646,7 @@ public class TopicsController extends BaseController {
         return null;
     }
 
-    private final static int[] countsTmp = new int[4];
+    private final static int[] countsTmp = new int[5];
 
     public int[] getForumUnreadCount(long chatId) {
         ArrayList<TLRPC.TL_forumTopic> topics = topicsByChatId.get(chatId);
@@ -659,6 +660,7 @@ public class TopicsController extends BaseController {
                 if (!getMessagesController().isDialogMuted(-chatId, topic.id)) {
                     countsTmp[3] += topic.unread_count;
                 }
+                countsTmp[4] += topic.unread_poll_votes_count;
 
             }
         }
@@ -720,8 +722,8 @@ public class TopicsController extends BaseController {
     }
 
     private void deleteTopic(long chatId, int topicId, int offset) {
-        TLRPC.TL_channels_deleteTopicHistory deleteTopicHistory = new TLRPC.TL_channels_deleteTopicHistory();
-        deleteTopicHistory.channel = getMessagesController().getInputChannel(chatId);
+        TL_forum.TL_messages_deleteTopicHistory deleteTopicHistory = new TL_forum.TL_messages_deleteTopicHistory();
+        deleteTopicHistory.peer = getMessagesController().getInputPeer(-chatId);
         deleteTopicHistory.top_msg_id = topicId;
         if (offset == 0) {
             getMessagesStorage().removeTopic(-chatId, topicId);
@@ -742,8 +744,8 @@ public class TopicsController extends BaseController {
     }
 
     public void toggleCloseTopic(long chatId, int topicId, boolean close) {
-        TLRPC.TL_channels_editForumTopic req = new TLRPC.TL_channels_editForumTopic();
-        req.channel = getMessagesController().getInputChannel(chatId);
+        TL_forum.TL_messages_editForumTopic req = new TL_forum.TL_messages_editForumTopic();
+        req.peer = getMessagesController().getInputPeer(-chatId);
         req.topic_id = topicId;
         req.flags |= 4;
         req.closed = close;
@@ -822,8 +824,8 @@ public class TopicsController extends BaseController {
     }
 
     public void toggleShowTopic(long chatId, int topicId, boolean show) {
-        TLRPC.TL_channels_editForumTopic req = new TLRPC.TL_channels_editForumTopic();
-        req.channel = getMessagesController().getInputChannel(chatId);
+        TL_forum.TL_messages_editForumTopic req = new TL_forum.TL_messages_editForumTopic();
+        req.peer = getMessagesController().getInputPeer(-chatId);
         req.topic_id = topicId;
         req.flags = 8;
         boolean wasHidden = show;
@@ -860,8 +862,8 @@ public class TopicsController extends BaseController {
     }
 
     public void pinTopic(long chatId, int topicId, boolean pin, BaseFragment fragment) {
-        TLRPC.TL_channels_updatePinnedForumTopic req = new TLRPC.TL_channels_updatePinnedForumTopic();
-        req.channel = getMessagesController().getInputChannel(chatId);
+        TL_forum.TL_messages_updatePinnedForumTopic req = new TL_forum.TL_messages_updatePinnedForumTopic();
+        req.peer = getMessagesController().getInputPeer(-chatId);
         req.topic_id = topicId;
         req.pinned = pin;
 
@@ -884,7 +886,7 @@ public class TopicsController extends BaseController {
                         fragment.showDialog(
                             new AlertDialog.Builder(fragment.getContext())
                                 .setTitle(LocaleController.getString(R.string.LimitReached))
-                                .setMessage(LocaleController.formatString("LimitReachedPinnedTopics", R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
+                                .setMessage(LocaleController.formatString(R.string.LimitReachedPinnedTopics, MessagesController.getInstance(currentAccount).topicsPinnedLimit))
                                 .setPositiveButton(LocaleController.getString(R.string.OK), null)
                                 .create()
                         );
@@ -897,8 +899,8 @@ public class TopicsController extends BaseController {
     }
 
     public void reorderPinnedTopics(long chatId, ArrayList<Integer> topics) {
-        TLRPC.TL_channels_reorderPinnedForumTopics req = new TLRPC.TL_channels_reorderPinnedForumTopics();
-        req.channel = getMessagesController().getInputChannel(chatId);
+        TL_forum.TL_messages_reorderPinnedForumTopics req = new TL_forum.TL_messages_reorderPinnedForumTopics();
+        req.peer = getMessagesController().getInputPeer(-chatId);
         if (topics != null) {
             req.order.addAll(topics);
         }
@@ -935,10 +937,36 @@ public class TopicsController extends BaseController {
         return totalCount;
     }
 
+    public int updatePollVotesUnread(long dialogId, long topicId, int count, boolean increment) {
+        TLRPC.TL_forumTopic topic = findTopic(-dialogId, topicId);
+        int totalCount = -1;
+        if (topic != null) {
+            if (increment) {
+                topic.unread_poll_votes_count += count;
+                if (topic.unread_poll_votes_count < 0) {
+                    topic.unread_poll_votes_count = 0;
+                }
+            } else {
+                topic.unread_poll_votes_count = count;
+            }
+            totalCount = topic.unread_poll_votes_count;
+            sortTopics(-dialogId, true);
+        }
+        return totalCount;
+    }
+
     public void markAllReactionsAsRead(long chatId, long topicId) {
         TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
         if (topic != null && topic.unread_reactions_count > 0) {
             topic.unread_reactions_count = 0;
+            sortTopics(chatId);
+        }
+    }
+
+    public void markAllPollVotesAsRead(long chatId, long topicId) {
+        TLRPC.TL_forumTopic topic = findTopic(chatId, topicId);
+        if (topic != null && topic.unread_poll_votes_count > 0) {
+            topic.unread_poll_votes_count = 0;
             sortTopics(chatId);
         }
     }
@@ -952,6 +980,20 @@ public class TopicsController extends BaseController {
                     continue;
                 }
                 topic.unread_reactions_count = 0;
+            }
+            sortTopics(chatId);
+        }
+    }
+
+    public void markAllPollVotesAsRead(long chatId) {
+        ArrayList<TLRPC.TL_forumTopic> topics = getTopics(chatId);
+        if (topics != null) {
+            for (int i = 0; i < topics.size(); ++i) {
+                TLRPC.TL_forumTopic topic = topics.get(i);
+                if (topic == null) {
+                    continue;
+                }
+                topic.unread_poll_votes_count = 0;
             }
             sortTopics(chatId);
         }

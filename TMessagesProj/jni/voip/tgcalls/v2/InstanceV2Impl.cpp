@@ -1,5 +1,6 @@
 #include "v2/InstanceV2Impl.h"
 
+#include <tgnet/FileLog.h>
 #include "LogSinkImpl.h"
 #include "VideoCaptureInterfaceImpl.h"
 #include "VideoCapturerInterface.h"
@@ -1968,12 +1969,13 @@ public:
                 _videoCapture = nullptr;
                 _screencastCapture = videoCapture;
 
-                if (_outgoingVideoChannel) {
-                    _outgoingVideoChannel->setVideoCapture(nullptr);
-                }
                 if (_outgoingVideoChannelId) {
                     _contentNegotiationContext->removeOutgoingChannel(_outgoingVideoChannelId.value());
                     _outgoingVideoChannelId.reset();
+                }
+                if (_outgoingVideoChannel) {
+                    _outgoingVideoChannel->setVideoCapture(nullptr);
+                    _outgoingVideoChannel.reset();
                 }
 
                 if (_outgoingScreencastChannel) {
@@ -1986,41 +1988,42 @@ public:
                 _videoCapture = videoCapture;
                 _screencastCapture = nullptr;
 
+                if (_outgoingScreencastChannelId) {
+                    _contentNegotiationContext->removeOutgoingChannel(_outgoingScreencastChannelId.value());
+                    _outgoingScreencastChannelId.reset();
+                }
+                if (_outgoingScreencastChannel) {
+                    _outgoingScreencastChannel->setVideoCapture(nullptr);
+                    _outgoingScreencastChannel.reset();
+                }
+
                 if (_outgoingVideoChannel) {
                     _outgoingVideoChannel->setVideoCapture(videoCapture);
                 }
                 if (!_outgoingVideoChannelId) {
                     _outgoingVideoChannelId = _contentNegotiationContext->addOutgoingChannel(signaling::MediaContent::Type::Video);
                 }
-
-                if (_outgoingScreencastChannel) {
-                    _outgoingScreencastChannel->setVideoCapture(nullptr);
-                }
-                if (_outgoingScreencastChannelId) {
-                    _contentNegotiationContext->removeOutgoingChannel(_outgoingScreencastChannelId.value());
-                    _outgoingScreencastChannelId.reset();
-                }
             }
         } else {
             _videoCapture = nullptr;
             _screencastCapture = nullptr;
 
-            if (_outgoingVideoChannel) {
-                _outgoingVideoChannel->setVideoCapture(nullptr);
-            }
-
-            if (_outgoingScreencastChannel) {
-                _outgoingScreencastChannel->setVideoCapture(nullptr);
-            }
-
             if (_outgoingVideoChannelId) {
                 _contentNegotiationContext->removeOutgoingChannel(_outgoingVideoChannelId.value());
                 _outgoingVideoChannelId.reset();
+            }
+            if (_outgoingVideoChannel) {
+                _outgoingVideoChannel->setVideoCapture(nullptr);
+                _outgoingVideoChannel.reset();
             }
 
             if (_outgoingScreencastChannelId) {
                 _contentNegotiationContext->removeOutgoingChannel(_outgoingScreencastChannelId.value());
                 _outgoingScreencastChannelId.reset();
+            }
+            if (_outgoingScreencastChannel) {
+                _outgoingScreencastChannel->setVideoCapture(nullptr);
+                _outgoingScreencastChannel.reset();
             }
         }
 

@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -40,6 +41,8 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     private Theme.ResourcesProvider resourcesProvider;
 
+    private int radiusDp = 8;
+
     private final Paint paint;
     public final AnimatedTextView.AnimatedTextDrawable text;
     public final AnimatedTextView.AnimatedTextDrawable subText;
@@ -47,10 +50,54 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     private float countAlpha;
     private final AnimatedFloat countAlphaAnimated = new AnimatedFloat(350, CubicBezierInterpolator.EASE_OUT_QUINT);
     public final View rippleView;
-    private final boolean filled;
+    private boolean filled;
+    public boolean useWrapContent;
+    private boolean neutral;
+    private boolean customBackgroundColor;
+    private int backgroundColor;
 
     public ButtonWithCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, true, resourcesProvider);
+    }
+
+    public void setUseWrapContent(boolean useWrapContent) {
+        this.useWrapContent = useWrapContent;
+    }
+
+    public ButtonWithCounterView setRound() {
+        setRoundRadius(24);
+        return this;
+    }
+
+    public ButtonWithCounterView setNeutral() {
+        this.neutral = true;
+        setFilled(true);
+        setColor(Theme.getColor(Theme.key_buttonNeutral, resourcesProvider));
+        updateColors();
+        return this;
+    }
+
+    public void setRoundRadius(int radiusDp) {
+        this.radiusDp = radiusDp;
+        if (filled) {
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
+        } else {
+            setBackground(null);
+        }
+        updateColors();
+    }
+
+    public void setFilled(boolean filled) {
+        if (this.filled == filled) return;
+        this.filled = filled;
+        if (filled) {
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor));
+            text.setTypeface(AndroidUtilities.bold());
+        } else {
+            setBackground(null);
+            text.setTypeface(null);
+        }
+        updateColors();
     }
 
     public ButtonWithCounterView(Context context, boolean filled, Theme.ResourcesProvider resourcesProvider) {
@@ -65,7 +112,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            setBackground(Theme.createRoundRectDrawable(dp(8), backgroundColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
         }
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -98,6 +145,14 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         updateColors();
     }
 
+    public void setTextHacks(boolean splitByWords, boolean preserveIndex, boolean startFromEnd, boolean enforceByLetter) {
+        text.setHacks(splitByWords, preserveIndex, startFromEnd, enforceByLetter);
+    }
+
+    public void setSubTextHacks(boolean splitByWords, boolean preserveIndex, boolean startFromEnd, boolean enforceByLetter) {
+        subText.setHacks(splitByWords, preserveIndex, startFromEnd, enforceByLetter);
+    }
+
     protected boolean subTextSplitToWords() {
         return true;
     }
@@ -108,7 +163,11 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
 
     public void setColor(int color) {
         if (filled) {
-            setBackground(Theme.createRoundRectDrawable(dp(8), color));
+            customBackgroundColor = true;
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor = color));
+        } else {
+            text.setTextColor(color);
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, .10f), radiusDp, radiusDp));
         }
     }
 
@@ -118,14 +177,18 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     }
 
     public void updateColors() {
-        text.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
-        if (filled) {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 8, 8));
-        } else {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
+        if (!customBackgroundColor) {
+            backgroundColor = Theme.getColor(neutral ? Theme.key_buttonNeutral : Theme.key_featuredStickers_addButton, resourcesProvider);
         }
-        subText.setTextColor(Theme.getColor(filled ? Theme.key_featuredStickers_buttonText : Theme.key_featuredStickers_addButton, resourcesProvider));
-        countText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        text.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
+        if (filled) {
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), radiusDp, radiusDp));
+        } else {
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
+        }
+        subText.setTextColor(Theme.getColor(filled ? (neutral ? Theme.key_buttonNeutralText : Theme.key_featuredStickers_buttonText) : Theme.key_featuredStickers_addButton, resourcesProvider));
+        countText.setTextColor(backgroundColor);
+        paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
     }
 
     public void setCounterColor(int color) {
@@ -136,7 +199,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void setTextColor(int color) {
         text.setTextColor(color);
         if (!filled) {
-            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), 8, 8));
+            rippleView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(text.getTextColor(), .10f), radiusDp, radiusDp));
         }
     }
 
@@ -145,9 +208,9 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         countFilled = filled;
         countText.setTextSize(dp(countFilled ? 12 : 14));
         countText.setTextColor(
-                countFilled ?
-                Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider) :
-                text.getTextColor()
+            countFilled ?
+            backgroundColor :
+            text.getTextColor()
         );
     }
 
@@ -176,6 +239,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         return timerSeconds > 0;
     }
 
+    public void setText(CharSequence newText) {
+        setText(newText, false);
+    }
+
     public void setText(CharSequence newText, boolean animated) {
         setText(newText, animated, true);
     }
@@ -187,6 +254,10 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         text.setText(newText, animated, moveDown);
         setContentDescription(newText);
         invalidate();
+    }
+
+    public TextPaint getTextPaint() {
+        return text.getPaint();
     }
 
     private float subTextT = 0f;
@@ -323,7 +394,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
     public void withCounterIcon() {
         withCounterIcon = true;
         counterDrawable = ContextCompat.getDrawable(getContext(), R.drawable.mini_boost_button).mutate();
-        counterDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        counterDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.SRC_IN));
     }
 
     public void setShowZero(boolean showZero) {
@@ -419,7 +490,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
                 }
                 flickeringLoadingDrawable.resetDisappear();
                 flickeringLoadingDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                flickeringLoadingDrawable.setRadiiDp(8);
+                flickeringLoadingDrawable.setRadiiDp(radiusDp);
                 flickeringLoadingDrawable.draw(canvas);
             } else if (flickeringLoadingDrawable != null) {
                 flickeringLoadingDrawable.disappear();
@@ -492,38 +563,48 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
             );
             AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
 
-            if (countScale != 1) {
-                canvas.save();
-                canvas.scale(countScale, countScale, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
-            }
-            if (countFilled) {
-                paint.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * countAlpha * AndroidUtilities.lerp(.5f, 1f, enabledT)));
-                int radius = withCounterIcon ? dp(4) : dp(10);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
-            }
+            // if (countAlpha > 0) {
+                if (countScale != 1) {
+                    canvas.save();
+                    canvas.scale(countScale, countScale, AndroidUtilities.rectTmp2.centerX(), AndroidUtilities.rectTmp2.centerY());
+                }
+                if (countFilled) {
+                    paint.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * countAlpha * AndroidUtilities.lerp(.5f, 1f, enabledT)));
+                    int radius = withCounterIcon ? dp(4) : dp(10);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
+                }
 
-            int countLength = countText.getText() != null ? countText.getText().length() : 0;
-            AndroidUtilities.rectTmp2.offset(-dp(countLength > 1 ? .3f : 0), -dp(.4f));
-            countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
-            countText.setBounds(AndroidUtilities.rectTmp2);
-            canvas.save();
-            if (countFilled && withCounterIcon) {
-                counterDrawable.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * 1));
-                counterDrawable.setBounds(
-                        dp(1) + AndroidUtilities.rectTmp2.left,
-                        dp(2) + AndroidUtilities.rectTmp2.top,
-                        dp(1) + AndroidUtilities.rectTmp2.left + counterDrawable.getIntrinsicWidth(),
-                        dp(2) + AndroidUtilities.rectTmp2.top + counterDrawable.getIntrinsicHeight());
-                counterDrawable.draw(canvas);
-                canvas.translate(lightningWidth / 2, 0);
-            }
-            countText.draw(canvas);
-            canvas.restore();
-            if (countScale != 1) {
+                int countLength = countText.getText() != null ? countText.getText().length() : 0;
+                AndroidUtilities.rectTmp2.offset(-dp(countLength > 1 ? .3f : 0), -dp(.4f));
+                countText.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * (countFilled ? 1 : .5f)));
+                countText.setBounds(AndroidUtilities.rectTmp2);
+                canvas.save();
+                if (countFilled && withCounterIcon) {
+                    counterDrawable.setAlpha((int) (globalAlpha * (1f - loadingT) * countAlpha * 1));
+                    counterDrawable.setBounds(
+                            dp(1) + AndroidUtilities.rectTmp2.left,
+                            dp(2) + AndroidUtilities.rectTmp2.top,
+                            dp(1) + AndroidUtilities.rectTmp2.left + counterDrawable.getIntrinsicWidth(),
+                            dp(2) + AndroidUtilities.rectTmp2.top + counterDrawable.getIntrinsicHeight());
+                    counterDrawable.draw(canvas);
+                    canvas.translate(lightningWidth / 2, 0);
+                }
+                countText.draw(canvas);
                 canvas.restore();
-            }
+                if (countScale != 1) {
+                    canvas.restore();
+                }
+            // }
             if (restore) {
                 canvas.restore();
+            }
+        }
+
+        if (useWrapContent) {
+            int wrapWidth = getWrapWidth();
+            if (lastWrapWidth != wrapWidth) {
+                lastWrapWidth = wrapWidth;
+                requestLayout();
             }
         }
     }
@@ -556,9 +637,25 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         this.minWidth = px;
     }
 
+    private int lastWrapWidth;
+    private int getWrapWidth() {
+        float countAlpha = countAlphaAnimated.set(this.countAlpha);
+        float lightningWidth = withCounterIcon ? AndroidUtilities.dp(12) : 0;
+        float textWidth = text.getCurrentWidth();
+        float width = textWidth + lightningWidth + calculateCounterWidth((dp(5.66f + 5 + 5) + countText.getCurrentWidth()), countAlpha);
+
+        return getPaddingLeft() + (int) width + getPaddingRight();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (wrapWidth) {
+        if (useWrapContent) {
+            lastWrapWidth = getWrapWidth();
+            super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(lastWrapWidth, MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
+            if (rippleView != null) {
+                rippleView.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            }
+        } else if (wrapWidth) {
             super.onMeasure(MeasureSpec.makeMeasureSpec((int) Math.min(Math.max(getPaddingLeft() + text.getCurrentWidth() + getPaddingRight(), minWidth), MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY), heightMeasureSpec);
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

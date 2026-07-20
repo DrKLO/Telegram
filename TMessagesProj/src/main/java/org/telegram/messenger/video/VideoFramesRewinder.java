@@ -3,7 +3,6 @@ package org.telegram.messenger.video;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.util.Log;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -11,8 +10,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.AnimatedFileNative;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -50,7 +48,7 @@ public class VideoFramesRewinder {
     public void draw(Canvas canvas, int w, int h) {
         this.w = w;
         this.h = h;
-        if (ptr != 0 && currentFrame != null) {
+        if (mDecoder != null && currentFrame != null) {
             canvas.save();
             canvas.scale(w / (float) currentFrame.bitmap.getWidth(), h / (float) currentFrame.bitmap.getHeight());
             canvas.drawBitmap(currentFrame.bitmap, 0, 0, paint);
@@ -58,11 +56,11 @@ public class VideoFramesRewinder {
         }
     }
 
-    private long ptr;
-    private final int[] meta = new int[6];
+    private AnimatedFileNative mDecoder;
+    private final int[] meta = new int[7];
 
     public boolean isReady() {
-        return ptr != 0;
+        return mDecoder != null;
     }
 
     public void setup(File file) {
@@ -71,7 +69,7 @@ public class VideoFramesRewinder {
             return;
         }
         stop.set(false);
-        ptr = AnimatedFileDrawable.createDecoder(file.getAbsolutePath(), meta, UserConfig.selectedAccount, 0, null, true);
+        mDecoder = AnimatedFileNative.createDecoderFrom(file.getAbsolutePath(), meta, UserConfig.selectedAccount, 0, null, true);
     }
 
     private final ArrayList<Frame> freeFrames = new ArrayList<>();
@@ -106,7 +104,7 @@ public class VideoFramesRewinder {
             h = (int) (h * scale);
         }
         final long toMs = prepareToMs;
-        AnimatedFileDrawable.seekToMs(ptr, toMs - (long) (350 * prepareWithSpeed), meta, false);
+        mDecoder.seekToMs(toMs - (long) (350 * prepareWithSpeed), false);
         long ms = meta[3];
         int triesCount = 0;
         for (int i = 0; meta[3] <= until.get() && i < maxFramesCount && !stop.get(); ++i) {
@@ -127,9 +125,9 @@ public class VideoFramesRewinder {
                 }
             }
             while (meta[3] + (long) Math.ceil(1000.0f / fps) < nextms) {
-                AnimatedFileDrawable.getVideoFrame(ptr, null, meta, 0, true, 0, meta[4], false);
+                mDecoder.getVideoFrame(null, true, 0, meta[4], false);
             }
-            if (0 == AnimatedFileDrawable.getVideoFrame(ptr, frame.bitmap, meta, frame.bitmap.getRowBytes(), true, 0, meta[4], false)) {
+            if (0 == mDecoder.getVideoFrame(frame.bitmap, true, 0, meta[4], false)) {
                 triesCount++;
                 if (triesCount > 6) break;
                 continue;
@@ -181,7 +179,7 @@ public class VideoFramesRewinder {
     }
 
     public void seek(long position, float currentSpeed) {
-        if (ptr == 0) return;
+        if (mDecoder == null) return;
 
         lastSeek = position;
         lastSpeed = currentSpeed;
@@ -237,8 +235,10 @@ public class VideoFramesRewinder {
             destroyAfterPrepare = true;
             return;
         }
-        AnimatedFileDrawable.destroyDecoder(ptr);
-        ptr = 0;
+        if (mDecoder != null) {
+            mDecoder.recycle();
+            mDecoder = null;
+        }
         destroyAfterPrepare = false;
         clearCurrent();
         until.set(0);

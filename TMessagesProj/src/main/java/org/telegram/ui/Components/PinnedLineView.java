@@ -122,15 +122,26 @@ public class PinnedLineView extends View {
         }
     }
 
+
+    private boolean needDrawFade;
+
+    private void checkLayerType() {
+        final boolean drawFade = (replaceInProgress ? Math.max(animateFromTotal, animateToTotal) : totalCount) > 3;
+        final int layerType = drawFade ? LAYER_TYPE_HARDWARE : LAYER_TYPE_NONE;
+        if (getLayerType() != layerType) {
+            setLayerType(layerType, null);
+            invalidate();
+        }
+        this.needDrawFade = drawFade;
+    }
+
+
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (selectedPosition < 0 || totalCount == 0) {
             return;
-        }
-        boolean drawFade = (replaceInProgress ? Math.max(animateFromTotal, animateToTotal) : totalCount) > 3;
-        if (drawFade) {
-            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
         }
         int viewPadding = AndroidUtilities.dp(8);
         float lineH;
@@ -200,6 +211,7 @@ public class PinnedLineView extends View {
             canvas.drawRoundRect(rectF, r, r, selectedPaint);
         }
 
+        final boolean drawFade = needDrawFade;
         if (drawFade) {
             canvas.drawRect(0, 0, getMeasuredWidth(), AndroidUtilities.dp(6), fadePaint);
             canvas.drawRect(0, getMeasuredHeight() - AndroidUtilities.dp(6), getMeasuredWidth(), getMeasuredHeight(), fadePaint);
@@ -271,6 +283,7 @@ public class PinnedLineView extends View {
                             selectPosition(nextPosition);
                             nextPosition = -1;
                         }
+                        checkLayerType();
                     }
                 });
                 animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -280,6 +293,7 @@ public class PinnedLineView extends View {
                 selectPosition(position);
             }
         }
+        checkLayerType();
     }
 
     private int getThemedColor(int key) {

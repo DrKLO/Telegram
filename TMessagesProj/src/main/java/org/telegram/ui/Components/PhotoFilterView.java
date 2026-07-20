@@ -15,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -48,7 +49,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.ui.ActionBar.Theme;
@@ -103,7 +103,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private boolean filtersEmpty;
     private CurvesToolValue curvesToolValue;
     private float blurExcludeSize;
-    private Point blurExcludePoint;
+    private PointF blurExcludePoint;
     private float blurExcludeBlurSize;
     private float blurAngle;
 
@@ -389,7 +389,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         } else {
             curvesToolValue = new CurvesToolValue();
             blurExcludeSize = 0.35f;
-            blurExcludePoint = new Point(0.5f, 0.5f);
+            blurExcludePoint = new PointF(0.5f, 0.5f);
             blurExcludeBlurSize = 0.15f;
             blurAngle = (float) Math.PI / 2.0f;
             filtersEmpty = true;
@@ -1159,7 +1159,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     }
 
     @Override
-    public Point getBlurExcludePoint() {
+    public PointF getBlurExcludePoint() {
         return blurExcludePoint;
     }
 

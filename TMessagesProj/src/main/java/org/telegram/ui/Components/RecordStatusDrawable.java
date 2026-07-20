@@ -58,7 +58,8 @@ public class RecordStatusDrawable extends StatusDrawable {
         while (progress > 1.0f) {
             progress -= 1.0f;
         }
-        invalidateSelf();
+
+        invalidateLimited();
     }
 
     public void start() {

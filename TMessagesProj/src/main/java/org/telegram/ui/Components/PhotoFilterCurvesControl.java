@@ -48,7 +48,7 @@ public class PhotoFilterCurvesControl extends View {
     private float lastX;
     private float lastY;
 
-    private Rect actualArea = new Rect();
+    private RectOld actualArea = new RectOld();
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintDash = new Paint(Paint.ANTI_ALIAS_FLAG);

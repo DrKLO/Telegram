@@ -1,8 +1,8 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.messenger.AndroidUtilities.runOnUIThread;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -28,6 +28,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -46,7 +47,6 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -55,13 +55,17 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class SearchTagsList extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class SearchTagsList extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount;
     private final BaseFragment fragment;
@@ -102,6 +106,27 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
             }
             Item that = (Item) obj;
             return this.count == that.count && this.reaction.hash == that.reaction.hash && this.nameHash == that.nameHash;
+        }
+    }
+
+    private BlurredBackgroundDrawableViewFactory blurredFactory;
+    private BlurredBackgroundProvider blurredColorProvider;
+    private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    public void setBlurredFactory(BlurredBackgroundDrawableViewFactory blurredFactory,
+                                  BlurredBackgroundProvider blurredColorProvider) {
+        this.blurredFactory = blurredFactory;
+        this.blurredColorProvider = blurredColorProvider;
+        strokePaint.setStrokeWidth(dpf2(1));
+        strokePaint.setStyle(Paint.Style.STROKE);
+
+        if (premiumLayout != null) {
+            premiumLayout.setBackground(blurredFactory.create(premiumLayout)
+                .setColorProvider(BlurredBackgroundProviderImpl.topPanelChatActivity(resourcesProvider))
+                .setRadius(dp(9), dp(15), dp(15), dp(9))
+                .setThickness(dp(5f))
+                .setPadding(dp(4))
+            );
         }
     }
 
@@ -146,7 +171,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
             private final Paint paint = new Paint();
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                paint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider), 0.10f));
+                paint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider), 0.15f));
                 bounds.set(0, 0, getWidth(), getHeight());
                 ReactionsLayoutInBubble.fillTagPath(bounds, path);
                 canvas.drawPath(path, paint);
@@ -198,18 +223,20 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         textView.setText(ssb);
         textView.setPadding(dp(5.66f), dp(4), dp(9), dp(4));
 
-        premiumLayout.addView(tagView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
-        premiumLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        premiumLayout.addView(tagView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        premiumLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        premiumLayout.setPadding(dp(7), 0, 0, 0);
+        premiumLayout.setClipToPadding(false);
+        // premiumLayout.setTranslationY(dp(1));
 
-        addView(premiumLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 16.33f, 0, 16.33f, 0));
+        addView(premiumLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 5, 0, 5, 0));
     }
 
     private long topicId;
 
-    public SearchTagsList(Context context, BaseFragment fragment, SizeNotifierFrameLayout contentView, int currentAccount, long topicId, Theme.ResourcesProvider resourcesProvider, boolean showWithCut) {
-        super(context, contentView);
+    public SearchTagsList(Context context, BaseFragment fragment, int currentAccount, long topicId, Theme.ResourcesProvider resourcesProvider) {
+        super(context);
 
-        this.showWithCut = showWithCut;
         this.currentAccount = currentAccount;
         this.fragment = fragment;
         this.resourcesProvider = resourcesProvider;
@@ -237,7 +264,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         listView.setLayoutManager(layoutManager);
         listView.setAdapter(adapter = new Adapter());
         listView.setOverScrollMode(OVER_SCROLL_NEVER);
-        addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
+        addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnItemClickListener((view, position) -> {
             if (position < 0 || position >= items.size()) {
                 return;
@@ -346,13 +373,15 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
     }
 
     private static AlertDialog currentDialog;
-    public static boolean onBackPressedRenameTagAlert() {
+    public static boolean onBackPressedRenameTagAlert(boolean invoked) {
         if (currentDialog != null) {
-            currentDialog.dismiss();
-            currentDialog = null;
-            return true;
+            if (invoked) {
+                currentDialog.dismiss();
+                currentDialog = null;
+            }
+            return false;
         }
-        return false;
+        return true;
     }
     public static void openRenameTagAlert(Context context, int currentAccount, TLRPC.Reaction reaction, Theme.ResourcesProvider resourcesProvider, boolean forceNotAdaptive) {
         BaseFragment fragment = LaunchActivity.getLastFragment();
@@ -537,12 +566,16 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
         return true;
     }
 
-    public void attach() {
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.savedReactionTagsUpdate);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.emojiLoaded);
     }
 
-    public void detach() {
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.savedReactionTagsUpdate);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.emojiLoaded);
     }
@@ -639,11 +672,6 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
     }
 
     @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(40), MeasureSpec.EXACTLY));
-    }
-
-    @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (shownT < .5f) {
             return false;
@@ -652,18 +680,13 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
     }
 
     public float shownT;
-    public boolean showWithCut = true;
     public void setShown(float shownT) {
         this.shownT = shownT;
         listView.setPivotX(listView.getWidth() / 2f);
         listView.setPivotY(0);
         listView.setScaleX(lerp(0.8f, 1, shownT));
         listView.setScaleY(lerp(0.8f, 1, shownT));
-        if (showWithCut) {
-            listView.setAlpha(shownT);
-        } else {
-            setAlpha(shownT);
-        }
+        setAlpha(shownT);
         invalidate();
     }
 
@@ -710,30 +733,6 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
     }
     public int getCurrentHeight() {
         return (int) (getMeasuredHeight() * shownT);
-    }
-
-    private Paint backgroundPaint2;
-    @Override
-    public void setBackgroundColor(int color) {
-        if (SharedConfig.chatBlurEnabled() && super.sizeNotifierFrameLayout != null) {
-            super.setBackgroundColor(color);
-        } else {
-            backgroundPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            backgroundPaint2.setColor(color);
-        }
-    }
-
-    @Override
-    protected void dispatchDraw(Canvas canvas) {
-        canvas.save();
-        if (showWithCut) {
-            canvas.clipRect(0, 0, getWidth(), getCurrentHeight());
-        }
-        if (backgroundPaint2 != null) {
-            canvas.drawRect(0, 0, getWidth(), getCurrentHeight(), backgroundPaint2);
-        }
-        super.dispatchDraw(canvas);
-        canvas.restore();
     }
 
     private class Adapter extends RecyclerListView.SelectionAdapter {
@@ -786,11 +785,20 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
     private class TagButton extends View {
         public ReactionsLayoutInBubble.ReactionButton reactionButton;
         private final AnimatedFloat progress = new AnimatedFloat(this, 0, 260, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private BlurredBackgroundDrawable blurredDrawable;
         private int count;
 
         public TagButton(Context context) {
             super(context);
             ScaleStateListAnimator.apply(this);
+            if (blurredFactory != null) {
+                blurredDrawable = blurredFactory.create(this)
+                        .setColorProvider(blurredColorProvider)
+                        .setThickness(dp(5f))
+                        .setClipToOutline(false)
+                        .setRadius(dp(6))
+                        .setPadding(dp(4));
+            }
         }
 
         private ReactionsLayoutInBubble.VisibleReaction lastReaction;
@@ -805,7 +813,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
                     @Override
                     protected void updateColors(float progress) {
                         lastDrawnTextColor = ColorUtils.blendARGB(fromTextColor, chosen ? Theme.getColor(Theme.key_chat_inReactionButtonTextSelected, resourcesProvider) : Theme.getColor(Theme.key_actionBarActionModeReactionText, resourcesProvider), progress);
-                        lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, chosen ? Theme.getColor(Theme.key_chat_inReactionButtonBackground, resourcesProvider) : Theme.getColor(Theme.key_actionBarActionModeReaction, resourcesProvider), progress);
+                        lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, chosen ? Theme.getColor(Theme.key_chat_inReactionButtonBackground, resourcesProvider) : 0, progress);
                         lastDrawnTextColor = Theme.blendOver(lastDrawnBackgroundColor, lastDrawnTextColor);
                         lastDrawnTagDotColor = ColorUtils.blendARGB(fromTagDotColor, chosen ? 0x5affffff : Theme.getColor(Theme.key_actionBarActionModeReactionDot, resourcesProvider), progress);
                     }
@@ -831,6 +839,7 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
                     }
                 };
                 reactionButton.counterDrawable.setSize(dp(29), dp(100));
+                reactionButton.drawBgOnlyIfChosen = true;
                 reactionButton.isTag = true;
             } else {
                 reactionButton.count = item.count;
@@ -896,12 +905,39 @@ public class SearchTagsList extends BlurredFrameLayout implements NotificationCe
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(dp(8.67f) + (reactionButton != null ? reactionButton.width : dp(44.33f)), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(40), MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(dp(8.67f) + (reactionButton != null ? reactionButton.width : dp(44.33f)), MeasureSpec.EXACTLY), heightMeasureSpec);
         }
 
+        private final Path clipPath = new Path();
+        private final RectF clipPathRect = new RectF();
+        private final RectF clipPathTmpRect = new RectF();
+
         @Override
-        protected void onDraw(Canvas canvas) {
-            reactionButton.draw(canvas, (getWidth() - reactionButton.width) / 2f, (getHeight() - reactionButton.height) / 2f, progress.set(1f), 1f, false, false, 0.0f);
+        protected void onDraw(@NonNull Canvas canvas) {
+            final int x = (getWidth() - reactionButton.width) / 2;
+            final int y = (getHeight() - reactionButton.height) / 2;
+
+            if (blurredDrawable != null) {
+                AndroidUtilities.rectTmp2.set(x, y, x + reactionButton.width, y + reactionButton.height);
+                clipPathTmpRect.set(AndroidUtilities.rectTmp2);
+                if (!clipPathTmpRect.equals(clipPathRect)) {
+                    clipPathRect.set(clipPathTmpRect);
+                    ReactionsLayoutInBubble.fillTagPath(clipPathRect, clipPathTmpRect, clipPath);
+                }
+
+                AndroidUtilities.rectTmp2.inset(-dp(4), -dp(4));
+                AndroidUtilities.rectTmp2.right += dp(1);
+                blurredDrawable.setBounds(AndroidUtilities.rectTmp2);
+
+                canvas.save();
+                canvas.clipPath(clipPath);
+                blurredDrawable.draw(canvas);
+                strokePaint.setColor((resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark()) ? 0x28FFFFFF : 0xFFFFFFFF);
+                canvas.drawPath(clipPath, strokePaint);
+                canvas.restore();
+            }
+
+            reactionButton.draw(canvas, x, y, progress.set(1f), 1f, false, false, 0.0f);
         }
 
         private boolean attached;

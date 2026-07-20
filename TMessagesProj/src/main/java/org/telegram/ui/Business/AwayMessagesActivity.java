@@ -54,7 +54,7 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (onBackPressed()) {
+                    if (onBackPressed(true)) {
                         finishFragment();
                     }
                 } else if (id == done_button) {
@@ -82,7 +82,11 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         }
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        listView.setSections();
+        listView.adapter.setApplyBackground(false);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        actionBar.setAdaptiveBackground(listView, true);
+
         setValue();
 
         return fragmentView = contentView;
@@ -241,21 +245,23 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public boolean onBackPressed() {
+    public boolean onBackPressed(boolean invoked) {
         if (hasChanges()) {
-            if (!enabled) {
-                processDone();
-                return false;
+            if (invoked) {
+                if (!enabled) {
+                    processDone();
+                    return false;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString(R.string.UnsavedChanges));
+                builder.setMessage(LocaleController.getString(R.string.BusinessAwayUnsavedChanges));
+                builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
+                builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
+                showDialog(builder.create());
             }
-            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(LocaleController.getString(R.string.UnsavedChanges));
-            builder.setMessage(LocaleController.getString(R.string.BusinessAwayUnsavedChanges));
-            builder.setPositiveButton(LocaleController.getString(R.string.ApplyTheme), (dialogInterface, i) -> processDone());
-            builder.setNegativeButton(LocaleController.getString(R.string.PassportDiscard), (dialog, which) -> finishFragment());
-            showDialog(builder.create());
             return false;
         }
-        return super.onBackPressed();
+        return super.onBackPressed(invoked);
     }
 
     public TL_account.TL_businessAwayMessage currentValue;
@@ -285,7 +291,7 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
     private static final int SCHEDULE_CUSTOM = 2;
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asTopView(getString(R.string.BusinessAwayInfo), "RestrictedEmoji", "💤"));
+        items.add(UItem.asTopView(getString(R.string.BusinessAway), getString(R.string.BusinessAwayInfo), "RestrictedEmoji", "💤"));
         items.add(UItem.asCheck(BUTTON_ENABLE, getString(R.string.BusinessAwaySend)).setChecked(enabled));
         items.add(UItem.asShadow(null));
         if (enabled) {
@@ -312,10 +318,10 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
             items.add(UItem.asCheck(BUTTON_ONLY_OFFLINE, LocaleController.getString(R.string.BusinessAwayOnlyOffline)).setChecked(offline_only));
             items.add(UItem.asShadow(LocaleController.getString(R.string.BusinessAwayOnlyOfflineInfo)));
             items.add(UItem.asHeader(getString(R.string.BusinessRecipients)));
-            items.add(UItem.asRadio(RADIO_PRIVATE_CHATS, getString(R.string.BusinessChatsAllPrivateExcept)).setChecked(exclude));
-            items.add(UItem.asRadio(RADIO_ALL_CHATS, getString(R.string.BusinessChatsOnlySelected)).setChecked(!exclude));
+            items.add(UItem.asRadio(RADIO_PRIVATE_CHATS, getString(R.string.BusinessChatsAllPrivateExcept2)).setChecked(exclude));
+            items.add(UItem.asRadio(RADIO_ALL_CHATS, getString(R.string.BusinessChatsOnlySelected2)).setChecked(!exclude));
             items.add(UItem.asShadow(null));
-            recipientsHelper.fillItems(items);
+            recipientsHelper.fillItems(items, adapter);
             items.add(UItem.asShadow(null));
         }
     }
@@ -355,12 +361,12 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
             listView.adapter.update(true);
             checkDone(true);
         } else if (item.id == BUTTON_SCHEDULE_CUSTOM_START) {
-            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomStartTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomStart, (notify, date) -> {
+            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomStartTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomStart, (notify, date, scheduleRepeatPeriod) -> {
                 ((TextCell) view).setValue(LocaleController.formatShortDateTime(scheduleCustomStart = date), true);
                 checkDone(true);
             });
         } else if (item.id == BUTTON_SCHEDULE_CUSTOM_END) {
-            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomEndTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomEnd, (notify, date) -> {
+            AlertsCreator.createDatePickerDialog(getContext(), getString(R.string.BusinessAwayScheduleCustomEndTitle), getString(R.string.BusinessAwayScheduleCustomSetButton), scheduleCustomEnd, (notify, date, scheduleRepeatPeriod) -> {
                 ((TextCell) view).setValue(LocaleController.formatShortDateTime(scheduleCustomEnd = date), true);
                 checkDone(true);
             });
@@ -399,4 +405,14 @@ public class AwayMessagesActivity extends BaseFragment implements NotificationCe
         super.onFragmentDestroy();
     }
 
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        listView.setPadding(0, 0, 0, bottom);
+        listView.setClipToPadding(false);
+    }
 }

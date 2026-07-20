@@ -4,20 +4,29 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.ProfileActivity;
 
 public class JoinToSendSettingsView extends LinearLayout {
 
@@ -39,30 +48,12 @@ public class JoinToSendSettingsView extends LinearLayout {
 
         setOrientation(LinearLayout.VERTICAL);
 
-        joinHeaderCell = new HeaderCell(context, 23);
+        joinHeaderCell = new HeaderCell(context, 20);
         joinHeaderCell.setText(LocaleController.getString(R.string.ChannelSettingsJoinTitle));
         joinHeaderCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         addView(joinHeaderCell);
 
-        joinToSendCell = new TextCheckCell(context) {
-//            @Override
-//            public boolean onTouchEvent(MotionEvent event) {
-//                if (event.getAction() == MotionEvent.ACTION_DOWN && !isEnabled()) {
-//                    return true;
-//                }
-//                if (event.getAction() == MotionEvent.ACTION_UP && !isEnabled()) {
-//                    new AlertDialog.Builder(context)
-//                        .setTitle(LocaleController.getString(R.string.UserRestrictionsCantModify))
-//                        .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("ChannelSettingsJoinToSendRestricted", R.string.ChannelSettingsJoinToSendRestricted, LocaleController.getString(R.string.EditAdminBanUsers))))
-//                        .setPositiveButton(LocaleController.getString(R.string.OK), null)
-//                        .create()
-//                        .show();
-//                    return false;
-//                }
-//                return super.onTouchEvent(event);
-//            }
-        };
-        joinToSendCell.setBackground(Theme.getSelectorDrawable(true));
+        joinToSendCell = new TextCheckCell(context, 20);
         joinToSendCell.setTextAndCheck(LocaleController.getString(R.string.ChannelSettingsJoinToSend), isJoinToSend, isJoinToSend);
         joinToSendCell.setEnabled(currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.ban_users);
         joinToSendCell.setOnClickListener(e -> {
@@ -78,22 +69,7 @@ public class JoinToSendSettingsView extends LinearLayout {
         });
         addView(joinToSendCell);
 
-        joinRequestCell = new TextCheckCell(context) {
-//            @Override
-//            public boolean onTouchEvent(MotionEvent event) {
-//                if (event.getAction() == MotionEvent.ACTION_DOWN && !isEnabled()) {
-//                    new AlertDialog.Builder(context)
-//                        .setTitle(LocaleController.getString(R.string.UserRestrictionsCantModify))
-//                        .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("ChannelSettingsJoinToSendRestricted", R.string.ChannelSettingsJoinToSendRestricted, LocaleController.getString(R.string.EditAdminBanUsers))))
-//                        .setPositiveButton(LocaleController.getString(R.string.OK), null)
-//                        .create()
-//                        .show();
-//                    return false;
-//                }
-//                return super.onTouchEvent(event);
-//            }
-        };
-        joinRequestCell.setBackground(Theme.getSelectorDrawable(true));
+        joinRequestCell = new TextCheckCell(context, 20);
         joinRequestCell.setTextAndCheck(LocaleController.getString(R.string.ChannelSettingsJoinRequest), isJoinRequest, false);
         joinRequestCell.setPivotY(0);
         joinRequestCell.setEnabled(currentChat.creator || currentChat.admin_rights != null && currentChat.admin_rights.ban_users);
@@ -107,17 +83,21 @@ public class JoinToSendSettingsView extends LinearLayout {
         });
         addView(joinRequestCell);
 
-        joinToSendInfoCell = new TextInfoPrivacyCell(context);
+        joinToSendInfoCell = new TextInfoPrivacyCell(context, 12);
         joinToSendInfoCell.setText(LocaleController.getString(R.string.ChannelSettingsJoinToSendInfo));
         addView(joinToSendInfoCell);
 
-        joinRequestInfoCell = new TextInfoPrivacyCell(context);
+        joinRequestInfoCell = new TextInfoPrivacyCell(context, 12);
         joinRequestInfoCell.setText(LocaleController.getString(R.string.ChannelSettingsJoinRequestInfo));
         addView(joinRequestInfoCell);
 
         toggleValue = isJoinToSend ? 1f : 0f;
         joinRequestCell.setVisibility(isJoinToSend ? View.VISIBLE : View.GONE);
         updateToggleValue(toggleValue);
+    }
+
+    public float getBottomInfoMargin() {
+        return joinToSendInfoCell.getAlpha() * joinToSendInfoCell.getHeight() + joinRequestInfoCell.getAlpha() * joinRequestInfoCell.getHeight();
     }
 
     public void setChat(TLRPC.Chat chat) {
@@ -150,6 +130,7 @@ public class JoinToSendSettingsView extends LinearLayout {
     }
 
     public void showJoinToSend(boolean show) {
+        joinHeaderCell.setVisibility(show ? View.VISIBLE : View.GONE);
         joinToSendCell.setVisibility(show ? View.VISIBLE : View.GONE);
         if (!show) {
             isJoinToSend = true;
@@ -157,6 +138,33 @@ public class JoinToSendSettingsView extends LinearLayout {
             updateToggleValue(1);
         }
         requestLayout();
+    }
+
+    public void setFullInfo(BaseFragment fragment, TLRPC.ChatFull chatFull) {
+        final boolean isChannel = ChatObject.isChannelAndNotMegaGroup(currentChat);
+        final boolean isPublic = ChatObject.isPublic(currentChat);
+
+        if (chatFull != null && chatFull.guard_bot_id != 0) {
+            final String name = "@" + DialogObject.getPublicUsername(MessagesController.getInstance(UserConfig.selectedAccount).getUser(chatFull.guard_bot_id));
+            joinRequestInfoCell.setText(AndroidUtilities.replaceSingleLink(LocaleController.formatString(
+                isChannel ?
+                    R.string.ChannelSettingsJoinRequestInfoManagedBy :
+                    (isPublic ?
+                        R.string.GroupPublicSettingsJoinRequestInfoManagedBy :
+                        R.string.GroupPrivateSettingsJoinRequestInfoManagedBy), name
+            ), Theme.getColor(Theme.key_telegram_color_text), () -> {
+                Bundle bundle = new Bundle();
+                bundle.putLong("user_id", chatFull.guard_bot_id);
+                fragment.presentFragment(new ProfileActivity(bundle));
+            }));
+        } else {
+            joinRequestInfoCell.setText(LocaleController.getString(isChannel ?
+                R.string.ChannelSettingsJoinRequestInfo2 :
+                (isPublic ?
+                    R.string.GroupPublicSettingsJoinRequestInfo2:
+                    R.string.GroupPrivateSettingsJoinRequestInfo2)
+            ));
+        }
     }
 
     public void setJoinRequest(boolean newJoinRequest) {
@@ -193,8 +201,8 @@ public class JoinToSendSettingsView extends LinearLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int y = 0;
-        joinHeaderCell.layout(0, y, r - l, y += joinHeaderCell.getMeasuredHeight());
         if (joinToSendCell.getVisibility() == View.VISIBLE) {
+            joinHeaderCell.layout(0, y, r - l, y += joinHeaderCell.getMeasuredHeight());
             joinToSendCell.layout(0, y, r - l, y += joinToSendCell.getMeasuredHeight());
         }
         joinRequestCell.layout(0, y, r - l, y += joinRequestCell.getMeasuredHeight());
@@ -206,9 +214,8 @@ public class JoinToSendSettingsView extends LinearLayout {
 
     private int calcHeight() {
         return (int) (
-            joinHeaderCell.getMeasuredHeight() +
             (joinToSendCell.getVisibility() == View.VISIBLE ?
-                joinToSendCell.getMeasuredHeight() + joinRequestCell.getMeasuredHeight() * toggleValue :
+                joinHeaderCell.getMeasuredHeight() + joinToSendCell.getMeasuredHeight() + joinRequestCell.getMeasuredHeight() * toggleValue :
                 joinRequestCell.getMeasuredHeight()
             ) +
             AndroidUtilities.lerp(joinToSendInfoCell.getMeasuredHeight(), joinRequestInfoCell.getMeasuredHeight(), toggleValue)

@@ -57,7 +57,8 @@ public class RoundStatusDrawable extends StatusDrawable {
             progressDirection = 1;
             progress = 0;
         }
-        invalidateSelf();
+
+        invalidateLimited();
     }
 
     public void start() {

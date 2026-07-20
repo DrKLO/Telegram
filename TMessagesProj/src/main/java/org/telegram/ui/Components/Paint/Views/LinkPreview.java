@@ -28,17 +28,16 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Text;
-import org.telegram.ui.Stories.recorder.HintView2;
 
 public class LinkPreview extends View {
 
@@ -495,16 +494,8 @@ public class LinkPreview extends View {
         public int photoSize;
 
         public static WebPagePreview TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            if (WebPagePreview.constructor != constructor) {
-                if (exception) {
-                    throw new RuntimeException(String.format("can't parse magic %x in WebPagePreview", constructor));
-                } else {
-                    return null;
-                }
-            }
-            WebPagePreview result = new WebPagePreview();
-            result.readParams(stream, exception);
-            return result;
+            final WebPagePreview result = WebPagePreview.constructor != constructor ? null : new WebPagePreview();
+            return TLdeserialize(WebPagePreview.class, result, stream, constructor, exception);
         }
 
         @Override
