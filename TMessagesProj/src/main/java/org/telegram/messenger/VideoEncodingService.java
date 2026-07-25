@@ -12,6 +12,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.text.TextUtils;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -168,6 +169,9 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         if (videoConvertMessage == null) {
             return;
         }
+        String name = videoConvertMessage.messageObject != null ? DialogObject.getName(videoConvertMessage.currentAccount, videoConvertMessage.messageObject.getDialogId()) : null;
+        builder.setContentTitle(TextUtils.isEmpty(name) ? LocaleController.getString(R.string.AppName) : name);
+
         boolean isGif = videoConvertMessage.messageObject != null && MessageObject.isGifMessage(videoConvertMessage.messageObject.messageOwner);
         if (videoConvertMessage.foregroundConversion) {
             builder.setTicker(LocaleController.getString(R.string.ConvertingVideo));
