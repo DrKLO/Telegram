@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
+import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
@@ -80,6 +81,7 @@ import com.google.android.exoplayer2.video.VideoSize;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -160,6 +162,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     public boolean allowMultipleInstances;
 
     private boolean triedReinit;
+    private boolean triedAv1CodecFallback;
 
     private Uri currentUri;
 
@@ -870,11 +873,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             final VideoUri q = result.get(i);
             if (q.codec != null) {
                 if (forThumb) {
-                    if (!("avc".equals(q.codec) || "h264".equals(q.codec) || "vp9".equals(q.codec) || "vp8".equals(q.codec) || ("av1".equals(q.codec) || "av01".equals(q.codec)) && supportsHardwareDecoder(q.codec))) {
+                    if (!("avc".equals(q.codec) || "h264".equals(q.codec) || "vp9".equals(q.codec) || "vp8".equals(q.codec) || ("av1".equals(q.codec) || "av01".equals(q.codec)) && supportsDecoder(q.codec, q.width, q.height))) {
                         continue;
                     }
                 } else {
-                    if (("av1".equals(q.codec) || "av01".equals(q.codec) || "hevc".equals(q.codec) || "h265".equals(q.codec) || "vp9".equals(q.codec)) && !supportsHardwareDecoder(q.codec)) {
+                    if (("av1".equals(q.codec) || "av01".equals(q.codec) || "hevc".equals(q.codec) || "h265".equals(q.codec) || "vp9".equals(q.codec)) && !supportsDecoder(q.codec, q.width, q.height)) {
                         continue;
                     }
                 }
@@ -994,6 +997,50 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     private static HashMap<String, Boolean> cachedSupportedCodec;
+    private static HashMap<String, Boolean> cachedSupportedSoftwareCodec;
+
+    // A codec is only treated as unusable after repeated failures, and the verdict expires.
+    // A single transient MediaCodec error (resource exhaustion, low memory, one bad file)
+    // must not disable a codec for the lifetime of the install.
+    private static final int CODEC_FAILURE_THRESHOLD = 3;
+    private static final long CODEC_FAILURE_TTL = 30L * 24 * 60 * 60 * 1000; // 30 days
+
+    private static boolean isCodecBlacklisted(String mime) {
+        final SharedPreferences prefs = MessagesController.getGlobalMainSettings();
+        if (prefs.getInt("unsupport_fails_" + mime, 0) < CODEC_FAILURE_THRESHOLD) {
+            return false;
+        }
+        final long now = System.currentTimeMillis();
+        final long since = prefs.getLong("unsupport_since_" + mime, 0);
+        // A new app build may ship a different decoder or ExoPlayer version, and an old
+        // verdict expires. In both cases reset the counter, so the codec gets a full
+        // fresh failure budget instead of instantly re-tripping on the next failure.
+        final boolean sameBuild = TextUtils.equals(prefs.getString("unsupport_build_" + mime, null), BuildVars.BUILD_VERSION_STRING);
+        final boolean stale = since == 0 || since > now || now - since >= CODEC_FAILURE_TTL;
+        if (!sameBuild || stale) {
+            prefs.edit()
+                    .remove("unsupport_fails_" + mime)
+                    .remove("unsupport_build_" + mime)
+                    .remove("unsupport_since_" + mime)
+                    .apply();
+            return false;
+        }
+        return true;
+    }
+
+    public static void reportCodecFailure(String mime) {
+        final SharedPreferences prefs = MessagesController.getGlobalMainSettings();
+        final int fails = prefs.getInt("unsupport_fails_" + mime, 0) + 1;
+        prefs.edit()
+                .putInt("unsupport_fails_" + mime, fails)
+                .putString("unsupport_build_" + mime, BuildVars.BUILD_VERSION_STRING)
+                .putLong("unsupport_since_" + mime, System.currentTimeMillis())
+                .apply();
+        // both caches gate on the blacklist, so both must be invalidated
+        if (cachedSupportedCodec != null) cachedSupportedCodec.clear();
+        if (cachedSupportedSoftwareCodec != null) cachedSupportedSoftwareCodec.clear();
+    }
+
     public static boolean supportsHardwareDecoder(String codec) {
         try {
             final String mime = toMime(codec);
@@ -1001,7 +1048,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             if (cachedSupportedCodec == null) cachedSupportedCodec = new HashMap<>();
             Boolean cached = cachedSupportedCodec.get(mime);
             if (cached != null) return cached;
-            if (MessagesController.getGlobalMainSettings().getBoolean("unsupport_" + mime, false)) {
+            if (isCodecBlacklisted(mime)) {
                 return false;
             }
             final int count = MediaCodecList.getCodecCount();
@@ -1023,6 +1070,52 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             FileLog.e(e);
             return false;
         }
+    }
+
+    // Android 10+ guarantees a software AV1 decoder, and the app bundles its own FFmpeg.
+    // Dropping the video track outright when no hardware decoder exists leaves the user
+    // with audio and a black frame, which is strictly worse than decoding in software.
+    private static final long SOFTWARE_DECODE_MAX_PIXELS = 1920L * 1080L;
+
+    public static boolean supportsSoftwareDecoder(String codec) {
+        try {
+            final String mime = toMime(codec);
+            if (mime == null) return false;
+            if (cachedSupportedSoftwareCodec == null) cachedSupportedSoftwareCodec = new HashMap<>();
+            Boolean cached = cachedSupportedSoftwareCodec.get(mime);
+            if (cached != null) return cached;
+            if (isCodecBlacklisted(mime)) {
+                return false;
+            }
+            final int count = MediaCodecList.getCodecCount();
+            for (int i = 0; i < count; i++) {
+                final MediaCodecInfo info = MediaCodecList.getCodecInfoAt(i);
+                if (info.isEncoder()) continue;
+                final String[] supportedTypes = info.getSupportedTypes();
+                for (int j = 0; j < supportedTypes.length; ++j) {
+                    if (supportedTypes[j].equalsIgnoreCase(mime)) {
+                        cachedSupportedSoftwareCodec.put(mime, true);
+                        return true;
+                    }
+                }
+            }
+            cachedSupportedSoftwareCodec.put(mime, false);
+            return false;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return false;
+        }
+    }
+
+    // Use for hard gates that would otherwise discard the video track entirely.
+    // supportsHardwareDecoder() remains the right check for quality-selection heuristics,
+    // where preferring a hardware path is legitimate.
+    public static boolean supportsDecoder(String codec, int width, int height) {
+        if (supportsHardwareDecoder(codec)) return true;
+        // unknown dimensions: allow software decode anyway - a possibly-choppy picture
+        // degrades more gracefully than dropping the video track outright
+        if (width <= 0 || height <= 0) return supportsSoftwareDecoder(codec);
+        return supportsSoftwareDecoder(codec) && (long) width * height <= SOFTWARE_DECODE_MAX_PIXELS;
     }
 
     public Uri makeManifest(ArrayList<Quality> qualities) {
@@ -1124,7 +1217,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 Quality q = qualities.get(i);
                 for (int j = 0; j < q.uris.size(); ++j) {
                     VideoUri u = q.uris.get(j);
-                    if (!TextUtils.isEmpty(u.codec) && !supportsHardwareDecoder(u.codec)) {
+                    if (!TextUtils.isEmpty(u.codec) && !supportsDecoder(u.codec, u.width, u.height)) {
                         q.uris.remove(j);
                         j--;
                     }
@@ -1343,6 +1436,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
 
     public void releasePlayer(boolean async) {
         activePlayers.remove(playerId);
+        triedAv1CodecFallback = false;
         if (player != null) {
             player.release();
             player = null;
@@ -1381,6 +1475,9 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     public void onRenderedFirstFrame(EventTime eventTime, Object output, long renderTimeMs) {
         fallbackPosition = C.TIME_UNSET;
         fallbackDuration = C.TIME_UNSET;
+        // something is rendering, so any earlier codec fallback is spent - let a later
+        // source on this same instance have its own attempt
+        triedAv1CodecFallback = false;
         if (delegate != null) {
             delegate.onRenderedFirstFrame(eventTime);
         }
@@ -1699,14 +1796,37 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             if (cause instanceof MediaCodecDecoderException) {
                 if (cause.toString().contains("av1") || cause.toString().contains("av01")) {
                     FileLog.e(error);
-                    FileLog.e("av1 codec failed, we think this codec is not supported");
-                    MessagesController.getGlobalMainSettings().edit().putBoolean("unsupport_video/av01", true).commit();
-                    if (cachedSupportedCodec != null) {
-                        cachedSupportedCodec.clear();
+                    // Do not count transient failures (codec instance exhaustion, low memory)
+                    // against the codec - they say nothing about device capability.
+                    // MediaCodecDecoderException wraps the original MediaCodec.CodecException as its cause.
+                    boolean transientFailure = false;
+                    Throwable c = cause;
+                    while (c != null) {
+                        if (c instanceof MediaCodec.CodecException && ((MediaCodec.CodecException) c).isTransient()) {
+                            transientFailure = true;
+                            break;
+                        }
+                        c = c.getCause();
                     }
-                    videoQualities = Quality.filterByCodec(videoQualities);
-                    if (videoQualities != null) {
-                        preparePlayer(videoQualities, videoQualityToSelect);
+                    if (transientFailure) {
+                        FileLog.e("av1 codec failed transiently, not counting it against the codec");
+                    } else {
+                        FileLog.e("av1 codec failed, recording a failure for this codec");
+                        reportCodecFailure("video/av01");
+                    }
+                    // One fallback attempt per player instance. Below the blacklist threshold
+                    // filterByCodec may strip nothing, and re-preparing the same quality list
+                    // would just hit the same failure again, forever.
+                    if (!triedAv1CodecFallback) {
+                        triedAv1CodecFallback = true;
+                        videoQualities = Quality.filterByCodec(videoQualities);
+                        if (videoQualities != null) {
+                            preparePlayer(videoQualities, videoQualityToSelect);
+                            return;
+                        }
+                    }
+                    if (delegate != null) {
+                        delegate.onError(this, error);
                     }
                     return;
                 }
