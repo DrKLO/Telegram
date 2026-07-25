@@ -5825,6 +5825,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
 
+        accessibilityFocused = false;
+        accessibilityHovered = false;
+
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
@@ -23130,6 +23133,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = true;
+        } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = false;
+            updateAccessibilityTraversalText();
+        }
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
             return false;
         }
@@ -23215,6 +23224,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         int x = (int) getEventX(event);
         int y = (int) getEventY(event);
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
+            accessibilityHovered = true;
             for (int i = 0; i < accessibilityVirtualViewBounds.size(); i++) {
                 Rect rect = accessibilityVirtualViewBounds.valueAt(i);
                 if (rect.contains(x, y)) {
@@ -23228,8 +23238,26 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
             currentFocusedVirtualView = 0;
+            accessibilityHovered = false;
+            updateAccessibilityTraversalText();
         }
         return super.onHoverEvent(event);
+    }
+
+    private boolean accessibilityFocused;
+    private boolean accessibilityHovered;
+
+    boolean isReadByAccessibility() {
+        return accessibilityFocused || accessibilityHovered || isAccessibilityFocused();
+    }
+
+    // the framework's granular traversal iterates over the host view's content description, and
+    // changing it reports the message as changed, which has screen readers read it again: so it
+    // is only brought up to date once the message is no longer being read
+    void updateAccessibilityTraversalText() {
+        if (accessibilityText != null && !TextUtils.equals(getContentDescription(), accessibilityText)) {
+            setContentDescription(accessibilityText);
+        }
     }
 
     @Override

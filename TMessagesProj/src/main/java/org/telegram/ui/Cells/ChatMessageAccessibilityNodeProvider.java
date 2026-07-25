@@ -379,7 +379,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setContentDescription(cell.accessibilityText.toString());
             } else {
                 info.setText(cell.accessibilityText);
+                // links are only exposed to screen readers through the node text, so keep
+                // the content description off the node to not shadow it
+                info.setContentDescription(null);
             }
+            if (!cell.isReadByAccessibility()) {
+                cell.updateAccessibilityTraversalText();
+            }
+            info.setMovementGranularities(
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER |
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD |
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH
+            );
+            info.addAction(AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY);
+            info.addAction(AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY);
 
             info.setEnabled(true);
             AccessibilityNodeInfo.CollectionItemInfo itemInfo = info.getCollectionItemInfo();
