@@ -435,7 +435,10 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP8 ||
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP9 ||
-                (sdkVersion > 21 && info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC);
+                (sdkVersion > 21 && info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC) ||
+                // AOSP ships a software AV1 decoder (c2.android.av1-dec) since Android 10 (API 29);
+                // the convert pipeline decodes via platform MediaCodec, not the bundled ffmpeg
+                (sdkVersion >= 29 && info->video_stream->codecpar->codec_id == AV_CODEC_ID_AV1);
 
         if (strstr(info->fmt_ctx->iformat->name, "mov") != 0 && dataArr[PARAM_NUM_SUPPORTED_VIDEO_CODEC]) {
             MOVStreamContext *mov = (MOVStreamContext *) info->video_stream->priv_data;
