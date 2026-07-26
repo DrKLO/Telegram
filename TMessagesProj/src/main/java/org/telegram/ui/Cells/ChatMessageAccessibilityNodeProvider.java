@@ -375,10 +375,27 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 cell.accessibilityTextFileSize = fileSize;
             }
 
+            CharSequence spokenText = cell.accessibilityText;
+            CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(cell.currentMessageObject);
+            if (playbackPosition != null) {
+                // while the message is being read, keep reporting the position it was reached
+                // at: a position that moves on every request looks like the message itself
+                // changed and has screen readers read all of it again
+                if (cell.isReadByAccessibility() && !MediaController.getInstance().isMessagePaused()) {
+                    if (cell.readPlaybackPosition == null) {
+                        cell.readPlaybackPosition = playbackPosition;
+                    }
+                    playbackPosition = cell.readPlaybackPosition;
+                } else {
+                    cell.readPlaybackPosition = null;
+                }
+                spokenText = TextUtils.concat(playbackPosition, ", ", cell.accessibilityText);
+            }
+
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                info.setContentDescription(cell.accessibilityText.toString());
+                info.setContentDescription(spokenText.toString());
             } else {
-                info.setText(cell.accessibilityText);
+                info.setText(spokenText);
             }
 
             info.setEnabled(true);
