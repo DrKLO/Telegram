@@ -5123,6 +5123,7 @@
     <string name="AccDescrVideoCompressLow">Smaller size</string>
     <string name="AccDescrVideoCompressHigh">Higher quality</string>
     <string name="AccDescrPlayerDuration">%1$s of %2$s</string>
+    <string name="AccDescrTransferredSize">%1$s of %2$s</string>
     <string name="AccDescrDownloadProgress">Downloaded %1$s of %2$s</string>
     <string name="AccDescrUploadProgress">Uploaded %1$s of %2$s</string>
     <string name="AccDescrNumberOfViews_one">Viewed %1$d time</string>
