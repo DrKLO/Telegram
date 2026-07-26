@@ -128,7 +128,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             final boolean unread = cell.currentMessageObject != null && cell.currentMessageObject.isOut() && !cell.currentMessageObject.scheduled && cell.currentMessageObject.isUnread();
             final boolean contentUnread = cell.currentMessageObject != null && cell.currentMessageObject.isContentUnread();
             final long fileSize = cell.currentMessageObject != null ? cell.currentMessageObject.loadedFileSize : 0;
-            if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize) {
+            if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize || cell.accessibilityTextButtonState != cell.buttonState || cell.accessibilityTextMiniButtonState != cell.miniButtonState) {
                 SpannableStringBuilder sb = new SpannableStringBuilder();
                 if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
                     sb.append(UserObject.getUserName(cell.currentUser));
@@ -207,15 +207,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                     sb.append(messageText);
                 }
-                if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
-                    if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {
-                        sb.append("\n");
-                        final boolean sending = cell.currentMessageObject.isSending();
-                        final String key = sending ? "AccDescrUploadProgress" : "AccDescrDownloadProgress";
-                        final int resId = sending ? R.string.AccDescrUploadProgress : R.string.AccDescrDownloadProgress;
-                        sb.append(formatString(key, resId, AndroidUtilities.formatFileSize(cell.currentMessageObject.loadedFileSize), AndroidUtilities.formatFileSize(cell.lastLoadingSizeTotal)));
-                    }
-                }
+                cell.accessibilityTextTransferIndex = sb.length();
                 if (cell.currentMessageObject.isMusic()) {
                     sb.append("\n");
                     sb.append(formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, cell.currentMessageObject.getMusicAuthor(), cell.currentMessageObject.getMusicTitle()));
@@ -283,11 +275,13 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                             sb.append(cell.currentMessageObject.isUnread() ? getString("AccDescrMsgUnread", R.string.AccDescrMsgUnread) : getString("AccDescrMsgRead", R.string.AccDescrMsgRead));
                         }
                     } else if (cell.currentMessageObject.isSending()) {
-                        sb.append("\n");
-                        sb.append(getString("AccDescrMsgSending", R.string.AccDescrMsgSending));
-                        final float sendingProgress = cell.radialProgress.getProgress();
-                        if (sendingProgress > 0f) {
-                            sb.append(Integer.toString(Math.round(sendingProgress * 100))).append("%");
+                        if (cell.getTransferPercent() < 0) {
+                            sb.append("\n");
+                            sb.append(getString("AccDescrMsgSending", R.string.AccDescrMsgSending));
+                            final float sendingProgress = cell.radialProgress.getProgress();
+                            if (sendingProgress > 0f) {
+                                sb.append(" ").append(Integer.toString(Math.round(sendingProgress * 100))).append("%");
+                            }
                         }
                     } else if (cell.currentMessageObject.isSendError()) {
                         sb.append("\n");
@@ -373,12 +367,24 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 cell.accessibilityTextUnread = unread;
                 cell.accessibilityTextContentUnread = contentUnread;
                 cell.accessibilityTextFileSize = fileSize;
+                cell.accessibilityTextButtonState = cell.buttonState;
+                cell.accessibilityTextMiniButtonState = cell.miniButtonState;
+            }
+
+            // the progress moves while the message stays as it is, so it cannot live in the
+            // text that is kept: it goes in where it belongs every time the message is read
+            CharSequence spokenText = cell.accessibilityText;
+            final CharSequence transferProgress = cell.getTransferProgressText();
+            if (transferProgress != null && cell.accessibilityTextTransferIndex >= 0 && cell.accessibilityTextTransferIndex <= cell.accessibilityText.length()) {
+                final SpannableStringBuilder withProgress = new SpannableStringBuilder(cell.accessibilityText);
+                withProgress.insert(cell.accessibilityTextTransferIndex, "\n" + transferProgress);
+                spokenText = withProgress;
             }
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                info.setContentDescription(cell.accessibilityText.toString());
+                info.setContentDescription(spokenText.toString());
             } else {
-                info.setText(cell.accessibilityText);
+                info.setText(spokenText);
             }
 
             info.setEnabled(true);
