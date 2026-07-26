@@ -502,11 +502,17 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
+        CharSequence text;
         if (currentMessageObject.isMusic()) {
-            info.setText(LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, currentMessageObject.getMusicAuthor(), currentMessageObject.getMusicTitle()));
+            text = LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, currentMessageObject.getMusicAuthor(), currentMessageObject.getMusicTitle());
         } else { // voice message
-            info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
+            text = titleLayout.getText() + ", " + descriptionLayout.getText();
         }
+        final CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(currentMessageObject);
+        if (playbackPosition != null) {
+            text = playbackPosition + ", " + text;
+        }
+        info.setText(text);
     }
 
     private int getThemedColor(int key) {
