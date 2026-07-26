@@ -11370,6 +11370,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 showPopup = false;
             }
             botKeyboardView.setButtons(botReplyMarkup);
+            if (botKeyboardViewVisible) {
+                updateFieldHint(true);
+            }
             if (showPopup && (messageEditText == null || messageEditText.length() == 0) && !isPopupShowing()) {
                 showPopup(1, POPUP_CONTENT_BOT_KEYBOARD);
             }
