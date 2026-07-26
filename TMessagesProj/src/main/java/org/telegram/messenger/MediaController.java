@@ -4407,6 +4407,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return currentSavedMusicList;
     }
 
+    // how far the message got, for screen readers, while it is playing or paused
+    public static CharSequence getPlaybackPositionDescription(MessageObject messageObject) {
+        if (messageObject == null || !getInstance().isPlayingMessage(messageObject)) {
+            return null;
+        }
+        final int duration = (int) messageObject.getDuration();
+        // the seconds are counted as it plays, while moving the slider takes it somewhere else
+        // without counting: where the slider stands is what holds in both
+        int position = messageObject.audioProgressSec;
+        if (duration > 0 && messageObject.audioProgress > 0) {
+            position = Math.round(messageObject.audioProgress * duration);
+        }
+        position = Math.max(0, Math.min(duration, position));
+        return LocaleController.formatString(R.string.AccDescrPlayerDuration, LocaleController.formatDuration(position), LocaleController.formatDuration(duration));
+    }
+
     public boolean isPlayingMessage(MessageObject messageObject) {
         if (messageObject != null && messageObject.isRepostPreview) {
             return false;
