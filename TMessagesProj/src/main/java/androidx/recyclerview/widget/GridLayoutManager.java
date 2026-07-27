@@ -443,6 +443,12 @@ public class GridLayoutManager extends LinearLayoutManager {
         if (!state.isPreLayout()) {
             return mSpanSizeLookup.getCachedSpanGroupIndex(viewPosition, mSpanCount);
         }
+        if (viewPosition < 0 || viewPosition >= state.getItemCount()) {
+            // the position belongs to a layout that is already gone, as happens when the item is
+            // asked about from a content changed event dispatched while the list is being laid out
+            Log.w(TAG, "Cannot find span size for pre layout position. " + viewPosition);
+            return 0;
+        }
         final int adapterPosition = recycler.convertPreLayoutPositionToPostLayout(viewPosition);
         if (adapterPosition == -1) {
             if (DEBUG) {
