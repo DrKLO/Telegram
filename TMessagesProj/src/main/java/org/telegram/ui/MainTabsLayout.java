@@ -5,11 +5,18 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.BlendMode;
+import android.graphics.BlendModeColorFilter;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,12 +25,15 @@ import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
-import android.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedLinearLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.render.SurfaceTouchLighting;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
+import org.telegram.ui.Components.blur3.source.LayeredCaptureSource;
 import org.telegram.ui.Components.glass.GlassTabView;
 
 import java.util.HashSet;
@@ -43,8 +53,147 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         this.resourcesProvider = resourcesProvider;
     }
 
+    private BlurredBackgroundDrawable liquidSelectorDrawable;
+    private BlurredBackgroundDrawable liquidTabsBackground;
+    private BlurredBackgroundDrawable liquidHiddenTabsBackground;
+    private LayeredCaptureSource layeredCaptureSource;
+    private final Paint liquidTintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path liquidSelectorPath = new Path();
+    private final RectF liquidSelectorRect = new RectF();
+    private final RectF liquidPanelBounds = new RectF();
+    private BlendModeColorFilter liquidTintColorFilter;
+    private int liquidTintColor;
+    private float liquidPressProgress;
+    private float liquidSelectorScaleX = 1f;
+    private float liquidSelectorScaleY = 1f;
+    private float liquidSelectorCenterX;
+    private float liquidSelectorVelocity;
+    private long liquidSelectorPositionTime;
+    private float liquidInteractiveProgress;
+    private float liquidSelectorRadius = Float.NaN;
+    private boolean liquidReleasePending;
+    private float liquidReleaseTargetX;
+    private float liquidPanelDragOffset;
+    private float liquidPanelOffsetX;
+    private float liquidAppliedPanelOffsetX;
+    private float liquidLastTouchX;
+    private SurfaceTouchLighting surfaceTouchLighting;
+    private boolean liquidTracking;
+    private View liquidTargetTab;
+    private View liquidDownTab;
+    private float liquidDownX;
+    private float liquidDownY;
+    private float liquidLastTouchY;
+    private long liquidDownTime;
+    private int liquidPointerId = MotionEvent.INVALID_POINTER_ID;
+    private LiquidGestureState liquidGestureState = LiquidGestureState.IDLE;
+    private final Runnable liquidLongPressRunnable = this::startPendingLiquidLongPress;
+
+    private enum LiquidGestureState {
+        IDLE,
+        PENDING_LONG_PRESS,
+        TRACKING
+    }
+
+    public void installGlassSelectionRenderer(
+        BlurredBackgroundDrawableViewFactory factory,
+        BlurredBackgroundDrawable tabsBackground,
+        BlurredBackgroundDrawable hiddenTabsBackground,
+        LayeredCaptureSource captureSource
+    ) {
+        liquidTabsBackground = tabsBackground;
+        liquidHiddenTabsBackground = hiddenTabsBackground;
+        layeredCaptureSource = captureSource;
+        liquidSelectorDrawable = factory.create(null, new BlurredBackgroundColorProvider() {
+            @Override
+            public int getShadowColor() {
+                return 0x1A000000;
+            }
+
+            @Override
+            public int getBackgroundColor() {
+                final boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+                final int color = dark ? Color.WHITE : Color.BLACK;
+                return Theme.multAlpha(color, 0.1f * (1f - liquidPressProgress));
+            }
+
+            @Override
+            public int getStrokeColorTop() {
+                return 0;
+            }
+
+            @Override
+            public int getStrokeColorBottom() {
+                return 0;
+            }
+        });
+        liquidSelectorDrawable
+            .setSpectralSeparationEnabled(true)
+            .setBackdropSaturation(1f)
+            .setSurfaceBlurRadius(0f)
+            .setEdgeLightingStrength(0f)
+            .setThickness(1)
+            .setOpticalDisplacement(0f);
+        liquidSelectorDrawable.setShadowParams(dp(24), 0, dp(4));
+        liquidSelectorDrawable.setShadowAlpha(0f);
+        surfaceTouchLighting = new SurfaceTouchLighting();
+        setBackground(null);
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child instanceof GlassTabView) {
+                ((GlassTabView) child).setSplitSelectionRendering(true);
+            }
+        }
+        setSkipDrawSelector(true);
+        drawCustomSelector = false;
+        syncLiquidSelectorToSelectedTab();
+    }
+
+    public void renderSelectionCapture(Canvas canvas) {
+        if (liquidTabsBackground == null) {
+            return;
+        }
+
+        final int accent = Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
+        canvas.save();
+        canvas.translate(liquidTabsBackground.getSourceOffsetX(), liquidTabsBackground.getSourceOffsetY());
+        liquidHiddenTabsBackground.draw(canvas);
+
+        final float contentScale = lerp(1f, 1.2f, liquidPressProgress);
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            canvas.save();
+            canvas.translate(child.getX(), child.getY());
+            canvas.scale(contentScale, contentScale, child.getWidth() * 0.5f, child.getHeight() * 0.5f);
+            if (child instanceof GlassTabView) {
+                ((GlassTabView) child).renderSelectedPresentation(canvas, accent);
+            } else {
+                if (liquidTintColorFilter == null || liquidTintColor != accent) {
+                    liquidTintColor = accent;
+                    liquidTintColorFilter = new BlendModeColorFilter(accent, BlendMode.SRC_IN);
+                }
+                liquidTintPaint.setColorFilter(liquidTintColorFilter);
+                final int layer = canvas.saveLayer(
+                    0f,
+                    0f,
+                    child.getWidth(),
+                    child.getHeight(),
+                    liquidTintPaint
+                );
+                child.draw(canvas);
+                canvas.restoreToCount(layer);
+            }
+            canvas.restore();
+        }
+        canvas.restore();
+    }
+
     private static final float[] PASS_TEXT_SIZES_DP = {12f, 12f, 10f};
     private static final int[] PASS_PADDINGS_DP = {16, 8, 4};
+    private static final float LIQUID_PRESSED_SCALE = 80f / 56f;
 
     private int maxWidthPx;
 
@@ -66,7 +215,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
-        final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
+        if (liquidSelectorDrawable == null) {
+            measureLegacyTabs(height, tabHeight, maxTotalWidthForTabs);
+            return;
+        }
 
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
         float lastMeasuredTextSize = -1;
@@ -76,13 +228,17 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 lastMeasuredTextSize = PASS_TEXT_SIZES_DP[pass];
             }
             final int padding = dp(PASS_PADDINGS_DP[pass]);
-            float total = 0;
+            final float equalTabWidth = maxTotalWidthForTabs / (float) Math.max(1, visibleChildCount);
+            boolean fits = true;
             for (int a = 0, N = getChildCount(); a < N; a++) {
-                if (!isViewVisible(getChildAt(a))) continue;
-                final float withMargin = tabsTextWidth[a] + padding * 2;
-                total += withMargin;
+                if (!isViewVisible(getChildAt(a))) {
+                    continue;
+                }
+                if (tabsTextWidth[a] + padding * 2 > equalTabWidth) {
+                    fits = false;
+                    break;
+                }
             }
-            final boolean fits = total <= maxTotalWidthForTabs;
             if (fits || pass == PASS_TEXT_SIZES_DP.length - 1) {
                 chosenPass = pass;
                 break;
@@ -91,55 +247,15 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         applyPassTextSize(chosenPass);
 
-        final int tabPadding = dp(PASS_PADDINGS_DP[chosenPass]);
-        final int maxTabTextWidthIfEq = (maxTotalWidthForTabs / Math.max(1, visibleChildCount)) - tabPadding * 2;
-
-        float totalWidth = 0;
-        int totalWeight = 0;
-        for (int a = 0, N = getChildCount(); a < N; a++) {
-            final View child = getChildAt(a);
-            if (!isViewVisible(child)) {
-                tabsTextWidth[a] = tabsTextWidthWithMargin[a] = 0;
-                tabsWeight[a] = 0;
-                continue;
-            }
-
-            tabsTextWidthWithMargin[a] = tabsTextWidth[a] + tabPadding * 2;
-            tabsWeight[a] = tabsTextWidthWithMargin[a] > (maxTabTextWidthIfEq + tabPadding * 2) ? 0 : 1;
-
-            totalWidth += tabsTextWidthWithMargin[a];
-            totalWeight += tabsWeight[a];
-        }
-
-        if (totalWeight == 0) {
-            for (int a = 0, N = getChildCount(); a < N; a++) {
-                tabsWeight[a] = isViewVisible(getChildAt(a)) ? 1 : 0;
-            }
-            totalWeight = visibleChildCount;
-        }
-
-        if (totalWidth > maxTotalWidthForTabs) {
-            final float m = maxTotalWidthForTabs / totalWidth;
-            for (int a = 0, N = getChildCount(); a < N; a++) {
-                tabsTextWidthWithMargin[a] *= m;
-            }
-        } else if (totalWidth < minTotalWidthForTabs) {
-            final float growW = minTotalWidthForTabs - totalWidth;
-            final float growP = growW / totalWeight;
-
-            for (int a = 0, N = getChildCount(); a < N; a++) {
-                tabsTextWidthWithMargin[a] += growP * tabsWeight[a];
-            }
-        }
-
+        final int equalWidth = maxTotalWidthForTabs / Math.max(1, visibleChildCount);
+        int remainingPixels = maxTotalWidthForTabs - equalWidth * visibleChildCount;
         int l = 0;
         for (int a = 0, N = getChildCount(); a < N; a++) {
             if (!isViewVisible(getChildAt(a))) {
+                tabsWidth[a] = 0;
                 continue;
             }
-
-            tabsWidth[a] = Math.round(tabsTextWidthWithMargin[a]);
-            tabsLeftPos[a] = l;
+            tabsWidth[a] = equalWidth + (remainingPixels-- > 0 ? 1 : 0);
             l += tabsWidth[a];
         }
         setMeasuredDimension(l + getPaddingLeft() + getPaddingRight(), height);
@@ -153,6 +269,88 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         calculateTotalSizesAfterMeasure();
     }
 
+    private void measureLegacyTabs(int height, int tabHeight, int maxTotalWidthForTabs) {
+        final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
+        int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
+        float lastMeasuredTextSize = -1;
+        for (int pass = 0; pass < PASS_TEXT_SIZES_DP.length; pass++) {
+            if (PASS_TEXT_SIZES_DP[pass] != lastMeasuredTextSize) {
+                measureTabTexts(PASS_TEXT_SIZES_DP[pass]);
+                lastMeasuredTextSize = PASS_TEXT_SIZES_DP[pass];
+            }
+            final int padding = dp(PASS_PADDINGS_DP[pass]);
+            float total = 0;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                if (!isViewVisible(getChildAt(a))) {
+                    continue;
+                }
+                total += tabsTextWidth[a] + padding * 2;
+            }
+            if (total <= maxTotalWidthForTabs || pass == PASS_TEXT_SIZES_DP.length - 1) {
+                chosenPass = pass;
+                break;
+            }
+        }
+
+        applyPassTextSize(chosenPass);
+        final int tabPadding = dp(PASS_PADDINGS_DP[chosenPass]);
+        final int maxTabTextWidthIfEq =
+            maxTotalWidthForTabs / Math.max(1, visibleChildCount) - tabPadding * 2;
+        float totalWidth = 0;
+        int totalWeight = 0;
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View child = getChildAt(a);
+            if (!isViewVisible(child)) {
+                tabsTextWidth[a] = tabsTextWidthWithMargin[a] = 0;
+                tabsWeight[a] = 0;
+                continue;
+            }
+            tabsTextWidthWithMargin[a] = tabsTextWidth[a] + tabPadding * 2;
+            tabsWeight[a] =
+                tabsTextWidthWithMargin[a] > maxTabTextWidthIfEq + tabPadding * 2 ? 0 : 1;
+            totalWidth += tabsTextWidthWithMargin[a];
+            totalWeight += tabsWeight[a];
+        }
+
+        if (totalWeight == 0) {
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                tabsWeight[a] = isViewVisible(getChildAt(a)) ? 1 : 0;
+            }
+            totalWeight = visibleChildCount;
+        }
+
+        if (totalWidth > maxTotalWidthForTabs) {
+            final float multiplier = maxTotalWidthForTabs / totalWidth;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                tabsTextWidthWithMargin[a] *= multiplier;
+            }
+        } else if (totalWidth < minTotalWidthForTabs) {
+            final float growPerWeight = (minTotalWidthForTabs - totalWidth) / totalWeight;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                tabsTextWidthWithMargin[a] += growPerWeight * tabsWeight[a];
+            }
+        }
+
+        int measuredWidth = 0;
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            if (!isViewVisible(getChildAt(a))) {
+                tabsWidth[a] = 0;
+                continue;
+            }
+            tabsWidth[a] = Math.round(tabsTextWidthWithMargin[a]);
+            measuredWidth += tabsWidth[a];
+        }
+        setMeasuredDimension(measuredWidth + getPaddingLeft() + getPaddingRight(), height);
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View child = getChildAt(a);
+            child.measure(
+                MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY)
+            );
+        }
+        calculateTotalSizesAfterMeasure();
+    }
+
     public interface Tab {
         float measureTextWidth();
         default float measureTextWidth(float textSizeDp) { return measureTextWidth(); }
@@ -161,14 +359,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
 
 
-    // fills tabsTextWidth[] and return visible child count;
-
     private float[] tabsTextWidth;
     private float[] tabsTextWidthWithMargin;
     private int[] tabsWeight;
     private int[] tabsWidth;
-
-    private int[] tabsLeftPos;
 
 
     private int visibleChildCount;
@@ -180,7 +374,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             tabsTextWidth = new float[childCount];
             tabsTextWidthWithMargin = new float[childCount];
             tabsWeight = new int[childCount];
-            tabsLeftPos = new int[childCount];
             tabsWidth = new int[childCount];
         }
 
@@ -232,12 +425,33 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         checkVisualWidth();
+        if (liquidTabsBackground != null) {
+            liquidTabsBackground.setBounds(0, 0, getWidth(), getHeight());
+            liquidPanelBounds.set(liquidTabsBackground.getPaddedBounds());
+            liquidHiddenTabsBackground.setBounds(
+                Math.round(liquidPanelBounds.left),
+                getPaddingTop(),
+                Math.round(liquidPanelBounds.right),
+                getHeight() - getPaddingBottom()
+            );
+        }
+        if (!liquidTracking && !liquidPositionAnimation.isRunning()) {
+            syncLiquidSelectorToSelectedTab();
+        }
     }
 
     @Override
     protected void onItemsChanged() {
         super.onItemsChanged();
         checkVisualWidth();
+    }
+
+    @Override
+    public void onDescendantInvalidated(@NonNull View child, @NonNull View target) {
+        super.onDescendantInvalidated(child, target);
+        if (layeredCaptureSource != null) {
+            layeredCaptureSource.invalidateConsumers();
+        }
     }
 
     private void checkVisualWidth() {
@@ -262,6 +476,42 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 ((GlassTabView) child).setSelected(child == tab, animated);
             }
         }
+        if (liquidSelectorDrawable != null && tab != null && !liquidTracking) {
+            moveLiquidSelectorToTab(tab, animated);
+        }
+    }
+
+    private void moveLiquidSelectorToTab(View tab, boolean animated) {
+        final float targetX = getCenterX(tab);
+        if (!animated) {
+            liquidPositionAnimation.cancel();
+            liquidVelocityAnimation.cancel();
+            liquidPressAnimation.cancel();
+            liquidScaleXAnimation.cancel();
+            liquidScaleYAnimation.cancel();
+            liquidSelectorCenterX = targetX;
+            liquidSelectorVelocity = 0f;
+            liquidPressProgress = 0f;
+            liquidSelectorScaleX = 1f;
+            liquidSelectorScaleY = 1f;
+            liquidReleasePending = false;
+            invalidateLiquidContent();
+            return;
+        }
+        if (liquidReleasePending && Math.abs(liquidReleaseTargetX - targetX) < 0.5f) {
+            return;
+        }
+        if (!liquidReleasePending && Math.abs(liquidSelectorCenterX - targetX) < 0.5f) {
+            return;
+        }
+        liquidReleaseTargetX = targetX;
+        liquidReleasePending = true;
+        liquidPressAnimation.animateToFinalPosition(1f);
+        liquidScaleXAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        liquidScaleYAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        liquidPositionAnimation.getSpring().setStiffness(1000f).setDampingRatio(1f);
+        liquidPositionAnimation.animateToFinalPosition(targetX);
+        postOnAnimation(this::maybeFinishLiquidRelease);
     }
 
     private View findSelectedTab() {
@@ -284,16 +534,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     private boolean drawCustomSelector;
     private void setSkipDrawSelector(boolean skipDrawSelector) {
-        drawCustomSelector = skipDrawSelector;
+        skipDrawSelector = skipDrawSelector || liquidSelectorDrawable != null;
+        drawCustomSelector = skipDrawSelector && liquidSelectorDrawable == null;
         if (drawCustomSelector) {
             selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.09f));
         }
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
-            if (child.getVisibility() != View.VISIBLE) {
-                continue;
-            }
-
             if (child instanceof GlassTabView) {
                 ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector);
             }
@@ -309,6 +556,27 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        final boolean liquid = liquidSelectorDrawable != null;
+        if (liquid) {
+            applyLiquidPanelSourceOffset();
+            canvas.save();
+            canvas.translate(liquidPanelOffsetX, 0f);
+        }
+        if (liquidSelectorDrawable != null) {
+            final float panelScale = getLiquidPanelScale();
+            canvas.save();
+            canvas.scale(panelScale, panelScale, getWidth() * 0.5f, getHeight() * 0.5f);
+            liquidTabsBackground.draw(canvas);
+            surfaceTouchLighting.render(
+                canvas,
+                liquidPanelBounds,
+                liquidSelectorCenterX,
+                getHeight() * 0.5f,
+                liquidInteractiveProgress
+            );
+            canvas.restore();
+            drawLiquidSelector(canvas);
+        }
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
@@ -319,14 +587,264 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                     x + sWidth / 2f, (getHeight() + sHeight) / 2f,
                     sHeight / 2f, sHeight / 2f, selectorPaint);
         }
+        if (liquidSelectorDrawable != null && !liquidSelectorRect.isEmpty()) {
+            canvas.save();
+            liquidSelectorPath.rewind();
+            liquidSelectorPath.addRoundRect(
+                liquidSelectorRect,
+                liquidSelectorRect.height() * 0.5f,
+                liquidSelectorRect.height() * 0.5f,
+                Path.Direction.CW
+            );
+            canvas.clipOutPath(liquidSelectorPath);
+            final float panelScale = getLiquidPanelScale();
+            canvas.scale(panelScale, panelScale, getWidth() * 0.5f, getHeight() * 0.5f);
+            super.dispatchDraw(canvas);
+            canvas.restore();
+        } else {
+            super.dispatchDraw(canvas);
+        }
+        if (liquid) {
+            canvas.restore();
+        }
+    }
 
-        super.dispatchDraw(canvas);
+    private void applyLiquidPanelSourceOffset() {
+        final float baseOffsetX = liquidTabsBackground.getSourceOffsetX() - liquidAppliedPanelOffsetX;
+        final float offsetY = liquidTabsBackground.getSourceOffsetY();
+        liquidAppliedPanelOffsetX = liquidPanelOffsetX;
+        liquidTabsBackground.setSourceOffset(baseOffsetX + liquidPanelOffsetX, offsetY);
+        liquidHiddenTabsBackground.setSourceOffset(baseOffsetX + liquidPanelOffsetX, offsetY);
+        liquidSelectorDrawable.setSourceOffset(baseOffsetX + liquidPanelOffsetX, offsetY);
+    }
+
+    private float getLiquidPanelScale() {
+        return getWidth() > 0
+            ? 1f + dp(16) / (float) getWidth() * liquidPressProgress
+            : 1f;
+    }
+
+    private void drawLiquidSelector(Canvas canvas) {
+        final float normalWidth = getInterpolatedWidthByX(liquidSelectorCenterX, this);
+        final float normalHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+        if (normalWidth <= 0f || normalHeight <= 0f) {
+            liquidSelectorRect.setEmpty();
+            return;
+        }
+        final float velocity = liquidSelectorVelocity / 10f;
+        final float velocityX = Math.max(-0.2f, Math.min(0.2f, velocity * 0.75f));
+        final float velocityY = Math.max(-0.2f, Math.min(0.2f, velocity * 0.25f));
+        final float scaleX = liquidSelectorScaleX / (1f - velocityX);
+        final float scaleY = liquidSelectorScaleY * (1f - velocityY);
+        final float scaledWidth = normalWidth * scaleX;
+        final float scaledHeight = normalHeight * scaleY;
+        final float centerY = getHeight() * 0.5f;
+        final float selectorRadius = scaledHeight * 0.5f;
+        if (Float.isNaN(liquidSelectorRadius) || Math.abs(liquidSelectorRadius - selectorRadius) > 0.1f) {
+            liquidSelectorRadius = selectorRadius;
+            liquidSelectorDrawable.setRadius(selectorRadius);
+        }
+        liquidSelectorDrawable.setThickness(
+            Math.max(1, Math.round(dp(10) * liquidPressProgress * scaleY))
+        );
+        liquidSelectorDrawable.setOpticalDisplacement(
+            dp(14) * liquidPressProgress * scaleY
+        );
+
+        liquidSelectorRect.set(
+            liquidSelectorCenterX - scaledWidth * 0.5f,
+            centerY - scaledHeight * 0.5f,
+            liquidSelectorCenterX + scaledWidth * 0.5f,
+            centerY + scaledHeight * 0.5f
+        );
+
+        liquidSelectorDrawable.setBounds(
+            Math.round(liquidSelectorRect.left),
+            Math.round(liquidSelectorRect.top),
+            Math.round(liquidSelectorRect.right),
+            Math.round(liquidSelectorRect.bottom)
+        );
+        liquidSelectorDrawable.setSourceOffset(
+            liquidTabsBackground.getSourceOffsetX(),
+            liquidTabsBackground.getSourceOffsetY()
+        );
+        liquidHiddenTabsBackground.setSourceOffset(
+            liquidTabsBackground.getSourceOffsetX(),
+            liquidTabsBackground.getSourceOffsetY()
+        );
+        liquidSelectorDrawable.draw(canvas);
+    }
+
+    private float getLiquidCentersRange() {
+        float first = Float.NaN;
+        float last = Float.NaN;
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            final float center = getCenterX(child);
+            if (Float.isNaN(first)) {
+                first = center;
+            }
+            last = center;
+        }
+        return Float.isNaN(first) || Float.isNaN(last) ? 0f : last - first;
+    }
+
+    private void syncLiquidSelectorToSelectedTab() {
+        if (liquidSelectorDrawable == null) {
+            return;
+        }
+        final View selected = findSelectedTab();
+        if (selected == null || selected.getWidth() == 0) {
+            return;
+        }
+        liquidSelectorCenterX = getCenterX(selected);
+        liquidSelectorVelocity = 0f;
+        liquidSelectorPositionTime = 0L;
+        liquidPositionAnimation.setStartValue(liquidSelectorCenterX);
+        invalidateLiquidGeometry();
+    }
+
+    private void invalidateLiquidContent() {
+        if (liquidSelectorDrawable == null) {
+            return;
+        }
+        liquidSelectorDrawable.setEdgeLightingStrength(liquidPressProgress);
+        liquidSelectorDrawable.setShadowAlpha(liquidPressProgress);
+        liquidSelectorDrawable.setSurfaceTintColor(
+            Theme.multAlpha(Color.BLACK, 0.03f * liquidPressProgress)
+        );
+        liquidSelectorDrawable.setInsetShadow(
+            dp(8) * liquidPressProgress,
+            liquidPressProgress
+        );
+        liquidHiddenTabsBackground.setThickness(Math.max(1, Math.round(dp(24) * liquidPressProgress)));
+        liquidHiddenTabsBackground.setOpticalDisplacement(dp(24) * liquidPressProgress);
+        liquidHiddenTabsBackground.setEdgeLightingStrength(liquidPressProgress);
+        liquidHiddenTabsBackground.updateColors();
+        liquidSelectorDrawable.updateColors();
+        layeredCaptureSource.invalidateConsumers();
+        invalidate();
+    }
+
+    private void invalidateLiquidGeometry() {
+        if (liquidSelectorDrawable != null) {
+            invalidate();
+        }
+    }
+
+    public void syncGlassSelectionPalette() {
+        if (liquidSelectorDrawable == null) {
+            invalidate();
+            return;
+        }
+        liquidTabsBackground.updateColors();
+        liquidHiddenTabsBackground.updateColors();
+        liquidSelectorDrawable.updateColors();
+        layeredCaptureSource.invalidateConsumers();
+        invalidate();
     }
 
 
     final Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     final SpringAnimation scaleX = new SpringAnimation(this, DynamicAnimation.SCALE_X, 1f);
     final SpringAnimation scaleY = new SpringAnimation(this, DynamicAnimation.SCALE_Y, 1f);
+    final SpringAnimation liquidPressAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidPressProgress") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidPressProgress;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.liquidPressProgress = value;
+            object.invalidateLiquidContent();
+        }
+    });
+    final SpringAnimation liquidScaleXAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidSelectorScaleX") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidSelectorScaleX;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.liquidSelectorScaleX = value;
+            object.invalidateLiquidGeometry();
+        }
+    });
+    final SpringAnimation liquidScaleYAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidSelectorScaleY") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidSelectorScaleY;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.liquidSelectorScaleY = value;
+            object.invalidateLiquidGeometry();
+        }
+    });
+    final SpringAnimation liquidInteractiveAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidInteractiveProgress") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidInteractiveProgress;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.liquidInteractiveProgress = value;
+            object.invalidate();
+        }
+    });
+    final SpringAnimation liquidVelocityAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidSelectorVelocity") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidSelectorVelocity;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.liquidSelectorVelocity = value;
+            object.invalidateLiquidGeometry();
+        }
+    });
+    final SpringAnimation liquidPanelOffsetAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidPanelDragOffset") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidPanelDragOffset;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            object.setLiquidPanelDragOffset(value);
+        }
+    });
+    final SpringAnimation liquidPositionAnimation = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("liquidSelectorCenterX") {
+        @Override
+        public float getValue(MainTabsLayout object) {
+            return object.liquidSelectorCenterX;
+        }
+
+        @Override
+        public void setValue(MainTabsLayout object, float value) {
+            final long now = System.nanoTime();
+            if (object.liquidTracking && object.liquidSelectorPositionTime != 0L) {
+                final float dt = (now - object.liquidSelectorPositionTime) / 1_000_000_000f;
+                if (dt > 0f) {
+                    final float range = Math.max(object.getLiquidCentersRange(), 1f);
+                    final float velocity = (value - object.liquidSelectorCenterX) / dt / range;
+                    object.liquidVelocityAnimation.animateToFinalPosition(velocity);
+                }
+            }
+            object.liquidSelectorPositionTime = now;
+            object.liquidSelectorCenterX = value;
+            object.maybeFinishLiquidRelease();
+            object.invalidateLiquidGeometry();
+        }
+    });
 
     final SpringAnimation selectedTabPositionOffsetX = new SpringAnimation(this, new FloatPropertyCompat<MainTabsLayout>("selectedTabPositionOffsetX") {
         @Override
@@ -366,6 +884,33 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         selectedTabPositionX.setSpring(new SpringForce(1f)
             .setStiffness(SpringForce.STIFFNESS_MEDIUM)
             .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY));
+        liquidPressAnimation.setSpring(new SpringForce(0f)
+            .setStiffness(1000f)
+            .setDampingRatio(1f));
+        liquidScaleXAnimation.setSpring(new SpringForce(1f)
+            .setStiffness(250f)
+            .setDampingRatio(0.6f));
+        liquidScaleYAnimation.setSpring(new SpringForce(1f)
+            .setStiffness(250f)
+            .setDampingRatio(0.7f));
+        liquidPositionAnimation.setSpring(new SpringForce(0f)
+            .setStiffness(1000f)
+            .setDampingRatio(1f));
+        liquidVelocityAnimation.setSpring(new SpringForce(0f)
+            .setStiffness(300f)
+            .setDampingRatio(0.5f));
+        liquidPanelOffsetAnimation.setSpring(new SpringForce(0f)
+            .setStiffness(300f)
+            .setDampingRatio(0.5f));
+        liquidInteractiveAnimation.setSpring(new SpringForce(0f)
+            .setStiffness(300f)
+            .setDampingRatio(0.5f));
+        liquidPressAnimation.setMinimumVisibleChange(0.001f);
+        liquidScaleXAnimation.setMinimumVisibleChange(0.001f);
+        liquidScaleYAnimation.setMinimumVisibleChange(0.001f);
+        liquidVelocityAnimation.setMinimumVisibleChange(0.01f);
+        liquidPanelOffsetAnimation.setMinimumVisibleChange(0.001f);
+        liquidInteractiveAnimation.setMinimumVisibleChange(0.001f);
     }
 
     private float animatedLongSelectedViewCenterX;
@@ -376,6 +921,12 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private float lastLongSelectedViewWidth;
     private View lastLongSelectedView;
 
+    private final Set<View> tabsWithIgnoreClick = new HashSet<>();
+
+    public void addTabToIgnoreClick(View view) {
+        tabsWithIgnoreClick.add(view);
+    }
+
 
 
 
@@ -385,8 +936,24 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
             if (child.getVisibility() != View.VISIBLE) continue;
 
-            if (x >= child.getLeft() && x <= child.getRight()
-                    && y >= child.getTop() && y <= child.getBottom()) {
+            if (x >= child.getX() && x <= child.getX() + child.getWidth()
+                    && y >= child.getY() && y <= child.getY() + child.getHeight()) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static View findLegacyChildUnder(ViewGroup parent, float x, float y) {
+        for (int i = parent.getChildCount() - 1; i >= 0; i--) {
+            final View child = parent.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            if (x >= child.getLeft() &&
+                x <= child.getRight() &&
+                y >= child.getTop() &&
+                y <= child.getBottom()) {
                 return child;
             }
         }
@@ -428,11 +995,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
     }
 
-    private final Set<View> tabsWithIgnoreClick = new HashSet<>();
-    public void addTabToIgnoreClick(View v) {
-        tabsWithIgnoreClick.add(v);
-    }
-
     private final BoolAnimator animatorIsScaled = new BoolAnimator(0, (a, factor, c, g) -> {
         setScaleX(lerp(1, 1.019f, factor));
         setScaleY(lerp(1, 1.019f, factor));
@@ -442,7 +1004,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         @Override
         public boolean needClickAt(View view, float x, float y) {
             lastLongSelectedView = null;
-            final View found = findChildUnder(MainTabsLayout.this, x, y);
+            final View found = findLegacyChildUnder(MainTabsLayout.this, x, y);
             return found != null && !tabsWithIgnoreClick.contains(found);
         }
 
@@ -605,8 +1167,233 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (liquidSelectorDrawable != null) {
+            return dispatchLiquidTouchEvent(ev);
+        }
         clickHelper.onTouchEvent(this, ev);
         return super.dispatchTouchEvent(ev);
+    }
+
+    private boolean dispatchLiquidTouchEvent(MotionEvent ev) {
+        final int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            cancelPendingLiquidLongPress();
+            liquidPointerId = ev.getPointerId(0);
+            liquidDownTime = ev.getDownTime();
+            liquidLastTouchX = ev.getX();
+            liquidLastTouchY = ev.getY();
+            liquidDownX = liquidLastTouchX;
+            liquidDownY = liquidLastTouchY;
+            liquidDownTab = findChildUnder(this, liquidLastTouchX, liquidLastTouchY);
+            if (liquidDownTab == null) {
+                liquidGestureState = LiquidGestureState.IDLE;
+                return super.dispatchTouchEvent(ev);
+            }
+            if (liquidDownTab == findSelectedTab()) {
+                liquidGestureState = LiquidGestureState.TRACKING;
+                startLiquidTracking(liquidDownTab, liquidLastTouchX);
+                if (getParent() != null) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
+                return true;
+            }
+            liquidGestureState = LiquidGestureState.PENDING_LONG_PRESS;
+            postDelayed(
+                liquidLongPressRunnable,
+                ViewConfiguration.getLongPressTimeout() * 3L / 4L
+            );
+            return super.dispatchTouchEvent(ev);
+        }
+
+        final int pointerIndex = liquidPointerId == MotionEvent.INVALID_POINTER_ID
+            ? -1
+            : ev.findPointerIndex(liquidPointerId);
+        if (pointerIndex >= 0) {
+            liquidLastTouchX = ev.getX(pointerIndex);
+            liquidLastTouchY = ev.getY(pointerIndex);
+        }
+
+        if (liquidGestureState == LiquidGestureState.PENDING_LONG_PRESS) {
+            final boolean activePointerUp =
+                action == MotionEvent.ACTION_POINTER_UP &&
+                    ev.getPointerId(ev.getActionIndex()) == liquidPointerId;
+            final float dx = liquidLastTouchX - liquidDownX;
+            final float dy = liquidLastTouchY - liquidDownY;
+            final int touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+            if (action == MotionEvent.ACTION_UP ||
+                action == MotionEvent.ACTION_CANCEL ||
+                activePointerUp ||
+                pointerIndex < 0 ||
+                dx * dx + dy * dy > touchSlop * touchSlop) {
+                cancelPendingLiquidLongPress();
+            }
+            return super.dispatchTouchEvent(ev);
+        }
+
+        if (liquidGestureState == LiquidGestureState.TRACKING) {
+            if (action == MotionEvent.ACTION_MOVE) {
+                moveLiquidTracking(liquidLastTouchX);
+            } else if (action == MotionEvent.ACTION_UP) {
+                finishLiquidTracking(true);
+                resetLiquidGesture();
+            } else if (action == MotionEvent.ACTION_CANCEL ||
+                action == MotionEvent.ACTION_POINTER_UP &&
+                    ev.getPointerId(ev.getActionIndex()) == liquidPointerId) {
+                finishLiquidTracking(false);
+                resetLiquidGesture();
+            }
+            return true;
+        }
+
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private void startPendingLiquidLongPress() {
+        if (liquidGestureState != LiquidGestureState.PENDING_LONG_PRESS ||
+            liquidDownTab == null ||
+            !isViewVisible(liquidDownTab)) {
+            return;
+        }
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        liquidGestureState = LiquidGestureState.TRACKING;
+        startLiquidTrackingFromInactive(
+            liquidDownTab,
+            liquidLastTouchX,
+            liquidLastTouchY
+        );
+        if (getParent() != null) {
+            getParent().requestDisallowInterceptTouchEvent(true);
+        }
+    }
+
+    private void cancelPendingLiquidLongPress() {
+        removeCallbacks(liquidLongPressRunnable);
+        if (liquidGestureState == LiquidGestureState.PENDING_LONG_PRESS) {
+            liquidGestureState = LiquidGestureState.IDLE;
+            liquidDownTab = null;
+            liquidPointerId = MotionEvent.INVALID_POINTER_ID;
+        }
+    }
+
+    private void resetLiquidGesture() {
+        removeCallbacks(liquidLongPressRunnable);
+        liquidGestureState = LiquidGestureState.IDLE;
+        liquidDownTab = null;
+        liquidPointerId = MotionEvent.INVALID_POINTER_ID;
+        if (getParent() != null) {
+            getParent().requestDisallowInterceptTouchEvent(false);
+        }
+    }
+
+    private void startLiquidTrackingFromInactive(View target, float touchX, float touchY) {
+        liquidTracking = true;
+        liquidTargetTab = target;
+        liquidReleasePending = false;
+        liquidLastTouchX = touchX;
+        liquidPositionAnimation.cancel();
+        liquidVelocityAnimation.cancel();
+        liquidSelectorVelocity = 0f;
+        liquidSelectorPositionTime = 0L;
+        liquidPressAnimation.animateToFinalPosition(1f);
+        liquidInteractiveAnimation.animateToFinalPosition(1f);
+        liquidScaleXAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        liquidScaleYAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        liquidPositionAnimation.getSpring().setStiffness(1000f).setDampingRatio(1f);
+        liquidPositionAnimation.animateToFinalPosition(getCenterX(target));
+        final MotionEvent cancel = MotionEvent.obtain(
+            liquidDownTime,
+            android.os.SystemClock.uptimeMillis(),
+            MotionEvent.ACTION_CANCEL,
+            touchX,
+            touchY,
+            0
+        );
+        super.dispatchTouchEvent(cancel);
+        cancel.recycle();
+        invalidateLiquidGeometry();
+    }
+
+    private void startLiquidTracking(View selected, float touchX) {
+        liquidTracking = true;
+        liquidTargetTab = selected;
+        liquidReleasePending = false;
+        liquidLastTouchX = touchX;
+        liquidPositionAnimation.cancel();
+        liquidVelocityAnimation.cancel();
+        liquidSelectorCenterX = getCenterX(selected);
+        liquidSelectorVelocity = 0f;
+        liquidSelectorPositionTime = 0L;
+        liquidPressAnimation.animateToFinalPosition(1f);
+        liquidInteractiveAnimation.animateToFinalPosition(1f);
+        liquidScaleXAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        liquidScaleYAnimation.animateToFinalPosition(LIQUID_PRESSED_SCALE);
+        invalidateLiquidGeometry();
+    }
+
+    private void moveLiquidTracking(float x) {
+        final float dragAmount = x - liquidLastTouchX;
+        liquidLastTouchX = x;
+        liquidPanelOffsetAnimation.cancel();
+        setLiquidPanelDragOffset(liquidPanelDragOffset + dragAmount);
+        x = clampXToChildrenCenters(x, this);
+        liquidPositionAnimation.getSpring().setStiffness(1000f).setDampingRatio(1f);
+        liquidPositionAnimation.animateToFinalPosition(x);
+        final View found = findNearestVisibleChildByX(x, this);
+        if (found != null && found != liquidTargetTab) {
+            liquidTargetTab = found;
+        }
+    }
+
+    private void finishLiquidTracking(boolean performClick) {
+        liquidTracking = false;
+        final View target;
+        if (performClick) {
+            target = liquidTargetTab;
+        } else {
+            target = findSelectedTab();
+            liquidTargetTab = target;
+        }
+        if (target != null) {
+            liquidReleaseTargetX = getCenterX(target);
+            liquidReleasePending = true;
+            liquidPositionAnimation.getSpring().setStiffness(1000f).setDampingRatio(1f);
+            liquidPositionAnimation.animateToFinalPosition(liquidReleaseTargetX);
+        }
+        liquidVelocityAnimation.animateToFinalPosition(0f);
+        liquidPanelOffsetAnimation.animateToFinalPosition(0f);
+        liquidInteractiveAnimation.animateToFinalPosition(0f);
+        postOnAnimation(this::maybeFinishLiquidRelease);
+        if (performClick && target != null) {
+            target.performClick();
+        }
+        liquidTargetTab = null;
+    }
+
+    private void setLiquidPanelDragOffset(float value) {
+        liquidPanelDragOffset = value;
+        final float fraction = getWidth() > 0
+            ? Math.max(-1f, Math.min(1f, value / getWidth()))
+            : 0f;
+        liquidPanelOffsetX = dp(4)
+            * Math.signum(fraction)
+            * CubicBezierInterpolator.EASE_OUT.getInterpolation(Math.abs(fraction));
+        invalidateLiquidContent();
+    }
+
+    private void maybeFinishLiquidRelease() {
+        if (!liquidReleasePending) {
+            return;
+        }
+        final float threshold = Math.max(getLiquidCentersRange() * 0.025f, 0.001f);
+        if (Math.abs(liquidSelectorCenterX - liquidReleaseTargetX) >= threshold) {
+            return;
+        }
+        liquidReleasePending = false;
+        postOnAnimation(() -> {
+            liquidPressAnimation.animateToFinalPosition(0f);
+            liquidScaleXAnimation.animateToFinalPosition(1f);
+            liquidScaleYAnimation.animateToFinalPosition(1f);
+        });
     }
 
 

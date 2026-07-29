@@ -5,6 +5,8 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 
 import android.content.Context;
+import android.graphics.BlendMode;
+import android.graphics.BlendModeColorFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -16,6 +18,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -54,11 +57,18 @@ import me.vkryl.android.animator.FactorAnimator;
 
 public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, FactorAnimator.Target {
     private final TextView textView;
+    private final TextView liquidSelectedTextView;
     private final RLottieImageView imageView;
     private BackupImageView backupImageView;
     private Theme.ResourcesProvider resourcesProvider;
     private final Paint paintCounterBackground = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint liquidSelectedTintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final AnimatedTextView.AnimatedTextDrawable counter;
+    private PorterDuffColorFilter liquidInactiveColorFilter;
+    private PorterDuffColorFilter liquidSelectedColorFilter;
+    private BlendModeColorFilter liquidSelectedLayerColorFilter;
+    private int liquidInactiveFilterColor;
+    private int liquidSelectedFilterColor;
 
     private static final int ANIMATOR_ID_IS_SELECTED = 0;
     private static final int ANIMATOR_ID_COUNTER_VISIBLE = 1;
@@ -95,6 +105,18 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         defaultTextPaint = new TextPaint(textView.getPaint());
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 28.33f, 0, 0));
 
+        liquidSelectedTextView = new TextView(context);
+        liquidSelectedTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+        liquidSelectedTextView.setSingleLine();
+        liquidSelectedTextView.setLines(1);
+        liquidSelectedTextView.setEllipsize(TextUtils.TruncateAt.END);
+        liquidSelectedTextView.setTypeface(
+            AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD)
+        );
+        liquidSelectedTextView.setGravity(Gravity.CENTER);
+        liquidSelectedTextView.setTextColor(Color.WHITE);
+        addView(liquidSelectedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 28.33f, 0, 0));
+
         counter = new AnimatedTextView.AnimatedTextDrawable();
         counter.setTypeface(AndroidUtilities.bold());
         counter.setCallback(this);
@@ -125,6 +147,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             final float offset = (visualWidth - getMeasuredWidth()) / 2f;
             imageView.setTranslationX(offset);
             textView.setTranslationX(offset);
+            liquidSelectedTextView.setTranslationX(offset);
         }
     }
 
@@ -133,6 +156,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private boolean hasGestureSelectedOverride;
     private float gestureSelectedOverride;
     private boolean skipDrawSelector;
+    private boolean liquidGlassLayersEnabled;
+    private boolean liquidSelectedLayerDraw;
+    private Drawable liquidInactiveIconDrawable;
+    private Drawable liquidSelectedIconDrawable;
 
     public void setGestureSelectedOverride(float gestureSelectedOverride, boolean allow) {
         this.gestureSelectedOverride = gestureSelectedOverride;
@@ -149,6 +176,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        dispatchDrawContent(canvas);
+    }
+
+    private void dispatchDrawContent(Canvas canvas) {
         final float viewWidth = hasVisualWidth ? visualWidth : getWidth();
         final float selectedFactor = hasGestureSelectedOverride ? gestureSelectedOverride : isSelectedAnimator.getFloatValue();
         if (selectedFactor > 0 && !skipDrawSelector) {
@@ -171,6 +202,12 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
 
         super.dispatchDraw(canvas);
+
+        if (liquidGlassLayersEnabled && !liquidSelectedLayerDraw && liquidInactiveIconDrawable != null) {
+            ensureLiquidInactiveColorFilter();
+            liquidInactiveIconDrawable.setColorFilter(liquidInactiveColorFilter);
+            drawLiquidIcon(canvas, liquidInactiveIconDrawable);
+        }
 
         if (hasCounter > 0) {
             canvas.save();
@@ -218,6 +255,176 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
     }
 
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (liquidGlassLayersEnabled && child == imageView) {
+            return true;
+        }
+        if (child == liquidSelectedTextView && (!liquidGlassLayersEnabled || !liquidSelectedLayerDraw)) {
+            return true;
+        }
+        if (liquidSelectedLayerDraw && (child == textView || child == backupImageView)) {
+            return true;
+        }
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
+    public void setSplitSelectionRendering(boolean enabled) {
+        if (liquidGlassLayersEnabled == enabled) {
+            return;
+        }
+        liquidGlassLayersEnabled = enabled;
+        if (enabled) {
+            rebuildLiquidSelectedIcon();
+            imageView.clearAnimationDrawable();
+            applyUnselectedPresentation();
+        } else {
+            clearLiquidIcons();
+            lastIconAnimationRaw = 0;
+            checkPlayAnimation(false);
+            textView.setTypeface(isSelectedAnimator.getValue()
+                ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD)
+                : AndroidUtilities.bold());
+            updateColors();
+        }
+        invalidate();
+    }
+
+    private void applyUnselectedPresentation() {
+        textView.setTypeface(AndroidUtilities.bold());
+        updateColors();
+    }
+
+    private void rebuildLiquidSelectedIcon() {
+        clearLiquidIcons();
+        if (tabAnimation == null) {
+            return;
+        }
+        if (tabAnimation.iconStatic != -1) {
+            liquidInactiveIconDrawable = getContext().getResources()
+                .getDrawable(tabAnimation.iconStatic)
+                .mutate();
+            liquidInactiveIconDrawable.setCallback(this);
+            liquidSelectedIconDrawable = getContext().getResources()
+                .getDrawable(tabAnimation.iconStatic)
+                .mutate();
+            liquidSelectedIconDrawable.setCallback(this);
+            return;
+        }
+        if (tabAnimation.iconToFilled == -1 || tabAnimation.iconToOutline == -1) {
+            return;
+        }
+        final RLottieDrawable inactiveDrawable = new RLottieDrawable(
+            tabAnimation.iconToOutline,
+            "liquid_inactive_" + tabAnimation.iconToOutline,
+            dp(24),
+            dp(24)
+        );
+        inactiveDrawable.setMasterParent(this);
+        inactiveDrawable.setCurrentFrame(0, false);
+        liquidInactiveIconDrawable = inactiveDrawable;
+        final RLottieDrawable drawable = new RLottieDrawable(
+            tabAnimation.iconToFilled,
+            "liquid_selected_" + tabAnimation.iconToFilled,
+            dp(24),
+            dp(24)
+        );
+        drawable.setMasterParent(this);
+        final int selectedFrame = tabAnimation.endFrameMid >= 0
+            ? tabAnimation.endFrameMid
+            : Math.max(0, drawable.getFramesCount() - 1);
+        drawable.setCurrentFrame(selectedFrame, false);
+        liquidSelectedIconDrawable = drawable;
+    }
+
+    private void clearLiquidIcons() {
+        recycleLiquidIcon(liquidInactiveIconDrawable);
+        recycleLiquidIcon(liquidSelectedIconDrawable);
+        liquidInactiveIconDrawable = null;
+        liquidSelectedIconDrawable = null;
+    }
+
+    private void recycleLiquidIcon(Drawable drawable) {
+        if (drawable == null) {
+            return;
+        }
+        drawable.setCallback(null);
+        if (drawable instanceof RLottieDrawable) {
+            final RLottieDrawable lottieDrawable = (RLottieDrawable) drawable;
+            lottieDrawable.setMasterParent(null);
+            lottieDrawable.recycle(true);
+        }
+    }
+
+    private void ensureLiquidInactiveColorFilter() {
+        if (liquidInactiveColorFilter == null || liquidInactiveFilterColor != colorDefault) {
+            liquidInactiveFilterColor = colorDefault;
+            liquidInactiveColorFilter = new PorterDuffColorFilter(colorDefault, PorterDuff.Mode.SRC_IN);
+        }
+    }
+
+    private void ensureLiquidSelectedColorFilters(int accentColor) {
+        if (liquidSelectedColorFilter == null || liquidSelectedFilterColor != accentColor) {
+            liquidSelectedFilterColor = accentColor;
+            liquidSelectedColorFilter = new PorterDuffColorFilter(accentColor, PorterDuff.Mode.SRC_IN);
+            liquidSelectedLayerColorFilter = new BlendModeColorFilter(accentColor, BlendMode.SRC_IN);
+        }
+    }
+
+    public void renderSelectedPresentation(Canvas canvas, int accentColor) {
+        ensureLiquidSelectedColorFilters(accentColor);
+        liquidSelectedTintPaint.setColorFilter(liquidSelectedLayerColorFilter);
+        final int layer = canvas.saveLayer(
+            0f,
+            0f,
+            getWidth(),
+            getHeight(),
+            liquidSelectedTintPaint
+        );
+        liquidSelectedLayerDraw = true;
+        try {
+            dispatchDrawContent(canvas);
+        } finally {
+            liquidSelectedLayerDraw = false;
+        }
+        canvas.restoreToCount(layer);
+
+        if (liquidSelectedIconDrawable != null) {
+            liquidSelectedIconDrawable.setColorFilter(liquidSelectedColorFilter);
+            final int left = Math.round(imageView.getLeft() + imageView.getTranslationX());
+            final int top = Math.round(imageView.getTop() + imageView.getTranslationY());
+            liquidSelectedIconDrawable.setBounds(
+                left,
+                top,
+                left + imageView.getWidth(),
+                top + imageView.getHeight()
+            );
+            liquidSelectedIconDrawable.draw(canvas);
+        }
+
+        if (backupImageView != null) {
+            canvas.save();
+            canvas.translate(
+                backupImageView.getLeft() + backupImageView.getTranslationX(),
+                backupImageView.getTop() + backupImageView.getTranslationY()
+            );
+            backupImageView.draw(canvas);
+            canvas.restore();
+        }
+    }
+
+    private void drawLiquidIcon(Canvas canvas, Drawable drawable) {
+        final int left = Math.round(imageView.getLeft() + imageView.getTranslationX());
+        final int top = Math.round(imageView.getTop() + imageView.getTranslationY());
+        drawable.setBounds(
+            left,
+            top,
+            left + imageView.getWidth(),
+            top + imageView.getHeight()
+        );
+        drawable.draw(canvas);
+    }
+
     private Drawable premiumStarDrawable;
 
     public void setCounter(String text, boolean isError, boolean animated) {
@@ -231,10 +438,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     public void setSelected(boolean selected, boolean animated) {
-        isSelectedAnimator.setValue(selected, animated);
-        checkPlayAnimation(animated);
-
-        textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        if (liquidGlassLayersEnabled) {
+            isSelectedAnimator.setValue(selected, false);
+            applyUnselectedPresentation();
+        } else {
+            isSelectedAnimator.setValue(selected, animated);
+            checkPlayAnimation(animated);
+            textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        }
     }
 
     public boolean isTabSelected() {
@@ -252,8 +463,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private boolean needUpdateBackupViewColor;
 
     private void updateColors() {
-        final int color = ColorUtils.blendARGB(colorDefault, colorSelected, isSelectedAnimator.getFloatValue());
-        final int colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, isSelectedAnimator.getFloatValue());
+        final float selected = liquidGlassLayersEnabled ? 0f : isSelectedAnimator.getFloatValue();
+        final int color = ColorUtils.blendARGB(colorDefault, colorSelected, selected);
+        final int colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, selected);
 
         final PorterDuffColorFilter filter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
         if (backupImageView != null && needUpdateBackupViewColor) {
@@ -401,7 +613,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         GlassTabView tab = new GlassTabView(context);
         tab.resourcesProvider = resourcesProvider;
         tab.tabAnimation = tabAnimation;
-        tab.textView.setText(LocaleController.getString(stringRes));
+        tab.setText(LocaleController.getString(stringRes));
         tab.checkPlayAnimation(false);
         tab.imageView.setLayoutParams(LayoutHelper.createFrame(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 4, 0, 0));
         tab.colorDefault = Theme.getColor(Theme.key_glass_tabUnselected, resourcesProvider);
@@ -413,7 +625,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public static GlassTabView createAvatar(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, @StringRes int stringRes) {
         GlassTabView tab = new GlassTabView(context);
-        tab.textView.setText(LocaleController.getString(stringRes));
+        tab.setText(LocaleController.getString(stringRes));
         tab.imageView.setVisibility(GONE);
 
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
@@ -492,6 +704,8 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     public void setAttachScale(float scale) {
         textView.setScaleX(scale);
         textView.setScaleY(scale);
+        liquidSelectedTextView.setScaleX(scale);
+        liquidSelectedTextView.setScaleY(scale);
         imageView.setScaleX(scale);
         imageView.setScaleY(scale);
         if (backupImageView != null) {
@@ -533,6 +747,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         final float px = dp(textSizeDp);
         if (textView.getTextSize() != px) {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
+            liquidSelectedTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
             defaultTextPaint.setTextSize(px);
         }
     }
@@ -618,11 +833,17 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         lastIconAnimationRaw = 0;
         lastBotIconId = 0;
         imageView.clearAnimationDrawable();
-        checkPlayAnimation(false);
+        if (liquidGlassLayersEnabled) {
+            rebuildLiquidSelectedIcon();
+            applyUnselectedPresentation();
+        } else {
+            checkPlayAnimation(false);
+        }
     }
 
     public void setText(CharSequence text) {
         textView.setText(text);
+        liquidSelectedTextView.setText(text);
     }
 
 
@@ -636,7 +857,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         tabAnimationBot = bot;
         lastIconAnimationRaw = 0;
         lastBotIconId = 0;
-        textView.setText(bot.short_name);
+        setText(bot.short_name);
 
         backupImageView.setRoundRadius(0);
         backupImageView.setSize(dp(24), dp(24));
@@ -656,7 +877,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         lastIconAnimationRaw = 0;
         lastBotIconId = 0;
 
-        textView.setText(ContactsController.formatName(user.first_name, user.last_name));
+        setText(ContactsController.formatName(user.first_name, user.last_name));
         if (avatarDrawable == null) {
             avatarDrawable = new AvatarDrawable();
         }

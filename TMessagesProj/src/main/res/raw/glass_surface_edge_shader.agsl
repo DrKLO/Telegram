@@ -1,0 +1,36 @@
+uniform float2 size;
+uniform float4 cornerRadii;
+uniform float angle;
+uniform float falloff;
+
+float resolveEdgeRadius(float2 coord, float4 radii) {
+    if (coord.x >= 0.0) {
+        if (coord.y <= 0.0) return radii.y;
+        else return radii.z;
+    } else {
+        if (coord.y <= 0.0) return radii.x;
+        else return radii.w;
+    }
+}
+
+float2 resolveEdgeGradient(float2 coord, float2 halfSize, float radius) {
+    float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
+    if (cornerCoord.x >= 0.0 || cornerCoord.y >= 0.0) {
+        return sign(coord) * normalize(max(cornerCoord, 0.0));
+    } else {
+        float gradX = step(cornerCoord.y, cornerCoord.x);
+        return sign(coord) * float2(gradX, 1.0 - gradX);
+    }
+}
+
+half4 main(float2 coord) {
+    float2 halfSize = size * 0.5;
+    float2 centeredCoord = coord - halfSize;
+    float radius = resolveEdgeRadius(centeredCoord, cornerRadii);
+    float gradRadius = min(radius * 1.5, min(halfSize.x, halfSize.y));
+    float2 grad = resolveEdgeGradient(centeredCoord, halfSize, gradRadius);
+    float2 normal = float2(cos(angle), sin(angle));
+    float d = dot(grad, normal);
+    float intensity = pow(abs(d), falloff);
+    return half4(1.0) * intensity;
+}

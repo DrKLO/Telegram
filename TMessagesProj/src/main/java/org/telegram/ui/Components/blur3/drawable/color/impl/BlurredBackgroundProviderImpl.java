@@ -3,6 +3,7 @@ package org.telegram.ui.Components.blur3.drawable.color.impl;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Color;
+import android.os.Build;
 
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
@@ -17,12 +18,26 @@ import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider
 
 public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider mainTabs(Theme.ResourcesProvider resourcesProvider) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
+            return new BlurredBackgroundProviderBuilder(resourcesProvider)
+                .setBackgroundColor((r, isDark) -> {
+                    final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
+                    final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTabs, r);
+                    return solveSrcColor(colorBg, colorTarget, 0.4f);
+                })
+                .setStrokeColorTop(0, 0)
+                .setStrokeColorBottom(0, 0)
+                .setShadowColor(0x1A000000, 0x1A000000)
+                .setShadowLayer(dpf2(24f), 0, dpf2(4f))
+                .setStrokeWidth(0, 0)
+                .build();
+        }
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                 final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                 final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTabs, r);
-                return solveSrcColor(colorBg, colorTarget, alpha);
+                return solveSrcColor(colorBg, colorTarget, 0.76f);
             })
             .setStrokeColorTop(0x11000000, 0x06FFFFFF)
             .setStrokeColorBottom(0x20000000, 0x11FFFFFF)

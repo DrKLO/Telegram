@@ -1,0 +1,26 @@
+Liquid Glass rendering
+
+Portions of the optical rendering implementation are derived from
+AndroidLiquidGlass / Backdrop by Kyant.
+
+Copyright 2025 Kyant
+Original project: https://github.com/Kyant0/AndroidLiquidGlass
+Licensed under the Apache License, Version 2.0.
+
+Derived portions are present in:
+
+- res/raw/liquid_glass_shader.agsl
+  Lens refraction, signed-distance shape calculations and chromatic dispersion.
+
+- res/raw/glass_surface_edge_shader.agsl
+  Directional edge-lighting calculations.
+
+- java/org/telegram/ui/Components/blur3/LiquidGlassEffect.java
+  Android RuntimeShader configuration and optical-effect composition.
+
+The Telegram render-node integration, background capture pipeline,
+bottom-tab layout, gesture handling, animations, theming, selected-state
+rendering and application-specific behavior were implemented separately
+for this project.
+
+The complete Apache License 2.0 text is included in LICENSE.txt.

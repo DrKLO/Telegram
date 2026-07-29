@@ -3129,12 +3129,17 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     /* Blur3 */
 
     private Matrix selfTransformationsMatrix;
+    private boolean forceInternalRenderNodeBlurCapture;
+
+    public void setForceInternalRenderNodeBlurCapture(boolean force) {
+        forceInternalRenderNodeBlurCapture = force;
+    }
 
     @Override
     public void capture(Canvas canvas, RectF position) {
         final long drawingTime = SystemClock.uptimeMillis();
 
-        if (hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+        if (forceInternalRenderNodeBlurCapture || hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
             if (selfTransformationsMatrix == null) {
                 selfTransformationsMatrix = new Matrix();
             }
@@ -3196,7 +3201,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             return;
         }
 
-        if (hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
+        if (forceInternalRenderNodeBlurCapture || hasActiveEdgeEffects() && getOverScrollMode() != OVER_SCROLL_NEVER) {
             builder.unsupported();
             return;
         }

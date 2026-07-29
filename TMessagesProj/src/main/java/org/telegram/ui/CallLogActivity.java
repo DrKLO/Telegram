@@ -828,6 +828,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 
 		iBlur3Capture = new ViewGroupPartRenderer(listView, contentView, listView::drawChild);
+		listView.setForceInternalRenderNodeBlurCapture(
+			Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+				LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)
+		);
 		listView.addEdgeEffectListener(() -> listView.postOnAnimation(() -> {
 			checkUi_listClip();
 			blur3_InvalidateBlur();

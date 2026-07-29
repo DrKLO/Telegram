@@ -141,6 +141,55 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         onBoundPropsChanged();
     }
 
+    public BlurredBackgroundDrawable setOpticalDisplacement(float amount) {
+        boundProps.opticalDisplacement = amount;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setDepthShadingEnabled(boolean enabled) {
+        boundProps.depthShadingEnabled = enabled;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setSpectralSeparationEnabled(boolean enabled) {
+        boundProps.spectralSeparationEnabled = enabled;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setSurfaceBlurRadius(float radius) {
+        boundProps.opticalBlurRadius = radius;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setBackdropSaturation(float saturation) {
+        boundProps.backdropSaturation = saturation;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setEdgeLightingStrength(float strength) {
+        boundProps.edgeLightingStrength = strength;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setSurfaceTintColor(int color) {
+        boundProps.surfaceTintColor = color;
+        onBoundPropsChanged();
+        return this;
+    }
+
+    public BlurredBackgroundDrawable setInsetShadow(float radius, float alpha) {
+        boundProps.insetShadowRadius = radius;
+        boundProps.insetShadowAlpha = alpha;
+        onBoundPropsChanged();
+        return this;
+    }
+
     public Rect getPaddedBounds() {
         return boundProps.boundsWithPadding;
     }
@@ -222,7 +271,15 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         public boolean hasPadding;
         public int liquidThickness;
         public float liquidIntensity = 0.75f;
-        public float liquidIndex = 1.5f;
+        public float opticalDisplacement = Float.NaN;
+        public float opticalBlurRadius;
+        public float backdropSaturation = 1.5f;
+        public float edgeLightingStrength = 1f;
+        public float insetShadowRadius;
+        public float insetShadowAlpha;
+        public int surfaceTintColor;
+        public boolean depthShadingEnabled;
+        public boolean spectralSeparationEnabled;
 
         public float strokeWidthTop;
         public float strokeWidthBottom;
