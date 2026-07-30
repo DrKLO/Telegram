@@ -171,6 +171,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.MessageSuggestionParams;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessageVariantsController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
@@ -1238,6 +1239,9 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_SUGGESTION_ADD_OFFER = 114;
 
     public final static int OPTION_VIEW_STATISTICS = 115;
+    // Long-press menu "regenerate" item; dispatches through the same entry point as the bubble's
+    // reload side button (MessageVariantsController.notifyRegenerateRequested).
+    public final static int OPTION_REGENERATE = 116;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -4938,14 +4942,21 @@ public class ChatActivity extends BaseFragment implements
                         slidingView = view;
                         MessageObject message = getSlidingMessageObject();
                         boolean allowReplyOnOpenTopic = canSendMessageToTopic(message);
+                        // A message from a variant-authoring peer pages between its variant siblings
+                        // on swipe-release instead of opening the reply/forward UI. It still has to
+                        // track normally through the bail-list below -- only its release differs.
+                        TLRPC.User slidingSender = message != null ? getMessagesController().getUser(message.getFromChatId()) : null;
+                        boolean isVariantMessage = MessageVariantsController.isGenerativeBot(slidingSender);
                         if (
-                            chatMode != 0 && chatMode != MODE_QUICK_REPLIES && chatMode != MODE_SUGGESTIONS && (chatMode != MODE_SAVED || threadMessageId != getUserConfig().getClientUserId()) ||
-                            threadMessageObjects != null && threadMessageObjects.contains(message) ||
-                            getMessageType(message) == 1 && (message.getDialogId() == mergeDialogId || message.needDrawBluredPreview()) ||
-                            currentEncryptedChat == null && message.getId() < 0 ||
-                            currentChat != null && ChatObject.isForum(currentChat) && !allowReplyOnOpenTopic ||
-                            hasTextSelection() ||
-                            message.isEphemeral() && message.isOut()
+                            !isVariantMessage && (
+                                chatMode != 0 && chatMode != MODE_QUICK_REPLIES && chatMode != MODE_SUGGESTIONS && (chatMode != MODE_SAVED || threadMessageId != getUserConfig().getClientUserId()) ||
+                                threadMessageObjects != null && threadMessageObjects.contains(message) ||
+                                getMessageType(message) == 1 && (message.getDialogId() == mergeDialogId || message.needDrawBluredPreview()) ||
+                                currentEncryptedChat == null && message.getId() < 0 ||
+                                currentChat != null && ChatObject.isForum(currentChat) && !allowReplyOnOpenTopic ||
+                                hasTextSelection() ||
+                                message.isEphemeral() && message.isOut()
+                            )
                         ) {
                             slidingViewSetOffset(0);
                             slidingView = null;
@@ -4995,6 +5006,13 @@ public class ChatActivity extends BaseFragment implements
                 } else if (slidingView != null && (e == null || e.getPointerId(0) == startedTrackingPointerId && (e.getAction() == MotionEvent.ACTION_CANCEL || e.getAction() == MotionEvent.ACTION_UP || e.getAction() == MotionEvent.ACTION_POINTER_UP))) {
                     if (e != null && e.getAction() != MotionEvent.ACTION_CANCEL && Math.abs(getSlidingNonAnimationTranslationX(false)) >= AndroidUtilities.dp(50)) {
                         MessageObject message = getSlidingMessageObject();
+                        // Swipe-left on a variant-authoring peer's message pages to the next sibling
+                        // instead of opening the reply/forward-picker UI below -- checked strictly
+                        // before both of those branches, and skips them entirely when it fires.
+                        TLRPC.User releaseSender = message != null ? getMessagesController().getUser(message.getFromChatId()) : null;
+                        if (MessageVariantsController.isGenerativeBot(releaseSender)) {
+                            pageVariant((ChatMessageCell) slidingView, 1);
+                        } else {
                         final boolean allowReplyOnOpenTopic = canSendMessageToTopic(message);
                         if (
                             bottomChannelButtonsLayout != null && bottomChannelButtonsLayout.getVisibility() == View.VISIBLE && !(bottomOverlayChatWaitsReply && allowReplyOnOpenTopic || message.wasJustSent) ||
@@ -5027,6 +5045,7 @@ public class ChatActivity extends BaseFragment implements
                             presentFragment(fragment);
                         } else {
                             showFieldPanelForReply(getSlidingMessageObject());
+                        }
                         }
                     }
                     endTrackingX = slidingViewGetOffsetX();
@@ -20379,6 +20398,21 @@ public class ChatActivity extends BaseFragment implements
         }
         ArrayList<MessageObject> messArr = (ArrayList<MessageObject>) args[2];
 
+        // hide non-active members of a variant-answer group; see MessageVariantsController.
+        // Cache-reload path: warm the cache for every loaded message, then drop any message
+        // that is a non-active member of its group before it ever enters the render list.
+        {
+            MessageVariantsController variantsController = MessageVariantsController.getInstance(currentAccount);
+            for (int a = 0, N = messArr.size(); a < N; a++) {
+                variantsController.observe(messArr.get(a));
+            }
+            for (int a = messArr.size() - 1; a >= 0; a--) {
+                if (variantsController.isHidden(messArr.get(a).getId())) {
+                    messArr.remove(a);
+                }
+            }
+        }
+
         boolean universalNotify = false;
         HashMap<Integer, MessageObject> oldMessages = null;
         if (clearOnLoad && (mode == MODE_DEFAULT || mode == MODE_SUGGESTIONS)) {
@@ -25146,6 +25180,51 @@ public class ChatActivity extends BaseFragment implements
         processNewMessages(arr, true);
     }
     private void processNewMessages(ArrayList<MessageObject> arr, final boolean animatedFromBottom) {
+        // hide non-active members of a variant-answer group; see MessageVariantsController.
+        // Live path: warm the cache, drop any newly-arrived message that is a non-active member
+        // of its group, then evict any OTHER member of a surviving message's group that is
+        // already resident in the visible list (the predecessor being replaced by this reply).
+        {
+            MessageVariantsController variantsController = MessageVariantsController.getInstance(currentAccount);
+            for (int a = 0, N = arr.size(); a < N; a++) {
+                variantsController.observe(arr.get(a));
+            }
+            for (int a = arr.size() - 1; a >= 0; a--) {
+                // Never drop the user's own outgoing message. A variant sibling is by definition an
+                // incoming answer (out=false), so an outgoing message can never legitimately be a
+                // hidden sibling -- but a locally-assigned negative id can collide with a stale
+                // group membership left in the prefs by a previous process, which would silently
+                // vanish the pending send bubble. Exempting out=true closes that regardless.
+                if (!arr.get(a).isOut() && variantsController.isHidden(arr.get(a).getId())) {
+                    arr.remove(a);
+                }
+            }
+            if (chatMode == MODE_DEFAULT) {
+                ArrayList<Integer> evictIds = null;
+                for (int a = 0, N = arr.size(); a < N; a++) {
+                    MessageObject mo = arr.get(a);
+                    int groupId = variantsController.groupIdOf(mo.getId());
+                    if (groupId == 0) {
+                        continue;
+                    }
+                    int[] members = variantsController.memberIds(groupId);
+                    for (int id : members) {
+                        if (id == mo.getId()) {
+                            continue;
+                        }
+                        if (messagesDict[0].get(id) != null) {
+                            if (evictIds == null) {
+                                evictIds = new ArrayList<>();
+                            }
+                            evictIds.add(id);
+                        }
+                    }
+                }
+                if (evictIds != null && !evictIds.isEmpty()) {
+                    processDeletedMessages(evictIds, 0, false);
+                }
+            }
+        }
         FileLog.d("processNewMessages " + arr.size() + " messages");
 
         final boolean isBot = UserObject.isBot(currentUser);
@@ -26066,6 +26145,71 @@ public class ChatActivity extends BaseFragment implements
             sponsoredMessagesCount++;
         }
         return sponsoredMessagesCount;
+    }
+
+    // Page the variant-sibling group `cell`'s message belongs to by `delta` (-1 previous, +1 next),
+    // swapping the cached sibling into the visible list in place. Never fabricates a MessageObject
+    // and never touches MessagesStorage -- only re-shows a sibling already warmed into
+    // MessageVariantsController's object cache by this session's observe() calls.
+    private void pageVariant(ChatMessageCell cell, int delta) {
+        if (cell == null) {
+            return;
+        }
+        MessageObject current = cell.getMessageObject();
+        if (current == null) {
+            return;
+        }
+        MessageVariantsController variantsController = MessageVariantsController.getInstance(currentAccount);
+        int groupId = variantsController.groupIdOf(current.getId());
+        if (groupId == 0) {
+            return;
+        }
+        int newActiveId = variantsController.page(groupId, delta);
+        if (newActiveId == current.getId()) {
+            // Paging landed back on the same member -- a single-member group, nothing to swap.
+            return;
+        }
+        MessageObject target = variantsController.getCached(newActiveId);
+        if (target == null) {
+            // Defensive -- should always be warm from this session's observe() calls.
+            return;
+        }
+        int index = messages.indexOf(current);
+        if (index < 0) {
+            return;
+        }
+        ArrayList<Integer> evict = new ArrayList<>();
+        evict.add(current.getId());
+        processDeletedMessages(evict, 0, false);
+
+        // Re-insert the cached sibling at the position the evicted message occupied -- the same
+        // dict/day-bucket/list/adapter bookkeeping processNewMessages' per-message insertion does,
+        // without its unread-count/mention/scroll-to-bottom side effects (this swaps an
+        // already-seen sibling into view, it is not a genuinely new incoming message). Reuses
+        // target's own stableId, assigned the first time it was ever inserted (before an earlier
+        // eviction), so RecyclerView keeps a stable identity across the swap.
+        // Known limitation: day-header re-creation (processNewMessages' dayArray == null branch,
+        // which inserts a TYPE_DATE header row) is not replicated here -- if evicting `current`
+        // emptied its day bucket and removed the date header row, this swap does not re-add it.
+        // Narrow in practice, since siblings of one answer share a day with the prompt above them.
+        target.deleted = false;
+        messagesDict[0].put(target.getId(), target);
+        ArrayList<MessageObject> dayArray = messagesByDays.get(target.dateKey);
+        if (dayArray == null) {
+            dayArray = new ArrayList<>();
+            messagesByDays.put(target.dateKey, dayArray);
+            messagesByDaysSorted.put(target.dateKeyInt, dayArray);
+        }
+        dayArray.add(0, target);
+        if (index > messages.size()) {
+            index = messages.size();
+        }
+        messages.add(index, target);
+        if (chatAdapter != null) {
+            chatAdapter.notifyItemChanged(chatAdapter.messagesStartRow + index);
+            chatAdapter.notifyItemInserted(chatAdapter.messagesStartRow + index);
+        }
+        updateVisibleRows();
     }
 
     private void processDeletedMessages(ArrayList<Integer> markAsDeletedMessages, long channelId, boolean sent) {
@@ -33055,6 +33199,12 @@ public class ChatActivity extends BaseFragment implements
         }
         boolean preserveDim = false;
         switch (option) {
+            case OPTION_REGENERATE: {
+                // Same generic dispatch entry point the reload side button uses -- one call path,
+                // no parallel one for the menu trigger.
+                MessageVariantsController.getInstance(currentAccount).notifyRegenerateRequested(selectedObject);
+                break;
+            }
             case OPTION_RETRY: {
                 final MessageObject object = selectedObject;
                 final MessageObject.GroupedMessages group = selectedObjectGroup;
@@ -38971,9 +39121,21 @@ public class ChatActivity extends BaseFragment implements
         }
 
         @Override
+        public void didPressVariantArrow(ChatMessageCell cell, int delta) {
+            pageVariant(cell, delta);
+        }
+
+        @Override
         public void didPressSideButton(ChatMessageCell cell) {
             if (getParentActivity() == null) {
                 return;
+            }
+            {
+                TLRPC.User sideButtonSender = getMessagesController().getUser(cell.getMessageObject().getFromChatId());
+                if (MessageVariantsController.isGenerativeBot(sideButtonSender)) {
+                    MessageVariantsController.getInstance(currentAccount).notifyRegenerateRequested(cell.getMessageObject());
+                    return;
+                }
             }
             if (topicsTabs != null && threadMessageId == 0 && (cell.isForum || cell.isMonoForum)) {
                 topicsTabs.selectTopic(cell.getMessageObject().getTopicId(), true);
@@ -45506,6 +45668,16 @@ public class ChatActivity extends BaseFragment implements
                     items.add(LocaleController.getString(R.string.Copy));
                     options.add(OPTION_COPY);
                     icons.add(R.drawable.msg_copy);
+                }
+                {
+                    // Long-press "regenerate", offered only for peers that author variant answers;
+                    // same sender lookup the swipe/side-button/counter paths use.
+                    TLRPC.User menuSender = getMessagesController().getUser(message.getFromChatId());
+                    if (MessageVariantsController.isGenerativeBot(menuSender)) {
+                        items.add(LocaleController.getString(R.string.MessageRegenerate));
+                        options.add(OPTION_REGENERATE);
+                        icons.add(R.drawable.msg_regenerate);
+                    }
                 }
                 if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && primaryMessage != null && (currentChat.has_link || primaryMessage.hasReplies()) && currentChat.megagroup && primaryMessage.canViewThread()) {
                     if (primaryMessage.hasReplies()) {
