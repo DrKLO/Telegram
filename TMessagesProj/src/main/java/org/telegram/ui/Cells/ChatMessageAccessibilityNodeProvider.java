@@ -231,7 +231,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         sb.append(getString("AccDescrMsgPlayed", R.string.AccDescrMsgPlayed));
                     }
                 }
-                if (cell.lastPoll != null) {
+                // the poll of a previous message stays around on a recycled cell, so it is
+                // only of this message when this message is a poll itself
+                if (cell.lastPoll != null && cell.currentMessageObject.isPoll()) {
                     sb.append(", ");
                     sb.append(cell.lastPoll.question.text);
                     sb.append(", ");
