@@ -7038,6 +7038,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     if (recordedAudioPanel != null) {
                         recordedAudioPanel.setVisibility(GONE);
                     }
+                    if (controlsView != null) {
+                        controlsView.setVisibility(GONE);
+                    }
                     if (messageEditText != null) {
                         messageEditText.requestFocus();
                     }
@@ -7243,6 +7246,11 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         if (recordedAudioPanel != null) {
             recordedAudioPanel.setVisibility(GONE);
+        }
+        // the recording controls are only faded out when the panel closes: left visible they keep
+        // covering the bottom of the screen and swallow touch exploration of what is under them
+        if (controlsView != null) {
+            controlsView.setVisibility(GONE);
         }
         isRecordingStateChanged();
     }
