@@ -186,6 +186,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                 } else if (!TextUtils.isEmpty(cell.currentMessageObject.messageText)) {
                     CharSequence messageText = cell.currentMessageObject.messageText;
+                    // translating a chat puts the translated caption in the message text of a
+                    // media message, where its type belongs: the caption is read on its own
+                    // below, so report the type here as an untranslated message does
+                    if (!cell.currentMessageObject.isMediaEmpty() && !TextUtils.isEmpty(cell.currentMessageObject.caption) && TextUtils.equals(messageText, cell.currentMessageObject.caption)) {
+                        messageText = cell.currentMessageObject.getMediaTitle(MessageObject.getMedia(cell.currentMessageObject.messageOwner));
+                    }
                     if (messageText instanceof Spanned) {
                         final Spanned spanned = (Spanned) messageText;
                         CodeHighlighting.Span[] codeSpans = spanned.getSpans(0, spanned.length(), CodeHighlighting.Span.class);
@@ -205,7 +211,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                             messageText = ssb;
                         }
                     }
-                    sb.append(messageText);
+                    if (!TextUtils.isEmpty(messageText)) {
+                        sb.append(messageText);
+                    }
                 }
                 if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
                     if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {
