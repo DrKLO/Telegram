@@ -27182,7 +27182,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             sb.append(getString("AccDescrMsgPlayed", R.string.AccDescrMsgPlayed));
                         }
                     }
-                    if (lastPoll != null) {
+                    // the poll of a previous message stays around on a recycled cell, so it is
+                    // only of this message when this message is a poll itself
+                    if (lastPoll != null && currentMessageObject.isPoll()) {
                         sb.append(", ");
                         sb.append(lastPoll.question.text);
                         sb.append(", ");
