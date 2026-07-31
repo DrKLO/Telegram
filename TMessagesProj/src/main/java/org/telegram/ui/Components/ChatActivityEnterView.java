@@ -2927,7 +2927,41 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (!isSendButtonEnabled()) {
                     return false;
                 }
+                if (ev.getAction() == MotionEvent.ACTION_DOWN && !isRecording() && !isOverShownButton(ev.getX(), ev.getY())) {
+                    return false;
+                }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            // while recording, the button of this container is faded out and the recording circle
+            // takes its place, so the container has to keep taking what happens over it
+            private boolean isRecording() {
+                return recordingAudioVideo || recordCircle != null && recordCircle.isSendButtonVisible();
+            }
+
+            @Override
+            public boolean dispatchHoverEvent(MotionEvent event) {
+                if (!isRecording() && !isOverShownButton(event.getX(), event.getY())) {
+                    return false;
+                }
+                return super.dispatchHoverEvent(event);
+            }
+
+            // this container is wider than the button it shows and reaches over the attach button
+            // next to it, so what happens where the attach button is drawn belongs to it: touching
+            // there would otherwise be read as the send button and open the send options
+            private boolean isOverShownButton(float x, float y) {
+                for (int i = 0; i < getChildCount(); ++i) {
+                    final View child = getChildAt(i);
+                    if (child.getVisibility() != VISIBLE || child.getAlpha() <= 0.01f) {
+                        continue;
+                    }
+                    if (x >= child.getX() && x < child.getX() + child.getWidth() &&
+                        y >= child.getY() && y < child.getY() + child.getHeight()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             @Override
