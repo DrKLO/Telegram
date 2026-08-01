@@ -10578,18 +10578,18 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             switch (action) {
                 case AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD:
                     if (mRecyclerView.canScrollVertically(-1)) {
-                        vScroll = -(getHeight() - getPaddingTop() - getPaddingBottom());
+                        vScroll = -accessibilityScrollAmount(true, false);
                     }
                     if (mRecyclerView.canScrollHorizontally(-1)) {
-                        hScroll = -(getWidth() - getPaddingLeft() - getPaddingRight());
+                        hScroll = -accessibilityScrollAmount(false, false);
                     }
                     break;
                 case AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD:
                     if (mRecyclerView.canScrollVertically(1)) {
-                        vScroll = getHeight() - getPaddingTop() - getPaddingBottom();
+                        vScroll = accessibilityScrollAmount(true, true);
                     }
                     if (mRecyclerView.canScrollHorizontally(1)) {
-                        hScroll = getWidth() - getPaddingLeft() - getPaddingRight();
+                        hScroll = accessibilityScrollAmount(false, true);
                     }
                     break;
             }
@@ -10598,6 +10598,49 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             }
             mRecyclerView.smoothScrollBy(hScroll, vScroll);
             return true;
+        }
+
+        private final Rect mAccessibilityVisibleRect = new Rect();
+
+        // a screen reader asks a list to scroll once it reaches the last row it can see, and a
+        // page of the list is what it is given. a list can be measured taller than the part of
+        // it that is on screen, and a page of it is then more than what is shown, which carries
+        // the rows that come next past the edge before they can be reached: go by the part that
+        // is really in sight, and only far enough to bring the last row that fits in it wholly
+        // to the edge, so the row after it is the next to be read and none in between are lost
+        private int accessibilityScrollAmount(boolean vertical, boolean forward) {
+            final boolean clipToPadding = mRecyclerView.getClipToPadding();
+            int start = vertical
+                ? (clipToPadding ? getPaddingTop() : 0)
+                : (clipToPadding ? getPaddingLeft() : 0);
+            int end = vertical
+                ? (clipToPadding ? getHeight() - getPaddingBottom() : getHeight())
+                : (clipToPadding ? getWidth() - getPaddingRight() : getWidth());
+            final Rect visible = mAccessibilityVisibleRect;
+            if (mRecyclerView.getLocalVisibleRect(visible)) {
+                start = Math.max(start, vertical ? visible.top : visible.left);
+                end = Math.min(end, vertical ? visible.bottom : visible.right);
+            }
+            final int page = end - start;
+            if (page <= 0) {
+                return vertical
+                    ? getHeight() - getPaddingTop() - getPaddingBottom()
+                    : getWidth() - getPaddingLeft() - getPaddingRight();
+            }
+            int amount = 0;
+            for (int i = 0; i < getChildCount(); ++i) {
+                final View child = getChildAt(i);
+                final int childStart = vertical ? getDecoratedTop(child) : getDecoratedLeft(child);
+                final int childEnd = vertical ? getDecoratedBottom(child) : getDecoratedRight(child);
+                // a row the edge cuts through was not offered whole to the screen reader, so it
+                // is not one to carry to the edge
+                if (childStart < start || childEnd > end) {
+                    continue;
+                }
+                amount = Math.max(amount, forward ? childStart - start : end - childEnd);
+            }
+            // a row taller than what is in sight leaves nothing to go by: fall back to a page
+            return amount > 0 ? Math.min(page, amount) : page;
         }
 
         // called by accessibility delegate
