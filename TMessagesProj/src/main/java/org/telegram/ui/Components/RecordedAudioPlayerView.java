@@ -10,19 +10,30 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
+import java.util.List;
 
 public class RecordedAudioPlayerView extends View {
 
@@ -50,6 +61,148 @@ public class RecordedAudioPlayerView extends View {
         text.setTextSize(dp(12));
         text.setTypeface(AndroidUtilities.bold());
         text.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+
+        setFocusable(true);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        trimHandlesHelper = new TrimHandlesHelper(this);
+        ViewCompat.setAccessibilityDelegate(this, trimHandlesHelper);
+    }
+
+    private final TrimHandlesHelper trimHandlesHelper;
+
+    // exploring by touch asks the view where the handles are, so the question has to reach them
+    @Override
+    public boolean dispatchHoverEvent(MotionEvent event) {
+        return trimHandlesHelper.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    // the ends of the recording are moved by dragging two handles that are drawn on the waveform:
+    // report them where they are drawn and let them be moved a step at a time
+    private class TrimHandlesHelper extends ExploreByTouchHelper {
+
+        private static final int START_HANDLE = 1;
+        private static final int END_HANDLE = 2;
+
+        private final Rect bounds = new Rect();
+
+        public TrimHandlesHelper(@NonNull View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (leftHandleClickRect.contains(x, y)) {
+                return START_HANDLE;
+            } else if (rightHandleClickRect.contains(x, y)) {
+                return END_HANDLE;
+            }
+            return HOST_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            // before the waveform is laid out the handles have no place yet, and reporting them
+            // without one is refused
+            if (leftHandleClickRect.isEmpty() || rightHandleClickRect.isEmpty()) {
+                return;
+            }
+            list.add(START_HANDLE);
+            list.add(END_HANDLE);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final boolean start = id == START_HANDLE;
+            final RectF handle = start ? leftHandleClickRect : rightHandleClickRect;
+            if (handle.isEmpty()) {
+                bounds.set(0, 0, getWidth(), getHeight());
+            } else {
+                bounds.set((int) handle.left, (int) handle.top, (int) handle.right, (int) handle.bottom);
+            }
+            info.setBoundsInParent(bounds);
+            info.setClassName("android.widget.SeekBar");
+            info.setText(LocaleController.getString(start ? R.string.AccDescrRecordingTrimStart : R.string.AccDescrRecordingTrimEnd)
+                + ", " + LocaleController.formatDuration((int) ((start ? getAudioLeftMs() : getAudioRightMs()) / 1000L)));
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD);
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
+            if (action != AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD && action != AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) {
+                return false;
+            }
+            if (!moveTrimHandle(id == START_HANDLE, action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD)) {
+                return false;
+            }
+            invalidateVirtualView(id);
+            sendEventForVirtualView(id, AccessibilityEvent.TYPE_VIEW_SELECTED);
+            return true;
+        }
+    }
+
+    // how close the two handles may come to each other: a second, or the room they take up on
+    // the waveform, whichever is more
+    private float getHandlesRoom() {
+        return Math.max(1.0f / duration, (float) dp(30) / (backgroundRect.width() - dp(22.66f)));
+    }
+
+    // a second at a time, kept apart by the same room the handles need when they are dragged. As
+    // with a drag, playing stops while a handle moves and goes on from the new end after it
+    private boolean moveTrimHandle(boolean start, boolean forward) {
+        if (duration <= 0 || backgroundRect.width() <= dp(22.66f)) {
+            return false;
+        }
+        final float step = 1.0f / duration;
+        if (start) {
+            final float moved = clamp(left + (forward ? step : -step), clamp01(right - getHandlesRoom()), 0);
+            if (moved == left) {
+                return false;
+            }
+            left = moved;
+        } else {
+            final float moved = clamp(right + (forward ? step : -step), 1.0f, clamp01(left + getHandlesRoom()));
+            if (moved == right) {
+                return false;
+            }
+            right = moved;
+        }
+        if (isPlaying()) {
+            setPlaying(false);
+            if (player != null) {
+                if (start) {
+                    player.seekTo((long) (left * player.getDuration()));
+                } else {
+                    player.seekTo(Math.max((long) (left * player.getDuration()), (long) (right * player.getDuration()) - 1500L));
+                }
+            }
+            setPlaying(true);
+        }
+        text.setText(AndroidUtilities.formatDuration((int) Math.round(Math.max(1, duration * (right - left))), false), true);
+        invalidate();
+        return true;
+    }
+
+    // the recorded voice message is drawn as a waveform that plays and can be trimmed, and none
+    // of it is written anywhere: report what it holds and let it be played from where it is read
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
+        info.setEnabled(true);
+        info.setClickable(true);
+        info.setText(LocaleController.formatDuration((int) Math.max(0, getNewDuration())));
+        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK,
+            LocaleController.getString(isPlaying() ? R.string.AccActionPause : R.string.AccActionPlay)));
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+            setPlaying(!isPlaying());
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     @Override
@@ -385,11 +538,11 @@ public class RecordedAudioPlayerView extends View {
         } else if (e.getAction() == MotionEvent.ACTION_MOVE) {
             if (leftPressed) {
                 final float minLeft = 0;
-                final float maxLeft = clamp01(right - Math.max(1.0f / duration, (float) dp(30) / (backgroundRect.width() - dp(22.66f))));
+                final float maxLeft = clamp01(right - getHandlesRoom());
                 left = clamp(ilerp(e.getX(), backgroundRect.left + dp(11.33f), backgroundRect.right - dp(11.33f)), maxLeft, minLeft);
                 invalidate();
             } else if (rightPressed) {
-                final float minRight = clamp01(left + Math.max(1.0f / duration, (float) dp(30) / (backgroundRect.width() - dp(22.66f))));
+                final float minRight = clamp01(left + getHandlesRoom());
                 final float maxRight = 1.0f;
                 right = clamp(ilerp(e.getX(), backgroundRect.left + dp(11.33f), backgroundRect.right - dp(11.33f)), maxRight, minRight);
                 invalidate();
