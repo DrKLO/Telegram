@@ -26679,6 +26679,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return new MessageAccessibilityNodeProvider();
     }
 
+    // the buttons of a message are reported in the order they are added to it: keeping that
+    // order lets each of them say which one comes before it, which is what a screen reader
+    // walks back through
+    private final java.util.ArrayList<Integer> reportedVirtualViewIds = new java.util.ArrayList<>();
+
+    private static final int NO_PREVIOUS_VIRTUAL_VIEW = Integer.MIN_VALUE;
+
+    private int previousVirtualViewId(int virtualViewId) {
+        final int at = reportedVirtualViewIds.indexOf(virtualViewId);
+        if (at < 0) {
+            return NO_PREVIOUS_VIRTUAL_VIEW;
+        }
+        // what comes before the first button of a message is the message itself, and saying so
+        // is what keeps going back from a button from passing the message by
+        return at == 0 ? AccessibilityNodeProvider.HOST_VIEW_ID : reportedVirtualViewIds.get(at - 1);
+    }
+
     private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
         sendAccessibilityEventForVirtualView(viewId, eventType, null);
     }
@@ -27383,14 +27400,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
                 }
 
+                reportedVirtualViewIds.clear();
+
                 if (useTranscribeButton && transcribeButton != null) {
                     info.addChild(ChatMessageCell.this, TRANSCRIBE);
+                    reportedVirtualViewIds.add(TRANSCRIBE);
                 }
 
                 int i;
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                     if (isChat && currentUser != null && !currentMessageObject.isOut()) {
                         info.addChild(ChatMessageCell.this, PROFILE);
+                        reportedVirtualViewIds.add(PROFILE);
                     }
                     if (currentMessageObject.messageText instanceof Spannable) {
                         Spannable buffer = (Spannable) currentMessageObject.messageText;
@@ -27398,6 +27419,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         i = 0;
                         for (CharacterStyle link : links) {
                             info.addChild(ChatMessageCell.this, LINK_IDS_START + i);
+                            reportedVirtualViewIds.add(LINK_IDS_START + i);
                             i++;
                         }
                     }
@@ -27407,6 +27429,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         i = 0;
                         for (CharacterStyle link : links) {
                             info.addChild(ChatMessageCell.this, LINK_CAPTION_IDS_START + i);
+                            reportedVirtualViewIds.add(LINK_CAPTION_IDS_START + i);
                             i++;
                         }
                     }
@@ -27414,43 +27437,54 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 i = 0;
                 for (BotButton button : botButtons) {
                     info.addChild(ChatMessageCell.this, BOT_BUTTONS_START + i);
+                    reportedVirtualViewIds.add(BOT_BUTTONS_START + i);
                     i++;
                 }
                 if (hintButtonVisible && pollHintX != -1 && currentMessageObject.isPoll()) {
                     info.addChild(ChatMessageCell.this, POLL_HINT);
+                    reportedVirtualViewIds.add(POLL_HINT);
                 }
                 i = 0;
                 for (PollButton button : pollButtons) {
                     info.addChild(ChatMessageCell.this, POLL_BUTTONS_START + i);
+                    reportedVirtualViewIds.add(POLL_BUTTONS_START + i);
                     i++;
                 }
                 if (drawInstantView && !instantButtonRect.isEmpty()) {
                     info.addChild(ChatMessageCell.this, INSTANT_VIEW);
+                    reportedVirtualViewIds.add(INSTANT_VIEW);
                 }
                 if (drawContact && contactRect != null && !contactRect.isEmpty()) {
                     info.addChild(ChatMessageCell.this, CONTACT);
+                    reportedVirtualViewIds.add(CONTACT);
                     if (contactButtons != null && contactButtons.size() > 1) {
                         for (InstantViewButton instantViewButton : contactButtons) {
                             if (drawContactView && instantViewButton.type == INSTANT_BUTTON_TYPE_CONTACT_VIEW && !instantViewButton.rect.isEmpty()) {
                                 info.addChild(ChatMessageCell.this, CONTACT_VIEW);
+                                reportedVirtualViewIds.add(CONTACT_VIEW);
                             }
                             if (drawContactAdd && instantViewButton.type == INSTANT_BUTTON_TYPE_CONTACT_ADD && !instantViewButton.rect.isEmpty()) {
                                 info.addChild(ChatMessageCell.this, CONTACT_ADD);
+                                reportedVirtualViewIds.add(CONTACT_ADD);
                             }
                             if (drawContactSendMessage && instantViewButton.type == INSTANT_BUTTON_TYPE_CONTACT_SEND_MESSAGE && !instantViewButton.rect.isEmpty()) {
                                 info.addChild(ChatMessageCell.this, CONTACT_MESSAGE);
+                                reportedVirtualViewIds.add(CONTACT_MESSAGE);
                             }
                         }
                     }
                 }
                 if (commentLayout != null) {
                     info.addChild(ChatMessageCell.this, COMMENT);
+                    reportedVirtualViewIds.add(COMMENT);
                 }
                 if (drawSideButton == 1 || drawSideButton == 2) {
                     info.addChild(ChatMessageCell.this, SHARE);
+                    reportedVirtualViewIds.add(SHARE);
                 }
                 if (replyNameLayout != null) {
                     info.addChild(ChatMessageCell.this, REPLY);
+                    reportedVirtualViewIds.add(REPLY);
                 }
                 if (currentMessageObject != null && currentMessageObject.richLayout != null) {
                     final RichMessageLayout richLayout = currentMessageObject.richLayout;
@@ -27463,6 +27497,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         final int count = block.getAccessibilityElementCount();
                         for (int e = 0; e < count; e++) {
                             info.addChild(ChatMessageCell.this, RICH_MEDIA_START + acc + e);
+                            reportedVirtualViewIds.add(RICH_MEDIA_START + acc + e);
                         }
                         acc += count;
                     }
@@ -27841,6 +27876,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     rect.offset(pos[0], pos[1]);
                     info.setBoundsInScreen(rect);
                     info.setClickable(true);
+                }
+                // a message that is not laid out yet, or is being held for reuse, has buttons with
+                // no place on the screen: reporting them leaves empty stops that a screen reader
+                // lands on and that get in the way of going back through the messages
+                info.getBoundsInScreen(rect);
+                if (rect.isEmpty()) {
+                    return null;
+                }
+                // and the ones that do have a place are tied to the one before them, so going
+                // back through them follows the same path as going forward, whichever screen
+                // reader is doing the walking
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                    final int previous = previousVirtualViewId(virtualViewId);
+                    if (previous != NO_PREVIOUS_VIRTUAL_VIEW) {
+                        info.setTraversalAfter(ChatMessageCell.this, previous);
+                    }
                 }
                 info.setFocusable(true);
                 info.setVisibleToUser(true);
