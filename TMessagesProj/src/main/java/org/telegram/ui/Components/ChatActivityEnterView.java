@@ -1849,7 +1849,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (onceVisible && (recordCircle != null && snapAnimationProgress > .1f) && onceRect.contains(x, y)) {
                     return 4;
                 }
-                return HOST_ID;
+                // this view covers the whole bottom of the chat while recording: exploring by
+                // touch off its buttons has to reach the timer and the rest under it
+                return INVALID_ID;
             }
 
             @Override
@@ -1877,7 +1879,15 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             @Override
             protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
-                return true;
+                if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                    return false;
+                }
+                if (id == 2) {
+                    return togglePauseForAccessibility();
+                } else if (id == 4) {
+                    return pressViewAt(ControlsView.this, onceRect.centerX(), onceRect.centerY());
+                }
+                return false;
             }
         }
     }
@@ -2521,14 +2531,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                         }
                     }
                 }
-                return HOST_ID;
+                if (pauseRect.contains(x, y)) {
+                    return 2;
+                }
+                return INVALID_ID;
             }
 
             @Override
             protected void getVisibleVirtualViews(List<Integer> list) {
                 if (isSendButtonVisible()) {
                     list.add(1);
-//                    list.add(2);
+                    // the pause button is already reported by the controls drawn over the circle,
+                    // and reporting it here as well would leave two buttons on the same spot
                     list.add(3);
                 }
             }
@@ -2557,9 +2571,64 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             @Override
             protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
-                return true;
+                if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                    return false;
+                }
+                if (id == 1) {
+                    // sending is taken from where the record button is pressed
+                    return pressViewAt(audioVideoButtonContainer, audioVideoButtonContainer.getMeasuredWidth() / 2f, audioVideoButtonContainer.getMeasuredHeight() / 2f);
+                } else if (id == 2) {
+                    return togglePauseForAccessibility();
+                } else if (id == 3 && slideText != null) {
+                    return pressViewAt(slideText, slideText.cancelRect.centerX(), slideText.cancelRect.centerY());
+                }
+                return false;
             }
         }
+    }
+
+    private boolean togglePauseForAccessibility() {
+        if (isInVideoMode()) {
+            if (slideText != null) {
+                slideText.setEnabled(false);
+            }
+            delegate.toggleVideoRecordingPause();
+            return true;
+        }
+        if (!MediaController.getInstance().isRecordingPaused()) {
+            MessagesController.getGlobalMainSettings().edit().putInt("voicepausehint", 3).apply();
+        }
+        if (recordCircle != null && recordCircle.isSendButtonVisible()) {
+            calledRecordRunnable = true;
+        }
+        if (audioTimelineView != null) {
+            audioTimelineView.setPlaying(false);
+        }
+        MediaController.getInstance().toggleRecordingPause(voiceOnce);
+        delegate.needStartRecordAudio(0);
+        if (slideText != null) {
+            slideText.setEnabled(false);
+        }
+        return true;
+    }
+
+    // the recording controls are drawn rather than laid out, so what stands for them to a screen
+    // reader has to be carried out where they are drawn
+    private static boolean pressViewAt(View view, float x, float y) {
+        if (view == null) {
+            return false;
+        }
+        final long now = SystemClock.uptimeMillis();
+        final MotionEvent down = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN, x, y, 0);
+        final MotionEvent up = MotionEvent.obtain(now, now, MotionEvent.ACTION_UP, x, y, 0);
+        try {
+            view.onTouchEvent(down);
+            view.onTouchEvent(up);
+        } finally {
+            down.recycle();
+            up.recycle();
+        }
+        return true;
     }
 
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat) {
@@ -14221,6 +14290,18 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         public TimerView(Context context) {
             super(context);
+            setFocusable(true);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        }
+
+        // the time is drawn rather than written, so it is reported when a screen reader asks for
+        // it: telling it as it runs would talk over everything else while recording
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName("android.widget.TextView");
+            final long recorded = isRunning ? System.currentTimeMillis() - startTime : stopTime - startTime;
+            info.setText(LocaleController.formatDuration((int) Math.max(0, recorded / 1000)));
         }
 
         public void start(long milliseconds) {
