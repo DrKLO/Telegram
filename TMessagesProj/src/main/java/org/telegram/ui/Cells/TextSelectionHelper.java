@@ -17,9 +17,12 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.text.Layout;
+import android.text.NoCopySpan;
+import android.text.SpanWatcher;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
+import android.text.TextWatcher;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -2869,6 +2872,42 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         SparseArray<CharSequence> prefixTextByPosition = new SparseArray<>();
         SparseIntArray childCountByPosition = new SparseIntArray();
 
+        private static CharSequence detachedText(CharSequence text) {
+            if (text == null) {
+                return "";
+            }
+            if (!(text instanceof Spanned)) {
+                return text.toString();
+            }
+
+            final Spanned source = (Spanned) text;
+            final SpannableStringBuilder copy = new SpannableStringBuilder(text.toString());
+            final Object[] spans = source.getSpans(0, source.length(), Object.class);
+            for (Object span : spans) {
+                if (span instanceof TextWatcher || span instanceof SpanWatcher || span instanceof NoCopySpan) {
+                    continue;
+                }
+                final int start = source.getSpanStart(span);
+                final int end = source.getSpanEnd(span);
+                if (start < 0 || end < start || start > copy.length()) {
+                    continue;
+                }
+                copy.setSpan(span, start, Math.min(end, copy.length()), source.getSpanFlags(span));
+            }
+            return copy;
+        }
+
+        private void cacheLayoutBlock(int position, int childPosition, TextLayoutBlock block) {
+            final int key = position + (childPosition << 16);
+            textByPosition.put(key, detachedText(block.getText()));
+            final CharSequence prefix = block.getPrefix();
+            if (prefix == null) {
+                prefixTextByPosition.remove(key);
+            } else {
+                prefixTextByPosition.put(key, detachedText(prefix));
+            }
+        }
+
         public LinearLayoutManager layoutManager;
 
         public ArticleTextSelectionHelper() {
@@ -3170,8 +3209,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             int n = arrayList.size();
             childCountByPosition.put(position, n);
             for (int i = 0; i < n; i++) {
-                textByPosition.put(position + (i << 16), arrayList.get(i).getText());
-                prefixTextByPosition.put(position + (i << 16), arrayList.get(i).getPrefix());
+                cacheLayoutBlock(position, i, arrayList.get(i));
             }
         }
 
@@ -3437,13 +3475,18 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
 
         public void cacheText(int pos, CharSequence text, CharSequence prefix) {
-            textByPosition.put(pos + (0 << 16), text == null ? "" : text);
-            if (prefix != null) prefixTextByPosition.put(pos + (0 << 16), prefix);
+            final int key = pos + (0 << 16);
+            textByPosition.put(key, detachedText(text));
+            if (prefix == null) {
+                prefixTextByPosition.remove(key);
+            } else {
+                prefixTextByPosition.put(key, detachedText(prefix));
+            }
             childCountByPosition.put(pos, Math.max(1, childCountByPosition.get(pos)));
         }
 
         public void cacheChildText(int pos, int childPos, CharSequence text) {
-            textByPosition.put(pos + (childPos << 16), text == null ? "" : text);
+            textByPosition.put(pos + (childPos << 16), detachedText(text));
             childCountByPosition.put(pos, Math.max(childPos + 1, childCountByPosition.get(pos)));
         }
 
@@ -3453,8 +3496,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             int n = arrayList.size();
             childCountByPosition.put(pos, n);
             for (int i = 0; i < n; i++) {
-                textByPosition.put(pos + (i << 16), arrayList.get(i).getText());
-                prefixTextByPosition.put(pos + (i << 16), arrayList.get(i).getPrefix());
+                cacheLayoutBlock(pos, i, arrayList.get(i));
             }
         }
 
@@ -3576,8 +3618,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             int n = arrayList.size();
             childCountByPosition.put(position, n);
             for (int i = 0; i < n; i++) {
-                textByPosition.put(position + (i << 16), arrayList.get(i).getText());
-                prefixTextByPosition.put(position + (i << 16), arrayList.get(i).getPrefix());
+                cacheLayoutBlock(position, i, arrayList.get(i));
             }
         }
 

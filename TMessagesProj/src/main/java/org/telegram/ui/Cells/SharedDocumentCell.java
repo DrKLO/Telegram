@@ -207,7 +207,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         statusImageView = new RLottieImageView(context);
         statusImageView.setAnimation(statusDrawable);
         statusImageView.setVisibility(INVISIBLE);
-        statusImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_sharedMedia_startStopLoadIcon), PorterDuff.Mode.MULTIPLY));
+        statusImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_sharedMedia_startStopLoadIcon), PorterDuff.Mode.SRC_IN));
         if (viewType == VIEW_TYPE_PICKER) {
             addView(statusImageView, LayoutHelper.createFrame(14, 14, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 70, 37, LocaleController.isRTL ? 72 : 8, 0));
         } else {

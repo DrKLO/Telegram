@@ -12,7 +12,7 @@
 #define VPX_VPX_VPX_INTEGER_H_
 
 /* get ptrdiff_t, size_t, wchar_t, NULL */
-#include <stddef.h>
+#include <stddef.h>  // IWYU pragma: export
 
 #if defined(_MSC_VER)
 #define VPX_FORCE_INLINE __forceinline
@@ -34,7 +34,7 @@
 #endif
 #endif  // __cplusplus
 
-#include <inttypes.h>
-#include <stdint.h>
+#include <inttypes.h>  // IWYU pragma: export
+#include <stdint.h>    // IWYU pragma: export
 
 #endif  // VPX_VPX_VPX_INTEGER_H_

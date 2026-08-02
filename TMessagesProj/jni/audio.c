@@ -8,6 +8,7 @@
 #include <math.h>
 #include "c_utils.h"
 #include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
 
 typedef struct {
     int version;
@@ -705,9 +706,6 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
 JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveformLoader_init(JNIEnv *env, jobject obj, jstring pathJStr, jint count) {
     const char *path = (*env)->GetStringUTFChars(env, pathJStr, 0);
 
-    // Initialize FFmpeg components
-    av_register_all();
-
     AVFormatContext *formatContext = avformat_alloc_context();
     if (!formatContext) {
         // Handle error
@@ -761,7 +759,7 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
     int skip = 4;
     int barWidth = (int) round((double) duration_in_seconds * sampleRate / count / (1 + skip)); // Assuming you have 'duration' and 'count' defined somewhere
 
-    int channels = codecContext->channels;
+    int channels = codecContext->ch_layout.nb_channels;
 
     short peak = 0;
     int currentCount = 0;

@@ -1877,7 +1877,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             optionsSearchImageView.setAnimation(R.raw.options_to_search, 24, 24);
             optionsSearchImageView.getAnimatedDrawable().multiplySpeed(2f);
             optionsSearchImageView.getAnimatedDrawable().setPlayInDirectionOfCustomEndFrame(true);
-            optionsSearchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            optionsSearchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.SRC_IN));
             optionsSearchImageView.setVisibility(GONE);
             actionBar.addView(optionsSearchImageView, LayoutHelper.createFrame(48, 56, Gravity.RIGHT | Gravity.BOTTOM));
         }

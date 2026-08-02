@@ -39,7 +39,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
@@ -1851,7 +1850,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         if (textureView.renderer.isFirstFrameRendered()) {
             Bitmap bitmap = textureView.blurRenderer.getBitmap(100, 100);
             if (bitmap != null) {
-                Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+                Utilities.blurBitmap(bitmap, 3);
                 Drawable drawable = new BitmapDrawable(bitmap);
                 blurredFlippingStub.setBackground(drawable);
             }

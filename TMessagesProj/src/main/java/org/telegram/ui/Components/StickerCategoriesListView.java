@@ -761,7 +761,7 @@ public class StickerCategoriesListView extends RecyclerListView {
 
         public void setImageColor(int color) {
             if (imageColor != color) {
-                setColorFilter(new PorterDuffColorFilter(imageColor = color, PorterDuff.Mode.MULTIPLY));
+                setColorFilter(new PorterDuffColorFilter(imageColor = color, PorterDuff.Mode.SRC_IN));
             }
         }
 

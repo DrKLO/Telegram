@@ -655,7 +655,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 info.setText(isMuted ? getString(R.string.VoipUnmute) : getString(R.string.VoipMute));
             }
         };
-        muteButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_returnToCallText), PorterDuff.Mode.MULTIPLY));
+        muteButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_returnToCallText), PorterDuff.Mode.SRC_IN));
         muteButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         muteButton.setAnimation(muteDrawable);
         muteButton.setScaleType(ImageView.ScaleType.CENTER);

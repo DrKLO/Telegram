@@ -332,7 +332,7 @@ public class VoIPTextureView extends FrameLayout {
     public void saveCameraLastBitmap() {
         Bitmap bitmap = renderer.getBitmap(150, 150);
         if (bitmap != null && bitmap.getPixel(0, 0) != 0) {
-            Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+            Utilities.blurBitmap(bitmap, 3);
             try {
                 File file = new File(ApplicationLoader.getFilesDirFixed(), "voip_icthumb.jpg");
                 FileOutputStream stream = new FileOutputStream(file);

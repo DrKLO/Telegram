@@ -11141,6 +11141,7 @@
     <string name="ArticleCommandList">List</string>
     <string name="ArticleCommandOrderedList">Ordered List</string>
     <string name="ArticleCommandToggle">Toggle</string>
+    <string name="ArticleTableTitleHint">Add title…</string>
     <string name="ArticleCommandTable">Table</string>
     <string name="ArticleCommandMath">Math</string>
     <string name="ArticleCommandDivider">Divider</string>

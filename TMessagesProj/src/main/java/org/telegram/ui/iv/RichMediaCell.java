@@ -1,6 +1,7 @@
 package org.telegram.ui.iv;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -744,6 +745,7 @@ public class RichMediaCell extends RichBlockCell
         if (slideDotPaint == null) {
             slideDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             slideDotPaint.setColor(0xFFFFFFFF);
+            slideDotPaint.setShadowLayer(dpf2(3), 0, dpf2(1), 0x80000000);
         }
         final int n = items.size();
         final float dotsY = getPaddingTop() + imageH - dp(7 + 16) + dp(5);

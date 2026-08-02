@@ -33,7 +33,15 @@ extern "C" {
  * This interface provides the capability to encode raw VP8 streams.
  * @{
  */
+
+/*!\brief A single instance of the VP8 encoder.
+ *\deprecated This access mechanism is provided for backwards compatibility;
+ * prefer vpx_codec_vp8_cx().
+ */
 extern vpx_codec_iface_t vpx_codec_vp8_cx_algo;
+
+/*!\brief The interface to the VP8 encoder.
+ */
 extern vpx_codec_iface_t *vpx_codec_vp8_cx(void);
 /*!@} - end algorithm interface member group*/
 
@@ -42,7 +50,15 @@ extern vpx_codec_iface_t *vpx_codec_vp8_cx(void);
  * This interface provides the capability to encode raw VP9 streams.
  * @{
  */
+
+/*!\brief A single instance of the VP9 encoder.
+ *\deprecated This access mechanism is provided for backwards compatibility;
+ * prefer vpx_codec_vp9_cx().
+ */
 extern vpx_codec_iface_t vpx_codec_vp9_cx_algo;
+
+/*!\brief The interface to the VP9 encoder.
+ */
 extern vpx_codec_iface_t *vpx_codec_vp9_cx(void);
 /*!@} - end algorithm interface member group*/
 
@@ -150,6 +166,7 @@ enum vp8e_enc_control_id {
    *
    * \note Valid range for VP8: -16..16
    * \note Valid range for VP9: -9..9
+   * \note A negative value (-n) is treated as its absolute value (n) in VP9.
    *
    * Supported in codecs: VP8, VP9
    */
@@ -286,7 +303,7 @@ enum vp8e_enc_control_id {
    * the feature is off, i.e., no golden frame boost in CBR mode and
    * average bitrate target is used.
    *
-   * For example, to allow 100% more bits, i.e, 2X, in a golden frame
+   * For example, to allow 100% more bits, i.e., 2X, in a golden frame
    * than average frame, set this to 100.
    *
    * Supported in codecs: VP9
@@ -494,25 +511,13 @@ enum vp8e_enc_control_id {
    */
   VP9E_SET_COLOR_SPACE,
 
-  /*!\brief Codec control function to set temporal layering mode.
-   * \note Valid ranges: 0..3, default is "0"
-   * (VP9E_TEMPORAL_LAYERING_MODE_NOLAYERING).
-   *                     0 = VP9E_TEMPORAL_LAYERING_MODE_NOLAYERING
-   *                     1 = VP9E_TEMPORAL_LAYERING_MODE_BYPASS
-   *                     2 = VP9E_TEMPORAL_LAYERING_MODE_0101
-   *                     3 = VP9E_TEMPORAL_LAYERING_MODE_0212
-   *
-   * Supported in codecs: VP9
-   */
-  VP9E_SET_TEMPORAL_LAYERING_MODE,
-
   /*!\brief Codec control function to set minimum interval between GF/ARF frames
    *
    * By default the value is set as 4.
    *
    * Supported in codecs: VP9
    */
-  VP9E_SET_MIN_GF_INTERVAL,
+  VP9E_SET_MIN_GF_INTERVAL = 48,
 
   /*!\brief Codec control function to set minimum interval between GF/ARF frames
    *
@@ -594,7 +599,7 @@ enum vp8e_enc_control_id {
    * the feature is off, i.e., no golden frame boost in CBR mode and
    * average bitrate target is used.
    *
-   * For example, to allow 100% more bits, i.e, 2X, in a golden frame
+   * For example, to allow 100% more bits, i.e., 2X, in a golden frame
    * than average frame, set this to 100.
    *
    * Supported in codecs: VP8
@@ -668,7 +673,7 @@ enum vp8e_enc_control_id {
    */
   VP9E_SET_TPL,
 
-  /*!\brief Codec control function to enable postencode frame drop.
+  /*!\brief Codec control function to enable post encode frame drop.
    *
    * This will allow encoder to drop frame after it's encoded.
    *
@@ -712,6 +717,65 @@ enum vp8e_enc_control_id {
    * Supported in codecs: VP9
    */
   VP9E_SET_EXTERNAL_RATE_CONTROL,
+
+  /*!\brief Codec control to disable internal features in rate control.
+   *
+   * This will do 3 things, only for 1 pass:
+   *  - Turn off low motion computation
+   *  - Turn off gf update constraint on key frame frequency
+   *  - Turn off content mode for cyclic refresh
+   *
+   * With those, the rate control is expected to work exactly the same as the
+   * interface provided in ratectrl_rtc.cc/h
+   *
+   * Supported in codecs: VP9
+   */
+  VP9E_SET_RTC_EXTERNAL_RATECTRL,
+
+  /*!\brief Codec control function to get loopfilter level in the encoder.
+   *
+   * Supported in codecs: VP9
+   */
+  VP9E_GET_LOOPFILTER_LEVEL,
+
+  /*!\brief Codec control to get last quantizers for all spatial layers.
+   *
+   * Return value uses an array of internal quantizers scale defined by the
+   * codec, for all spatial layers.
+   * The size of the array passed in should be #VPX_SS_MAX_LAYERS.
+   *
+   * Supported in codecs: VP9
+   */
+  VP9E_GET_LAST_QUANTIZER_SVC_LAYERS,
+
+  /*!\brief Codec control to disable internal features in rate control.
+   *
+   * This will turn off cyclic refresh for vp8.
+   *
+   * With this, the rate control is expected to work exactly the same as the
+   * interface provided in vp8_ratectrl_rtc.cc/h
+   *
+   * Supported in codecs: VP8
+   */
+  VP8E_SET_RTC_EXTERNAL_RATECTRL,
+
+  /*!\brief Codec control to set quantizer for the next frame.
+   *
+   * This will turn off cyclic refresh. Only applicable to 1-pass without
+   * spatial layers.
+   *
+   * Supported in codecs: VP9
+   *
+   */
+  VP9E_SET_QUANTIZER_ONE_PASS,
+
+  /*!\brief Codec control function to enable key frame temporal filtering.
+   *
+   * Vp9 allows the encoder to run key frame temporal filtering and use it to
+   * improve the compression performance. To enable, set this parameter to be
+   * 1. The default value is set to be 0.
+   */
+  VP9E_SET_KEY_FRAME_FILTERING,
 };
 
 /*!\brief vpx 1-D scaling mode
@@ -767,8 +831,8 @@ typedef struct vpx_roi_map {
   unsigned int rows; /**< Number of rows. */
   unsigned int cols; /**< Number of columns. */
   /*! VP8 only uses the first 4 segments. VP9 uses 8 segments. */
-  int delta_q[8];  /**< Quantizer deltas. */
-  int delta_lf[8]; /**< Loop filter deltas. */
+  int delta_q[8];  /**< Quantizer deltas. Valid range: [-63, 63].*/
+  int delta_lf[8]; /**< Loop filter deltas. Valid range: [-63, 63].*/
   /*! skip and ref frame segment is only used in VP9. */
   int skip[8];      /**< Skip this block. */
   int ref_frame[8]; /**< Reference frame for this block. */
@@ -813,7 +877,7 @@ typedef enum {
   VP8_EIGHT_TOKENPARTITION = 3
 } vp8e_token_partitions;
 
-/*!brief VP9 encoder content type */
+/*!\brief VP9 encoder content type */
 typedef enum {
   VP9E_CONTENT_DEFAULT,
   VP9E_CONTENT_SCREEN,
@@ -911,28 +975,12 @@ typedef struct vpx_svc_spatial_layer_sync {
  *
  */
 
-VPX_CTRL_USE_TYPE(VP8E_SET_FRAME_FLAGS, int)
-#define VPX_CTRL_VP8E_SET_FRAME_FLAGS
-VPX_CTRL_USE_TYPE(VP8E_SET_TEMPORAL_LAYER_ID, int)
-#define VPX_CTRL_VP8E_SET_TEMPORAL_LAYER_ID
 VPX_CTRL_USE_TYPE(VP8E_SET_ROI_MAP, vpx_roi_map_t *)
 #define VPX_CTRL_VP8E_SET_ROI_MAP
-VPX_CTRL_USE_TYPE(VP9E_SET_ROI_MAP, vpx_roi_map_t *)
-#define VPX_CTRL_VP9E_SET_ROI_MAP
 VPX_CTRL_USE_TYPE(VP8E_SET_ACTIVEMAP, vpx_active_map_t *)
 #define VPX_CTRL_VP8E_SET_ACTIVEMAP
 VPX_CTRL_USE_TYPE(VP8E_SET_SCALEMODE, vpx_scaling_mode_t *)
 #define VPX_CTRL_VP8E_SET_SCALEMODE
-
-VPX_CTRL_USE_TYPE(VP9E_SET_SVC, int)
-#define VPX_CTRL_VP9E_SET_SVC
-VPX_CTRL_USE_TYPE(VP9E_SET_SVC_PARAMETERS, void *)
-#define VPX_CTRL_VP9E_SET_SVC_PARAMETERS
-VPX_CTRL_USE_TYPE(VP9E_REGISTER_CX_CALLBACK, void *)
-#define VPX_CTRL_VP9E_REGISTER_CX_CALLBACK
-VPX_CTRL_USE_TYPE(VP9E_SET_SVC_LAYER_ID, vpx_svc_layer_id_t *)
-#define VPX_CTRL_VP9E_SET_SVC_LAYER_ID
-
 VPX_CTRL_USE_TYPE(VP8E_SET_CPUUSED, int)
 #define VPX_CTRL_VP8E_SET_CPUUSED
 VPX_CTRL_USE_TYPE(VP8E_SET_ENABLEAUTOALTREF, unsigned int)
@@ -945,7 +993,10 @@ VPX_CTRL_USE_TYPE(VP8E_SET_STATIC_THRESHOLD, unsigned int)
 #define VPX_CTRL_VP8E_SET_STATIC_THRESHOLD
 VPX_CTRL_USE_TYPE(VP8E_SET_TOKEN_PARTITIONS, int) /* vp8e_token_partitions */
 #define VPX_CTRL_VP8E_SET_TOKEN_PARTITIONS
-
+VPX_CTRL_USE_TYPE(VP8E_GET_LAST_QUANTIZER, int *)
+#define VPX_CTRL_VP8E_GET_LAST_QUANTIZER
+VPX_CTRL_USE_TYPE(VP8E_GET_LAST_QUANTIZER_64, int *)
+#define VPX_CTRL_VP8E_GET_LAST_QUANTIZER_64
 VPX_CTRL_USE_TYPE(VP8E_SET_ARNR_MAXFRAMES, unsigned int)
 #define VPX_CTRL_VP8E_SET_ARNR_MAXFRAMES
 VPX_CTRL_USE_TYPE(VP8E_SET_ARNR_STRENGTH, unsigned int)
@@ -956,120 +1007,107 @@ VPX_CTRL_USE_TYPE(VP8E_SET_TUNING, int) /* vp8e_tuning */
 #define VPX_CTRL_VP8E_SET_TUNING
 VPX_CTRL_USE_TYPE(VP8E_SET_CQ_LEVEL, unsigned int)
 #define VPX_CTRL_VP8E_SET_CQ_LEVEL
-
+VPX_CTRL_USE_TYPE(VP8E_SET_MAX_INTRA_BITRATE_PCT, unsigned int)
+#define VPX_CTRL_VP8E_SET_MAX_INTRA_BITRATE_PCT
+VPX_CTRL_USE_TYPE(VP8E_SET_FRAME_FLAGS, int)
+#define VPX_CTRL_VP8E_SET_FRAME_FLAGS
+VPX_CTRL_USE_TYPE(VP9E_SET_MAX_INTER_BITRATE_PCT, unsigned int)
+#define VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT
+VPX_CTRL_USE_TYPE(VP9E_SET_GF_CBR_BOOST_PCT, unsigned int)
+#define VPX_CTRL_VP9E_SET_GF_CBR_BOOST_PCT
+VPX_CTRL_USE_TYPE(VP8E_SET_TEMPORAL_LAYER_ID, int)
+#define VPX_CTRL_VP8E_SET_TEMPORAL_LAYER_ID
+VPX_CTRL_USE_TYPE(VP8E_SET_SCREEN_CONTENT_MODE, unsigned int)
+#define VPX_CTRL_VP8E_SET_SCREEN_CONTENT_MODE
+VPX_CTRL_USE_TYPE(VP9E_SET_LOSSLESS, unsigned int)
+#define VPX_CTRL_VP9E_SET_LOSSLESS
 VPX_CTRL_USE_TYPE(VP9E_SET_TILE_COLUMNS, int)
 #define VPX_CTRL_VP9E_SET_TILE_COLUMNS
 VPX_CTRL_USE_TYPE(VP9E_SET_TILE_ROWS, int)
 #define VPX_CTRL_VP9E_SET_TILE_ROWS
-
-VPX_CTRL_USE_TYPE(VP9E_SET_TPL, int)
-#define VPX_CTRL_VP9E_SET_TPL
-
-VPX_CTRL_USE_TYPE(VP8E_GET_LAST_QUANTIZER, int *)
-#define VPX_CTRL_VP8E_GET_LAST_QUANTIZER
-VPX_CTRL_USE_TYPE(VP8E_GET_LAST_QUANTIZER_64, int *)
-#define VPX_CTRL_VP8E_GET_LAST_QUANTIZER_64
-VPX_CTRL_USE_TYPE(VP9E_GET_SVC_LAYER_ID, vpx_svc_layer_id_t *)
-#define VPX_CTRL_VP9E_GET_SVC_LAYER_ID
-
-VPX_CTRL_USE_TYPE(VP8E_SET_MAX_INTRA_BITRATE_PCT, unsigned int)
-#define VPX_CTRL_VP8E_SET_MAX_INTRA_BITRATE_PCT
-VPX_CTRL_USE_TYPE(VP9E_SET_MAX_INTER_BITRATE_PCT, unsigned int)
-#define VPX_CTRL_VP9E_SET_MAX_INTER_BITRATE_PCT
-
-VPX_CTRL_USE_TYPE(VP8E_SET_GF_CBR_BOOST_PCT, unsigned int)
-#define VPX_CTRL_VP8E_SET_GF_CBR_BOOST_PCT
-
-VPX_CTRL_USE_TYPE(VP8E_SET_SCREEN_CONTENT_MODE, unsigned int)
-#define VPX_CTRL_VP8E_SET_SCREEN_CONTENT_MODE
-
-VPX_CTRL_USE_TYPE(VP9E_SET_GF_CBR_BOOST_PCT, unsigned int)
-#define VPX_CTRL_VP9E_SET_GF_CBR_BOOST_PCT
-
-VPX_CTRL_USE_TYPE(VP9E_SET_LOSSLESS, unsigned int)
-#define VPX_CTRL_VP9E_SET_LOSSLESS
-
 VPX_CTRL_USE_TYPE(VP9E_SET_FRAME_PARALLEL_DECODING, unsigned int)
 #define VPX_CTRL_VP9E_SET_FRAME_PARALLEL_DECODING
-
 VPX_CTRL_USE_TYPE(VP9E_SET_AQ_MODE, unsigned int)
 #define VPX_CTRL_VP9E_SET_AQ_MODE
-
-VPX_CTRL_USE_TYPE(VP9E_SET_ALT_REF_AQ, int)
-#define VPX_CTRL_VP9E_SET_ALT_REF_AQ
-
 VPX_CTRL_USE_TYPE(VP9E_SET_FRAME_PERIODIC_BOOST, unsigned int)
 #define VPX_CTRL_VP9E_SET_FRAME_PERIODIC_BOOST
-
 VPX_CTRL_USE_TYPE(VP9E_SET_NOISE_SENSITIVITY, unsigned int)
 #define VPX_CTRL_VP9E_SET_NOISE_SENSITIVITY
-
+VPX_CTRL_USE_TYPE(VP9E_SET_SVC, int)
+#define VPX_CTRL_VP9E_SET_SVC
+VPX_CTRL_USE_TYPE(VP9E_SET_ROI_MAP, vpx_roi_map_t *)
+#define VPX_CTRL_VP9E_SET_ROI_MAP
+VPX_CTRL_USE_TYPE(VP9E_SET_SVC_PARAMETERS, void *)
+#define VPX_CTRL_VP9E_SET_SVC_PARAMETERS
+VPX_CTRL_USE_TYPE(VP9E_SET_SVC_LAYER_ID, vpx_svc_layer_id_t *)
+#define VPX_CTRL_VP9E_SET_SVC_LAYER_ID
 VPX_CTRL_USE_TYPE(VP9E_SET_TUNE_CONTENT, int) /* vp9e_tune_content */
 #define VPX_CTRL_VP9E_SET_TUNE_CONTENT
-
+VPX_CTRL_USE_TYPE(VP9E_GET_SVC_LAYER_ID, vpx_svc_layer_id_t *)
+#define VPX_CTRL_VP9E_GET_SVC_LAYER_ID
+VPX_CTRL_USE_TYPE(VP9E_REGISTER_CX_CALLBACK, void *)
+#define VPX_CTRL_VP9E_REGISTER_CX_CALLBACK
 VPX_CTRL_USE_TYPE(VP9E_SET_COLOR_SPACE, int)
 #define VPX_CTRL_VP9E_SET_COLOR_SPACE
-
 VPX_CTRL_USE_TYPE(VP9E_SET_MIN_GF_INTERVAL, unsigned int)
 #define VPX_CTRL_VP9E_SET_MIN_GF_INTERVAL
-
 VPX_CTRL_USE_TYPE(VP9E_SET_MAX_GF_INTERVAL, unsigned int)
 #define VPX_CTRL_VP9E_SET_MAX_GF_INTERVAL
-
 VPX_CTRL_USE_TYPE(VP9E_GET_ACTIVEMAP, vpx_active_map_t *)
 #define VPX_CTRL_VP9E_GET_ACTIVEMAP
-
 VPX_CTRL_USE_TYPE(VP9E_SET_COLOR_RANGE, int)
 #define VPX_CTRL_VP9E_SET_COLOR_RANGE
-
 VPX_CTRL_USE_TYPE(VP9E_SET_SVC_REF_FRAME_CONFIG, vpx_svc_ref_frame_config_t *)
 #define VPX_CTRL_VP9E_SET_SVC_REF_FRAME_CONFIG
-
 VPX_CTRL_USE_TYPE(VP9E_SET_RENDER_SIZE, int *)
 #define VPX_CTRL_VP9E_SET_RENDER_SIZE
-
 VPX_CTRL_USE_TYPE(VP9E_SET_TARGET_LEVEL, unsigned int)
 #define VPX_CTRL_VP9E_SET_TARGET_LEVEL
-
 VPX_CTRL_USE_TYPE(VP9E_SET_ROW_MT, unsigned int)
 #define VPX_CTRL_VP9E_SET_ROW_MT
-
 VPX_CTRL_USE_TYPE(VP9E_GET_LEVEL, int *)
 #define VPX_CTRL_VP9E_GET_LEVEL
-
+VPX_CTRL_USE_TYPE(VP9E_SET_ALT_REF_AQ, int)
+#define VPX_CTRL_VP9E_SET_ALT_REF_AQ
+VPX_CTRL_USE_TYPE(VP8E_SET_GF_CBR_BOOST_PCT, unsigned int)
+#define VPX_CTRL_VP8E_SET_GF_CBR_BOOST_PCT
 VPX_CTRL_USE_TYPE(VP9E_ENABLE_MOTION_VECTOR_UNIT_TEST, unsigned int)
 #define VPX_CTRL_VP9E_ENABLE_MOTION_VECTOR_UNIT_TEST
-
 VPX_CTRL_USE_TYPE(VP9E_SET_SVC_INTER_LAYER_PRED, unsigned int)
 #define VPX_CTRL_VP9E_SET_SVC_INTER_LAYER_PRED
-
 VPX_CTRL_USE_TYPE(VP9E_SET_SVC_FRAME_DROP_LAYER, vpx_svc_frame_drop_t *)
 #define VPX_CTRL_VP9E_SET_SVC_FRAME_DROP_LAYER
-
 VPX_CTRL_USE_TYPE(VP9E_GET_SVC_REF_FRAME_CONFIG, vpx_svc_ref_frame_config_t *)
 #define VPX_CTRL_VP9E_GET_SVC_REF_FRAME_CONFIG
-
 VPX_CTRL_USE_TYPE(VP9E_SET_SVC_GF_TEMPORAL_REF, unsigned int)
 #define VPX_CTRL_VP9E_SET_SVC_GF_TEMPORAL_REF
-
 VPX_CTRL_USE_TYPE(VP9E_SET_SVC_SPATIAL_LAYER_SYNC,
                   vpx_svc_spatial_layer_sync_t *)
 #define VPX_CTRL_VP9E_SET_SVC_SPATIAL_LAYER_SYNC
-
+VPX_CTRL_USE_TYPE(VP9E_SET_TPL, int)
+#define VPX_CTRL_VP9E_SET_TPL
 VPX_CTRL_USE_TYPE(VP9E_SET_POSTENCODE_DROP, unsigned int)
 #define VPX_CTRL_VP9E_SET_POSTENCODE_DROP
-
 VPX_CTRL_USE_TYPE(VP9E_SET_DELTA_Q_UV, int)
 #define VPX_CTRL_VP9E_SET_DELTA_Q_UV
-
 VPX_CTRL_USE_TYPE(VP9E_SET_DISABLE_OVERSHOOT_MAXQ_CBR, int)
 #define VPX_CTRL_VP9E_SET_DISABLE_OVERSHOOT_MAXQ_CBR
-
 VPX_CTRL_USE_TYPE(VP9E_SET_DISABLE_LOOPFILTER, int)
 #define VPX_CTRL_VP9E_SET_DISABLE_LOOPFILTER
-
 VPX_CTRL_USE_TYPE(VP9E_SET_EXTERNAL_RATE_CONTROL, vpx_rc_funcs_t *)
 #define VPX_CTRL_VP9E_SET_EXTERNAL_RATE_CONTROL
+VPX_CTRL_USE_TYPE(VP9E_SET_RTC_EXTERNAL_RATECTRL, int)
+#define VPX_CTRL_VP9E_SET_RTC_EXTERNAL_RATECTRL
+VPX_CTRL_USE_TYPE(VP9E_GET_LOOPFILTER_LEVEL, int *)
+#define VPX_CTRL_VP9E_GET_LOOPFILTER_LEVEL
+VPX_CTRL_USE_TYPE(VP9E_GET_LAST_QUANTIZER_SVC_LAYERS, int *)
+#define VPX_CTRL_VP9E_GET_LAST_QUANTIZER_SVC_LAYERS
+VPX_CTRL_USE_TYPE(VP8E_SET_RTC_EXTERNAL_RATECTRL, int)
+#define VPX_CTRL_VP8E_SET_RTC_EXTERNAL_RATECTRL
+VPX_CTRL_USE_TYPE(VP9E_SET_QUANTIZER_ONE_PASS, int)
+#define VPX_CTRL_VP9E_SET_QUANTIZER_ONE_PASS
+VPX_CTRL_USE_TYPE(VP9E_SET_KEY_FRAME_FILTERING, int)
+#define VPX_CTRL_VP9E_SET_KEY_FRAME_FILTERING
 
 /*!\endcond */
 /*! @} - end defgroup vp8_encoder */

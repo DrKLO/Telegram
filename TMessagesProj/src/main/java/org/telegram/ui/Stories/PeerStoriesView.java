@@ -4993,7 +4993,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             imageReceiver.setCrossfadeDuration(ImageReceiver.DEFAULT_CROSSFADE_DURATION);
             if (uploadingStory.entry.thumbBitmap != null) {
                 Bitmap blurredBitmap = Bitmap.createBitmap(uploadingStory.entry.thumbBitmap);
-                Utilities.blurBitmap(blurredBitmap, 3, 1, blurredBitmap.getWidth(), blurredBitmap.getHeight(), blurredBitmap.getRowBytes());
+                Utilities.blurBitmap(blurredBitmap, 3);
                 thumbDrawable = new BitmapDrawable(blurredBitmap);
             }
             if (uploadingStory.isVideo || uploadingStory.hadFailed) {
@@ -6117,8 +6117,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             canvas.drawColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.4f)));
         }
 
-        Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
-        Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+        Utilities.blurBitmap(bitmap, 3);
+        Utilities.blurBitmap(bitmap, 3);
     }
 
     public void stopPlaying(boolean stop) {

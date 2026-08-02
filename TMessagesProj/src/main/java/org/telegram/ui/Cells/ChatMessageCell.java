@@ -865,6 +865,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
         }
 
+        default void forceUpdate(ChatMessageCell cell, boolean anchorScroll, boolean scrollByTop) {
+            forceUpdate(cell, anchorScroll);
+        }
+
         default void didTogglePollPreview(ChatMessageCell cell) {
 
         }

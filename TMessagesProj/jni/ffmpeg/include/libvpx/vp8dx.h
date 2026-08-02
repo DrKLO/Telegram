@@ -32,7 +32,15 @@ extern "C" {
  * This interface provides the capability to decode VP8 streams.
  * @{
  */
+
+/*!\brief A single instance of the VP8 decoder.
+ *\deprecated This access mechanism is provided for backwards compatibility;
+ * prefer vpx_codec_vp8_dx().
+ */
 extern vpx_codec_iface_t vpx_codec_vp8_dx_algo;
+
+/*!\brief The interface to the VP8 decoder.
+ */
 extern vpx_codec_iface_t *vpx_codec_vp8_dx(void);
 /*!@} - end algorithm interface member group*/
 
@@ -41,7 +49,15 @@ extern vpx_codec_iface_t *vpx_codec_vp8_dx(void);
  * This interface provides the capability to decode VP9 streams.
  * @{
  */
+
+/*!\brief A single instance of the VP9 decoder.
+ *\deprecated This access mechanism is provided for backwards compatibility;
+ * prefer vpx_codec_vp9_dx().
+ */
 extern vpx_codec_iface_t vpx_codec_vp9_dx_algo;
+
+/*!\brief The interface to the VP9 decoder.
+ */
 extern vpx_codec_iface_t *vpx_codec_vp9_dx(void);
 /*!@} - end algorithm interface member group*/
 
@@ -177,28 +193,30 @@ VPX_CTRL_USE_TYPE(VP8D_GET_FRAME_CORRUPTED, int *)
 #define VPX_CTRL_VP8D_GET_FRAME_CORRUPTED
 VPX_CTRL_USE_TYPE(VP8D_GET_LAST_REF_USED, int *)
 #define VPX_CTRL_VP8D_GET_LAST_REF_USED
-VPX_CTRL_USE_TYPE(VPXD_GET_LAST_QUANTIZER, int *)
-#define VPX_CTRL_VPXD_GET_LAST_QUANTIZER
 VPX_CTRL_USE_TYPE(VPXD_SET_DECRYPTOR, vpx_decrypt_init *)
 #define VPX_CTRL_VPXD_SET_DECRYPTOR
 VPX_CTRL_USE_TYPE(VP8D_SET_DECRYPTOR, vpx_decrypt_init *)
 #define VPX_CTRL_VP8D_SET_DECRYPTOR
+VPX_CTRL_USE_TYPE(VP9D_GET_FRAME_SIZE, int *)
+#define VPX_CTRL_VP9D_GET_FRAME_SIZE
 VPX_CTRL_USE_TYPE(VP9D_GET_DISPLAY_SIZE, int *)
 #define VPX_CTRL_VP9D_GET_DISPLAY_SIZE
 VPX_CTRL_USE_TYPE(VP9D_GET_BIT_DEPTH, unsigned int *)
 #define VPX_CTRL_VP9D_GET_BIT_DEPTH
-VPX_CTRL_USE_TYPE(VP9D_GET_FRAME_SIZE, int *)
-#define VPX_CTRL_VP9D_GET_FRAME_SIZE
+VPX_CTRL_USE_TYPE(VP9_SET_BYTE_ALIGNMENT, int)
+#define VPX_CTRL_VP9_SET_BYTE_ALIGNMENT
 VPX_CTRL_USE_TYPE(VP9_INVERT_TILE_DECODE_ORDER, int)
 #define VPX_CTRL_VP9_INVERT_TILE_DECODE_ORDER
-#define VPX_CTRL_VP9_DECODE_SVC_SPATIAL_LAYER
-VPX_CTRL_USE_TYPE(VP9_DECODE_SVC_SPATIAL_LAYER, int)
-#define VPX_CTRL_VP9_SET_SKIP_LOOP_FILTER
 VPX_CTRL_USE_TYPE(VP9_SET_SKIP_LOOP_FILTER, int)
-#define VPX_CTRL_VP9_DECODE_SET_ROW_MT
+#define VPX_CTRL_VP9_SET_SKIP_LOOP_FILTER
+VPX_CTRL_USE_TYPE(VP9_DECODE_SVC_SPATIAL_LAYER, int)
+#define VPX_CTRL_VP9_DECODE_SVC_SPATIAL_LAYER
+VPX_CTRL_USE_TYPE(VPXD_GET_LAST_QUANTIZER, int *)
+#define VPX_CTRL_VPXD_GET_LAST_QUANTIZER
 VPX_CTRL_USE_TYPE(VP9D_SET_ROW_MT, int)
-#define VPX_CTRL_VP9_SET_LOOP_FILTER_OPT
+#define VPX_CTRL_VP9_DECODE_SET_ROW_MT
 VPX_CTRL_USE_TYPE(VP9D_SET_LOOP_FILTER_OPT, int)
+#define VPX_CTRL_VP9_SET_LOOP_FILTER_OPT
 
 /*!\endcond */
 /*! @} - end defgroup vp8_decoder */

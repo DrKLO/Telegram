@@ -449,10 +449,18 @@ static void fastBlur565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int3
     delete[] rgb;
 }
 
-JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass clazz, jobject bitmap, jint unpin, jint width, jint height, jint stride) {
+JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass clazz, jobject bitmap) {
     if (!bitmap) {
         return 0;
     }
+
+    AndroidBitmapInfo info{};
+    if (__builtin_expect(AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return 0;
+    }
+    uint32_t width = info.width;
+    uint32_t height = info.height;
+    uint32_t stride = info.stride;
 
     if (!width || !height || !stride || stride != width * 4 || width * height > 150 * 150) {
         return 0;
@@ -509,16 +517,22 @@ JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jcla
             }
         }
     }
-    if (unpin) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
+    AndroidBitmap_unlockPixels(env, bitmap);
     return hasAlpha && matching / total > 0.85;
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius, jint unpin, jint width, jint height, jint stride) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius) {
     if (!bitmap) {
         return;
     }
+
+    AndroidBitmapInfo info{};
+    if (__builtin_expect(AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return;
+    }
+    uint32_t width = info.width;
+    uint32_t height = info.height;
+    uint32_t stride = info.stride;
 
     if (!width || !height || !stride) {
         return;
@@ -541,9 +555,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jcl
             fastBlurMore(width, height, stride, (uint8_t *) pixels, radius);
         }
     }
-    if (unpin) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
+    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 const uint32_t PGPhotoEnhanceHistogramBins = 256;
@@ -639,21 +651,6 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
             result[index + 3] = 255;
         }
     }
-}
-
-JNIEXPORT jint Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
-    if (bitmap == nullptr) {
-        return 0;
-    }
-    void *pixels;
-    return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
-}
-
-JNIEXPORT void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
-    if (bitmap == nullptr) {
-        return;
-    }
-    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 #define SQUARE(i) ((i)*(i))
@@ -1138,10 +1135,18 @@ std::vector<std::pair<float, float>> gatherPositions(std::vector<std::pair<float
 thread_local static float *pixelCache = nullptr;
 thread_local static int pixelCacheSize = 0;
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *env, jclass clazz, jobject bitmap, jboolean unpin, jint phase, jfloat progress, jint width, jint height, jint stride, jintArray colors) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *env, jclass clazz, jobject bitmap, jint phase, jfloat progress, jintArray colors) {
     if (!bitmap) {
         return;
     }
+
+    AndroidBitmapInfo info{};
+    if (__builtin_expect(AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return;
+    }
+    uint32_t width = info.width;
+    uint32_t height = info.height;
+    uint32_t stride = info.stride;
 
     if (!width || !height) {
         return;
@@ -1250,9 +1255,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *en
 
     env->ReleaseIntArrayElements(colors, (jint *) colorsArray, JNI_ABORT);
 
-    if (unpin) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
+    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 static inline uint32_t bitmapBytesPerPixel(int32_t format) {

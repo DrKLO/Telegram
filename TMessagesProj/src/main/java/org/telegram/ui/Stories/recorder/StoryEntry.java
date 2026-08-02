@@ -369,7 +369,7 @@ public class StoryEntry {
                 final File file = filterFile != null ? filterFile : this.file;
                 if (file != null) {
                     try {
-                        Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), w, h, true, true);
+                        Bitmap fileBitmap = getScaledBitmap(opts -> BitmapFactory.decodeFile(file.getPath(), opts), w, h, orientation, true, true);
                         final float s = (float) width / fileBitmap.getWidth();
                         tempMatrix.preScale(s, s);
                         tempMatrix.postScale(scale, scale);
@@ -486,6 +486,16 @@ public class StoryEntry {
     }
 
     public static Bitmap getScaledBitmap(DecodeBitmap decode, int maxWidth, int maxHeight, boolean allowBlur, boolean scale) {
+        return getScaledBitmap(decode, maxWidth, maxHeight, 0, allowBlur, scale);
+    }
+
+    public static Bitmap getScaledBitmap(DecodeBitmap decode, int maxWidth, int maxHeight, int orientation, boolean allowBlur, boolean scale) {
+        if (orientation == 90 || orientation == 270) {
+            int s = maxWidth;
+            maxWidth = maxHeight;
+            maxHeight = s;
+        }
+
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inJustDecodeBounds = true;
         decode.decode(opts);
@@ -512,20 +522,10 @@ public class StoryEntry {
             final int w = (int) (bitmap.getWidth() * s), h = (int) (bitmap.getHeight() * s);
 
             Bitmap scaledBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(scaledBitmap);
 
-            final Matrix matrix = new Matrix();
-            final BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-            final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            paint.setShader(shader);
+            Utilities.libyuvARGBSaleBitmap(bitmap, scaledBitmap, Utilities.libyuv_ScaleFilter.Box);
 
             int blurRadius = Utilities.clamp(Math.round(1f / s), 8, 0);
-
-            matrix.reset();
-            matrix.postScale(s, s);
-            shader.setLocalMatrix(matrix);
-            canvas.drawRect(0, 0, w, h, paint);
-
 //            if (allowBlur && blurRadius > 0) {
 //                Utilities.stackBlurBitmap(scaledBitmap, blurRadius);
 //            }
@@ -533,8 +533,15 @@ public class StoryEntry {
             return scaledBitmap;
         } else {
             opts.inScaled = true;
-            opts.inDensity = opts.outWidth;
-            opts.inTargetDensity = maxWidth;
+            final float scaleX = maxWidth / (float) opts.outWidth;
+            final float scaleY = maxHeight / (float) opts.outHeight;
+            if (scaleX > scaleY) {
+                opts.inDensity = opts.outWidth;
+                opts.inTargetDensity = maxWidth;
+            } else {
+                opts.inDensity = opts.outHeight;
+                opts.inTargetDensity = maxHeight;
+            }
             return decode.decode(opts);
         }
     }

@@ -233,7 +233,7 @@ public class PublicStoriesList extends FrameLayout {
             }
         };
         if (sharedMediaLayout.getSearchOptionsItem() != null) {
-            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
         }
         sharedMediaLayout.setPinnedToTop(true);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);

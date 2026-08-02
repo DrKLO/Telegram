@@ -55,7 +55,6 @@
 #include "libavutil/attributes.h"
 
 #include "avcodec.h"
-#include "version.h"
 
 struct AVCodecContext;
 struct AVFrame;
@@ -67,16 +66,14 @@ typedef int (*AVVDPAU_Render2)(struct AVCodecContext *, struct AVFrame *,
 /**
  * This structure is used to share data between the libavcodec library and
  * the client video application.
- * The user shall allocate the structure via the av_alloc_vdpau_hwaccel
- * function and make it available as
- * AVCodecContext.hwaccel_context. Members can be set by the user once
+ * This structure will be allocated and stored in AVCodecContext.hwaccel_context
+ * by av_vdpau_bind_context(). Members can be set by the user once
  * during initialization or through each AVCodecContext.get_buffer()
  * function call. In any case, they must be valid prior to calling
  * decoding functions.
  *
  * The size of this structure is not a part of the public ABI and must not
- * be used outside of libavcodec. Use av_vdpau_alloc_context() to allocate an
- * AVVDPAUContext.
+ * be used outside of libavcodec.
  */
 typedef struct AVVDPAUContext {
     /**
@@ -95,16 +92,6 @@ typedef struct AVVDPAUContext {
 
     AVVDPAU_Render2 render2;
 } AVVDPAUContext;
-
-/**
- * @brief allocation function for AVVDPAUContext
- *
- * Allows extending the struct without breaking API/ABI
- */
-AVVDPAUContext *av_alloc_vdpaucontext(void);
-
-AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
-void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
 
 /**
  * Associate a VDPAU device with a codec context for hardware acceleration.
@@ -146,31 +133,6 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
 int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
                                     uint32_t *width, uint32_t *height);
 
-/**
- * Allocate an AVVDPAUContext.
- *
- * @return Newly-allocated AVVDPAUContext or NULL on failure.
- */
-AVVDPAUContext *av_vdpau_alloc_context(void);
-
-#if FF_API_VDPAU_PROFILE
-/**
- * Get a decoder profile that should be used for initializing a VDPAU decoder.
- * Should be called from the AVCodecContext.get_format() callback.
- *
- * @deprecated Use av_vdpau_bind_context() instead.
- *
- * @param avctx the codec context being used for decoding the stream
- * @param profile a pointer into which the result will be written on success.
- *                The contents of profile are undefined if this function returns
- *                an error.
- *
- * @return 0 on success (non-negative), a negative AVERROR on failure.
- */
-attribute_deprecated
-int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile);
-#endif
-
-/* @}*/
+/** @} */
 
 #endif /* AVCODEC_VDPAU_H */

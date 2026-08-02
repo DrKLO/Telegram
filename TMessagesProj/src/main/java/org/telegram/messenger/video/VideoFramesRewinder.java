@@ -57,7 +57,7 @@ public class VideoFramesRewinder {
     }
 
     private AnimatedFileNative mDecoder;
-    private final int[] meta = new int[7];
+    private final int[] meta = new int[8];
 
     public boolean isReady() {
         return mDecoder != null;

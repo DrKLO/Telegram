@@ -14,6 +14,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.FormattedDateSpan;
+import org.telegram.ui.Components.SquigglyLinesSpan;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanReplacement;
@@ -52,6 +53,24 @@ public class RichTextStyle {
         if (rt instanceof TL_iv.textConcat) {
             for (TL_iv.RichText child : ((TL_iv.textConcat) rt).texts) {
                 append(sb, child, flags, block);
+            }
+            return;
+        }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            boolean textEmpty = isEmpty(diff.text);
+            boolean oldTextEmpty = isEmpty(diff.old_text);
+            int start = sb.length();
+            if (textEmpty) {
+                append(sb, diff.old_text, flags, block);
+                setDiffStyle(sb, start, TextStyleSpan.FLAG_STYLE_STRIKE_RED);
+            } else {
+                append(sb, diff.text, flags, block);
+                if (oldTextEmpty) {
+                    setDiffStyle(sb, start, TextStyleSpan.FLAG_STYLE_ACCENT);
+                } else if (sb.length() > start) {
+                    sb.setSpan(new SquigglyLinesSpan(), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
             return;
         }
@@ -113,6 +132,14 @@ public class RichTextStyle {
         appendLeaf(sb, plainOf(rt), flags, block);
     }
 
+    private static void setDiffStyle(SpannableStringBuilder sb, int start, int flags) {
+        if (sb.length() > start) {
+            TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+            run.flags = flags;
+            sb.setSpan(new TextStyleSpan(run), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
     private static void appendLeaf(SpannableStringBuilder sb, String text, int flags, TL_iv.PageBlock block) {
         if (text == null || text.isEmpty()) {
             return;
@@ -159,7 +186,42 @@ public class RichTextStyle {
             }
             return s.toString();
         }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            String text = plainOf(diff.text);
+            return isEmpty(diff.text) ? plainOf(diff.old_text) : text;
+        }
         return plainOf(rt.text);
+    }
+
+    public static boolean isEmpty(TL_iv.RichText rt) {
+        if (rt == null || rt instanceof TL_iv.textEmpty) {
+            return true;
+        }
+        if (rt instanceof TL_iv.textPlain) {
+            String text = ((TL_iv.textPlain) rt).text;
+            return text == null || text.isEmpty();
+        }
+        if (rt instanceof TL_iv.textCustomEmoji) {
+            return false;
+        }
+        if (rt instanceof TL_iv.textMath) {
+            String source = ((TL_iv.textMath) rt).source;
+            return source == null || source.isEmpty();
+        }
+        if (rt instanceof TL_iv.textConcat) {
+            for (TL_iv.RichText child : ((TL_iv.textConcat) rt).texts) {
+                if (!isEmpty(child)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            return isEmpty(diff.text) && isEmpty(diff.old_text);
+        }
+        return isEmpty(rt.text);
     }
 
     private static FormattedDateSpan dateSpan(TL_iv.textDate date, String text) {

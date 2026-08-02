@@ -288,7 +288,9 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 if (backButton != null && backButton.getVisibility() == View.VISIBLE) {
                     if (ev.getAction() == MotionEvent.ACTION_DOWN) {
                         if (ViewPositionWatcher.computeRectInParent(backButton, this, AndroidUtilities.rectTmp)) {
-                            isTouchedActionBarBackButton = true;
+                            if (AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY())) {
+                                isTouchedActionBarBackButton = true;
+                            }
                         }
                     }
                     if (isTouchedActionBarBackButton) {

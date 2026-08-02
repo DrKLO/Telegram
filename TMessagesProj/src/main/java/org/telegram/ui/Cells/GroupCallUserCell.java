@@ -612,7 +612,7 @@ public class GroupCallUserCell extends FrameLayout {
             grayIconColor = key;
         }
         if (currentIconGray) {
-            muteButton.setColorFilter(new PorterDuffColorFilter(value, PorterDuff.Mode.MULTIPLY));
+            muteButton.setColorFilter(new PorterDuffColorFilter(value, PorterDuff.Mode.SRC_IN));
             Theme.setSelectorDrawableColor(muteButton.getDrawable(), value & 0x24ffffff, true);
         }
     }
@@ -787,12 +787,12 @@ public class GroupCallUserCell extends FrameLayout {
                 animator.addUpdateListener(animation -> {
                     float value = animation.getAnimatedFraction();
                     int color = AndroidUtilities.getOffsetColor(oldColor, newMuteColor, value, 1.0f);
-                    muteButton.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                    muteButton.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
                     Theme.setSelectorDrawableColor(muteButton.getDrawable(), color & 0x24ffffff, true);
                 });
                 animators.add(animator);
             } else {
-                muteButton.setColorFilter(new PorterDuffColorFilter(lastMuteColor = newMuteColor, PorterDuff.Mode.MULTIPLY));
+                muteButton.setColorFilter(new PorterDuffColorFilter(lastMuteColor = newMuteColor, PorterDuff.Mode.SRC_IN));
                 Theme.setSelectorDrawableColor(muteButton.getDrawable(), newMuteColor & 0x24ffffff, true);
             }
         }

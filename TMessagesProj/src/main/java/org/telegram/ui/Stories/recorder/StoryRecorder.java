@@ -31,7 +31,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
-import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -70,8 +69,6 @@ import android.view.ScaleGestureDetector;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -7068,7 +7065,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                             if (lastBitmap != bitmap2) {
                                 bitmap2.recycle();
                             }
-                            Utilities.blurBitmap(lastBitmap, 7, 1, lastBitmap.getWidth(), lastBitmap.getHeight(), lastBitmap.getRowBytes());
+                            Utilities.blurBitmap(lastBitmap, 7);
                             File file = new File(ApplicationLoader.getFilesDirFixed(), "cthumb.jpg");
                             FileOutputStream stream = new FileOutputStream(file);
                             lastBitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);

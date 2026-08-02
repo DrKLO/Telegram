@@ -49,7 +49,7 @@ public class VoIPOverlayBackground extends ImageView {
                 Bitmap blur1 = Bitmap.createBitmap(150, 150, Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(blur1);
                 canvas.drawBitmap(src.bitmap, null, new Rect(0, 0, 150, 150), new Paint(Paint.FILTER_BITMAP_FLAG));
-                Utilities.blurBitmap(blur1, 3, 0, blur1.getWidth(), blur1.getHeight(), blur1.getRowBytes());
+                Utilities.blurBitmap(blur1, 3);
                 final Palette palette = Palette.from(src.bitmap).generate();
                 Paint paint = new Paint();
                 paint.setColor((palette.getDarkMutedColor(0xFF547499) & 0x00FFFFFF) | 0x44000000);

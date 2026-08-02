@@ -127,7 +127,7 @@ public class TextCell extends FrameLayout {
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
         addView(imageView);
 
         valueImageView = new ImageView(context);
@@ -314,7 +314,7 @@ public class TextCell extends FrameLayout {
             if (colorKey != Theme.key_dialogIcon && colorKey != Theme.key_windowBackgroundWhiteGrayIcon) {
                 color = processColor(color);
             }
-            imageView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
         }
         subtitleView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider)));
         valueTextView.setTextColor(processColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider)));
@@ -325,7 +325,7 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(text, resourcesProvider));
         textView.setTag(text);
         if (icon >= 0) {
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(icon, resourcesProvider), PorterDuff.Mode.SRC_IN));
             imageView.setTag(icon);
         }
         updateColors();

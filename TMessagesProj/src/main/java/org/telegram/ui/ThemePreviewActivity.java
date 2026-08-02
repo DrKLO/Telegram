@@ -2732,7 +2732,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     dimAmount = 0;
                     backgroundImage.draw(canvas);
                     dimAmount = currentDim;
-                    Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+                    Utilities.blurBitmap(bitmap, 3);
                     tlwallPaper.stripedThumb = bitmap;
 
                     createServiceMessageLocal(tlwallPaper, forBoth);
@@ -3326,7 +3326,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         d.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
         d.draw(new Canvas(bitmap));
         d.setColorFilter(wasColorFilter);
-        Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+        Utilities.blurBitmap(bitmap, 3);
         blurredDrawable = new BitmapDrawable(getContext().getResources(), bitmap);
         blurredDrawable.setFilterBitmap(true);
         return blurredDrawable;

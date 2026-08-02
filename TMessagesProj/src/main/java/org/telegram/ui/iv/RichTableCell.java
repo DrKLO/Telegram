@@ -1,6 +1,7 @@
 package org.telegram.ui.iv;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -16,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.Theme;
@@ -73,7 +75,7 @@ public class RichTableCell extends RichBlockCell implements Theme.Colorable, Tex
         titleEditText.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
         titleEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(8, SharedConfig.fontSize));
         titleEditText.setPadding(dp(2), dp(4), dp(2), dp(2));
-        titleEditText.setHint("Add title…");
+        titleEditText.setHint(getString(R.string.ArticleTableTitleHint));
         titleEditText.setCenterEmptyHint(true);
         titleEditText.setListener(new RichEditText.Listener() {
             @Override

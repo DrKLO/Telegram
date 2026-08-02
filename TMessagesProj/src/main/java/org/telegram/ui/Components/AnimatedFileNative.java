@@ -57,6 +57,10 @@ public class AnimatedFileNative {
         return mMetaData[6] == 1;
     }
 
+    public boolean isStaticVideoDetected() {
+        return mMetaData[7] == 1;
+    }
+
     public void stopDecoder() {
         checkNotDestroyed();
         stopDecoder(mNativePtr);
@@ -181,7 +185,7 @@ public class AnimatedFileNative {
     public static void getVideoInfo(String src, int[] params, long fileOffset) {
         Trace.beginSection("AnimatedFileNative#getVideoInfo");
         try {
-            nGetVideoInfo(Build.VERSION.SDK_INT, src, params, fileOffset);
+            nGetVideoInfo(src, params, fileOffset);
         } finally {
             Trace.endSection();
         }
@@ -203,5 +207,5 @@ public class AnimatedFileNative {
 
     private static native void nPrepareToSeek(long ptr);
 
-    private static native void nGetVideoInfo(int sdkVersion, String src, int[] params, long fileOffset);
+    private static native void nGetVideoInfo(String src, int[] params, long fileOffset);
 }

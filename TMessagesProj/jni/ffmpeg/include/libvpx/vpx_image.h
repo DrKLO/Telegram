@@ -64,8 +64,12 @@ typedef enum vpx_color_space {
 
 /*!\brief List of supported color range */
 typedef enum vpx_color_range {
-  VPX_CR_STUDIO_RANGE = 0, /**< Y [16..235], UV [16..240] */
-  VPX_CR_FULL_RANGE = 1    /**< YUV/RGB [0..255] */
+  VPX_CR_STUDIO_RANGE = 0, /**<- Y  [16..235],  UV  [16..240]  (bit depth 8) */
+                           /**<- Y  [64..940],  UV  [64..960]  (bit depth 10) */
+                           /**<- Y [256..3760], UV [256..3840] (bit depth 12) */
+  VPX_CR_FULL_RANGE = 1    /**<- YUV/RGB [0..255]  (bit depth 8) */
+                           /**<- YUV/RGB [0..1023] (bit depth 10) */
+                           /**<- YUV/RGB [0..4095] (bit depth 12) */
 } vpx_color_range_t;       /**< alias for enum vpx_color_range */
 
 /**\brief Image Descriptor */
@@ -126,16 +130,19 @@ typedef struct vpx_image_rect {
 /*!\brief Open a descriptor, allocating storage for the underlying image
  *
  * Returns a descriptor for storing an image of the given format. The
- * storage for the descriptor is allocated on the heap.
+ * storage for the image is allocated on the heap.
  *
  * \param[in]    img       Pointer to storage for descriptor. If this parameter
  *                         is NULL, the storage for the descriptor will be
  *                         allocated on the heap.
  * \param[in]    fmt       Format for the image
- * \param[in]    d_w       Width of the image
- * \param[in]    d_h       Height of the image
+ * \param[in]    d_w       Width of the image. Must not exceed 0x08000000
+ *                         (2^27).
+ * \param[in]    d_h       Height of the image. Must not exceed 0x08000000
+ *                         (2^27).
  * \param[in]    align     Alignment, in bytes, of the image buffer and
- *                         each row in the image(stride).
+ *                         each row in the image (stride). Must not exceed
+ *                         65536.
  *
  * \return Returns a pointer to the initialized image descriptor. If the img
  *         parameter is non-null, the value of the img parameter will be
@@ -148,21 +155,55 @@ vpx_image_t *vpx_img_alloc(vpx_image_t *img, vpx_img_fmt_t fmt,
 /*!\brief Open a descriptor, using existing storage for the underlying image
  *
  * Returns a descriptor for storing an image of the given format. The
- * storage for descriptor has been allocated elsewhere, and a descriptor is
+ * storage for the image has been allocated elsewhere, and a descriptor is
  * desired to "wrap" that storage.
  *
  * \param[in]    img           Pointer to storage for descriptor. If this
  *                             parameter is NULL, the storage for the descriptor
  *                             will be allocated on the heap.
  * \param[in]    fmt           Format for the image
- * \param[in]    d_w           Width of the image
- * \param[in]    d_h           Height of the image
- * \param[in]    stride_align  Alignment, in bytes, of each row in the image.
- * \param[in]    img_data      Storage to use for the image
+ * \param[in]    d_w           Width of the image. Must not exceed 0x08000000
+ *                             (2^27).
+ * \param[in]    d_h           Height of the image. Must not exceed 0x08000000
+ *                             (2^27).
+ * \param[in]    stride_align  Alignment, in bytes, of each row in the image
+ *                             (stride). Must not exceed 65536.
+ * \param[in]    img_data      Storage to use for the image. The storage must
+ *                             outlive the returned image descriptor; it can be
+ *                             disposed of after calling vpx_img_free().
  *
  * \return Returns a pointer to the initialized image descriptor. If the img
  *         parameter is non-null, the value of the img parameter will be
  *         returned.
+ *
+ * \note \a img_data is required to have a minimum allocation size that
+ *       satisfies the requirements of the \a fmt, \a d_w, \a d_h and \a
+ *       stride_align parameters. This size can be calculated as follows (see
+ *       \c img_alloc_helper in the vpx_image.c file in the libvpx source tree
+ *       for more detail):
+ * \code
+ * align = (1 << x_chroma_shift) - 1;
+ * w = (d_w + align) & ~align;
+ * align = (1 << y_chroma_shift) - 1;
+ * h = (d_h + align) & ~align;
+ *
+ * s = (fmt & VPX_IMG_FMT_PLANAR) ? w : (uint64_t)bps * w / 8;
+ * s = (fmt & VPX_IMG_FMT_HIGHBITDEPTH) ? s * 2 : s;
+ * s = (s + stride_align - 1) & ~((uint64_t)stride_align - 1);
+ * s = (fmt & VPX_IMG_FMT_HIGHBITDEPTH) ? s / 2 : s;
+ * alloc_size = (fmt & VPX_IMG_FMT_PLANAR) ? (uint64_t)h * s * bps / 8
+ *                                         : (uint64_t)h * s;
+ * \endcode
+ * \a x_chroma_shift, \a y_chroma_shift and \a bps can be obtained by calling
+ * \ref vpx_img_wrap with a non-\c NULL \a img_data parameter. The \c
+ * vpx_image_t pointer should \em not be used in other API calls until \em after
+ * a successful call to \ref vpx_img_wrap with a valid image buffer. For
+ * example:
+ * \code
+ * vpx_img_wrap(img, fmt, d_w, d_h, stride_align, (unsigned char *)1);
+ * ... calculate buffer size and allocate buffer as described earlier
+ * vpx_img_wrap(img, fmt, d_w, d_h, stride_align, img_data);
+ * \endcode
  */
 vpx_image_t *vpx_img_wrap(vpx_image_t *img, vpx_img_fmt_t fmt, unsigned int d_w,
                           unsigned int d_h, unsigned int stride_align,
@@ -171,7 +212,8 @@ vpx_image_t *vpx_img_wrap(vpx_image_t *img, vpx_img_fmt_t fmt, unsigned int d_w,
 /*!\brief Set the rectangle identifying the displayed portion of the image
  *
  * Updates the displayed rectangle (aka viewport) on the image surface to
- * match the specified coordinates and size.
+ * match the specified coordinates and size. Specifically, sets img->d_w,
+ * img->d_h, and elements of the img->planes[] array.
  *
  * \param[in]    img       Image descriptor
  * \param[in]    x         leftmost column
@@ -179,7 +221,7 @@ vpx_image_t *vpx_img_wrap(vpx_image_t *img, vpx_img_fmt_t fmt, unsigned int d_w,
  * \param[in]    w         width
  * \param[in]    h         height
  *
- * \return 0 if the requested rectangle is valid, nonzero otherwise.
+ * \return 0 if the requested rectangle is valid, nonzero (-1) otherwise.
  */
 int vpx_img_set_rect(vpx_image_t *img, unsigned int x, unsigned int y,
                      unsigned int w, unsigned int h);

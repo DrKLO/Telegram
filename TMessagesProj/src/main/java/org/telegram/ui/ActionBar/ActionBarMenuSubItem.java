@@ -85,7 +85,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+        imageView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
         addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
 
         textView = new AnimatedEmojiSpan.TextViewEmojis(context);
@@ -261,7 +261,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setIconColor(int iconColor) {
-        setIconColor(iconColor, PorterDuff.Mode.MULTIPLY);
+        setIconColor(iconColor, PorterDuff.Mode.SRC_IN);
     }
 
     public void setIconColor(int iconColor, PorterDuff.Mode mode) {

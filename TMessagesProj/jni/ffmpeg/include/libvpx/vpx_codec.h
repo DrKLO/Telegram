@@ -50,7 +50,7 @@ extern "C" {
 
 /*!\brief Decorator indicating a function is deprecated */
 #ifndef VPX_DEPRECATED
-#if defined(__GNUC__) && __GNUC__
+#if defined(__GNUC__)
 #define VPX_DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #define VPX_DEPRECATED
@@ -60,7 +60,7 @@ extern "C" {
 #endif /* VPX_DEPRECATED */
 
 #ifndef VPX_DECLSPEC_DEPRECATED
-#if defined(__GNUC__) && __GNUC__
+#if defined(__GNUC__)
 #define VPX_DECLSPEC_DEPRECATED /**< \copydoc #VPX_DEPRECATED */
 #elif defined(_MSC_VER)
 /*!\brief \copydoc #VPX_DEPRECATED */
@@ -318,19 +318,21 @@ const char *vpx_codec_err_to_string(vpx_codec_err_t err);
  * \param[in]    ctx     Pointer to this instance's context.
  *
  */
-const char *vpx_codec_error(vpx_codec_ctx_t *ctx);
+const char *vpx_codec_error(const vpx_codec_ctx_t *ctx);
 
 /*!\brief Retrieve detailed error information for codec context
  *
  * Returns a human readable string providing detailed information about
- * the last error.
+ * the last error. The returned string is only valid until the next
+ * vpx_codec_* function call (except vpx_codec_error and
+ * vpx_codec_error_detail) on the codec context.
  *
  * \param[in]    ctx     Pointer to this instance's context.
  *
  * \retval NULL
  *     No detailed information is available.
  */
-const char *vpx_codec_error_detail(vpx_codec_ctx_t *ctx);
+const char *vpx_codec_error_detail(const vpx_codec_ctx_t *ctx);
 
 /* REQUIRED FUNCTIONS
  *
@@ -345,9 +347,11 @@ const char *vpx_codec_error_detail(vpx_codec_ctx_t *ctx);
  * \param[in] ctx   Pointer to this instance's context
  *
  * \retval #VPX_CODEC_OK
- *     The codec algorithm initialized.
- * \retval #VPX_CODEC_MEM_ERROR
- *     Memory allocation failed.
+ *     The codec instance has been destroyed.
+ * \retval #VPX_CODEC_INVALID_PARAM
+ *     ctx is a null pointer.
+ * \retval #VPX_CODEC_ERROR
+ *     Codec context not initialized.
  */
 vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx);
 

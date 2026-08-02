@@ -31,6 +31,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
     private ReelValue center;
     private ReelValue right;
 
+    private Bitmap backgroundBitmapTmp;
     private final RLottieNative[] lottieNatives = new RLottieNative[5];
     private final int[] frameCounts = new int[5];
     private final int[] frameNums = new int[5];
@@ -54,6 +55,13 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
         if (nativePtr == null || isDice == 2 && secondNativePtr == null) {
             return LOAD_FRAME_RESULT_ERROR;
         }
+        if (backgroundBitmapTmp == null) {
+            try {
+                backgroundBitmapTmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
         if (backgroundBitmap == null) {
             try {
                 backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -61,13 +69,13 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                 FileLog.e(e);
             }
         }
-        if (backgroundBitmap != null) {
+        if (backgroundBitmap != null && backgroundBitmapTmp != null) {
             try {
                 int result;
                 if (isDice == 1) {
                     result = -1;
                     for (int a = 0; a < lottieNatives.length; a++) {
-                        result = lottieNatives[a].getFrame(frameNums[a], backgroundBitmap, a == 0);
+                        result = lottieNatives[a].getFrame(frameNums[a], backgroundBitmapTmp, a == 0);
                         if (a == 0) {
                             continue;
                         }
@@ -95,9 +103,9 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                         }
                     }
 
-                    lottieNatives[0].getFrame(Math.max(frameNums[0], 0), backgroundBitmap, true);
+                    lottieNatives[0].getFrame(Math.max(frameNums[0], 0), backgroundBitmapTmp, true);
                     for (int a = 0; a < secondLottieNatives.length; a++) {
-                        secondLottieNatives[a].getFrame(secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmap, false);
+                        secondLottieNatives[a].getFrame(secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmapTmp, false);
                         if (!nextFrameIsLast) {
                             if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
                                 secondFrameNums[a]++;
@@ -106,7 +114,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                             }
                         }
                     }
-                    result = lottieNatives[4].getFrame(frameNums[4], backgroundBitmap, false);
+                    result = lottieNatives[4].getFrame(frameNums[4], backgroundBitmapTmp, false);
                     if (frameNums[4] + 1 < frameCounts[4]) {
                         frameNums[4]++;
                     }
@@ -131,6 +139,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                 if (result < 0) {
                     return LOAD_FRAME_RESULT_ERROR;
                 }
+                Utilities.copyBitmaps(backgroundBitmapTmp, backgroundBitmap);
                 nextRenderingBitmap = backgroundBitmap;
             } catch (Exception e) {
                 FileLog.e(e);

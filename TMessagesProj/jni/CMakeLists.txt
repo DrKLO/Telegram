@@ -9,7 +9,6 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto=full -Wl,--gc-
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavresample.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavutil.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a,
@@ -33,9 +32,6 @@ set_target_properties(avformat PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTO
 
 add_library(avcodec STATIC IMPORTED)
 set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a)
-
-add_library(avresample STATIC IMPORTED)
-set_target_properties(avresample PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavresample.a)
 
 add_library(swresample STATIC IMPORTED)
 set_target_properties(swresample PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a)
@@ -365,7 +361,6 @@ add_library(${NATIVE_LIB} SHARED
         audio.c
         webm_encoder.c
         image.cpp
-        video.c
         intro/IntroRenderer.c
         SqliteWrapper.cpp
         utilities.cpp
@@ -650,7 +645,6 @@ target_link_libraries(${NATIVE_LIB}
         swscale
         avformat
         avcodec
-        avresample
         swresample
         libvpx
         libdav1d

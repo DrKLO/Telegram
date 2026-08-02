@@ -21,6 +21,7 @@
 #ifndef AVUTIL_RANDOM_SEED_H
 #define AVUTIL_RANDOM_SEED_H
 
+#include <stddef.h>
 #include <stdint.h>
 /**
  * @addtogroup lavu_crypto
@@ -35,6 +36,19 @@
  * PRNG. The quality of the seed depends on the platform.
  */
 uint32_t av_get_random_seed(void);
+
+/**
+ * Generate cryptographically secure random data, i.e. suitable for use as
+ * encryption keys and similar.
+ *
+ * @param buf buffer into which the random data will be written
+ * @param len size of buf in bytes
+ *
+ * @retval 0                         success, len bytes of random data was written
+ *                                   into buf
+ * @retval "a negative AVERROR code" random data could not be generated
+ */
+int av_random_bytes(uint8_t *buf, size_t len);
 
 /**
  * @}

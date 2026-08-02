@@ -1,4 +1,6 @@
 /*
+ * Version macros.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,35 +18,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVRESAMPLE_VERSION_H
-#define AVRESAMPLE_VERSION_H
+#ifndef AVFORMAT_VERSION_MAJOR_H
+#define AVFORMAT_VERSION_MAJOR_H
 
 /**
  * @file
- * @ingroup lavr
- * Libavresample version macros.
+ * @ingroup libavf
+ * Libavformat version macros
  */
 
-#include "libavutil/version.h"
-
-#define LIBAVRESAMPLE_VERSION_MAJOR  4
-#define LIBAVRESAMPLE_VERSION_MINOR  0
-#define LIBAVRESAMPLE_VERSION_MICRO  0
-
-#define LIBAVRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                                  LIBAVRESAMPLE_VERSION_MINOR, \
-                                                  LIBAVRESAMPLE_VERSION_MICRO)
-#define LIBAVRESAMPLE_VERSION          AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                                  LIBAVRESAMPLE_VERSION_MINOR, \
-                                                  LIBAVRESAMPLE_VERSION_MICRO)
-#define LIBAVRESAMPLE_BUILD        LIBAVRESAMPLE_VERSION_INT
-
-#define LIBAVRESAMPLE_IDENT        "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
+// Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
+// Also please add any ticket numbers that you believe might be affected here
+#define LIBAVFORMAT_VERSION_MAJOR  62
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
+ *
+ * @note, when bumping the major version it is recommended to manually
+ * disable each FF_API_* in its own commit instead of disabling them all
+ * at once through the bump. This improves the git bisect-ability of the change.
+ *
  */
+#define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 63)
 
-#endif /* AVRESAMPLE_VERSION_H */
+#define FF_API_INTERNAL_TIMING          (LIBAVFORMAT_VERSION_MAJOR < 63)
+
+#define FF_API_NO_DEFAULT_TLS_VERIFY    (LIBAVFORMAT_VERSION_MAJOR < 63)
+
+#define FF_API_R_FRAME_RATE            1
+
+#endif /* AVFORMAT_VERSION_MAJOR_H */

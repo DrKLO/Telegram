@@ -316,7 +316,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
                 icons[i].setLayerColor("Box2.**",iconColor);
                 icons[i].setLayerColor("Box1.**",iconColor);
             } else {
-                icons[i].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
+                icons[i].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
             }
         }
     }

@@ -752,16 +752,16 @@ public class TextureRenderer {
     }
 
     private void drawEntity(VideoEditedInfo.MediaEntity entity, int textColor, long time) {
-        if (entity.ptr != 0) {
+        if (entity.lottieNative != null) {
             if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
                 return;
             }
-            RLottieNative.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, true);
+            entity.lottieNative.getFrame((int) entity.currentFrame, entity.bitmap, true);
             applyRoundRadius(entity, entity.bitmap, (entity.subType & 8) != 0 ? textColor : 0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
             GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, entity.bitmap, 0);
             entity.currentFrame += entity.framesPerDraw;
-            if (entity.currentFrame >= entity.metadata[0]) {
+            if (entity.currentFrame >= entity.lottieNative.getFrameCount()) {
                 entity.currentFrame = 0;
             }
             drawTexture(false, stickerTexture[0], entity.x, entity.y, entity.width, entity.height, entity.rotation, (entity.subType & 2) != 0);
@@ -1513,9 +1513,8 @@ public class TextureRenderer {
                 return;
             }
             entity.bitmap = Bitmap.createBitmap(entity.W, entity.H, Bitmap.Config.ARGB_8888);
-            entity.metadata = new int[3];
-            entity.ptr = RLottieNative.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
-            entity.framesPerDraw = entity.metadata[1] / videoFps;
+            entity.lottieNative = RLottieNative.createFromFile(entity.text, null, entity.W, entity.H, false, null, false, 0);
+            entity.framesPerDraw = entity.lottieNative != null ? entity.lottieNative.getFps() / videoFps : 0;
         } else if ((entity.subType & 4) != 0) {
             entity.looped = false;
             entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512, null);
@@ -1872,8 +1871,8 @@ public class TextureRenderer {
         if (mediaEntities != null) {
             for (int a = 0, N = mediaEntities.size(); a < N; a++) {
                 VideoEditedInfo.MediaEntity entity = mediaEntities.get(a);
-                if (entity.ptr != 0) {
-                    RLottieNative.destroy(entity.ptr);
+                if (entity.lottieNative != null) {
+                    entity.lottieNative.recycle();
                 }
                 if (entity.animatedFileDrawable != null) {
                     entity.animatedFileDrawable.recycle();

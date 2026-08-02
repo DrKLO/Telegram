@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#include "./vpx_codec.h"
+#include "./vpx_codec.h"  // IWYU pragma: export
 #include "./vpx_frame_buffer.h"
 
 /*!\brief Current ABI version number
@@ -60,7 +60,7 @@ extern "C" {
 #define VPX_CODEC_CAP_INPUT_FRAGMENTS 0x100000
 /*!\brief Can support frame-based multi-threading */
 #define VPX_CODEC_CAP_FRAME_THREADING 0x200000
-/*!brief Can support external frame buffers */
+/*!\brief Can support external frame buffers */
 #define VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER 0x400000
 
 /*! \brief Initialization-time Feature Enabling
@@ -127,7 +127,7 @@ typedef struct vpx_codec_dec_cfg {
  * \param[in]    ver     ABI version number. Must be set to
  *                       VPX_DECODER_ABI_VERSION
  * \retval #VPX_CODEC_OK
- *     The decoder algorithm initialized.
+ *     The decoder algorithm has been initialized.
  * \retval #VPX_CODEC_MEM_ERROR
  *     Memory allocation failed.
  */
@@ -152,7 +152,7 @@ vpx_codec_err_t vpx_codec_dec_init_ver(vpx_codec_ctx_t *ctx,
  * \param[in]      iface   Pointer to the algorithm interface
  * \param[in]      data    Pointer to a block of data to parse
  * \param[in]      data_sz Size of the data buffer
- * \param[in,out]  si      Pointer to stream info to update. The size member
+ * \param[in,out]  si      Pointer to stream info to update. The sz member
  *                         \ref MUST be properly initialized, but \ref MAY be
  *                         clobbered by the algorithm. This parameter \ref MAY
  *                         be NULL.
@@ -170,7 +170,7 @@ vpx_codec_err_t vpx_codec_peek_stream_info(vpx_codec_iface_t *iface,
  * Returns information about the stream that has been parsed during decoding.
  *
  * \param[in]      ctx     Pointer to this instance's context
- * \param[in,out]  si      Pointer to stream info to update. The size member
+ * \param[in,out]  si      Pointer to stream info to update. The sz member
  *                         \ref MUST be properly initialized, but \ref MAY be
  *                         clobbered by the algorithm. This parameter \ref MAY
  *                         be NULL.
@@ -205,6 +205,8 @@ vpx_codec_err_t vpx_codec_get_stream_info(vpx_codec_ctx_t *ctx,
  *                         this frame.
  * \param[in] deadline     Soft deadline the decoder should attempt to meet,
  *                         in us. Set to zero for unlimited.
+ *                         NOTE: The deadline parameter is ignored. Always
+ *                         pass 0.
  *
  * \return Returns #VPX_CODEC_OK if the coded data was processed completely
  *         and future pictures can be decoded without error. Otherwise,

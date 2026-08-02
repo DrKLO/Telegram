@@ -11840,12 +11840,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (isRound) {
                             if (isEncrypted) {
                                 thumb = Bitmap.createScaledBitmap(thumb, 90, 90, true);
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
+                                Utilities.blurBitmap(thumb, 7);
+                                Utilities.blurBitmap(thumb, 7);
+                                Utilities.blurBitmap(thumb, 7);
                                 thumbKey = String.format(size.location.volume_id + "_" + size.location.local_id + "@%d_%d_b2", (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density), (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density));
                             } else {
-                                Utilities.blurBitmap(thumb, 3, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
+                                Utilities.blurBitmap(thumb, 3);
                                 thumbKey = String.format(size.location.volume_id + "_" + size.location.local_id + "@%d_%d_b", (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density), (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density));
                             }
                         } else {
@@ -11929,12 +11929,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (isRound) {
                             if (isEncrypted) {
                                 thumb = Bitmap.createScaledBitmap(thumb, 90, 90, true);
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
-                                Utilities.blurBitmap(thumb, 7, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
+                                Utilities.blurBitmap(thumb, 7);
+                                Utilities.blurBitmap(thumb, 7);
+                                Utilities.blurBitmap(thumb, 7);
                                 thumbKey = String.format(size.location.volume_id + "_" + size.location.local_id + "@%d_%d_b2", (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density), (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density));
                             } else {
-                                Utilities.blurBitmap(thumb, 3, 1, thumb.getWidth(), thumb.getHeight(), thumb.getRowBytes());
+                                Utilities.blurBitmap(thumb, 3);
                                 thumbKey = String.format(size.location.volume_id + "_" + size.location.local_id + "@%d_%d_b", (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density), (int) (AndroidUtilities.roundMessageSize / AndroidUtilities.density));
                             }
                         } else {

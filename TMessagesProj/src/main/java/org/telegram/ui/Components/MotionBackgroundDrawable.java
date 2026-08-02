@@ -150,7 +150,7 @@ public class MotionBackgroundDrawable extends Drawable {
         gradientFromBitmap.setHasAlpha(false);
         gradientFromCanvas = new Canvas(gradientFromBitmap);
 
-        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        Utilities.generateGradient(currentBitmap, phase, interpolator.getInterpolation(posAnimationProgress), colors);
         if (useSoftLight) {
             paint2.setBlendMode(BlendMode.SOFT_LIGHT);
         }
@@ -243,7 +243,7 @@ public class MotionBackgroundDrawable extends Drawable {
         } else if (phase > 7) {
             phase = 7;
         }
-        Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        Utilities.generateGradient(currentBitmap, phase, interpolator.getInterpolation(posAnimationProgress), colors);
     }
 
     public float getPosAnimationProgress() {
@@ -280,7 +280,7 @@ public class MotionBackgroundDrawable extends Drawable {
     public void generateNextGradient() {
         for (int i = -1; i < ANIMATION_CACHE_BITMAPS_COUNT; i++) {
             float p = (i + 1) / (float) ANIMATION_CACHE_BITMAPS_COUNT;
-            Utilities.generateGradient(i < 0 ? gradientFromBitmap : gradientToBitmap[i], true, phase, p, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            Utilities.generateGradient(i < 0 ? gradientFromBitmap : gradientToBitmap[i], phase, p, colors);
         }
     }
 
@@ -293,7 +293,7 @@ public class MotionBackgroundDrawable extends Drawable {
         rotationBack = true;
         posAnimationProgress = 0.0f;
         invalidateParent();
-        Utilities.generateGradient(gradientFromBitmap, true, phase, 0, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        Utilities.generateGradient(gradientFromBitmap, phase, 0, colors);
         generateNextGradient();
     }
 
@@ -317,7 +317,7 @@ public class MotionBackgroundDrawable extends Drawable {
         colors[1] = c2;
         colors[2] = c3;
         colors[3] = c4;
-        Utilities.generateGradient(bitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+        Utilities.generateGradient(bitmap, phase, interpolator.getInterpolation(posAnimationProgress), colors);
     }
 
     public void setColors(int c1, int c2, int c3, int c4, int rotation, boolean invalidate) {
@@ -334,7 +334,7 @@ public class MotionBackgroundDrawable extends Drawable {
         colors[2] = c3;
         colors[3] = c4;
         if (currentBitmap != null) {
-            Utilities.generateGradient(currentBitmap, true, phase, interpolator.getInterpolation(posAnimationProgress), currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+            Utilities.generateGradient(currentBitmap, phase, interpolator.getInterpolation(posAnimationProgress), colors);
             if (invalidate) {
                 invalidateParent();
             }
@@ -769,7 +769,7 @@ public class MotionBackgroundDrawable extends Drawable {
             }
 
             if (isNeedGenerateGradient) {
-                Utilities.generateGradient(currentBitmap, true, phase, progress, currentBitmap.getWidth(), currentBitmap.getHeight(), currentBitmap.getRowBytes(), colors);
+                Utilities.generateGradient(currentBitmap, phase, progress, colors);
             } else {
                 if (progress != 1f) {
                     float part = 1f / ANIMATION_CACHE_BITMAPS_COUNT;

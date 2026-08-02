@@ -179,13 +179,6 @@ public final class RLottieNative {
         return mMetaData[1];
     }
 
-    /** Animation duration in milliseconds, derived from frame count and fps. */
-    public long getDurationMs() {
-        int fps = mMetaData[1];
-        if (fps == 0) return 0;
-        return (long) (mMetaData[0] / (float) fps * 1000L);
-    }
-
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
@@ -308,7 +301,12 @@ public final class RLottieNative {
      * Prefer {@link #recycle()} for new code.
      */
     public static void destroy(long ptr) {
-        nDestroy(ptr);
+        Trace.beginSection("RLottieNative#destroy");
+        try {
+            nDestroy(ptr);
+        } finally {
+            Trace.endSection();
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -320,14 +318,27 @@ public final class RLottieNative {
      * Safe to call on any thread; does not produce an instance.
      */
     public static long getFramesCount(String src, String json) {
-        return nGetFramesCount(src, json);
+        final RLottieNative rLottieNative = createFromFile(src, json, 0, 0, false, null, false, 0);
+        if (rLottieNative != null) {
+            final int framesCount = rLottieNative.getFrameCount();
+            rLottieNative.recycle();
+            return framesCount;
+        }
+        return 0;
     }
 
     /**
      * Returns the animation duration in seconds without keeping the file open.
      */
     public static double getDuration(String src, String json) {
-        return nGetDuration(src, json);
+        final RLottieNative rLottieNative = createFromFile(src, json, 0, 0, false, null, false, 0);
+        if (rLottieNative != null) {
+            final int framesCount = rLottieNative.getFrameCount();
+            final int fps = rLottieNative.getFps();
+            rLottieNative.recycle();
+            return (double) framesCount / fps;
+        }
+        return 0;
     }
 
 
@@ -347,8 +358,4 @@ public final class RLottieNative {
     private static native void nReplaceColors(long ptr, int[] colorReplacement);
 
     private static native void nDestroy(long ptr);
-
-    private static native long nGetFramesCount(String src, String json);
-
-    private static native double nGetDuration(String src, String json);
 }

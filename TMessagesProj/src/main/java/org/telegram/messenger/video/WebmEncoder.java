@@ -184,17 +184,17 @@ public class WebmEncoder {
         }
 
         private void drawEntity(Canvas canvas, VideoEditedInfo.MediaEntity entity, int textColor, long time) {
-            if (entity.ptr != 0) {
+            if (entity.lottieNative != null) {
                 if (entity.bitmap == null || entity.W <= 0 || entity.H <= 0) {
                     return;
                 }
-                RLottieNative.getFrame(entity.ptr, (int) entity.currentFrame, entity.bitmap, true);
+                entity.lottieNative.getFrame((int) entity.currentFrame, entity.bitmap, true);
                 applyRoundRadius(entity, entity.bitmap, (entity.subType & 8) != 0 ? textColor : 0);
 
                 canvas.drawBitmap(entity.bitmap, entity.matrix, bitmapPaint);
 
                 entity.currentFrame += entity.framesPerDraw;
-                if (entity.currentFrame >= entity.metadata[0]) {
+                if (entity.currentFrame >= entity.lottieNative.getFrameCount()) {
                     entity.currentFrame = 0;
                 }
             } else if (entity.animatedFileDrawable != null) {
@@ -373,9 +373,8 @@ public class WebmEncoder {
                     return;
                 }
                 entity.bitmap = Bitmap.createBitmap(entity.W, entity.H, Bitmap.Config.ARGB_8888);
-                entity.metadata = new int[3];
-                entity.ptr = RLottieNative.create(entity.text, null, entity.W, entity.H, entity.metadata, false, null, false, 0);
-                entity.framesPerDraw = (float) entity.metadata[1] / fps;
+                entity.lottieNative = RLottieNative.createFromFile(entity.text, null, entity.W, entity.H, false, null, false, 0);
+                entity.framesPerDraw = entity.lottieNative != null ? (float) entity.lottieNative.getFps() / fps : 0;
             } else if ((entity.subType & 4) != 0) {
                 entity.looped = false;
                 entity.animatedFileDrawable = new AnimatedFileDrawable(new File(entity.text), true, 0, 0, null, null, null, 0, UserConfig.selectedAccount, true, 512, 512, null);

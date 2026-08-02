@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.readRes;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -108,8 +109,10 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.RLottieDiceDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.RLottieNative;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.ThemeSmallPreviewView;
@@ -166,6 +169,7 @@ public class QrActivity extends BaseFragment {
     private ImageView closeImageView;
 
     private Bitmap emojiThemeIcon;
+    private Bitmap logoOptimal;
     private EmojiThemes currentTheme = homeTheme;
     private boolean isCurrentThemeDark;
     private long userId;
@@ -370,7 +374,7 @@ public class QrActivity extends BaseFragment {
 
         logoImageView = new RLottieImageView(context);
         logoImageView.setAutoRepeat(true);
-        logoImageView.setAnimation(R.raw.qr_code_logo_2, 60, 60);
+        logoImageView.setAnimation(R.raw.plane_logo_plain, 60, 60);
         logoImageView.playAnimation();
         rootLayout.addView(logoImageView);
 
@@ -434,7 +438,15 @@ public class QrActivity extends BaseFragment {
             }
             fragmentView.postDelayed(() -> {
                 onItemSelected(currentTheme, 0, true);
-                logoImageView.getAnimatedDrawable().cacheFrame(LOGO_OPTIMAL_FRAME);
+                if (logoOptimal == null) {
+                    final int s = dp(60);
+                    logoOptimal = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
+                    RLottieNative rLottieNative = RLottieNative.createFromRawJson(readRes(R.raw.plane_logo_plain), "plane_logo_plain", null);
+                    if (rLottieNative != null) {
+                        rLottieNative.getFrame(LOGO_OPTIMAL_FRAME, logoOptimal, false);
+                        rLottieNative.recycle();
+                    }
+                }
             }, 17);
         }, 25);
 
@@ -785,8 +797,12 @@ public class QrActivity extends BaseFragment {
         fragmentView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
         fragmentView.layout(0, 0, width, height);
         fragmentView.draw(canvas);
-        drawable.setBounds(logoImageView.getLeft(), logoImageView.getTop(), logoImageView.getRight(), logoImageView.getBottom());
-        drawable.drawFrame(canvas, LOGO_OPTIMAL_FRAME);
+
+        AndroidUtilities.rectTmp.set(logoImageView.getLeft(), logoImageView.getTop(), logoImageView.getRight(), logoImageView.getBottom());
+        if (logoOptimal != null) {
+            Paint p = new Paint(Paint.FILTER_BITMAP_FLAG);
+            canvas.drawBitmap(logoOptimal, null, AndroidUtilities.rectTmp, p);
+        }
         canvas.setBitmap(null);
 
         themeLayout.setVisibility(View.VISIBLE);
@@ -1527,7 +1543,7 @@ public class QrActivity extends BaseFragment {
             forceDark = !Theme.getActiveTheme().isDark();
             setForceDark(Theme.getActiveTheme().isDark(), false);
             darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
-            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.MULTIPLY));
+            darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(drawableColor, PorterDuff.Mode.SRC_IN));
 
             darkThemeView = new RLottieImageView(context) {
                 @Override
@@ -1864,7 +1880,7 @@ public class QrActivity extends BaseFragment {
                         onAnimationStart();
                         isAnimationStarted = true;
                     }
-                    darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+                    darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
                     if (isLightDarkChangeAnimation) {
                         setItemsAnimationProgress(progress);
                     }

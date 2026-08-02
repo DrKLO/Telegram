@@ -35,7 +35,7 @@
  * Useful to check and match library version in order to maintain
  * backward compatibility.
  *
- * The FFmpeg libraries follow a versioning sheme very similar to
+ * The FFmpeg libraries follow a versioning scheme very similar to
  * Semantic Versioning (http://semver.org/)
  * The difference is that the component called PATCH is called MICRO in FFmpeg
  * and its value is reset to 100 instead of 0 to keep it above or equal to 100.
@@ -72,15 +72,15 @@
 /**
  * @defgroup lavu_ver Version and Build diagnostics
  *
- * Macros and function useful to check at compiletime and at runtime
+ * Macros and function useful to check at compile time and at runtime
  * which version of libavutil is in use.
  *
  * @{
  */
 
-#define LIBAVUTIL_VERSION_MAJOR  56
-#define LIBAVUTIL_VERSION_MINOR  70
-#define LIBAVUTIL_VERSION_MICRO 100
+#define LIBAVUTIL_VERSION_MAJOR  60
+#define LIBAVUTIL_VERSION_MINOR  26
+#define LIBAVUTIL_VERSION_MICRO 102
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
                                                LIBAVUTIL_VERSION_MINOR, \
@@ -105,42 +105,15 @@
  * @{
  */
 
-#ifndef FF_API_VAAPI
-#define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_FRAME_QP
-#define FF_API_FRAME_QP                 (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_PLUS1_MINUS1
-#define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_ERROR_FRAME
-#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_PKT_PTS
-#define FF_API_PKT_PTS                  (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_CRYPTO_SIZE_T
-#define FF_API_CRYPTO_SIZE_T            (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_FRAME_GET_SET
-#define FF_API_FRAME_GET_SET            (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_PSEUDOPAL
-#define FF_API_PSEUDOPAL                (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_CHILD_CLASS_NEXT
-#define FF_API_CHILD_CLASS_NEXT         (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_BUFFER_SIZE_T
-#define FF_API_BUFFER_SIZE_T            (LIBAVUTIL_VERSION_MAJOR < 57)
-#endif
-#ifndef FF_API_D2STR
-#define FF_API_D2STR                    (LIBAVUTIL_VERSION_MAJOR < 58)
-#endif
-#ifndef FF_API_DECLARE_ALIGNED
-#define FF_API_DECLARE_ALIGNED          (LIBAVUTIL_VERSION_MAJOR < 58)
-#endif
+#define FF_API_MOD_UINTP2               (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_RISCV_FD_ZBA             (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_VULKAN_FIXED_QUEUES      (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_OPT_INT_LIST             (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_OPT_PTR                  (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_CPU_FLAG_FORCE           (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_DOVI_L11_INVALID_PROPS   (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_ASSERT_FPU               (LIBAVUTIL_VERSION_MAJOR < 61)
+#define FF_API_VULKAN_SYNC_QUEUES       (LIBAVUTIL_VERSION_MAJOR < 62)
 
 /**
  * @}

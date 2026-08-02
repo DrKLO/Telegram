@@ -372,7 +372,6 @@ public:
     
     ~VideoStreamingDecoderState() {
         if (_codecContext) {
-            avcodec_close(_codecContext);
             avcodec_free_context(&_codecContext);
         }
         if (_codecParameters) {

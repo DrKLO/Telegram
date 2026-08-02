@@ -43,6 +43,8 @@ extern "C" {
       #else
         #define DAV1D_API
       #endif
+    #elif defined __OS2__
+        #define DAV1D_API __declspec(dllexport)
     #else
       #if __GNUC__ >= 4
         #define DAV1D_API __attribute__ ((visibility ("default")))
