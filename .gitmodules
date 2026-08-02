@@ -1,0 +1,9 @@
+[submodule "TMessagesProj/jni/third_party/libvpx"]
+	path = TMessagesProj/jni/third_party/libvpx
+	url = https://github.com/webmproject/libvpx.git
+[submodule "TMessagesProj/jni/third_party/dav1d"]
+	path = TMessagesProj/jni/third_party/dav1d
+	url = https://github.com/videolan/dav1d.git
+[submodule "TMessagesProj/jni/third_party/ffmpeg"]
+	path = TMessagesProj/jni/third_party/ffmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
