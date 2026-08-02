@@ -126,6 +126,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessageVariantsController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
@@ -652,6 +653,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         default void didPressSideButton(ChatMessageCell cell) {
+        }
+
+        // Variant-sibling arrow tap zone (delta -1 = previous, +1 = next).
+        default void didPressVariantArrow(ChatMessageCell cell, int delta) {
         }
 
         default void didQuickShareStart(ChatMessageCell cell, float x, float y) {
@@ -1241,6 +1246,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean wasTranscriptionOpen;
     private Path instantLinkArrowPath;
     private Paint instantLinkArrowPaint;
+    // Variant-sibling stack cards -- lazy-init like instantLinkArrowPaint above.
+    private Paint variantStackFramePaint;   // border stroke
+    private Paint variantStackFillPaint;    // filled card body
+    private RectF variantStackFrameRect;
+    // The whole look of the variant stack is tuned from these four constants, in one place: how far
+    // each back card peeks out, how opaque its border is, and how much the fill is darkened per
+    // depth step so the back cards read as cards rather than blending into the bubble.
+    private static final float VARIANT_STACK_DX_DP = 3f;        // sideways peek per card
+    private static final float VARIANT_STACK_DY_DP = 2f;        // upward peek per card
+    private static final int VARIANT_STACK_BORDER_ALPHA = 210;  // border stroke alpha
+    private static final float VARIANT_STACK_TINT = 0.12f;      // border colour blended into the fill, per depth
 
     private int nameLayoutSelectorColor;
     private Drawable nameLayoutSelector;
@@ -1335,6 +1351,36 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int foreverDrawableColor = 0xFFFFFFFF;
 
     private boolean timePressed;
+
+    // Variant-sibling arrow tap zones -- geometry is set alongside the counter draw in
+    // drawTimeInternal and consumed by checkVariantArrowMotionEvent below.
+    private boolean variantCounterHitActive;
+    private float variantCounterHitLeft, variantCounterHitCenter, variantCounterHitRight, variantCounterHitTop, variantCounterHitBottom;
+    private boolean variantArrowPressed;
+    private int variantArrowPressedDelta;
+    // The counter is centred on the bubble, so the same draw pass must not run twice per frame:
+    // drawTime enters drawTimeInternal up to four times (the i < 2 selection loop plus the two
+    // transitionParams layouts). Anchored on the clock those passes land at different X, but centred
+    // they land pixel-on-pixel, doubling the alpha and letting the last pass own the tap zone.
+    // First call of the frame wins.
+    private boolean variantCounterDrawnThisFrame;
+
+    // Single source of truth for the "is this message part of a variant pack" gate, used by
+    // measureTime, drawTimeInternal, the accessibility node and the stack overlay. Returns the
+    // variant-group id, or 0 when this message is not part of a pack. The id rather than the size
+    // is returned because three of the four call sites immediately need it for indexOfActive() --
+    // returning only the size would force each of them to look the group up a second time, in the
+    // draw path.
+    private int variantPackGroupId() {
+        if (currentMessageObject == null) {
+            return 0;
+        }
+        TLRPC.User variantSender = MessagesController.getInstance(currentAccount).getUser(currentMessageObject.getFromChatId());
+        if (!MessageVariantsController.isGenerativeBot(variantSender)) {
+            return 0;
+        }
+        return MessageVariantsController.getInstance(currentAccount).groupIdOf(currentMessageObject.getId());
+    }
 
     private float timeAlpha = 1.0f;
     private float actionAlpha = 1.0f;
@@ -1662,6 +1708,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private float[] sideButtonPathCorners1, sideButtonPathCorners2;
     private static final int SIDE_BUTTON_SPONSORED_CLOSE = 4;
     private static final int SIDE_BUTTON_SPONSORED_MORE = 5;
+    private static final int SIDE_BUTTON_REGENERATE = 6;
     private float sideStartX, sideStartY;
     private float summarizeButtonX, summarizeButtonY;
 
@@ -4156,6 +4203,38 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // Arrow tap zones flanking the variant counter -- mirrors checkDateMotionEvent's minimal
+    // ACTION_DOWN/ACTION_UP pattern (variantArrowPressed is cleared by the shared ACTION_CANCEL
+    // reset block further down in onTouchEvent, same as timePressed).
+    private boolean checkVariantArrowMotionEvent(MotionEvent event) {
+        if (!variantCounterHitActive) {
+            return false;
+        }
+        int x = (int) getEventX(event);
+        int y = (int) getEventY(event);
+
+        boolean result = false;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (x >= variantCounterHitLeft && x <= variantCounterHitRight && y >= variantCounterHitTop && y <= variantCounterHitBottom) {
+                variantArrowPressed = true;
+                variantArrowPressedDelta = x < variantCounterHitCenter ? -1 : 1;
+                result = true;
+                invalidate();
+            }
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            if (variantArrowPressed) {
+                variantArrowPressed = false;
+                playSoundEffect(SoundEffectConstants.CLICK);
+                if (delegate != null) {
+                    delegate.didPressVariantArrow(this, variantArrowPressedDelta);
+                }
+                invalidate();
+                result = true;
+            }
+        }
+        return result;
+    }
+
     private boolean checkDateMotionEvent(MotionEvent event) {
         if (!currentMessageObject.isImportedForward()) {
             return false;
@@ -4968,6 +5047,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             result = checkDateMotionEvent(event);
         }
         if (!result) {
+            result = checkVariantArrowMotionEvent(event);
+        }
+        if (!result) {
             result = checkTextSelection(event);
         }
         if (!result && topicButton != null) {
@@ -5067,6 +5149,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             pressedSideButton = 0;
             imagePressed = false;
             timePressed = false;
+            variantArrowPressed = false;
             gamePreviewPressed = false;
             instantPressed = commentButtonPressed = false;
             setInstantButtonPressed(false);
@@ -6954,6 +7037,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawSideButton = !isRepliesChat && checkNeedDrawShareButton(messageObject) ? 1 : 0;
                 if (isPinnedChat || drawSideButton == 1 && (messageObject.messageOwner.fwd_from != null && !messageObject.isOutOwner() && messageObject.messageOwner.fwd_from.saved_from_peer != null && messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId() || messageObject.isSaved)) {
                     drawSideButton = 2;
+                }
+            }
+            {
+                TLRPC.User sideButtonSender = MessagesController.getInstance(currentAccount).getUser(messageObject.getFromChatId());
+                if (MessageVariantsController.isGenerativeBot(sideButtonSender)) {
+                    drawSideButton = SIDE_BUTTON_REGENERATE;
                 }
             }
             drawSummarizeButton = TranslateController.isSummarizable(messageObject);
@@ -12898,6 +12987,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentMessageObject.isUnsupported()) {
             newLineForTime = true;
         }
+        // A variant pack always gets its own time row. The counter is drawn centred on the bubble
+        // width, so if the clock shared the last text line the centred counter would sit on top of
+        // that line's tail. The newLineForTime branch below widens the bubble to timeWidth + dp(31),
+        // and timeWidth already carries the counter's reservation from measureTime -- so the
+        // dedicated row fits both the clock and the centred counter.
+        int packGroupId = variantPackGroupId();
+        if (packGroupId != 0 && MessageVariantsController.getInstance(currentAccount).size(packGroupId) > 1) {
+            newLineForTime = true;
+        }
         if ((reactionsLayoutInBubble.isEmpty || reactionsLayoutInBubble.isSmall) && currentMessageObject.richLayout != null && currentMessageObject.richLayout.forceNewLineForTime()) {
             newLineForTime = true;
         }
@@ -18563,6 +18661,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         } else {
             signWidth = 0;
         }
+        // Variant-sibling footer counter reserves its width in the time row (same pattern as
+        // views/replies/reactions above).
+        // The reservation does not POSITION the counter -- the counter is centred on the bubble
+        // geometry, not appended to the clock. What it buys is room: it guarantees the time row is
+        // wide enough for the clock AND the centred counter, which keeps the bubble-relative clamp
+        // in drawTimeInternal from firing on a normally sized message.
+        int measureGroupId = variantPackGroupId();
+        int measureGroupSize = measureGroupId != 0 ? MessageVariantsController.getInstance(currentAccount).size(measureGroupId) : 0;
+        if (measureGroupSize > 1) {
+            String counterText = LocaleController.formatString(R.string.VariantCounterFormat, MessageVariantsController.getInstance(currentAccount).indexOfActive(measureGroupId) + 1, measureGroupSize);
+            timeWidth += (int) Math.ceil(Theme.chat_timePaint.measureText(counterText)) + dp(4);
+        }
     }
 
     protected boolean shouldDrawSelectionOverlay() {
@@ -20523,6 +20633,67 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             roundVideoPlayPipFloat.set(0, true);
         }
 
+        // Variant-pack visual stack: a message with siblings should read as a stack of cards rather
+        // than a lone bubble. Draw up to two filled cards (bubble-fill body + hairline border) BEHIND
+        // the bubble, each offset up and sideways so their top corners peek past the bubble into the
+        // wallpaper. This runs before the bubble-background pass below, so the bubble paints on top
+        // and only the peek shows. Gated on group size > 1 and free otherwise. An earlier attempt
+        // that inset a 1dp hairline INSIDE the bubble was invisible on a real screen, which is why
+        // the cards are drawn behind and offset outwards instead.
+        {
+            // Gate shared with the measure/draw/accessibility call sites via variantPackGroupId(),
+            // which also requires the sender to be a variant-authoring peer. Variant groups are only
+            // ever created for such a peer's answers, so the extra condition cannot hide a real pack,
+            // and one shared gate is what keeps the four call sites from drifting apart.
+            int stackGroupId = variantPackGroupId();
+            int stackSize = stackGroupId != 0 ? MessageVariantsController.getInstance(currentAccount).size(stackGroupId) : 0;
+            if (stackSize > 1) {
+                if (variantStackFillPaint == null) {
+                    variantStackFillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    variantStackFillPaint.setStyle(Paint.Style.FILL);
+                }
+                if (variantStackFramePaint == null) {
+                    variantStackFramePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    variantStackFramePaint.setStyle(Paint.Style.STROKE);
+                    variantStackFramePaint.setStrokeWidth(dp(1));
+                }
+                if (variantStackFrameRect == null) {
+                    variantStackFrameRect = new RectF();
+                }
+                int bubbleFill = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble);
+                int borderColor = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outTimeText : Theme.key_chat_inTimeText);
+                float radius = dp(SharedConfig.bubbleRadius);
+                int backCards = Math.min(2, stackSize - 1);
+                // Farthest card first so nearer cards paint over it; the bubble then covers every card's
+                // left/bottom, leaving only the offset top-right sliver of each visible.
+                for (int i = backCards; i >= 1; i--) {
+                    // Peek is single-digit dp, driven by the constants above.
+                    float dx = dp(VARIANT_STACK_DX_DP * i);
+                    float dy = dp(VARIANT_STACK_DY_DP * i);
+                    // Clamp the card top to the cell's own top edge. backgroundDrawableTop is
+                    // additionalTop + dp(1), so there is essentially no room above the bubble inside
+                    // the cell -- anything above zero is clipped by the cell boundary
+                    // (RecyclerView clipChildren) and the rounded corner is cut in half. Clamping at
+                    // zero still leaves about 1dp of visible top peek and keeps the corner whole.
+                    // The bottom edge sits under the bubble, so it is left alone.
+                    variantStackFrameRect.set(
+                            backgroundDrawableLeft + dx,
+                            Math.max(0f, backgroundDrawableTop - dy),
+                            backgroundDrawableLeft + backgroundDrawableRight + dx,
+                            backgroundDrawableBottom - dy);
+                    // Tint the fill towards the border colour by depth, so the farther card is
+                    // visibly darker than the nearer one and the stack reads as a stack. Stroke width
+                    // stays at dp(1) -- on a 3dp sliver a fatter stroke would swallow the sliver.
+                    variantStackFillPaint.setColor(ColorUtils.blendARGB(bubbleFill, borderColor, VARIANT_STACK_TINT * i));
+                    variantStackFillPaint.setAlpha(255);
+                    canvas.drawRoundRect(variantStackFrameRect, radius, radius, variantStackFillPaint);
+                    variantStackFramePaint.setColor(borderColor);
+                    variantStackFramePaint.setAlpha(VARIANT_STACK_BORDER_ALPHA);
+                    canvas.drawRoundRect(variantStackFrameRect, radius, radius, variantStackFramePaint);
+                }
+            }
+        }
+
         if ((drawBackground || transitionParams.animateDrawBackground) && currentBackgroundDrawable != null && (currentPosition == null || isDrawSelectionBackground() && (currentMessageObject.isMusic() || currentMessageObject.isDocument())) && !(enterTransitionInProgress && !currentMessageObject.isVoice())) {
             float alphaInternal = this.alphaInternal;
             if (fromParent) {
@@ -21523,6 +21694,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 Drawable goIconDrawable = getThemedDrawable(Theme.key_drawable_goIcon);
                 setDrawableBounds(goIconDrawable, sideStartX + dp(16) - goIconDrawable.getIntrinsicWidth() / 2f, sideStartY + dp(16) - goIconDrawable.getIntrinsicHeight() / 2f);
                 goIconDrawable.draw(canvas);
+            } else if (drawSideButton == SIDE_BUTTON_REGENERATE) {
+                Drawable regenerateIconDrawable = getThemedDrawable(Theme.key_drawable_regenerateIcon);
+                setDrawableBounds(regenerateIconDrawable, sideStartX + dp(16) - regenerateIconDrawable.getIntrinsicWidth() / 2f, sideStartY + dp(16) - regenerateIconDrawable.getIntrinsicHeight() / 2f);
+                regenerateIconDrawable.draw(canvas);
             } else if (drawSideButton == SIDE_BUTTON_SPONSORED_CLOSE) {
                 final int scx = (int) (sideStartX + dp(16)), scy = (int) (sideStartY + dp(16));
                 Drawable drawable = getThemedDrawable(Theme.key_drawable_closeIcon);
@@ -23632,6 +23807,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
             return;
         }
+        // Open the frame for the variant counter. The loop below may enter drawTimeInternal up to
+        // four times (selection pass + the two transition layouts); the first one to reach the
+        // counter draws it and owns the tap zone, the rest pass it by. Both flags are cleared on
+        // EVERY drawTime call, so separate-canvas paths (pinch-to-zoom, ThanosEffect) still get
+        // their own draw.
+        variantCounterDrawnThisFrame = false;
+        variantCounterHitActive = false;
         for (int i = 0; i < 2; i++) {
             float currentAlpha = alpha;
             if (i == 0 && isDrawSelectionBackground() && currentSelectedBackgroundAlpha == 1f && !shouldDrawTimeOnMedia()) {
@@ -24008,6 +24190,46 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 SpoilerEffect.layoutDrawMaybe(timeLayout, canvas);
             }
             canvas.restore();
+        }
+
+        // Variant-sibling footer counter "<i>/<N>", gated on group size > 1 so a message with no
+        // siblings pays zero extra draw cost. Detached from the clock and centred on the bubble,
+        // guarded by the per-frame latch opened in drawTime -- the first call of the frame draws,
+        // the rest skip.
+        if (!variantCounterDrawnThisFrame && currentMessageObject != null) {
+            int groupId = variantPackGroupId();
+            int groupSize = groupId != 0 ? MessageVariantsController.getInstance(currentAccount).size(groupId) : 0;
+            // backgroundDrawableRight is the bubble WIDTH; <= 0 means the bubble geometry has not
+            // been computed yet this layout, so there is nothing to centre against -- skip the frame
+            // entirely and leave both flags as drawTime cleared them.
+            if (groupSize > 1 && backgroundDrawableRight > 0) {
+                variantCounterDrawnThisFrame = true;
+                String counterText = LocaleController.formatString(R.string.VariantCounterFormat, MessageVariantsController.getInstance(currentAccount).indexOfActive(groupId) + 1, groupSize);
+                StaticLayout counterLayout = new StaticLayout(counterText, Theme.chat_timePaint, dp(60), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                // Position from the BUBBLE, never from the clock. The old anchor (drawTimeX + time
+                // text width) inherited whatever width the time row happened to have reserved, and
+                // the FIRST variant was measured while its group was still a single message -- i.e.
+                // with no counter reservation at all -- so paging back to it pushed the counter past
+                // the bubble edge. Both clamp ends are bubble-relative too, so the counter cannot
+                // leave the bubble under any reservation history; the clamp only ever engages on a
+                // degenerately narrow bubble (a very short message).
+                float counterW = counterLayout.getLineWidth(0);
+                float counterX = backgroundDrawableLeft + backgroundDrawableRight / 2f - counterW / 2f;
+                counterX = Math.min(counterX, drawTimeX - counterW - dp(4));
+                counterX = Math.max(counterX, backgroundDrawableLeft + dp(8));
+                canvas.save();
+                canvas.translate(counterX, drawTimeY);
+                counterLayout.draw(canvas);
+                canvas.restore();
+                // Arrow tap zones: a generous rect flanking the counter, split at its horizontal
+                // center (left half = previous, right half = next).
+                variantCounterHitActive = true;
+                variantCounterHitLeft = counterX - dp(16);
+                variantCounterHitRight = counterX + counterLayout.getLineWidth(0) + dp(16);
+                variantCounterHitCenter = counterX + counterLayout.getLineWidth(0) / 2f;
+                variantCounterHitTop = drawTimeY - dp(8);
+                variantCounterHitBottom = drawTimeY + counterLayout.getHeight() + dp(8);
+            }
         }
 
         if (currentMessageObject.isOutOwner()) {
@@ -26929,6 +27151,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         sb.append(messageText);
+                    }
+                    // Surface the variant-pack "i/N" counter on the cell's accessibility node, so a
+                    // pack is distinguishable from a single message without looking at pixels: the
+                    // footer counter in drawTimeInternal is Canvas-only and therefore invisible to
+                    // TalkBack. Mirrors that gate and format exactly; a message with no siblings
+                    // appends nothing.
+                    {
+                        int variantGroupId = variantPackGroupId();
+                        int variantGroupSize = variantGroupId != 0 ? MessageVariantsController.getInstance(currentAccount).size(variantGroupId) : 0;
+                        if (variantGroupSize > 1) {
+                            sb.append(" ");
+                            sb.append(LocaleController.formatString(R.string.VariantCounterFormat, MessageVariantsController.getInstance(currentAccount).indexOfActive(variantGroupId) + 1, variantGroupSize));
+                        }
                     }
                     if (documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO)) {
                         if (buttonState == 1 && loadingProgressLayout != null) {

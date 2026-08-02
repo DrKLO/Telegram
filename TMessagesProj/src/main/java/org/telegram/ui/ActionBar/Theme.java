@@ -3317,6 +3317,7 @@ public class Theme {
     public static Drawable chat_closeIconDrawable;
     public static Drawable chat_moreIconDrawable;
     public static Drawable chat_goIconDrawable;
+    public static Drawable chat_regenerateIconDrawable;
     public static Drawable chat_botLinkDrawable;
     public static Drawable chat_botCardDrawable;
     public static Drawable chat_botInlineDrawable;
@@ -4212,6 +4213,7 @@ public class Theme {
     public static final String key_drawable_botInvite = "drawable_botInvite";
     public static final String key_drawable_commentSticker = "drawableCommentSticker";
     public static final String key_drawable_goIcon = "drawableGoIcon";
+    public static final String key_drawable_regenerateIcon = "drawableRegenerateIcon";
     public static final String key_drawable_msgError = "drawableMsgError";
     public static final String key_drawable_msgIn = "drawableMsgIn";
     public static final String key_drawable_msgInInstant = "drawableMsgInInstant";
@@ -8849,6 +8851,7 @@ public class Theme {
             chat_closeIconDrawable = resources.getDrawable(R.drawable.msg_voiceclose).mutate();
             chat_moreIconDrawable = resources.getDrawable(R.drawable.media_more).mutate();
             chat_goIconDrawable = resources.getDrawable(R.drawable.filled_open_message);
+            chat_regenerateIconDrawable = resources.getDrawable(R.drawable.msg_regenerate);
 
             int rad = dp(2);
             RectF rect = new RectF();
@@ -8907,6 +8910,7 @@ public class Theme {
             addChatDrawable(key_drawable_botLink, chat_botLinkDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_botInvite, chat_botInviteDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_goIcon, chat_goIconDrawable, key_chat_serviceIcon);
+            addChatDrawable(key_drawable_regenerateIcon, chat_regenerateIconDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_commentSticker, chat_commentStickerDrawable, key_chat_serviceIcon);
             addChatDrawable(key_drawable_msgError, chat_msgErrorDrawable, key_chat_sentErrorIcon);
             addChatDrawable(key_drawable_msgIn, chat_msgInDrawable, -1);
@@ -9042,6 +9046,7 @@ public class Theme {
             setDrawableColorByKey(chat_shareIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_goIconDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_regenerateIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botInlineDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botWebViewDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botLockDrawable, key_chat_lockIcon);
@@ -9276,6 +9281,7 @@ public class Theme {
             setDrawableColor(chat_shareIconDrawable, 0xffffffff);
             setDrawableColor(chat_replyIconDrawable, 0xffffffff);
             setDrawableColor(chat_goIconDrawable, 0xffffffff);
+            setDrawableColor(chat_regenerateIconDrawable, 0xffffffff);
             setDrawableColor(chat_botInlineDrawable, 0xffffffff);
             setDrawableColor(chat_botWebViewDrawable, 0xffffffff);
             setDrawableColor(chat_botLockDrawable, 0xffffffff);
@@ -9298,6 +9304,7 @@ public class Theme {
             setDrawableColorByKey(chat_shareIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_replyIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_goIconDrawable, key_chat_serviceIcon);
+            setDrawableColorByKey(chat_regenerateIconDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botInlineDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botWebViewDrawable, key_chat_serviceIcon);
             setDrawableColorByKey(chat_botLockDrawable, key_chat_serviceIcon);

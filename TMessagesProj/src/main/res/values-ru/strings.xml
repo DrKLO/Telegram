@@ -263,4 +263,6 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+    <string name="VariantCounterFormat">‹ %1$d/%2$d ›</string>
+    <string name="MessageRegenerate">Обновить</string>
 </resources>

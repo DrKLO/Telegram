@@ -1379,6 +1379,8 @@
     <string name="PinNotify">Notify all members</string>
     <string name="PinAlsoFor">Also pin for %1$s</string>
     <string name="UnpinMessage">Unpin</string>
+    <string name="VariantCounterFormat">‹ %1$d/%2$d ›</string>
+    <string name="MessageRegenerate">Regenerate</string>
     <string name="PinMessageAlertTitle">Pin message</string>
     <string name="UnpinMessageAlertTitle">Unpin message</string>
     <string name="PinOldMessageAlert">Do you want to pin an older message while leaving a more recent one pinned?</string>
