@@ -1001,6 +1001,13 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         return fragmentView = container;
     }
 
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        if (listView != null && listView.textSelectionHelper.isInSelectionMode())
+            return false;
+        return super.isSwipeBackEnabled(event);
+    }
+
     private static final int BOTTOM_PANEL_TOOLBAR = 0;
     private static final int BOTTOM_PANEL_FORMATTING = 1;
     private static final int BOTTOM_PANEL_TRASH = 2;

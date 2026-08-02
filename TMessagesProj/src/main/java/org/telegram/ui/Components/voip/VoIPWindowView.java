@@ -27,7 +27,6 @@ public class VoIPWindowView extends FrameLayout {
     Activity activity;
     protected boolean lockOnScreen;
 
-    private int orientationBefore;
     private AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     VelocityTracker velocityTracker;
@@ -36,10 +35,8 @@ public class VoIPWindowView extends FrameLayout {
         super(activity);
         this.activity = activity;
         setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        setFitsSystemWindows(true);
 
-        orientationBefore = activity.getRequestedOrientation();
-        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        AndroidUtilities.lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         OrientationHelper.cameraRotationDisabled = true;
         if (!enterAnimation) {
             runEnterTransition = true;
@@ -145,9 +142,8 @@ public class VoIPWindowView extends FrameLayout {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         notificationsLocker.unlock();
+                        AndroidUtilities.unlockOrientation(activity);
                         if (getParent() != null) {
-                            activity.setRequestedOrientation(orientationBefore);
-
                             WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
                             setVisibility(View.GONE);
                             try {
@@ -185,18 +181,12 @@ public class VoIPWindowView extends FrameLayout {
         windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
         windowLayoutParams.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 
-        if (Build.VERSION.SDK_INT >= 28) {
-            windowLayoutParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
-        if (Build.VERSION.SDK_INT >= 21) {
-            windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                    WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                    WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
-                    WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
-        } else {
-            windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        }
-        windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+        AndroidUtilities.applyEdgeToEdgeLayoutParams(windowLayoutParams);
+        windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+                WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM |
+                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         return windowLayoutParams;
@@ -219,7 +209,7 @@ public class VoIPWindowView extends FrameLayout {
 
     public void finishImmediate() {
         if (getParent() != null) {
-            activity.setRequestedOrientation(orientationBefore);
+            AndroidUtilities.unlockOrientation(activity);
             WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
             setVisibility(View.GONE);
             wm.removeView(VoIPWindowView.this);

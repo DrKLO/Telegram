@@ -68,7 +68,6 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     private static boolean supportBigNotifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     private static boolean supportLockScreenControls = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || !TextUtils.isEmpty(AndroidUtilities.getSystemProperty("ro.miui.ui.version.code"));
 
-    private TelegramMediaSession sessionHolder;
     private MediaSessionCompat mediaSession;
     private PlaybackStateCompat.Builder playbackState;
     private Bitmap albumArtPlaceholder;
@@ -113,13 +112,119 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            sessionHolder = TelegramMediaSession.getInstance(getApplicationContext());
-            mediaSession = sessionHolder.getSession();
+            mediaSession = new MediaSessionCompat(this, "telegramAudioPlayer");
             playbackState = new PlaybackStateCompat.Builder();
             albumArtPlaceholder = Bitmap.createBitmap(AndroidUtilities.dp(102), AndroidUtilities.dp(102), Bitmap.Config.ARGB_8888);
             Drawable placeholder = getResources().getDrawable(R.drawable.nocover_big);
             placeholder.setBounds(0, 0, albumArtPlaceholder.getWidth(), albumArtPlaceholder.getHeight());
             placeholder.draw(new Canvas(albumArtPlaceholder));
+            mediaSession.setCallback(new MediaSessionCompat.Callback() {
+                @Override
+                public void onPlay() {
+                    MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
+                }
+
+                @Override
+                public void onPause() {
+                    MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
+                }
+
+                @Override
+                public void onSkipToNext() {
+                    MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (playingMessageObject != null && playingMessageObject.isMusic()) {
+                        MediaController.getInstance().playNextMessage();
+                    }
+                }
+
+                @Override
+                public void onSkipToPrevious() {
+                    MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (playingMessageObject != null && playingMessageObject.isMusic()) {
+                        MediaController.getInstance().playPreviousMessage();
+                    }
+                }
+
+                @Override
+                public void onSeekTo(long pos) {
+                    MessageObject object = MediaController.getInstance().getPlayingMessageObject();
+                    if (object != null) {
+                        MediaController.getInstance().seekToProgress(object, pos / 1000 / (float) object.getDuration());
+                        updatePlaybackState(pos);
+                    }
+                }
+
+                @Override
+                public void onSetRepeatMode(int repeatMode) {
+                    int newMode;
+                    switch (repeatMode) {
+                        case PlaybackStateCompat.REPEAT_MODE_ONE:
+                            newMode = 2;
+                            break;
+                        case PlaybackStateCompat.REPEAT_MODE_ALL:
+                        case PlaybackStateCompat.REPEAT_MODE_GROUP:
+                            newMode = 1;
+                            break;
+                        default:
+                            newMode = 0;
+                            break;
+                    }
+                    SharedConfig.setRepeatMode(newMode);
+                    updateRepeatMode();
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
+                public void onSetShuffleMode(int shuffleMode) {
+                    if (shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL || shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_GROUP) {
+                        if (!SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(2);
+                        }
+                    } else {
+                        if (SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(0);
+                        }
+                    }
+                    updateShuffleMode();
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
+                public void onCustomAction(String action, android.os.Bundle extras) {
+                    if (NOTIFY_REPEAT.equals(action)) {
+                        SharedConfig.setRepeatMode((SharedConfig.repeatMode + 1) % 3);
+                        updateRepeatMode();
+                        if (AudioPlayerAlert.instance != null) {
+                            AudioPlayerAlert.instance.updateRepeatButton();
+                        }
+                    } else if (NOTIFY_SHUFFLE.equals(action)) {
+                        if (SharedConfig.shuffleMusic) {
+                            MediaController.getInstance().setPlaybackOrderType(0);
+                        } else {
+                            MediaController.getInstance().setPlaybackOrderType(2);
+                        }
+                        updateShuffleMode();
+                        if (AudioPlayerAlert.instance != null) {
+                            AudioPlayerAlert.instance.updateRepeatButton();
+                        }
+                    }
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null) {
+                        createNotification(messageObject, false);
+                    }
+                }
+
+                @Override
+                public void onStop() {
+                    //stopSelf();
+                }
+            });
             mediaSession.setActive(true);
             updateRepeatMode();
             updateShuffleMode();
@@ -714,7 +819,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             metadataEditor.apply();
             audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
-        // mediaSession is owned by TelegramMediaSession (process singleton) — do NOT release here.
+        if (mediaSession != null) {
+            mediaSession.release();
+        }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);

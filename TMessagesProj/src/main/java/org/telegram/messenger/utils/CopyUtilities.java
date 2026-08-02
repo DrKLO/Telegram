@@ -293,10 +293,13 @@ public class CopyUtilities {
                 }
             } else if (tag.equals("blockquote")) {
                 if (opening) {
-                    output.setSpan(new ParsedSpan(TYPE_QUOTE), output.length(), output.length(), Spanned.SPAN_MARK_MARK);
+                    final String className = HTMLTagAttributesHandler.getValue(attributes, "class");
+                    final boolean collapsed = HTMLTagAttributesHandler.getValue(attributes, "data-collapsed") != null
+                            || className != null && className.contains("telegram-collapsed-quote");
+                    output.setSpan(new ParsedSpan(collapsed ? TYPE_COLLAPSE : TYPE_QUOTE), output.length(), output.length(), Spanned.SPAN_MARK_MARK);
                     return true;
                 } else {
-                    ParsedSpan obj = getLast(output, ParsedSpan.class, TYPE_QUOTE);
+                    ParsedSpan obj = getLastQuote(output);
                     if (obj != null) {
                         int where = output.getSpanStart(obj);
                         output.removeSpan(obj);
@@ -323,6 +326,18 @@ public class CopyUtilities {
                 }
             }
             return false;
+        }
+
+        private ParsedSpan getLastQuote(Editable text) {
+            ParsedSpan[] objs = text.getSpans(0, text.length(), ParsedSpan.class);
+            for (int i = objs.length - 1; i >= 0; i--) {
+                final ParsedSpan obj = objs[i];
+                if (text.getSpanFlags(obj) == Spannable.SPAN_MARK_MARK
+                        && (obj.type == TYPE_QUOTE || obj.type == TYPE_COLLAPSE)) {
+                    return obj;
+                }
+            }
+            return null;
         }
 
         private <T> T getLast(Editable text, Class<T> kind) {

@@ -509,6 +509,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
 
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
+        buttonView.setRound();
         if (sendEnabled || liveStories) {
             if (!sendEnabled) {
                 buttonView.setAlpha(0.5f);
@@ -561,9 +562,9 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
                 if (starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
                     if (liveStories) {
-                        new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, DialogObject.getShortName(currentAccount, dialogId), send, 0).show();
+                        new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, DialogObject.getShortName(currentAccount, dialogId), send, dialogId).show();
                     } else {
-                        new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, chat == null ? "" : chat.title, send, 0).show();
+                        new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, chat == null ? "" : chat.title, send, dialogId).show();
                     }
                 } else {
                     send.run();

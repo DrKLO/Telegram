@@ -27,6 +27,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
 import androidx.core.math.MathUtils;
 import androidx.core.view.WindowInsetsCompat;
 
@@ -36,7 +38,6 @@ import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -50,6 +51,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -209,10 +211,26 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
+                final int color = getEstBackgroundColor();
+                if (insetLeft != 0) {
+                    canvas.drawRect(0, 0, insetLeft, getHeight(), Theme.fillingPaint(color));
+                }
+                if (insetRight != 0) {
+                    canvas.drawRect(getWidth() - insetRight, 0, getWidth(), getHeight(), Theme.fillingPaint(color));
+                }
+
                 super.dispatchDraw(canvas);
                 blur3_invalidateBlur();
+                blur3_updateFadeColors();
             }
         };
+    }
+
+    private int getEstBackgroundColor() {
+        return ColorUtils.blendARGB(
+                getThemedColor(Theme.key_windowBackgroundGray),
+                getThemedColor(Theme.key_windowBackgroundWhite),
+                viewPager != null ? viewPager.getPositionVisibility(0) : 1);
     }
 
     private boolean tabletLayout;
@@ -648,6 +666,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         checkUi_fadeView();
         blur3_invalidateBlur();
+        contentView.invalidate();
     }
 
 
@@ -791,11 +810,18 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     /* * */
 
     private int navigationBarHeight;
+    private int insetLeft;
+    private int insetRight;
 
     @NonNull
     @Override
     protected WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
-        navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
+
+        insetLeft = systemInsets.left;
+        insetRight = systemInsets.right;
+
+        navigationBarHeight = systemInsets.bottom;
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
         updateLayoutWrapper.setPadding(0, 0, 0, navigationBarHeight);
@@ -815,13 +841,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }
             lp = (ViewGroup.MarginLayoutParams) viewPager.getLayoutParams();
-            if (lp.bottomMargin != bottomMargin) {
+            if (lp.bottomMargin != bottomMargin || lp.leftMargin != systemInsets.left || lp.rightMargin != systemInsets.right) {
+                lp.leftMargin = systemInsets.left;
+                lp.rightMargin = systemInsets.right;
                 lp.bottomMargin = bottomMargin;
                 viewPager.setLayoutParams(lp);
             }
         }
 
-        tabsViewWrapper.setPadding(0, 0, 0, navigationBarHeight);
+        tabsViewWrapper.setPadding(systemInsets.left, 0, systemInsets.right, navigationBarHeight);
 
         final WindowInsetsCompat consumed = isUpdateLayoutVisible ?
             insets.inset(0, 0, 0, navigationBarHeight) : insets;
@@ -1087,8 +1115,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         iBlur3SourceTabGlass.updateDisplayListIfNeeded();
     }
 
+    private void blur3_updateFadeColors() {
+        iBlur3SourceColor.setColor(getEstBackgroundColor());
+        if (fadeView != null) {
+            fadeView.invalidate();
+        }
+    }
+
     private void blur3_updateColors() {
-        iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        blur3_updateFadeColors();
         if (tabsViewBackground != null) {
             tabsViewBackground.updateColors();
         }
@@ -1104,5 +1139,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 tabView.updateColorsLottie();
             }
         }
+    }
+
+    @Override
+    public EdgeToEdgeSupportMode getEdgeToEdgeSupportMode() {
+        return EdgeToEdgeSupportMode.FULL;
     }
 }

@@ -11688,7 +11688,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    private boolean isValidKeyboardToSave(TLRPC.Message message) {
+    public static boolean isValidKeyboardToSave(TLRPC.Message message) {
         return message.reply_markup != null && !(message.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && (!message.reply_markup.selective || message.mentioned);
     }
 
@@ -13225,6 +13225,16 @@ public class MessagesStorage extends BaseController {
                     state.bindLong(1, dialogId);
                     state.bindInteger(2, ids.get(j));
                     state.step();
+                }
+            }
+
+            for (int i = 0; i < messages.size(); i++) {
+                long did = messages.keyAt(i);
+                ArrayList<Integer> ids = messages.valueAt(i);
+                getMediaDataController().clearBotKeyboard(TopicKey.of(did, 0), null);
+                for (int id : ids) {
+                    database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard_topics WHERE mid IN(%s) AND uid = %d", ids, did)).stepThis().dispose();
                 }
             }
 

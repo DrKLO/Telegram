@@ -74,7 +74,10 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.chat.layouts.ChatActivityFadeView;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.FilteredSearchView;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.TopicsFragment;
 import org.telegram.ui.community.cells.CommunityPendingRequestCell;
@@ -87,7 +90,7 @@ import java.util.ArrayList;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
-public class CommunitySheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
+public class CommunitySheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target, DialogCell.DialogCellDelegate {
 
     private static final int ANIMATOR_ID_SEARCH_MESSAGES_VISIBLE = 1;
     private static final int ANIMATOR_ID_SEARCH_CHATS_VISIBLE = 2;
@@ -191,7 +194,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                AndroidUtilities.hideKeyboard(chatsSearchView.editText);
+                if (foundChatsView.scrollingByUser) {
+                    AndroidUtilities.hideKeyboard(chatsSearchView.editText);
+                }
             }
         });
         foundChatsView.setClipToPadding(false);
@@ -373,7 +378,7 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             items.add(UItem.asSpace(5, dp(14.33f)));
         }
 
-        CommunityUtils.fillLinkedPeers(currentAccount, items, communityId, true);
+        CommunityUtils.fillLinkedPeers(currentAccount, items, this, communityId, true);
     }
 
     private void fillItemsRequests(ArrayList<UItem> items, UniversalAdapter adapter) {
@@ -1347,5 +1352,46 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             gradientProtectionDrawableBottom.setColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundGray), bottomAlpha));
             gradientProtectionDrawableBottom.draw(canvas);
         }
+    }
+
+
+
+
+    @Override
+    public void onButtonClicked(DialogCell dialogCell) {
+        if (dialogCell.getMessage() != null) {
+            TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-dialogCell.getDialogId(), MessageObject.getTopicId(currentAccount, dialogCell.getMessage().messageOwner, true));
+            if (topic != null) {
+                ForumUtilities.openTopic(parentFragment, -dialogCell.getDialogId(), topic, 0);
+            }
+        }
+    }
+
+    @Override
+    public void onButtonLongPress(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public boolean canClickButtonInside() {
+        return true;
+    }
+
+    @Override
+    public void openStory(DialogCell dialogCell, Runnable onDone) {
+        if (MessagesController.getInstance(currentAccount).getStoriesController().hasStories(dialogCell.getDialogId())) {
+            parentFragment.getOrCreateStoryViewer().doOnAnimationReady(onDone);
+            parentFragment.getOrCreateStoryViewer().open(parentFragment.getContext(), dialogCell.getDialogId(), StoriesListPlaceProvider.of((RecyclerListView) dialogCell.getParent()));
+        }
+    }
+
+    @Override
+    public void showChatPreview(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public void openHiddenStories() {
+
     }
 }

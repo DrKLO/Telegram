@@ -1456,8 +1456,8 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
                     topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE, true);
                 }
             };
-            fragmentContextView.isInsideBubble = true;
             fragmentContextViewWrapper.addView(fragmentContextView);
+            topPanelLayout.setCallFragmentContextView(fragmentContextView);
         }
         FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
         if (inPreviewMode) {

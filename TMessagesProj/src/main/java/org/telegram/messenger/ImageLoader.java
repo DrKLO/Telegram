@@ -53,6 +53,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.RLottieDiceDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.SlotsDrawable;
 import org.telegram.ui.Components.ThemePreviewDrawable;
@@ -980,7 +981,7 @@ public class ImageLoader {
                     if ("\uD83C\uDFB0".equals(diceEmoji)) {
                         lottieDrawable = new SlotsDrawable(diceEmoji, w, h);
                     } else {
-                        lottieDrawable = new RLottieDrawable(diceEmoji, w, h);
+                        lottieDrawable = new RLottieDiceDrawable(diceEmoji, w, h);
                     }
                 } else {
                     File f = cacheImage.finalFilePath;
@@ -1029,8 +1030,9 @@ public class ImageLoader {
                     if (compressed) {
                         lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, decompressGzip(cacheImage.finalFilePath), w, h, cacheOptions, limitFps, null, fitzModifier);
                     } else {
-                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, cacheOptions, limitFps, null, fitzModifier);
+                        lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, null, w, h, cacheOptions, limitFps, null, fitzModifier);
                     }
+                    lottieDrawable.setIsSingleChannel(cacheImage.imageLocation != null && MessageObject.isTextColorEmoji(cacheImage.imageLocation.document));
                 }
                 if (lastFrameBitmap || firstFrameBitmap) {
                     loadLastFrame(lottieDrawable, h, w, lastFrameBitmap, lastFrameReactionScaleBitmap);
@@ -2339,12 +2341,9 @@ public class ImageLoader {
 
     private int sizeOfBitmapDrawable(BitmapDrawable value) {
         if (value instanceof AnimatedFileDrawable) {
-            AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) value;
-            int maxSize = animatedFileDrawable.getRenderingHeight() * animatedFileDrawable.getRenderingWidth() * 4 * 3;
-            maxSize = Math.max(animatedFileDrawable.getIntrinsicHeight() * value.getIntrinsicWidth() * 4 * 3, maxSize);
-            return maxSize;
+            return ((AnimatedFileDrawable) value).estimateSizeInCache();
         } if (value instanceof RLottieDrawable) {
-            return value.getIntrinsicWidth() * value.getIntrinsicHeight() * 4 * 2;
+            return ((RLottieDrawable) value).estimateSizeInCache();
         }
         return value.getBitmap().getByteCount();
     }

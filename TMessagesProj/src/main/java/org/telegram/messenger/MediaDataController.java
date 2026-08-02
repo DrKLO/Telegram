@@ -8388,7 +8388,7 @@ public class MediaDataController extends BaseController {
                 mid = cursor.intValue(0);
             }
             cursor.dispose();
-            if (mid >= message.id) {
+            if (mid >= message.id && !MessageObject.isEphemeralMessageId(mid) && !MessageObject.isEphemeralMessageId(message.id)) {
                 return;
             }
 

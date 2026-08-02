@@ -123,6 +123,8 @@
     <string name="PaymentInvoiceLinkInvalid">Invalid invoice</string>
     <string name="PaymentInvoiceSubscriptionLinkAlreadyPaid">Already subscribed!</string>
     <string name="PaymentInvoice">INVOICE</string>
+    <string name="PaymentInvoiceDisabledStarsText">Not enough stars</string>
+    <string name="StarsPurchaseUnavailable">Purchasing stars is not available at this time.</string>
     <string name="PaymentTestInvoice">TEST INVOICE</string>
     <string name="PaymentCheckoutPay">PAY %1$s</string>
     <string name="PaymentCheckoutMethod">Payment method</string>
@@ -4993,6 +4995,11 @@
     <string name="AccDescrCodeBlockLanguage">Code Block, %1$s</string>
     <string name="AccDescrExpanded">Expanded</string>
     <string name="AccDescrCollapsed">Collapsed</string>
+    <string name="AccDescrCheckbox">Checkbox</string>
+    <string name="AccDescrChecked">Checked</string>
+    <string name="AccDescrNotChecked">Not Checked</string>
+    <string name="AccDescrWithAdminTag">with admin tag: %1$s</string>
+    <string name="AccDescrWithMemberTag">with member tag: %1$s</string>
     <string name="AccDescrLiked">Liked</string>
     <string name="AccDescrOpenChat">Open chat</string>
     <string name="AccDescrProfilePicture">Profile picture</string>

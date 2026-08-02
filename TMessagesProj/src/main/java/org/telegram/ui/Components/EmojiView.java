@@ -3234,6 +3234,7 @@ public class EmojiView extends FrameLayout implements
                     drawable.draw(canvas, time, w, h, 1f);
                 }
                 canvas.restore();
+                invalidate();
             }
 
             for (int i = 0; i < lineDrawablesTmp.size(); i++) {

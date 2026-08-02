@@ -900,6 +900,7 @@ public class RichHtml {
             SpannableStringBuilder sb = new SpannableStringBuilder();
             appendChildrenInlineExcept(sb, node, "cite");
             TL_iv.pageBlockBlockquote bq = new TL_iv.pageBlockBlockquote();
+            bq.collapsed = node.has("data-collapsed") || node.has("collapsed");
             RichTextCell.applyStyledTextToBlock(bq, trim(sb));
             if (author != null) bq.caption = author;
             rows.add(new BlockRow(bq, level, 0));

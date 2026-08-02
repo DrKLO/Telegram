@@ -14,10 +14,10 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RecordingCanvas;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
@@ -32,6 +32,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
@@ -116,11 +117,11 @@ public class RichMediaCell extends RichBlockCell
     private float pageOffset;
     private boolean dragging;
     private float downX, downY;
-    private int touchSlop;
+    private int touchSlop, minFlingVelocity, maxFlingVelocity;
+    private VelocityTracker velocityTracker;
     private ValueAnimator settleAnimator;
 
-    private static Drawable slideDotDrawable;
-    private static Drawable slideDotBigDrawable;
+    private static Paint slideDotPaint;
 
     public RichMediaCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -265,6 +266,11 @@ public class RichMediaCell extends RichBlockCell
 
     public void onModeChanged() {
         if (settleAnimator != null) { settleAnimator.cancel(); settleAnimator = null; }
+        if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
+        if (velocityTracker != null) {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
         currentPage = 0;
         pageOffset = 0;
         updateSwitchButton(true);
@@ -371,6 +377,12 @@ public class RichMediaCell extends RichBlockCell
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attached = false;
+        if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
+        if (velocityTracker != null) {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
+        dragging = false;
         for (int i = 0; i < items.size(); i++) items.get(i).detach();
         if (spoilerEffect != null) {
             spoilerEffect.detach(this);
@@ -655,6 +667,12 @@ public class RichMediaCell extends RichBlockCell
         } else {
             canvas.clipRect(0, top, contentW, top + imageH);
         }
+        final boolean slideshow = isSlideshow() && items.size() >= 2;
+        final boolean inQuote = RichBlockChrome.quoteDepth(currentRow) > 0;
+        final int roundRadius = inQuote ? dp(8) : 0;
+        if (slideshow && (currentPage == 0 && pageOffset < 0 || currentPage == items.size() - 1 && pageOffset > 0)) {
+            canvas.drawRect(0, top, contentW, top + imageH, backgroundPaint);
+        }
         // singular media that doesn't fill the cell width: fill the side gaps with a blurred copy
         if (items.size() == 1 && itemRects.size() == 1) {
             final RectF r = itemRects.get(0);
@@ -666,6 +684,16 @@ public class RichMediaCell extends RichBlockCell
         for (int i = 0; i < items.size() && i < itemRects.size(); i++) {
             final RichMediaItem item = items.get(i);
             final RectF r = itemRects.get(i);
+            if (slideshow) {
+                item.setRoundRadius(
+                    i == 0 ? roundRadius : 0,
+                    i == items.size() - 1 ? roundRadius : 0,
+                    i == items.size() - 1 ? roundRadius : 0,
+                    i == 0 ? roundRadius : 0
+                );
+            } else {
+                item.setRoundRadius(0, 0, 0, 0);
+            }
             if (!item.hasImage()) {
                 canvas.drawRect(r, backgroundPaint);
             }
@@ -713,24 +741,36 @@ public class RichMediaCell extends RichBlockCell
     }
 
     private void drawDots(Canvas canvas, float progress) {
-        if (slideDotDrawable == null) {
-            slideDotDrawable = getResources().getDrawable(R.drawable.slide_dot_small);
-            slideDotBigDrawable = getResources().getDrawable(R.drawable.slide_dot_big);
+        if (slideDotPaint == null) {
+            slideDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            slideDotPaint.setColor(0xFFFFFFFF);
         }
         final int n = items.size();
-        final int alpha = (int) (255 * progress);
-        final int dotsY = getPaddingTop() + imageH - dp(7 + 16);
+        final float dotsY = getPaddingTop() + imageH - dp(7 + 16) + dp(5);
         final int totalWidth = n * dp(7) + (n - 1) * dp(6) + dp(4);
         final int insL = getPaddingLeft();
         final int contentW = Math.max(0, getWidth() - insL - getPaddingRight());
-        final int xOffset = insL + (contentW - totalWidth) / 2;
-        for (int a = 0; a < n; a++) {
-            final int cx = xOffset + dp(4) + dp(13) * a;
-            final Drawable d = currentPage == a ? slideDotBigDrawable : slideDotDrawable;
-            d.setAlpha(alpha);
-            d.setBounds(cx - dp(5), dotsY, cx + dp(5), dotsY + dp(10));
-            d.draw(canvas);
+        final float selectedPage = currentPage + pageOffset;
+        float xOffset;
+        if (totalWidth < contentW) {
+            xOffset = insL + (contentW - totalWidth) / 2f;
+        } else {
+            xOffset = insL + dp(4);
+            final int size = dp(13);
+            final int halfCount = (contentW - dp(8)) / 2 / size;
+            final float maxShift = Math.max(0, n - halfCount * 2 - 1);
+            xOffset -= Utilities.clamp(selectedPage - halfCount, maxShift, 0) * size;
         }
+        canvas.save();
+        canvas.clipRect(insL, getPaddingTop() + imageH - dp(7 + 16), insL + contentW, getPaddingTop() + imageH);
+        for (int a = 0; a < n; a++) {
+            final float selection = Math.max(0, 1f - Math.abs(a - selectedPage));
+            final float radius = dp(2) + dp(1) * selection;
+            slideDotPaint.setAlpha((int) ((0xA0 + (0xFF - 0xA0) * selection) * progress));
+            final float cx = xOffset + dp(4) + dp(13) * a;
+            canvas.drawCircle(cx, dotsY, radius, slideDotPaint);
+        }
+        canvas.restore();
     }
 
     @Override
@@ -744,18 +784,27 @@ public class RichMediaCell extends RichBlockCell
         if (slideMode) {
             if (act == MotionEvent.ACTION_DOWN) {
                 if (!inImage) return super.onTouchEvent(event);
-                if (touchSlop == 0) touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (touchSlop == 0) {
+                    final ViewConfiguration configuration = ViewConfiguration.get(getContext());
+                    touchSlop = configuration.getScaledTouchSlop();
+                    minFlingVelocity = configuration.getScaledMinimumFlingVelocity();
+                    maxFlingVelocity = configuration.getScaledMaximumFlingVelocity();
+                }
                 downX = x; downY = y;
                 dragging = false;
+                if (velocityTracker == null) velocityTracker = VelocityTracker.obtain();
+                else velocityTracker.clear();
+                velocityTracker.addMovement(event);
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
                 if (settleAnimator != null) { settleAnimator.cancel(); settleAnimator = null; }
                 pressedItem = currentPage;
                 return true;
             } else if (act == MotionEvent.ACTION_MOVE) {
+                if (velocityTracker != null) velocityTracker.addMovement(event);
                 final float ddx = x - downX, ddy = y - downY;
                 if (!dragging && Math.abs(ddx) > touchSlop && Math.abs(ddx) > Math.abs(ddy)) {
                     dragging = true;
                     pressedItem = -1;
-                    if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
                 }
                 if (dragging) {
                     float off = -ddx / slideW;
@@ -767,10 +816,24 @@ public class RichMediaCell extends RichBlockCell
                 }
                 return true;
             } else if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
+                float velocityX = 0;
+                if (act == MotionEvent.ACTION_UP && velocityTracker != null) {
+                    velocityTracker.addMovement(event);
+                    velocityTracker.computeCurrentVelocity(1000, maxFlingVelocity);
+                    final float vx = velocityTracker.getXVelocity();
+                    final float vy = velocityTracker.getYVelocity();
+                    if (Math.abs(vx) >= minFlingVelocity && Math.abs(vx) > Math.abs(vy)) {
+                        velocityX = vx;
+                    }
+                }
+                if (velocityTracker != null) {
+                    velocityTracker.recycle();
+                    velocityTracker = null;
+                }
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
                 if (dragging) {
                     dragging = false;
-                    if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
-                    settle();
+                    settle(velocityX);
                 } else if (act == MotionEvent.ACTION_UP && pressedItem == currentPage) {
                     handleTap(currentPage);
                 }
@@ -797,10 +860,12 @@ public class RichMediaCell extends RichBlockCell
         return super.onTouchEvent(event);
     }
 
-    private void settle() {
+    private void settle(float velocityX) {
         final int n = items.size();
         int targetDelta = 0;
-        if (pageOffset > 0.5f && currentPage < n - 1) targetDelta = 1;
+        if (velocityX < 0 && currentPage < n - 1) targetDelta = 1;
+        else if (velocityX > 0 && currentPage > 0) targetDelta = -1;
+        else if (pageOffset > 0.5f && currentPage < n - 1) targetDelta = 1;
         else if (pageOffset < -0.5f && currentPage > 0) targetDelta = -1;
         final int target = currentPage + targetDelta;
         final float from = pageOffset;

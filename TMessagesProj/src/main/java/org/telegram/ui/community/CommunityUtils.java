@@ -56,7 +56,7 @@ public class CommunityUtils {
 
     }
 
-    public static void fillLinkedPeers(int currentAccount, ArrayList<UItem> items, long communityId, boolean withGap) {
+    public static void fillLinkedPeers(int currentAccount, ArrayList<UItem> items, DialogCell.DialogCellDelegate delegate, long communityId, boolean withGap) {
         MessagesController.CommunityPeersDialog communityPeersDialog = MessagesController.getInstance(currentAccount).buildCommunityPeers(communityId);
         if (communityPeersDialog == null) {
             return;
@@ -67,7 +67,7 @@ public class CommunityUtils {
             needGap = withGap;
             items.add(UItem.asHeader(21, getString(R.string.CommunitySectionChatsYouAreIn)));
             for (MessagesController.CommunityPeerDialog chat : communityPeersDialog.chatsYouAreIn) {
-                items.add(DialogCellFactory.asCell(chat));
+                items.add(DialogCellFactory.asCell(chat, delegate));
             }
         }
         if (!communityPeersDialog.chatsYouCanView.isEmpty()) {
@@ -77,7 +77,7 @@ public class CommunityUtils {
             needGap = withGap;
             items.add(UItem.asHeader(23, getString(R.string.CommunitySectionChatsYouCanView)));
             for (MessagesController.CommunityPeerDialog chat : communityPeersDialog.chatsYouCanView) {
-                items.add(DialogCellFactory.asCell(chat));
+                items.add(DialogCellFactory.asCell(chat, delegate));
             }
         }
         if (!communityPeersDialog.chatsYouCanJoin.isEmpty()) {
@@ -87,7 +87,7 @@ public class CommunityUtils {
             needGap = withGap;
             items.add(UItem.asHeader(25, getString(R.string.CommunitySectionChatsYouCanRequestToJoin)));
             for (MessagesController.CommunityPeerDialog chat : communityPeersDialog.chatsYouCanJoin) {
-                items.add(DialogCellFactory.asCell(chat));
+                items.add(DialogCellFactory.asCell(chat, delegate));
             }
         }
         if (!communityPeersDialog.chatsOther.isEmpty()) {
@@ -97,7 +97,7 @@ public class CommunityUtils {
             needGap = withGap;
             items.add(UItem.asHeader(27, getString(R.string.CommunitySectionHiddenChats)));
             for (MessagesController.CommunityPeerDialog chat : communityPeersDialog.chatsOther) {
-                items.add(DialogCellFactory.asCell(chat));
+                items.add(DialogCellFactory.asCell(chat, delegate));
             }
         }
     }
@@ -739,6 +739,7 @@ public class CommunityUtils {
         @Override
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             DialogCell cell = (DialogCell) view;
+            cell.setDialogCellDelegate((DialogCell.DialogCellDelegate) item.object2);
 
             if (item.object instanceof TLRPC.Chat) {
                 TLRPC.Chat chat = (TLRPC.Chat) item.object;
@@ -769,27 +770,29 @@ public class CommunityUtils {
             }
         }
 
-        public static UItem asCell(MessagesController.CommunityPeerDialog peerDialog) {
-            return peerDialog.user != null ? asCell(peerDialog.user) : asCell(peerDialog.chat);
+        public static UItem asCell(MessagesController.CommunityPeerDialog peerDialog, DialogCell.DialogCellDelegate delegate) {
+            return peerDialog.user != null ? asCell(peerDialog.user, delegate) : asCell(peerDialog.chat, delegate);
         }
 
         public static UItem asCell(
-                TLRPC.User user
+                TLRPC.User user, DialogCell.DialogCellDelegate delegate
         ) {
             final UItem item = UItem.ofFactory(DialogCellFactory.class);
             item.longValue = user != null ? user.id : 0;
             item.id = Long.hashCode(item.longValue);
             item.object = user;
+            item.object2 = delegate;
             return item;
         }
 
         public static UItem asCell(
-                TLRPC.Chat chat
+                TLRPC.Chat chat, DialogCell.DialogCellDelegate delegate
         ) {
             final UItem item = UItem.ofFactory(DialogCellFactory.class);
             item.longValue = chat != null ?  -chat.id : 0;
             item.id = Long.hashCode(item.longValue);
             item.object = chat;
+            item.object2 = delegate;
             return item;
         }
     }

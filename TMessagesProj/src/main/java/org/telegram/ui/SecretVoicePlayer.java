@@ -14,19 +14,16 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Insets;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
 import android.view.Gravity;
@@ -35,13 +32,13 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.exoplayer2.ExoPlayer;
@@ -85,7 +82,7 @@ public class SecretVoicePlayer extends Dialog {
 
     private ThanosEffect thanosEffect;
 
-    private final Rect insets = new Rect();
+    private Insets insets = Insets.NONE;
     private Bitmap blurBitmap;
     private BitmapShader blurBitmapShader;
     private Paint blurBitmapPaint;
@@ -105,6 +102,8 @@ public class SecretVoicePlayer extends Dialog {
     public SecretVoicePlayer(Context context) {
         super(context, R.style.TransparentDialog);
         this.context = context;
+
+        AndroidUtilities.enableEdgeToEdge(getWindow());
 
         windowView = new FrameLayout(context) {
             @Override
@@ -187,28 +186,12 @@ public class SecretVoicePlayer extends Dialog {
         containerView.setClipToPadding(false);
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            windowView.setFitsSystemWindows(true);
-            windowView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @NonNull
-                @Override
-                public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
-                        SecretVoicePlayer.this.insets.set(r.left, r.top, r.right, r.bottom);
-                    } else {
-                        SecretVoicePlayer.this.insets.set(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-                    }
-                    containerView.setPadding(SecretVoicePlayer.this.insets.left, SecretVoicePlayer.this.insets.top, SecretVoicePlayer.this.insets.right, SecretVoicePlayer.this.insets.bottom);
-                    windowView.requestLayout();
-                    if (Build.VERSION.SDK_INT >= 30) {
-                        return WindowInsets.CONSUMED;
-                    } else {
-                        return insets.consumeSystemWindowInsets();
-                    }
-                }
-            });
-        }
+        ViewCompat.setOnApplyWindowInsetsListener(windowView, (v, i) -> {
+            insets = AndroidUtilities.getDefaultWindowInsets(i, false);
+            containerView.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            windowView.requestLayout();
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         if (SharedConfig.raiseToListen) {
             earListener = new EarListener(context);
@@ -251,21 +234,16 @@ public class SecretVoicePlayer extends Dialog {
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
         params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        if (Build.VERSION.SDK_INT >= 21) {
-            params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
-                WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
-                WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
-        }
+        params.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+            WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR |
+            WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS |
+            WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
         if (!BuildVars.DEBUG_PRIVATE_VERSION) {
             params.flags |= WindowManager.LayoutParams.FLAG_SECURE;
             AndroidUtilities.logFlagSecure();
         }
         params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
-        if (Build.VERSION.SDK_INT >= 28) {
-            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
         window.setAttributes(params);
 
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);

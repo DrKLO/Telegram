@@ -32,7 +32,7 @@ public class CustomHtml {
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
-                    out.append(spans[j].isCollapsing ? "<details>" : "<blockquote>");
+                    out.append(spans[j].isCollapsing ? "<blockquote collapsed>" : "<blockquote>");
                 }
             }
 
@@ -40,7 +40,7 @@ public class CustomHtml {
 
             if (spans != null) {
                 for (int j = spans.length - 1; j >= 0; --j) {
-                    out.append(spans[j].isCollapsing ? "</details>" : "</blockquote>");
+                    out.append("</blockquote>");
                 }
             }
         }

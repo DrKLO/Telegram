@@ -170,8 +170,6 @@ public class CustomEmojiReactionsWindow {
         });
         attachToParent = type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI || type == TYPE_MESSAGE_EFFECTS || forceAttachToParent;
 
-        // sizeNotifierFrameLayout.setFitsSystemWindows(true);
-
         containerView = new ContainerView(context);
         final int dialogType = reactionsContainerLayout.getWindowType();
         selectAnimatedEmojiDialog = new SelectAnimatedEmojiDialog(baseFragment, context, false, null, dialogType, type != TYPE_STORY, resourcesProvider, 16) {

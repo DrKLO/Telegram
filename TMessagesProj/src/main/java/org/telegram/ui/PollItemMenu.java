@@ -270,7 +270,7 @@ public class PollItemMenu extends Dialog {
         ViewCompat.setOnApplyWindowInsetsListener(windowView, new OnApplyWindowInsetsListener() {
             @Override
             public @NonNull WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat i) {
-                insets = i.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                insets = i.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars());
                 containerView.setPadding(insets.left, insets.top, insets.right, insets.bottom);
                 windowView.requestLayout();
 
@@ -302,9 +302,7 @@ public class PollItemMenu extends Dialog {
                 | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
                 | WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
-        if (Build.VERSION.SDK_INT >= 28) {
-            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
+        AndroidUtilities.applyEdgeToEdgeLayoutParams(params);
         window.setAttributes(params);
 
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);

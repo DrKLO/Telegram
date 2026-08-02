@@ -92,9 +92,12 @@ public class AppGlobalConfig {
     public final ConfigString richMessagePosting = ofString("rich_message_posting", "premium");
 
     public final ConfigInt communityPeersLimit = ofInt("community_peers_limit", 100);
+    public final ConfigInt communityBotPeersLimit = ofInt("community_bot_peers_limit", 100);
 
     public final ConfigInt messageLengthLimitDefault = ofInt("message_length_limit_default", 4096);
     public final ConfigInt messageLengthLimitPremium = ofInt("message_length_limit_premium", 8192);
+
+    public final ConfigBoolean starsSpendTopUpInvoiceDisabled = ofBoolean("stars_spend_topup_invoice_disabled", false);
 
     /* * */
 

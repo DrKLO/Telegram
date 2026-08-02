@@ -49,9 +49,10 @@ import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
-import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.AnimatedFileNative;
 import org.telegram.ui.Components.PhotoFilterView;
 import org.telegram.ui.Components.RLottieNative;
+import org.telegram.ui.Components.voip.AnimatedFileInfo;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -1242,8 +1243,8 @@ public class StoryEntry {
             resultHeight = 1280;
         }
         final String videoPath = file == null ? null : file.getAbsolutePath();
-        final int[][] params = new int[Math.max(1, isCollage() ? collageContent.size() : 0)][AnimatedFileDrawable.PARAM_NUM_COUNT];
-        params[0] = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
+        final int[][] params = new int[Math.max(1, isCollage() ? collageContent.size() : 0)][AnimatedFileInfo.PARAM_NUM_COUNT];
+        params[0] = new int[AnimatedFileInfo.PARAM_NUM_COUNT];
         Runnable fill = () -> {
             VideoEditedInfo info = new VideoEditedInfo();
 
@@ -1263,9 +1264,9 @@ public class StoryEntry {
             if (isVideo && videoPath != null && !isCollage()) {
                 info.originalPath = videoPath;
                 info.isPhoto = false;
-                info.framerate = Math.min(59, params[0][AnimatedFileDrawable.PARAM_NUM_FRAMERATE]);
+                info.framerate = Math.min(59, params[0][AnimatedFileInfo.PARAM_NUM_FRAMERATE]);
                 int videoBitrate = MediaController.getVideoBitrate(videoPath);
-                info.originalBitrate = videoBitrate == -1 ? params[0][AnimatedFileDrawable.PARAM_NUM_BITRATE] : videoBitrate;
+                info.originalBitrate = videoBitrate == -1 ? params[0][AnimatedFileInfo.PARAM_NUM_BITRATE] : videoBitrate;
                 if (info.originalBitrate < 1_000_000 && (mediaEntities != null && !mediaEntities.isEmpty())) {
                     info.bitrate = 2_000_000;
                     info.originalBitrate = -1;
@@ -1276,13 +1277,13 @@ public class StoryEntry {
                     info.bitrate = Utilities.clamp(info.originalBitrate, 3_000_000, 500_000);
                 }
                 FileLog.d("story bitrate, original = " + info.originalBitrate + " => " + info.bitrate);
-                info.originalDuration = (duration = params[0][AnimatedFileDrawable.PARAM_NUM_DURATION]) * 1000L;
+                info.originalDuration = (duration = params[0][AnimatedFileInfo.PARAM_NUM_DURATION]) * 1000L;
                 info.startTime = (long) (left * duration) * 1000L;
                 info.endTime = (long) (right * duration) * 1000L;
                 info.estimatedDuration = info.endTime - info.startTime;
                 info.volume = videoVolume;
                 info.muted = muted;
-                info.estimatedSize = (long) (params[0][AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE] + params[0][AnimatedFileDrawable.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
+                info.estimatedSize = (long) (params[0][AnimatedFileInfo.PARAM_NUM_AUDIO_FRAME_SIZE] + params[0][AnimatedFileInfo.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
                 info.estimatedSize = Math.max(file.length(), info.estimatedSize);
                 info.filterState = filterState;
                 info.blurPath = paintBlurFile == null ? null : paintBlurFile.getPath();
@@ -1300,9 +1301,9 @@ public class StoryEntry {
                         StoryEntry e = collageContent.get(i);
                         if (e.isVideo) {
                             hasVideo = true;
-                            e.width = Math.max(e.width, params[i][AnimatedFileDrawable.PARAM_NUM_WIDTH]);
-                            e.height = Math.max(e.height, params[i][AnimatedFileDrawable.PARAM_NUM_HEIGHT]);
-                            e.duration = Math.max(e.duration, params[i][AnimatedFileDrawable.PARAM_NUM_DURATION]);
+                            e.width = Math.max(e.width, params[i][AnimatedFileInfo.PARAM_NUM_WIDTH]);
+                            e.height = Math.max(e.height, params[i][AnimatedFileInfo.PARAM_NUM_HEIGHT]);
+                            e.duration = Math.max(e.duration, params[i][AnimatedFileInfo.PARAM_NUM_DURATION]);
                         }
                     }
                     info.collageParts = VideoEditedInfo.Part.toParts(this);
@@ -1420,19 +1421,19 @@ public class StoryEntry {
             final String[] paths = new String[collageContent.size()];
             for (int i = 0; i < collageContent.size(); ++i) {
                 paths[i] = collageContent.get(i).file == null ? null : collageContent.get(i).file.getAbsolutePath();
-                params[i] = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
+                params[i] = new int[AnimatedFileInfo.PARAM_NUM_COUNT];
             }
             Utilities.globalQueue.postRunnable(() -> {
                 for (int i = 0; i < paths.length; ++i)
                     if (paths[i] != null)
-                        AnimatedFileDrawable.getVideoInfo(paths[i], params[i], 0);
+                        AnimatedFileNative.getVideoInfo(paths[i], params[i], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         } else if (file == null) {
             fill.run();
         } else {
             Utilities.globalQueue.postRunnable(() -> {
-                AnimatedFileDrawable.getVideoInfo(videoPath, params[0], 0);
+                AnimatedFileNative.getVideoInfo(videoPath, params[0], 0);
                 AndroidUtilities.runOnUIThread(fill);
             });
         }

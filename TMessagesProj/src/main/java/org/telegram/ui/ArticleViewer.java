@@ -356,8 +356,6 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
     private WebPlayerView currentPlayingVideo;
     private WebPlayerView fullscreenedVideo;
 
-    private Drawable slideDotDrawable;
-    private Drawable slideDotBigDrawable;
 
     private int openUrlReqId;
     private int previewsReqId;
@@ -4150,8 +4148,6 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         backgroundPaint = new Paint();
 
         layerShadowDrawable = activity.getResources().getDrawable(R.drawable.layer_shadow);
-        slideDotDrawable = activity.getResources().getDrawable(R.drawable.slide_dot_small);
-        slideDotBigDrawable = activity.getResources().getDrawable(R.drawable.slide_dot_big);
         scrimPaint = new Paint();
 
         windowView = new WindowView(activity);
@@ -4207,7 +4203,6 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             }
         };
         windowView.addView(containerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        //containerView.setFitsSystemWindows(true);
         if (sheet == null) {
             windowView.setFitsSystemWindows(true);
             containerView.setOnApplyWindowInsetsListener((v, insets) -> {
@@ -10581,12 +10576,23 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             innerListView = new ViewPager(context) {
                 @Override
                 public boolean onTouchEvent(MotionEvent ev) {
-                    return super.onTouchEvent(ev);
+                    if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        windowView.requestDisallowInterceptTouchEvent(true);
+                    }
+                    final boolean handled = super.onTouchEvent(ev);
+                    if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                        windowView.requestDisallowInterceptTouchEvent(false);
+                    }
+                    return handled;
                 }
 
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
-                    windowView.requestDisallowInterceptTouchEvent(true);
+                    if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        windowView.requestDisallowInterceptTouchEvent(true);
+                    } else if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                        windowView.requestDisallowInterceptTouchEvent(false);
+                    }
                     cancelCheckLongPress();
                     return super.onInterceptTouchEvent(ev);
                 }
@@ -10685,29 +10691,27 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
                     int count = innerAdapter.getCount();
                     int totalWidth = count * dp(7) + (count - 1) * dp(6) + dp(4);
-                    int xOffset;
+                    final float selectedPage = currentPage + pageOffset;
+                    float xOffset;
                     if (totalWidth < getMeasuredWidth()) {
-                        xOffset = (getMeasuredWidth() - totalWidth) / 2;
+                        xOffset = (getMeasuredWidth() - totalWidth) / 2f;
                     } else {
                         xOffset = dp(4);
                         int size = dp(13);
                         int halfCount = (getMeasuredWidth() - dp(8)) / 2 / size;
-                        if (currentPage == count - halfCount - 1 && pageOffset < 0) {
-                            xOffset -= (int) (pageOffset * size) + (count - halfCount * 2 - 1) * size;
-                        } else if (currentPage >= count - halfCount - 1) {
-                            xOffset -= (count - halfCount * 2 - 1) * size;
-                        } else if (currentPage > halfCount) {
-                            xOffset -= (int) (pageOffset * size) + (currentPage - halfCount) * size;
-                        } else if (currentPage == halfCount && pageOffset > 0) {
-                            xOffset -= (int) (pageOffset * size);
-                        }
+                        final float maxShift = Math.max(0, count - halfCount * 2 - 1);
+                        xOffset -= Utilities.clamp(selectedPage - halfCount, maxShift, 0) * size;
                     }
+                    canvas.save();
+                    canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     for (int a = 0; a < currentBlock.items.size(); a++) {
-                        int cx = xOffset + dp(4) + dp(13) * a;
-                        Drawable drawable = currentPage == a ? slideDotBigDrawable : slideDotDrawable;
-                        drawable.setBounds(cx - dp(5), 0, cx + dp(5), dp(10));
-                        drawable.draw(canvas);
+                        final float selection = Math.max(0, 1f - Math.abs(a - selectedPage));
+                        final float radius = dp(2) + dp(1) * selection;
+                        dotsPaint.setAlpha((int) (0xA0 + (0xFF - 0xA0) * selection));
+                        final float cx = xOffset + dp(4) + dp(13) * a;
+                        canvas.drawCircle(cx, getMeasuredHeight() / 2f, radius, dotsPaint);
                     }
+                    canvas.restore();
                 }
             };
             addView(dotsContainer);

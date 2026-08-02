@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -56,6 +57,9 @@ import androidx.annotation.NonNull;
 import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
@@ -86,6 +90,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -181,48 +186,83 @@ public class QrActivity extends BaseFragment {
         return super.onFragmentCreate();
     }
 
+    private boolean isFragmentViewPortrait;
+
     @Override
     public View createView(Context context) {
+        setHasOwnBackground(true);
+
         isCurrentThemeDark = Theme.getActiveTheme().isDark();
         actionBar.setAddToContainer(false);
         actionBar.setBackground(null);
         actionBar.setItemsColor(0xffffffff, false);
 
         FrameLayout rootLayout = new FrameLayout(context) {
-
-            private boolean prevIsPortrait;
-
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
                 super.dispatchTouchEvent(ev);
                 return true;
             }
 
+            private boolean ignoreLayout;
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                int width = MeasureSpec.getSize(widthMeasureSpec);
-                int height = MeasureSpec.getSize(heightMeasureSpec);
-                boolean isPortrait = width < height;
+                final int width = MeasureSpec.getSize(widthMeasureSpec);
+                final int height = MeasureSpec.getSize(heightMeasureSpec);
+                final boolean isPortrait = width < height;
+                isFragmentViewPortrait = isPortrait;
                 avatarImageView.setVisibility(isPortrait ? View.VISIBLE : View.GONE);
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 if (isPortrait) {
-                    themeLayout.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
-                    qrView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(330), MeasureSpec.EXACTLY));
+                    ignoreLayout = true;
+                    themeLayout.setPadding(insets.left, dp(8), insets.right, insets.bottom);
+                    ignoreLayout = false;
+                    themeLayout.measure(
+                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+                        MeasureSpec.makeMeasureSpec(height + insets.bottom, MeasureSpec.AT_MOST));
+                    qrView.measure(
+                        MeasureSpec.makeMeasureSpec(dp(260), MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(dp(330), MeasureSpec.EXACTLY));
                 } else {
-                    themeLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(273), MeasureSpec.EXACTLY), heightMeasureSpec);
-                    qrView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(310), MeasureSpec.EXACTLY));
+                    ignoreLayout = true;
+                    themeLayout.setPadding(0, insets.top * 2 / 3, insets.right, insets.bottom);
+                    ignoreLayout = false;
+                    themeLayout.measure(
+                        MeasureSpec.makeMeasureSpec(dp(273) + insets.right, MeasureSpec.EXACTLY),
+                        heightMeasureSpec
+                    );
+                    qrView.measure(
+                        MeasureSpec.makeMeasureSpec(dp(260), MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(dp(310), MeasureSpec.EXACTLY));
                 }
-                if (prevIsPortrait != isPortrait) {
-                    qrView.onSizeChanged(qrView.getMeasuredWidth(), qrView.getMeasuredHeight(), 0, 0);
+            }
+
+            @Override
+            public void requestLayout() {
+                if (!ignoreLayout) {
+                    super.requestLayout();
                 }
-                prevIsPortrait = isPortrait;
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-                boolean isPortrait = getWidth() < getHeight();
+                final int width = getMeasuredWidth();
+                final int height = getMeasuredHeight();
+                final boolean isPortrait = width < height;
 
-                backgroundView.layout(0, 0, getWidth(), getHeight());
+                if (themeLayout.getVisibility() == VISIBLE) {
+                    if (isPortrait) {
+                        AndroidUtilities.rectTmp2.set(0, 0, width, height - themeLayout.getMeasuredHeight() + dp(25));
+                    } else {
+                        AndroidUtilities.rectTmp2.set(0, 0, width - themeLayout.getWidth() + dp(25), height);
+                    }
+                    backgroundView.setClipBounds(AndroidUtilities.rectTmp2);
+                } else {
+                    backgroundView.setClipBounds(null);
+                }
+
+                backgroundView.layout(0, 0, width, height);
 
                 int themeLayoutHeight = 0;
                 if (themeLayout.getVisibility() == View.VISIBLE) {
@@ -230,33 +270,33 @@ public class QrActivity extends BaseFragment {
                 }
 
                 int qrLeft = isPortrait
-                        ? (getWidth() - qrView.getMeasuredWidth()) / 2
-                        : (getWidth() - themeLayout.getMeasuredWidth() - qrView.getMeasuredWidth()) / 2;
+                        ? (width - qrView.getMeasuredWidth()) / 2
+                        : insets.left + (width - themeLayout.getMeasuredWidth() - insets.left - qrView.getMeasuredWidth()) / 2;
                 int qrTop = isPortrait
-                        ? (getHeight() - themeLayoutHeight - qrView.getMeasuredHeight() - AndroidUtilities.dp(48)) / 2 + AndroidUtilities.dp(48 + 4)
-                        : (getHeight() - qrView.getMeasuredHeight()) / 2;
+                        ? insets.top + (height - themeLayoutHeight - insets.top - qrView.getMeasuredHeight() - dp(48)) / 2 + dp(48 + 4)
+                        : (height - qrView.getMeasuredHeight()) / 2;
                 qrView.layout(qrLeft, qrTop, qrLeft + qrView.getMeasuredWidth(), qrTop + qrView.getMeasuredHeight());
 
                 if (isPortrait) {
-                    int avatarLeft = (getWidth() - avatarImageView.getMeasuredWidth()) / 2;
-                    int avatarTop = qrTop - AndroidUtilities.dp(48);
+                    int avatarLeft = (width - avatarImageView.getMeasuredWidth()) / 2;
+                    int avatarTop = qrTop - dp(48);
                     avatarImageView.layout(avatarLeft, avatarTop, avatarLeft + avatarImageView.getMeasuredWidth(), avatarTop + avatarImageView.getMeasuredHeight());
                 }
 
                 if (themeLayout.getVisibility() == View.VISIBLE) {
                     if (isPortrait) {
-                        int themeLayoutLeft = (getWidth() - themeLayout.getMeasuredWidth()) / 2;
-                        themeLayout.layout(themeLayoutLeft, bottom - themeLayoutHeight, themeLayoutLeft + themeLayout.getMeasuredWidth(), bottom);
+                        int themeLayoutLeft = (width - themeLayout.getMeasuredWidth()) / 2;
+                        themeLayout.layout(themeLayoutLeft, getMeasuredHeight() - themeLayoutHeight, themeLayoutLeft + themeLayout.getMeasuredWidth(), getMeasuredHeight());
                     } else {
-                        int themeLayoutTop = (getHeight() - themeLayout.getMeasuredHeight()) / 2;
-                        themeLayout.layout(right - themeLayout.getMeasuredWidth(), themeLayoutTop, right, themeLayoutTop + themeLayout.getMeasuredHeight());
+                        int themeLayoutTop = (height - themeLayout.getMeasuredHeight()) / 2;
+                        themeLayout.layout(getMeasuredWidth() - themeLayout.getMeasuredWidth(), themeLayoutTop, getMeasuredWidth(), themeLayoutTop + themeLayout.getMeasuredHeight());
                     }
                 }
 
                 logoImageView.layout(qrLeft + logoRect.left, qrTop + logoRect.top, qrLeft + logoRect.right, qrTop + logoRect.bottom);
 
-                int closeLeft = isPortrait ? AndroidUtilities.dp(14) : AndroidUtilities.dp(17);
-                int closeTop = AndroidUtilities.statusBarHeight + (isPortrait ? AndroidUtilities.dp(10) : AndroidUtilities.dp(5));
+                int closeLeft = insets.left + dp(11);
+                int closeTop = insets.top + dp(11);
                 closeImageView.layout(closeLeft, closeTop, closeLeft + closeImageView.getMeasuredWidth(), closeTop + closeImageView.getMeasuredHeight());
             }
         };
@@ -271,11 +311,8 @@ public class QrActivity extends BaseFragment {
                 currMotionDrawable.setBounds(0, 0, getWidth(), getHeight());
 
                 if (prevMotionDrawable != null)
-                    prevMotionDrawable.drawBackground(canvas);
-                currMotionDrawable.drawBackground(canvas);
-                if (prevMotionDrawable != null)
-                    prevMotionDrawable.drawPattern(canvas);
-                currMotionDrawable.drawPattern(canvas);
+                    prevMotionDrawable.draw(canvas);
+                currMotionDrawable.draw(canvas);
                 super.onDraw(canvas);
             }
         };
@@ -338,38 +375,31 @@ public class QrActivity extends BaseFragment {
         rootLayout.addView(logoImageView);
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(42));
-        avatarImageView.setSize(AndroidUtilities.dp(84), AndroidUtilities.dp(84));
+        avatarImageView.setRoundRadius(dp(42));
+        avatarImageView.setSize(dp(84), dp(84));
         rootLayout.addView(avatarImageView, LayoutHelper.createFrame(84, 84, Gravity.LEFT | Gravity.TOP));
         avatarImageView.setImage(imageLocation, "84_84", imageLocationSmall, "50_50", avatarDrawable, null, null, 0, null);
 
         closeImageView = new ImageView(context);
         closeImageView.setContentDescription(getString(R.string.AccDescrGoBack));
-        closeImageView.setBackground(Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(34), 0x28000000, 0x28ffffff));
+        closeImageView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(34), 0x28000000, 0x28ffffff));
         closeImageView.setImageResource(R.drawable.ic_ab_back);
         closeImageView.setScaleType(ImageView.ScaleType.CENTER);
         closeImageView.setOnClickListener(v -> finishFragment());
         rootLayout.addView(closeImageView, LayoutHelper.createFrame(34, 34));
 
-        emojiThemeIcon = Bitmap.createBitmap(AndroidUtilities.dp(32), AndroidUtilities.dp(32), Bitmap.Config.ARGB_8888);
+        emojiThemeIcon = Bitmap.createBitmap(dp(32), dp(32), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(emojiThemeIcon);
         AndroidUtilities.rectTmp.set(0f, 0f, emojiThemeIcon.getWidth(), emojiThemeIcon.getHeight());
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.WHITE);
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(5), AndroidUtilities.dp(5), paint);
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(5), dp(5), paint);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         Bitmap bitmap = BitmapFactory.decodeResource(ApplicationLoader.applicationContext.getResources(), R.drawable.msg_qr_mini);
         canvas.drawBitmap(bitmap, (emojiThemeIcon.getWidth() - bitmap.getWidth()) * 0.5f, (emojiThemeIcon.getHeight() - bitmap.getHeight()) * 0.5f, paint);
         canvas.setBitmap(null);
 
-        themesViewController = new ThemeListViewController(this, getParentActivity().getWindow()) {
-            @Override
-            protected void setDarkTheme(boolean isDark) {
-                super.setDarkTheme(isDark);
-                isCurrentThemeDark = isDark;
-                onItemSelected(currentTheme, selectedPosition, false);
-            }
-        };
+        themesViewController = new ThemeListViewController(this, getParentActivity().getWindow());
         themeLayout = themesViewController.rootLayout;
 
         themesViewController.onCreate();
@@ -429,6 +459,8 @@ public class QrActivity extends BaseFragment {
 
         prevSystemUiVisibility = getParentActivity().getWindow().getDecorView().getSystemUiVisibility();
         applyScreenSettings();
+
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
     }
 
@@ -561,7 +593,7 @@ public class QrActivity extends BaseFragment {
                         tempMotionDrawable = new MotionBackgroundDrawable(0, 0, 0, 0, true);
                     }
                     tempMotionDrawable.setColors(colors[0], colors[1], colors[2], colors[3]);
-                    tempMotionDrawable.setBounds(AndroidUtilities.dp(6), AndroidUtilities.dp(6), canvas.getWidth() - AndroidUtilities.dp(6), canvas.getHeight() - AndroidUtilities.dp(6));
+                    tempMotionDrawable.setBounds(dp(6), dp(6), canvas.getWidth() - dp(6), canvas.getHeight() - dp(6));
                     tempMotionDrawable.draw(canvas);
                 }
                 canvas.drawBitmap(emojiThemeIcon, 0, 0, null);
@@ -882,8 +914,8 @@ public class QrActivity extends BaseFragment {
 
     private static class QrView extends View {
 
-        private static final float SHADOW_SIZE = AndroidUtilities.dp(2);
-        private static final float RADIUS = AndroidUtilities.dp(20);
+        private static final float SHADOW_SIZE = dp(2);
+        private static final float RADIUS = dp(20);
 
         private final MotionBackgroundDrawable gradientDrawable = new MotionBackgroundDrawable();
         private final Paint bitmapGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -928,11 +960,11 @@ public class QrActivity extends BaseFragment {
             timerTextDrawable.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
             timerTextDrawable.getPaint().setShader(gradientTextShader);
             timerTextDrawable.setGravity(Gravity.CENTER);
-            timerTextDrawable.setTextSize(AndroidUtilities.dp(35));
+            timerTextDrawable.setTextSize(dp(35));
             timerTextDrawable.setText("");
-            crossfadeFromPaint.setShader(new LinearGradient(0, 0, 0, AndroidUtilities.dp(crossfadeWidthDp), new int[]{0xffffffff, 0}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            crossfadeFromPaint.setShader(new LinearGradient(0, 0, 0, dp(crossfadeWidthDp), new int[]{0xffffffff, 0}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             crossfadeFromPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
-            crossfadeToPaint.setShader(new LinearGradient(0, 0, 0, AndroidUtilities.dp(crossfadeWidthDp), new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
+            crossfadeToPaint.setShader(new LinearGradient(0, 0, 0, dp(crossfadeWidthDp), new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP));
             crossfadeToPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
 
@@ -946,10 +978,10 @@ public class QrActivity extends BaseFragment {
                 }
                 shareUsernameLayoutPaint.setShader(gradientTextShader);
                 shareUsernameLayoutPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
-                shareUsernameLayoutPaint.setTextSize(AndroidUtilities.dp(25));
+                shareUsernameLayoutPaint.setTextSize(dp(25));
                 CharSequence text = this.username == null ? "" : this.username;
                 text = Emoji.replaceEmoji(text, shareUsernameLayoutPaint.getFontMetricsInt(), false);
-                shareUsernameLayout = StaticLayoutEx.createStaticLayout(text, shareUsernameLayoutPaint, getWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0, false, TextUtils.TruncateAt.END, getWidth() - AndroidUtilities.dp(60), 1);
+                shareUsernameLayout = StaticLayoutEx.createStaticLayout(text, shareUsernameLayoutPaint, getWidth(), Layout.Alignment.ALIGN_CENTER, 1f, 0, false, TextUtils.TruncateAt.END, getWidth() - dp(60), 1);
             } else {
                 shareUsernameLayout = null;
             }
@@ -965,7 +997,7 @@ public class QrActivity extends BaseFragment {
                 }
                 Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 backgroundPaint.setColor(Color.WHITE);
-                backgroundPaint.setShadowLayer(AndroidUtilities.dp(4), 0f, SHADOW_SIZE, 0x0F000000);
+                backgroundPaint.setShadowLayer(dp(4), 0f, SHADOW_SIZE, 0x0F000000);
                 backgroundBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(backgroundBitmap);
                 RectF rect = new RectF(SHADOW_SIZE, SHADOW_SIZE, w - SHADOW_SIZE, getHeight() - SHADOW_SIZE);
@@ -983,7 +1015,7 @@ public class QrActivity extends BaseFragment {
 
                 Matrix textMatrix = new Matrix();
                 textMatrix.setScale(maxScale, maxScale);
-                textMatrix.postTranslate(w / 2f, getWidth() + AndroidUtilities.dp(6));
+                textMatrix.postTranslate(w / 2f, getWidth() + dp(6));
                 gradientTextShader.setLocalMatrix(textMatrix);
             }
         }
@@ -991,7 +1023,7 @@ public class QrActivity extends BaseFragment {
         private void drawLoading(Canvas canvas) {
             if (loadingMatrix != null) {
                 int qrSize = 33;
-                int multiple = (getWidth() - AndroidUtilities.dp(60)) / qrSize;
+                int multiple = (getWidth() - dp(60)) / qrSize;
                 int size = multiple * qrSize + 32;
                 int padding = (getWidth() - size) / 2, top = (int) (getHeight() * 0.15f);
                 if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
@@ -1037,7 +1069,7 @@ public class QrActivity extends BaseFragment {
                     drawLoading(canvas);
                 }
                 if (crossfading) {
-                    float h = AndroidUtilities.dp(crossfadeWidthDp);
+                    float h = dp(crossfadeWidthDp);
                     canvas.save();
                     canvas.translate(0, -h + (getHeight() + h) * (1f - crossfadeAlpha));
                     canvas.drawRect(0, 0, getWidth(), getHeight() + h, crossfadeToPaint);
@@ -1057,7 +1089,7 @@ public class QrActivity extends BaseFragment {
                     drawLoading(canvas);
                 }
                 if (crossfading) {
-                    float h = AndroidUtilities.dp(crossfadeWidthDp);
+                    float h = dp(crossfadeWidthDp);
                     canvas.save();
                     canvas.translate(0, -h + (getHeight() + h) * (1f - crossfadeAlpha));
                     canvas.drawRect(0, - h - getHeight(), getWidth(), getHeight() + h, crossfadeFromPaint);
@@ -1067,7 +1099,7 @@ public class QrActivity extends BaseFragment {
             }
 
             if (hasTimer) {
-                float transY = getWidth() + AndroidUtilities.dp(6);
+                float transY = getWidth() + dp(6);
                 if (shareUsernameLayout != null) {
                     canvas.save();
                     canvas.translate(0, transY);
@@ -1077,7 +1109,7 @@ public class QrActivity extends BaseFragment {
                     shareUsernameLayout.draw(canvas);
                     canvas.restore();
                 } else {
-                    timerTextDrawable.setBounds(0, (int) transY, getWidth(), (int) transY + AndroidUtilities.dp(40));
+                    timerTextDrawable.setBounds(0, (int) transY, getWidth(), (int) transY + dp(40));
                     timerTextDrawable.draw(canvas);
                 }
             }
@@ -1116,7 +1148,7 @@ public class QrActivity extends BaseFragment {
                 return;
             }
             if (hasTimer && loadingMatrix == null) {
-                loadingMatrix = new RLottieDrawable(R.raw.qr_matrix, "qr_matrix", AndroidUtilities.dp(200), AndroidUtilities.dp(200));
+                loadingMatrix = new RLottieDrawable(R.raw.qr_matrix, "qr_matrix", dp(200), dp(200));
                 loadingMatrix.setMasterParent(this);
                 loadingMatrix.getPaint().setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
                 loadingMatrix.setAutoRepeat(1);
@@ -1214,18 +1246,18 @@ public class QrActivity extends BaseFragment {
             StaticLayout staticLayout = null;
             Drawable drawable;
             int attemptsCount = 2;
-            final int textMaxWidth = bitmap.getWidth() - AndroidUtilities.dp(20) * 2;
+            final int textMaxWidth = bitmap.getWidth() - dp(20) * 2;
             if (!hasTimer) {
                 for (int i = 0; i <= attemptsCount; ++i) {
                     if (i == 0) {
                         drawable = ContextCompat.getDrawable(getContext(), R.drawable.qr_at_large);
-                        textPaint.setTextSize(AndroidUtilities.dp(30));
+                        textPaint.setTextSize(dp(30));
                     } else if (i == 1) {
                         drawable = ContextCompat.getDrawable(getContext(), R.drawable.qr_at_medium);
-                        textPaint.setTextSize(AndroidUtilities.dp(25));
+                        textPaint.setTextSize(dp(25));
                     } else {
                         drawable = ContextCompat.getDrawable(getContext(), R.drawable.qr_at_small);
-                        textPaint.setTextSize(AndroidUtilities.dp(19));
+                        textPaint.setTextSize(dp(19));
                     }
                     if (drawable != null) {
                         drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
@@ -1243,13 +1275,13 @@ public class QrActivity extends BaseFragment {
                     int linesCount = textWidth > textMaxWidth ? 2 : 1;
                     int layoutWidth = textMaxWidth;
                     if (linesCount > 1) {
-                        layoutWidth = (int)(textWidth + drawable.getBounds().width()) / 2 + AndroidUtilities.dp(2);
+                        layoutWidth = (int)(textWidth + drawable.getBounds().width()) / 2 + dp(2);
                     }
                     if (layoutWidth > textMaxWidth) {
                         linesCount = 3;
-                        layoutWidth = (int)(textWidth + drawable.getBounds().width()) / 3 + AndroidUtilities.dp(4);
+                        layoutWidth = (int)(textWidth + drawable.getBounds().width()) / 3 + dp(4);
                     }
-                    staticLayout = StaticLayoutEx.createStaticLayout(string, textPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false, null, Math.min(layoutWidth + AndroidUtilities.dp(10), bitmap.getWidth()), linesCount);
+                    staticLayout = StaticLayoutEx.createStaticLayout(string, textPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false, null, Math.min(layoutWidth + dp(10), bitmap.getWidth()), linesCount);
 
                     break;
                 }
@@ -1259,7 +1291,7 @@ public class QrActivity extends BaseFragment {
 
             Bitmap qrBitmap = null;
             int imageSize = 0;
-            int qrBitmapSize = w - AndroidUtilities.dp(30) * 2;
+            int qrBitmapSize = w - dp(30) * 2;
             HashMap<EncodeHintType, Object> hints = new HashMap<>();
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
             hints.put(EncodeHintType.MARGIN, 0);
@@ -1304,7 +1336,7 @@ public class QrActivity extends BaseFragment {
 
             if (staticLayout != null) {
                 float xTranslate = (canvas.getWidth() - staticLayout.getWidth()) * 0.5f;
-                float yTranslate = qrTop + qrBitmap.getHeight() + (canvas.getHeight() - (qrTop + qrBitmap.getHeight()) - textHeight) * 0.5f - AndroidUtilities.dp(4);
+                float yTranslate = qrTop + qrBitmap.getHeight() + (canvas.getHeight() - (qrTop + qrBitmap.getHeight()) - textHeight) * 0.5f - dp(4);
                 canvas.save();
                 canvas.translate(xTranslate, yTranslate);
                 staticLayout.draw(canvas);
@@ -1414,13 +1446,12 @@ public class QrActivity extends BaseFragment {
                     backgroundPaint.setColor(fragment.getThemedColor(Theme.key_windowBackgroundWhite));
                     backgroundDrawable.setCallback(this);
                     backgroundDrawable.getPadding(backgroundPadding);
-                    setPadding(0, backgroundPadding.top + AndroidUtilities.dp(8), 0, backgroundPadding.bottom);
                 }
 
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    boolean isPortrait = AndroidUtilities.displaySize.x < AndroidUtilities.displaySize.y;
-                    int recyclerPadding = AndroidUtilities.dp(12);
+                    boolean isPortrait = isFragmentViewPortrait;
+                    int recyclerPadding = dp(12);
                     if (isPortrait) {
                         recyclerView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.START, 0, 44, 0, 0));
                         recyclerView.setPadding(recyclerPadding, 0, recyclerPadding, 0);
@@ -1447,9 +1478,9 @@ public class QrActivity extends BaseFragment {
                     } else {
                         final int bottomBottomMargin = shareButton != null ? (80 + 56) : 80;
                         bottomShadow.setVisibility(View.VISIBLE);
-                        bottomShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(2), Gravity.BOTTOM, 0, 0, 0, bottomBottomMargin));
+                        bottomShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, dp(2), Gravity.BOTTOM, 0, 0, 0, bottomBottomMargin));
                         topShadow.setVisibility(View.VISIBLE);
-                        topShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(2), Gravity.TOP, 0, 44, 0, 0));
+                        topShadow.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, dp(2), Gravity.TOP, 0, 44, 0, 0));
                     }
                     if (prevIsPortrait != isPortrait) {
                         recyclerView.setLayoutManager(layoutManager = getLayoutManager(isPortrait));
@@ -1463,13 +1494,13 @@ public class QrActivity extends BaseFragment {
                 }
 
                 @Override
-                protected void dispatchDraw(Canvas canvas) {
+                protected void dispatchDraw(@NonNull Canvas canvas) {
                     if (prevIsPortrait) {
-                        backgroundDrawable.setBounds(-backgroundPadding.left, 0, getWidth() + backgroundPadding.right, getHeight());
+                        backgroundDrawable.setBounds(-backgroundPadding.left, -backgroundPadding.top, getWidth() + backgroundPadding.right, getHeight() + backgroundPadding.bottom);
                         backgroundDrawable.draw(canvas);
                     } else {
-                        AndroidUtilities.rectTmp.set(0, 0, getWidth() + AndroidUtilities.dp(14), getHeight());
-                        canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(14), AndroidUtilities.dp(14), backgroundPaint);
+                        AndroidUtilities.rectTmp.set(0, 0, getWidth() + dp(14), getHeight());
+                        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(14), dp(14), backgroundPaint);
                     }
                     super.dispatchDraw(canvas);
                 }
@@ -1487,11 +1518,11 @@ public class QrActivity extends BaseFragment {
             titleView.setTextColor(fragment.getThemedColor(Theme.key_dialogTextBlack));
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             titleView.setTypeface(AndroidUtilities.bold());
-            titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
+            titleView.setPadding(dp(21), dp(6), dp(21), dp(8));
             rootLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, 0, 0, 62, 0));
 
             int drawableColor = fragment.getThemedColor(Theme.key_featuredStickers_addButton);
-            int drawableSize = AndroidUtilities.dp(28);
+            int drawableSize = dp(28);
             darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, false, null);
             forceDark = !Theme.getActiveTheme().isDark();
             setForceDark(Theme.getActiveTheme().isDark(), false);
@@ -1526,7 +1557,7 @@ public class QrActivity extends BaseFragment {
             progressView.setVisibility(View.VISIBLE);
             rootLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 104, Gravity.START, 0, 44, 0, 0));
 
-            prevIsPortrait = AndroidUtilities.displaySize.x < AndroidUtilities.displaySize.y;
+            prevIsPortrait = true;
             recyclerView = new RecyclerListView(context);
             recyclerView.setAdapter(adapter = new ChatThemeBottomSheet.Adapter(currentAccount, resourcesProvider, ThemeSmallPreviewView.TYPE_QR));
             recyclerView.setClipChildren(false);
@@ -1541,7 +1572,7 @@ public class QrActivity extends BaseFragment {
                 public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                     super.onScrolled(recyclerView, dx, dy);
                     yScroll += dy;
-                    topShadow.setAlpha(yScroll * 1f / AndroidUtilities.dp(6));
+                    topShadow.setAlpha(yScroll * 1f / dp(6));
                 }
             });
             rootLayout.addView(recyclerView);
@@ -1770,7 +1801,10 @@ public class QrActivity extends BaseFragment {
             });
         }
 
-        protected void setDarkTheme(boolean isDark) { }
+        protected void setDarkTheme(boolean isDark) {
+            isCurrentThemeDark = isDark;
+            onItemSelected(currentTheme, selectedPosition, false);
+        }
 
         public void setForceDark(boolean isDark, boolean playAnimation) {
             if (forceDark == isDark) {
@@ -1859,5 +1893,34 @@ public class QrActivity extends BaseFragment {
     interface OnItemSelectedListener {
 
         void onItemSelected(EmojiThemes theme, int position);
+    }
+
+
+
+
+    private Insets insets = Insets.NONE;
+
+    @NonNull
+    private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+        this.insets = AndroidUtilities.getDefaultWindowInsets(insets, false);
+        fragmentView.requestLayout();
+
+
+        return WindowInsetsCompat.CONSUMED;
+    }
+
+    @Override
+    public boolean drawEdgeNavigationBar() {
+        return false;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public EdgeToEdgeSupportMode getEdgeToEdgeSupportMode() {
+        return EdgeToEdgeSupportMode.FULL;
     }
 }

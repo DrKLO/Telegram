@@ -190,12 +190,6 @@ public class UsersAlertBase extends BottomSheet {
         listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        AndroidUtilities.statusBarHeight = AndroidUtilities.getStatusBarHeight(getContext());
-    }
-
     protected ContainerView createContainerView(Context context) {
         return new ContainerView(context);
     }

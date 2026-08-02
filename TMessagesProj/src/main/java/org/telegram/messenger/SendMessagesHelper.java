@@ -76,6 +76,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.AnimatedFileNative;
 import org.telegram.ui.Components.poll.PollAttachedMedia;
 import org.telegram.ui.Components.poll.PollAttachedMediaPack;
 import org.telegram.ui.Components.poll.PollSendParams;
@@ -85,6 +86,7 @@ import org.telegram.ui.Components.poll.attached.PollAttachedMediaLink;
 import org.telegram.ui.Components.poll.attached.PollAttachedMediaLocation;
 import org.telegram.ui.Components.poll.attached.PollAttachedMediaMusic;
 import org.telegram.ui.Components.poll.attached.PollAttachedMediaSticker;
+import org.telegram.ui.Components.voip.AnimatedFileInfo;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.OAuthSheet;
 import org.telegram.ui.Stars.StarsController;
@@ -11675,10 +11677,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     private static VideoEditedInfo createCompressionSettings(String videoPath, long videoOffset) {
-        int[] params = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
-        AnimatedFileDrawable.getVideoInfo(videoPath, params, videoOffset);
+        int[] params = new int[AnimatedFileInfo.PARAM_NUM_COUNT];
+        AnimatedFileNative.getVideoInfo(videoPath, params, videoOffset);
 
-        if (params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_VIDEO_CODEC] == 0) {
+        if (params[AnimatedFileInfo.PARAM_NUM_SUPPORTED_VIDEO_CODEC] == 0) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("video hasn't avc1 atom");
             }
@@ -11688,13 +11690,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         long originalSize = new File(videoPath).length();
         int originalBitrate = MediaController.getVideoBitrate(videoPath);
         if (originalBitrate == -1) {
-            originalBitrate = params[AnimatedFileDrawable.PARAM_NUM_BITRATE];
+            originalBitrate = params[AnimatedFileInfo.PARAM_NUM_BITRATE];
         }
         int bitrate = originalBitrate;
-        float videoDuration = params[AnimatedFileDrawable.PARAM_NUM_DURATION];
-        long videoFramesSize = params[AnimatedFileDrawable.PARAM_NUM_VIDEO_FRAME_SIZE];
-        long audioFramesSize = params[AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE];
-        int videoFramerate = params[AnimatedFileDrawable.PARAM_NUM_FRAMERATE];
+        float videoDuration = params[AnimatedFileInfo.PARAM_NUM_DURATION];
+        long videoFramesSize = params[AnimatedFileInfo.PARAM_NUM_VIDEO_FRAME_SIZE];
+        long audioFramesSize = params[AnimatedFileInfo.PARAM_NUM_AUDIO_FRAME_SIZE];
+        int videoFramerate = params[AnimatedFileInfo.PARAM_NUM_FRAMERATE];
 
         VideoEditedInfo videoEditedInfo = new VideoEditedInfo();
         videoEditedInfo.startTime = -1;
@@ -11704,9 +11706,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         videoEditedInfo.videoOffset = videoOffset;
         videoEditedInfo.framerate = videoFramerate;
         videoEditedInfo.estimatedDuration = (long) Math.ceil(videoDuration);
-        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = params[AnimatedFileDrawable.PARAM_NUM_WIDTH];
-        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = params[AnimatedFileDrawable.PARAM_NUM_HEIGHT];
-        videoEditedInfo.rotationValue = params[AnimatedFileDrawable.PARAM_NUM_ROTATION];
+        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = params[AnimatedFileInfo.PARAM_NUM_WIDTH];
+        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = params[AnimatedFileInfo.PARAM_NUM_HEIGHT];
+        videoEditedInfo.rotationValue = params[AnimatedFileInfo.PARAM_NUM_ROTATION];
         videoEditedInfo.originalDuration = (long) (videoDuration * 1000);
 
         int compressionsCount;

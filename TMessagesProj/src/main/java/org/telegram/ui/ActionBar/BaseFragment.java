@@ -1410,6 +1410,13 @@ public abstract class BaseFragment {
         public boolean occupyNavigationBar;
     }
 
+    public EdgeToEdgeSupportMode getEdgeToEdgeSupportMode() {
+        return isSupportEdgeToEdge() ?
+            EdgeToEdgeSupportMode.VERTICAL :
+            EdgeToEdgeSupportMode.NONE;
+    }
+
+    @Deprecated
     public boolean isSupportEdgeToEdge() {
         // warn: overridden method must return a constant
         return false;

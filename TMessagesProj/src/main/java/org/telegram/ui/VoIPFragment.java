@@ -63,6 +63,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -398,28 +399,15 @@ public class VoIPFragment implements
         instance.deviceIsLocked = ((KeyguardManager) activity.getSystemService(Context.KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode();
 
         PowerManager pm = (PowerManager) activity.getSystemService(Context.POWER_SERVICE);
-        boolean screenOn;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            screenOn = pm.isInteractive();
-        } else {
-            screenOn = pm.isScreenOn();
-        }
+        boolean screenOn = pm.isInteractive();
         instance.screenWasWakeup = !screenOn;
         windowView.setLockOnScreen(instance.deviceIsLocked);
         fragment.windowView = windowView;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            windowView.setOnApplyWindowInsetsListener((view, windowInsets) -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    fragment.setInsets(windowInsets);
-                }
-                if (Build.VERSION.SDK_INT >= 30) {
-                    return WindowInsets.CONSUMED;
-                } else {
-                    return windowInsets.consumeSystemWindowInsets();
-                }
-            });
-        }
+        ViewCompat.setOnApplyWindowInsetsListener(windowView, (view, windowInsets) -> {
+            fragment.setInsets(windowInsets.toWindowInsets());
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
         WindowManager.LayoutParams layoutParams = windowView.createWindowLayoutParams();
@@ -491,7 +479,7 @@ public class VoIPFragment implements
                 int h = instance.windowView.getMeasuredHeight();
                 if (instance.canSwitchToPip && !VoIPService.getSharedInstance().isConverting()) {
                     VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
+                    if (instance.lastInsets != null) {
                         VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                         VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
                     }
@@ -509,8 +497,6 @@ public class VoIPFragment implements
         return instance;
     }
 
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void setInsets(WindowInsets windowInsets) {
         lastInsets = windowInsets;
         ((FrameLayout.LayoutParams) buttonsLayout.getLayoutParams()).bottomMargin = lastInsets.getSystemWindowInsetBottom();
@@ -852,7 +838,6 @@ public class VoIPFragment implements
         frameLayout.setBackgroundColor(0xff000000);
         updateSystemBarColors();
         fragmentView = frameLayout;
-        frameLayout.setFitsSystemWindows(true);
 
         VoIPServiceState state = VoIPService.getSharedState();
         gradientLayout = new VoIpGradientLayout(context, state != null && state.isConference(), backgroundProvider);
@@ -1489,7 +1474,7 @@ public class VoIPFragment implements
         if (VoIPService.getSharedInstance() != null) {
             int h = instance.windowView.getMeasuredHeight();
             VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_TRANSITION);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
+            if (instance.lastInsets != null) {
                 VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                 VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
             }
@@ -1894,7 +1879,7 @@ public class VoIPFragment implements
                         lpCloseBtn.rightMargin = AndroidUtilities.dp(18);
                         lpCloseBtn.leftMargin = AndroidUtilities.dp(18);
                         lpCloseBtn.bottomMargin = AndroidUtilities.dp(36);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && lastInsets != null) {
+                        if (lastInsets != null) {
                             lpCloseBtn.bottomMargin += lastInsets.getSystemWindowInsetBottom();
                         }
                         lpCloseBtn.gravity = Gravity.BOTTOM;
@@ -2607,7 +2592,7 @@ public class VoIPFragment implements
         if (service == null) {
             return;
         }
-        if (animated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        if (animated) {
             TransitionSet transitionSet = new TransitionSet();
             Visibility visibility = new Visibility() {
                 @Override
@@ -2764,18 +2749,7 @@ public class VoIPFragment implements
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && activity.checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                     activity.requestPermissions(new String[]{Manifest.permission.CAMERA}, 102);
                 } else {
-                    if (Build.VERSION.SDK_INT < 21 && service.privateCall != null && !service.privateCall.video && !callingUserIsVideo && !service.sharedUIParams.cameraAlertWasShowed) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                        builder.setMessage(LocaleController.getString(R.string.VoipSwitchToVideoCall));
-                        builder.setPositiveButton(LocaleController.getString(R.string.VoipSwitch), (dialogInterface, i) -> {
-                            service.sharedUIParams.cameraAlertWasShowed = true;
-                            toggleCameraInput();
-                        });
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-                        builder.create().show();
-                    } else {
-                        toggleCameraInput();
-                    }
+                    toggleCameraInput();
                 }
             });
             bottomButton.setEnabled(true);
@@ -2889,88 +2863,77 @@ public class VoIPFragment implements
                 fragmentView.announceForAccessibility(text);
             }
             if (!currentUserIsVideo) {
-                if (Build.VERSION.SDK_INT >= 21) {
-                    if (previewDialog == null) {
-                        service.createCaptureDevice(false);
-                        if (!service.isFrontFaceCamera()) {
-                            service.switchCamera();
-                        }
-                        windowView.setLockOnScreen(true);
-                        int[] locVideoButton = new int[2];
-                        bottomVideoBtn.getLocationOnScreen(locVideoButton); // asdf
-                        previewDialog = new PrivateVideoPreviewDialogNew(fragmentView.getContext(), locVideoButton[0], locVideoButton[1]) {
-                            @Override
-                            public void onDismiss(boolean screencast, boolean apply) {
-                                previewDialog = null;
-                                VoIPService service = VoIPService.getSharedInstance();
-                                windowView.setLockOnScreen(false);
-                                if (apply) {
-                                    currentUserIsVideo = true;
-                                    if (service != null && !screencast) {
-                                        service.requestVideoCall(false);
-                                        service.setVideoState(false, Instance.VIDEO_STATE_ACTIVE);
-                                        service.switchToSpeaker();
-                                    }
-                                    if (service != null) {
-                                        setVideoAction(bottomVideoBtn, service, true);
-                                    }
-                                } else {
-                                    if (service != null) {
-                                        service.setVideoState(false, Instance.VIDEO_STATE_INACTIVE);
-                                    }
+                if (previewDialog == null) {
+                    service.createCaptureDevice(false);
+                    if (!service.isFrontFaceCamera()) {
+                        service.switchCamera();
+                    }
+                    windowView.setLockOnScreen(true);
+                    int[] locVideoButton = new int[2];
+                    bottomVideoBtn.getLocationOnScreen(locVideoButton); // asdf
+                    previewDialog = new PrivateVideoPreviewDialogNew(fragmentView.getContext(), locVideoButton[0], locVideoButton[1]) {
+                        @Override
+                        public void onDismiss(boolean screencast, boolean apply) {
+                            previewDialog = null;
+                            VoIPService service = VoIPService.getSharedInstance();
+                            windowView.setLockOnScreen(false);
+                            if (apply) {
+                                currentUserIsVideo = true;
+                                if (service != null && !screencast) {
+                                    service.requestVideoCall(false);
+                                    service.setVideoState(false, Instance.VIDEO_STATE_ACTIVE);
+                                    service.switchToSpeaker();
                                 }
-                                previousState = currentState;
-                                updateViewState();
+                                if (service != null) {
+                                    setVideoAction(bottomVideoBtn, service, true);
+                                }
+                            } else {
+                                if (service != null) {
+                                    service.setVideoState(false, Instance.VIDEO_STATE_INACTIVE);
+                                }
                             }
-
-                            @Override
-                            protected void afterOpened() {
-                                gradientLayout.lockDrawing = true;
-                                gradientLayout.invalidate();
-                            }
-
-                            @Override
-                            protected void beforeClosed() {
-                                gradientLayout.lockDrawing = false;
-                                gradientLayout.invalidate();
-                            }
-
-                            @Override
-                            protected int[] getFloatingViewLocation() {
-                                int[] loc = new int[2];
-                                int[] result = new int[3];
-                                currentUserCameraFloatingLayout.getLocationOnScreen(loc);
-                                result[0] = loc[0];
-                                result[1] = loc[1];
-                                result[2] = currentUserCameraFloatingLayout.getMeasuredWidth();
-                                return result;
-                            }
-
-                            @Override
-                            protected boolean isHasVideoOnMainScreen() {
-                                return callingUserIsVideo;
-                            }
-                        };
-                        if (lastInsets != null) {
-                            previewDialog.setBottomPadding(lastInsets.getSystemWindowInsetBottom());
+                            previousState = currentState;
+                            updateViewState();
                         }
-                        fragmentView.addView(previewDialog);
+
+                        @Override
+                        protected void afterOpened() {
+                            gradientLayout.lockDrawing = true;
+                            gradientLayout.invalidate();
+                        }
+
+                        @Override
+                        protected void beforeClosed() {
+                            gradientLayout.lockDrawing = false;
+                            gradientLayout.invalidate();
+                        }
+
+                        @Override
+                        protected int[] getFloatingViewLocation() {
+                            int[] loc = new int[2];
+                            int[] result = new int[3];
+                            currentUserCameraFloatingLayout.getLocationOnScreen(loc);
+                            result[0] = loc[0];
+                            result[1] = loc[1];
+                            result[2] = currentUserCameraFloatingLayout.getMeasuredWidth();
+                            return result;
+                        }
+
+                        @Override
+                        protected boolean isHasVideoOnMainScreen() {
+                            return callingUserIsVideo;
+                        }
+                    };
+                    if (lastInsets != null) {
+                        previewDialog.setBottomPadding(lastInsets.getSystemWindowInsetBottom());
                     }
-                    return;
-                } else {
-                    currentUserIsVideo = true;
-                    if (!service.isSpeakerphoneOn()) {
-                        VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(activity, false);
-                    }
-                    service.requestVideoCall(false);
-                    service.setVideoState(false, Instance.VIDEO_STATE_ACTIVE);
+                    fragmentView.addView(previewDialog);
                 }
+                return;
             } else {
                 currentUserTextureView.saveCameraLastBitmap();
                 service.setVideoState(false, Instance.VIDEO_STATE_INACTIVE);
-                if (Build.VERSION.SDK_INT >= 21) {
-                    service.clearCamera();
-                }
+                service.clearCamera();
             }
             previousState = currentState;
             updateViewState();
@@ -3047,11 +3010,7 @@ public class VoIPFragment implements
         PowerManager pm = (PowerManager) activity.getSystemService(Context.POWER_SERVICE);
 
         boolean screenOn;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
-            screenOn = pm.isInteractive();
-        } else {
-            screenOn = pm.isScreenOn();
-        }
+        screenOn = pm.isInteractive();
 
         final @PipPermissions int permissions = PipUtils.checkPermissions(activity);
         final boolean hasPermissionsToPip = permissions > 0;
@@ -3059,7 +3018,7 @@ public class VoIPFragment implements
         if (canSwitchToPip && (VoIPService.getSharedInstance() != null && !VoIPService.getSharedInstance().isConverting()) && permissions == PipPermissions.PIP_GRANTED_OVERLAY) {
             int h = instance.windowView.getMeasuredHeight();
             VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
+            if (instance.lastInsets != null) {
                 VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                 VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
             }
@@ -3105,13 +3064,11 @@ public class VoIPFragment implements
 
     @SuppressLint("InlinedApi")
     private void requestInlinePermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            AlertsCreator.createDrawOverlayPermissionDialog(activity, (dialogInterface, i) -> {
-                if (windowView != null) {
-                    windowView.finish();
-                }
-            }, true).show();
-        }
+        AlertsCreator.createDrawOverlayPermissionDialog(activity, (dialogInterface, i) -> {
+            if (windowView != null) {
+                windowView.finish();
+            }
+        }, true).show();
     }
 
     public TLRPC.Document replaceEmojiToLottieFrame(CharSequence text, int[] emojiOnly) {

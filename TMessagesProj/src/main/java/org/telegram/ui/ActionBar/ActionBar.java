@@ -1515,7 +1515,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         textLeft += additionalTextLeft;
 
         if (menu != null && menu.getVisibility() != GONE) {
-            int menuLeft = menu.searchFieldVisible() ? dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66) : (right - left) - menu.getMeasuredWidth();
+            int menuLeft = menu.searchFieldVisible() ? dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66) : (getMeasuredWidth()) - menu.getMeasuredWidth();
             menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());
         }
 
@@ -1581,10 +1581,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
             switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
                 case Gravity.CENTER_HORIZONTAL:
-                    childLeft = (right - left - width) / 2 + lp.leftMargin - lp.rightMargin;
+                    childLeft = (getMeasuredWidth() - width) / 2 + lp.leftMargin - lp.rightMargin;
                     break;
                 case Gravity.RIGHT:
-                    childLeft = right - width - lp.rightMargin;
+                    childLeft = getMeasuredWidth() - width - lp.rightMargin;
                     break;
                 case Gravity.LEFT:
                 default:

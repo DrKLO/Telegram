@@ -115,6 +115,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -215,6 +216,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.EdgeToEdgeSupportMode;
 import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -7479,9 +7481,7 @@ public class ChatActivity extends BaseFragment implements
                     topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
                 }
             };
-
-            fragmentContextView.isInsideBubble = true;
-            fragmentLocationContextView.isInsideBubble = true;
+            topPanelLayout.setCallFragmentContextView(fragmentContextView);
             fragmentContextViewWrapper.addView(fragmentContextView);
             fragmentLocationContextViewWrapper.addView(fragmentLocationContextView);
             fragmentContextView.setEnabled(!inPreviewMode);
@@ -8940,12 +8940,30 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean lastImeVisible;
+    private int insetSystemLeft;
+    private int insetSystemRight;
 
     @NonNull
     private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+        final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
+
+        final int insetsLeft = systemInsets.left;
+        final int insetsRight = systemInsets.right;
+        if (insetSystemLeft != insetsLeft || insetSystemRight != insetsRight) {
+            insetSystemLeft = insetsLeft;
+            insetSystemRight = insetsRight;
+            contentView.requestLayout();
+        }
+
         windowInsetsStateHolder.setInsets(insets);
+        
+        if (messagesSearchListContainer != null) {
+            messagesSearchListContainer.setPadding(insetsLeft, 0, insetsRight, 0);
+        }
+        
         checkUi_chatListViewPaddings();
         checkUi_messagesSearchListPadding();
+        invalidateClipRectForBackgroundAndChatList();
 
         final boolean keyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
         if (lastImeVisible != keyboardVisible) {
@@ -15882,7 +15900,7 @@ public class ChatActivity extends BaseFragment implements
                     recyclerChatViewHeight,
                     0,
                     view.getY() + (isKeyboardVisible() ? chatListView.getTop() : actionBar.getMeasuredHeight()) - contentView.getBackgroundTranslationY() - (1f - contentPanTranslationT) * chatListViewPaddingTop,
-                    contentView.getMeasuredWidth(),
+                    chatListView.getMeasuredWidth(),
                     contentView.getBackgroundSizeY(),
                     blurredViewTopOffset,
                     blurredViewBottomOffset,
@@ -18088,13 +18106,25 @@ public class ChatActivity extends BaseFragment implements
             }*/
         }
 
+        private boolean isFullSizeIgnoreInsersChild(View child) {
+            return child != null && (child == backgroundView
+                || child == blurredView || child == searchViewPager
+                || child == fireworksOverlay || child == chatActivityFadeView
+                || child == messagesSearchListContainer
+            );
+        }
+
         @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        protected void onMeasure(int origWidthMeasureSpec, int heightMeasureSpec) {
             invalidateBlurredSourcesView.bringToFrontIfNeeded();
 
-            final int allHeight;
-            int widthSize = View.MeasureSpec.getSize(widthMeasureSpec);
-            int heightSize = allHeight = View.MeasureSpec.getSize(heightMeasureSpec);
+            final int allWidth = MeasureSpec.getSize(origWidthMeasureSpec);
+            final int allHeight = MeasureSpec.getSize(heightMeasureSpec);
+
+            final int widthSize = allWidth - insetSystemLeft - insetSystemRight;
+            final int widthMeasureSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
+
+            int heightSize = allHeight;
 
             if (navbarContentSourceWallpaper.getSource() instanceof BlurredBackgroundSourceBitmap) {
                 ((BlurredBackgroundSourceBitmap) navbarContentSourceWallpaper.getSource())
@@ -18154,7 +18184,7 @@ public class ChatActivity extends BaseFragment implements
                 globalIgnoreLayout = false;
             }
 
-            setMeasuredDimension(widthSize, heightSize);
+            setMeasuredDimension(allWidth, heightSize);
             heightSize -= getPaddingTop();
 
             if (webBotTitle != null) {
@@ -18232,8 +18262,8 @@ public class ChatActivity extends BaseFragment implements
                 if (child == null || child.getVisibility() == GONE || child == chatActivityEnterView || child == actionBar) {
                     continue;
                 }
-                if (child == backgroundView || child == blurredView || child == searchViewPager) {
-                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
+                if (isFullSizeIgnoreInsersChild(child)) {
+                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(allWidth, View.MeasureSpec.EXACTLY);
                     int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(allHeight, View.MeasureSpec.EXACTLY);
                     child.measure(contentWidthSpec, contentHeightSpec);
                 } else if (child == chatListView || child == chatListThanosEffect || child instanceof TextSelectionHelper.TextSelectionOverlay) {
@@ -18360,6 +18390,9 @@ public class ChatActivity extends BaseFragment implements
             final int count = getChildCount();
             int paddingBottom = 0;
 
+            final int selfWidth = getMeasuredWidth();
+            final int selfWidthWithoutInsets = selfWidth - insetSystemLeft - insetSystemRight;
+
             for (int i = 0; i < count; i++) {
                 final View child = getChildAt(i);
                 if (child == null || child.getVisibility() == GONE) {
@@ -18383,14 +18416,14 @@ public class ChatActivity extends BaseFragment implements
 
                 switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
                     case Gravity.CENTER_HORIZONTAL:
-                        childLeft = (r - l - width) / 2 + lp.leftMargin - lp.rightMargin;
+                        childLeft = insetSystemLeft + (selfWidthWithoutInsets - width) / 2 + lp.leftMargin - lp.rightMargin;
                         break;
                     case Gravity.RIGHT:
-                        childLeft = r - width - lp.rightMargin;
+                        childLeft = selfWidth - insetSystemRight - width - lp.rightMargin;
                         break;
                     case Gravity.LEFT:
                     default:
-                        childLeft = lp.leftMargin;
+                        childLeft = insetSystemLeft + lp.leftMargin;
                 }
 
                 switch (verticalGravity) {
@@ -18410,7 +18443,10 @@ public class ChatActivity extends BaseFragment implements
                         childTop = lp.topMargin;
                 }
 
-                if (child == blurredView || child == messageEnterTransitionContainer || child == fireworksOverlay || child == messagesSearchListContainer || child == chatActivityFadeView || child == backgroundView || child == quickShareSelectorOverlay || child == chatInputViewsContainer || child instanceof HintView || child instanceof ChecksHintView) {
+                if (isFullSizeIgnoreInsersChild(child)) {
+                    childLeft = 0;
+                    childTop = 0;
+                } else if (child == messageEnterTransitionContainer || child == quickShareSelectorOverlay || child == chatInputViewsContainer || child instanceof HintView || child instanceof ChecksHintView) {
                     childTop = 0;
                 } else if (child instanceof TextSelectionHelper.TextSelectionOverlay) {
                     childTop = -blurredViewTopOffset;
@@ -18448,7 +18484,7 @@ public class ChatActivity extends BaseFragment implements
                     childTop = 0;
                 } else if (child instanceof MessagePreviewView) {
                     childTop = AndroidUtilities.statusBarHeight;
-                } else if (child == searchViewPager || child == roundVideoRecordBackground || child == messageMetricsView || child == pollAddOptionFieldLayout) {
+                } else if (child == roundVideoRecordBackground || child == messageMetricsView || child == pollAddOptionFieldLayout) {
                     childTop = 0;
                 }
                 child.layout(childLeft, childTop, childLeft + width, childTop + height);
@@ -45912,6 +45948,12 @@ public class ChatActivity extends BaseFragment implements
     public boolean isSupportEdgeToEdge() {
         return true;
     }
+
+    @Override
+    public EdgeToEdgeSupportMode getEdgeToEdgeSupportMode() {
+        return EdgeToEdgeSupportMode.FULL;
+    }
+
     @Override
     public boolean drawEdgeNavigationBar() {
         return false;
@@ -46772,6 +46814,8 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
 
+        final boolean hasSideInsets = insetSystemLeft > 0 || insetSystemRight > 0;
+
         final int topClip = 0;
         final int bottomClip = (int) Math.max(0,
             windowInsetsStateHolder.getAnimatedImeBottomInset() * windowInsetsStateHolder.getAnimatedKeyboardVisibility() - dp(29));
@@ -46790,7 +46834,7 @@ public class ChatActivity extends BaseFragment implements
                 Math.min(windowInsetsStateHolder.getInAppKeyboardHeight(), windowInsetsStateHolder.getAnimatedImeBottomInset() * windowInsetsStateHolder.getAnimatedKeyboardVisibility()) - dp(29));
 
             clipBoundsTmp.set(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight() - bottomClip2);
-            chatActivityFadeView.setClipBounds(clipBoundsTmp);
+            chatActivityFadeView.setClipBounds(hasSideInsets ? null : clipBoundsTmp);
         }
     }
 

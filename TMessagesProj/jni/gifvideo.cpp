@@ -211,7 +211,10 @@ int decode_packet(VideoInfo *info, int *got_frame) {
             if (ret >= 0) {
                 ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
                 if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-                    return 0;
+                    // No frame yet (need more input) or decoder drained.
+                    // Report the packet as fully consumed so the caller advances
+                    // to the next av_read_frame instead of re-decoding it forever.
+                    return info->pkt.size;
                 } else if (ret < 0) {
                     return ret;
                 }

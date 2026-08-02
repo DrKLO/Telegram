@@ -597,8 +597,6 @@ public class BitmapsCache {
         int getNextFrame(Bitmap bitmap);
 
         void releaseForGenerateCache();
-
-        Bitmap getFirstFrame(Bitmap bitmap);
     }
 
     public static class Metadata {

@@ -66,6 +66,11 @@ public class RichMediaItem {
         return media != null && (media.localPath != null || media.isReady());
     }
 
+    public void setRoundRadius(int tl, int tr, int br, int bl) {
+        imageReceiver.setRoundRadius(tl, tr, br, bl);
+        blurImageReceiver.setRoundRadius(tl, tr, br, bl);
+    }
+
     public int getWidth() {
         if (media == null) return 0;
         return isLocalRotated90() ? media.height : media.width;

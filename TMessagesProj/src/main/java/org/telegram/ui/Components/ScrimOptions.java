@@ -163,7 +163,7 @@ public class ScrimOptions extends Dialog {
         ViewCompat.setOnApplyWindowInsetsListener(windowView, new OnApplyWindowInsetsListener() {
             @Override
             public @NonNull WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
-                final Insets r = insets.getInsets(WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.systemBars());
+                final Insets r = AndroidUtilities.getDefaultWindowInsets(insets, false);
                 containerView.setPadding(r.left, r.top, r.right, r.bottom);
                 windowView.requestLayout();
 
@@ -319,9 +319,7 @@ public class ScrimOptions extends Dialog {
             | WindowManager.LayoutParams.FLAG_FULLSCREEN
             | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-        if (Build.VERSION.SDK_INT >= 28) {
-            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
+        AndroidUtilities.applyEdgeToEdgeLayoutParams(params);
         window.setAttributes(params);
 
         windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);

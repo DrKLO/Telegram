@@ -17,6 +17,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
@@ -39,7 +40,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -50,10 +50,11 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
+import androidx.core.graphics.Insets;
 import androidx.core.math.MathUtils;
 import androidx.core.util.Consumer;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.FloatValueHolder;
@@ -2470,26 +2471,23 @@ public class Bulletin {
 
         private BulletinWindow(Context context, Delegate delegate) {
             super(context);
+            AndroidUtilities.enableEdgeToEdge(getWindow());
+
             setContentView(
                     container = new BulletinWindowLayout(context),
                     new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             );
-            if (Build.VERSION.SDK_INT >= 21) {
-                container.setFitsSystemWindows(true);
-                container.setOnApplyWindowInsetsListener((v, insets) -> {
-                    applyInsets(insets);
-                    v.requestLayout();
-                    if (Build.VERSION.SDK_INT >= 30) {
-                        return WindowInsets.CONSUMED;
-                    } else {
-                        return insets.consumeSystemWindowInsets();
-                    }
-                });
-                if (Build.VERSION.SDK_INT >= 30) {
-                    container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-                } else {
-                    container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-                }
+
+            ViewCompat.setOnApplyWindowInsetsListener(container, (v, i) -> {
+                applyInsets(AndroidUtilities.getDefaultWindowInsets(i, false));
+                v.requestLayout();
+                return WindowInsetsCompat.CONSUMED;
+            });
+
+            if (Build.VERSION.SDK_INT >= 30) {
+                container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            } else {
+                container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             }
 
             addDelegate(container, new Delegate() {
@@ -2518,6 +2516,7 @@ public class Bulletin {
                 params.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 params.gravity = Gravity.TOP | Gravity.LEFT;
                 params.dimAmount = 0;
+                params.format = PixelFormat.TRANSLUCENT;
                 params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
                 params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
                 params.flags |= WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
@@ -2540,15 +2539,9 @@ public class Bulletin {
             super.show();
         }
 
-        @RequiresApi(api = Build.VERSION_CODES.KITKAT_WATCH)
-        private void applyInsets(WindowInsets insets) {
+        private void applyInsets(Insets insets) {
             if (container != null) {
-                container.setPadding(
-                        insets.getSystemWindowInsetLeft(),
-                        insets.getSystemWindowInsetTop(),
-                        insets.getSystemWindowInsetRight(),
-                        insets.getSystemWindowInsetBottom()
-                );
+                container.setPadding(insets.left, insets.top, insets.right, insets.bottom);
             }
         }
 

@@ -10046,28 +10046,26 @@ public class TLRPC {
         public ArrayList<TL_keyboardButtonRow> rows = new ArrayList<>();
 
         public static ReplyMarkup TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            ReplyMarkup result = null;
+            return TLdeserialize(ReplyMarkup.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+
+        private static ReplyMarkup fromConstructor(int constructor) {
             switch (constructor) {
-                case 0x85dd99d1:
-                    result = new TL_replyKeyboardMarkup();
-                    break;
-                case 0xa03e5b85:
-                    result = new TL_replyKeyboardHide();
-                    break;
-                case 0x86b40b08:
-                    result = new TL_replyKeyboardForceReply();
-                    break;
-                case 0x3502758c:
-                    result = new TL_replyKeyboardMarkup_layer129();
-                    break;
-                case 0xf4108aa0:
-                    result = new TL_replyKeyboardForceReply_layer129();
-                    break;
-                case 0x48a30254:
-                    result = new TL_replyInlineMarkup();
-                    break;
+                case TL_replyKeyboardMarkup.constructor:
+                    return new TL_replyKeyboardMarkup();
+                case TL_replyKeyboardHide.constructor:
+                    return new TL_replyKeyboardHide();
+                case TL_replyKeyboardForceReply.constructor:
+                    return new TL_replyKeyboardForceReply();
+                case TL_replyKeyboardMarkup_layer129.constructor:
+                    return new TL_replyKeyboardMarkup_layer129();
+                case TL_replyKeyboardForceReply_layer129.constructor:
+                    return new TL_replyKeyboardForceReply_layer129();
+                case TL_replyInlineMarkup.constructor:
+                    return new TL_replyInlineMarkup();
+                default:
+                    return null;
             }
-            return TLdeserialize(ReplyMarkup.class, result, stream, constructor, exception);
         }
     }
 

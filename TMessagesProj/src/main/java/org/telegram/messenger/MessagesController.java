@@ -1602,7 +1602,7 @@ public class MessagesController extends BaseController implements NotificationCe
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
         keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
-        backgroundConnection = mainPreferences.getBoolean("keepAliveService", false);
+        backgroundConnection = mainPreferences.getBoolean("backgroundConnection", false);
         promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
         nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
         promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
@@ -19545,6 +19545,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 final long dialogId = MessageObject.getDialogId(convertedMessage);
                 final boolean isDialogCreated = false;
                 MessageObject obj = new MessageObject(currentAccount, convertedMessage, usersDict, chatsDict, isDialogCreated, isDialogCreated);
+
+                if (MessagesStorage.isValidKeyboardToSave(convertedMessage)) {
+                    getMessagesStorage().getStorageQueue().postRunnable(() -> {
+                        getMediaDataController().putBotKeyboard(MessagesStorage.TopicKey.of(dialogId, 0), convertedMessage);
+                    });
+                }
 
                 if (ephemeralMessages == null) {
                     ephemeralMessages = new LongSparseArray<>();

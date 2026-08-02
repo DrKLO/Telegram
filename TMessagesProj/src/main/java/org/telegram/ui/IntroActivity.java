@@ -452,24 +452,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
             justCreated = false;
         }
-        if (!AndroidUtilities.isTablet()) {
-            Activity activity = getParentActivity();
-            if (activity != null) {
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            }
-        }
+        AndroidUtilities.lockOrientation(getParentActivity(), ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-
-        if (!AndroidUtilities.isTablet()) {
-            Activity activity = getParentActivity();
-            if (activity != null) {
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-            }
-        }
+        AndroidUtilities.unlockOrientation(getParentActivity());
     }
 
     @Override

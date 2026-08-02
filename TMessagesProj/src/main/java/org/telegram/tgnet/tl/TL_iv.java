@@ -1060,6 +1060,7 @@ public class TL_iv {
         public static final int constructor = 0x263d7c26;
 
         public RichText caption;
+        public boolean collapsed; //custom
 
         public void readParams(InputSerializedData stream, boolean exception) {
             text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);

@@ -176,9 +176,6 @@ import java.util.Objects;
 
 @SuppressWarnings("unchecked")
 public class SharedMediaLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, DialogCell.DialogCellDelegate {
-
-    private final static boolean SHOW_CONTEXT_VIEW_AS_BUBBLE = true;
-
     public static final int TAB_PHOTOVIDEO = 0;
     public static final int TAB_FILES = 1;
     public static final int TAB_VOICE = 2;
@@ -3687,54 +3684,51 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
         if (!customTabs()) {
-            if (SHOW_CONTEXT_VIEW_AS_BUBBLE) {
-                topPanelLayout = new DialogsActivityTopPanelLayout(context);
-                topPanelLayout.setPadding(dp(11), dp(21), dp(11), dp(21));
+            topPanelLayout = new DialogsActivityTopPanelLayout(context);
+            topPanelLayout.setPadding(dp(11), dp(21), dp(11), dp(21));
 
-                BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
-                topPanelLayoutBackground.setRadius(dp(24));
-                topPanelLayoutBackground.setPadding(dp(7));
-                topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
+            BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
+            topPanelLayoutBackground.setRadius(dp(24));
+            topPanelLayoutBackground.setPadding(dp(7));
+            topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
 
-                fragmentContextViewWrapper = new FrameLayout(context);
-                topPanelLayout.addView(fragmentContextViewWrapper);
-                topPanelLayout.setViewVisible(fragmentContextViewWrapper, true, false);
-                topPanelLayout.setOnAnimatedHeightChangedListener(() -> {
-                    topLayoutPadding = (int) topPanelLayout.getAnimatedHeightWithPadding(dp(14));
+            fragmentContextViewWrapper = new FrameLayout(context);
+            topPanelLayout.addView(fragmentContextViewWrapper);
+            topPanelLayout.setViewVisible(fragmentContextViewWrapper, true, false);
+            topPanelLayout.setOnAnimatedHeightChangedListener(() -> {
+                topLayoutPadding = (int) topPanelLayout.getAnimatedHeightWithPadding(dp(14));
 
-                    if (giftsContainer != null) {
-                        giftsContainer.setPaddingTop(dp(48) + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7)));
-                    }
-                    if (mediaPages != null) {
-                        for (MediaPage page : mediaPages) {
-                            if (page != null) {
-                                final int paddingTopOld = page.listView.getPaddingTop();
-                                page.listView.setPadding(
-                                    page.listView.getPaddingLeft(),
-                                    getPagePaddingTop(page.selectedType),
-                                    page.listView.getPaddingRight(),
-                                    page.listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView())
-                                );
-                                final int paddingTopNew = page.listView.getPaddingTop();
-                                final int scroll = paddingTopOld - paddingTopNew;
-                                AndroidUtilities.doOnLayout(page.listView, () -> page.listView.scrollBy(0, scroll));
-                            }
+                if (giftsContainer != null) {
+                    giftsContainer.setPaddingTop(dp(48) + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7)));
+                }
+                if (mediaPages != null) {
+                    for (MediaPage page : mediaPages) {
+                        if (page != null) {
+                            final int paddingTopOld = page.listView.getPaddingTop();
+                            page.listView.setPadding(
+                                page.listView.getPaddingLeft(),
+                                getPagePaddingTop(page.selectedType),
+                                page.listView.getPaddingRight(),
+                                page.listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView())
+                            );
+                            final int paddingTopNew = page.listView.getPaddingTop();
+                            final int scroll = paddingTopOld - paddingTopNew;
+                            AndroidUtilities.doOnLayout(page.listView, () -> page.listView.scrollBy(0, scroll));
                         }
                     }
-                    // SharedMediaLayout.this.setPadding(0, , 0, 0);
-                });
-                fragmentContextView = new FragmentContextView(context, parent, this, false, resourcesProvider) {
-                    @Override
-                    public void setVisibility(int visibility) {
-                        topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
-                    }
-                };
-                fragmentContextView.isInsideBubble = true;
-                fragmentContextViewWrapper.addView(fragmentContextView);
-                addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 48 -14, 0, 0));
-            } else {
-                addView(fragmentContextView = new FragmentContextView(context, parent, this, false, resourcesProvider), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
-            }
+                }
+                // SharedMediaLayout.this.setPadding(0, , 0, 0);
+            });
+            fragmentContextView = new FragmentContextView(context, parent, this, false, resourcesProvider) {
+                @Override
+                public void setVisibility(int visibility) {
+                    topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
+                }
+            };
+            fragmentContextViewWrapper.addView(fragmentContextView);
+            topPanelLayout.setCallFragmentContextView(fragmentContextView);
+            addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 48 -14, 0, 0));
+
             fragmentContextView.setDelegate((start, show) -> {
                 if (!start) {
                     requestLayout();

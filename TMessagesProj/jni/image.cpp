@@ -1651,6 +1651,192 @@ Java_org_telegram_messenger_Utilities_applySoftLight(
     return JNI_TRUE;
 }
 
+
+
+// ---------------------------------------------------------------------------
+// Alpha-invert effect.
+//
+// For every pixel:
+//   a = alpha channel of the input pixel
+//   v = 255 - (a * intensity / 255)      (clamped to [0, 255])
+//   output pixel = RGBA(0, 0, 0, v)
+//
+// Input  : RGBA_8888 (alpha is byte 3) or ALPHA_8 (single byte per pixel)
+// Output : RGBA_8888, same dimensions as input
+//
+// The output has RGB = 0, which satisfies RGB <= A for any v, so the result is
+// simultaneously valid as straight and as premultiplied RGBA — no conversion
+// is needed either way.
+//
+// The output pixel depends only on `a` and `intensity`, so a 256-entry LUT of
+// fully packed uint32 pixels is built once per call (256 iterations —
+// negligible next to millions of pixels). The hot loop then reduces to one
+// lookup plus one 32-bit store per pixel.
+// ---------------------------------------------------------------------------
+
+// Builds lut[a] = the fully packed output pixel RGBA(0, 0, 0, v),
+// where v = clamp(255 - (a * intensity / 255), 0, 255).
+//
+// Storing the packed 32-bit pixel (rather than just v) means the hot loop is a
+// single lookup followed by a single 32-bit store, with no per-pixel packing.
+//
+// RGBA_8888 memory order is R, G, B, A; on little-endian (every Android ABI)
+// the packed word is (A << 24) | (B << 16) | (G << 8) | R. With R = G = B = 0
+// this collapses to v << 24.
+static void build_intensity_lut(uint32_t lut[256], int32_t intensity) {
+    for (int32_t a = 0; a < 256; ++a) {
+        // int64 keeps the product safe even for out-of-range intensity values.
+        int64_t v = 255 - (static_cast<int64_t>(a) * intensity) / 255;
+        if (v < 0)   v = 0;
+        if (v > 255) v = 255;
+
+        lut[a] = static_cast<uint32_t>(v) << 24;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Hot loops. One per input format, selected before entering the loop.
+//
+// Each iteration is a single LUT lookup followed by a single 32-bit store.
+// Output is RGBA_8888, whose base pointer is 4-byte aligned by
+// AndroidBitmap_lockPixels and whose stride is a multiple of 4 (validated by
+// the caller), so the uint32_t store is legal on every row.
+// ---------------------------------------------------------------------------
+
+// Input RGBA_8888: alpha lives in byte 3 of every 4-byte pixel.
+static void process_rgba8888(
+        const uint8_t * __restrict__ inPx,
+        uint8_t * __restrict__ outPx,
+        uint32_t width, uint32_t height,
+        uint32_t inStride, uint32_t outStride,
+        const uint32_t * __restrict__ lut)
+{
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t * __restrict__ src = inPx  + y * inStride;
+        auto          * __restrict__ dst =
+                reinterpret_cast<uint32_t *>(outPx + y * outStride);
+
+        for (uint32_t x = 0; x < width; ++x) {
+            dst[x] = lut[src[3]];   // byte 3 = alpha
+            src += 4;
+        }
+    }
+}
+
+// Input ALPHA_8: one alpha byte per pixel, no other channels.
+static void process_alpha8(
+        const uint8_t * __restrict__ inPx,
+        uint8_t * __restrict__ outPx,
+        uint32_t width, uint32_t height,
+        uint32_t inStride, uint32_t outStride,
+        const uint32_t * __restrict__ lut)
+{
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t * __restrict__ src = inPx  + y * inStride;
+        auto          * __restrict__ dst =
+                reinterpret_cast<uint32_t *>(outPx + y * outStride);
+
+        for (uint32_t x = 0; x < width; ++x) {
+            dst[x] = lut[src[x]];
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point
+//
+// Kotlin: external fun applyAlphaInvert(
+//             input: Bitmap, output: Bitmap, intensity: Int): Boolean
+//         [org.telegram.messenger.Utilities]
+//
+// input     — RGBA_8888 or ALPHA_8
+// output    — RGBA_8888, same dimensions as input
+// intensity — alpha scaling factor in [0, 255]; 255 means "use alpha as-is"
+//
+// Returns true on success, false on error (size mismatch, unsupported format,
+// aliasing between the two bitmaps, or a failed lock).
+// ---------------------------------------------------------------------------
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_applyAlphaInvert(
+        JNIEnv *env,
+        jclass  /*clazz*/,
+        jobject inputBitmap,
+        jobject outputBitmap,
+        jint    intensity)
+{
+    if (__builtin_expect(env->IsSameObject(inputBitmap, outputBitmap), 0)) {
+        return JNI_FALSE;
+    }
+
+    AndroidBitmapInfo inInfo{};
+    AndroidBitmapInfo outInfo{};
+
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, inputBitmap,  &inInfo)  != ANDROID_BITMAP_RESULT_SUCCESS ||
+            AndroidBitmap_getInfo(env, outputBitmap, &outInfo) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    // Input may be RGBA_8888 (4 bytes/px) or ALPHA_8 (1 byte/px).
+    const bool inIsRgba  = (inInfo.format == ANDROID_BITMAP_FORMAT_RGBA_8888);
+    const bool inIsA8    = (inInfo.format == ANDROID_BITMAP_FORMAT_A_8);
+    const uint32_t inBpp = inIsRgba ? 4u : 1u;
+
+    if (__builtin_expect(
+            (!inIsRgba && !inIsA8)                            ||
+            outInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+            inInfo.width   != outInfo.width                   ||
+            inInfo.height  != outInfo.height                  ||
+            inInfo.width   == 0                               ||
+            inInfo.height  == 0                               ||
+            inInfo.stride  < inInfo.width * inBpp             ||
+            outInfo.stride < outInfo.width * 4u,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *inPixels  = nullptr;
+    void *outPixels = nullptr;
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, inputBitmap, &inPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, outputBitmap, &outPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        AndroidBitmap_unlockPixels(env, inputBitmap);
+        return JNI_FALSE;
+    }
+
+    // 1 KB LUT of packed output pixels — built per call because it depends on `intensity`.
+    uint32_t lut[256];
+    build_intensity_lut(lut, intensity);
+
+    const auto *src = static_cast<const uint8_t *>(inPixels);
+    auto       *dst = static_cast<uint8_t *>(outPixels);
+    const uint32_t w  = inInfo.width;
+    const uint32_t h  = inInfo.height;
+    const uint32_t si = inInfo.stride;
+    const uint32_t so = outInfo.stride;
+
+    // Dispatch before the loop so no format branching occurs inside it.
+    if (inIsRgba) {
+        process_rgba8888(src, dst, w, h, si, so, lut);
+    } else {
+        process_alpha8(src, dst, w, h, si, so, lut);
+    }
+
+    AndroidBitmap_unlockPixels(env, outputBitmap);
+    AndroidBitmap_unlockPixels(env, inputBitmap);
+    return JNI_TRUE;
+}
+
+
+
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_org_telegram_messenger_Utilities_nLibyuvARGBSaleBitmap(
@@ -1850,6 +2036,246 @@ Java_org_telegram_messenger_Utilities_averageBitmapColor(
             (avgG << 8) |
             avgB
     );
+}
+
+// ---------------------------------------------------------------------------
+// ALPHA_8 -> RGBA_8888 expansion.
+//
+// For every pixel:
+//   a = the source alpha byte
+//   output pixel = RGBA(0, 0, 0, a)   — black, alpha taken from the source
+//
+// src : ALPHA_8    (1 byte per pixel)
+// dst : RGBA_8888  (4 bytes per pixel), same dimensions as src
+//
+// RGB = 0 satisfies RGB <= A for any a, so the result is simultaneously valid
+// as straight and as premultiplied RGBA — no conversion is needed either way.
+//
+// No LUT is needed here: on little-endian (every Android ABI) the RGBA_8888
+// memory order R, G, B, A packs into a word as (A << 24) | (B << 16) |
+// (G << 8) | R, which with R = G = B = 0 collapses to a << 24. A shift is
+// cheaper than a table lookup, so the hot loop is a byte load, a shift, and a
+// 32-bit store.
+// ---------------------------------------------------------------------------
+
+static void expand_alpha8_to_rgba8888(
+        const uint8_t * __restrict__ srcPx,
+        uint8_t * __restrict__ dstPx,
+        uint32_t width, uint32_t height,
+        uint32_t srcStride, uint32_t dstStride)
+{
+    for (uint32_t y = 0; y < height; ++y) {
+        const uint8_t * __restrict__ src = srcPx + y * srcStride;
+        auto          * __restrict__ dst =
+                reinterpret_cast<uint32_t *>(dstPx + y * dstStride);
+
+        for (uint32_t x = 0; x < width; ++x) {
+            dst[x] = static_cast<uint32_t>(src[x]) << 24;   // RGBA(0, 0, 0, a)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point
+//
+// Kotlin: external fun expandAlphaToBlack(src: Bitmap, dst: Bitmap): Boolean
+//         [org.telegram.messenger.Utilities]
+//
+// src — ALPHA_8
+// dst — RGBA_8888, same dimensions as src
+//
+// Returns true on success, false on error (size mismatch, unsupported format,
+// aliasing between the two bitmaps, or a failed lock).
+// ---------------------------------------------------------------------------
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_expandAlphaToBlack(
+        JNIEnv *env,
+        jclass  /*clazz*/,
+        jobject srcBitmap,
+        jobject dstBitmap)
+{
+    if (__builtin_expect(env->IsSameObject(srcBitmap, dstBitmap), 0)) {
+        return JNI_FALSE;
+    }
+
+    AndroidBitmapInfo srcInfo{};
+    AndroidBitmapInfo dstInfo{};
+
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, srcBitmap, &srcInfo) != ANDROID_BITMAP_RESULT_SUCCESS ||
+            AndroidBitmap_getInfo(env, dstBitmap, &dstInfo) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            srcInfo.format != ANDROID_BITMAP_FORMAT_A_8         ||
+            dstInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888   ||
+            srcInfo.width  != dstInfo.width                     ||
+            srcInfo.height != dstInfo.height                    ||
+            srcInfo.width  == 0                                 ||
+            srcInfo.height == 0                                 ||
+            srcInfo.stride < srcInfo.width                      ||
+            dstInfo.stride < dstInfo.width * 4u,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *srcPixels = nullptr;
+    void *dstPixels = nullptr;
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, srcBitmap, &srcPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, dstBitmap, &dstPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        AndroidBitmap_unlockPixels(env, srcBitmap);
+        return JNI_FALSE;
+    }
+
+    expand_alpha8_to_rgba8888(
+            static_cast<const uint8_t *>(srcPixels),
+            static_cast<uint8_t *>(dstPixels),
+            srcInfo.width, srcInfo.height,
+            srcInfo.stride, dstInfo.stride);
+
+    AndroidBitmap_unlockPixels(env, dstBitmap);
+    AndroidBitmap_unlockPixels(env, srcBitmap);
+    return JNI_TRUE;
+}
+
+// ---------------------------------------------------------------------------
+// RGBA_8888 -> ALPHA_8: extract the alpha channel.
+//
+// For every pixel:
+//   dst = alpha byte of the source pixel
+//
+// src : RGBA_8888  (4 bytes per pixel; alpha is the high byte on little-endian)
+// dst : ALPHA_8    (1 byte per pixel), same dimensions as src
+//
+// The hot loop reads each pixel as one 32-bit word and stores its high byte.
+// Reading a whole word and shifting is friendlier to the load unit than a
+// strided byte read of src[3], and lets the compiler vectorise the pass.
+// ---------------------------------------------------------------------------
+
+// Contiguous fast path: both bitmaps have no row padding, so they are flat
+// buffers and the whole image is one pass over width*height pixels.
+static void extract_alpha_contiguous(
+        const uint8_t * __restrict__ srcPx,
+        uint8_t * __restrict__ dstPx,
+        uint32_t width, uint32_t height)
+{
+    const auto * __restrict__ src = reinterpret_cast<const uint32_t *>(srcPx);
+    uint8_t    * __restrict__ dst = dstPx;
+    const uint32_t count = width * height;
+
+    for (uint32_t i = 0; i < count; ++i) {
+        dst[i] = static_cast<uint8_t>(src[i] >> 24);   // high byte = alpha
+    }
+}
+
+// General path: row-by-row, honouring each bitmap's stride.
+static void extract_alpha_strided(
+        const uint8_t * __restrict__ srcPx,
+        uint8_t * __restrict__ dstPx,
+        uint32_t width, uint32_t height,
+        uint32_t srcStride, uint32_t dstStride)
+{
+    for (uint32_t y = 0; y < height; ++y) {
+        const auto * __restrict__ src =
+                reinterpret_cast<const uint32_t *>(srcPx + y * srcStride);
+        uint8_t    * __restrict__ dst = dstPx + y * dstStride;
+
+        for (uint32_t x = 0; x < width; ++x) {
+            dst[x] = static_cast<uint8_t>(src[x] >> 24);   // high byte = alpha
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point
+//
+// Kotlin: external fun extractAlpha(src: Bitmap, dst: Bitmap): Boolean
+//         [org.telegram.messenger.Utilities]
+//
+// src — RGBA_8888
+// dst — ALPHA_8, same dimensions as src
+//
+// Returns true on success, false on error (size mismatch, unsupported format,
+// aliasing between the two bitmaps, or a failed lock).
+// ---------------------------------------------------------------------------
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_extractAlpha(
+        JNIEnv *env,
+        jclass  /*clazz*/,
+        jobject srcBitmap,
+        jobject dstBitmap)
+{
+    if (__builtin_expect(env->IsSameObject(srcBitmap, dstBitmap), 0)) {
+        return JNI_FALSE;
+    }
+
+    AndroidBitmapInfo srcInfo{};
+    AndroidBitmapInfo dstInfo{};
+
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, srcBitmap, &srcInfo) != ANDROID_BITMAP_RESULT_SUCCESS ||
+            AndroidBitmap_getInfo(env, dstBitmap, &dstInfo) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            srcInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+            dstInfo.format != ANDROID_BITMAP_FORMAT_A_8       ||
+            srcInfo.width  != dstInfo.width                   ||
+            srcInfo.height != dstInfo.height                  ||
+            srcInfo.width  == 0                               ||
+            srcInfo.height == 0                               ||
+            srcInfo.stride < srcInfo.width * 4u               ||
+            dstInfo.stride < dstInfo.width,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *srcPixels = nullptr;
+    void *dstPixels = nullptr;
+
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, srcBitmap, &srcPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        return JNI_FALSE;
+    }
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, dstBitmap, &dstPixels) != ANDROID_BITMAP_RESULT_SUCCESS,
+            0)) {
+        AndroidBitmap_unlockPixels(env, srcBitmap);
+        return JNI_FALSE;
+    }
+
+    // Contiguous when neither bitmap has row padding. The two formats have
+    // different bytes-per-pixel, so each has its own "no padding" test.
+    if (srcInfo.stride == srcInfo.width * 4u && dstInfo.stride == dstInfo.width) {
+        extract_alpha_contiguous(
+                static_cast<const uint8_t *>(srcPixels),
+                static_cast<uint8_t *>(dstPixels),
+                srcInfo.width, srcInfo.height);
+    } else {
+        extract_alpha_strided(
+                static_cast<const uint8_t *>(srcPixels),
+                static_cast<uint8_t *>(dstPixels),
+                srcInfo.width, srcInfo.height,
+                srcInfo.stride, dstInfo.stride);
+    }
+
+    AndroidBitmap_unlockPixels(env, dstBitmap);
+    AndroidBitmap_unlockPixels(env, srcBitmap);
+    return JNI_TRUE;
 }
 
 }

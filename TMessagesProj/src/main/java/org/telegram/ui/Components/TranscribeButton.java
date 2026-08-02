@@ -42,6 +42,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -573,15 +574,28 @@ public class TranscribeButton {
         private RLottieDrawable lottie;
         private int lastColor;
         private Paint paint;
+        private final Drawable.Callback callback = new Callback() {
+            @Override
+            public void invalidateDrawable(@NonNull Drawable who) {
+                invalidateSelf();
+            }
+
+            @Override
+            public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
+
+            }
+
+            @Override
+            public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
+
+            }
+        };
+
         public LoadingPointsDrawable(TextPaint textPaint) {
             this.paint = textPaint;
             float fontSize = textPaint.getTextSize() * 0.89f;
-            lottie = new RLottieDrawable(R.raw.dots_loading, "dots_loading", (int) fontSize, (int) (fontSize * 1.25f)) {
-                @Override
-                protected boolean hasParentView() {
-                    return true;
-                }
-            };
+            lottie = new RLottieDrawable(R.raw.dots_loading, "dots_loading", (int) fontSize, (int) (fontSize * 1.25f));
+            lottie.setCallback(callback);
             lottie.setAutoRepeat(1);
             lottie.setCurrentFrame((int) (SystemClock.elapsedRealtime() / 16f % 60f));
             lottie.setAllowDecodeSingleFrame(true);

@@ -3,6 +3,8 @@ package org.telegram.ui.Components;
 import android.graphics.Bitmap;
 import android.os.Trace;
 
+import androidx.annotation.Nullable;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -63,10 +65,25 @@ public final class RLottieNative {
             int[] colorReplacement,
             boolean limitFps,
             int fitzModifier) {
+        return createFromFile(path, json, w, h, null, precache, colorReplacement, limitFps, fitzModifier);
+    }
+
+    public static RLottieNative createFromFile(
+            String path,
+            String json,
+            int w, int h,
+            @Nullable int[] metaOut,
+            boolean precache,
+            int[] colorReplacement,
+            boolean limitFps,
+            int fitzModifier) {
         int[] meta = new int[3];
         long ptr = create(path, json, w, h, meta, precache, colorReplacement, limitFps, fitzModifier);
         if (ptr == 0) {
             return null;
+        }
+        if (metaOut != null && metaOut.length == 3) {
+            System.arraycopy(meta, 0, metaOut, 0, 3);
         }
         return new RLottieNative(ptr, meta);
     }
@@ -84,6 +101,14 @@ public final class RLottieNative {
             String json,
             String name,
             int[] colorReplacement) {
+        return createFromRawJson(json, name, null, colorReplacement);
+    }
+
+    public static RLottieNative createFromRawJson(
+            String json,
+            String name,
+            @Nullable int[] metaOut,
+            int[] colorReplacement) {
         if (json == null || json.isEmpty()) {
             return null;
         }
@@ -91,6 +116,9 @@ public final class RLottieNative {
         long ptr = createWithJson(json, name, meta, colorReplacement);
         if (ptr == 0) {
             return null;
+        }
+        if (metaOut != null && metaOut.length == 3) {
+            System.arraycopy(meta, 0, metaOut, 0, 3);
         }
         return new RLottieNative(ptr, meta);
     }
@@ -156,14 +184,6 @@ public final class RLottieNative {
         int fps = mMetaData[1];
         if (fps == 0) return 0;
         return (long) (mMetaData[0] / (float) fps * 1000L);
-    }
-
-    /**
-     * Raw metadata array in the form {@code [frameCount, fps, reserved]}.
-     * <p><b>Do not modify</b> the returned array.
-     */
-    public int[] getMetaData() {
-        return mMetaData;
     }
 
     // -------------------------------------------------------------------------
@@ -245,7 +265,7 @@ public final class RLottieNative {
      * Creates a native animation from a JSON string and returns the raw pointer.
      * Prefer {@link #createFromRawJson} for new code.
      */
-    public static long createWithJson(String json, String name, int[] params, int[] colorReplacement) {
+    private static long createWithJson(String json, String name, int[] params, int[] colorReplacement) {
         Trace.beginSection("RLottieNative#createWithJson");
         try {
             return nCreateWithJson(json, name, params, colorReplacement);
@@ -271,7 +291,7 @@ public final class RLottieNative {
      * Updates a layer color directly using a raw pointer.
      * Prefer the instance method {@link #setLayerColor(String, int)} for new code.
      */
-    public static void setLayerColor(long ptr, String layer, int color) {
+    private static void setLayerColor(long ptr, String layer, int color) {
         nSetLayerColor(ptr, layer, color);
     }
 
@@ -279,7 +299,7 @@ public final class RLottieNative {
      * Replaces colors directly using a raw pointer.
      * Prefer the instance method {@link #replaceColors(int[])} for new code.
      */
-    public static void replaceColors(long ptr, int[] colorReplacement) {
+    private static void replaceColors(long ptr, int[] colorReplacement) {
         nReplaceColors(ptr, colorReplacement);
     }
 
