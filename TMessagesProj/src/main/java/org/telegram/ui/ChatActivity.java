@@ -99,6 +99,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -13799,17 +13800,7 @@ public class ChatActivity extends BaseFragment implements
                 @Override
                 public void startPhotoSelectActivity() {
                     try {
-                        Intent videoPickerIntent = new Intent();
-                        videoPickerIntent.setType("video/*");
-                        videoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
-                        videoPickerIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
-
-                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                        photoPickerIntent.setType("image/*");
-                        Intent chooserIntent = Intent.createChooser(photoPickerIntent, null);
-                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{videoPickerIntent});
-
-                        startActivityForResult(chooserIntent, 1);
+                        startActivityForResult(ChatAttachAlertPhotoLayout.createSystemMediaPickerIntent(getParentActivity(), true), 1);
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -20182,6 +20173,32 @@ public class ChatActivity extends BaseFragment implements
         hideFieldPanel(false);
     }
 
+    private void openExternalPickerVideo(Uri uri, String mimeType) {
+        Utilities.globalQueue.postRunnable(() -> {
+            String videoPath = null;
+            try {
+                videoPath = AndroidUtilities.getPath(uri);
+                if (videoPath == null) {
+                    String extension = mimeType == null ? null : MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+                    videoPath = MediaController.copyFileToCache(uri, TextUtils.isEmpty(extension) ? "mp4" : extension, FileLoader.DEFAULT_MAX_FILE_SIZE);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            String finalVideoPath = videoPath;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (finalVideoPath == null) {
+                    showAttachmentError();
+                } else if (paused) {
+                    startVideoEdit = finalVideoPath;
+                } else {
+                    openVideoEditor(finalVideoPath, null);
+                }
+                afterMessageSend();
+            });
+        });
+    }
+
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
@@ -20201,21 +20218,15 @@ public class ChatActivity extends BaseFragment implements
                     return;
                 }
                 Uri uri = data.getData();
-                if (uri.toString().contains("video")) {
-                    String videoPath = null;
-                    try {
-                        videoPath = AndroidUtilities.getPath(uri);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    if (videoPath == null) {
-                        showAttachmentError();
-                    }
-                    if (paused) {
-                        startVideoEdit = videoPath;
-                    } else {
-                        openVideoEditor(videoPath, null);
-                    }
+                String mimeType = null;
+                try {
+                    mimeType = getParentActivity().getContentResolver().getType(uri);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                if ((mimeType != null && mimeType.startsWith("video/")) || (mimeType == null && uri.toString().contains("video"))) {
+                    openExternalPickerVideo(uri, mimeType);
+                    return;
                 } else {
                     if (editingMessageObject == null && chatMode == MODE_SCHEDULED) {
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate, scheduleRepeatPeriod) -> {
