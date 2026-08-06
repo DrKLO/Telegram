@@ -3221,6 +3221,28 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         return 1;
     }
 
+    public static Intent createSystemMediaPickerIntent(Context context, boolean allowVideo) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Intent photoPickerIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            if (!allowVideo) {
+                photoPickerIntent.setType("image/*");
+            }
+            if (photoPickerIntent.resolveActivity(context.getPackageManager()) != null) {
+                return photoPickerIntent;
+            }
+        }
+
+        Intent documentPickerIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        documentPickerIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        if (allowVideo) {
+            documentPickerIntent.setType("*/*");
+            documentPickerIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+        } else {
+            documentPickerIntent.setType("image/*");
+        }
+        return documentPickerIntent;
+    }
+
     @Override
     public void onMenuItemClick(int id) {
         if (id == caption) {
@@ -3371,24 +3393,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         } else if (id == open_in) {
             try {
                 if (parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2) {
-                    Intent videoPickerIntent = new Intent();
-                    videoPickerIntent.setType("video/*");
-                    videoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
-                    videoPickerIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, FileLoader.DEFAULT_MAX_FILE_SIZE);
-
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
-                    Intent chooserIntent = Intent.createChooser(photoPickerIntent, null);
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{videoPickerIntent});
+                    Intent mediaPickerIntent = createSystemMediaPickerIntent(getContext(), true);
 
                     if (parentAlert.avatarPicker != 0) {
-                        parentAlert.baseFragment.startActivityForResult(chooserIntent, 14);
+                        parentAlert.baseFragment.startActivityForResult(mediaPickerIntent, 14);
                     } else {
-                        parentAlert.baseFragment.startActivityForResult(chooserIntent, 1);
+                        parentAlert.baseFragment.startActivityForResult(mediaPickerIntent, 1);
                     }
                 } else {
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
+                    Intent photoPickerIntent = createSystemMediaPickerIntent(getContext(), false);
                     if (parentAlert.avatarPicker != 0) {
                         parentAlert.baseFragment.startActivityForResult(photoPickerIntent, 14);
                     } else {
