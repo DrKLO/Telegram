@@ -9,11 +9,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout target branch
-        uses: actions/checkout@v7
-      
       - name: Sync fork
-        uses: ./.github/actions/sync-fork/action.yml
+        uses: ./.github/actions/sync-fork
         with:
           sync_method: 'rebase'
           upstream_repo: 'DrKLO/Telegram'
