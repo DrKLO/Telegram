@@ -9,10 +9,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Path form — use this if the action lives in this same repo,
-      # e.g. at .github/actions/sync-fork-action/action.yml
       - name: Sync fork
-        uses: ./.github/actions/sync-fork
+        uses: ./.github/actions/sync-fork/action.yml
         with:
           sync_method: 'rebase'
           upstream_repo: 'DrKLO/Telegram'
