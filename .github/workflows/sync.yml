@@ -12,7 +12,7 @@ jobs:
       # Path form — use this if the action lives in this same repo,
       # e.g. at .github/actions/sync-fork-action/action.yml
       - name: Sync fork
-        uses: ./.github/actions/sync-fork-action
+        uses: ./.github/actions/sync-fork
         with:
           sync_method: 'rebase'
           upstream_repo: 'DrKLO/Telegram'
