@@ -7,16 +7,20 @@ on:
 
 jobs:
   sync:
-
     runs-on: ubuntu-latest
-
     steps:
-      - uses: tgymnich/fork-sync@v2.0
+      # Path form — use this if the action lives in this same repo,
+      # e.g. at .github/actions/sync-fork-action/action.yml
+      - name: Sync fork
+        uses: ./.github/actions/sync-fork-action
         with:
-          owner: DrKLO
-          repo: Telegram
-          base: master
-          head: main
-          merge_method: rebase
+          sync_method: 'rebase'
+          upstream_repo: 'DrKLO/Telegram'
+          upstream_branch: 'master'
+          target_branch: 'main'
+          pr_title: 'chore: sync with upstream'
+          pr_body: 'Automated sync from upstream repository.'
           auto_approve: true
-          ignore_fail: true
+          auto_merge: true
+          merge_method: 'rebase'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
