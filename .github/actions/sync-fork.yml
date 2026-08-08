@@ -1,0 +1,168 @@
+name: 'Sync Fork With Upstream'
+description: 'Syncs a fork with its upstream repo via merge or rebase and opens a configurable PR if new changes are found.'
+
+inputs:
+  sync_method:
+    description: "Integration method: 'rebase' or 'merge'"
+    required: false
+    default: 'rebase'
+  upstream_repo:
+    description: "Upstream repo as owner/name. Leave empty to auto-detect via the GitHub API (requires this repo to be a real fork)."
+    required: false
+    default: ''
+  upstream_branch:
+    description: 'Upstream branch to sync from'
+    required: false
+    default: 'main'
+  target_branch:
+    description: "Branch in this repo to sync into (also the PR's base branch)"
+    required: false
+    default: 'main'
+  pr_title:
+    description: 'Title for the sync PR'
+    required: false
+    default: 'chore: sync with upstream'
+  pr_body:
+    description: 'Body/description for the sync PR'
+    required: false
+    default: 'Automated sync from upstream repository.'
+  auto_approve:
+    description: 'Auto-approve the PR (true/false)'
+    required: false
+    default: 'false'
+  auto_merge:
+    description: 'Enable auto-merge on the PR (true/false). Requires branch protection to allow auto-merge.'
+    required: false
+    default: 'false'
+  merge_method:
+    description: "Merge method for auto-merge: 'merge', 'squash', or 'rebase'"
+    required: false
+    default: 'merge'
+  github_token:
+    description: 'Token with contents:write and pull-requests:write used for git push and gh CLI calls'
+    required: true
+
+outputs:
+  has_changes:
+    description: "'true' if upstream had new commits, 'false' otherwise"
+    value: ${{ steps.diff.outputs.has_changes }}
+  pr_number:
+    description: 'Number of the created PR, if any'
+    value: ${{ steps.pr.outputs.number }}
+  pr_url:
+    description: 'URL of the created PR, if any'
+    value: ${{ steps.pr.outputs.url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set sync branch name
+      id: vars
+      shell: bash
+      run: |
+        echo "sync_branch=sync/upstream-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout target branch
+      uses: actions/checkout@v7
+      with:
+        ref: ${{ inputs.target_branch }}
+        fetch-depth: 0
+        persist-credentials: true
+        token: ${{ inputs.github_token }}
+
+    - name: Resolve upstream repo
+      id: upstream
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        REPO="${{ inputs.upstream_repo }}"
+        if [ -z "$REPO" ]; then
+          REPO=$(gh api "repos/${{ github.repository }}" --jq '.parent.full_name')
+          if [ -z "$REPO" ] || [ "$REPO" = "null" ]; then
+            echo "::error::Could not auto-detect upstream. This repo has no parent — set 'upstream_repo' explicitly."
+            exit 1
+          fi
+        fi
+        echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+
+    - name: Configure git identity
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Add upstream remote and fetch
+      shell: bash
+      run: |
+        git remote add upstream "https://github.com/${{ steps.upstream.outputs.repo }}.git"
+        git fetch upstream "${{ inputs.upstream_branch }}"
+
+    - name: Create sync branch
+      shell: bash
+      run: |
+        git checkout -b "${{ steps.vars.outputs.sync_branch }}"
+
+    - name: Merge upstream
+      if: inputs.sync_method == 'merge'
+      shell: bash
+      run: |
+        git merge --no-edit "upstream/${{ inputs.upstream_branch }}"
+
+    - name: Rebase onto upstream
+      if: inputs.sync_method == 'rebase'
+      shell: bash
+      run: |
+        git rebase "upstream/${{ inputs.upstream_branch }}"
+
+    - name: Check for changes vs target branch
+      id: diff
+      shell: bash
+      run: |
+        if git diff --quiet "origin/${{ inputs.target_branch }}" "${{ steps.vars.outputs.sync_branch }}"; then
+          echo "has_changes=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Push sync branch
+      if: steps.diff.outputs.has_changes == 'true'
+      shell: bash
+      run: |
+        git push origin "${{ steps.vars.outputs.sync_branch }}" --force-with-lease
+
+    - name: Create pull request
+      if: steps.diff.outputs.has_changes == 'true'
+      id: pr
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        URL=$(gh pr create \
+          --base "${{ inputs.target_branch }}" \
+          --head "${{ steps.vars.outputs.sync_branch }}" \
+          --title "${{ inputs.pr_title }}" \
+          --body "${{ inputs.pr_body }}")
+        echo "url=$URL" >> "$GITHUB_OUTPUT"
+        echo "number=$(basename "$URL")" >> "$GITHUB_OUTPUT"
+
+    - name: Auto-approve PR
+      if: steps.diff.outputs.has_changes == 'true' && inputs.auto_approve == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        gh pr review "${{ steps.pr.outputs.number }}" --approve
+
+    - name: Enable auto-merge
+      if: steps.diff.outputs.has_changes == 'true' && inputs.auto_merge == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        gh pr merge "${{ steps.pr.outputs.number }}" --auto --${{ inputs.merge_method }}
+
+    - name: No changes
+      if: steps.diff.outputs.has_changes == 'false'
+      shell: bash
+      run: echo "Fork is already up to date with upstream — no PR needed."
