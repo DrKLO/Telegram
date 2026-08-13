@@ -15144,6 +15144,36 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    public void getMediaPositionCounts(long dialogId, int type, int mid, int classGuid) {
+        storageQueue.postRunnable(() -> {
+            int before = 0;
+            int after = 0;
+            try {
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM media_v4 WHERE uid = %d AND mid < %d AND type = %d", dialogId, mid, type));
+                if (cursor.next()) {
+                    before = cursor.intValue(0);
+                }
+                cursor.dispose();
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM media_v4 WHERE uid = %d AND mid > %d AND type = %d", dialogId, mid, type));
+                if (cursor.next()) {
+                    after = cursor.intValue(0);
+                }
+                cursor.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            final int b = before;
+            final int a = after;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.mediaPositionCountsDidLoad, dialogId, type, mid, b, a, classGuid);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            });
+        });
+    }
+
     private static class Hole {
 
         public Hole(int s, int e) {
