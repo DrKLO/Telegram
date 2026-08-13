@@ -70,18 +70,31 @@ Wired into:
 
 **Chat**
 
+- `ChatActivityEnterView` — the compose panel frosted with a specular hairline
+  along the edge the message list passes under.
 - `ChatActionCell` — frosted wash and specular edge following the service pill.
 - `Theme.getColor` — translucent `key_chat_inBubble` and Apple blue
   `key_chat_outBubble`; bubble radius default raised to 18dp.
 
+**Full-screen surfaces**
+
+- `VoIPToggleButton` — call controls frosted as glass discs. These force the
+  dark fill: the call screen sits on a dark blurred backdrop whatever the app
+  theme is.
+- `PreviewButtons`, `CaptionContainerView` — the story editor already blurs its
+  own backdrop, so these take the specular edge only, rather than a second
+  frosted layer on top of the first.
+
 ### What is not converted
 
-Screens that draw entirely custom canvases rather than going through the shared
-cells and chrome — the camera and story editors, PhotoViewer's own controls, the
-call and group-call UI, and the map picker — keep their existing look. So do
-platform widgets the app hosts rather than draws (system pickers, the keyboard,
-share sheets). Making those match would mean rewriting each screen's drawing
-code, not extending this layer.
+- `EmojiView` (the sticker and emoji panel) and `GroupCallActivity`'s internals
+  still use their stock backgrounds.
+- `PhotoViewer` was left alone deliberately: Telegram 12.9 already routes its
+  controls through `blur3`'s own frosted glass, so it is glass already, just not
+  through this layer.
+- Platform widgets the app hosts rather than draws — system pickers, the
+  keyboard, Android share sheets — cannot be restyled from inside the app at
+  all.
 
 Note that Telegram 12.9 already ships its own glass system (`ui.Components.blur3`,
 gated by `LiteMode.FLAG_LIQUID_GLASS`). This layer sits on top of it rather than

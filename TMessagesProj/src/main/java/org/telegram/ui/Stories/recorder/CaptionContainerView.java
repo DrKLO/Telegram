@@ -62,6 +62,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -1076,6 +1077,8 @@ public class CaptionContainerView extends FrameLayout {
             drawBlur(backgroundBlur, canvas, bounds, r, false, 0, 0, true, 1.0f);
             backgroundPaint.setAlpha((int) (lerp(0x26, 0x40, keyboardT)));
             canvas.drawRoundRect(bounds, r, r, backgroundPaint);
+            // Backdrop blur is already handled above; add the specular edge only.
+            LiquidGlass.drawStroke(canvas, bounds, r, true, 1f);
         } else {
             Paint[] blurPaints = backgroundBlur.getPaints(1f, 0, 0);
             if (blurPaints == null || blurPaints[1] == null) {

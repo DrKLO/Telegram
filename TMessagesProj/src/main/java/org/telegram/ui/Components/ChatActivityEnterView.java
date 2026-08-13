@@ -4698,6 +4698,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else {
             canvas.drawRect(0, bottom, getWidth(), getHeight(), getThemedPaint(Theme.key_paint_chatComposeBackground));
         }
+
+        // Liquid glass: frost the compose panel and lay the specular hairline
+        // along the edge where the message list passes underneath it.
+        LiquidGlass.drawBarGlass(canvas, 0, bottom, getWidth(), getHeight());
     }
 
     public float getVisualHeight() {

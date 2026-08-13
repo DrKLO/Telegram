@@ -226,6 +226,26 @@ public final class LiquidGlass {
         canvas.drawPath(path, strokePaint);
     }
 
+    /**
+     * Frosts a full-width bar — a compose panel, a tab strip, a control tray —
+     * that runs edge to edge and therefore has no rounded plate of its own. The
+     * fill is topped with the specular hairline that separates it from the
+     * content scrolling underneath.
+     */
+    public static void drawBarGlass(Canvas canvas, float left, float top, float right, float bottom) {
+        if (canvas == null || !isEnabled() || bottom <= top || right <= left) {
+            return;
+        }
+        final boolean dark = isDark();
+        fillPaint.setColor(getToolbarColor(dark));
+        canvas.drawRect(left, top, right, bottom, fillPaint);
+
+        final float width = dp(STROKE_WIDTH);
+        strokePaint.setStrokeWidth(width);
+        strokePaint.setColor(getStrokeColor(dark));
+        canvas.drawLine(left, top + width / 2f, right, top + width / 2f, strokePaint);
+    }
+
     private static final RectF rowRect = new RectF();
 
     /**

@@ -29,6 +29,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -134,6 +135,19 @@ public class VoIPToggleButton extends FrameLayout {
         pressedScaleAnimator.start();
     }
 
+    private final android.graphics.RectF liquidGlassRect = new android.graphics.RectF();
+
+    private void drawLiquidGlassCircle(Canvas canvas, float cx, float cy, float radius) {
+        if (!LiquidGlass.isEnabled() || radius <= 0) {
+            return;
+        }
+        liquidGlassRect.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        // The call screen always sits on a dark blurred backdrop, whatever the
+        // app theme is, so the dark glass fill is the right one here.
+        LiquidGlass.drawPanel(canvas, liquidGlassRect, radius,
+            LiquidGlass.getLiquidGlassColor(true), 1f);
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -151,6 +165,8 @@ public class VoIPToggleButton extends FrameLayout {
         float radius = dp(diameter) / 2f;
         if (drawBackground) {
             canvas.drawCircle(cx, cy, radius, circlePaint);
+            // Liquid glass: frost the call control and ring it with the specular edge.
+            drawLiquidGlassCircle(canvas, cx, cy, radius);
         }
         if (rippleDrawable == null) {
             rippleDrawable = Theme.createSimpleSelectorCircleDrawable(dp(diameter), 0, Color.BLACK);

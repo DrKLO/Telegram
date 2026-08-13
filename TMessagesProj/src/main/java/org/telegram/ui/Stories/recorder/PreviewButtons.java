@@ -33,6 +33,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -301,6 +302,9 @@ public class PreviewButtons extends FrameLayout {
             canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
             AndroidUtilities.rectTmp.set(dp(10), dp(4), getWidth() - dp(10), getHeight() - dp(4));
             canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(20), dp(20), buttonPaint);
+            // This screen already blurs its own backdrop; it only needs the
+            // specular edge to match the rest of the glass language.
+            LiquidGlass.drawStroke(canvas, AndroidUtilities.rectTmp, dp(20), true, 1f);
 
             canvas.save();
             canvas.translate((w - width) / 2f + dp(arrow ? 3 : 0) - left, (getHeight() - staticLayout.getHeight()) / 2f);
