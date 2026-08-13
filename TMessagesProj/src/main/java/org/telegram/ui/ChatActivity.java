@@ -36519,7 +36519,27 @@ public class ChatActivity extends BaseFragment implements
             }
             PhotoViewer.getInstance().openPhoto(arrayList, arrayList.indexOf(message), dialog_id, 0, getTopicId(),photoViewerProvider);
         } else {
-            PhotoViewer.getInstance().openPhoto(message, ChatActivity.this, message.type != 0 ? dialog_id : 0, message.type != 0 ? mergeDialogId : 0, message.type != 0 ? getTopicId() : 0, photoViewerProvider);
+            boolean openedFromMemory = false;
+            int sharedType = MediaDataController.getMediaType(message.messageOwner);
+            if (sharedType != -1 && currentEncryptedChat == null && mergeDialogId == 0 && !isThreadChat() && !isFiltered() && getFilterTag() == null && !messages.isEmpty()) {
+                ArrayList<MessageObject> arrayList = new ArrayList<>();
+                for (int a = 0, N = messages.size(); a < N; a++) {
+                    MessageObject m = messages.get(a);
+                    if (MediaDataController.getMediaType(m.messageOwner) != sharedType) {
+                        continue;
+                    }
+                    arrayList.add(0, m);
+                }
+                int idx = arrayList.indexOf(message);
+                if (idx >= 0) {
+                    PhotoViewer.getInstance().setParentChatActivity(ChatActivity.this);
+                    PhotoViewer.getInstance().openPhoto(arrayList.get(idx), null, null, null, arrayList, null, null, idx, photoViewerProvider, ChatActivity.this, dialog_id, 0, getTopicId(), true, null, null);
+                    openedFromMemory = true;
+                }
+            }
+            if (!openedFromMemory) {
+                PhotoViewer.getInstance().openPhoto(message, ChatActivity.this, message.type != 0 ? dialog_id : 0, message.type != 0 ? mergeDialogId : 0, message.type != 0 ? getTopicId() : 0, photoViewerProvider);
+            }
         }
         hideHints(false);
         MediaController.getInstance().resetGoingToShowMessageObject();
