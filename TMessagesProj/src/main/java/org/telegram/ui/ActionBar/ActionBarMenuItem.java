@@ -71,6 +71,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.GradientProtectionDrawable;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.FiltersView;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CloseProgressDrawable2;
@@ -271,6 +272,9 @@ public class ActionBarMenuItem extends FrameLayout {
                 iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
             }
         }
+        // Elastic press feedback on toolbar items. The listener returns false, so
+        // this view's own onTouchEvent (popup handling, long press) still runs.
+        LiquidGlass.bindElasticTouch(this);
     }
 
     @Override

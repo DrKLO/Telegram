@@ -29,6 +29,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
@@ -361,9 +362,11 @@ public class TextSettingsCell extends FrameLayout {
             invalidate();
         }
         valueTextView.setAlpha(1f - drawLoadingProgress);
+        LiquidGlass.drawSettingsRow(canvas, this, needDivider);
         super.dispatchDraw(canvas);
 
-        if (needDivider) {
+        // The grouped plate edge replaces the row divider.
+        if (needDivider && !LiquidGlass.isEnabled()) {
             int offset = AndroidUtilities.dp(imageView.getVisibility() == View.VISIBLE ? 71 : 20);
             canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }

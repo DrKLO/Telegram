@@ -1215,6 +1215,24 @@ public class Bulletin {
             dispatchDrawImpl(canvas, true, alpha);
         }
 
+        private final RectF liquidGlassRect = new RectF();
+
+        /**
+         * Frosts the bulletin into a floating glass pill, following the bounds the
+         * background drawable was just given.
+         */
+        private void drawLiquidGlassPlate(Canvas canvas) {
+            if (!LiquidGlass.isEnabled()) {
+                return;
+            }
+            liquidGlassRect.set(background.getBounds());
+            if (liquidGlassRect.width() <= 0 || liquidGlassRect.height() <= 0) {
+                return;
+            }
+            LiquidGlass.drawPanel(canvas, liquidGlassRect, dp(LiquidGlass.RADIUS_POPUP),
+                LiquidGlass.getPanelColor(LiquidGlass.isDark()), 1f);
+        }
+
         protected void dispatchDrawImpl(Canvas canvas, boolean fromBlurRender, int alpha) {
             if (bulletin == null || alpha == 0) {
                 return;
@@ -1234,6 +1252,7 @@ public class Bulletin {
                     canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), alpha, Canvas.ALL_SAVE_FLAG);
                 }
                 background.draw(canvas);
+                drawLiquidGlassPlate(canvas);
                 super.dispatchDraw(canvas);
                 if (clip) {
                     if (clipPaint == null) {
@@ -1262,6 +1281,7 @@ public class Bulletin {
                 invalidate();
             } else {
                 background.draw(canvas);
+                drawLiquidGlassPlate(canvas);
                 super.dispatchDraw(canvas);
             }
         }

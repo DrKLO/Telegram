@@ -1884,7 +1884,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         interpolated = CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(animationProgress);
                     }
                 } else {
-                    interpolated = decelerateInterpolator.getInterpolation(animationProgress);
+                    // iOS page transitions ride a long deceleration curve rather than
+                    // the Material decelerate ramp.
+                    interpolated = (LiquidGlass.isEnabled() ? LiquidGlass.SPRING_IN : decelerateInterpolator)
+                        .getInterpolation(animationProgress);
                 }
                 if (open) {
                     float clampedInterpolated = MathUtils.clamp(interpolated, 0, 1);

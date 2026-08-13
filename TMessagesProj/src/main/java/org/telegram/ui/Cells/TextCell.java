@@ -36,6 +36,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -827,7 +828,9 @@ public class TextCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (needDivider) {
+        LiquidGlass.drawSettingsRow(canvas, this, needDivider);
+        // The grouped plate edge replaces the row divider.
+        if (needDivider && !LiquidGlass.isEnabled()) {
             Paint paint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : null;
             if (paint == null) {
                 paint = Theme.dividerPaint;

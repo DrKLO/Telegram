@@ -108,6 +108,10 @@ public final class LiquidGlass {
     public static final float RADIUS_BUBBLE = 18.0f;
     public static final float RADIUS_MODAL = 24.0f;
     public static final float RADIUS_CELL = 20.0f;
+    /** Context menus and popups sit tighter than sheets. */
+    public static final float RADIUS_POPUP = 14.0f;
+    /** Grouped table sections in settings screens. */
+    public static final float RADIUS_GROUP = 12.0f;
 
     /** Hairline width of the specular edge, in dp. */
     public static final float STROKE_WIDTH = 0.8f;
@@ -220,6 +224,32 @@ public final class LiquidGlass {
         strokePaint.setColor(stroke);
         strokePaint.setAlpha((int) (Color.alpha(stroke) * Math.min(1f, alpha)));
         canvas.drawPath(path, strokePaint);
+    }
+
+    private static final RectF rowRect = new RectF();
+
+    /**
+     * Draws a settings row as an inset grouped-table plate, the way iOS renders
+     * list sections. Callers suppress their own divider line when this is on,
+     * since the plate edge already separates adjacent rows.
+     *
+     * @param hasDivider whether the row reserved a trailing pixel for a divider,
+     *                   which must be excluded from the plate.
+     */
+    public static void drawSettingsRow(Canvas canvas, View view, boolean hasDivider) {
+        if (canvas == null || view == null || !isEnabled()) {
+            return;
+        }
+        rowRect.set(
+            dp(8),
+            dp(2),
+            view.getMeasuredWidth() - dp(8),
+            view.getMeasuredHeight() - (hasDivider ? 1 : 0) - dp(2)
+        );
+        if (rowRect.width() <= 0 || rowRect.height() <= 0) {
+            return;
+        }
+        drawPanel(canvas, rowRect, dp(RADIUS_GROUP), getLiquidGlassColor(isDark()), 1f);
     }
 
     /* ------------------------------------------------------------------ *

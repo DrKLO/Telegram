@@ -34,6 +34,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.AvatarSpan;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -392,7 +393,9 @@ public class TextCheckCell extends FrameLayout {
             float animatedRad = rad * animationProgress;
             canvas.drawCircle(cx, cy, animatedRad, animationPaint);
         }
-        if (needDivider) {
+        LiquidGlass.drawSettingsRow(canvas, this, needDivider);
+        // The grouped plate edge replaces the row divider.
+        if (needDivider && !LiquidGlass.isEnabled()) {
             Paint dividerPaint = resourcesProvider != null ? resourcesProvider.getPaint(Theme.key_paint_divider) : Theme.dividerPaint;
             if (dividerPaint != null) {
                 if (imageView != null) {

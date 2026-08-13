@@ -280,6 +280,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             }
         });
         backButtonImageView.setContentDescription(LocaleController.getString(R.string.AccDescrGoBack));
+        // Elastic press feedback; the listener does not consume the event, so the
+        // click above still fires.
+        LiquidGlass.bindElasticTouch(backButtonImageView);
     }
 
     public Drawable getBackButtonDrawable() {

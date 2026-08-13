@@ -52,6 +52,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 
 import java.lang.reflect.Field;
@@ -448,6 +449,30 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         Path path;
 
+        private final RectF liquidGlassRect = new RectF();
+
+        /**
+         * Frosts a context menu into a floating crystal plate: the glass wash and
+         * specular hairline follow the popup background bounds exactly, including
+         * the swipe-back scale and the gap between menu sections.
+         */
+        private void drawLiquidGlassPlate(Canvas canvas, Rect bounds, int alpha) {
+            if (!LiquidGlass.isEnabled() || alpha <= 0) {
+                return;
+            }
+            liquidGlassRect.set(
+                bounds.left + bgPaddings.left,
+                bounds.top + bgPaddings.top,
+                bounds.right - bgPaddings.right,
+                bounds.bottom - bgPaddings.bottom
+            );
+            if (liquidGlassRect.width() <= 0 || liquidGlassRect.height() <= 0) {
+                return;
+            }
+            LiquidGlass.drawPanel(canvas, liquidGlassRect, dp(LiquidGlass.RADIUS_POPUP),
+                LiquidGlass.getPanelColor(LiquidGlass.isDark()), alpha / 255f);
+        }
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             if (swipeBackGravityRight) {
@@ -530,6 +555,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                     }
                     backgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
                     backgroundDrawable.draw(canvas);
+                    drawLiquidGlassPlate(canvas, AndroidUtilities.rectTmp2, applyAlpha ? backAlpha : 255);
                     if (clipChildren) {
                         AndroidUtilities.rectTmp2.left += bgPaddings.left;
                         AndroidUtilities.rectTmp2.top += bgPaddings.top;

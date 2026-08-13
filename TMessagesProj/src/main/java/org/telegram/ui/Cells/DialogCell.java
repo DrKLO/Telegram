@@ -94,6 +94,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.AvatarSpan;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -3759,6 +3760,31 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private GradientDrawable archiveFadeGradientDrawable;
     private int archiveFadeGradientDrawableColor;
 
+    private final RectF liquidGlassRect = new RectF();
+
+    /**
+     * Draws the chat list row as a detached glass module. Called from inside the
+     * swipe translation so the plate travels with the row, and skipped in the
+     * tablet split layout where the row collapses into a narrow avatar strip.
+     */
+    private void drawLiquidGlassPlate(Canvas canvas) {
+        if (!LiquidGlass.isEnabled() || rightFragmentOpenedProgress != 0) {
+            return;
+        }
+        final float separator = useSeparator ? 1 : 0;
+        liquidGlassRect.set(
+            dp(8),
+            dp(3) - translateY,
+            getMeasuredWidth() - dp(8),
+            getMeasuredHeight() - separator - dp(3) - translateY
+        );
+        if (liquidGlassRect.width() <= 0 || liquidGlassRect.height() <= 0) {
+            return;
+        }
+        LiquidGlass.drawPanel(canvas, liquidGlassRect, dp(LiquidGlass.RADIUS_CELL),
+            LiquidGlass.getLiquidGlassColor(LiquidGlass.isDark()), 1f);
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3986,6 +4012,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.translate(translationX, 0);
             gtx += translationX;
         }
+
+        // Liquid glass rows: drawn inside the swipe translation, so the plate
+        // slides with the row and the swipe action stays visible behind it.
+        drawLiquidGlassPlate(canvas);
 
         float cornersRadius = dp(8) * cornerProgress;
         if (isSelected) {
@@ -4768,7 +4798,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
         }
 
-        if (useSeparator) {
+        // Floating plates carry their own edge; a divider between them only fights it.
+        if (useSeparator && !LiquidGlass.isEnabled()) {
             int left;
             if (fullSeparator || currentDialogFolderId != 0 && archiveHidden && !fullSeparator2 || fullSeparator2 && !archiveHidden) {
                 left = 0;
