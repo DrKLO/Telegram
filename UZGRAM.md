@@ -41,17 +41,47 @@ restores the stock look at runtime, and every helper becomes a no-op.
 
 Wired into:
 
+**Chrome and windows**
+
 - `ActionBar` — refractive toolbar mask in `onDraw` (skipped where Telegram's
   own `glassMode` blur capsules already run).
-- `ActionBarLayout` — `applyIos26WindowSystem(Window)` for edge-to-edge, and the
-  push/pop depth effect that sinks the covered screen to 0.94 scale.
+- `ActionBarLayout` — `applyIos26WindowSystem(Window)` for edge-to-edge, the
+  push/pop depth effect that sinks the covered screen to 0.94 scale, and the
+  iOS deceleration curve on page transitions.
+- `ActionBar` back button and `ActionBarMenuItem` — elastic press feedback.
+
+**Modals**
+
 - `AlertDialog` / `BottomSheet` — frosted plates with 24dp corners plus window
   blur-behind on Android 12+.
-- `ProfileSearchCell` — rows drawn as detached 20dp glass modules (row
-  separators are suppressed while glass is on).
+- `ActionBarPopupWindow` — context menus frosted along the popup background
+  bounds, following the swipe-back scale and section gaps.
+- `Bulletin` — toasts frosted into floating glass pills.
+
+**Lists**
+
+- `DialogCell` — chat list rows as detached glass plates, drawn inside the swipe
+  translation so swipe actions and the archive pull keep working.
+- `ProfileSearchCell` — search and contact rows as 20dp glass modules.
+- `TextCell`, `TextSettingsCell`, `TextCheckCell` — settings rows as inset iOS
+  grouped-table plates.
+- Row dividers are suppressed wherever a plate is drawn, since the plate edge
+  already separates adjacent rows.
+
+**Chat**
+
 - `ChatActionCell` — frosted wash and specular edge following the service pill.
 - `Theme.getColor` — translucent `key_chat_inBubble` and Apple blue
   `key_chat_outBubble`; bubble radius default raised to 18dp.
+
+### What is not converted
+
+Screens that draw entirely custom canvases rather than going through the shared
+cells and chrome — the camera and story editors, PhotoViewer's own controls, the
+call and group-call UI, and the map picker — keep their existing look. So do
+platform widgets the app hosts rather than draws (system pickers, the keyboard,
+share sheets). Making those match would mean rewriting each screen's drawing
+code, not extending this layer.
 
 Note that Telegram 12.9 already ships its own glass system (`ui.Components.blur3`,
 gated by `LiteMode.FLAG_LIQUID_GLASS`). This layer sits on top of it rather than
