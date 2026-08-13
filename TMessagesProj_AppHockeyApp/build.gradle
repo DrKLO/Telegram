@@ -128,7 +128,7 @@ android {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
-            minSdkVersion 23
+            minSdkVersion 26
             ext {
                 abiVersionCode = 2
             }
@@ -160,7 +160,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 35
         versionName APP_VERSION_NAME
         ndkVersion "27.2.12479018"

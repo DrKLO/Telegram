@@ -1430,10 +1430,19 @@ public class LocaleController {
         return getStringInternal(key, null, 0, res);
     }
 
+    /**
+     * Keys that carry the product name. The cloud language pack is served by the
+     * upstream server and still spells these "Telegram", so they are always
+     * resolved from the bundled resources instead.
+     */
+    private static boolean isBrandKey(String key) {
+        return "AppName".equals(key) || "AppNameBeta".equals(key) || "NotificationAppName".equals(key);
+    }
+
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
-        String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
+        String value = BuildVars.USE_CLOUD_STRINGS && !isBrandKey(key) ? localeValues.get(key) : null;
         if (value == null) {
-            if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
+            if (BuildVars.USE_CLOUD_STRINGS && !isBrandKey(key) && fallback != null) {
                 value = localeValues.get(fallback);
             }
             if (value == null) {

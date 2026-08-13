@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Uzbek brand overrides. Everything else falls back to values/strings.xml and,
+        at runtime, to the cloud language pack.
+    -->
+    <string name="AppName" translatable="false">UZGRAM</string>
+    <string name="AppNameBeta" translatable="false">UZGRAM Beta</string>
+</resources>

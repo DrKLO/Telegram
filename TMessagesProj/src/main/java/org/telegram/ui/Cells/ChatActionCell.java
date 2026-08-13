@@ -118,6 +118,7 @@ import org.telegram.ui.Components.CommunityAvatarDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.ImageUpdater;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.Premium.StarParticlesView;
@@ -3493,6 +3494,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
         if (currentMessageObject == null || !currentMessageObject.isRepostPreview) {
             canvas.drawPath(backgroundPath, backgroundPaint);
+            // Service plates get the frosted wash and the specular edge of the
+            // glass language, following the pill geometry exactly.
+            LiquidGlass.drawPathGlass(canvas, backgroundPath, getAlpha());
             if (hasGradientService() && darkenBackgroundPaint.getAlpha() > 0) {
                 canvas.drawPath(backgroundPath, darkenBackgroundPaint);
             }

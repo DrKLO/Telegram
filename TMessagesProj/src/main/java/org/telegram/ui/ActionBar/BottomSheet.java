@@ -77,6 +77,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
@@ -222,7 +223,39 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     protected Drawable shadowDrawable;
     protected int backgroundPaddingTop;
+
     protected int backgroundPaddingLeft;
+
+    private final android.graphics.RectF liquidGlassBounds = new android.graphics.RectF();
+
+    /**
+     * Bounds of the sheet plate inside {@code view}, i.e. the container minus the
+     * transparent shadow padding baked into the sheet background drawable. The
+     * bottom is pushed past the screen edge so the plate keeps square bottom
+     * corners while the top ones stay rounded.
+     */
+    protected android.graphics.RectF getLiquidGlassModalBounds(View view) {
+        liquidGlassBounds.set(
+            backgroundPaddingLeft,
+            backgroundPaddingTop,
+            view.getMeasuredWidth() - backgroundPaddingLeft,
+            view.getMeasuredHeight() + dp(LiquidGlass.RADIUS_MODAL)
+        );
+        return liquidGlassBounds;
+    }
+
+    /**
+     * Renders a sliding modal as a detached floating crystal plate: a frosted
+     * fill with iOS 26 corner geometry and a specular hairline along the edge.
+     * Drawn above the sheet background drawable and below its content.
+     */
+    public void drawLiquidGlassModal(Canvas canvas, android.graphics.RectF bounds) {
+        if (!LiquidGlass.isEnabled() || bounds == null) {
+            return;
+        }
+        final float radius = dp(LiquidGlass.RADIUS_MODAL);
+        LiquidGlass.drawPanel(canvas, bounds, radius, LiquidGlass.getPanelColor(LiquidGlass.isDark()), 1f);
+    }
 
     private boolean applyTopPadding = true;
     private boolean applyBottomPadding = true;
@@ -1352,6 +1385,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                     }
                     onContainerTranslationYChanged(translationY);
                 }
+
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    drawLiquidGlassModal(canvas, getLiquidGlassModalBounds(this));
+                    super.dispatchDraw(canvas);
+                }
             };
             containerView.setBackgroundDrawable(shadowDrawable);
             containerView.setPadding(backgroundPaddingLeft, (applyTopPadding ? dp(8) : 0) + backgroundPaddingTop - 1, backgroundPaddingLeft, (applyBottomPadding ? dp(8) : 0));
@@ -1471,6 +1510,8 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             }
             window.setAttributes(params);
+            // iOS 26 modals: blur the content behind the sliding plate (Android 12+).
+            LiquidGlass.applyGlassDialogWindow(window);
         }
     }
 

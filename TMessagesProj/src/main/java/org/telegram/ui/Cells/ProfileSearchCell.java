@@ -60,6 +60,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.PhotoBubbleClip;
 import org.telegram.ui.Components.Premium.PremiumGradient;
@@ -935,13 +936,36 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     private PremiumGradient.PremiumGradientTools premiumGradient;
     private Drawable lockDrawable;
 
+    private final RectF liquidGlassRect = new RectF();
+
+    /**
+     * Turns the row into a detached glass module: an inset plate with iOS 26
+     * corner geometry and a specular hairline, drawn beneath the avatar, name
+     * and status of the row.
+     */
+    private void drawLiquidGlassPlate(Canvas canvas) {
+        liquidGlassRect.set(dp(12), dp(6), getMeasuredWidth() - dp(12), getMeasuredHeight() - dp(6));
+        if (liquidGlassRect.width() <= 0 || liquidGlassRect.height() <= 0) {
+            return;
+        }
+        LiquidGlass.drawPanel(canvas, liquidGlassRect, dp(LiquidGlass.RADIUS_CELL),
+            LiquidGlass.getLiquidGlassColor(LiquidGlass.isDark()), 1f);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (user == null && chat == null && encryptedChat == null && contact == null) {
             return;
         }
 
-        if (useSeparator) {
+        final boolean liquidGlass = LiquidGlass.isEnabled();
+        if (liquidGlass) {
+            drawLiquidGlassPlate(canvas);
+        }
+
+        // Floating plates carry their own edge, so the hairline separator between
+        // adjacent rows would only fight with them.
+        if (useSeparator && !liquidGlass) {
             Paint dividerPaint = null;
             if (customPaints && resourcesProvider != null) {
                 dividerPaint = resourcesProvider.getPaint(Theme.key_paint_divider);

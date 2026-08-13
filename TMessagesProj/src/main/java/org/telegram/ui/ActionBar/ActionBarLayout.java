@@ -85,6 +85,7 @@ import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.StoryViewer;
 
@@ -696,6 +697,19 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(this, this::onApplyWindowInsets);
+
+        if (main && parentActivity != null) {
+            applyIos26WindowSystem(parentActivity.getWindow());
+        }
+    }
+
+    /**
+     * Drops the solid status and navigation bar colouring so the fragment canvas
+     * is drawn all the way behind the system bars. Insets keep being dispatched
+     * to the view tree, so the layouts that already consume them are unaffected.
+     */
+    public void applyIos26WindowSystem(Window window) {
+        LiquidGlass.applyImmersiveWindow(window);
     }
 
     public void setIsLayersLayout() {
@@ -1890,6 +1904,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         invalidate();
                     } else {
                         containerView.setTranslationX(dp(48) * (1.0f - interpolated));
+                        // iOS push: the screen being covered sinks back into the stack.
+                        LiquidGlass.applyPageDepth(containerViewBack, interpolated);
                     }
                 } else {
                     float clampedReverseInterpolated = MathUtils.clamp(1f - interpolated, 0, 1);
@@ -1905,6 +1921,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                         invalidate();
                     } else {
                         containerViewBack.setTranslationX(dp(48) * interpolated);
+                        // iOS pop: the screen underneath rises back to the front of the stack.
+                        LiquidGlass.applyPageDepth(containerView, 1.0f - interpolated);
                     }
                 }
                 if (animationProgress < 1) {

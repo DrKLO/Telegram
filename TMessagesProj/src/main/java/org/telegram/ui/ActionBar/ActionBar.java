@@ -65,6 +65,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.SnowflakesEffect;
@@ -182,6 +183,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public ActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        setWillNotDraw(false); // the liquid glass toolbar mask is painted in onDraw
         setOnClickListener(v -> {
             if (isSearchFieldVisible()) {
                 return;
@@ -2147,6 +2149,29 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 animatorMenuItemsWidth.forceFactor(width);
             }
         }
+    }
+
+    private Paint liquidGlassMaskPaint;
+
+    /**
+     * Refractive toolbar mask. Drawn after the action bar background but before
+     * any child, so the title, back button and menu items stay fully opaque on
+     * top of the frosted plate. Where the action bar already runs Telegram's
+     * real backdrop blur ({@link #blurredBackground}) this only adds the iOS 26
+     * frost tint on top of it.
+     */
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (!LiquidGlass.isEnabled() || glassMode || actionBarColor == Color.TRANSPARENT) {
+            // glassMode already renders the native blurred capsules - do not double tint it.
+            return;
+        }
+        if (liquidGlassMaskPaint == null) {
+            liquidGlassMaskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        liquidGlassMaskPaint.setColor(LiquidGlass.getToolbarColor(LiquidGlass.isDark()));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), liquidGlassMaskPaint);
     }
 
     @Override

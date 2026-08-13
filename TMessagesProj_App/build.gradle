@@ -87,7 +87,7 @@ android {
             jniDebuggable false
             signingConfig signingConfigs.release
             minifyEnabled true
-            shrinkResources false
+            shrinkResources true
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
@@ -128,7 +128,7 @@ android {
             sourceSets.release {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
-            minSdkVersion 23
+            minSdkVersion 26
             ext {
                 abiVersionCode = 2
             }
@@ -171,7 +171,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 35
         versionName APP_VERSION_NAME
         ndkVersion "27.2.12479018"

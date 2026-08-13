@@ -73,6 +73,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AttachableDrawable;
 import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.LineProgressView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
@@ -611,8 +612,29 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 } else {
                     shadowDrawable.draw(canvas);
                 }
+                drawLiquidGlassPlate(canvas);
             }
             super.dispatchDraw(canvas);
+        }
+
+        /**
+         * Frosts the alert plate: a translucent wash over the platform container
+         * plus the specular hairline along its edge. Drawn above the shadow
+         * drawable and below the dialog content, so text and buttons stay crisp.
+         */
+        private void drawLiquidGlassPlate(Canvas canvas) {
+            if (!LiquidGlass.isEnabled()) {
+                return;
+            }
+            final float radius = dp(LiquidGlass.RADIUS_MODAL);
+            AndroidUtilities.rectTmp.set(
+                backgroundPaddings.left,
+                backgroundPaddings.top,
+                getMeasuredWidth() - backgroundPaddings.right,
+                getMeasuredHeight() - backgroundPaddings.bottom
+            );
+            LiquidGlass.drawPanel(canvas, AndroidUtilities.rectTmp, radius,
+                LiquidGlass.getLiquidGlassColor(LiquidGlass.isDark()), 1f);
         }
     }
 
@@ -1306,6 +1328,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
 
         window.setAttributes(params);
+        // iOS 26 modals: blur whatever is rendered behind the alert (Android 12+).
+        // The native blur path installs its own window background - leave it alone.
+        LiquidGlass.applyGlassDialogWindow(window, !blurredNativeBackground);
 
         return rootView;
     }

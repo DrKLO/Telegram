@@ -256,13 +256,22 @@ public class AndroidUtilities {
     public final static String TYPEFACE_ROBOTO_MONO = "fonts/rmono.ttf";
     public final static String TYPEFACE_MERRIWEATHER_BOLD = "fonts/mw_bold.ttf";
 
+    // UZGRAM liquid glass typography. Drop the three SF Pro Display faces into
+    // TMessagesProj/src/main/assets/fonts/ to switch the whole app over to them;
+    // when they are absent every lookup transparently falls back to the bundled
+    // Roboto faces, so a checkout without the (proprietary) Apple fonts still builds
+    // and renders exactly as before.
+    public final static String TYPEFACE_SF_PRO_REGULAR = "fonts/SF-Pro-Display-Regular.ttf";
+    public final static String TYPEFACE_SF_PRO_MEDIUM = "fonts/SF-Pro-Display-Medium.ttf";
+    public final static String TYPEFACE_SF_PRO_BOLD = "fonts/SF-Pro-Display-Bold.ttf";
+
     public static Typeface mediumTypeface;
     public static ThreadLocal<byte[]> readBufferLocal = new ThreadLocal<>();
     public static ThreadLocal<byte[]> bufferLocal = new ThreadLocal<>();
 
     public static Typeface bold() {
         if (mediumTypeface == null) {
-            if (SharedConfig.useSystemBoldFont && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (SharedConfig.useSystemBoldFont && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !isSanFranciscoAvailable()) {
                 mediumTypeface = Typeface.create(null, 500, false);
             } else {
                 mediumTypeface = getTypeface(TYPEFACE_ROBOTO_MEDIUM);
@@ -270,6 +279,20 @@ public class AndroidUtilities {
         }
         return mediumTypeface;
     }
+
+    /**
+     * Regular weight of the app typeface: SF Pro Display when it is bundled,
+     * the platform default otherwise.
+     */
+    public static Typeface regular() {
+        if (regularTypeface == null) {
+            Typeface typeface = isSanFranciscoAvailable() ? getTypeface(TYPEFACE_SF_PRO_REGULAR) : null;
+            regularTypeface = typeface != null ? typeface : Typeface.DEFAULT;
+        }
+        return regularTypeface;
+    }
+
+    private static Typeface regularTypeface;
 
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     public static float touchSlop;
@@ -2391,35 +2414,99 @@ public class AndroidUtilities {
     }
 
     public static Typeface getTypeface(String assetPath) {
+        final String path = resolveTypefacePath(assetPath);
         synchronized (typefaceCache) {
-            if (!typefaceCache.containsKey(assetPath)) {
+            if (!typefaceCache.containsKey(path)) {
                 try {
+                    final String lower = path.toLowerCase();
                     Typeface t;
                     if (Build.VERSION.SDK_INT >= 26) {
-                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                        if (assetPath.contains("rextrabold")) {
+                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), path);
+                        if (lower.contains("rextrabold")) {
                             builder.setWeight(800);
                         }
-                        if (assetPath.contains("medium") || assetPath.contains("rbold")) {
+                        if (lower.contains("medium") || lower.contains("rbold") || lower.contains("-bold")) {
                             builder.setWeight(700);
                         }
-                        if (assetPath.contains("italic")) {
+                        if (lower.contains("italic")) {
                             builder.setItalic(true);
                         }
                         t = builder.build();
                     } else {
-                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), path);
                     }
-                    typefaceCache.put(assetPath, t);
+                    typefaceCache.put(path, t);
                 } catch (Exception e) {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Could not get typeface '" + assetPath + "' because " + e.getMessage());
+                        FileLog.e("Could not get typeface '" + path + "' because " + e.getMessage());
                     }
                     return null;
                 }
             }
-            return typefaceCache.get(assetPath);
+            return typefaceCache.get(path);
         }
+    }
+
+    private static final HashMap<String, String> sanFranciscoRedirects = new HashMap<>();
+
+    static {
+        // Upright Roboto faces map onto SF Pro Display. The italic, monospace and
+        // Merriweather faces have no SF Pro counterpart shipped with the app and stay
+        // on their original files.
+        sanFranciscoRedirects.put(TYPEFACE_ROBOTO_MEDIUM, TYPEFACE_SF_PRO_MEDIUM);
+        sanFranciscoRedirects.put(TYPEFACE_ROBOTO_EXTRA_BOLD, TYPEFACE_SF_PRO_BOLD);
+    }
+
+    private static Boolean sanFranciscoAvailable;
+
+    /** True when all three SF Pro Display faces are present in the assets. */
+    public static boolean isSanFranciscoAvailable() {
+        if (sanFranciscoAvailable == null) {
+            if (ApplicationLoader.applicationContext == null) {
+                return false; // asked too early to answer - do not cache the miss
+            }
+            sanFranciscoAvailable = assetExists(TYPEFACE_SF_PRO_REGULAR)
+                && assetExists(TYPEFACE_SF_PRO_MEDIUM)
+                && assetExists(TYPEFACE_SF_PRO_BOLD);
+        }
+        return sanFranciscoAvailable;
+    }
+
+    private static boolean assetExists(String assetPath) {
+        if (ApplicationLoader.applicationContext == null) {
+            return false;
+        }
+        try (java.io.InputStream stream = ApplicationLoader.applicationContext.getAssets().open(assetPath)) {
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /**
+     * Draws the fine translucent border stroke that gives a liquid glass surface
+     * its edge specularity. Delegates to the shared rendering core so every
+     * surface in the app uses identical stroke geometry.
+     */
+    public static void renderLiquidGlassStroke(Canvas canvas, RectF targetBounds, float radius) {
+        org.telegram.ui.Components.LiquidGlass.drawStroke(canvas, targetBounds, radius);
+    }
+
+    /**
+     * Binds elastic press feedback to a view: it compresses on touch down and
+     * settles back with a slight overshoot. The touch listener does not consume
+     * events, so clicks and long presses keep working.
+     */
+    public static void bindLiquidElasticTouch(final View element) {
+        org.telegram.ui.Components.LiquidGlass.bindElasticTouch(element);
+    }
+
+    private static String resolveTypefacePath(String assetPath) {
+        if (assetPath == null || !isSanFranciscoAvailable()) {
+            return assetPath;
+        }
+        final String redirect = sanFranciscoRedirects.get(assetPath);
+        return redirect != null ? redirect : assetPath;
     }
 
     public static boolean isWaitingForSms() {

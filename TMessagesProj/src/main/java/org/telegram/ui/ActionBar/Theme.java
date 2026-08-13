@@ -109,6 +109,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChoosingStickerStatusDrawable;
+import org.telegram.ui.Components.LiquidGlass;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FragmentContextViewWavesDrawable;
 import org.telegram.ui.Components.LinkPath;
@@ -9556,6 +9557,12 @@ public class Theme {
     }
 
     public static int getColor(int key, boolean[] isDefault, boolean ignoreAnimation) {
+        // iOS 26 message bubbles: translucent glass in, vivid Apple blue out.
+        // Everything that paints a bubble resolves its colour through here, so a
+        // single substitution covers cells, previews and the reply/quote chrome.
+        if ((key == key_chat_inBubble || key == key_chat_outBubble) && LiquidGlass.isEnabled()) {
+            return LiquidGlass.getBubbleColor(key == key_chat_outBubble, isCurrentThemeDark());
+        }
         if (!ignoreAnimation && animatingColors != null) {
             int index = animatingColors.indexOfKey(key);
             if (index >= 0) {

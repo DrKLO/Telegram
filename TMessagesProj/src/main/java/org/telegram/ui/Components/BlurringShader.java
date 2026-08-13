@@ -46,6 +46,29 @@ import javax.microedition.khronos.egl.EGLContext;
 
 public class BlurringShader {
 
+    /* ------------------------------------------------------------------ *
+     *  UZGRAM liquid glass bridge
+     *
+     *  Thin static facade over {@link LiquidGlass} so the compositor colours
+     *  and the hardware blur can be reached from the same place as the rest of
+     *  the blur pipeline. The values themselves live in LiquidGlass.
+     * ------------------------------------------------------------------ */
+
+    /** Blur radius of the iOS 26 chrome surfaces. */
+    public static final float IOS_26_BLUR_RADIUS = LiquidGlass.BLUR_RADIUS;
+    /** 65% frosted white. */
+    public static final int BG_GLASS_LIGHT = LiquidGlass.FILL_LIGHT;
+    /** 45% dark volcanic volumetric glass. */
+    public static final int BG_GLASS_DARK = LiquidGlass.FILL_DARK;
+
+    public static int getLiquidGlassColor(boolean isDark) {
+        return LiquidGlass.getLiquidGlassColor(isDark);
+    }
+
+    public static void applyHardwareBlur(View view) {
+        LiquidGlass.applyHardwareBlur(view, IOS_26_BLUR_RADIUS);
+    }
+
     private FilterGLThread parent;
 
     public BlurringShader() {

@@ -111,6 +111,16 @@
 -keep class ru.noties.jlatexmath.** { *; }
 -dontwarn org.scilab.forge.jlatexmath.**
 
+# UZGRAM liquid glass presentation layer.
+# The rendering core is a static facade reached from every UI surface; keeping it
+# whole means resource shrinking in release builds cannot drop the glass palette
+# or the drawing helpers, and stack traces from it stay readable.
+-keep class org.telegram.ui.Components.LiquidGlass { *; }
+-keepclassmembers class org.telegram.messenger.AndroidUtilities {
+    public static void renderLiquidGlassStroke(...);
+    public static void bindLiquidElasticTouch(...);
+}
+
 # Use -keep to explicitly keep any other classes shrinking would remove
 -dontoptimize
 -dontobfuscate
