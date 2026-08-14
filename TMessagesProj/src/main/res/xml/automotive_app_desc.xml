@@ -2,4 +2,5 @@
 <automotiveApp>
     <uses name="notification"/>
     <uses name="template"/>
+    <uses name="media"/>
 </automotiveApp>
