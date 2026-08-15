@@ -268,7 +268,7 @@ public class HomeScreen extends Screen
         } else if (chat != null) {
             senderBuilder.setName(chat.title != null ? chat.title : "").setKey("c" + chat.id);
         } else {
-            senderBuilder.setName("");
+            senderBuilder.setName("").setKey("d" + dialogId);
         }
 
         return new CarMessage.Builder()
