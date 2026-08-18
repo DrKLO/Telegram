@@ -42,7 +42,7 @@ jobs:
         run: yes | sdkmanager --licenses
 
       - name: Build debug APK
-        run: ./gradlew --no-daemon :TMessagesProj_App:assembleAfatDebug
+        run: ./gradlew --no-daemon -PkidMode :TMessagesProj_App:assembleAfatDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
