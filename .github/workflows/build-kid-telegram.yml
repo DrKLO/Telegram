@@ -7,6 +7,9 @@ on:
       - kid-mode-video-block
       - copilot/kid-mode-video-block
 
+permissions:
+  contents: read
+
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
