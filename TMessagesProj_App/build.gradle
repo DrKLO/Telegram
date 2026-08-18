@@ -221,6 +221,6 @@ android {
     }
 }
 
-if (file('google-services.json').exists()) {
+if (file('google-services.json').exists() && !project.hasProperty("kidMode")) {
     apply plugin: 'com.google.gms.google-services'
 }
