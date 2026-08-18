@@ -173,6 +173,7 @@ import org.telegram.messenger.FileStreamLoadOperation;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.KidModeConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -10300,6 +10301,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void playVideoOrWeb() {
+        if (isCurrentVideoPlaybackBlocked()) {
+            return;
+        }
         if (videoPlayer != null) {
             videoPlayer.play();
         } else if (photoViewerWebView != null) {
@@ -10328,6 +10332,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void preparePlayer(ArrayList<VideoPlayer.Quality> videoUrises, Uri uri, boolean playWhenReady, boolean preview, MediaController.SavedFilterState savedFilterState, boolean livePhoto, long videoByteOffset) {
+        if (isCurrentVideoPlaybackBlocked()) {
+            releasePlayer(false);
+            return;
+        }
         if (!preview) {
             currentPlayingVideoFile = uri;
             currentPlayingVideoQualityFiles = videoUrises;
@@ -10937,6 +10945,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             pipSource.setContentView(aspectRatioFrameLayout);
             pipSource.setPlaceholderView(pipPlaceholderView);
         }
+    }
+
+    private boolean isCurrentVideoPlaybackBlocked() {
+        if (!KidModeConfig.isVideoPlaybackBlocked()) {
+            return false;
+        }
+        if (KidModeConfig.shouldBlockVideoPlayback(currentMessageObject) || KidModeConfig.shouldBlockVideoPlayback(currentBotInlineResult)) {
+            return true;
+        }
+        return pageBlocksAdapter != null && (pageBlocksAdapter.isVideo(currentIndex) || pageBlocksAdapter.isHardwarePlayer(currentIndex));
     }
 
     private void releasePlayer(boolean onClose) {

@@ -78,6 +78,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.KidModeConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -529,6 +530,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     }
 
     private void preparePlayer(File file) {
+        if (KidModeConfig.shouldBlockVideoPlayback(currentMessageObject)) {
+            return;
+        }
         if (parentActivity == null) {
             return;
         }

@@ -89,6 +89,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.KidModeConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -2943,6 +2944,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     @Override
                     public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
                         if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+                            if (KidModeConfig.shouldBlockVideoPlayback(messageObject)) {
+                                return false;
+                            }
                             boolean result = MediaController.getInstance().playMessage(messageObject, muted);
                             MediaController.getInstance().setVoiceMessagesPlaylist(null, false);
                             return result;
@@ -3145,6 +3149,13 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     @Override
                     public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
                         MessageObject message = cell.getMessageObject();
+                        if (KidModeConfig.shouldBlockVideoPlayback(message)) {
+                            if (message.isVideo()) {
+                                PhotoViewer.getInstance().setParentActivity(ChannelAdminLogActivity.this);
+                                PhotoViewer.getInstance().openPhoto(message, null, 0, 0, 0, provider);
+                            }
+                            return;
+                        }
                         if (message.getInputStickerSet() != null) {
                             showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, message.getInputStickerSet(), null, null, false));
                         } else if (message.isVideo() || message.type == MessageObject.TYPE_PHOTO || message.type == MessageObject.TYPE_TEXT && !message.isWebpageDocument() || message.isGif()) {

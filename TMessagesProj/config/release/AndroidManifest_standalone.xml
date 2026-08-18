@@ -36,7 +36,7 @@
     <application
         android:icon="@mipmap/ic_launcher_sa"
         android:roundIcon="@mipmap/ic_launcher_sa"
-        android:label="@string/AppName"
+        android:label="@string/AppNameKidMode"
         android:theme="@style/Theme.TMessages.Start"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
