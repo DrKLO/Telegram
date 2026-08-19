@@ -58,6 +58,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.KidModeConfig;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -1967,6 +1968,12 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     }
 
     private void preparePlayer() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            isLoading = false;
+            updatePlayButton();
+            controlsView.invalidate();
+            return;
+        }
         if (playVideoUrl == null) {
             return;
         }

@@ -162,6 +162,7 @@ import org.telegram.messenger.HashtagSearchController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.KidModeConfig;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -39154,6 +39155,9 @@ public class ChatActivity extends BaseFragment implements
                 showDialog(secretVoicePlayer);
                 return false;
             } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+                if (KidModeConfig.shouldBlockVideoPlayback(messageObject)) {
+                    return false;
+                }
                 boolean result = MediaController.getInstance().playMessage(messageObject, muted);
                 MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(messageObject, false) : null, false);
                 return result;
@@ -41061,6 +41065,12 @@ public class ChatActivity extends BaseFragment implements
         @Override
         public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
             MessageObject message = cell.getMessageObject();
+            if (KidModeConfig.shouldBlockVideoPlayback(message)) {
+                if (message.isVideo()) {
+                    openPhotoViewerForMessage(cell, message);
+                }
+                return;
+            }
             if (message.type == MessageObject.TYPE_STORY) {
                 if (message.messageOwner.media.storyItem != null && !(message.messageOwner.media.storyItem instanceof TL_stories.TL_storyItemDeleted)) {
                     TL_stories.StoryItem storyItem = message.messageOwner.media.storyItem;

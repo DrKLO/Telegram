@@ -9988,6 +9988,9 @@ public class MessageObject {
     }
 
     public boolean canStreamVideo() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            return false;
+        }
         if (hasVideoQualities()) return true;
         TLRPC.Document document = getDocument();
         if (document == null || document instanceof TLRPC.TL_documentEncrypted) {

@@ -118,38 +118,50 @@ android {
             }
             buildConfigField "boolean", "BUNDLE", "true"
         }
+
         bundleAfat_SDK23 {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
+
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
+
             sourceSets.release {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
+
             minSdkVersion 23
+
             ext {
                 abiVersionCode = 2
             }
+
             buildConfigField "boolean", "BUNDLE", "true"
         }
+
         afat {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
+
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
+
             sourceSets.release {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
+
             sourceSets.standalone {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_standalone.xml'
             }
+
             ext {
                 abiVersionCode = 9
             }
+
             buildConfigField "boolean", "BUNDLE", "false"
         }
     }
@@ -159,12 +171,15 @@ android {
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             outputFileName = "app.apk"
-            output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
+            output.versionCodeOverride =
+                    defaultConfig.versionCode * 10 +
+                    variant.productFlavors.get(0).abiVersionCode
         }
     }
 
     variantFilter { variant ->
         def names = variant.flavors*.name
+
         if (variant.buildType.name != "release" && !names.contains("afat")) {
             setIgnore(true)
         }
@@ -178,12 +193,19 @@ android {
 
         multiDexEnabled true
 
-        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
+        vectorDrawables.generatedDensities = [
+                'mdpi',
+                'hdpi',
+                'xhdpi',
+                'xxhdpi'
+        ]
 
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' // , '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+
+                arguments '-DANDROID_STL=c++_static',
+                        '-DANDROID_PLATFORM=android-21'
             }
         }
     }
@@ -191,6 +213,7 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
     namespace 'org.telegram.messenger.regular'
 
     lintOptions {
@@ -198,4 +221,6 @@ android {
     }
 }
 
-apply plugin: 'com.google.gms.google-services'
+if (file('google-services.json').exists() && !project.hasProperty("kidMode")) {
+    apply plugin: 'com.google.gms.google-services'
+}

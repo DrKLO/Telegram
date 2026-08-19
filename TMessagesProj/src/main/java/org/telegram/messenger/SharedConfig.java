@@ -620,6 +620,11 @@ public class SharedConfig {
             forceDisableTabletMode = preferences.getBoolean("forceDisableTabletMode", false);
             streamAllVideo = preferences.getBoolean("streamAllVideo", BuildVars.DEBUG_VERSION);
             streamMkv = preferences.getBoolean("streamMkv", false);
+            if (KidModeConfig.isVideoPlaybackBlocked()) {
+                streamMedia = false;
+                streamAllVideo = false;
+                streamMkv = false;
+            }
             suggestStickers = preferences.getInt("suggestStickers", 0);
             suggestAnimatedEmoji = preferences.getBoolean("suggestAnimatedEmoji", true);
             overrideDevicePerformanceClass = preferences.getInt("overrideDevicePerformanceClass", -1);
@@ -731,6 +736,9 @@ public class SharedConfig {
     }
 
     public static boolean isAutoplayVideo() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            return false;
+        }
         return LiteMode.isEnabled(LiteMode.FLAG_AUTOPLAY_VIDEOS);
     }
 
@@ -1306,6 +1314,14 @@ public class SharedConfig {
     }
 
     public static void toggleStreamMedia() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            streamMedia = false;
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("streamMedia", false);
+            editor.apply();
+            return;
+        }
         streamMedia = !streamMedia;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
@@ -1330,6 +1346,14 @@ public class SharedConfig {
     }
 
     public static void toggleStreamAllVideo() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            streamAllVideo = false;
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("streamAllVideo", false);
+            editor.apply();
+            return;
+        }
         streamAllVideo = !streamAllVideo;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
@@ -1338,6 +1362,14 @@ public class SharedConfig {
     }
 
     public static void toggleStreamMkv() {
+        if (KidModeConfig.isVideoPlaybackBlocked()) {
+            streamMkv = false;
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("streamMkv", false);
+            editor.apply();
+            return;
+        }
         streamMkv = !streamMkv;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
