@@ -14,13 +14,27 @@ public final class KidModeConfig {
     }
 
     public static boolean shouldBlockVideoPlayback(MessageObject messageObject) {
-        return isVideoPlaybackBlocked() && messageObject != null && (messageObject.isVideo() || messageObject.isRoundVideo() || messageObject.type == MessageObject.TYPE_VIDEO);
+        return isVideoPlaybackBlocked()
+                && messageObject != null
+                && (messageObject.isVideo()
+                    || messageObject.isRoundVideo()
+                    || messageObject.type == MessageObject.TYPE_VIDEO);
+    }
+
+    public static boolean shouldBlockVideoDownload(MessageObject messageObject) {
+        return isVideoPlaybackBlocked()
+                && messageObject != null
+                && (messageObject.isVideo()
+                    || messageObject.isRoundVideo()
+                    || messageObject.type == MessageObject.TYPE_VIDEO);
     }
 
     public static boolean shouldBlockVideoPlayback(TLRPC.BotInlineResult inlineResult) {
         if (!isVideoPlaybackBlocked() || inlineResult == null) {
             return false;
         }
-        return "video".equals(inlineResult.type) || MessageObject.isVideoDocument(inlineResult.document);
+
+        return "video".equals(inlineResult.type)
+                || MessageObject.isVideoDocument(inlineResult.document);
     }
 }
