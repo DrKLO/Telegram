@@ -9,6 +9,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.tgnet.tl.TL_ephemeral;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
@@ -155,9 +156,9 @@ public class FileRefController extends BaseController {
             return null;
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPoll && parentObject instanceof ArrayList) {
             return null;
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia && parentObject instanceof ArrayList) {
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia && parentObject instanceof ArrayList) {
             return null;
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPoll && parentObject instanceof ArrayList) {
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPoll && parentObject instanceof ArrayList) {
             return null;
         }
         if (args[0] instanceof StoriesController.BotPreview) {
@@ -233,8 +234,8 @@ public class FileRefController extends BaseController {
                     }
                 }
             }
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage) {
-            TLRPC.TL_ephemeral_sendMessage req = (TLRPC.TL_ephemeral_sendMessage) args[0];
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage) {
+            TL_ephemeral.TL_sendMessage req = (TL_ephemeral.TL_sendMessage) args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
                 TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.media;
                 final TLRPC.InputFileLocation location = new TLRPC.TL_inputDocumentFileLocation();
@@ -381,8 +382,8 @@ public class FileRefController extends BaseController {
                 requestReference(parentObject, media, req);
             }
             return;
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia && parentObject instanceof ArrayList) {
-            TLRPC.TL_ephemeral_sendMessage req = (TLRPC.TL_ephemeral_sendMessage) args[0];
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia && parentObject instanceof ArrayList) {
+            TL_ephemeral.TL_sendMessage req = (TL_ephemeral.TL_sendMessage) args[0];
             TLRPC.TL_inputMediaPaidMedia paidMedia = (TLRPC.TL_inputMediaPaidMedia) req.media;
             ArrayList<Object> parentObjects = (ArrayList<Object>) parentObject;
             multiMediaCache.put(req, args);
@@ -553,6 +554,7 @@ public class FileRefController extends BaseController {
         } else if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
             long channelId = messageObject.getChannelId();
+            TLRPC.InputPeer richMessagePeer = getMessagesController().getInputPeer(messageObject.getDialogId());
             if (messageObject.scheduled) {
                 TLRPC.TL_messages_getScheduledMessages req = new TLRPC.TL_messages_getScheduledMessages();
                 req.peer = getMessagesController().getInputPeer(messageObject.getDialogId());
@@ -563,6 +565,11 @@ public class FileRefController extends BaseController {
                 req.shortcut_id = messageObject.getQuickReplyId();
                 req.flags |= 1;
                 req.id.add(messageObject.getRealId());
+                getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
+            } else if (messageObject.messageOwner != null && messageObject.messageOwner.rich_message != null && richMessagePeer != null) {
+                TL_iv.getRichMessage req = new TL_iv.getRichMessage();
+                req.peer = richMessagePeer;
+                req.id = messageObject.getRealId();
                 getConnectionsManager().sendRequest(req, (response, error) -> onRequestComplete(locationKey, parentKey, response, error, true, false));
             } else if (channelId != 0) {
                 TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
@@ -806,8 +813,8 @@ public class FileRefController extends BaseController {
                 multiMediaCache.remove(sendMedia);
                 AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(sendMedia, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
             }
-        } else if (requester.args.length >= 2 && requester.args[1] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) requester.args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (requester.args[0] instanceof TLRPC.TL_inputMediaPhoto || requester.args[0] instanceof TLRPC.TL_inputMediaDocument)) {
-            TLRPC.TL_ephemeral_sendMessage sendMedia = (TLRPC.TL_ephemeral_sendMessage) requester.args[1];
+        } else if (requester.args.length >= 2 && requester.args[1] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) requester.args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (requester.args[0] instanceof TLRPC.TL_inputMediaPhoto || requester.args[0] instanceof TLRPC.TL_inputMediaDocument)) {
+            TL_ephemeral.TL_sendMessage sendMedia = (TL_ephemeral.TL_sendMessage) requester.args[1];
             Object[] objects = multiMediaCache.get(sendMedia);
             if (objects == null) {
                 return true;
@@ -865,8 +872,8 @@ public class FileRefController extends BaseController {
                 mediaPhoto.id.file_reference = file_reference;
             }
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) requester.args[0], (MessageObject) requester.args[1], (String) requester.args[2], (SendMessagesHelper.DelayedMessage) requester.args[3], (Boolean) requester.args[4], (SendMessagesHelper.DelayedMessage) requester.args[5], null, null, (Boolean) requester.args[6]));
-        } else if (requester.args[0] instanceof TLRPC.TL_ephemeral_sendMessage) {
-            TLRPC.TL_ephemeral_sendMessage req = (TLRPC.TL_ephemeral_sendMessage) requester.args[0];
+        } else if (requester.args[0] instanceof TL_ephemeral.TL_sendMessage) {
+            TL_ephemeral.TL_sendMessage req = (TL_ephemeral.TL_sendMessage) requester.args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
                 TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.media;
                 if (fromCache && isSameReference(mediaDocument.id.file_reference, file_reference)) {
@@ -1035,8 +1042,8 @@ public class FileRefController extends BaseController {
                 multiMediaCache.remove(req);
                 AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequestMulti(req, (ArrayList<MessageObject>) objects[1], (ArrayList<String>) objects[2], null, (SendMessagesHelper.DelayedMessage) objects[4], (Boolean) objects[5]));
             }
-        } else if ((args[0] instanceof TLRPC.TL_inputMediaDocument || args[0] instanceof TLRPC.TL_inputMediaPhoto) && args[1] instanceof TLRPC.TL_ephemeral_sendMessage) {
-            TLRPC.TL_ephemeral_sendMessage req = (TLRPC.TL_ephemeral_sendMessage) args[1];
+        } else if ((args[0] instanceof TLRPC.TL_inputMediaDocument || args[0] instanceof TLRPC.TL_inputMediaPhoto) && args[1] instanceof TL_ephemeral.TL_sendMessage) {
+            TL_ephemeral.TL_sendMessage req = (TL_ephemeral.TL_sendMessage) args[1];
             Object[] objects = multiMediaCache.get(req);
             if (objects != null) {
                 multiMediaCache.remove(req);
@@ -1044,7 +1051,7 @@ public class FileRefController extends BaseController {
             }
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) && !(((TLRPC.TL_messages_sendMedia) args[0]).media instanceof TLRPC.TL_inputMediaPoll) || args[0] instanceof TLRPC.TL_messages_editMessage || args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null, null, (Boolean) args[6]));
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage && !(((TLRPC.TL_ephemeral_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) && !(((TLRPC.TL_ephemeral_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPoll) || args[0] instanceof TLRPC.TL_messages_editMessage || args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage && !(((TL_ephemeral.TL_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPaidMedia) && !(((TL_ephemeral.TL_sendMessage) args[0]).media instanceof TLRPC.TL_inputMediaPoll) || args[0] instanceof TLRPC.TL_messages_editMessage || args[0] instanceof TLRPC.TL_messages_addPollAnswer) {
             AndroidUtilities.runOnUIThread(() -> getSendMessagesHelper().performSendMessageRequest((TLObject) args[0], (MessageObject) args[1], (String) args[2], (SendMessagesHelper.DelayedMessage) args[3], (Boolean) args[4], (SendMessagesHelper.DelayedMessage) args[5], null, null, (Boolean) args[6]));
         } else if (args[0] instanceof TLRPC.TL_messages_saveGif) {
             TLRPC.TL_messages_saveGif req = (TLRPC.TL_messages_saveGif) args[0];
@@ -1531,6 +1538,8 @@ public class FileRefController extends BaseController {
                                 break;
                             }
                         }
+                    } else if (message.rich_message != null) {
+                        result = getFileReferenceForRichMessage(message.rich_message, location, needReplacement, locationReplacement);
                     } else if (message.media instanceof TLRPC.TL_messageMediaPoll) {
                         result = getFileReferenceForPoll((TLRPC.TL_messageMediaPoll) message.media, location, needReplacement, locationReplacement);
                     } else if (message.media != null) {
@@ -1866,9 +1875,9 @@ public class FileRefController extends BaseController {
             return false;
         } else if (args.length >= 2 && args[1] instanceof TLRPC.TL_messages_sendMedia && ((TLRPC.TL_messages_sendMedia) args[1]).media instanceof TLRPC.TL_inputMediaPoll && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
             return false;
-        } else if (args.length >= 2 && args[1] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
+        } else if (args.length >= 2 && args[1] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) args[1]).media instanceof TLRPC.TL_inputMediaPaidMedia && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
             return false;
-        } else if (args.length >= 2 && args[1] instanceof TLRPC.TL_ephemeral_sendMessage && ((TLRPC.TL_ephemeral_sendMessage) args[1]).media instanceof TLRPC.TL_inputMediaPoll && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
+        } else if (args.length >= 2 && args[1] instanceof TL_ephemeral.TL_sendMessage && ((TL_ephemeral.TL_sendMessage) args[1]).media instanceof TLRPC.TL_inputMediaPoll && (args[0] instanceof TLRPC.TL_inputMediaPhoto || args[0] instanceof TLRPC.TL_inputMediaDocument)) {
             return false;
         } else if (args[0] instanceof TLRPC.TL_messages_sendMedia) {
             TLRPC.TL_messages_sendMedia req = (TLRPC.TL_messages_sendMedia) args[0];
@@ -1885,8 +1894,8 @@ public class FileRefController extends BaseController {
                 }
                 mediaPhoto.id.file_reference = file_reference;
             }
-        } else if (args[0] instanceof TLRPC.TL_ephemeral_sendMessage) {
-            TLRPC.TL_ephemeral_sendMessage req = (TLRPC.TL_ephemeral_sendMessage) args[0];
+        } else if (args[0] instanceof TL_ephemeral.TL_sendMessage) {
+            TL_ephemeral.TL_sendMessage req = (TL_ephemeral.TL_sendMessage) args[0];
             if (req.media instanceof TLRPC.TL_inputMediaDocument) {
                 TLRPC.TL_inputMediaDocument mediaDocument = (TLRPC.TL_inputMediaDocument) req.media;
                 if (isSameReference(mediaDocument.id.file_reference, file_reference)) {

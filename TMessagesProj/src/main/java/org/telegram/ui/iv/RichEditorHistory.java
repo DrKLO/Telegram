@@ -5,6 +5,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.tgnet.tl.TL_keyboard;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -296,6 +297,12 @@ public class RichEditorHistory {
                 for (TL_iv.pageTableCell cell : row.cells) {
                     if (cell != null && cell.text == null) cell.text = emptyRichText();
                 }
+            }
+        } else if (b instanceof TL_iv.pageBlockButtonRow) {
+            final TL_iv.pageBlockButtonRow row = (TL_iv.pageBlockButtonRow) b;
+            if (row.buttons == null) row.buttons = new ArrayList<>();
+            for (TL_keyboard.PageButton button : row.buttons) {
+                if (button != null && button.text == null) button.text = emptyRichText();
             }
         } else if (b instanceof TL_iv.pageBlockCollage) {
             TL_iv.pageBlockCollage c = (TL_iv.pageBlockCollage) b;

@@ -174,9 +174,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         ScrollView fragmentView = new ScrollView(context);
 
         contentLayout = new LinearLayout(context);
-        contentLayout.setPadding(dp(20), 0, dp(20), 0);
+        contentLayout.setPadding(dp(16), 0, dp(16), 0);
         contentLayout.setOrientation(LinearLayout.VERTICAL);
-        fragmentView.addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        fragmentView.addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));;
         contentLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
@@ -649,6 +649,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         qrButtonContainer.addView(qrButtonSeparator, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.TOP, 0, 6, 0, 0));
 
         qrButton = new ButtonWithCounterView(context, false, resourcesProvider);
+        qrButton.setRound();
         SpannableStringBuilder qrButtonText = new SpannableStringBuilder("QR");
         qrButtonText.setSpan(new ColoredImageSpan(R.drawable.header_qr_24), 0, qrButtonText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         qrButtonText.append("  ");
@@ -795,17 +796,18 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         doneButton.setTextColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         doneButton.setTypeface(AndroidUtilities.bold());
+        ScaleStateListAnimator.apply(doneButtonContainer, .02f, 1.2f);
 
         progressView = new RadialProgressView(context);
         progressView.setSize(dp(20));
         progressView.setProgressColor(parentFragment.getThemedColor(Theme.key_featuredStickers_buttonText));
         doneButtonContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         doneButtonContainer.addView(progressView, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
-        contentLayout.addView(doneButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 16, 0, 16));
+        contentLayout.addView(doneButtonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 8, 0, 4));
 
         AndroidUtilities.updateViewVisibilityAnimated(doneButton, true, 1f, false);
         AndroidUtilities.updateViewVisibilityAnimated(progressView, false, 1f, false);
-        doneButtonContainer.setBackground(Theme.AdaptiveRipple.filledRect(parentFragment.getThemedColor(Theme.key_featuredStickers_addButton), 6));
+        doneButtonContainer.setBackground(Theme.AdaptiveRipple.filledRect(parentFragment.getThemedColor(Theme.key_featuredStickers_addButton), 24));
         doneButtonContainer.setOnClickListener(v -> doOnDone());
 
         plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

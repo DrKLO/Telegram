@@ -517,8 +517,8 @@ public class MediaCodecVideoConvertor {
                             outputSurface = new OutputSurface(savedFilterState, null, paintPath, blurPath, mediaEntities, cropState, resultWidth, resultHeight, originalWidth, originalHeight, rotationValue, framerate, false, gradientTopColor, gradientBottomColor, hdrInfo, convertVideoParams);
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && hdrInfo != null && hdrInfo.getHDRType() != 0) {
                                 outputSurface.changeFragmentShader(
-                                        hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo),
-                                        hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, hdrInfo),
+                                        hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, true, hdrInfo, 8, rotationValue == 90 || rotationValue == 270),
+                                        hdrFragmentShader(originalWidth, originalHeight, resultWidth, resultHeight, false, hdrInfo, 8, rotationValue == 90 || rotationValue == 270),
                                         false
                                 );
                             } else if (!isRound && Math.max(resultHeight, resultHeight) / (float) Math.max(originalHeight, originalWidth) < 0.9f) {
@@ -1277,31 +1277,103 @@ public class MediaCodecVideoConvertor {
             final int dstWidth,
             final int dstHeight,
             boolean external,
-            StoryEntry.HDRInfo hdrInfo
+            StoryEntry.HDRInfo hdrInfo,
+            int maxSamplesPerAxis,
+            boolean isRotated
     ) {
-        if (external) {
-            String shaderCode;
-            if (hdrInfo.getHDRType() == 1) {
-                shaderCode = AndroidUtilities.readRes(R.raw.hdr2sdr_hlg);
-            } else {
-                shaderCode = AndroidUtilities.readRes(R.raw.hdr2sdr_pq);
-            }
-            shaderCode = shaderCode.replace("$dstWidth", dstWidth + ".0");
-            shaderCode = shaderCode.replace("$dstHeight", dstHeight + ".0");
-            // TODO(@dkaraush): use minlum/maxlum
-            return shaderCode + "\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "void main() {\n" +
-                    "    gl_FragColor = TEX(vTextureCoord);\n" +
-                    "}";
-        } else {
-            return "precision mediump float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform sampler2D sTexture;\n" +
-                    "void main() {\n" +
-                    "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-                    "}\n";
+        if (!external) {
+            return createFragmentShader(
+                    srcWidth,
+                    srcHeight,
+                    dstWidth,
+                    dstHeight,
+                    false,
+                    maxSamplesPerAxis,
+                    isRotated
+            );
         }
+
+        int sourceAlignedDstWidth = isRotated ? dstHeight : dstWidth;
+        int sourceAlignedDstHeight = isRotated ? dstWidth : dstHeight;
+
+        float ratioX = (float) srcWidth / (float) sourceAlignedDstWidth;
+        float ratioY = (float) srcHeight / (float) sourceAlignedDstHeight;
+
+        int samplesX = Math.max(1, Math.round(ratioX));
+        int samplesY = Math.max(1, Math.round(ratioY));
+
+        if (SharedConfig.deviceIsAverage()) {
+            samplesX = 1;
+            samplesY = 1;
+        }
+
+        samplesX = Math.min(maxSamplesPerAxis, samplesX);
+        samplesY = Math.min(maxSamplesPerAxis, samplesY);
+
+        float kernelScaleX = ratioX / samplesX;
+        float kernelScaleY = ratioY / samplesY;
+
+        float offsetX = -(samplesX - 1) / 2f;
+        float offsetY = -(samplesY - 1) / 2f;
+
+        if ((samplesX & 1) == 0) {
+            offsetX += 0.01f;
+        }
+        if ((samplesY & 1) == 0) {
+            offsetY += 0.01f;
+        }
+
+        float weightsum = samplesX * samplesY;
+
+        FileLog.d(
+                "HDR source size " + srcWidth + "x" + srcHeight
+                        + "    dest size " + dstWidth + "x" + dstHeight
+                        + "   rotated " + isRotated
+                        + "   ratio " + ratioX + "x" + ratioY
+                        + "   samples " + samplesX + "x" + samplesY
+                        + "   kernel scale " + kernelScaleX + "x" + kernelScaleY
+        );
+
+        String offsetXStr = glslFloat(offsetX);
+        String offsetYStr = glslFloat(offsetY);
+        String kernelScaleXStr = glslFloat(kernelScaleX);
+        String kernelScaleYStr = glslFloat(kernelScaleY);
+        String weightsumStr = glslFloat(weightsum);
+        String pixelSizeXStr = glslFloat(1f / srcWidth);
+        String pixelSizeYStr = glslFloat(1f / srcHeight);
+
+        String shaderCode;
+        if (hdrInfo.getHDRType() == 1) {
+            shaderCode = AndroidUtilities.readRes(R.raw.hdr2sdr_hlg);
+        } else {
+            shaderCode = AndroidUtilities.readRes(R.raw.hdr2sdr_pq);
+        }
+
+        // TODO(@dkaraush): use minlum/maxlum
+        return shaderCode + "\n" +
+                "varying vec2 vTextureCoord;\n" +
+                "const float offsetX = " + offsetXStr + ";\n" +
+                "const float offsetY = " + offsetYStr + ";\n" +
+                "const float kernelScaleX = " + kernelScaleXStr + ";\n" +
+                "const float kernelScaleY = " + kernelScaleYStr + ";\n" +
+                "const float weightsum = " + weightsumStr + ";\n" +
+                "const float pixelSizeX = " + pixelSizeXStr + ";\n" +
+                "const float pixelSizeY = " + pixelSizeYStr + ";\n" +
+                "void main() {\n" +
+                "    vec3 accumulation = vec3(0.0);\n" +
+                "    for (int i = 0; i < " + samplesX + "; ++i) {\n" +
+                "        for (int j = 0; j < " + samplesY + "; ++j) {\n" +
+                "            float x = (offsetX + float(i)) * kernelScaleX;\n" +
+                "            float y = (offsetY + float(j)) * kernelScaleY;\n" +
+                "            vec2 uv = vTextureCoord + vec2(\n" +
+                "                    x * pixelSizeX,\n" +
+                "                    y * pixelSizeY\n" +
+                "            );\n" +
+                "            accumulation += TEX(uv).rgb;\n" +
+                "        }\n" +
+                "    }\n" +
+                "    gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
+                "}\n";
     }
 
     private static String glslFloat(float value) {
@@ -1354,6 +1426,9 @@ public class MediaCodecVideoConvertor {
         samplesX = Math.min(maxSamplesPerAxis, samplesX);
         samplesY = Math.min(maxSamplesPerAxis, samplesY);
 
+        float kernelScaleX = ratioX / samplesX;
+        float kernelScaleY = ratioY / samplesY;
+
         float offsetX = -(samplesX - 1) / 2f;
         float offsetY = -(samplesY - 1) / 2f;
 
@@ -1370,57 +1445,62 @@ public class MediaCodecVideoConvertor {
                 "source size " + srcWidth + "x" + srcHeight
                         + "    dest size " + dstWidth + "x" + dstHeight
                         + "   rotated " + isRotated
+                        + "   ratio " + ratioX + "x" + ratioY
                         + "   samples " + samplesX + "x" + samplesY
+                        + "   kernel scale " + kernelScaleX + "x" + kernelScaleY
         );
 
         String offsetXStr = glslFloat(offsetX);
         String offsetYStr = glslFloat(offsetY);
+        String kernelScaleXStr = glslFloat(kernelScaleX);
+        String kernelScaleYStr = glslFloat(kernelScaleY);
         String weightsumStr = glslFloat(weightsum);
         String pixelSizeXStr = glslFloat(1f / srcWidth);
         String pixelSizeYStr = glslFloat(1f / srcHeight);
 
+        String textureHeader;
+        String textureSampler;
+
         if (external) {
-            return "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision highp float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "const float offsetX = " + offsetXStr + ";\n" +
-                    "const float offsetY = " + offsetYStr + ";\n" +
-                    "const float weightsum = " + weightsumStr + ";\n" +
-                    "const float pixelSizeX = " + pixelSizeXStr + ";\n" +
-                    "const float pixelSizeY = " + pixelSizeYStr + ";\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "vec3 accumulation = vec3(0);\n" +
-                    "for (int i = 0; i < " + samplesX + "; ++i){\n" +
-                    "   for (int j = 0; j < " + samplesY + "; ++j){\n" +
-                    "       float x = offsetX + float(i);\n" +
-                    "       float y = offsetY + float(j);\n" +
-                    "       accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
-                    "   }\n" +
-                    "}\n" +
-                    "gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
-                    "}\n";
+            textureHeader =
+                    "#extension GL_OES_EGL_image_external : require\n" +
+                            "uniform samplerExternalOES sTexture;\n";
+
+            textureSampler =
+                    "texture2D(sTexture, uv).rgb";
         } else {
-            return "precision highp float;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "const float offsetX = " + offsetXStr + ";\n" +
-                    "const float offsetY = " + offsetYStr + ";\n" +
-                    "const float weightsum = " + weightsumStr + ";\n" +
-                    "const float pixelSizeX = " + pixelSizeXStr + ";\n" +
-                    "const float pixelSizeY = " + pixelSizeYStr + ";\n" +
-                    "uniform sampler2D sTexture;\n" +
-                    "void main() {\n" +
-                    "vec3 accumulation = vec3(0);\n" +
-                    "for (int i = 0; i < " + samplesX + "; ++i){\n" +
-                    "   for (int j = 0; j < " + samplesY + "; ++j){\n" +
-                    "       float x = offsetX + float(i);\n" +
-                    "       float y = offsetY + float(j);\n" +
-                    "       accumulation += texture2D(sTexture, vTextureCoord + vec2(x * pixelSizeX, y * pixelSizeY)).xyz;\n" +
-                    "   }\n" +
-                    "}\n" +
-                    "gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
-                    "}\n";
+            textureHeader =
+                    "uniform sampler2D sTexture;\n";
+
+            textureSampler =
+                    "texture2D(sTexture, uv).rgb";
         }
+
+        return textureHeader +
+                "precision highp float;\n" +
+                "varying vec2 vTextureCoord;\n" +
+                "const float offsetX = " + offsetXStr + ";\n" +
+                "const float offsetY = " + offsetYStr + ";\n" +
+                "const float kernelScaleX = " + kernelScaleXStr + ";\n" +
+                "const float kernelScaleY = " + kernelScaleYStr + ";\n" +
+                "const float weightsum = " + weightsumStr + ";\n" +
+                "const float pixelSizeX = " + pixelSizeXStr + ";\n" +
+                "const float pixelSizeY = " + pixelSizeYStr + ";\n" +
+                "void main() {\n" +
+                "    vec3 accumulation = vec3(0.0);\n" +
+                "    for (int i = 0; i < " + samplesX + "; ++i) {\n" +
+                "        for (int j = 0; j < " + samplesY + "; ++j) {\n" +
+                "            float x = (offsetX + float(i)) * kernelScaleX;\n" +
+                "            float y = (offsetY + float(j)) * kernelScaleY;\n" +
+                "            vec2 uv = vTextureCoord + vec2(\n" +
+                "                    x * pixelSizeX,\n" +
+                "                    y * pixelSizeY\n" +
+                "            );\n" +
+                "            accumulation += " + textureSampler + ";\n" +
+                "        }\n" +
+                "    }\n" +
+                "    gl_FragColor = vec4(accumulation / weightsum, 1.0);\n" +
+                "}\n";
     }
 
 

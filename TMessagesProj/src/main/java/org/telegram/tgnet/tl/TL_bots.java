@@ -1209,15 +1209,15 @@ public class TL_bots {
         }
     }
 
-    public static class getRequestedWebViewButton extends TLMethod<TLRPC.KeyboardButton> {
+    public static class getRequestedWebViewButton extends TLMethod<TL_keyboard.KeyboardButton> {
         public static final int constructor = 0xbf25b7f3;
 
         public TLRPC.InputUser bot;
         public String webapp_req_id;
 
         @Override
-        public TLRPC.KeyboardButton deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
-            return TLRPC.KeyboardButton.TLdeserialize(stream, constructor, exception);
+        public TL_keyboard.KeyboardButton deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_keyboard.KeyboardButton.TLdeserialize(stream, constructor, exception);
         }
 
         @Override

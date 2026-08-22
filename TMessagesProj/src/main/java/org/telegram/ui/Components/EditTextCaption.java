@@ -314,13 +314,79 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
     }
 
     public void makeSelectedUrl() {
+        makeSelectedUrl(null);
+    }
+
+    public void makeSelectedUrl(Runnable onApplied) {
+        final int start;
+        final int end;
+        if (selectionStart >= 0 && selectionEnd >= 0) {
+            start = selectionStart;
+            end = selectionEnd;
+            selectionStart = selectionEnd = -1;
+        } else {
+            start = getSelectionStart();
+            end = getSelectionEnd();
+        }
+        showInputDialog(
+            LocaleController.getString(R.string.CreateLink),
+            LocaleController.getString(R.string.URL),
+            "http://",
+            true,
+            url -> {
+                Editable editable = getText();
+                CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
+                if (spans != null && spans.length > 0) {
+                    for (CharacterStyle oldSpan : spans) {
+                        if (!(oldSpan instanceof AnimatedEmojiSpan) && !(oldSpan instanceof QuoteSpan.QuoteStyleSpan)) {
+                            int spanStart = editable.getSpanStart(oldSpan);
+                            int spanEnd = editable.getSpanEnd(oldSpan);
+                            editable.removeSpan(oldSpan);
+                            if (spanStart < start) {
+                                editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                            if (spanEnd > end) {
+                                editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            }
+                        }
+                    }
+                }
+                try {
+                    editable.setSpan(createUrlSpan(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } catch (Exception ignore) {}
+                if (delegate != null) {
+                    delegate.onSpansChanged();
+                }
+                if (onApplied != null) {
+                    onApplied.run();
+                }
+            }
+        );
+    }
+
+    public interface InputDialogCallback {
+        void run(String value);
+    }
+
+    protected URLSpanReplacement createUrlSpan(String url) {
+        return new URLSpanReplacement(url);
+    }
+
+    /** Shared single-line editor that keeps an already-open keyboard in place when adaptive mode is enabled. */
+    public void showInputDialog(String title, String hint, String initial, boolean showPaste,
+                                InputDialogCallback callback) {
+        showInputDialog(title, hint, initial, showPaste, adaptiveCreateLinkDialog, callback);
+    }
+
+    public void showInputDialog(String title, String hint, String initial, boolean showPaste,
+                                boolean adaptive, InputDialogCallback callback) {
         AlertDialog.Builder builder;
-        if (adaptiveCreateLinkDialog) {
+        if (adaptive) {
             builder = new AlertDialogDecor.Builder(getContext(), resourcesProvider);
         } else {
             builder = new AlertDialog.Builder(getContext(), resourcesProvider);
         }
-        builder.setTitle(LocaleController.getString(R.string.CreateLink));
+        builder.setTitle(title);
 
         FrameLayout container = new FrameLayout(getContext());
         final EditTextBoldCursor editText = new EditTextBoldCursor(getContext()) {
@@ -329,11 +395,11 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
             }
         };
-        final String def = "http://";
+        final String def = initial == null ? "" : initial;
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setText(def);
         editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        editText.setHintText(LocaleController.getString(R.string.URL));
+        editText.setHintText(hint);
         editText.setHeaderHintColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         editText.setSingleLine(true);
         editText.setFocusable(true);
@@ -358,10 +424,11 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         pasteTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.multAlpha(textColor, .12f), Theme.multAlpha(textColor, .15f)));
         ScaleStateListAnimator.apply(pasteTextView, .1f, 1.5f);
         container.addView(pasteTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 24, 3));
+        pasteTextView.setVisibility(showPaste ? VISIBLE : GONE);
 
         Runnable checkPaste = () -> {
             ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-            final boolean show = (TextUtils.isEmpty(editText.getText()) || TextUtils.equals(editText.getText().toString(), def)) && clipboardManager != null && clipboardManager.hasPrimaryClip();
+            final boolean show = showPaste && (TextUtils.isEmpty(editText.getText()) || TextUtils.equals(editText.getText().toString(), def)) && clipboardManager != null && clipboardManager.hasPrimaryClip();
             pasteTextView.animate()
                 .alpha(show ? 1f : 0f)
                 .scaleX(show ? 1f : .7f)
@@ -396,7 +463,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         });
 
         ClipboardManager clipboardManager = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboardManager != null && clipboardManager.hasPrimaryClip()) {
+        if (showPaste && TextUtils.equals(def, "http://") && clipboardManager != null && clipboardManager.hasPrimaryClip()) {
             CharSequence text = null;
             try {
                 text = clipboardManager.getPrimaryClip().getItemAt(0).coerceToText(getContext());
@@ -413,46 +480,11 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
 
         builder.setView(container);
 
-        final int start;
-        final int end;
-        if (selectionStart >= 0 && selectionEnd >= 0) {
-            start = selectionStart;
-            end = selectionEnd;
-            selectionStart = selectionEnd = -1;
-        } else {
-            start = getSelectionStart();
-            end = getSelectionEnd();
-        }
-
         builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialogInterface, i) -> {
-            Editable editable = getText();
-            CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
-            if (spans != null && spans.length > 0) {
-                for (int a = 0; a < spans.length; a++) {
-                    CharacterStyle oldSpan = spans[a];
-                    if (!(oldSpan instanceof AnimatedEmojiSpan) && !(oldSpan instanceof QuoteSpan.QuoteStyleSpan)) {
-                        int spanStart = editable.getSpanStart(oldSpan);
-                        int spanEnd = editable.getSpanEnd(oldSpan);
-                        editable.removeSpan(oldSpan);
-                        if (spanStart < start) {
-                            editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                        if (spanEnd > end) {
-                            editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                    }
-                }
-            }
-            try {
-                final String url = editText.getText().toString().trim();
-                editable.setSpan(new URLSpanReplacement(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } catch (Exception ignore) {}
-            if (delegate != null) {
-                delegate.onSpansChanged();
-            }
+            callback.run(editText.getText().toString().trim());
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-        if (adaptiveCreateLinkDialog) {
+        if (adaptive) {
             creationLinkDialog = builder.create();
             creationLinkDialog.setOnDismissListener(dialog -> {
                 creationLinkDialog = null;

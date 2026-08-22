@@ -2,6 +2,7 @@ package org.telegram.ui.iv;
 
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.tgnet.tl.TL_keyboard;
 
 import java.util.ArrayList;
 
@@ -90,6 +91,13 @@ public class RichEditorLimits {
                         }
                     }
                     if (cols > m.tableCols) m.tableCols = cols;
+                }
+            }
+        } else if (b instanceof TL_iv.pageBlockButtonRow) {
+            final TL_iv.pageBlockButtonRow row = (TL_iv.pageBlockButtonRow) b;
+            if (row.buttons != null) {
+                for (TL_keyboard.PageButton button : row.buttons) {
+                    if (button != null) addText(button.text, depth + 1, m);
                 }
             }
         } else if (b instanceof TL_iv.pageBlockCollage) {

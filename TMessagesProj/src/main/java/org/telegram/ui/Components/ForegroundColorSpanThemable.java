@@ -12,6 +12,7 @@ public class ForegroundColorSpanThemable extends CharacterStyle implements Updat
 
     private int color;
     private int colorKey;
+    private float alpha = 1;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public ForegroundColorSpanThemable(int colorKey) {
@@ -23,9 +24,17 @@ public class ForegroundColorSpanThemable extends CharacterStyle implements Updat
         this.resourcesProvider = resourcesProvider;
     }
 
+    public void setColorKey(int colorKey) {
+        this.colorKey = colorKey;
+    }
+
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+    }
+
     @Override
     public void updateDrawState(@NonNull TextPaint textPaint) {
-        color = Theme.getColor(colorKey, resourcesProvider);
+        color = Theme.multAlpha(Theme.getColor(colorKey, resourcesProvider), alpha);
         if (textPaint.getColor() != color) {
             textPaint.setColor(color);
         }

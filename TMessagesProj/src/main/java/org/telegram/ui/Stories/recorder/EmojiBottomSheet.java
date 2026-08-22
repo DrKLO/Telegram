@@ -53,7 +53,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;

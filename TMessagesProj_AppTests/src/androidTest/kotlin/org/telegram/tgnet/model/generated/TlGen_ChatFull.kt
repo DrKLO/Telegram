@@ -15,6 +15,7 @@ public sealed class TlGen_ChatFull : TlGen_Object {
     public val can_set_username: Boolean,
     public val has_scheduled: Boolean,
     public val translations_disabled: Boolean,
+    public val has_welcome_messages: Boolean,
     public val id: Long,
     public val about: String,
     public val participants: TlGen_ChatParticipants,
@@ -50,6 +51,7 @@ public sealed class TlGen_ChatFull : TlGen_Object {
         if (available_reactions != null) result = result or 262144U
         if (translations_disabled) result = result or 524288U
         if (reactions_limit != null) result = result or 1048576U
+        if (has_welcome_messages) result = result or 2097152U
         return result
       }
 
@@ -107,6 +109,7 @@ public sealed class TlGen_ChatFull : TlGen_Object {
     public val paid_reactions_available: Boolean,
     public val stargifts_available: Boolean,
     public val paid_messages_available: Boolean,
+    public val has_welcome_messages: Boolean,
     public val id: Long,
     public val about: String,
     public val participants_count: Int?,
@@ -215,6 +218,7 @@ public sealed class TlGen_ChatFull : TlGen_Object {
         if (send_paid_messages_stars != null) result = result or 2097152U
         if (main_tab != null) result = result or 4194304U
         if (guard_bot_id != null) result = result or 8388608U
+        if (has_welcome_messages) result = result or 16777216U
         return result
       }
 

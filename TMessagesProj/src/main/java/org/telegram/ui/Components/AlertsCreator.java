@@ -31,7 +31,6 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -88,9 +87,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -114,6 +111,7 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_ephemeral;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_update;
@@ -446,7 +444,7 @@ public class AlertsCreator {
                 }
             }
         } else if (request instanceof TLRPC.TL_messages_sendMessage ||
-                request instanceof TLRPC.TL_ephemeral_sendMessage ||
+                request instanceof TL_ephemeral.TL_sendMessage ||
                 request instanceof TLRPC.TL_messages_sendMedia ||
                 request instanceof TLRPC.TL_messages_sendInlineBotResult ||
                 request instanceof TLRPC.TL_messages_forwardMessages ||
@@ -457,8 +455,8 @@ public class AlertsCreator {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMessage) request).peer);
             } else if (request instanceof TLRPC.TL_messages_sendMedia) {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendMedia) request).peer);
-            } else if (request instanceof TLRPC.TL_ephemeral_sendMessage) {
-                dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_ephemeral_sendMessage) request).peer);
+            } else if (request instanceof TL_ephemeral.TL_sendMessage) {
+                dialogId = DialogObject.getPeerDialogId(((TL_ephemeral.TL_sendMessage) request).peer);
             } else if (request instanceof TLRPC.TL_messages_sendInlineBotResult) {
                 dialogId = DialogObject.getPeerDialogId(((TLRPC.TL_messages_sendInlineBotResult) request).peer);
             } else if (request instanceof TLRPC.TL_messages_forwardMessages) {
@@ -808,8 +806,8 @@ public class AlertsCreator {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(title);
         Map<String, Integer> colorsReplacement = new HashMap<>();
-        colorsReplacement.put("info1.**", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
-        colorsReplacement.put("info2.**", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
+        colorsReplacement.put("info1", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
+        colorsReplacement.put("info2", Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider));
         builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground, resourcesProvider), colorsReplacement);
         builder.setTopAnimationIsNew(true);
         builder.setPositiveButton(LocaleController.getString(R.string.Close), null);

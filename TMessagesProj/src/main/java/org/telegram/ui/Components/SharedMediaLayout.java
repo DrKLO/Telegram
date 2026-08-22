@@ -2825,6 +2825,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
                 @Override
                 public int getSpanSize(int position) {
+                    return Math.min(getSpanSizeInternal(position), mediaPage.layoutManager.getSpanCount());
+                }
+
+                private int getSpanSizeInternal(int position) {
                     final int columnsCount = mediaColumnsCount[isAnyStoryPageType(mediaPage.selectedType) ? 1 : 0];
                     if (mediaPage.listView.getAdapter() == photoVideoAdapter) {
                         if (photoVideoAdapter.getItemViewType(position) == 2) {
@@ -3736,19 +3740,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 setVisibleHeight(lastVisibleHeight);
             });
 
-            if (iBlur3FactoryLiquidGlass != null) {
-                BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
-                filterTabsViewBackground.setRadius(dp(18));
-                filterTabsViewBackground.setPadding(dp(6.666f));
-                scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
-                scrollSlidingTextTabStrip.setClipToPadding(false);
-                scrollSlidingTextTabStrip.setBackground(null);
-                scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
-                scrollSlidingTextTabStrip.setOpen(false);
-                addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP, -2, 0, -2, 0));
-            } else {
-                addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
-            }
+            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
+            filterTabsViewBackground.setRadius(dp(18));
+            filterTabsViewBackground.setPadding(dp(6.666f));
+            scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
+            scrollSlidingTextTabStrip.setClipToPadding(false);
+            scrollSlidingTextTabStrip.setBackground(null);
+            scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
+            scrollSlidingTextTabStrip.setOpen(false);
+            addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP, -2, 0, -2, 0));
             searchTagsList = new SearchTagsList(getContext(), profileActivity, profileActivity.getCurrentAccount(), includeSavedDialogs() ? 0 : dialog_id, resourcesProvider) {
                 @Override
                 protected boolean setFilter(ReactionsLayoutInBubble.VisibleReaction reaction) {
@@ -3791,6 +3791,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
             };
+            searchTagsList.setBlurredFactory(iBlur3FactoryLiquidGlass, BlurredBackgroundProviderImpl.topPanel(resourcesProvider));
             searchTagsList.setShown(0f);
             addView(searchTagsList, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 0, 4, 0, 0));
             addView(actionModeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));

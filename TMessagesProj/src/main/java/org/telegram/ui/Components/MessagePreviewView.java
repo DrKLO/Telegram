@@ -36,7 +36,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;

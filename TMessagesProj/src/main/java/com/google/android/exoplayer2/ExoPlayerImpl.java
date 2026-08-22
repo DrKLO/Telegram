@@ -250,7 +250,6 @@ import java.util.concurrent.TimeoutException;
               .get()
               .createRenderers(
                   eventHandler,
-                  builder.eglContext,
                   componentListener,
                   componentListener,
                   componentListener,

@@ -9,6 +9,7 @@ import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.SpannableString;
@@ -45,6 +46,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.tgnet.tl.TL_keyboard;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -83,6 +86,8 @@ public class RichEditorListView extends UniversalRecyclerView {
         void onListScrolled(int dy);
         void onListLayoutUpdated();
         void makeEditTextFocusable(RichEditText et, boolean showKeyboard);
+        void onInlineButtonEditRequested(InlineButtonEdit edit, View anchor);
+        void onBlockButtonEditRequested(BlockButtonEdit edit, View anchor);
         void onReorderStart();
         boolean onReorderMove(float screenX, float screenY);
         void onReorderEnd();
@@ -91,6 +96,8 @@ public class RichEditorListView extends UniversalRecyclerView {
     private int currentAccount;
     private Theme.ResourcesProvider resourcesProvider;
     private Delegate delegate;
+    private MessageObject fileRefParentObject;
+    private boolean adaptiveLinkDialogs = true;
 
     TL_iv.RichMessage loadedRichMessage;
 
@@ -112,6 +119,10 @@ public class RichEditorListView extends UniversalRecyclerView {
     private Runnable longPressRunnable;
     private boolean pressMoved;
     private boolean longPressConsumed;
+    private boolean cellSelectionDragActive;
+    private boolean clearDraggedMultiCellSelectionOnMenuDismiss;
+    private TL_iv.pageTableCell cellSelectionDragAnchor;
+    private TL_iv.pageTableCell cellSelectionDragEnd;
     private long lastTapDownTime;
     private float lastTapDownX, lastTapDownY;
 
@@ -121,6 +132,14 @@ public class RichEditorListView extends UniversalRecyclerView {
 
     public RichEditorListView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, Delegate delegate) {
         this(context, currentAccount, resourcesProvider, delegate, new RichEditorListView[1]);
+    }
+
+    public void setFileRefParentObject(MessageObject messageObject) {
+        fileRefParentObject = messageObject;
+    }
+
+    public void setAdaptiveLinkDialogs(boolean adaptive) {
+        adaptiveLinkDialogs = adaptive;
     }
 
     private RichEditorListView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, Delegate delegate, RichEditorListView[] self) {
@@ -462,7 +481,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     public CharSequence toSimpleMessage() {
-        return RichMessageConvert.rowsToCharSequence(rows);
+        return RichMessageConvert.rowsToSimpleMessage(rows);
     }
 
     public void convertToSimple() {
@@ -590,6 +609,14 @@ public class RichEditorListView extends UniversalRecyclerView {
             media.document = doc;
             media.audioDisplayDocument = doc;
             return media;
+        } else if (block instanceof TL_iv.pageBlockDocument) {
+            final TLRPC.Document doc = findLoadedDocument(((TL_iv.pageBlockDocument) block).document_id);
+            if (doc == null) return null;
+            final MediaUploadState media = new MediaUploadState();
+            media.isDocument = true;
+            media.state = MediaUploadState.STATE_DONE;
+            media.document = doc;
+            return media;
         } else if (block instanceof TL_iv.pageBlockVideo) {
             final TLRPC.Document doc = findLoadedDocument(((TL_iv.pageBlockVideo) block).video_id);
             if (doc == null) return null;
@@ -648,7 +675,8 @@ public class RichEditorListView extends UniversalRecyclerView {
                 out.add(row);
             } else if (row.block instanceof TL_iv.pageBlockPhoto
                     || row.block instanceof TL_iv.pageBlockVideo
-                    || row.block instanceof TL_iv.pageBlockAudio) {
+                    || row.block instanceof TL_iv.pageBlockAudio
+                    || row.block instanceof TL_iv.pageBlockDocument) {
                 final MediaUploadState m = resolveBlockMedia(row.block);
                 if (m == null) continue;
                 row.media = m;
@@ -902,6 +930,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     void onFormattingClicked(int flag) {
         if (textSelectionHelper == null || !textSelectionHelper.isInSelectionMode()) return;
         if (isTableSelection()) { onFormattingClickedTable(flag); return; }
+        if (isDetailsSelection()) { onFormattingClickedDetails(flag); return; }
         if (isCaptionSelection()) { onFormattingClickedCaption(flag); return; }
         if (isQuoteAuthorSelection()) { onFormattingClickedAuthor(flag); return; }
         int sCell = textSelectionHelper.getStartCell();
@@ -986,6 +1015,7 @@ public class RichEditorListView extends UniversalRecyclerView {
 
     void onLinkClicked() {
         if (isTableSelection()) { onLinkClickedTable(); return; }
+        if (isDetailsSelection()) { onLinkClickedDetails(); return; }
         if (isCaptionSelection()) { onLinkClickedCaption(); return; }
         if (isQuoteAuthorSelection()) { onLinkClickedAuthor(); return; }
         RichTextCell cell = singleSelectionCell();
@@ -1013,12 +1043,14 @@ public class RichEditorListView extends UniversalRecyclerView {
                 refreshSelectionHighlight();
             }
             cell.getEditText().setSelectionOverride(from, to);
-            cell.getEditText().makeSelectedUrl();
+            hideTextSelectionUi(false);
+            showSelectedUrlDialog(cell.getEditText());
         }
     }
 
     void onDateClicked() {
         if (isTableSelection()) { onDateClickedTable(); return; }
+        if (isDetailsSelection()) { onDateClickedDetails(); return; }
         if (isCaptionSelection()) { onDateClickedCaption(); return; }
         if (isQuoteAuthorSelection()) { onDateClickedAuthor(); return; }
         RichTextCell cell = singleSelectionCell();
@@ -1050,6 +1082,10 @@ public class RichEditorListView extends UniversalRecyclerView {
             if (sChild != eChild) return;
             et = tableEditText(pos, sChild);
             persist = () -> persistTableCell(pos, sChild);
+        } else if (isDetailsSelection()) {
+            final int pos = textSelectionHelper.getStartCell();
+            et = detailsEditText(pos);
+            persist = () -> persistDetailsTitle(pos);
         } else if (isCaptionSelection()) {
             final int pos = textSelectionHelper.getStartCell();
             et = captionEditText(pos);
@@ -1070,6 +1106,242 @@ public class RichEditorListView extends UniversalRecyclerView {
         final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
         if (from > to) return;
         insertInlineMath(et, from, to, persist);
+    }
+
+    public void onInlineButtonClicked(View anchor) {
+        final InlineButtonEdit edit = beginInlineButtonEdit();
+        if (edit != null) {
+            hideTextSelectionUi(false);
+            delegate.onInlineButtonEditRequested(edit, anchor);
+        }
+    }
+
+    boolean canCreateInlineButtonOnSelection() {
+        if (textSelectionHelper == null || !textSelectionHelper.isInSelectionMode()) return false;
+        if (textSelectionHelper.getStartCell() != textSelectionHelper.getEndCell()) return false;
+        final RichEditText editText;
+        if (isTableSelection()) {
+            final int position = textSelectionHelper.getStartCell();
+            final int startChild = textSelectionHelper.getStartChildPosition();
+            final int endChild = textSelectionHelper.getEndChildPosition();
+            if (startChild != endChild) return false;
+            editText = tableEditText(position, startChild);
+        } else if (isDetailsSelection()) {
+            editText = detailsEditText(textSelectionHelper.getStartCell());
+        } else if (isCaptionSelection()) {
+            editText = captionEditText(textSelectionHelper.getStartCell());
+        } else if (isQuoteAuthorSelection()) {
+            editText = quoteAuthorEditText(textSelectionHelper.getStartCell());
+        } else {
+            final RichTextCell cell = singleSelectionCell();
+            if (cell == null) return false;
+            editText = cell.getEditText();
+        }
+        if (editText == null) return false;
+        final int length = editText.length();
+        final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), length));
+        final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), length));
+        return from < to && !hasInlineButton(editText.getText(), from, to);
+    }
+
+    private static boolean hasInlineButton(Editable text, int from, int to) {
+        if (text == null || from >= to) return false;
+        for (RichInlineButtonSpan span : text.getSpans(from, to, RichInlineButtonSpan.class)) {
+            if (text.getSpanStart(span) < to && text.getSpanEnd(span) > from) return true;
+        }
+        return false;
+    }
+
+    private void hideTextSelectionUi(boolean clearSelection) {
+        if (textSelectionHelper != null) {
+            if (clearSelection) textSelectionHelper.clear();
+            else textSelectionHelper.hideActionsMenu();
+        }
+        if (clearSelection) finishEditTextActionModes();
+        else hideEditTextActionModes();
+    }
+
+    private void showSelectedUrlDialog(RichEditText editText) {
+        editText.adaptiveCreateLinkDialog = adaptiveLinkDialogs;
+        editText.makeSelectedUrl(() -> hideTextSelectionUi(true));
+    }
+
+    private InlineButtonEdit beginInlineButtonEdit() {
+        if (!canCreateInlineButtonOnSelection()) return null;
+        final RichEditText et;
+        if (isTableSelection()) {
+            final int pos = textSelectionHelper.getStartCell();
+            final int sChild = textSelectionHelper.getStartChildPosition();
+            final int eChild = textSelectionHelper.getEndChildPosition();
+            if (sChild != eChild) return null;
+            et = tableEditText(pos, sChild);
+        } else if (isDetailsSelection()) {
+            et = detailsEditText(textSelectionHelper.getStartCell());
+        } else if (isCaptionSelection()) {
+            et = captionEditText(textSelectionHelper.getStartCell());
+        } else if (isQuoteAuthorSelection()) {
+            et = quoteAuthorEditText(textSelectionHelper.getStartCell());
+        } else {
+            final RichTextCell cell = singleSelectionCell();
+            if (cell == null) return null;
+            et = cell.getEditText();
+        }
+        if (et == null) return null;
+        final int len = et.length();
+        final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        return new InlineButtonEdit(et, from, to, null);
+    }
+
+    public class InlineButtonEdit {
+        private final RichEditText editText;
+        private final int from;
+        private final int to;
+        private final RichInlineButtonSpan existingSpan;
+        private final TL_iv.RichText label;
+
+        private InlineButtonEdit(RichEditText editText, int from, int to, RichInlineButtonSpan existingSpan) {
+            this.editText = editText;
+            this.from = from;
+            this.to = to;
+            this.existingSpan = existingSpan;
+            if (existingSpan != null && existingSpan.getButton() != null) {
+                label = existingSpan.getButton().text;
+            } else {
+                label = RichTextStyle.fromSpannable(new SpannableStringBuilder(editText.getText().subSequence(from, to)));
+            }
+        }
+
+        public TL_keyboard.InlineButtonType getType() {
+            return existingSpan == null || existingSpan.getButton() == null ? null : existingSpan.getButton().type;
+        }
+
+        public String getLabel() {
+            return RichTextStyle.plainOf(label);
+        }
+
+        public void showInputDialog(String title, String hint, String initial, boolean showPaste,
+                                    org.telegram.ui.Components.EditTextCaption.InputDialogCallback callback) {
+            editText.showInputDialog(title, hint, initial, showPaste, callback);
+        }
+
+        public void showInputDialog(String title, String hint, String initial, boolean showPaste,
+                                    boolean adaptive,
+                                    org.telegram.ui.Components.EditTextCaption.InputDialogCallback callback) {
+            editText.showInputDialog(title, hint, initial, showPaste, adaptive, callback);
+        }
+
+        public void dismissSelectionUi() {
+            hideTextSelectionUi(true);
+        }
+
+        public void hideSelectionUi() {
+            hideTextSelectionUi(false);
+        }
+
+        public void apply(TL_keyboard.InlineButtonType type) {
+            if (!RichInlineButtonSpan.isSupported(type)) return;
+            final Editable editable = editText.getText();
+            if (editable == null || from < 0 || to > editable.length() || from >= to) return;
+            if (history != null) history.flush();
+            if (textSelectionHelper != null) textSelectionHelper.clear();
+            editText.setLocked(false);
+            for (RichInlineButtonSpan span : editable.getSpans(from, to, RichInlineButtonSpan.class)) {
+                editable.removeSpan(span);
+            }
+            RichTextStyle.removeLink(editable, from, to);
+            RichTextStyle.removeDate(editable, from, to);
+            final TL_iv.textButton button = existingSpan != null && existingSpan.getButton() != null
+                ? existingSpan.getButton() : new TL_iv.textButton();
+            button.text = label;
+            button.type = type;
+            if (button.style == null) {
+                button.style = new TL_keyboard.RichButtonStyle();
+            }
+            final RichInlineButtonSpan span = new RichInlineButtonSpan(button);
+            span.bind(editText, currentAccount, resourcesProvider);
+            editable.setSpan(span, from, to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.removeNestedReplacementSpans(editable);
+            editText.setSelection(Math.min(to, editText.length()));
+            suppressSpansChanged = true;
+            try {
+                editText.notifyInlineContentChanged();
+            } finally {
+                suppressSpansChanged = false;
+            }
+            if (history != null) history.record();
+            delegate.onContentChanged();
+        }
+    }
+
+    public class BlockButtonEdit {
+        private final BlockRow row;
+        private final int index;
+
+        private BlockButtonEdit(BlockRow row, int index) {
+            this.row = row;
+            this.index = index;
+        }
+
+        private TL_iv.pageBlockButtonRow getRowBlock() {
+            return row != null && row.block instanceof TL_iv.pageBlockButtonRow
+                ? (TL_iv.pageBlockButtonRow) row.block : null;
+        }
+
+        public boolean exists() {
+            final TL_iv.pageBlockButtonRow block = getRowBlock();
+            return block != null && index >= 0 && index < block.buttons.size();
+        }
+
+        public TL_keyboard.InlineButtonType getType() {
+            final TL_keyboard.PageButton button = getButton();
+            return button == null ? null : button.type;
+        }
+
+        public String getLabel() {
+            final TL_keyboard.PageButton button = getButton();
+            return button == null ? "" : RichTextStyle.plainOf(button.text);
+        }
+
+        public long getUserId() {
+            final TL_keyboard.InlineButtonType type = getType();
+            return type instanceof TL_keyboard.TL_inlineButtonTypeUserProfile
+                ? ((TL_keyboard.TL_inlineButtonTypeUserProfile) type).user_id : 0;
+        }
+
+        private TL_keyboard.PageButton getButton() {
+            final TL_iv.pageBlockButtonRow block = getRowBlock();
+            return block != null && index >= 0 && index < block.buttons.size()
+                ? block.buttons.get(index) : null;
+        }
+
+        public void apply(String label, TL_keyboard.InlineButtonType type) {
+            if (TextUtils.isEmpty(label) || !RichInlineButtonSpan.isSupported(type)) return;
+            final TL_iv.pageBlockButtonRow block = getRowBlock();
+            if (block == null) return;
+            final boolean replacing = index >= 0 && index < block.buttons.size();
+            if (!replacing && block.buttons.size() >= RichButtonRowCell.MAX_BUTTONS) return;
+            if (history != null) history.flush();
+            final TL_keyboard.PageButton button = replacing
+                ? block.buttons.get(index) : new TL_keyboard.PageButton();
+            button.text = RichTextStyle.fromSpannable(label);
+            button.type = type;
+            if (button.style == null) button.style = new TL_keyboard.RichButtonStyle();
+            if (!replacing) block.buttons.add(button);
+            adapter.update(false);
+            if (history != null) history.record();
+            delegate.onContentChanged();
+        }
+
+        public void delete() {
+            final TL_iv.pageBlockButtonRow block = getRowBlock();
+            if (block == null || index < 0 || index >= block.buttons.size()) return;
+            if (history != null) history.flush();
+            block.buttons.remove(index);
+            adapter.update(false);
+            if (history != null) history.record();
+            delegate.onContentChanged();
+        }
     }
 
     private void insertInlineMath(RichEditText et, int from, int to, Runnable persist) {
@@ -1317,6 +1589,10 @@ public class RichEditorListView extends UniversalRecyclerView {
 
     private CharSequence singleSelectionText(int sCell, int sOff, int eCell, int eOff) {
         if (sCell != eCell) return null;
+        if (isDetailsHeader(rowForCell(sCell))) {
+            final RichEditText et = detailsEditText(sCell);
+            return et != null ? et.getText() : null;
+        }
         if (isQuoteAuthorSelection()) {
             final RichEditText et = quoteAuthorEditText(sCell);
             return et != null ? et.getText() : null;
@@ -1332,6 +1608,13 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     boolean isStyleFullyApplied(int flag, int sCell, int sOff, int eCell, int eOff) {
+        if (isDetailsSelection()) {
+            final RichEditText et = detailsEditText(sCell);
+            if (et == null) return false;
+            final int from = Math.max(0, Math.min(Math.min(sOff, eOff), et.length()));
+            final int to = Math.max(0, Math.min(Math.max(sOff, eOff), et.length()));
+            return from < to && (et.getCurrentStyle(from, to) & flag) != 0;
+        }
         if (isQuoteAuthorSelection()) {
             final RichEditText et = quoteAuthorEditText(sCell);
             if (et == null) return false;
@@ -1364,6 +1647,8 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private int blockTextLength(int adapterPos) {
+        final RichEditText details = detailsEditText(adapterPos);
+        if (details != null) return details.length();
         RichTextCell cell = cellAt(adapterPos);
         if (cell != null) return cell.getEditText().length();
         final BlockRow row = rowForCell(adapterPos);
@@ -1384,6 +1669,105 @@ public class RichEditorListView extends UniversalRecyclerView {
         final int e = textSelectionHelper.getEndCell();
         final BlockRow row = rowForCell(s);
         return s == e && row != null && row.block instanceof TL_iv.pageBlockTable;
+    }
+
+    private boolean isDetailsSelection() {
+        if (textSelectionHelper == null || !textSelectionHelper.isInSelectionMode()) return false;
+        final int s = textSelectionHelper.getStartCell();
+        final int e = textSelectionHelper.getEndCell();
+        return s == e && isDetailsHeader(rowForCell(s));
+    }
+
+    private RichEditText detailsEditText(int adapterPos) {
+        final BlockRow row = rowForCell(adapterPos);
+        if (!isDetailsHeader(row)) return null;
+        final View view = selectableAt(adapterPos);
+        return view instanceof RichDetailsCell ? ((RichDetailsCell) view).getEditText() : null;
+    }
+
+    private void persistDetailsTitle(int adapterPos) {
+        final BlockRow row = rowForCell(adapterPos);
+        final RichEditText et = detailsEditText(adapterPos);
+        if (!isDetailsHeader(row) || et == null) return;
+        ((TL_iv.pageBlockDetails) row.block).title = RichTextStyle.fromSpannable(et.getText());
+    }
+
+    private void onFormattingClickedDetails(int flag) {
+        final int pos = textSelectionHelper.getStartCell();
+        final RichEditText et = detailsEditText(pos);
+        if (et == null) return;
+        final int len = et.length();
+        final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        if (from >= to) return;
+        final boolean add = (et.getCurrentStyle(from, to) & flag) == 0;
+        if (history != null) history.flush();
+        suppressSpansChanged = true;
+        if (add) {
+            final int clearMask = clearMaskFor(flag);
+            if (clearMask != 0) et.removeStyle(clearMask, from, to);
+            et.addStyle(flag, from, to);
+        } else {
+            et.removeStyle(flag, from, to);
+        }
+        suppressSpansChanged = false;
+        persistDetailsTitle(pos);
+        et.invalidateEffects();
+        et.requestLayout();
+        if (history != null) history.record();
+        delegate.onSelectionChanged();
+        refreshSelectionHighlight();
+    }
+
+    private void onLinkClickedDetails() {
+        final int pos = textSelectionHelper.getStartCell();
+        final RichEditText et = detailsEditText(pos);
+        if (et == null) return;
+        final int len = et.length();
+        final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        if (from >= to) return;
+        if (RichTextStyle.hasLink(et.getText(), from, to)) {
+            if (history != null) history.flush();
+            RichTextStyle.removeLink(et.getText(), from, to);
+            et.invalidateEffects();
+            persistDetailsTitle(pos);
+            if (history != null) history.record();
+            delegate.onSelectionChanged();
+            refreshSelectionHighlight();
+        } else {
+            if (history != null) history.flush();
+            if (RichTextStyle.hasDate(et.getText(), from, to)) {
+                RichTextStyle.removeDate(et.getText(), from, to);
+                et.invalidateEffects();
+                persistDetailsTitle(pos);
+                if (history != null) history.record();
+                refreshSelectionHighlight();
+            }
+            et.setSelectionOverride(from, to);
+            hideTextSelectionUi(false);
+            showSelectedUrlDialog(et);
+        }
+    }
+
+    private void onDateClickedDetails() {
+        final int pos = textSelectionHelper.getStartCell();
+        final RichEditText et = detailsEditText(pos);
+        if (et == null) return;
+        final int len = et.length();
+        final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), len));
+        if (from >= to) return;
+        if (history != null) history.flush();
+        if (RichTextStyle.hasLink(et.getText(), from, to)) {
+            RichTextStyle.removeLink(et.getText(), from, to);
+            et.invalidateEffects();
+            persistDetailsTitle(pos);
+            if (history != null) history.record();
+            refreshSelectionHighlight();
+        }
+        et.setSelectionOverride(from, to);
+        et.makeSelectedDate();
     }
 
     RichEditText tableEditText(int adapterPos, int childPos) {
@@ -1513,7 +1897,8 @@ public class RichEditorListView extends UniversalRecyclerView {
                 refreshSelectionHighlight();
             }
             et.setSelectionOverride(from, to);
-            et.makeSelectedUrl();
+            hideTextSelectionUi(false);
+            showSelectedUrlDialog(et);
         }
     }
 
@@ -1644,7 +2029,8 @@ public class RichEditorListView extends UniversalRecyclerView {
                 refreshSelectionHighlight();
             }
             et.setSelectionOverride(from, to);
-            et.makeSelectedUrl();
+            hideTextSelectionUi(false);
+            showSelectedUrlDialog(et);
         }
     }
 
@@ -1734,7 +2120,8 @@ public class RichEditorListView extends UniversalRecyclerView {
                 refreshSelectionHighlight();
             }
             et.setSelectionOverride(from, to);
-            et.makeSelectedUrl();
+            hideTextSelectionUi(false);
+            showSelectedUrlDialog(et);
         }
     }
 
@@ -1771,6 +2158,13 @@ public class RichEditorListView extends UniversalRecyclerView {
     boolean selectionHasInlineFormattable() {
         if (textSelectionHelper == null || !textSelectionHelper.isInSelectionMode()) return false;
         if (isTableSelection()) return tableSelectionHasFormattable();
+        if (isDetailsSelection()) {
+            final RichEditText et = detailsEditText(textSelectionHelper.getStartCell());
+            if (et == null) return false;
+            final int from = Math.max(0, Math.min(Math.min(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), et.length()));
+            final int to = Math.max(0, Math.min(Math.max(textSelectionHelper.getStartOffset(), textSelectionHelper.getEndOffset()), et.length()));
+            return from < to;
+        }
         if (isCaptionSelection()) return captionSelectionHasFormattable();
         if (isQuoteAuthorSelection()) return quoteAuthorSelectionHasFormattable();
         final int sCell = textSelectionHelper.getStartCell();
@@ -1876,7 +2270,12 @@ public class RichEditorListView extends UniversalRecyclerView {
                         }
                         int localX = (int) (pressX - pressTarget.getLeft() - getLeft());
                         int localY = (int) (pressY - pressTarget.getTop() - getTop());
-                        if (pressTarget instanceof RichTableCell) {
+                        if (pressTarget instanceof RichButtonRowCell
+                                && ((RichButtonRowCell) pressTarget).isPressOnButton(localX, localY)) {
+                            // The button owns this hold: its own long-press opens the editor.
+                            // Do not let the row-level recognizer start block reordering too.
+                            longPressConsumed = true;
+                        } else if (pressTarget instanceof RichTableCell) {
                             RichTableCell cell = (RichTableCell) pressTarget;
                             if (handleTableHandleTap(cell, localX, localY)) {
                                 try { cell.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); } catch (Exception ignore) {}
@@ -1885,7 +2284,7 @@ public class RichEditorListView extends UniversalRecyclerView {
                             }
                             TL_iv.pageTableCell tableCell = cell.findCellAt(localX, localY);
                             if (tableCell != null) {
-                                enterCellSelectionMode(cell, tableCell);
+                                startCellSelectionDrag(cell, tableCell);
                                 try { cell.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); } catch (Exception ignore) {}
                                 longPressConsumed = true;
                             } else {
@@ -1902,6 +2301,11 @@ public class RichEditorListView extends UniversalRecyclerView {
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
+                if (cellSelectionDragActive && pressTarget == activeCellSelectionTable) {
+                    updateCellSelectionDrag(ev.getX(), ev.getY());
+                    pressMoved = true;
+                    return true;
+                }
                 float dx = ev.getX() - pressX;
                 float dy = ev.getY() - pressY;
                 if (dx * dx + dy * dy > dp(8) * dp(8)) {
@@ -1917,6 +2321,13 @@ public class RichEditorListView extends UniversalRecyclerView {
                 if (longPressRunnable != null) {
                     removeCallbacks(longPressRunnable);
                     longPressRunnable = null;
+                }
+                if (cellSelectionDragActive) {
+                    updateCellSelectionDrag(ev.getX(), ev.getY());
+                    finishCellSelectionDrag(true);
+                    pressTarget = null;
+                    longPressConsumed = false;
+                    return true;
                 }
                 if (!pressMoved && !longPressConsumed && pressTarget instanceof RichTableCell) {
                     RichTableCell rtc = (RichTableCell) pressTarget;
@@ -1971,6 +2382,9 @@ public class RichEditorListView extends UniversalRecyclerView {
                     removeCallbacks(longPressRunnable);
                     longPressRunnable = null;
                 }
+                if (cellSelectionDragActive) {
+                    exitCellSelectionMode();
+                }
                 pressTarget = null;
                 longPressConsumed = false;
                 break;
@@ -2022,6 +2436,18 @@ public class RichEditorListView extends UniversalRecyclerView {
 
     private View findCellUnder(int x, int y) {
         int listY = y - getTop();
+        // A table's bottom three-dot handle deliberately draws beyond the table's measured
+        // height. Keep that overlay interactive instead of handing its taps to the next block.
+        final RichTableCell overflowTable = activeCellSelectionTable != null
+            ? activeCellSelectionTable : findFocusedTableCell();
+        if (overflowTable != null && overflowTable.getParent() == this) {
+            final RichTableCell table = overflowTable;
+            final int localX = x - table.getLeft();
+            final int localY = listY - table.getTop();
+            if (table.findRowHandleAt(localX, localY) >= 0 || table.findColHandleAt(localX, localY) >= 0) {
+                return table;
+            }
+        }
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             if (listY >= child.getTop() && listY < child.getBottom() && x >= child.getLeft() && x < child.getRight()) {
@@ -2314,10 +2740,104 @@ public class RichEditorListView extends UniversalRecyclerView {
         (1 << ChatAttachAlert.LAYOUT_TYPE_MUSIC) |
         (1 << ChatAttachAlert.LAYOUT_TYPE_LOCATION);
 
+    private void prepareEditText(RichEditText editText) {
+        if (editText == null) return;
+        editText.adaptiveCreateLinkDialog = adaptiveLinkDialogs;
+        editText.setInlineButtonContext(currentAccount);
+        editText.setInlineButtonClickListener((source, span, longPress) -> {
+            final Editable text = source.getText();
+            final int from = text == null ? -1 : text.getSpanStart(span);
+            final int to = text == null ? -1 : text.getSpanEnd(span);
+            if (from < 0 || to <= from) return;
+            if (!longPress) {
+                cycleInlineButtonStyle(source, span, from, to);
+                return;
+            }
+            hideTextSelectionUi(false);
+            delegate.onInlineButtonEditRequested(new InlineButtonEdit(source, from, to, span), source);
+        });
+    }
+
+    private void cycleInlineButtonStyle(RichEditText source, RichInlineButtonSpan oldSpan, int from, int to) {
+        final TL_iv.textButton button = oldSpan.getButton();
+        if (button == null) return;
+        if (history != null) history.flush();
+
+        final TL_keyboard.RichButtonStyle oldStyle = button.style;
+        final int nextStyle;
+        if (oldStyle != null && oldStyle.bg_primary) nextStyle = 2;
+        else if (oldStyle != null && oldStyle.bg_danger) nextStyle = 3;
+        else if (oldStyle != null && oldStyle.bg_success) nextStyle = 0;
+        else nextStyle = 1;
+
+        final TL_keyboard.RichButtonStyle style = oldStyle != null
+            ? oldStyle : new TL_keyboard.RichButtonStyle();
+        style.flags = 0;
+        style.bg_primary = nextStyle == 1;
+        style.bg_danger = nextStyle == 2;
+        style.bg_success = nextStyle == 3;
+        style.link = false;
+        button.style = style;
+
+        final Editable text = source.getText();
+        if (text == null || text.getSpanStart(oldSpan) < 0) return;
+        oldSpan.detach(source);
+        text.removeSpan(oldSpan);
+        final RichInlineButtonSpan newSpan = new RichInlineButtonSpan(button);
+        newSpan.bind(source, currentAccount, resourcesProvider);
+        text.setSpan(newSpan, from, to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        source.notifyInlineContentChanged();
+        delegate.onContentChanged();
+    }
+
+    private static void cycleButtonStyle(TL_keyboard.PageButton button) {
+        if (button == null) return;
+        final TL_keyboard.RichButtonStyle oldStyle = button.style;
+        final int nextStyle;
+        if (oldStyle != null && oldStyle.bg_primary) nextStyle = 2;
+        else if (oldStyle != null && oldStyle.bg_danger) nextStyle = 3;
+        else if (oldStyle != null && oldStyle.bg_success) nextStyle = 0;
+        else nextStyle = 1;
+        final TL_keyboard.RichButtonStyle style = oldStyle != null
+            ? oldStyle : new TL_keyboard.RichButtonStyle();
+        style.flags = 0;
+        style.bg_primary = nextStyle == 1;
+        style.bg_danger = nextStyle == 2;
+        style.bg_success = nextStyle == 3;
+        style.link = false;
+        button.style = style;
+    }
+
+    private final RichButtonRowCell.Delegate buttonRowDelegate = new RichButtonRowCell.Delegate() {
+        @Override
+        public void onAddButton(BlockRow row, View anchor) {
+            hideTextSelectionUi(false);
+            delegate.onBlockButtonEditRequested(new BlockButtonEdit(row, -1), anchor);
+        }
+
+        @Override
+        public void onEditButton(BlockRow row, int index, View anchor) {
+            hideTextSelectionUi(false);
+            delegate.onBlockButtonEditRequested(new BlockButtonEdit(row, index), anchor);
+        }
+
+        @Override
+        public void onCycleButtonStyle(BlockRow row, int index) {
+            if (!(row.block instanceof TL_iv.pageBlockButtonRow)) return;
+            final TL_iv.pageBlockButtonRow block = (TL_iv.pageBlockButtonRow) row.block;
+            if (index < 0 || index >= block.buttons.size()) return;
+            if (history != null) history.flush();
+            cycleButtonStyle(block.buttons.get(index));
+            adapter.update(false);
+            if (history != null) history.record();
+            delegate.onContentChanged();
+        }
+    };
+
     private final RichDividerCell.Delegate dividerDelegate = this::getTextSelectionHelper;
 
     private final RichMediaCell.Delegate mediaDelegate = new RichMediaCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { delegate.makeEditTextFocusable(et, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
         @Override public void onMediaPick(BlockRow row) { pendingMediaRow = row; delegate.onOpenAttachRequest(DEFAULT_ATTACH_LAYOUTS, 0); }
         @Override public void onAddMedia(BlockRow row) { pendingMediaRow = row; delegate.onOpenAttachRequest(DEFAULT_ATTACH_LAYOUTS, 0); }
         @Override public void onSwitchMode(BlockRow row) { switchGalleryMode(row); }
@@ -2350,9 +2870,22 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private final RichAudioCell.Delegate audioDelegate = new RichAudioCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { delegate.makeEditTextFocusable(et, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
         @Override public void onCancelUpload(BlockRow row) { cancelAudioUpload(row); }
         @Override public TextSelectionHelper.ArticleTextSelectionHelper getSelectionHelper() { return getTextSelectionHelper(); }
+        @Override public void onCaptionWillChange(BlockRow row, int removed, int added) { if (history != null) history.onBeforeChange(removed, added); }
+        @Override public void onCaptionChanged(BlockRow row) { if (history != null) history.onTyping(); delegate.onContentChanged(); }
+        @Override public void onCaptionSpansChanged(BlockRow row) { onCellSpansChanged(); }
+        @Override public void onCaptionEnter(BlockRow row) { RichEditorListView.this.onCaptionEnter(row); }
+        @Override public void onCaptionLockedInsert(CharSequence text) { if (text != null && text.length() > 0) replaceHelperSelectionWith(text.toString()); }
+        @Override public boolean onCaptionSelectAll(BlockRow row) { return tryEscalateSelectAll(); }
+    };
+
+    private final RichDocumentCell.Delegate documentDelegate = new RichDocumentCell.Delegate() {
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
+        @Override public void onCancelUpload(BlockRow row) { cancelDocumentUpload(row); }
+        @Override public TextSelectionHelper.ArticleTextSelectionHelper getSelectionHelper() { return getTextSelectionHelper(); }
+        @Override public MessageObject getFileRefParentObject() { return fileRefParentObject; }
         @Override public void onCaptionWillChange(BlockRow row, int removed, int added) { if (history != null) history.onBeforeChange(removed, added); }
         @Override public void onCaptionChanged(BlockRow row) { if (history != null) history.onTyping(); delegate.onContentChanged(); }
         @Override public void onCaptionSpansChanged(BlockRow row) { onCellSpansChanged(); }
@@ -2367,7 +2900,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     BlockRow pendingInsertRow;
 
     private final RichMapCell.Delegate mapDelegate = new RichMapCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { delegate.makeEditTextFocusable(et, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
         @Override public void onPickLocation(BlockRow row) { delegate.onOpenLocationRequest(row); }
         @Override public TextSelectionHelper.ArticleTextSelectionHelper getSelectionHelper() { return getTextSelectionHelper(); }
         @Override public void onCaptionWillChange(BlockRow row, int removed, int added) { if (history != null) history.onBeforeChange(removed, added); }
@@ -2385,6 +2918,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     };
 
     private final RichQuoteAuthorCell.Delegate quoteAuthorDelegate = new RichQuoteAuthorCell.Delegate() {
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
         @Override public TL_iv.RichText getQuoteAuthor(long qid) { return quoteAuthors.get(qid); }
         @Override public void setQuoteAuthor(long qid, TL_iv.RichText text) {
             if (text == null || text instanceof TL_iv.textEmpty) quoteAuthors.remove(qid);
@@ -2427,7 +2961,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private final RichTableCell.Delegate tableDelegate = new RichTableCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { delegate.makeEditTextFocusable(et, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) { prepareEditText(et); delegate.makeEditTextFocusable(et, showKeyboard); }
         @Override public void onTextChanged(BlockRow row) { if (history != null) history.onTyping(); delegate.onContentChanged(); }
         @Override public void onTextWillChange(BlockRow row, int removed, int added) { if (history != null) history.onBeforeChange(removed, added); }
         @Override public void onSpansChanged(BlockRow row) { onCellSpansChanged(); }
@@ -2437,7 +2971,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     };
 
     private final RichDetailsCell.Delegate detailsDelegate = new RichDetailsCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText editText, boolean showKeyboard) { delegate.makeEditTextFocusable(editText, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText editText, boolean showKeyboard) { prepareEditText(editText); delegate.makeEditTextFocusable(editText, showKeyboard); }
         @Override public void onToggle(BlockRow row) { toggleDetails(row); }
         @Override public void onTitleChanged(BlockRow row) { if (history != null) history.onTyping(); delegate.onContentChanged(); }
         @Override public void onTitleEnter(BlockRow row) { onDetailsTitleEnter(row); }
@@ -2500,7 +3034,7 @@ public class RichEditorListView extends UniversalRecyclerView {
         if (table != activeCellSelectionTable) return;
         if (!table.hasCellSelection()) {
             exitCellSelectionMode();
-        } else {
+        } else if (!cellSelectionDragActive) {
             showTableCellMenu(table);
         }
     };
@@ -2510,6 +3044,7 @@ public class RichEditorListView extends UniversalRecyclerView {
             activeCellSelectionTable.clearCellSelection();
         }
         activeCellSelectionTable = table;
+        clearDraggedMultiCellSelectionOnMenuDismiss = false;
         dotSelectedRow = dotSelectedCol = -1;
         table.setCellSelectionListener(cellSelectionListener);
         if (textSelectionHelper != null && textSelectionHelper.isInSelectionMode()) {
@@ -2527,26 +3062,64 @@ public class RichEditorListView extends UniversalRecyclerView {
         table.addCellToSelection(cell);
     }
 
+    private void startCellSelectionDrag(RichTableCell table, TL_iv.pageTableCell cell) {
+        dismissTableCellMenu();
+        beginCellSelection(table);
+        stopScroll();
+        requestDisallowInterceptTouchEvent(true);
+        cellSelectionDragActive = true;
+        cellSelectionDragAnchor = cell;
+        cellSelectionDragEnd = cell;
+        table.selectCellRectangle(cell, cell);
+    }
+
+    private void updateCellSelectionDrag(float x, float y) {
+        final RichTableCell table = activeCellSelectionTable;
+        if (!cellSelectionDragActive || table == null || pressTarget != table) return;
+        final int localX = (int) (x - table.getLeft() - getLeft());
+        final int localY = (int) (y - table.getTop() - getTop());
+        final TL_iv.pageTableCell end = table.findCellAt(localX, localY);
+        if (end == null || end == cellSelectionDragEnd) return;
+        cellSelectionDragEnd = end;
+        table.selectCellRectangle(cellSelectionDragAnchor, end);
+    }
+
+    private void finishCellSelectionDrag(boolean showMenu) {
+        final RichTableCell table = activeCellSelectionTable;
+        if (cellSelectionDragActive) {
+            requestDisallowInterceptTouchEvent(false);
+        }
+        cellSelectionDragActive = false;
+        cellSelectionDragAnchor = null;
+        cellSelectionDragEnd = null;
+        clearDraggedMultiCellSelectionOnMenuDismiss = table != null && table.getSelectedCells().size() > 1;
+        if (showMenu && table != null && table.hasCellSelection()) {
+            showTableCellMenu(table);
+        }
+    }
+
     private boolean handleTableHandleTap(RichTableCell table, int localX, int localY) {
-        final int row = table.findRowHandleAt(localX, localY);
-        if (row >= 0) {
-            if (table == activeCellSelectionTable && dotSelectedRow == row) {
-                exitCellSelectionMode();
+        final int firstRow = table.findRowHandleAt(localX, localY);
+        if (firstRow >= 0) {
+            final int lastRow = table.rowHandleEnd(firstRow);
+            if (table == activeCellSelectionTable && table.selectionContainsWholeRows(firstRow, lastRow)) {
+                showTableCellMenu(table);
             } else {
                 beginCellSelection(table);
-                table.selectWholeRow(row);
-                dotSelectedRow = row;
+                table.selectWholeRows(firstRow, lastRow);
+                dotSelectedRow = firstRow;
             }
             return true;
         }
-        final int col = table.findColHandleAt(localX, localY);
-        if (col >= 0) {
-            if (table == activeCellSelectionTable && dotSelectedCol == col) {
-                exitCellSelectionMode();
+        final int firstCol = table.findColHandleAt(localX, localY);
+        if (firstCol >= 0) {
+            final int lastCol = table.colHandleEnd(firstCol);
+            if (table == activeCellSelectionTable && table.selectionContainsWholeColumns(firstCol, lastCol)) {
+                showTableCellMenu(table);
             } else {
                 beginCellSelection(table);
-                table.selectWholeColumn(col);
-                dotSelectedCol = col;
+                table.selectWholeColumns(firstCol, lastCol);
+                dotSelectedCol = firstCol;
             }
             return true;
         }
@@ -2554,6 +3127,13 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private void exitCellSelectionMode() {
+        if (cellSelectionDragActive) {
+            requestDisallowInterceptTouchEvent(false);
+        }
+        cellSelectionDragActive = false;
+        clearDraggedMultiCellSelectionOnMenuDismiss = false;
+        cellSelectionDragAnchor = null;
+        cellSelectionDragEnd = null;
         dismissTableCellMenu();
         if (activeCellSelectionTable != null) {
             activeCellSelectionTable.clearCellSelection();
@@ -2613,18 +3193,20 @@ public class RichEditorListView extends UniversalRecyclerView {
         final boolean fullRows = computeSpansFullRows(m, sel);
         final boolean fullCols = computeSpansFullColumns(m, sel);
         final boolean allSelected = computeAllSelected(m, sel);
+        final boolean canInsertAroundSelection = !allSelected || (m.rowCount == 1 && m.colCount == 1);
         final boolean canDeleteRows = fullRows && !allSelected && distinctSelectedRows(m, sel) < m.rowCount;
         final boolean canDeleteCols = fullCols && !allSelected && distinctSelectedCols(m, sel) < m.colCount;
-        final boolean canInsertCols = fullCols && m.colCount < MessagesController.getInstance(currentAccount).config.richMessageMaxTableCols.get();
+        final boolean canInsertCols = canInsertAroundSelection && fullCols && m.colCount < MessagesController.getInstance(currentAccount).config.richMessageMaxTableCols.get();
+        final boolean canInsertRows = canInsertAroundSelection && fullRows;
 
         dismissTableCellMenu();
 
         final int itemCount = 1
             + (canMerge ? 1 : 0) + (canUnmerge ? 1 : 0)
-            + (canInsertCols ? 2 : 0) + (fullRows ? 2 : 0)
+            + (canInsertCols ? 2 : 0) + (canInsertRows ? 2 : 0)
             + (canDeleteCols ? 1 : 0) + (canDeleteRows ? 1 : 0)
-            + (allSelected ? 1 : 0);
-        final int estMenuHeight = dp(4 + 12 + 32 + 4 + 8 + itemCount * 48 + 8);
+            + (allSelected ? 3 : 0);
+        final int estMenuHeight = dp(4 + 12 + 32 + 4 + 8 + itemCount * 48 + 8 + (allSelected ? 8 : 0));
         final View topAnchor = tableMenuAnchor(table, false);
         final int[] anchorLoc = new int[2];
         topAnchor.getLocationOnScreen(anchorLoc);
@@ -2636,7 +3218,9 @@ public class RichEditorListView extends UniversalRecyclerView {
         o.setDrawScrim(false);
         o.allowShowingOnTopOfKeyboard();
 
+        final int tableMenuContentWidth = 208;
         LinearLayout alignContainer = new LinearLayout(getContext());
+        alignContainer.setMinimumWidth(dp(tableMenuContentWidth));
         alignContainer.setOrientation(LinearLayout.VERTICAL);
         TextView alignTitle = new TextView(getContext());
         alignTitle.setText(getString(R.string.ArticleAlignment));
@@ -2652,28 +3236,28 @@ public class RichEditorListView extends UniversalRecyclerView {
         final RichEditor.Button[] horiz = new RichEditor.Button[3];
         final RichEditor.Button[] vert = new RichEditor.Button[3];
         alignLayout.addView(
-            horiz[0] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_left, resourcesProvider).setRoundRadius(4).setAccent(false),
+            horiz[0] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_left, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         alignLayout.addView(
-            horiz[1] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_middle, resourcesProvider).setRoundRadius(4).setAccent(false),
+            horiz[1] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_middle, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         alignLayout.addView(
-            horiz[2] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_right, resourcesProvider).setRoundRadius(4).setAccent(false),
+            horiz[2] = new RichEditor.Button(getContext(), R.drawable.iv_align_horiz_right, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         alignLayout.addView(new Space(getContext()), LayoutHelper.createLinear(8, 0));
         alignLayout.addView(
-            vert[0] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_top, resourcesProvider).setRoundRadius(4).setAccent(false),
+            vert[0] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_top, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         alignLayout.addView(
-            vert[1] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_middle, resourcesProvider).setRoundRadius(4).setAccent(false),
+            vert[1] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_middle, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         alignLayout.addView(
-            vert[2] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_bottom, resourcesProvider).setRoundRadius(4).setAccent(false),
+            vert[2] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_bottom, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
         o.addView(alignContainer);
@@ -2698,11 +3282,14 @@ public class RichEditorListView extends UniversalRecyclerView {
             });
         }
         o.addSpaceGap();
+        o.setMinWidth(tableMenuContentWidth);
 
         final boolean highlighted = table.allSelectedHeader();
         final String highlightLabel;
         if (highlighted) {
             highlightLabel = getString(R.string.ArticleRemoveHighlight);
+        } else if (allSelected || (n > 1 && !fullCols && !fullRows)) {
+            highlightLabel = getString(R.string.ArticleHighlightCells);
         } else {
             highlightLabel = fullCols ? getString(R.string.ArticleHighlightColumn) : (fullRows ? getString(R.string.ArticleHighlightRow) : getString(R.string.ArticleHighlightCell));
         }
@@ -2733,7 +3320,7 @@ public class RichEditorListView extends UniversalRecyclerView {
                 exitCellSelectionMode();
             });
         }
-        if (fullRows) {
+        if (canInsertRows) {
             o.add(R.drawable.iv_table_insert_top, getString(R.string.ArticleInsertAbove), () -> {
                 table.applyInsertRowFromSelection(true);
                 exitCellSelectionMode();
@@ -2766,8 +3353,32 @@ public class RichEditorListView extends UniversalRecyclerView {
                     if (delegate != null) delegate.onContentChanged();
                 }
             });
+            o.addSpaceGap();
+            final ActionBarMenuSubItem[] tableStyleItems = new ActionBarMenuSubItem[2];
+            o.addChecked(m.block.bordered, getString(R.string.ArticleTableBordered), () -> {
+                o.dontDismiss();
+                final boolean bordered = !m.block.bordered;
+                table.applyBordered(bordered);
+                tableStyleItems[0].setChecked(bordered);
+            });
+            tableStyleItems[0] = o.getLast();
+            o.addChecked(m.block.compact, getString(R.string.ArticleTableCompact), () -> {
+                o.dontDismiss();
+                final boolean compact = !m.block.compact;
+                table.applyCompact(compact);
+                tableStyleItems[1].setChecked(compact);
+            });
+            tableStyleItems[1] = o.getLast();
         }
-        o.setOnDismiss(() -> { if (tableCellMenu == o) tableCellMenu = null; });
+        o.setOnDismiss(() -> {
+            if (tableCellMenu != o) return;
+            tableCellMenu = null;
+            if (clearDraggedMultiCellSelectionOnMenuDismiss
+                    && activeCellSelectionTable == table
+                    && table.hasCellSelection()) {
+                exitCellSelectionMode();
+            }
+        });
         tableCellMenu = o;
         o.show();
     }
@@ -2846,7 +3457,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private final RichTextCell.Delegate cellDelegate = new RichTextCell.Delegate() {
-        @Override public void onRequestWindowFocusable(RichEditText editText, boolean showKeyboard) { delegate.makeEditTextFocusable(editText, showKeyboard); }
+        @Override public void onRequestWindowFocusable(RichEditText editText, boolean showKeyboard) { prepareEditText(editText); delegate.makeEditTextFocusable(editText, showKeyboard); }
         @Override public void onEnter(BlockRow row) { onCellEnter(row); }
         @Override public void onQuoteAuthorEnter(BlockRow row) { onCaptionEnter(row); }
         @Override public void onBackspace(BlockRow row) { onCellBackspaceAtStart(row, true); }
@@ -2865,6 +3476,43 @@ public class RichEditorListView extends UniversalRecyclerView {
         @Override public void onLanguageClick(BlockRow row, View button) { RichEditorListView.this.onLanguageClick(row, button); }
         @Override public boolean onSelectAll(BlockRow row) { return tryEscalateSelectAll(); }
         @Override public boolean onPaste(BlockRow row, RichEditText editText) { return onCellPaste(row, editText); }
+        @Override public int getListPaddingTop(BlockRow row) {
+            final int index = rows.indexOf(row);
+            return index > 0 && rows.get(index - 1).level > 0 ? dp(2) : dp(8);
+        }
+        @Override public int getListPaddingBottom(BlockRow row) {
+            final int index = rows.indexOf(row);
+            return index >= 0 && index + 1 < rows.size() && rows.get(index + 1).level > 0 ? dp(5) : dp(11);
+        }
+        @Override public int getOrderedListMarkerWidth(BlockRow row, android.graphics.Paint paint) {
+            final int index = rows.indexOf(row);
+            if (index < 0 || row.level <= 0 || row.num <= 0) {
+                return RichTextCell.Delegate.super.getOrderedListMarkerWidth(row, paint);
+            }
+            final int level = row.level;
+            int start = index;
+            while (start > 0) {
+                final BlockRow previous = rows.get(start - 1);
+                if (previous.level < level || previous.level == level && previous.num <= 0) break;
+                start--;
+            }
+            int end = index + 1;
+            while (end < rows.size()) {
+                final BlockRow next = rows.get(end);
+                if (next.level < level || next.level == level && next.num <= 0) break;
+                end++;
+            }
+            final android.graphics.Paint measurePaint = new android.graphics.Paint(paint);
+            measurePaint.setTypeface(AndroidUtilities.bold());
+            float widest = 0;
+            for (int i = start; i < end; i++) {
+                final BlockRow item = rows.get(i);
+                if (item.level == level && item.num > 0) {
+                    widest = Math.max(widest, measurePaint.measureText(item.num + "."));
+                }
+            }
+            return Math.max(dp(28), (int) Math.ceil(widest) + dp(10));
+        }
         @Override public void onCommand(BlockRow row, int command) { handleSlashCommand(row, command); }
         @Override public void onSlashSuggest(RichTextCell cell, String query) {
             delegate.onSlashSuggest(cell, query);
@@ -2872,6 +3520,11 @@ public class RichEditorListView extends UniversalRecyclerView {
     };
 
     void handleSlashCommand(BlockRow row, int command) {
+        if (command == RichTextCell.CMD_BUTTON) {
+            final TL_iv.pageBlockButtonRow buttonRow = new TL_iv.pageBlockButtonRow();
+            transformRow(row, buttonRow, 0, 0, false, false);
+            return;
+        }
         pendingMediaRow = null;
         pendingInsertRow = row;
         if (history != null) history.flush();
@@ -3129,6 +3782,7 @@ public class RichEditorListView extends UniversalRecyclerView {
         if (quoteLine == null) {
             quoteLine = new ReplyMessageLine(this);
             quoteLine.check(null, null, null, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
+            RichBlockChrome.applyEditorQuoteColor(quoteLine, resourcesProvider);
         }
         for (int d = 0; d < maxDepth; d++) {
             boolean inSeg = false;
@@ -3255,12 +3909,16 @@ public class RichEditorListView extends UniversalRecyclerView {
                 items.add(RichMediaCell.Factory.of(row, mediaDelegate));
             } else if (row.block instanceof TL_iv.pageBlockAudio) {
                 items.add(RichAudioCell.Factory.of(row, audioDelegate));
+            } else if (row.block instanceof TL_iv.pageBlockDocument) {
+                items.add(RichDocumentCell.Factory.of(row, documentDelegate));
             } else if (row.block instanceof TL_iv.pageBlockMap) {
                 items.add(RichMapCell.Factory.of(row, mapDelegate));
             } else if (row.block instanceof TL_iv.pageBlockMath) {
                 items.add(RichMathCell.Factory.of(row, mathDelegate));
             } else if (row.block instanceof TL_iv.pageBlockTable) {
                 items.add(RichTableCell.Factory.of(row, tableDelegate));
+            } else if (row.block instanceof TL_iv.pageBlockButtonRow) {
+                items.add(RichButtonRowCell.Factory.of(row, buttonRowDelegate));
             } else {
                 row.firstBlock = i == 0;
                 row.singleParagraph = singleParagraph && row.block instanceof TL_iv.pageBlockParagraph;
@@ -3719,6 +4377,145 @@ public class RichEditorListView extends UniversalRecyclerView {
         if (local) startAudioUpload(row, row.media.localPath, doc);
         if (history != null) history.record();
         delegate.onContentChanged();
+    }
+
+    void attachDocument(MessageObject mo) {
+        if (mo == null || mo.getDocument() == null) return;
+        final TLRPC.Document doc = mo.getDocument();
+        final String path = mo.messageOwner != null ? mo.messageOwner.attachPath : null;
+        attachDocument(doc, path);
+    }
+
+    void attachDocument(String path) {
+        if (TextUtils.isEmpty(path)) return;
+        final File file = new File(path);
+        if (!file.exists()) return;
+        final TLRPC.TL_document doc = new TLRPC.TL_document();
+        doc.id = 0;
+        doc.dc_id = 0;
+        doc.size = file.length();
+        String mime = null;
+        final String name = file.getName();
+        final int dot = name.lastIndexOf('.');
+        if (dot >= 0 && dot + 1 < name.length()) {
+            mime = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substring(dot + 1).toLowerCase());
+        }
+        doc.mime_type = TextUtils.isEmpty(mime) ? "application/octet-stream" : mime;
+        final TLRPC.TL_documentAttributeFilename filename = new TLRPC.TL_documentAttributeFilename();
+        filename.file_name = name;
+        doc.attributes.add(filename);
+        attachDocument(doc, path);
+    }
+
+    private void attachDocument(TLRPC.Document doc, String path) {
+        if (doc == null) return;
+        if (history != null) history.flush();
+        final TL_iv.pageBlockDocument block = new TL_iv.pageBlockDocument();
+        final BlockRow row = new BlockRow(block);
+        row.media = new MediaUploadState();
+        row.media.isDocument = true;
+        final boolean local = doc.id == 0 || doc.dc_id == 0 || doc.access_hash == 0;
+        if (local) {
+            if (TextUtils.isEmpty(path) || !new File(path).exists()) return;
+            row.media.document = doc;
+            row.media.localPath = path;
+            row.media.state = MediaUploadState.STATE_UPLOADING;
+            row.media.progress = 0f;
+        } else {
+            row.media.document = doc;
+            row.media.state = MediaUploadState.STATE_DONE;
+            block.document_id = doc.id;
+        }
+        insertPreparedRow(row);
+        if (local) startDocumentUpload(row, path, doc);
+        if (history != null) history.record();
+        delegate.onContentChanged();
+    }
+
+    void attachDocument(Uri uri) {
+        if (uri == null) return;
+        final Context context = getContext();
+        if (context == null) return;
+        Utilities.globalQueue.postRunnable(() -> {
+            String path = null;
+            try { path = AndroidUtilities.getPath(uri); } catch (Exception e) { FileLog.e(e); }
+            if (TextUtils.isEmpty(path) || !new File(path).exists()) {
+                path = copyDocumentUriToCache(uri);
+            }
+            final String finalPath = path;
+            if (!TextUtils.isEmpty(finalPath) && new File(finalPath).exists()) {
+                AndroidUtilities.runOnUIThread(() -> attachDocument(finalPath));
+            }
+        });
+    }
+
+    private String copyDocumentUriToCache(Uri uri) {
+        String name = null;
+        try (android.database.Cursor cursor = getContext().getContentResolver().query(uri, new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) name = cursor.getString(0);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        if (TextUtils.isEmpty(name)) name = "document_" + SharedConfig.getLastLocalId();
+        name = name.replace('/', '_').replace('\\', '_');
+        try (InputStream in = getContext().getContentResolver().openInputStream(uri)) {
+            if (in == null) return null;
+            final File file = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "rich_document_" + Math.abs(uri.hashCode()) + "_" + name);
+            try (OutputStream out = new FileOutputStream(file)) {
+                AndroidUtilities.copyFile(in, out);
+            }
+            return file.getAbsolutePath();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    private void startDocumentUpload(BlockRow row, String path, TLRPC.Document localDoc) {
+        final MediaUploadState media = row.media;
+        final RichMediaUploader old = uploaders.remove(media);
+        if (old != null) old.cancel();
+        final RichMediaUploader uploader = RichMediaUploader.forDocument(currentAccount, path, localDoc, new RichMediaUploader.Listener() {
+            @Override public void onProgress(float progress) {
+                media.progress = progress;
+                invalidateDocumentCell(row);
+                delegate.onContentChanged();
+            }
+            @Override public void onDocumentUploaded(TLRPC.Document doc) {
+                doc.localPath = path;
+                FileLoader.getInstance(currentAccount).setLocalPathTo(doc, path);
+                media.document = doc;
+                media.state = MediaUploadState.STATE_DONE;
+                if (row.block instanceof TL_iv.pageBlockDocument) ((TL_iv.pageBlockDocument) row.block).document_id = doc.id;
+                uploaders.remove(media);
+                adapter.update(false);
+                delegate.onContentChanged();
+            }
+            @Override public void onError() {
+                media.state = MediaUploadState.STATE_ERROR;
+                uploaders.remove(media);
+                rows.remove(row);
+                adapter.update(true);
+                delegate.onContentChanged();
+            }
+        });
+        uploaders.put(media, uploader);
+        uploader.start();
+    }
+
+    private void cancelDocumentUpload(BlockRow row) {
+        final RichMediaUploader uploader = uploaders.remove(row.media);
+        if (uploader != null) uploader.cancel();
+        if (history != null) history.flush();
+        rows.remove(row);
+        adapter.update(true);
+        if (history != null) history.record();
+        delegate.onContentChanged();
+    }
+
+    private void invalidateDocumentCell(BlockRow row) {
+        final View view = findViewByItemObject(row);
+        if (view instanceof RichDocumentCell) ((RichDocumentCell) view).refreshUploadState();
     }
 
     private void insertPreparedRow(BlockRow row) {
@@ -4338,6 +5135,9 @@ public class RichEditorListView extends UniversalRecyclerView {
             ((RichTextCell) v).getEditText().deleteToEndSilently(caret);
         }
         adapter.updateWithoutNotify();
+        // Insert notifications do not rebind adjacent surviving cells, whose list-edge padding
+        // may have changed now that this row has been split.
+        refreshVisibleListPaddingAround(idx + 1);
         final int insertPos = itemRows.indexOf(nextRow);
         if (insertPos < 0) {
             adapter.notifyDataSetChanged();
@@ -4496,6 +5296,9 @@ public class RichEditorListView extends UniversalRecyclerView {
                 return true;
             }
             adapter.updateWithoutNotify();
+            // Removal changes both sides of the join. Refresh the new neighbors without an
+            // adapter rebind so the focused editor and its selection remain intact.
+            refreshVisibleListPaddingAround(idx);
             final RecyclerView.ItemAnimator animator = getItemAnimator();
             setItemAnimator(null);
             adapter.notifyItemRemoved(removePos);
@@ -5107,6 +5910,19 @@ public class RichEditorListView extends UniversalRecyclerView {
         }
     }
 
+    private void refreshVisibleListPaddingAround(int rowIndex) {
+        final int from = Math.max(0, rowIndex - 1);
+        final int to = Math.min(rows.size() - 1, rowIndex + 1);
+        for (int i = from; i <= to; i++) {
+            final BlockRow affected = rows.get(i);
+            if (affected.level <= 0) continue;
+            final View child = findViewByItemObject(affected);
+            if (child instanceof RichTextCell) {
+                ((RichTextCell) child).refreshListVerticalPadding();
+            }
+        }
+    }
+
     private static boolean isListableText(TL_iv.PageBlock b) {
         return b instanceof TL_iv.pageBlockParagraph
             || isHeading(b)
@@ -5121,9 +5937,11 @@ public class RichEditorListView extends UniversalRecyclerView {
             || b instanceof TL_iv.pageBlockCollage
             || b instanceof TL_iv.pageBlockSlideshow
             || b instanceof TL_iv.pageBlockAudio
+            || b instanceof TL_iv.pageBlockDocument
             || b instanceof TL_iv.pageBlockMath
             || b instanceof TL_iv.pageBlockMap
             || b instanceof TL_iv.pageBlockTable
+            || b instanceof TL_iv.pageBlockButtonRow
             || b instanceof TL_iv.pageBlockList
             || b instanceof TL_iv.pageBlockOrderedList;
     }
@@ -5164,7 +5982,7 @@ public class RichEditorListView extends UniversalRecyclerView {
         for (int i = 0; i < rows.size(); i++) {
             BlockRow r = rows.get(i);
             if (!RichTextCell.readPlainText(r.block).isEmpty()) return true;
-            if (isMedia(r.block) || r.block instanceof TL_iv.pageBlockAudio) {
+            if (isMedia(r.block) || r.block instanceof TL_iv.pageBlockAudio || r.block instanceof TL_iv.pageBlockDocument) {
                 for (MediaUploadState ms : mediasOf(r)) {
                     if (ms.isReady() || ms.isPending()) return true;
                 }
@@ -5172,6 +5990,7 @@ public class RichEditorListView extends UniversalRecyclerView {
             if (r.block instanceof TL_iv.pageBlockMath && !android.text.TextUtils.isEmpty(((TL_iv.pageBlockMath) r.block).source)) return true;
             if (r.block instanceof TL_iv.pageBlockMap && RichMapCell.hasGeo((TL_iv.pageBlockMap) r.block)) return true;
             if (r.block instanceof TL_iv.pageBlockTable && tableHasText((TL_iv.pageBlockTable) r.block)) return true;
+            if (r.block instanceof TL_iv.pageBlockButtonRow && !((TL_iv.pageBlockButtonRow) r.block).buttons.isEmpty()) return true;
         }
         return false;
     }
@@ -5205,8 +6024,12 @@ public class RichEditorListView extends UniversalRecyclerView {
         ArrayList<TLRPC.Document> out = new ArrayList<>();
         HashSet<Long> seen = new HashSet<>();
         for (int i = 0; i < rows.size(); i++) {
-            for (MediaUploadState ms : mediasOf(rows.get(i))) {
-                if (ms.isReady() && ms.document != null && seen.add(ms.document.id)) {
+            final BlockRow row = rows.get(i);
+            if (row.block instanceof TL_iv.pageBlockDocument && row.media != null && row.media.isReady() && row.media.document != null) {
+                ((TL_iv.pageBlockDocument) row.block).document_id = row.media.document.id;
+            }
+            for (MediaUploadState ms : mediasOf(row)) {
+                if (ms.isReady() && ms.document != null && ms.document.id != 0 && ms.document.access_hash != 0 && seen.add(ms.document.id)) {
                     out.add(ms.document);
                 }
             }
@@ -5367,6 +6190,14 @@ public class RichEditorListView extends UniversalRecyclerView {
                 }
                 out.add(r.block);
             }
+        } else if (r.block instanceof TL_iv.pageBlockDocument) {
+            if (r.media != null && r.media.document != null) {
+                ((TL_iv.pageBlockDocument) r.block).document_id = r.media.document.id;
+            }
+            if (r.media != null && r.media.isReady() && ((TL_iv.pageBlockDocument) r.block).document_id != 0) {
+                RichCaptionController.ensureCaption(r.block);
+                out.add(r.block);
+            }
         } else if (r.block instanceof TL_iv.pageBlockMap) {
             TL_iv.pageBlockMap map = (TL_iv.pageBlockMap) r.block;
             if (RichMapCell.hasGeo(map)) {
@@ -5385,6 +6216,9 @@ public class RichEditorListView extends UniversalRecyclerView {
             TL_iv.pageBlockTable t = (TL_iv.pageBlockTable) r.block;
             TableModel.normalizeForSend(t);
             if (tableHasText(t)) out.add(t);
+        } else if (r.block instanceof TL_iv.pageBlockButtonRow) {
+            final TL_iv.pageBlockButtonRow buttons = (TL_iv.pageBlockButtonRow) r.block;
+            if (buttons.buttons != null && !buttons.buttons.isEmpty()) out.add(buttons);
         } else {
             out.add(r.block);
         }
@@ -5641,7 +6475,7 @@ public class RichEditorListView extends UniversalRecyclerView {
     }
 
     private static boolean hasCaption(TL_iv.PageBlock b) {
-        return b instanceof TL_iv.pageBlockMap || b instanceof TL_iv.pageBlockAudio || isMedia(b);
+        return b instanceof TL_iv.pageBlockMap || b instanceof TL_iv.pageBlockAudio || b instanceof TL_iv.pageBlockDocument || isMedia(b);
     }
 
     private RichEditText navEditTextOf(View v) {

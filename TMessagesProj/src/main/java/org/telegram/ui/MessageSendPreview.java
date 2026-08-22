@@ -34,7 +34,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;

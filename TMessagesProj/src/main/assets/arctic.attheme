@@ -278,3 +278,6 @@ chat_serviceText=-1
 chats_attachMessage=-13268780
 chat_outSentClock=1895825407
 chat_editMediaButton=-15033089
+chat_msgIvButtonPrimaryIn=#ff229af0
+chat_msgIvButtonPrimaryInPressed=-12412453
+chat_msgIvButtonPrimaryInText=#ffffffff

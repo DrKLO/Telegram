@@ -35,7 +35,7 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;

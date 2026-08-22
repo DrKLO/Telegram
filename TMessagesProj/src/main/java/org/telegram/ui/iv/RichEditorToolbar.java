@@ -52,6 +52,7 @@ public class RichEditorToolbar extends FrameLayout {
         void onBlockButton(int flag, View anchor);
         void onFormatting(int styleFlag);
         void onLink();
+        void onButton(View anchor);
         void onDate();
         void onMath();
         void onQuote();
@@ -87,7 +88,7 @@ public class RichEditorToolbar extends FrameLayout {
     private LinearLayout formattingLayout2;
     private LinearLayout formattingLayout3;
     private final RichEditor.Button aiStyleButton;
-    private final RichEditor.Button linkButton, dateButton, mathButton, quoteButton;
+    private final RichEditor.Button linkButton, inlineButton, dateButton, mathButton, quoteButton;
 
     private final ArrayList<RichEditor.Button> blockButtons = new ArrayList<>();
     private final ArrayList<RichEditor.Button> formattingButtons = new ArrayList<>();
@@ -173,16 +174,6 @@ public class RichEditorToolbar extends FrameLayout {
         bottomPanel.setPadding(dp(8), dp(8), dp(8), dp(8));
         bottomInnerContainer.addView(bottomPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8 + 44 + 8, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
-        emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
-        emojiButton.setPadding(dp(10), dp(10), dp(10), dp(10));
-        emojiButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(RichEditor.withShadow(Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22))));
-        emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
-        bottomPanel.addView(emojiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
-        ScaleStateListAnimator.apply(emojiButton);
-        emojiButton.setContentDescription("Emoji");
-        emojiButton.setOnClickListener(v -> delegate.onEmoji());
-
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -198,7 +189,7 @@ public class RichEditorToolbar extends FrameLayout {
         blocksContainer2.setClipChildren(false);
 
         final FrameLayout blocksContainer = new FrameLayout(context);
-        blocksContainer.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        blocksContainer.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_windowBackgroundWhite))));
         blocksContainer2.addView(blocksContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
 
         blocksScrollView = new HorizontalScrollView(context) {
@@ -229,22 +220,32 @@ public class RichEditorToolbar extends FrameLayout {
         blocksScrollView.addView(blocksLayout);
         blocksContainer.addView(blocksScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
+        emojiButton.setPadding(dp(7), dp(7), dp(7), dp(7));
+        emojiButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        emojiButton.setBackground(Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)));
+        emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
+        blocksLayout.addView(emojiButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL));
+        ScaleStateListAnimator.apply(emojiButton);
+        emojiButton.setContentDescription("Emoji");
+        emojiButton.setOnClickListener(v -> delegate.onEmoji());
+
         addBlockButton(R.drawable.iv_text, BLOCK_TEXT, false);
         addBlockButton(R.drawable.iv_lists, BLOCK_LIST, true);
         addBlockButton(R.drawable.iv_table, BLOCK_TABLE, true);
         addBlockButton(R.drawable.iv_math, BLOCK_MATH, true);
 
-        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
-
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);
         addButton.setScaleType(ImageView.ScaleType.CENTER);
         addButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        addButton.setBackground(RichEditor.withShadow(Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22))));
-        bottomPanel.addView(addButton, LayoutHelper.createLinear(44, 44, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+        addButton.setBackground(Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)));
+        blocksLayout.addView(addButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
         ScaleStateListAnimator.apply(addButton);
         addButton.setContentDescription("Attach");
         addButton.setOnClickListener(v -> delegate.onAttach());
+
+        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
 
         formattingPanel = new LinearLayout(context) {
             @Override
@@ -352,6 +353,12 @@ public class RichEditorToolbar extends FrameLayout {
         quoteButton.setOnClickListener(v -> delegate.onQuote());
         formattingPanelLayout.addView(quoteButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, formattingPanelLayout.getChildCount() == 0 ? 0 : 2, 0, 0, 0));
 
+        inlineButton = new RichEditor.Button(context, R.drawable.iv_button, resourcesProvider);
+        inlineButton.setBackgroundColorKey(Theme.key_glass_targetMainTabs);
+        inlineButton.setContentDescription(getString(R.string.RichEditorButton));
+        inlineButton.setOnClickListener(v -> delegate.onButton(v));
+        formattingPanelLayout.addView(inlineButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, formattingPanelLayout.getChildCount() == 0 ? 0 : 2, 0, 0, 0));
+
         formattingLayout2 = new LinearLayout(context);
         formattingLayout2.setOrientation(LinearLayout.HORIZONTAL);
         formattingLayout2.setPadding(dp(2), 0, dp(2), 0);
@@ -414,7 +421,7 @@ public class RichEditorToolbar extends FrameLayout {
 
     private RichEditor.Button addBlockButton(int icon, int flag, boolean premium) {
         final RichEditor.Button button = new RichEditor.Button(blocksLayout.getContext(), icon, resourcesProvider);
-        button.setBackgroundColorKey(Theme.key_glass_targetMainTabs);
+        button.setBackgroundColorKey(Theme.key_windowBackgroundWhite);
         if (premium) {
             button.setPremium();
             premiumButtons.add(button);
@@ -501,7 +508,8 @@ public class RichEditorToolbar extends FrameLayout {
         }
     }
 
-    public void setFormattingState(int appliedMask, boolean linkApplied, boolean dateApplied, boolean inlineEnabled, boolean boldItalicEnabled) {
+    public void setFormattingState(int appliedMask, boolean linkApplied, boolean dateApplied,
+                                   boolean inlineEnabled, boolean buttonEnabled, boolean boldItalicEnabled) {
         for (final RichEditor.Button button : formattingButtons) {
             final int styleFlag = (Integer) button.getTag();
             button.setSelected((appliedMask & styleFlag) != 0);
@@ -513,6 +521,7 @@ public class RichEditorToolbar extends FrameLayout {
         linkButton.setSelected(linkApplied);
         dateButton.setSelected(dateApplied);
         linkButton.setEnabled(inlineEnabled);
+        inlineButton.setEnabled(buttonEnabled);
         dateButton.setEnabled(inlineEnabled);
         mathButton.setEnabled(inlineEnabled);
     }

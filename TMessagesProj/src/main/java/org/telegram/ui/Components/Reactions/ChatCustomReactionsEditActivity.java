@@ -33,6 +33,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -520,7 +521,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                         AnimatedEmojiSpan span = createAnimatedEmojiSpan(document, documentId, editText.getFontMetricsInt());
                         span.cacheType = AnimatedEmojiDrawable.getCacheTypeForEnterView();
                         span.setAdded();
-                        selectedEmojisIds.add(selectionEnd, documentId);
+                        selectedEmojisIds.add(MathUtils.clamp(selectionEnd, 0, selectedEmojisIds.size()), documentId);
                         selectedEmojisMap.put(documentId, span);
                         spannable.setSpan(span, 0, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         editText.getText().insert(selectionEnd, spannable);

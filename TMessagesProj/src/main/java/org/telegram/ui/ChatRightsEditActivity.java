@@ -138,6 +138,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
     private int changeInfoRow;
     private int postMessagesRow;
     private int manageDirectRow;
+    private int manageWelcomeRow;
     private int editMesagesRow;
     private int deleteMessagesRow;
     private int addAdminsRow;
@@ -258,6 +259,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                             rightsAdmin.edit_stories = rightsAdmin.edit_stories || botDefaultRights.edit_stories;
                             rightsAdmin.delete_stories = rightsAdmin.delete_stories || botDefaultRights.delete_stories;
                             rightsAdmin.manage_direct_messages = rightsAdmin.manage_direct_messages || botDefaultRights.manage_direct_messages;
+                            rightsAdmin.manage_welcome_messages = rightsAdmin.manage_welcome_messages || botDefaultRights.manage_welcome_messages;
                             rightsAdmin.manage_linked_peers = rightsAdmin.manage_linked_peers || botDefaultRights.manage_linked_peers;
                             rightsAdmin.other = rightsAdmin.other || botDefaultRights.other;
                         }
@@ -287,6 +289,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     adminRights.edit_stories = myAdminRights.edit_stories;
                     adminRights.delete_stories = myAdminRights.delete_stories;
                     adminRights.manage_direct_messages = myAdminRights.manage_direct_messages;
+                    adminRights.manage_welcome_messages = myAdminRights.manage_welcome_messages;
                     adminRights.manage_linked_peers = myAdminRights.manage_linked_peers;
                     adminRights.other = myAdminRights.other;
                     initialIsSet = false;
@@ -308,14 +311,22 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 adminRights.edit_stories = rightsAdmin.edit_stories;
                 adminRights.delete_stories = rightsAdmin.delete_stories;
                 adminRights.manage_direct_messages = rightsAdmin.manage_direct_messages;
+                adminRights.manage_welcome_messages = rightsAdmin.manage_welcome_messages;
                 adminRights.manage_linked_peers = rightsAdmin.manage_linked_peers;
                 adminRights.add_admins = rightsAdmin.add_admins;
                 adminRights.anonymous = rightsAdmin.anonymous;
                 adminRights.other = rightsAdmin.other;
 
-                initialIsSet = adminRights.change_info || adminRights.post_messages || adminRights.manage_direct_messages || adminRights.edit_messages ||
-                        adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users || adminRights.manage_linked_peers ||
-                        adminRights.pin_messages || adminRights.manage_ranks || adminRights.add_admins || adminRights.manage_call || adminRights.anonymous || adminRights.manage_topics || adminRights.other;
+                initialIsSet = adminRights.change_info ||
+                        adminRights.post_messages ||
+                        adminRights.manage_direct_messages ||
+                        adminRights.manage_welcome_messages ||
+                        adminRights.edit_messages || adminRights.delete_messages ||
+                        adminRights.ban_users || adminRights.invite_users ||
+                        adminRights.manage_linked_peers || adminRights.pin_messages ||
+                        adminRights.manage_ranks || adminRights.add_admins ||
+                        adminRights.manage_call || adminRights.anonymous ||
+                        adminRights.manage_topics || adminRights.other;
 
                 if (type == TYPE_ADD_BOT) {
                     asAdmin = isChannel || initialIsSet;
@@ -520,6 +531,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         adminRights.edit_stories = a.edit_stories || b.edit_stories;
         adminRights.delete_stories = a.delete_stories || b.delete_stories;
         adminRights.manage_direct_messages = a.manage_direct_messages || b.manage_direct_messages;
+        adminRights.manage_welcome_messages = a.manage_welcome_messages || b.manage_welcome_messages;
         adminRights.manage_linked_peers = a.manage_linked_peers || b.manage_linked_peers;
         return adminRights;
     }
@@ -531,7 +543,9 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
             = adminRights.delete_messages = adminRights.ban_users = adminRights.invite_users
             = adminRights.pin_messages = adminRights.add_admins = adminRights.manage_call
             = adminRights.manage_topics = adminRights.post_stories = adminRights.edit_stories
-            = adminRights.delete_stories = adminRights.manage_direct_messages
+            = adminRights.delete_stories
+            = adminRights.manage_direct_messages
+            = adminRights.manage_welcome_messages
             = adminRights.manage_ranks = adminRights.manage_linked_peers = value;
         return adminRights;
     }
@@ -994,6 +1008,8 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                             checkGuardBotRow();
                         }
                     });
+                } else if (position == manageWelcomeRow) {
+                    value = adminRights.manage_welcome_messages = !adminRights.manage_welcome_messages;
                 } else if (position == manageDirectRow) {
                     value = adminRights.manage_direct_messages = !adminRights.manage_direct_messages;
                 } else if (position == editMesagesRow) {
@@ -1093,9 +1109,9 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
 
     private boolean hasAllAdminRights() {
         if (isChannel) {
-            return adminRights.change_info && adminRights.post_messages && adminRights.edit_messages && adminRights.delete_messages && adminRights.invite_users && adminRights.add_admins && adminRights.manage_call && adminRights.post_stories && adminRights.edit_stories && adminRights.delete_stories && adminRights.manage_direct_messages;
+            return adminRights.change_info && adminRights.post_messages && adminRights.edit_messages && adminRights.delete_messages && adminRights.invite_users && adminRights.add_admins && adminRights.manage_call && adminRights.post_stories && adminRights.edit_stories && adminRights.delete_stories && adminRights.manage_direct_messages && adminRights.manage_welcome_messages;
         } else {
-            return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && adminRights.manage_ranks && adminRights.add_admins && adminRights.manage_call && (!isForum || adminRights.manage_topics);
+            return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && adminRights.manage_ranks && adminRights.add_admins && adminRights.manage_call && (!isForum || adminRights.manage_topics) && adminRights.manage_welcome_messages;
         }
     }
 
@@ -1312,6 +1328,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         changeInfoRow = -1;
         postMessagesRow = -1;
         manageDirectRow = -1;
+        manageWelcomeRow = -1;
         editMesagesRow = -1;
         deleteMessagesRow = -1;
         addAdminsRow = -1;
@@ -1384,6 +1401,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     channelDeleteStoriesRow = rowCount++;
                 }
                 manageDirectRow = rowCount++;
+                manageWelcomeRow = rowCount++;
                 addUsersRow = rowCount++;
                 startVoiceChatRow = rowCount++;
                 addAdminsRow = rowCount++;
@@ -1414,6 +1432,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         channelDeleteStoriesRow = rowCount++;
                     }
                 }
+                manageWelcomeRow = rowCount++;
                 startVoiceChatRow = rowCount++;
                 addAdminsRow = rowCount++;
                 anonymousRow = rowCount++;
@@ -1554,7 +1573,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
             } else {
                 adminRights.post_messages = adminRights.edit_messages = false;
             }
-            if (!adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages && !adminRights.manage_direct_messages &&
+            if (!adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages && !adminRights.manage_direct_messages && !adminRights.manage_welcome_messages &&
                     !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users && (!isForum || !adminRights.manage_topics) &&
                     !adminRights.pin_messages && !adminRights.manage_ranks && !adminRights.add_admins && !adminRights.anonymous && !adminRights.manage_call && (!isChannel || !adminRights.post_stories && !adminRights.edit_stories && !adminRights.delete_stories)) {
                 adminRights.other = true;
@@ -1573,7 +1592,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
 
                 if (delegate != null) {
                     delegate.didSetRights(
-                            adminRights.change_info || adminRights.post_messages || adminRights.manage_direct_messages || adminRights.edit_messages ||
+                            adminRights.change_info || adminRights.post_messages || adminRights.manage_direct_messages || adminRights.manage_welcome_messages || adminRights.edit_messages ||
                                     adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users || (isForum && adminRights.manage_topics) ||
                                     adminRights.pin_messages || adminRights.manage_ranks || adminRights.add_admins || adminRights.anonymous || adminRights.manage_call ||
                                     isChannel && (adminRights.post_stories || adminRights.edit_stories || adminRights.delete_stories) ||
@@ -1831,6 +1850,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 if (position == guardBotRow) return 47;
                 if (position == guardBotInfoRow) return 48;
                 if (position == manageLinkedPeersRow) return 49;
+                if (position == manageWelcomeRow) return 50;
                 return 0;
             } else {
                 return super.getItemId(position);
@@ -1860,6 +1880,8 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         return myAdminRights.post_messages;
                     } else if (position == manageDirectRow) {
                         return myAdminRights.manage_direct_messages;
+                    } else if (position == manageWelcomeRow) {
+                        return myAdminRights.manage_welcome_messages;
                     } else if (position == editMesagesRow) {
                         return myAdminRights.edit_messages;
                     } else if (position == deleteMessagesRow) {
@@ -2177,6 +2199,15 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         if (currentType == TYPE_ADD_BOT) {
                             checkCell.setIcon(myAdminRights.post_messages || isCreator ? 0 : R.drawable.permission_locked);
                         }
+                    } else if (position == manageWelcomeRow) {
+                        if (UserObject.isBot(currentUser)) {
+                            checkCell.setTextAndCheck(LocaleController.getString(isChannel ? R.string.EditAdminBotChannelSendWelcomeMessages : R.string.EditAdminBotGroupSendWelcomeMessages), asAdminValue && adminRights.manage_welcome_messages, true);
+                        } else {
+                            checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminUserManageWelcomeMessages), asAdminValue && adminRights.manage_welcome_messages, true);
+                        }
+                        if (currentType == TYPE_ADD_BOT) {
+                            checkCell.setIcon(myAdminRights.manage_welcome_messages || isCreator ? 0 : R.drawable.permission_locked);
+                        }
                     } else if (position == manageDirectRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.EditAdminManageDirect), asAdminValue && adminRights.manage_direct_messages, true);
                         if (currentType == TYPE_ADD_BOT) {
@@ -2364,7 +2395,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     || position == sendMessagesRow || position == anonymousRow
                     || position == startVoiceChatRow || position == manageRow
                     || position == manageTopicsRow || position == guardBotRow
-                    || position == manageLinkedPeersRow
+                    || position == manageLinkedPeersRow || position == manageWelcomeRow
             ) {
                 return VIEW_TYPE_SWITCH_CELL;
             } else if (position == cantEditInfoRow || position == rankInfoRow || position == guardBotInfoRow) {
@@ -2531,6 +2562,9 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     } else if (childPosition == manageDirectRow) {
                         childValue = adminRights.manage_direct_messages;
                         childEnabled = myAdminRights.manage_direct_messages;
+                    } else if (childPosition == manageWelcomeRow) {
+                        childValue = adminRights.manage_welcome_messages;
+                        childEnabled = myAdminRights.manage_welcome_messages;
                     } else if (childPosition == editMesagesRow) {
                         childValue = adminRights.edit_messages;
                         childEnabled = myAdminRights.edit_messages;

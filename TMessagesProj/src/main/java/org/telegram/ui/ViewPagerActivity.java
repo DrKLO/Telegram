@@ -94,7 +94,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
 
                 fragment.setParentLayout(getParentLayout());
                 if (fragment.getFragmentView() == null) {
-                    fragment.createView(context);
+                    fragment.performCreateView(context);
                     fragment.setTitleOverlayText(titleOverlay, titleOverlayId, titleOverlayAction);
                 }
 

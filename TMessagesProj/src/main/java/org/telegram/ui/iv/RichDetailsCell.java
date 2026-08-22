@@ -1,6 +1,7 @@
 package org.telegram.ui.iv;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
@@ -56,11 +57,13 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
     public RichDetailsCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        setPadding(dp(16), 0, dp(16), 0);
         setClipToPadding(false);
         setWillNotDraw(false);
 
-        arrow = new AnimatedArrowDrawable(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), true);
+        arrow = new AnimatedArrowDrawable(
+            Theme.getColor(Theme.key_chat_inArticleDetailsArrow, resourcesProvider),
+            12.66f, 6.16f, 1.66f
+        );
         arrowCallback = new Drawable.Callback() {
             @Override public void invalidateDrawable(Drawable who) { arrowView.invalidate(); }
             @Override public void scheduleDrawable(Drawable who, Runnable what, long when) {}
@@ -71,7 +74,7 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
             @Override
             protected void onDraw(Canvas canvas) {
                 canvas.save();
-                canvas.translate(dp(2), (getMeasuredHeight() - dp(13)) / 2f);
+                canvas.translate(dpf2(22.6f), dpf2(21.66f));
                 arrow.draw(canvas);
                 canvas.restore();
             }
@@ -79,16 +82,17 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
         arrowView.setOnClickListener(v -> {
             if (delegate != null && currentRow != null) delegate.onToggle(currentRow);
         });
-        addView(arrowView, LayoutHelper.createFrame(28, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        addView(arrowView, LayoutHelper.createFrame(53, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
         editText = new RichEditText(context, resourcesProvider);
         editText.setAllowNewlines(false);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, SharedConfig.fontSize);
         editText.setHint(getString(R.string.ArticleHintDetailsTitle));
-        editText.setPadding(dp(2), dp(10), dp(2), dp(10));
+        editText.setPadding(0, dp(14), 0, dp(12.66f));
         editText.setListener(new RichEditText.Listener() {
             @Override
             public void onTextChanged(RichEditText et, Editable text) {
+                rememberAutoBoldState();
                 if (currentRow != null && currentRow.block instanceof TL_iv.pageBlockDetails) {
                     ((TL_iv.pageBlockDetails) currentRow.block).title = RichTextStyle.fromSpannable(text);
                 }
@@ -148,27 +152,44 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
             }
         });
         editText.setDelegate(() -> {
+            rememberAutoBoldState();
             if (currentRow != null && currentRow.block instanceof TL_iv.pageBlockDetails) {
                 ((TL_iv.pageBlockDetails) currentRow.block).title = RichTextStyle.fromSpannable(editText.getText());
             }
             if (delegate != null && currentRow != null) delegate.onSpansChanged(currentRow);
         });
-        addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 28 + 6, 0, 0, 0));
+        addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 53, 0, 16, 0));
 
         updateColors();
     }
 
     public void bind(BlockRow row, Delegate delegate) {
+        final boolean rowChanged = currentRow != row;
         this.currentRow = row;
         this.delegate = delegate;
         if (!(row.block instanceof TL_iv.pageBlockDetails)) return;
         final TL_iv.pageBlockDetails details = (TL_iv.pageBlockDetails) row.block;
         arrow.setAnimationProgressAnimated(details.open ? 0.0f : 1.0f);
         final CharSequence styled = RichTextStyle.toSpannable(details.title);
-        if (!String.valueOf(editText.getText()).equals(RichTextStyle.plainOf(details.title))) {
+        initializeAutoBold(row, styled);
+        editText.setAutoBold(row.titleAutoBold);
+        if (rowChanged || !String.valueOf(editText.getText()).equals(RichTextStyle.plainOf(details.title))) {
             editText.setTextSilently(styled);
             editText.invalidateEffects();
         }
+    }
+
+    private void initializeAutoBold(BlockRow row, CharSequence styled) {
+        if (row.titleAutoBoldInitialized) return;
+        row.titleAutoBoldInitialized = true;
+        row.titleAutoBold = styled.length() == 0
+            || (RichTextStyle.stylesFullyCovering(styled, 0, styled.length()) & RichTextStyle.BOLD) != 0;
+    }
+
+    private void rememberAutoBoldState() {
+        if (currentRow == null) return;
+        currentRow.titleAutoBoldInitialized = true;
+        currentRow.titleAutoBold = editText.isAutoBold();
     }
 
     public BlockRow getRow() {
@@ -222,8 +243,8 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
     @Override
     public void updateColors() {
         editText.updateColors();
-        arrow.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
-        dividerPaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        arrow.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsArrow, resourcesProvider));
+        dividerPaint.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsLine, resourcesProvider));
     }
 
     @Override

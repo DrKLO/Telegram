@@ -54,6 +54,10 @@ android {
         jvmTarget = "1.8"
     }
 
+    androidResources {
+        localeFilters += ["en", "ar", "de", "es", "it", "ko", "nl", "pt-rBR", "ru", "uk"]
+    }
+
     signingConfigs {
         debug {
             storeFile file("../TMessagesProj/config/release.keystore")

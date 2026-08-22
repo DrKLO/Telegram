@@ -288,7 +288,7 @@ public:
                             Op::string("\x11\xec\x00\x1d\x00\x17\x00\x18", 8)
                         },
                         { Op::string("\x00\x0b\x00\x02\x01\x00", 6) },
-                        { Op::string("\x00\x0d\x00\x12\x00\x10\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01",22) },
+                        { Op::string("\x00\x0d\x00\x18\x00\x16\x09\x04\x09\x05\x09\x06\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01",28) },
                         { Op::string("\x00\x10\x00\x0e\x00\x0c\x02\x68\x32\x08\x68\x74\x74\x70\x2f\x31\x2e\x31", 18) },
                         { Op::string("\x00\x12\x00\x00", 4) },
                         { Op::string("\x00\x17\x00\x00", 4) },
@@ -316,7 +316,7 @@ public:
                             Op::string("\x00\x00\x01\x00\x01", 5),
                             Op::random(1),
                             Op::string("\x00\x20", 2),
-                            Op::random(32),
+                            Op::K(),
                             Op::begin_scope(),
                             Op::E(),
                             Op::end_scope(),

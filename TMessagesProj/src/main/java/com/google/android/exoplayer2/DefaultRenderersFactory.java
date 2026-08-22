@@ -20,7 +20,6 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import android.content.Context;
 import android.media.MediaCodec;
 import android.media.PlaybackParams;
-import android.opengl.EGLContext;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.IntDef;
@@ -287,7 +286,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
   @Override
   public Renderer[] createRenderers(
       Handler eventHandler,
-      EGLContext parentContext,
       VideoRendererEventListener videoRendererEventListener,
       AudioRendererEventListener audioRendererEventListener,
       TextOutput textRendererOutput,
@@ -295,7 +293,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
     ArrayList<Renderer> renderersList = new ArrayList<>();
     buildVideoRenderers(
         context,
-        parentContext,
         extensionRendererMode,
         mediaCodecSelector,
         enableDecoderFallback,
@@ -351,7 +348,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
    */
   protected void buildVideoRenderers(
       Context context,
-      EGLContext parentContext,
       @ExtensionRendererMode int extensionRendererMode,
       MediaCodecSelector mediaCodecSelector,
       boolean enableDecoderFallback,
@@ -362,7 +358,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
     MediaCodecVideoRenderer videoRenderer =
         new MediaCodecVideoRenderer(
             context,
-            parentContext,
             getCodecAdapterFactory(),
             mediaCodecSelector,
             allowedVideoJoiningTimeMs,

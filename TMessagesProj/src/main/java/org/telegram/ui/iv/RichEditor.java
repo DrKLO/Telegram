@@ -51,6 +51,7 @@ import androidx.core.view.WindowInsetsCompat;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
@@ -58,6 +59,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -85,6 +87,7 @@ import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatActivityEnterViewAnimatedIconView;
 import org.telegram.ui.Components.ChatAttachAlert;
+import org.telegram.ui.Components.ChatAttachAlertDocumentLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.ItemOptions;
@@ -331,6 +334,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
     private LinearLayout formattingLayout3;
     private Button aiStyleButton;
     private Button linkButton;
+    private Button inlineButton;
     private Button dateButton;
     private Button mathButton;
     private Button quoteButton;
@@ -496,6 +500,16 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             @Override
             public void makeEditTextFocusable(RichEditText et, boolean showKeyboard) {}
             @Override
+            public void onInlineButtonEditRequested(RichEditorListView.InlineButtonEdit edit, View anchor) {
+                final ItemOptions options = ItemOptions.makeOptions(RichEditor.this, anchor).dontFocus();
+                currentMenuVisible = RichInlineButtonEditor.show(options, RichEditor.this, getContext(), getResourceProvider(), edit);
+            }
+            @Override
+            public void onBlockButtonEditRequested(RichEditorListView.BlockButtonEdit edit, View anchor) {
+                final ItemOptions options = ItemOptions.makeOptions(RichEditor.this, anchor).dontFocus();
+                currentMenuVisible = RichInlineButtonEditor.showBlock(options, RichEditor.this, getContext(), getResourceProvider(), edit);
+            }
+            @Override
             public void onReorderStart() {
                 reorderSavedPanelType = bottomPanelType;
                 setTrashHovered(false, false);
@@ -513,6 +527,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                 updateBottomPanel(reorderSavedPanelType == BOTTOM_PANEL_TRASH ? BOTTOM_PANEL_TOOLBAR : reorderSavedPanelType, true);
             }
         });
+        listView.setFileRefParentObject(editingMessageObject);
         container.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
         container.addView(listView.getOverlayView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -600,16 +615,6 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         bulletinContainer = new FrameLayout(context);
         bottomInnerContainer.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, 8 + 44 + 8));
 
-        emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
-        emojiButton.setPadding(dp(10), dp(10), dp(10), dp(10));
-        emojiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
-        emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
-        bottomPanel.addView(emojiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
-        ScaleStateListAnimator.apply(emojiButton);
-        emojiButton.setContentDescription(getString(R.string.AccDescrEmojiButton));
-        emojiButton.setOnClickListener(v -> toggleEmojiPopup());
-
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -661,6 +666,16 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         blocksLayout.setOrientation(LinearLayout.HORIZONTAL);
         blocksScrollView.addView(blocksLayout);
         blocksContainer.addView(blocksScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
+        emojiButton.setPadding(dp(7), dp(7), dp(7), dp(7));
+        emojiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        emojiButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)));
+        emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
+        blocksLayout.addView(emojiButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL));
+        ScaleStateListAnimator.apply(emojiButton);
+        emojiButton.setContentDescription(getString(R.string.AccDescrEmojiButton));
+        emojiButton.setOnClickListener(v -> toggleEmojiPopup());
 
         addBlockButton(R.drawable.iv_text, 1).setOnClickListener(v -> {
             if (currentMenuVisible != null) {
@@ -779,20 +794,20 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             }, getResourceProvider());
         });
 
-        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
-
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);
         addButton.setScaleType(ImageView.ScaleType.CENTER);
         addButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        addButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
-        bottomPanel.addView(addButton, LayoutHelper.createLinear(44, 44, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+        addButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)));
+        blocksLayout.addView(addButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
         ScaleStateListAnimator.apply(addButton);
         addButton.setContentDescription(getString(R.string.AccDescrAttachButton));
         addButton.setOnClickListener(v -> {
             listView.pendingMediaRow = null;
             openAttach();
         });
+
+        bottomPanel.addView(blocksContainer2, LayoutHelper.createLinear(0, 44, 1f));
 
         formattingPanel = new LinearLayout(context) {
             @Override
@@ -923,6 +938,11 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         quoteButton.setContentDescription(getString(R.string.Quote));
         quoteButton.setOnClickListener(v -> { listView.toggleQuoteOnSelection(); updateFormattingButtons(); });
         formattingPanelLayout.addView(quoteButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, formattingPanelLayout.getChildCount() > 0 ? 2 : 0, 0, 0, 0));
+
+        inlineButton = new Button(context, R.drawable.iv_button, getResourceProvider());
+        inlineButton.setContentDescription(getString(R.string.RichEditorButton));
+        inlineButton.setOnClickListener(v -> listView.onInlineButtonClicked(v));
+        formattingPanelLayout.addView(inlineButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, formattingPanelLayout.getChildCount() > 0 ? 2 : 0, 0, 0, 0));
 
         formattingLayout2 = new LinearLayout(context);
         formattingLayout2.setOrientation(LinearLayout.HORIZONTAL);
@@ -1239,7 +1259,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             row.block instanceof TL_iv.pageBlockSlideshow
         ) {
             type = 3;
-        } else if (row.block instanceof TL_iv.pageBlockAudio) {
+        } else if (row.block instanceof TL_iv.pageBlockAudio || row.block instanceof TL_iv.pageBlockDocument) {
             type = 5;
         } else if (row.block instanceof TL_iv.pageBlockMap) {
             type = 6;
@@ -1337,7 +1357,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         if (dateButton != null) {
             dateButton.setSelected(valid && listView.isDateApplied(sCell, sOff, eCell, eOff));
         }
-        setInlineButtonsEnabled(valid && sCell == eCell);
+        setInlineButtonsEnabled(valid && sCell == eCell, listView.canCreateInlineButtonOnSelection());
     }
 
     private void setBoldEnabled(boolean enabled) {
@@ -1349,8 +1369,9 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         }
     }
 
-    private void setInlineButtonsEnabled(boolean enabled) {
+    private void setInlineButtonsEnabled(boolean enabled, boolean buttonEnabled) {
         if (linkButton != null) linkButton.setEnabled(enabled);
+        if (inlineButton != null) inlineButton.setEnabled(buttonEnabled);
         if (dateButton != null) dateButton.setEnabled(enabled);
         if (mathButton != null) mathButton.setEnabled(enabled);
     }
@@ -1388,7 +1409,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             dateButton.setSelected(et != null && from < to && RichTextStyle.hasDate(et.getText(), from, to));
         }
         setBoldEnabled(true);
-        setInlineButtonsEnabled(single);
+        setInlineButtonsEnabled(single, listView.canCreateInlineButtonOnSelection());
     }
 
     private void updateFormattingButtonsCaption() {
@@ -1410,7 +1431,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             dateButton.setSelected(et != null && from < to && RichTextStyle.hasDate(et.getText(), from, to));
         }
         setBoldEnabled(true);
-        setInlineButtonsEnabled(true);
+        setInlineButtonsEnabled(true, listView.canCreateInlineButtonOnSelection());
     }
 
     public static class Button extends ImageView implements Theme.Colorable {
@@ -1731,6 +1752,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
     private static final int DEFAULT_ATTACH_LAYOUTS =
         (1 << ChatAttachAlert.LAYOUT_TYPE_PHOTO) |
         (1 << ChatAttachAlert.LAYOUT_TYPE_MUSIC) |
+        (1 << ChatAttachAlert.LAYOUT_TYPE_DOCUMENTS) |
         (1 << ChatAttachAlert.LAYOUT_TYPE_LOCATION);
 
     private void openAttach() {
@@ -1776,6 +1798,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             }
         });
 
+        chatAttachAlert.getPhotoLayout().setIncludeVideosInGallery(true);
         chatAttachAlert.getPhotoLayout().loadGalleryPhotos();
 
         chatAttachAlert.setMaxSelectedPhotos(1, true);
@@ -1799,6 +1822,25 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             }
             chatAttachAlert.dismiss(true);
         });
+        chatAttachAlert.setDocumentsDelegate(new ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate() {
+            @Override
+            public void didSelectFiles(ArrayList<String> files, String caption, ArrayList<TLRPC.MessageEntity> captionEntities, ArrayList<MessageObject> fmessages, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
+                if (files != null && !files.isEmpty()) listView.attachDocument(files.get(0));
+                else if (fmessages != null && !fmessages.isEmpty()) listView.attachDocument(fmessages.get(0));
+                chatAttachAlert.dismiss(true);
+            }
+
+            @Override
+            public void startDocumentSelectActivity() {
+                try {
+                    final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.setType("*/*");
+                    startActivityForResult(intent, 21);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        });
         chatAttachAlert.init();
         if (initialLayoutType != 0) {
             chatAttachAlert.openAttachLayoutForType(initialLayoutType);
@@ -1809,6 +1851,10 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK && requestCode == 21) {
+            if (data != null && data.getData() != null) listView.attachDocument(data.getData());
+            return;
+        }
         if (resultCode == Activity.RESULT_OK && (requestCode == 1 || requestCode == 14)) {
             if (data == null || data.getData() == null) return;
             listView.attachExternalMedia(data.getData());
@@ -1939,12 +1985,12 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         if (sendBlocks.isEmpty()) return;
         ArrayList<TLRPC.Photo> sendPhotos = listView.collectPhotos();
         ArrayList<TLRPC.Document> sendDocs = listView.collectDocuments();
+        final ArrayList<TLRPC.InputUser> sendUsers = RichMessageButtonUsers.collect(currentAccount, sendBlocks);
         final long dialogId = chatActivity.getDialogId();
         final MessageObject replyToMsg = chatActivity.getReplyMessage();
         final MessageObject replyToTopMsg = chatActivity.getThreadMessage();
         final long monoForumPeerId = chatActivity.getSendMonoForumPeerId();
-        final String quickReplyShortcut = chatActivity.quickReplyShortcut;
-        final int quickReplyShortcutId = chatActivity.getQuickReplyId();
+        final SendMessageChatArguments sendMessageChatArguments = chatActivity.getMessageChatSendParams();
         final MessageObject editing = editingMessageObject;
         final ArrayList<TL_iv.PageBlock> blocks = sendBlocks;
         final Runnable doSend = () -> {
@@ -1955,7 +2001,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                     blocks,
                     sendPhotos,
                     sendDocs,
-                    null,
+                    sendUsers,
                     false,
                     chatActivity
                 );
@@ -1965,7 +2011,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                     blocks,
                     sendPhotos,
                     sendDocs,
-                    null,
+                    sendUsers,
                     false,
                     dialogId,
                     replyToMsg,
@@ -1973,8 +2019,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                     notify,
                     scheduleDate,
                     scheduleRepeatPeriod,
-                    quickReplyShortcut,
-                    quickReplyShortcutId,
+                    sendMessageChatArguments,
                     0,
                     monoForumPeerId,
                     0

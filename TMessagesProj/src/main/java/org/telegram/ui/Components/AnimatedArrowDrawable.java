@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -21,6 +22,9 @@ public class AnimatedArrowDrawable extends Drawable {
     private float animateToProgress;
     private long lastUpdateTime;
     private boolean isSmall;
+    private float customWidthDp;
+    private float customHeightDp;
+    private float customStrokeWidthDp;
 
     public AnimatedArrowDrawable(int color, boolean small) {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -34,6 +38,21 @@ public class AnimatedArrowDrawable extends Drawable {
         updatePath();
     }
 
+    public AnimatedArrowDrawable(int color, float widthDp, float heightDp, float strokeWidthDp) {
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(dpf2(strokeWidthDp));
+        paint.setColor(color);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
+        isSmall = true;
+        customWidthDp = widthDp;
+        customHeightDp = heightDp;
+        customStrokeWidthDp = strokeWidthDp;
+
+        updatePath();
+    }
+
     @Override
     public void draw(Canvas c) {
         c.drawPath(path, paint);
@@ -43,7 +62,18 @@ public class AnimatedArrowDrawable extends Drawable {
     private void updatePath() {
         path.reset();
         float p = animProgress * 2 - 1;
-        if (isSmall) {
+        if (customWidthDp > 0 && customHeightDp > 0) {
+            final float halfStroke = dpf2(customStrokeWidthDp) / 2f;
+            final float left = halfStroke;
+            final float right = dpf2(customWidthDp) - halfStroke;
+            final float center = (left + right) / 2f;
+            final float top = halfStroke;
+            final float bottom = dpf2(customHeightDp) - halfStroke;
+            final float range = bottom - top;
+            path.moveTo(left, bottom - range * animProgress);
+            path.lineTo(center, top + range * animProgress);
+            path.lineTo(right, bottom - range * animProgress);
+        } else if (isSmall) {
             path.moveTo(dp(3), dp(6) - dp(2) * p);
             path.lineTo(dp(8), dp(6) + dp(2) * p);
             path.lineTo(dp(13), dp(6) - dp(2) * p);
@@ -119,11 +149,11 @@ public class AnimatedArrowDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        return dp(26);
+        return customWidthDp > 0 ? dp(customWidthDp) : dp(26);
     }
 
     @Override
     public int getIntrinsicHeight() {
-        return dp(26);
+        return customHeightDp > 0 ? dp(customHeightDp) : dp(26);
     }
 }

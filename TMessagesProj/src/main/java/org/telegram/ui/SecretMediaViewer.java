@@ -638,16 +638,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                         containerView.invalidate();
                     }
                 }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
             });
         }
         videoPlayer.preparePlayer(Uri.fromFile(file), "other");

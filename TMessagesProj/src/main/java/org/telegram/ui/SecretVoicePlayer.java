@@ -591,16 +591,6 @@ public class SecretVoicePlayer extends Dialog {
                         myCell.invalidate();
                     });
                 }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
             });
             if (audioVisualizerDrawable != null) {
                 player.setAudioVisualizerDelegate(new VideoPlayer.AudioVisualizerDelegate() {

@@ -76,7 +76,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         this.currentAccount = currentAccount;
         this.type = type;
 
-        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 6));
+        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 16));
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(13));

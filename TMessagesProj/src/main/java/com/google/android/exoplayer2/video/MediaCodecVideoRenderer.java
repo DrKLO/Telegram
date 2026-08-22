@@ -34,7 +34,6 @@ import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCrypto;
 import android.media.MediaFormat;
-import android.opengl.EGLContext;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -124,7 +123,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
   private static boolean deviceNeedsSetOutputSurfaceWorkaround;
 
   private final Context context;
-  public EGLContext eglContext;
   private final VideoFrameReleaseHelper frameReleaseHelper;
   private final EventDispatcher eventDispatcher;
   private final long allowedJoiningTimeMs;
@@ -209,7 +207,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       int maxDroppedFramesToNotify) {
     this(
         context,
-        null,
         MediaCodecAdapter.Factory.DEFAULT,
         mediaCodecSelector,
         allowedJoiningTimeMs,
@@ -244,7 +241,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       int maxDroppedFramesToNotify) {
     this(
         context,
-        null,
         MediaCodecAdapter.Factory.DEFAULT,
         mediaCodecSelector,
         allowedJoiningTimeMs,
@@ -273,7 +269,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
    */
   public MediaCodecVideoRenderer(
       Context context,
-      EGLContext parentContext,
       MediaCodecAdapter.Factory codecAdapterFactory,
       MediaCodecSelector mediaCodecSelector,
       long allowedJoiningTimeMs,
@@ -284,7 +279,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
 
     this(
         context,
-        parentContext,
         codecAdapterFactory,
         mediaCodecSelector,
         allowedJoiningTimeMs,
@@ -318,7 +312,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
    */
   public MediaCodecVideoRenderer(
       Context context,
-      EGLContext parentContext,
       MediaCodecAdapter.Factory codecAdapterFactory,
       MediaCodecSelector mediaCodecSelector,
       long allowedJoiningTimeMs,
@@ -336,7 +329,6 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
     this.allowedJoiningTimeMs = allowedJoiningTimeMs;
     this.maxDroppedFramesToNotify = maxDroppedFramesToNotify;
     this.context = context.getApplicationContext();
-    this.eglContext = parentContext;
     frameReleaseHelper = new VideoFrameReleaseHelper(this.context);
     eventDispatcher = new EventDispatcher(eventHandler, eventListener);
     deviceNeedsNoPostProcessWorkaround = deviceNeedsNoPostProcessWorkaround();
@@ -682,7 +674,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       } else {
         MediaCodecInfo codecInfo = getCodecInfo();
         if (codecInfo != null && shouldUsePlaceholderSurface(codecInfo)) {
-          placeholderSurface = PlaceholderSurface.newInstanceV17(context, codecInfo.secure, eglContext);
+          placeholderSurface = PlaceholderSurface.newInstanceV17(context, codecInfo.secure);
           surface = placeholderSurface;
         }
       }
@@ -747,10 +739,8 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       MediaCodecInfo codecInfo,
       Format format,
       @Nullable MediaCrypto crypto,
-      float codecOperatingRate,
-      EGLContext parentContext
-  ) {
-    if (placeholderSurface != null && (placeholderSurface.secure != codecInfo.secure || placeholderSurface.parentContext != parentContext)) {
+      float codecOperatingRate) {
+    if (placeholderSurface != null && placeholderSurface.secure != codecInfo.secure) {
       // We can't re-use the current DummySurface instance with the new decoder.
       releasePlaceholderSurface();
     }
@@ -769,7 +759,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
         throw new IllegalStateException();
       }
       if (placeholderSurface == null) {
-        placeholderSurface = PlaceholderSurface.newInstanceV17(context, codecInfo.secure, parentContext);
+        placeholderSurface = PlaceholderSurface.newInstanceV17(context, codecInfo.secure);
       }
       surface = placeholderSurface;
     }

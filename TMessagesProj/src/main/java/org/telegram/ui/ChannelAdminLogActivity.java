@@ -71,9 +71,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -108,6 +108,7 @@ import org.telegram.messenger.utils.RectFMergeBounding;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -123,6 +124,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatLoadingCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.ChatMessageUnsupportedCell;
 import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Components.AdminLogFilterAlert2;
 import org.telegram.ui.Components.AlertsCreator;
@@ -145,7 +147,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
-import org.telegram.ui.Components.TopicsTabsView;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanReplacement;
@@ -156,7 +157,6 @@ import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
@@ -670,7 +670,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 newFilteredMessages.add(message);
             }
             if (thisMessageDeletedBy != nextMessageDeletedBy && !currentDeleteGroup.isEmpty()) {
-                boolean wasKeyboard = message.messageOwner.reply_markup != null && !(message.messageOwner.reply_markup.rows.isEmpty());
+                boolean wasKeyboard = message.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !(((TLRPC.TL_replyInlineMarkup) message.messageOwner.reply_markup).rows.isEmpty());
                 int index = newFilteredMessages.size();
                 ArrayList<MessageObject> separatedFirstActions = new ArrayList<>();
                 for (int j = currentDeleteGroup.size() - 1; j >= 0; j--) {
@@ -692,7 +692,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         setupExpandButton(lastMessage, currentDeleteGroup.size() - 1);
                         newFilteredMessages.add(lastMessage);
                     }
-                    if (wasKeyboard != (lastMessage.messageOwner.reply_markup != null && !(lastMessage.messageOwner.reply_markup.rows.isEmpty()))) {
+                    if (wasKeyboard != (lastMessage.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !(((TLRPC.TL_replyInlineMarkup) lastMessage.messageOwner.reply_markup).rows.isEmpty()))) {
                         lastMessage.forceUpdate = true;
                         chatAdapter.notifyItemChanged(index + (wasKeyboard ? currentDeleteGroup.size() - 1 : 0));
                         chatAdapter.notifyItemChanged(index + (wasKeyboard ? currentDeleteGroup.size() - 1 : 0) + 1);
@@ -791,15 +791,18 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             return;
         }
         if (count <= 0) {
-            if (msg.messageOwner.reply_markup != null) {
-                msg.messageOwner.reply_markup.rows.clear();
+            if (msg.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) {
+                ((TLRPC.TL_replyInlineMarkup) msg.messageOwner.reply_markup).rows.clear();
+            }
+            if (msg.messageOwner.reply_markup instanceof TLRPC.TL_replyKeyboardMarkup) {
+                ((TLRPC.TL_replyKeyboardMarkup) msg.messageOwner.reply_markup).rows.clear();
             }
         } else {
             TLRPC.TL_replyInlineMarkup markup = new TLRPC.TL_replyInlineMarkup();
             msg.messageOwner.reply_markup = markup;
-            TLRPC.TL_keyboardButtonRow row = new TLRPC.TL_keyboardButtonRow();
+            TL_keyboard.KeyboardInlineButtonRow row = new TL_keyboard.TL_keyboardInlineButtonRow();
             markup.rows.add(row);
-            TLRPC.TL_keyboardButton button = new TLRPC.TL_keyboardButton();
+            TL_keyboard.TL_keyboardInlineButton button = new TL_keyboard.TL_keyboardInlineButton();
             button.text = LocaleController.formatPluralString("EventLogExpandMore", count);
             row.buttons.add(button);
         }
@@ -1199,6 +1202,12 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (child instanceof ChatMessageUnsupportedCell) {
+                    canvas.save();
+                    canvas.translate(child.getX(), child.getY());
+                    ((ChatMessageUnsupportedCell) child).drawBackground(canvas);
+                    canvas.restore();
+                }
                 boolean result = super.drawChild(canvas, child, drawingTime);
                 if (child instanceof ChatMessageCell) {
                     ChatMessageCell chatMessageCell = (ChatMessageCell) child;
@@ -2586,7 +2595,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         boolean foundTextureViewMessage = false;
         for (int a = 0; a < count; a++) {
             View view = chatListView.getChildAt(a);
-            if (view instanceof ChatMessageCell) {
+            if (view instanceof ChatMessageUnsupportedCell) {
+                ChatMessageUnsupportedCell unsupportedCell = (ChatMessageUnsupportedCell) view;
+                unsupportedCell.setVisiblePart(view.getY() + actionBar.getMeasuredHeight() - contentView.getBackgroundTranslationY(), contentView.getBackgroundSizeY());
+            } else if (view instanceof ChatMessageCell) {
                 ChatMessageCell messageCell = (ChatMessageCell) view;
                 int top = messageCell.getTop();
                 int bottom = messageCell.getBottom();
@@ -2913,6 +2925,19 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             return false;
                         }
                         return ChatObject.isForum(currentChat);
+                    }
+
+                    @Override
+                    public void didPressAppUpdateButton() {
+                        if (ApplicationLoader.isStandaloneBuild()) {
+                            if (LaunchActivity.instance != null) {
+                                LaunchActivity.instance.checkAppUpdate(true, null);
+                            }
+                        } else if (BuildVars.isHuaweiStoreApp()) {
+                            Browser.openUrl(getContext(), BuildVars.HUAWEI_STORE_URL);
+                        } else {
+                            Browser.openUrl(getContext(), BuildVars.PLAYSTORE_APP_URL);
+                        }
                     }
 
                     @Override
@@ -3251,7 +3276,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+                    public void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
                         MessageObject messageObject = cell.getMessageObject();
                         if (expandedEvents.contains(messageObject.eventId)) {
                             expandedEvents.remove(messageObject.eventId);
@@ -3390,6 +3415,23 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 });
             } else if (viewType == 2) {
                 view = new ChatUnreadCell(mContext, null);
+            } else if (viewType == 10) {
+                ChatMessageUnsupportedCell cell = new ChatMessageUnsupportedCell(mContext, resourceProvider);
+                cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
+                    @Override
+                    public void didPressAppUpdateButton() {
+                        if (ApplicationLoader.isStandaloneBuild()) {
+                            if (LaunchActivity.instance != null) {
+                                LaunchActivity.instance.checkAppUpdate(true, null);
+                            }
+                        } else if (BuildVars.isHuaweiStoreApp()) {
+                            Browser.openUrl(getContext(), BuildVars.HUAWEI_STORE_URL);
+                        } else {
+                            Browser.openUrl(getContext(), BuildVars.PLAYSTORE_APP_URL);
+                        }
+                    }
+                });
+                view = cell;
             } else {
                 view = new ChatLoadingCell(mContext, contentView, null);
             }
@@ -4474,6 +4516,15 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     continue;
                 }
 
+                /*
+                if (child instanceof ChatMessageUnsupportedCell) {
+                    blurCanvas.save();
+                    blurCanvas.translate(child.getX(), child.getY());
+                    ((ChatMessageUnsupportedCell) child).drawBackground(blurCanvas);
+                    blurCanvas.restore();
+                    chatListView.drawChild(blurCanvas, child, drawingTime);
+                } else
+                */
                 if (child instanceof ChatMessageCell) {
                     blurCanvas.save();
                     blurCanvas.translate(child.getX(), child.getY());

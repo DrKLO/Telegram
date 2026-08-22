@@ -42,6 +42,7 @@ public class RichQuoteAuthorCell extends RichBlockCell
         TL_iv.RichText getQuoteAuthor(long qid);
         void setQuoteAuthor(long qid, TL_iv.RichText text);
         default void onQuoteAuthorEnter(BlockRow row) {}
+        default void onRequestWindowFocusable(RichEditText editText, boolean showKeyboard) {}
         TextSelectionHelper.ArticleTextSelectionHelper getSelectionHelper();
     }
 
@@ -75,6 +76,9 @@ public class RichQuoteAuthorCell extends RichBlockCell
                 if (delegate != null && currentRow != null) delegate.onQuoteAuthorEnter(currentRow);
             }
             @Override public void onTextChanged(RichEditText et, Editable text) { persist(); }
+            @Override public void onRequestWindowFocusable(RichEditText et, boolean showKeyboard) {
+                if (delegate != null) delegate.onRequestWindowFocusable(et, showKeyboard);
+            }
             @Override public void onSelectionChanged(RichEditText et, int selStart, int selEnd) {
                 // Promote an in-field selection to a cross-block article selection so the shared TextSelectionHelper
                 // owns it (matches the caption / legacy quote-author behavior). The author is this cell's block 0.

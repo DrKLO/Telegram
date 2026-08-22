@@ -12,6 +12,7 @@ public class MediaUploadState {
     public int state = STATE_EMPTY;
     public boolean isVideo;
     public boolean isAudio;
+    public boolean isDocument;
     public String localPath;
     public String thumbPath;
     public int imageId;
@@ -30,7 +31,7 @@ public class MediaUploadState {
 
     public boolean isReady() {
         if (state != STATE_DONE) return false;
-        return (isVideo || isAudio) ? document != null : photo != null;
+        return (isVideo || isAudio || isDocument) ? document != null : photo != null;
     }
 
     public boolean isPending() {

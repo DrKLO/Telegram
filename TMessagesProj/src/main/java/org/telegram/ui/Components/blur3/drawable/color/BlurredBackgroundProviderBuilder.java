@@ -46,6 +46,21 @@ public class BlurredBackgroundProviderBuilder implements BlurredBackgroundProvid
         return this;
     }
 
+    public BlurredBackgroundProviderBuilder setShadowColor(ColorProvider colorProvider) {
+        shadowColor = colorProvider;
+        return this;
+    }
+
+    public BlurredBackgroundProviderBuilder setStrokeColorTop(ColorProvider colorProvider) {
+        strokeColorTop = colorProvider;
+        return this;
+    }
+
+    public BlurredBackgroundProviderBuilder setStrokeColorBottom(ColorProvider colorProvider) {
+        strokeColorBottom = colorProvider;
+        return this;
+    }
+
     public BlurredBackgroundProviderBuilder setShadowLayer(float radius, float dx, float dy) {
         shadowRadius = radius;
         shadowDx = dx;

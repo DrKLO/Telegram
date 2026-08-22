@@ -32,6 +32,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_ephemeral;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -54,7 +55,6 @@ import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class ReportBottomSheet extends BottomSheet {
@@ -261,7 +261,7 @@ public class ReportBottomSheet extends BottomSheet {
             req.option = option;
             request = req;
         } else if (ephemeral) {
-            TLRPC.TL_ephemeral_reportMessage req = new TLRPC.TL_ephemeral_reportMessage();
+            TL_ephemeral.TL_reportMessage req = new TL_ephemeral.TL_reportMessage();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             if (messageIds != null && !messageIds.isEmpty()) {
                 req.id = messageIds.get(0);
@@ -755,7 +755,16 @@ public class ReportBottomSheet extends BottomSheet {
         Context context,
         long dialogId
     ) {
-        open(currentAccount, context, dialogId, false, false, new ArrayList<>(), null, null, new byte[]{}, null, null);
+        openChat(currentAccount, context, null, dialogId);
+    }
+
+    public static void openChat(
+        int currentAccount,
+        Context context,
+        BulletinFactory bulletinFactory,
+        long dialogId
+    ) {
+        open(currentAccount, context, dialogId, false, false, new ArrayList<>(), bulletinFactory, null, new byte[]{}, null, null);
     }
 
     public static void openChat(
@@ -847,7 +856,7 @@ public class ReportBottomSheet extends BottomSheet {
             req.message = TextUtils.isEmpty(message) ? "" : message;
             request = req;
         } else if (ephemeral) {
-            TLRPC.TL_ephemeral_reportMessage req = new TLRPC.TL_ephemeral_reportMessage();
+            TL_ephemeral.TL_reportMessage req = new TL_ephemeral.TL_reportMessage();
             req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
             if (!messageIds.isEmpty()) {
                 req.id = messageIds.get(0);

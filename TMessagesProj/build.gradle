@@ -1,6 +1,20 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.telegram.lottie-meta'
+apply plugin: 'idea'
+
+idea {
+    module {
+        excludeDirs += [
+            file('jni/third_party'),
+            file('jni/ffmpeg'),
+            file('jni/tlottie'),
+            file('jni/boringssl'),
+            file('jni/sqlite')
+        ]
+    }
+}
 
 repositories {
     mavenCentral()
@@ -27,6 +41,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'
     implementation "androidx.mediarouter:mediarouter:1.7.0"
+    implementation 'com.google.zxing:core:3.5.4'
 
     implementation 'androidx.car.app:app:1.4.0'
     implementation 'androidx.car.app:app-projected:1.4.0'
@@ -35,7 +50,6 @@ dependencies {
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
     implementation 'com.google.firebase:firebase-messaging:22.0.0'
-    implementation 'com.google.firebase:firebase-config:21.0.1'
     implementation 'com.google.firebase:firebase-datatransport:18.1.0'
     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
     implementation 'com.google.android.gms:play-services-maps:18.1.0'
@@ -64,7 +78,10 @@ dependencies {
     implementation "io.noties.markwon:ext-tables:4.6.2"
     implementation "io.noties.markwon:html:4.6.2"
     implementation "io.noties.markwon:inline-parser:4.6.2"
-    implementation "io.noties.markwon:ext-latex:4.6.2"
+    implementation("io.noties.markwon:ext-latex:4.6.2") {
+        exclude group: 'ru.noties', module: 'jlatexmath-android'
+    }
+    api project(':jlatexmath')
 
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
@@ -81,7 +98,6 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
-def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 android {
     compileSdkVersion 35
     buildToolsVersion '35.0.0'
@@ -139,11 +155,11 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "0"
         }
 
         HA_private {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -155,11 +171,11 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "1"
         }
 
         HA_public {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -171,11 +187,11 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "4"
         }
 
         HA_hardcore {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -187,11 +203,11 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "5"
         }
 
         standalone {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
             multiDexEnabled true
@@ -203,7 +219,6 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "6"
         }
 
@@ -220,7 +235,6 @@ android {
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
         }
     }

@@ -39,7 +39,6 @@ import android.media.MediaCrypto;
 import android.media.MediaCryptoException;
 import android.media.MediaFormat;
 import android.media.metrics.LogSessionId;
-import android.opengl.EGLContext;
 import android.os.Bundle;
 import android.os.SystemClock;
 import androidx.annotation.CallSuper;
@@ -76,8 +75,6 @@ import com.google.android.exoplayer2.util.NalUnitUtil;
 import com.google.android.exoplayer2.util.TimedValueQueue;
 import com.google.android.exoplayer2.util.TraceUtil;
 import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -322,7 +319,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
   private float targetPlaybackSpeed;
   @Nullable private MediaCodecAdapter codec;
   @Nullable private Format codecInputFormat;
-  @Nullable public MediaFormat codecOutputMediaFormat;
+  @Nullable private MediaFormat codecOutputMediaFormat;
   private boolean codecOutputMediaFormatChanged;
   private float codecOperatingRate;
   @Nullable private ArrayDeque<MediaCodecInfo> availableCodecInfos;
@@ -490,8 +487,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       MediaCodecInfo codecInfo,
       Format format,
       @Nullable MediaCrypto crypto,
-      float codecOperatingRate,
-      EGLContext context);
+      float codecOperatingRate);
 
   protected final void maybeInitCodecOrBypass() throws ExoPlaybackException {
     if (codec != null || bypassEnabled || inputFormat == null) {
@@ -632,7 +628,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
   }
 
   @Nullable
-  protected final MediaFormat getCodecOutputMediaFormat() {
+  public final MediaFormat getCodecOutputMediaFormat() {
     return codecOutputMediaFormat;
   }
 
@@ -1103,7 +1099,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     }
     codecInitializingTimestamp = SystemClock.elapsedRealtime();
     MediaCodecAdapter.Configuration configuration =
-        getMediaCodecConfiguration(codecInfo, inputFormat, crypto, codecOperatingRate, this instanceof MediaCodecVideoRenderer ? ((MediaCodecVideoRenderer) this).eglContext : null);
+        getMediaCodecConfiguration(codecInfo, inputFormat, crypto, codecOperatingRate);
     if (Util.SDK_INT >= 31) {
       Api31.setLogSessionIdToMediaCodecFormat(configuration, getPlayerId());
     }

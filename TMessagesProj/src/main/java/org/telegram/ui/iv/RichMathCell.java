@@ -30,7 +30,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 
-import ru.noties.jlatexmath.JLatexMathDrawable;
+import org.telegram.ui.iv.Latex;
 
 public class RichMathCell extends RichBlockCell
     implements Theme.Colorable, TextSelectionHelper.ArticleSelectableView {
@@ -53,7 +53,7 @@ public class RichMathCell extends RichBlockCell
         super(context);
         this.resourcesProvider = resourcesProvider;
         setWillNotDraw(false);
-        setBlockPadding(0, dp(6), 0, dp(6));
+        setBlockPadding(dp(16), dp(6), dp(16), dp(6));
 
         image = new ImageView(context);
 
@@ -63,7 +63,7 @@ public class RichMathCell extends RichBlockCell
         scrollView = new HorizontalScrollView(context);
         scrollView.setHorizontalScrollBarEnabled(false);
         scrollView.setClipToPadding(false);
-        scrollView.setPadding(dp(16), 0, dp(16), 0);
+        scrollView.setPadding(0, 0, 0, 0);
         scrollView.setFillViewport(true);
         scrollView.addView(mathContainer, new FrameLayout.LayoutParams(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
@@ -94,21 +94,9 @@ public class RichMathCell extends RichBlockCell
         scrollView.scrollTo(0, 0);
         final String source = getSource();
         if (!TextUtils.isEmpty(source)) {
-            try {
-                final JLatexMathDrawable drawable =
-                    JLatexMathDrawable.builder(source)
-                        .textSize(dp(4 + SharedConfig.fontSize))
-                        .build();
-                final int w = drawable.getIntrinsicWidth();
-                final int h = drawable.getIntrinsicHeight();
-                if (w > 0 && h > 0) {
-                    final Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-                    drawable.setBounds(0, 0, w, h);
-                    drawable.draw(new Canvas(bm));
-                    bitmap = bm;
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            final Latex r = Latex.render(source, dp(4 + SharedConfig.fontSize), false);
+            if (r != null) {
+                bitmap = r.bitmap;
             }
         }
         image.setImageBitmap(bitmap);

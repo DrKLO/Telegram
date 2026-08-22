@@ -965,10 +965,10 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
     }
 
     private void setDarkButtonColor(int color) {
-        darkThemeDrawable.setLayerColor("Sunny.**", color);
-        darkThemeDrawable.setLayerColor("Path.**", color);
-        darkThemeDrawable.setLayerColor("Path 10.**", color);
-        darkThemeDrawable.setLayerColor("Path 11.**", color);
+        darkThemeDrawable.setLayerColor("Sunny", color);
+        darkThemeDrawable.setLayerColor("Path", color);
+        darkThemeDrawable.setLayerColor("Path 10", color);
+        darkThemeDrawable.setLayerColor("Path 11", color);
     }
 
     private void setForceDark(boolean isDark, boolean playAnimation) {

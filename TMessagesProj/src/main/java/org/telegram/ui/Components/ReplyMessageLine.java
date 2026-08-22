@@ -3,11 +3,15 @@ package org.telegram.ui.Components;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -24,6 +28,8 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.RadiiUtils;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -33,22 +39,19 @@ import java.util.ArrayList;
 public class ReplyMessageLine {
 
     private final RectF rectF = new RectF();
-    private final Path clipPath = new Path();
     private final Paint color1Paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint color2Paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint color3Paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint patternPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private final Matrix shaderMatrix = new Matrix();
 
     public final float[] radii = new float[8];
-    private final Path lineClipPath = new Path();
     private final Path backgroundPath = new Path();
     public final Paint backgroundPaint = new Paint();
     private LoadingDrawable backgroundLoadingDrawable;
 
     public boolean hasColor2, hasColor3;
-    private boolean lastHasColor3;
-    private float lastHeight;
-    private Path color2Path = new Path();
-    private Path color3Path = new Path();
+    private Bitmap patternBitmap;
+    private int cachedBg, cachedBar2, cachedBar3, cachedBarHeight;
+    private boolean cachedHasColor3;
     private int switchedCount = 0;
     private float emojiAlpha = 1f;
     private boolean sponsored;
@@ -116,6 +119,15 @@ public class ReplyMessageLine {
 
     public void setBackgroundColor(int backgroundColor) {
         this.backgroundColor = backgroundColor;
+    }
+
+    /** Applies a flat color without changing the defaults used by {@link #check}. */
+    public void setSimpleColor(int color, boolean dark) {
+        reversedOut = false;
+        hasColor2 = hasColor3 = false;
+        color1 = color2 = color3 = color;
+        backgroundColor = Theme.multAlpha(color, dark ? 0.12f : 0.10f);
+        emojiColor = color;
     }
 
     private int wasMessageId;
@@ -526,28 +538,24 @@ public class ReplyMessageLine {
     }
 
     public void drawLine(Canvas canvas, RectF rect, float alpha) {
-        canvas.save();
-
-        clipPath.rewind();
         final int rad = (int) Math.floor(SharedConfig.bubbleRadius / (sponsored ? 2f : 3f));
-        rectF.set(rect.left, rect.top, rect.left + Math.max(dp(3), dp(2 * rad)), rect.bottom);
-        clipPath.addRoundRect(rectF, dp(rad), dp(rad), Path.Direction.CW);
-        canvas.clipPath(clipPath);
-        canvas.clipRect(rect.left, rect.top, rect.left + dp(3), rect.bottom);
+        final float lineRight = rect.left + Math.max(dp(3), dp(2 * rad));
 
-        color1Paint.setColor(Theme.multAlpha(color1Animated.set(color1), alpha));
-        color2Paint.setColor(Theme.multAlpha(color2Animated.set(color2), alpha));
-        color3Paint.setColor(Theme.multAlpha(color3Animated.set(color3), alpha));
+        final int c1 = color1Animated.set(color1);
+        color1Paint.setColor(Theme.multAlpha(c1, alpha));
 
-        boolean restore = false;
         final float loadingAlpha = loadingStateT.set(loading);
-        if (loadingAlpha > 0 && !hasColor2) {
-            canvas.save();
+        final float color2Alpha = this.color2Alpha.set(hasColor2);
+        final float color3Alpha = this.color3Alpha.set(hasColor3);
 
-            // under line
+        if (loadingAlpha > 0 && !hasColor2) {
+            // dim background — full line with rounded corners
             int wasAlpha = color1Paint.getAlpha();
             color1Paint.setAlpha((int) (wasAlpha * .3f));
-            canvas.drawPaint(color1Paint);
+            rectF.set(rect.left, rect.top, lineRight, rect.bottom);
+            canvas.save();
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.drawRoundRect(rectF, dp(rad), dp(rad), color1Paint);
             color1Paint.setAlpha(wasAlpha);
 
             incrementLoadingT();
@@ -556,29 +564,32 @@ public class ReplyMessageLine {
             final float from = MathUtils.clamp(.5f * ((Math.max(x, .5f) + 1.5f) % 3.5f), 0, 1);
             final float to   = MathUtils.clamp(.5f * (((x + 1.5f) % 3.5f) - 1.5f), 0, 1);
 
+            // bright loading indicator with rounded ends, drawn over dim background
             rectF.set(
                 rect.left,
                 rect.top + rect.height() * AndroidUtilities.lerp(0, 1f - CubicBezierInterpolator.EASE_IN.getInterpolation(from), loadingAlpha),
                 rect.left + dp(6),
                 rect.top + rect.height() * AndroidUtilities.lerp(1f, 1f - CubicBezierInterpolator.EASE_OUT.getInterpolation(to), loadingAlpha)
             );
-            lineClipPath.rewind();
-            lineClipPath.addRoundRect(rectF, dp(4), dp(4), Path.Direction.CW);
-            canvas.clipPath(lineClipPath);
-            restore = true;
+            canvas.drawRoundRect(rectF, dp(4), dp(4), color1Paint);
+            canvas.restore();
 
             if (parentView != null) {
                 parentView.invalidate();
             }
-        }
-        canvas.drawPaint(color1Paint);
-        final float color2Alpha = this.color2Alpha.set(hasColor2);
-        if (color2Alpha > 0) {
+        } else if (color2Alpha <= 0) {
+            // single color
+            rectF.set(rect.left, rect.top, lineRight, rect.bottom);
+            canvas.save();
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.drawRoundRect(rectF, dp(rad), dp(rad), color1Paint);
+            canvas.restore();
+        } else {
+            // multi color: one tile holds every color -> one draw call
             canvas.save();
             canvas.translate(rect.left, rect.top);
             incrementLoadingT();
 
-            final float color3Alpha = this.color3Alpha.set(hasColor3);
             final float fh;
             if (hasColor3) {
                 fh = rect.height() - Math.floorMod((int) rect.height(), dp(6.33f + 6.33f + 3 + 3.33f));
@@ -586,29 +597,18 @@ public class ReplyMessageLine {
                 fh = rect.height() - Math.floorMod((int) rect.height(), dp(6.33f + 3 + 3.33f));
             }
 
-            canvas.translate(0, -((loadingTranslationT + switchStateT.set(switchedCount * 425) + (reversedOut ? 100 : 0)) / 1000f * dp(30) % fh));
+            final float scrollOffset = (loadingTranslationT + switchStateT.set(switchedCount * 425) + (reversedOut ? 100 : 0)) / 1000f * dp(30) % fh;
 
-            checkColorPathes(rect.height() * 2);
-            int wasAlpha = color2Paint.getAlpha();
-            color2Paint.setAlpha((int) (wasAlpha * color2Alpha));
-            canvas.drawPath(color2Path, color2Paint);
-            color2Paint.setAlpha(wasAlpha);
-
-            if (color3Alpha > 0) {
-                wasAlpha = color3Paint.getAlpha();
-                color3Paint.setAlpha((int) (wasAlpha * color3Alpha));
-                canvas.drawPath(color3Path, color3Paint);
-                color3Paint.setAlpha(wasAlpha);
-            }
+            checkPatternBitmap(c1, color2Animated.set(color2), color3Animated.set(color3), color2Alpha, color3Alpha, alpha);
+            shaderMatrix.setTranslate(0, -scrollOffset);
+            patternPaint.getShader().setLocalMatrix(shaderMatrix);
+            patternPaint.setAlpha(0xFF);
+            rectF.set(0, 0, lineRight - rect.left, rect.bottom - rect.top);
+            canvas.clipRect(rectF.left, rectF.top, rectF.left + dp(3), rectF.bottom);
+            canvas.drawRoundRect(rectF, dp(rad), dp(rad), patternPaint);
 
             canvas.restore();
         }
-
-        if (restore) {
-            canvas.restore();
-        }
-
-        canvas.restore();
     }
 
     public void drawBackground(Canvas canvas, RectF rect, float leftRad, float rightRad, float bottomRad, float alpha) {
@@ -653,12 +653,14 @@ public class ReplyMessageLine {
 
     public void drawBackground(Canvas canvas, RectF rect, float alpha, boolean hasQuote, boolean emojiOnly) {
         if (!emojiOnly) {
-            backgroundPath.rewind();
-            backgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
-
-            backgroundPaint.setColor(backgroundColorAnimated.set(backgroundColor));
-            backgroundPaint.setAlpha((int) (backgroundPaint.getAlpha() * alpha));
-            canvas.drawPath(backgroundPath, backgroundPaint);
+            backgroundPaint.setColor(Theme.multAlpha(backgroundColorAnimated.set(backgroundColor), alpha));
+            if (RadiiUtils.radiiAreSame(radii)) {
+                canvas.drawRoundRect(rect, radii[0], radii[0], backgroundPaint);
+            } else {
+                backgroundPath.rewind();
+                backgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
+                canvas.drawPath(backgroundPath, backgroundPaint);
+            }
         }
 
         if (emoji != null) {
@@ -763,44 +765,41 @@ public class ReplyMessageLine {
         }
     }
 
-    private void checkColorPathes(float height) {
-        if (Math.abs(lastHeight - height) > 3 || lastHasColor3 != hasColor3) {
-            final float w = dpf2(3);
-            final float h = dpf2(6.33f);
-            final float sk = dpf2(3);
-            final float margin = dpf2(3.33f);
-            float y = margin + sk;
+    // Rebuilds the pattern tile via NDK when any baked-in value changes.
+    // Colors are pre-composited on this side so the native code writes flat
+    // pixels with no blending — just a 45° lookup per pixel.
+    private void checkPatternBitmap(int c1, int c2, int c3, float c2a, float c3a, float alpha) {
+        final int bg   = Theme.multAlpha(c1, alpha);
+        final int bar2 = ColorUtils.compositeColors(Theme.multAlpha(c2, alpha * c2a), bg);
+        final int bar3 = hasColor3
+                ? ColorUtils.compositeColors(Theme.multAlpha(c3, alpha * c3a), bg) : 0;
+        final int barHeight = Math.round(dpf2(6.33f));
 
-            color2Path.rewind();
-            while (y < height) {
-                color2Path.moveTo(w + 1, y - 1);
-                color2Path.lineTo(w + 1, y + h);
-                color2Path.lineTo(0, y + h + sk);
-                color2Path.lineTo(0, y + sk);
-                color2Path.close();
+        final int width = Math.max(1, AndroidUtilities.dp(3));
+        final int period = hasColor3
+                ? AndroidUtilities.dp(6.33f + 6.33f + 3 + 3.33f)
+                : AndroidUtilities.dp(6.33f + 3 + 3.33f);
 
-                y += h + sk + margin;
-                if (hasColor3) {
-                    y += h;
-                }
-            }
-
-            if (hasColor3) {
-                y = margin + sk + h;
-                color3Path.rewind();
-                while (y < height) {
-                    color3Path.moveTo(w + 1, y - 1);
-                    color3Path.lineTo(w + 1, y + h);
-                    color3Path.lineTo(0, y + h + sk);
-                    color3Path.lineTo(0, y + sk);
-                    color3Path.close();
-
-                    y += h + sk + margin + h;
-                }
-            }
-
-            lastHeight = height;
-            lastHasColor3 = hasColor3;
+        if (patternBitmap != null
+                && cachedBg == bg && cachedBar2 == bar2 && cachedBar3 == bar3
+                && cachedHasColor3 == hasColor3 && cachedBarHeight == barHeight
+                && patternBitmap.getWidth() == width
+                && patternBitmap.getHeight() == period) {
+            return;
         }
+        cachedBg = bg;
+        cachedBar2 = bar2;
+        cachedBar3 = bar3;
+        cachedHasColor3 = hasColor3;
+        cachedBarHeight = barHeight;
+
+        if (patternBitmap == null || patternBitmap.getWidth() != width || patternBitmap.getHeight() != period) {
+            if (patternBitmap != null) {
+                patternBitmap.recycle();
+            }
+            patternBitmap = Bitmap.createBitmap(width, period, Bitmap.Config.ARGB_8888);
+            patternPaint.setShader(new BitmapShader(patternBitmap, Shader.TileMode.CLAMP, Shader.TileMode.REPEAT));
+        }
+        Utilities.drawReplyLinePattern(patternBitmap, bg, bar2, bar3, barHeight, hasColor3);
     }
 }

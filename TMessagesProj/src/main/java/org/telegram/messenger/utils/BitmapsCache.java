@@ -82,6 +82,10 @@ public class BitmapsCache {
     };
 
     public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h, boolean noLimit) {
+        this(sourceFile, source, options, w, h, noLimit, 0);
+    }
+
+    public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h, boolean noLimit, int fitz) {
         this.source = source;
         this.w = w;
         this.h = h;
@@ -96,7 +100,7 @@ public class BitmapsCache {
             fileTmo.mkdir();
             mkdir = true;
         }
-        file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
+        file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + (fitz != 0 ? "_fitz" + fitz : "") + ".pcache2");
         useSharedBuffers = w < AndroidUtilities.dp(60) && h < AndroidUtilities.dp(60);
 
         // check cache created in file load queue only for high devices

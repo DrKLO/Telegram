@@ -17,7 +17,6 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Bundle;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -41,23 +40,19 @@ import org.telegram.messenger.FileRefController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
-import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatEditActivity;
 import org.telegram.ui.Components.ClipRoundedDrawable;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
-import org.telegram.ui.LaunchActivity;
 
 import java.util.Objects;
 
@@ -368,7 +363,7 @@ public class BotHelpCell extends View {
             w = view.getMeasuredWidth();
             h = view.getMeasuredHeight();
         }
-        Theme.MessageDrawable drawable = (Theme.MessageDrawable) getThemedDrawable(Theme.key_drawable_msgInMedia);
+        MessageDrawable drawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgInMedia);
         drawable.setTop((int) getY(), w, h, false, false);
         drawable.setBounds(x, 0, width + x, height);
         drawable.draw(canvas);

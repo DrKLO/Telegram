@@ -236,7 +236,7 @@ import java.util.Stack;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import ru.noties.jlatexmath.JLatexMathDrawable;
+import org.telegram.ui.iv.Latex;
 
 public class ArticleViewer extends IArticleViewer implements NotificationCenter.NotificationCenterDelegate {
 
@@ -3040,28 +3040,12 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             final TL_iv.textMath textLatex = (TL_iv.textMath) richText;
             if (textLatex.bitmap == null && !textLatex.tried) {
                 textLatex.tried = true;
-                try {
-                    final JLatexMathDrawable drawable =
-                            JLatexMathDrawable.builder(textLatex.source)
-                                    .textSize(AndroidUtilities.dp(20))
-                                    .build();
-                    final int w = drawable.getIntrinsicWidth();
-                    final int h = drawable.getIntrinsicHeight();
-                    if (w > 0 && h > 0) {
-                        final Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-                        drawable.setBounds(0, 0, w, h);
-                        drawable.draw(new Canvas(bm));
-                        textLatex.w = w;
-                        textLatex.h = h;
-                        try {
-                            textLatex.depth = drawable.icon().getIconDepth();
-                        } catch (Throwable t) {
-                            FileLog.e(t);
-                        }
-                        textLatex.bitmap = bm;
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
+                final Latex r = Latex.render(textLatex.source, AndroidUtilities.dp(20), true);
+                if (r != null) {
+                    textLatex.w = r.width;
+                    textLatex.h = r.height;
+                    textLatex.depth = r.depth;
+                    textLatex.bitmap = r.bitmap;
                 }
             }
             if (textLatex.bitmap == null) {
@@ -6288,16 +6272,6 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public static boolean isVideo(TL_iv.RichMessage richMessage, TL_iv.PageBlock block) {
             if (block instanceof TL_iv.pageBlockVideo) {
                 TLRPC.Document document = getDocumentWithId(richMessage, ((TL_iv.pageBlockVideo) block).video_id);
-                if (BuildVars.LOGS_ENABLED) {
-                    StringBuilder attrs = new StringBuilder();
-                    if (document != null) {
-                        for (TLRPC.DocumentAttribute a : document.attributes) attrs.append(a.getClass().getSimpleName()).append(",");
-                    }
-                    FileLog.d("[richmedia] WebPageUtils.isVideo video_id=" + ((TL_iv.pageBlockVideo) block).video_id
-                        + (document == null
-                            ? " doc=NOT_FOUND documents.size=" + richMessage.documents.size()
-                            : " doc=" + document.id + " mime=" + document.mime_type + " attrs=[" + attrs + "] isVideoDocument=" + MessageObject.isVideoDocument(document) + " isGifDocument=" + MessageObject.isGifDocument(document)));
-                }
                 if (document != null) {
                     return MessageObject.isVideoDocument(document);
                 }
@@ -14234,22 +14208,10 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             imageView.setLayoutParams(new FrameLayout.LayoutParams(0, 0));
             width = dp(2 * parent.padx());
             if (block != null) {
-                try {
-                    final JLatexMathDrawable drawable =
-                        JLatexMathDrawable.builder(block.source)
-                            .textSize(dp(20))
-                            .build();
-                    final int w = drawable.getIntrinsicWidth();
-                    final int h = drawable.getIntrinsicHeight();
-                    if (w > 0 && h > 0) {
-                        final Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-                        drawable.setBounds(0, 0, w, h);
-                        drawable.draw(new Canvas(bm));
-                        imageView.setImageBitmap(bm);
-                        imageView.setLayoutParams(new FrameLayout.LayoutParams(width = w + dp(2 * parent.padx()), h));
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
+                final Latex r = Latex.render(block.source, dp(20), false);
+                if (r != null) {
+                    imageView.setImageBitmap(r.bitmap);
+                    imageView.setLayoutParams(new FrameLayout.LayoutParams(width = r.width + dp(2 * parent.padx()), r.height));
                 }
             }
         }

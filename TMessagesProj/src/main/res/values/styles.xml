@@ -89,6 +89,10 @@
         <item name="android:hyphenationFrequency">none</item>
     </style>
 
+    <style name="EditTextNoBackgroundStyle" parent="android:Widget.EditText">
+        <item name="android:background">@null</item>
+    </style>
+
     <!-- POPUP -->
 
     <style name="PopupAnimation" parent="android:Animation" mce_bogus="1">

@@ -2484,4 +2484,38 @@ public sealed class TlGen_Update : TlGen_Object {
       public const val MAGIC: UInt = 0x4BBB8F01U
     }
   }
+
+  public data class TL_updateEphemeralBotCallbackQuery(
+    public val query_id: Long,
+    public val user_id: Long,
+    public val peer: TlGen_Peer?,
+    public val msg_id: Int,
+    public val `data`: List<Byte>,
+    public val chat_instance: Long?,
+    public val message: TlGen_EphemeralMessage,
+  ) : TlGen_Update() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (peer != null) result = result or 1U
+        if (chat_instance != null) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(query_id)
+      stream.writeInt64(user_id)
+      peer?.serializeToStream(stream)
+      stream.writeInt32(msg_id)
+      stream.writeByteArray(data.toByteArray())
+      chat_instance?.let { stream.writeInt64(it) }
+      message.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x7C1079D6U
+    }
+  }
 }

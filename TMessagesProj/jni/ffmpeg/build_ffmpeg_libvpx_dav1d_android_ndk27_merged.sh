@@ -23,6 +23,8 @@ umask 022
 #       │   └── configure
 #       ├── dav1d/
 #       │   └── meson.build
+#       ├── opus/
+#       │   └── CMakeLists.txt
 #       └── ffmpeg/
 #           └── configure
 #
@@ -33,7 +35,7 @@ umask 022
 #   x86_64/                    # static libraries for x86_64
 #   x86/                       # static libraries for x86
 #
-# Intermediate build/install files remain under build_android/.
+# Intermediate build/install files remain under build/.
 #
 # Common overrides:
 #   ANDROID_NDK_HOME=/path/to/ndk/27.2.12479018
@@ -44,7 +46,7 @@ umask 022
 #   LIBVPX_SOURCE_DIR=/path/to/libvpx
 #   DAV1D_SOURCE_DIR=/path/to/dav1d
 #   FFMPEG_SOURCE_DIR=/path/to/ffmpeg
-#   BUILD_ROOT=/path/to/build_android
+#   BUILD_ROOT=/path/to/build
 #   ENABLE_SMALL=1
 #   BUILD_LIBVPX=1
 #   BUILD_DAV1D=1
@@ -214,13 +216,15 @@ THIRD_PARTY_DIR="${THIRD_PARTY_DIR:-$PROJECT_ROOT/third_party}"
 LIBVPX_SOURCE_DIR="${LIBVPX_SOURCE_DIR:-$THIRD_PARTY_DIR/libvpx}"
 DAV1D_SOURCE_DIR="${DAV1D_SOURCE_DIR:-$THIRD_PARTY_DIR/dav1d}"
 FFMPEG_SOURCE_DIR="${FFMPEG_SOURCE_DIR:-$THIRD_PARTY_DIR/ffmpeg}"
-BUILD_ROOT="${BUILD_ROOT:-$SCRIPT_DIR/build_android}"
+BUILD_ROOT="${BUILD_ROOT:-$SCRIPT_DIR/build}"
 
 LIBVPX_WORK_DIR="$BUILD_ROOT/work/libvpx"
 DAV1D_WORK_DIR="$BUILD_ROOT/work/dav1d"
 FFMPEG_WORK_DIR="$BUILD_ROOT/work/ffmpeg"
 LIBVPX_OUTPUT_DIR="$BUILD_ROOT/libvpx"
 DAV1D_OUTPUT_DIR="$BUILD_ROOT/dav1d"
+OPUS_OUTPUT_DIR="${OPUS_OUTPUT_DIR:-$SCRIPT_DIR/build/opus}"
+OPUS_SOURCE_DIR="${OPUS_SOURCE_DIR:-$THIRD_PARTY_DIR/xiph/opus}"
 FFMPEG_OUTPUT_DIR="$BUILD_ROOT/ffmpeg"
 PACKAGE_DIR="${PACKAGE_DIR:-$SCRIPT_DIR}"
 
@@ -306,6 +310,14 @@ if [[ "$FRAME_POINTERS" == "1" ]]; then
 else
     COMMON_CFLAGS_BASE+=" -fomit-frame-pointer"
 fi
+# No debug info in any static library. DWARF was ~4x the actual code in the
+# archives, never reaches the final .so (stripped at link time), and its line
+# tables would otherwise embed absolute NDK/sysroot paths (e.g. the build
+# machine's home dir) that -ffile-prefix-map above does not cover. Appended
+# last so it overrides the -g that the NDK CMake toolchain (opus) and the
+# meson/configure defaults (dav1d/libvpx) add on their own. FFmpeg is handled
+# separately by its --disable-debug configure flag.
+COMMON_CFLAGS_BASE+=" -g0"
 COMMON_CFLAGS_BASE="${COMMON_CFLAGS_BASE# }"
 
 COMMON_CFLAGS="$COMMON_CFLAGS_BASE"
@@ -419,8 +431,16 @@ if [[ "$BUILD_DAV1D" == "1" ]]; then
     done
 fi
 
+# FFmpeg's configure probes libopus/libdav1d/libvpx via pkg-config, so it is
+# required for the FFmpeg stage too — not only when dav1d is (re)built here.
+# Without this, a missing pkg-config surfaces as a misleading "opus not found".
+if [[ "$BUILD_FFMPEG" == "1" ]] && ! command -v pkg-config >/dev/null 2>&1; then
+    error "pkg-config is required to configure FFmpeg but was not found."
+    exit 1
+fi
+
 mkdir -p "$LIBVPX_WORK_DIR" "$DAV1D_WORK_DIR" "$FFMPEG_WORK_DIR" \
-    "$LIBVPX_OUTPUT_DIR" "$DAV1D_OUTPUT_DIR" "$FFMPEG_OUTPUT_DIR"
+    "$LIBVPX_OUTPUT_DIR" "$DAV1D_OUTPUT_DIR" "$OPUS_OUTPUT_DIR" "$FFMPEG_OUTPUT_DIR"
 
 check_x86_assembler() {
     local abi="$1"
@@ -818,11 +838,32 @@ build_ffmpeg_for_abi() {
     local dav1d_headers="$dav1d_prefix/include/dav1d"
     local dav1d_pc_dir="$dav1d_prefix/lib/pkgconfig"
 
+    local opus_prefix="$OPUS_OUTPUT_DIR/$abi"
+    local opus_archive="$opus_prefix/libopus.a"
+    local opus_headers="$OPUS_SOURCE_DIR/include"
+    local opus_pc_dir="$opus_prefix/pkgconfig"
+
     [[ -f "$vpx_archive" ]] || { error "Missing libvpx for $abi: $vpx_archive"; return 1; }
     [[ -d "$vpx_headers" ]] || { error "Missing libvpx headers for $abi: $vpx_headers"; return 1; }
     [[ -f "$dav1d_archive" ]] || { error "Missing dav1d for $abi: $dav1d_archive"; return 1; }
     [[ -d "$dav1d_headers" ]] || { error "Missing dav1d headers for $abi: $dav1d_headers"; return 1; }
     [[ -f "$dav1d_pc_dir/dav1d.pc" ]] || { error "Missing dav1d.pc for $abi"; return 1; }
+    [[ -f "$opus_archive" ]] || { error "Missing prebuilt opus for $abi: $opus_archive (run build_opus.sh first)"; return 1; }
+    [[ -f "$opus_headers/opus_multistream.h" ]] || { error "Missing opus headers: $opus_headers (check OPUS_SOURCE_DIR)"; return 1; }
+    # build_opus.sh emits a bare libopus.a (no install prefix), so synthesize the
+    # opus.pc that FFmpeg's pkg-config probe for --enable-libopus requires,
+    # pointing it at that archive and the opus source headers.
+    mkdir -p "$opus_pc_dir"
+    cat > "$opus_pc_dir/opus.pc" <<PC
+libdir=$opus_prefix
+includedir=$opus_headers
+Name: Opus
+Description: Opus IETF audio codec (prebuilt static)
+Version: 1.6.1
+Libs: -L\${libdir} -lopus
+Libs.private: -lm
+Cflags: -I\${includedir}
+PC
 
     local prefix="$FFMPEG_OUTPUT_DIR/$abi"
     local build_dir="$FFMPEG_WORK_DIR/$abi"
@@ -837,7 +878,7 @@ build_ffmpeg_for_abi() {
     local -a size_flags=()
     [[ "$ENABLE_SMALL" == "1" ]] && size_flags+=(--enable-small)
 
-    local dependency_pc_dirs="$vpx_pc_dir:$dav1d_pc_dir"
+    local dependency_pc_dirs="$vpx_pc_dir:$dav1d_pc_dir:$opus_pc_dir"
     local -a configure_env=(
         "PKG_CONFIG_PATH=$dependency_pc_dirs${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
         "PKG_CONFIG_LIBDIR=$dependency_pc_dirs"
@@ -887,9 +928,10 @@ build_ffmpeg_for_abi() {
         --enable-decoder=mjpeg
         --enable-decoder=gif
         --enable-decoder=alac
-        --enable-decoder=opus
+        --enable-decoder=libopus
         --enable-decoder=mp3
         --enable-decoder=aac
+        --enable-decoder=flac
 
         --enable-demuxer=mov
         --enable-demuxer=gif
@@ -905,6 +947,7 @@ build_ffmpeg_for_abi() {
 
         --enable-libvpx
         --enable-libdav1d
+        --enable-libopus
         --enable-decoder=libdav1d
         --enable-decoder=libvpx_vp9
         --enable-encoder=libvpx_vp9
@@ -916,9 +959,9 @@ build_ffmpeg_for_abi() {
         # removed in FFmpeg 8.0 and configure rejects the unknown option.)
         --disable-zlib
 
-        "--extra-cflags=-fPIC -DANDROID $extra_cflags${COMMON_CFLAGS:+ $COMMON_CFLAGS} -I$vpx_prefix/include -I$dav1d_prefix/include"
-        "--extra-ldflags=-Wl,-Bsymbolic -L$vpx_prefix/lib -L$dav1d_prefix/lib"
-        "--extra-libs=-ldav1d -lvpx -lm -ldl"
+        "--extra-cflags=-fPIC -DANDROID $extra_cflags${COMMON_CFLAGS:+ $COMMON_CFLAGS} -I$vpx_prefix/include -I$dav1d_prefix/include -I$opus_headers"
+        "--extra-ldflags=-Wl,-Bsymbolic -L$vpx_prefix/lib -L$dav1d_prefix/lib -L$opus_prefix"
+        "--extra-libs=-ldav1d -lvpx -lopus -lm -ldl"
     )
 
     # configure appends its own optimization flag (-Os with --enable-small,
@@ -937,6 +980,7 @@ build_ffmpeg_for_abi() {
             --enable-parser=aac
             --enable-parser=opus
             --enable-parser=av1
+            --enable-parser=gif
         )
     fi
 
@@ -1007,6 +1051,7 @@ build_ffmpeg_for_abi() {
         CONFIG_LIBDAV1D_DECODER
         CONFIG_LIBVPX_VP9_DECODER
         CONFIG_LIBVPX_VP9_ENCODER
+        CONFIG_LIBOPUS_DECODER
     )
     if [[ "$FFMPEG_LIBVPX_VP8" == "1" ]]; then
         required_components+=(
@@ -1311,6 +1356,10 @@ copy_component_libraries() {
 
     for abi in $ABIS; do
         source_lib_dir="$source_base/$abi/lib"
+        # opus (from build_opus.sh) is a flat layout: the archive sits directly
+        # under $abi/, not $abi/lib/. The find below is -maxdepth 1, so it picks
+        # up libopus.a without descending into the cmake build/ tree.
+        [[ -d "$source_lib_dir" ]] || source_lib_dir="$source_base/$abi"
         destination_lib_dir="$PACKAGE_DIR/$abi"
 
         [[ -d "$source_lib_dir" ]] || {
@@ -1384,6 +1433,12 @@ package_outputs() {
         copy_component_libraries "dav1d" "$DAV1D_OUTPUT_DIR"
     fi
 
+    if [[ -d "$OPUS_OUTPUT_DIR" ]]; then
+        # opus headers are consumed directly from its install prefix / the
+        # source tree, so only the archive is packaged (no header copy).
+        copy_component_libraries "opus" "$OPUS_OUTPUT_DIR"
+    fi
+
     if [[ "$BUILD_FFMPEG" == "1" || -d "$FFMPEG_OUTPUT_DIR" ]]; then
         merge_component_headers "ffmpeg" "$FFMPEG_OUTPUT_DIR" "$PACKAGE_DIR/include"
         copy_component_libraries "ffmpeg" "$FFMPEG_OUTPUT_DIR"
@@ -1406,6 +1461,7 @@ echo
 echo "Build completed."
 echo "Intermediate libvpx install: $LIBVPX_OUTPUT_DIR/<ABI>"
 echo "Intermediate dav1d install:  $DAV1D_OUTPUT_DIR/<ABI>"
+echo "Intermediate opus install:   $OPUS_OUTPUT_DIR/<ABI>"
 echo "Intermediate FFmpeg install: $FFMPEG_OUTPUT_DIR/<ABI>"
 if [[ "$PACKAGE_OUTPUT" == "1" ]]; then
     echo "Final headers: $PACKAGE_DIR/include"

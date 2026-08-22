@@ -711,6 +711,9 @@
     <string name="EditAdminChangeGroupInfo">Change Group Info</string>
     <string name="EditAdminPostMessages">Post Messages</string>
     <string name="EditAdminManageDirect">Manage Direct Messages</string>
+    <string name="EditAdminUserManageWelcomeMessages">Manage Welcome Messages</string>
+    <string name="EditAdminBotChannelSendWelcomeMessages">Send Welcome Messages</string>
+    <string name="EditAdminBotGroupSendWelcomeMessages">Send Welcome Messages</string>
     <string name="EditAdminEditMessages">Edit Messages of Others</string>
     <string name="EditAdminDeleteMessages">Delete Messages of Others</string>
     <string name="EditAdminPostStories">Post Stories</string>
@@ -1058,6 +1061,7 @@
     <string name="EventLogPromotedEditRanks">Edit tags</string>
     <string name="EventLogPromotedManageTopics">Manage topics</string>
     <string name="EventLogPromotedManageDirect">Manage direct</string>
+    <string name="EventLogPromotedManageWelcomeMessages">Manage welcome messages</string>
     <string name="EventLogFilterAll">All actions</string>
     <string name="EventLogFilterNewRestrictions">New exceptions</string>
     <string name="EventLogFilterNewAdmins">Admin rights</string>
@@ -3741,6 +3745,7 @@
     <string name="BotWebViewToSLink">https://telegram.org/tos/mini-apps</string>
     <string name="BotWebViewReloadPage">Reload page</string>
     <string name="BotWebViewDeleteBot">Delete bot</string>
+    <string name="BotWebViewReportBot">Report</string>
     <string name="BotWebViewRequestAllow">Allow</string>
     <string name="BotWebViewRequestDontAllow">Don\'t Allow</string>
     <string name="BotWebViewChangesMayNotBeSaved">Changes that you made may not be saved.</string>
@@ -3785,6 +3790,19 @@
     <string name="WaitMore">Wait more</string>
     <string name="Continue">Continue</string>
     <string name="CreateLink">Create Link</string>
+    <string name="RichEditorCreateLinkButton">Create Link Button</string>
+    <string name="RichEditorEditLinkButton">Edit Link Button</string>
+    <string name="RichEditorCreateCopyButton">Create Copy Button</string>
+    <string name="RichEditorEditCopyButton">Edit Copy Button</string>
+    <string name="RichEditorCreateProfileButton">Create Profile Button</string>
+    <string name="RichEditorEditProfileButton">Edit Profile Button</string>
+    <string name="RichEditorButtonText">Button Text</string>
+    <string name="RichEditorButtonURL">Button URL</string>
+    <string name="RichEditorButtonCopyText">Button Copy Text</string>
+    <string name="RichEditorChangeUser">Change User</string>
+    <string name="RichEditorUserProfile">User Profile</string>
+    <string name="RichEditorButton">Button</string>
+    <string name="RichEditorAddButton">Add Button</string>
     <string name="Crop">CROP</string>
     <string name="StoryCrop">Crop</string>
     <string name="UpdateApp">Update app</string>
@@ -3800,6 +3818,9 @@
     <string name="Enable">Enable</string>
     <string name="ReportFalsePositive">Report False Positive</string>
     <!--messages-->
+    <string name="ActionJoinedFromCommunityYou">You joined the group via un1 community</string>
+    <string name="ActionJoinedFromCommunityYouChannel">You joined the channel via un1 community</string>
+    <string name="ActionJoinedFromCommunityUser">un2 joined the group via un1 community</string>
     <string name="ActionInviteYou">You joined the group via invite link</string>
     <string name="ActionDeletedInviteLinkClickable">un1 deleted invite link un2</string>
     <string name="ActionEditedInviteLinkClickable">un1 edited invite link un2 to un3</string>
@@ -5073,6 +5094,7 @@
     <string name="AccDescrIVEmbed">Embedded content</string>
     <string name="AccDescrIVEmbedPost">Embedded post</string>
     <string name="AccDescrIVTable">Table</string>
+    <string name="AccDescrIVButtons">Buttons</string>
     <string name="AccDescrIVFormula">Formula</string>
     <string name="AccDescrIVSlideshow">Slideshow</string>
     <string name="AccDescrIVAudio">Audio</string>
@@ -6641,6 +6663,7 @@
     <string name="ShowInChats">Show in Chats</string>
     <string name="ForwardedStory">Forwarded Story</string>
     <string name="ForwardedStoryFrom">From **%s**</string>
+    <string name="UniqueGiftFrom">From **%s**</string>
     <string name="StoryPeriodHint">Choose how long the story will be visible.</string>
     <string name="StoryPeriodKeep">Keep Always</string>
     <string name="TimerPeriodHint">Choose how long the media will be kept after opening.</string>
@@ -10239,6 +10262,7 @@
     <string name="GiftAuctionInfo3Header">Missed Bidders</string>
     <string name="GiftAuctionInfo3Text">If your bid doesn’t win after the final round, your Stars will be fully refunded.</string>
     <string name="GiftTopAction">**%1$s** sent you this gift on **%2$s**</string>
+    <string name="GiftTopActionFromTo">**%1$s** sent this gift to **%2$s** on **%3$s**</string>
     <string name="GiftSelfTopAction">You bought this gift on **%1$s**</string>
     <string name="GiftSelfTopActionCrafted">You crafted this gift on **%1$s**</string>
     <string name="BotForumNewTopic">New Chat</string>
@@ -10258,6 +10282,7 @@
     <string name="EphemeralMessageVisibleToYou">Only visible to you</string>
     <string name="EphemeralMessageVisibleToOther">Only visible to @%s</string>
     <string name="EphemeralMessageMenuHint">Only you see this message. It will disappear after you log in again.</string>
+    <string name="EphemeralWelcomeMessageMenuHint">This version of the message is only visible to you.</string>
     <string name="AddContactShareNumber">Share My Phone Number</string>
     <string name="AddContactShareNumberInfo">Turn this off to prevent %s from seeing your phone number.</string>
     <string name="UserSuggestBirthday">Suggest Date of Birth</string>
@@ -11141,7 +11166,7 @@
     <string name="ArticleCommandList">List</string>
     <string name="ArticleCommandOrderedList">Ordered List</string>
     <string name="ArticleCommandToggle">Toggle</string>
-    <string name="ArticleTableTitleHint">Add title…</string>
+    <string name="ArticleTableTitleHint">Add title</string>
     <string name="ArticleCommandTable">Table</string>
     <string name="ArticleCommandMath">Math</string>
     <string name="ArticleCommandDivider">Divider</string>
@@ -11152,6 +11177,7 @@
     <string name="ArticleAlignment">Alignment</string>
     <string name="ArticleRemoveHighlight">Remove Highlight</string>
     <string name="ArticleHighlightCell">Highlight Cell</string>
+    <string name="ArticleHighlightCells">Highlight Cells</string>
     <string name="ArticleHighlightColumn">Highlight Column</string>
     <string name="ArticleHighlightRow">Highlight Row</string>
     <string name="ArticleMergeCells">Merge Cells</string>
@@ -11162,9 +11188,37 @@
     <string name="ArticleInsertBelow">Insert Below</string>
     <string name="ArticleDeleteColumn">Delete Column</string>
     <string name="ArticleDeleteRow">Delete Row</string>
+    <string name="ArticleTableBordered">Bordered</string>
+    <string name="ArticleTableCompact">Compact</string>
     <string name="ArticleDeleteTable">Delete Table</string>
     <string name="ArticleAICreate">Create With AI</string>
     <string name="ArticleAIPrompt">Write a prompt...</string>
     <string name="ArticleAIGenerate">Generate</string>
     <string name="ArticleAIAddToPage">Add to Page</string>
+
+    <string name="WelcomeMessage">Welcome Message</string>
+    <string name="WelcomeMessageOff">Off</string>
+    <string name="WelcomeMessageEmptyTitle">Create a Welcome\nMessage</string>
+    <string name="WelcomeMessageEmptySubtitle">Automatically greet new\nmembers when they join.</string>
+    <string name="WelcomeMessageHint">New members will see this messages\nwhen they join</string>
+    <string name="WelcomeMessageHint2">Tap it to delete it</string>
+    <string name="WelcomeMessageEnter">Add a message</string>
+    <string name="WelcomeMessagesLimit_one">Limit of **%d** message reached.</string>
+    <string name="WelcomeMessagesLimit_other">Limit of **%d** messages reached.</string>
+    <string name="WelcomeMessageRevert">Revert</string>
+    <string name="WelcomeMessageRevertInfo">restores the message to\nits original content</string>
+
+    <string name="GiftMessageHint">Your message...</string>
+    <string name="GiftMessagePreviewInChat">Preview in chat</string>
+    <string name="GiftMessageMakeMessagePublic">Make message public</string>
+    <string name="GiftMessageSendNow">Send Now</string>
+    <string name="GiftMessageAddHint">Add message...</string>
+    <string name="GiftMessageAddTitle">Add Message</string>
+    <string name="GiftMessageAddDescription">You can add a message for **%1$s** or send **%2$s** right away.</string>
+
+    <string name="UnsupportedBlockTitle">Unsupported Block</string>
+    <string name="UnsupportedBlockMessage">Update Telegram to view this part of the message</string>
+    <string name="UnsupportedMessageTitle">Unsupported Message</string>
+    <string name="UnsupportedMessageMessage">Update Telegram to view this message</string>
+    <string name="UnsupportedUpdate">Update</string>
 </resources>

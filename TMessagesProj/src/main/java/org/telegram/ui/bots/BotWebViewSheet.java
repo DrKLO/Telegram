@@ -100,6 +100,7 @@ import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
 import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.web.BotWebViewContainer;
 
@@ -1722,6 +1723,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             .addIf(onVerifiedAge == null, R.drawable.menu_intro, LocaleController.getString(R.string.BotWebViewToS), () -> {
                 Browser.openUrl(getContext(), LocaleController.getString(R.string.BotWebViewToSLink));
             })
+            .addIf(onVerifiedAge == null, R.drawable.msg_report, LocaleController.getString(R.string.BotWebViewReportBot), () -> {
+                ReportBottomSheet.openChat(currentAccount, getContext(), BulletinFactory.of(Bulletin.BulletinWindow.make(getContext()), resourcesProvider), botId);
+            })
             .addIf(onVerifiedAge == null && currentBot != null && (currentBot.show_in_side_menu || currentBot.show_in_attach_menu), R.drawable.msg_delete, LocaleController.getString(R.string.BotWebViewDeleteBot), () -> {
                 deleteBot(currentAccount, botId, () -> dismiss());
             });
@@ -1859,12 +1863,14 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     private void loadFromResponse() {
         if (requestProps == null) return;
         final long pollTimeout = Math.max(0, POLL_PERIOD - (System.currentTimeMillis() - requestProps.responseTime));
+        boolean sameOrigin = false;
         String url = null;
         fullsize = null;
         if (requestProps.response instanceof TLRPC.TL_webViewResultUrl) {
             TLRPC.TL_webViewResultUrl resultUrl = (TLRPC.TL_webViewResultUrl) requestProps.response;
             queryId = resultUrl.query_id;
             url = resultUrl.url;
+            sameOrigin = resultUrl.same_origin;
             fullsize = resultUrl.fullsize;
             if (!fromTab) {
                 setFullscreen(resultUrl.fullscreen, !fromTab);
@@ -1878,9 +1884,12 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             queryId = 0;
             url = resultUrl.url;
         }
+        if (sameOrigin) {
+            webViewContainer.setTrustedOrigin(url);
+        }
         if (url != null && !fromTab) {
             MediaDataController.getInstance(currentAccount).increaseWebappRating(requestProps.botId);
-            webViewContainer.loadUrl(currentAccount, url);
+            webViewContainer.loadUrl(currentAccount, url, sameOrigin);
         }
         AndroidUtilities.runOnUIThread(pollRunnable, pollTimeout);
         if (swipeContainer != null) {

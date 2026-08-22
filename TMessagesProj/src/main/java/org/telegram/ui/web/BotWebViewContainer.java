@@ -105,11 +105,13 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
@@ -1021,6 +1023,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     public void loadUrl(int currentAccount, String url) {
+        loadUrl(currentAccount, url, false);
+    }
+
+    public void loadUrl(int currentAccount, String url, boolean sameOrigin) {
         this.currentAccount = currentAccount;
         NotificationCenter.getInstance(currentAccount).doOnIdle(() -> {
             isPageLoaded = false;
@@ -1212,6 +1218,15 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     private void onWebEventReceived(String type, String data) {
         if (bot) return;
         if (delegate == null) return;
+
+        if (trustedOrigin != null) {
+            final String origin = getOriginHost();
+            if (!TextUtils.equals(origin, trustedOrigin)) {
+                d("onWebEventReceived ignore " + type);
+                return;
+            }
+        }
+
         d("onWebEventReceived " + type + " " + data);
         switch (type) {
             case "actionBarColor":
@@ -1305,9 +1320,20 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         }
     }
 
+    private String trustedOrigin;
+
+    public void setTrustedOrigin(String url) {
+        trustedOrigin = getOriginHost(url);
+    }
+
+
     public String getOriginHost() {
         if (webView == null) return null;
         final String url = webView.getUrl();
+        return getOriginHost(url);
+    }
+
+    public static String getOriginHost(String url) {
         if (url == null || url.isEmpty()) return null;
         final Uri uri = Uri.parse(url);
         final String scheme = uri.getScheme();
@@ -1335,6 +1361,13 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         if (webView == null || delegate == null) {
             d("onEventReceived " + eventType + ": no webview or delegate!");
             return;
+        }
+        if (trustedOrigin != null) {
+            final String origin = getOriginHost();
+            if (!TextUtils.equals(origin, trustedOrigin)) {
+                d("onEventReceived ignore " + eventType);
+                return;
+            }
         }
         d("onEventReceived " + eventType);
         switch (eventType) {
@@ -2785,10 +2818,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 req.bot = MessagesController.getInstance(currentAccount).getInputUser(botUser);
                 req.webapp_req_id = requestId;
                 ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
-                    if (res instanceof TLRPC.TL_keyboardButtonRequestPeer) {
-                        final TLRPC.TL_keyboardButtonRequestPeer btn = (TLRPC.TL_keyboardButtonRequestPeer) res;
-                        if (btn.peer_type instanceof TLRPC.TL_requestPeerTypeCreateBot) {
-                            final TLRPC.TL_requestPeerTypeCreateBot peerType = (TLRPC.TL_requestPeerTypeCreateBot) btn.peer_type;
+                    final TL_keyboard.TL_buttonTypeRequestPeer buttonTypeRequestPeer = TLKeyboardHelper.getType(res, TL_keyboard.TL_buttonTypeRequestPeer.class);
+                    if (buttonTypeRequestPeer != null) {
+                        if (buttonTypeRequestPeer.peer_type instanceof TLRPC.TL_requestPeerTypeCreateBot) {
+                            final TLRPC.TL_requestPeerTypeCreateBot peerType = (TLRPC.TL_requestPeerTypeCreateBot) buttonTypeRequestPeer.peer_type;
                             CreateBotAlert.show(getContext(), currentAccount, botUser, peerType, false, newBot -> {
                                 if (newBot == null) {
                                     notifyEvent("requested_chat_failed", obj("req_id", requestId));
@@ -2798,7 +2831,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                                 final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
                                 req2.peer = MessagesController.getInputPeer(botUser);
                                 req2.webapp_req_id = requestId;
-                                req2.button_id = btn.button_id;
+                                req2.button_id = buttonTypeRequestPeer.button_id;
                                 req2.requested_peers.add(MessagesController.getInputPeer(newBot));
                                 ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req2, AndroidUtilities::runOnUIThread, (updates, err2) -> {
                                     if (updates != null) {
@@ -2847,16 +2880,16 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                             }, resourcesProvider, BulletinFactory.of(this, resourcesProvider), true);
                             return;
                         }
-                        if (btn.peer_type instanceof TLRPC.TL_requestPeerTypeUser && btn.max_quantity > 1) {
-                            TLRPC.TL_requestPeerTypeUser peer_type = (TLRPC.TL_requestPeerTypeUser) btn.peer_type;
+                        if (buttonTypeRequestPeer.peer_type instanceof TLRPC.TL_requestPeerTypeUser && buttonTypeRequestPeer.max_quantity > 1) {
+                            TLRPC.TL_requestPeerTypeUser peer_type = (TLRPC.TL_requestPeerTypeUser) buttonTypeRequestPeer.peer_type;
                             final boolean[] sent = new boolean[1];
-                            final BottomSheet sheet = MultiContactsSelectorBottomSheet.open(peer_type.bot, peer_type.premium, btn.max_quantity, ids -> {
+                            final BottomSheet sheet = MultiContactsSelectorBottomSheet.open(peer_type.bot, peer_type.premium, buttonTypeRequestPeer.max_quantity, ids -> {
                                 if (ids != null && !ids.isEmpty()) {
                                     sent[0] = true;
                                     final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
                                     req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(botUser);
                                     req2.webapp_req_id = requestId;
-                                    req2.button_id = btn.button_id;
+                                    req2.button_id = buttonTypeRequestPeer.button_id;
                                     for (Long id : ids) {
                                         req2.requested_peers.add(MessagesController.getInstance(currentAccount).getInputPeer(id));
                                     }
@@ -2891,8 +2924,8 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_BOT_REQUEST_PEER);
                         args.putLong("requestPeerBotId", botUser.id);
                         try {
-                            SerializedData buffer = new SerializedData(btn.peer_type.getObjectSize());
-                            btn.peer_type.serializeToStream(buffer);
+                            SerializedData buffer = new SerializedData(buttonTypeRequestPeer.peer_type.getObjectSize());
+                            buttonTypeRequestPeer.peer_type.serializeToStream(buffer);
                             args.putByteArray("requestPeerType", buffer.toByteArray());
                             buffer.cleanup();
                         } catch (Exception e) {
@@ -2915,7 +2948,7 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                                 final TLRPC.TL_messages_sendBotRequestedPeer req2 = new TLRPC.TL_messages_sendBotRequestedPeer();
                                 req2.peer = MessagesController.getInstance(currentAccount).getInputPeer(botUser);
                                 req2.webapp_req_id = requestId;
-                                req2.button_id = btn.button_id;
+                                req2.button_id = buttonTypeRequestPeer.button_id;
                                 HashSet<Long> dialogIds = new HashSet<>();
                                 for (MessagesStorage.TopicKey key : dids) {
                                     dialogIds.add(key.dialogId);

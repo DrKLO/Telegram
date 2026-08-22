@@ -736,6 +736,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         } else if (
             block instanceof TL_iv.pageBlockMap ||
             block instanceof TL_iv.pageBlockAudio ||
+            block instanceof TL_iv.pageBlockDocument ||
             block instanceof TL_iv.pageBlockVideo ||
             block instanceof TL_iv.pageBlockPhoto ||
             block instanceof TL_iv.pageBlockSlideshow ||
@@ -807,6 +808,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         } else if (
             block instanceof TL_iv.pageBlockMap ||
             block instanceof TL_iv.pageBlockAudio ||
+            block instanceof TL_iv.pageBlockDocument ||
             block instanceof TL_iv.pageBlockVideo ||
             block instanceof TL_iv.pageBlockPhoto ||
             block instanceof TL_iv.pageBlockSlideshow ||

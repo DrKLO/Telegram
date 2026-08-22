@@ -75,8 +75,14 @@ public class TableLayout extends View {
     private int mAlignmentMode = DEFAULT_ALIGNMENT_MODE;
     private int mDefaultGap;
     private int mLastLayoutParamsHashCode = UNINITIALIZED_HASH;
-    private int itemPaddingTop = dp(7);
-    private int itemPaddingLeft = dp(8);
+    private int itemPaddingTop = dp(8);
+    private int itemPaddingBottom = dp(9);
+    private int itemPaddingLeft = dp(12);
+    private int minimumCellHeight;
+    private boolean fillWidth = true;
+    private int drawingWidth;
+    private int drawingHeight;
+    private int[] naturalRowLocations = new int[0];
     private boolean drawLines;
     private boolean isStriped;
     private boolean isRtl;
@@ -98,6 +104,9 @@ public class TableLayout extends View {
         default CharSequence getText() {
             return getLayout() == null ? null : getLayout().getText();
         }
+        default int getEmojiOnlyCount() {
+            return 0;
+        }
     }
 
     public class Child {
@@ -116,6 +125,8 @@ public class TableLayout extends View {
         private int measuredWidth;
         private int measuredHeight;
         private int fixedHeight;
+        private int naturalX;
+        private int naturalWidth;
         public int x;
         public int y;
         private int selectionIndex = -1;
@@ -143,35 +154,59 @@ public class TableLayout extends View {
                 fixedHeight = measuredHeight;
             }
             if (cell != null) {
-                if (cell.valign_middle) {
-                    textY = (measuredHeight - textHeight) / 2;
-                } else if (cell.valign_bottom) {
-                    textY = measuredHeight - textHeight - itemPaddingTop;
-                } else {
-                    textY = itemPaddingTop;
-                }
-
                 if (textLayout != null) {
                     final Layout layout = textLayout.getLayout();
                     int lineCount = layout != null ? layout.getLineCount() : 0;
                     if (!first && (lineCount > 1 || lineCount > 0 && (cell.align_center || cell.align_right))) {
                         setTextLayout(delegate.createTextLayout(cell, measuredWidth - itemPaddingLeft * 2));
-                        fixedHeight = textHeight + itemPaddingTop * 2;
+                        fixedHeight = textHeight + itemPaddingTop + itemPaddingBottom;
                     }
 
-                    if (textLeft != 0) {
-                        textX = -textLeft;
-                        if (cell.align_right) {
-                            textX += (measuredWidth - textWidth - itemPaddingLeft);
-                        } else if (cell.align_center) {
-                            textX += Math.round((measuredWidth - textWidth) / 2);
-                        } else {
-                            textX += itemPaddingLeft;
-                        }
-                    } else {
-                        textX = itemPaddingLeft;
-                    }
+                    updateTextX();
                 }
+                updateTextY();
+            }
+        }
+
+        private void updateTextY() {
+            if (cell.valign_middle) {
+                textY = (measuredHeight - textHeight) / 2;
+            } else if (cell.valign_bottom) {
+                textY = measuredHeight - textHeight - itemPaddingBottom;
+            } else {
+                textY = itemPaddingTop;
+            }
+        }
+
+        private void updateTextX() {
+            textX = -textLeft;
+            if (cell.align_right) {
+                textX += measuredWidth - textWidth - itemPaddingLeft;
+            } else if (cell.align_center) {
+                textX += Math.round((measuredWidth - textWidth) / 2f);
+            } else {
+                textX += itemPaddingLeft;
+            }
+        }
+
+        private void captureNaturalHorizontalGeometry() {
+            naturalX = x;
+            naturalWidth = measuredWidth;
+        }
+
+        private void setRenderHorizontalGeometry(int left, int right) {
+            x = left;
+            measuredWidth = Math.max(0, right - left);
+            if (cell != null && textLayout != null) {
+                updateTextX();
+            }
+        }
+
+        private void setRenderVerticalGeometry(int top, int bottom) {
+            y = top;
+            measuredHeight = Math.max(0, bottom - top);
+            if (cell != null) {
+                updateTextY();
             }
         }
 
@@ -210,11 +245,7 @@ public class TableLayout extends View {
 
         public void setFixedHeight(int value) {
             measuredHeight = fixedHeight;
-            if (cell.valign_middle) {
-                textY = (measuredHeight - textHeight) / 2;
-            } else if (cell.valign_bottom) {
-                textY = measuredHeight - textHeight - itemPaddingTop;
-            }
+            updateTextY();
         }
 
         public void draw(Canvas canvas, View view) {
@@ -226,8 +257,8 @@ public class TableLayout extends View {
                 return;
             }
 
-            boolean isLastX = x + measuredWidth == TableLayout.this.getMeasuredWidth();
-            boolean isLastY = y + measuredHeight == TableLayout.this.getMeasuredHeight();
+            boolean isLastX = x + measuredWidth == drawingWidth;
+            boolean isLastY = y + measuredHeight == drawingHeight;
             int rad = dp(8);
             if (cell.header || isStriped && layoutParams.rowSpec.span.min % 2 == 0) {
                 boolean hasCorners = false;
@@ -295,7 +326,7 @@ public class TableLayout extends View {
                     if (y == 0) {
                         start += rad;
                     }
-                    if (end == TableLayout.this.getMeasuredHeight()) {
+                    if (end == drawingHeight) {
                         end -= rad;
                     }
                     canvas.drawLine(x + strokeWidth, start, x + strokeWidth, end, linePaint);
@@ -308,7 +339,7 @@ public class TableLayout extends View {
                     if (x == 0) {
                         start += rad;
                     }
-                    if (end == TableLayout.this.getMeasuredWidth()) {
+                    if (end == drawingWidth) {
                         end -= rad;
                     }
                     canvas.drawLine(start, y + strokeWidth, end, y + strokeWidth, linePaint);
@@ -418,6 +449,103 @@ public class TableLayout extends View {
 
     public void setStriped(boolean value) {
         isStriped = value;
+    }
+
+    public void setMinimumCellHeight(int value) {
+        minimumCellHeight = value;
+        requestLayout();
+    }
+
+    public void setCellPadding(int horizontal, int top, int bottom) {
+        if (itemPaddingLeft == horizontal && itemPaddingTop == top && itemPaddingBottom == bottom) {
+            return;
+        }
+        itemPaddingLeft = horizontal;
+        itemPaddingTop = top;
+        itemPaddingBottom = bottom;
+        requestLayout();
+    }
+
+    public void setFillWidth(boolean fillWidth) {
+        if (this.fillWidth == fillWidth) {
+            return;
+        }
+        this.fillWidth = fillWidth;
+        requestLayout();
+    }
+
+    public void setRenderWidth(int width) {
+        final int naturalWidth = getMeasuredWidth();
+        drawingWidth = Math.max(naturalWidth, width);
+        for (int i = 0; i < getChildCount(); i++) {
+            final Child child = getChildAt(i);
+            if (naturalWidth <= 0 || drawingWidth == naturalWidth) {
+                child.setRenderHorizontalGeometry(child.naturalX, child.naturalX + child.naturalWidth);
+            } else {
+                final int left = Math.round(child.naturalX * drawingWidth / (float) naturalWidth);
+                final int right = Math.round((child.naturalX + child.naturalWidth) * drawingWidth / (float) naturalWidth);
+                child.setRenderHorizontalGeometry(left, right);
+            }
+        }
+
+        updateRenderRowGeometry();
+        invalidate();
+    }
+
+    private void updateRenderRowGeometry() {
+        if (naturalRowLocations.length < 2) {
+            drawingHeight = getMeasuredHeight();
+            return;
+        }
+
+        final int rowCount = naturalRowLocations.length - 1;
+        final int[] rowHeights = new int[rowCount];
+        for (int row = 0; row < rowCount; row++) {
+            rowHeights[row] = naturalRowLocations[row + 1] - naturalRowLocations[row];
+        }
+
+        for (int i = 0; i < getChildCount(); i++) {
+            final Child child = getChildAt(i);
+            final int emojiCount = child.textLayout != null ? child.textLayout.getEmojiOnlyCount() : 0;
+            if (emojiCount <= 0) {
+                continue;
+            }
+            final Interval span = child.layoutParams.rowSpec.span;
+            final int start = Math.max(0, span.min);
+            final int end = Math.min(rowCount, span.max);
+            if (start >= end) {
+                continue;
+            }
+            int currentHeight = 0;
+            for (int row = start; row < end; row++) {
+                currentHeight += rowHeights[row];
+            }
+            int deficit = Math.max(1, Math.round(child.measuredWidth / (float) emojiCount)) - currentHeight;
+            for (int row = start; row < end && deficit > 0; row++) {
+                final int rowsLeft = end - row;
+                final int extra = (deficit + rowsLeft - 1) / rowsLeft;
+                rowHeights[row] += extra;
+                deficit -= extra;
+            }
+        }
+
+        final int[] rowLocations = new int[rowCount + 1];
+        for (int row = 0; row < rowCount; row++) {
+            rowLocations[row + 1] = rowLocations[row] + rowHeights[row];
+        }
+        drawingHeight = rowLocations[rowCount];
+        for (int i = 0; i < getChildCount(); i++) {
+            final Child child = getChildAt(i);
+            final Interval span = child.layoutParams.rowSpec.span;
+            final int start = Math.max(0, Math.min(rowCount, span.min));
+            final int end = Math.max(start, Math.min(rowCount, span.max));
+            child.setRenderVerticalGeometry(rowLocations[start], rowLocations[end]);
+            delegate.onLayoutChild(child.textLayout, child.getTextX(), child.getTextY());
+        }
+    }
+
+    public int getRenderHeight() {
+        return drawingHeight;
     }
 
     public void setRtl(boolean value) {
@@ -855,8 +983,9 @@ public class TableLayout extends View {
                 }
                 c.setTextLayout(delegate.createTextLayout(c.cell, maxCellWidth));
                 if (c.textLayout != null) {
-                    lp.width = c.textWidth + itemPaddingLeft * 2;
-                    lp.height = c.textHeight + itemPaddingTop * 2;
+                    lp.height = Math.max(minimumCellHeight, c.textHeight + itemPaddingTop + itemPaddingBottom);
+                    final int emojiCount = c.textLayout.getEmojiOnlyCount();
+                    lp.width = emojiCount > 0 ? lp.height * emojiCount : c.textWidth + itemPaddingLeft * 2;
                 } else {
                     lp.width = 0;
                     lp.height = 0;
@@ -873,6 +1002,11 @@ public class TableLayout extends View {
                     int cellSize = locations[span.max] - locations[span.min];
                     int viewSize = cellSize - getTotalMargin(c, horizontal);
                     if (horizontal) {
+                        final int emojiCount = c.textLayout != null ? c.textLayout.getEmojiOnlyCount() : 0;
+                        if (emojiCount > 0) {
+                            lp.height = Math.max(1, Math.round(viewSize / (float) emojiCount));
+                            c.fixedHeight = lp.height;
+                        }
                         measureChildWithMargins2(c, widthSpec, heightSpec, viewSize, lp.height, false);
                     } else {
                         measureChildWithMargins2(c, widthSpec, heightSpec, lp.width, viewSize, false);
@@ -912,6 +1046,10 @@ public class TableLayout extends View {
 
         if (mOrientation == HORIZONTAL) {
             widthSansPadding = mHorizontalAxis.getMeasure(widthSpec);
+            if (fillWidth) {
+                widthSansPadding = max(widthSansPadding, MeasureSpec.getSize(widthSpec));
+                mHorizontalAxis.layout(widthSansPadding);
+            }
             measureChildrenWithMargins(widthSpec, heightSpec, false);
             heightSansPadding = mVerticalAxis.getMeasure(heightSpec);
         } else {
@@ -920,7 +1058,7 @@ public class TableLayout extends View {
             widthSansPadding = mHorizontalAxis.getMeasure(widthSpec);
         }
 
-        int measuredWidth = max(widthSansPadding, MeasureSpec.getSize(widthSpec));
+        int measuredWidth = widthSansPadding;
         int measuredHeight = max(heightSansPadding, getSuggestedMinimumHeight());
         setMeasuredDimension(measuredWidth, measuredHeight);
 
@@ -930,6 +1068,7 @@ public class TableLayout extends View {
 
         int[] hLocations = mHorizontalAxis.getLocations();
         int[] vLocations = mVerticalAxis.getLocations();
+        final int[] finalVLocations = Arrays.copyOf(vLocations, vLocations.length);
 
         int fixedHeight = measuredHeight;
 
@@ -1049,6 +1188,10 @@ public class TableLayout extends View {
 
             child.setFixedHeight(child.fixedHeight);
             fixedHeight -= heightDiff;
+            final int fixedRow = child.layoutParams.rowSpec.span.min;
+            for (int row = fixedRow + 1; row < finalVLocations.length; row++) {
+                finalVLocations[row] -= heightDiff;
+            }
 
             for (int i = 0, size = childrens.size(); i < size; i++) {
                 Child next = childrens.get(i);
@@ -1073,7 +1216,11 @@ public class TableLayout extends View {
         for (int i = 0, N = getChildCount(); i < N; i++) {
             Child c = getChildAt(i);
             delegate.onLayoutChild(c.textLayout, c.getTextX(), c.getTextY());
+            c.captureNaturalHorizontalGeometry();
         }
+        drawingWidth = measuredWidth;
+        drawingHeight = fixedHeight;
+        naturalRowLocations = finalVLocations;
         setMeasuredDimension(measuredWidth, fixedHeight);
     }
 

@@ -11,54 +11,12 @@
 #include <string>
 #include <limits.h>
 #include "libyuv/scale_argb.h"
-//#include <mozjpeg/java/org_libjpegturbo_turbojpeg_TJ.h>
-//#include <mozjpeg/jpeglib.h>
 #include <tgnet/FileLog.h>
 #include <vector>
 #include <algorithm>
-//#include "mozjpeg/turbojpeg.h"
 #include "c_utils.h"
 
 extern "C" {
-jclass jclass_NullPointerException;
-jclass jclass_RuntimeException;
-
-jclass jclass_Options;
-jfieldID jclass_Options_inJustDecodeBounds;
-jfieldID jclass_Options_outHeight;
-jfieldID jclass_Options_outWidth;
-
-jint imageOnJNILoad(JavaVM *vm, JNIEnv *env) {
-    DEBUG_REF("image.cpp nullpointerexception class");
-    jclass_NullPointerException = (jclass) env->NewGlobalRef(env->FindClass("java/lang/NullPointerException"));
-    if (jclass_NullPointerException == 0) {
-        return JNI_FALSE;
-    }
-    DEBUG_REF("image.cpp runtimeexception class");
-    jclass_RuntimeException = (jclass) env->NewGlobalRef(env->FindClass("java/lang/RuntimeException"));
-    if (jclass_RuntimeException == 0) {
-        return JNI_FALSE;
-    }
-    DEBUG_REF("image.cpp bitmapfactoryoptions class");
-    jclass_Options = (jclass) env->NewGlobalRef(env->FindClass("android/graphics/BitmapFactory$Options"));
-    if (jclass_Options == 0) {
-        return JNI_FALSE;
-    }
-    jclass_Options_inJustDecodeBounds = env->GetFieldID(jclass_Options, "inJustDecodeBounds", "Z");
-    if (jclass_Options_inJustDecodeBounds == 0) {
-        return JNI_FALSE;
-    }
-    jclass_Options_outHeight = env->GetFieldID(jclass_Options, "outHeight", "I");
-    if (jclass_Options_outHeight == 0) {
-        return JNI_FALSE;
-    }
-    jclass_Options_outWidth = env->GetFieldID(jclass_Options, "outWidth", "I");
-    if (jclass_Options_outWidth == 0) {
-        return JNI_FALSE;
-    }
-
-    return JNI_TRUE;
-}
 
 static inline uint64_t getColors(const uint8_t *p) {
     return p[0] + (p[1] << 16) + ((uint64_t) p[2] << 32) + ((uint64_t) p[3] << 48);
@@ -912,24 +870,21 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv *env
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv *env, jclass clazz, jobject bitmap, jintArray colors, jint startX, jint startY, jint endX, jint endY) {
+JNIEXPORT jboolean JNICALL Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv *env, jclass clazz, jobject bitmap, jintArray colors, jint startX, jint startY, jint endX, jint endY) {
     AndroidBitmapInfo info;
     void *pixelsBuffer;
     int reason;
 
     if ((reason = AndroidBitmap_getInfo(env, bitmap, &info)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_getInfo failed with a reason: " + reason);
-        return;
+        return JNI_FALSE;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        env->ThrowNew(jclass_RuntimeException, "Bitmap must be in ARGB_8888 format");
-        return;
+        return JNI_FALSE;
     }
 
     if ((reason = AndroidBitmap_lockPixels(env, bitmap, &pixelsBuffer)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_lockPixels failed with a reason: " + reason);
-        return;
+        return JNI_FALSE;
     }
 
     uint8_t i, j, n;
@@ -1009,10 +964,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv
 
     delete[] pixelsComponentsF;
 
-    if ((reason = AndroidBitmap_unlockPixels(env, bitmap)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_unlockPixels failed with a reason: " + reason);
-        return;
-    }
+    AndroidBitmap_unlockPixels(env, bitmap);
+    return JNI_TRUE;
 }
 
 //JNIEXPORT jint Java_org_telegram_messenger_Utilities_saveProgressiveJpeg(JNIEnv *env, jclass clazz, jobject bitmap, jint width, jint height, jint stride, jint quality, jstring path) {
@@ -2281,4 +2234,207 @@ Java_org_telegram_messenger_Utilities_extractAlpha(
     return JNI_TRUE;
 }
 
+}
+
+
+
+
+
+// ---------------------------------------------------------------------------
+// Fills an ARGB_8888 bitmap with the reply-line stripe pattern:
+//
+//   - color1 background
+//   - color2 diagonal bars (45°, sharp pixel edges)
+//   - optionally color3 diagonal bars placed right after color2's
+//
+// The bitmap height IS the vertical period; a BitmapShader with
+// TileMode.REPEAT tiles it on the Java side.
+//
+// All bar colors are pre-composited by the caller via
+// ColorUtils.compositeColors(barColor, backgroundColor), so this
+// function writes flat pixel values — no alpha blending.
+// ---------------------------------------------------------------------------
+
+#include <jni.h>
+#include <android/bitmap.h>
+#include <cstdint>
+#include <cstring>
+
+// Maximum supported tile period (pixels).  dp(19) ≈ 95 px at 5× density;
+// 256 is well above any realistic value and keeps the ref column on the stack.
+static constexpr uint32_t MAX_PERIOD = 256;
+
+// ---------------------------------------------------------------------------
+// Converts a Java ARGB color int to the native RGBA_8888 pixel value.
+//
+// Java color int  (0xAARRGGBB):  A31-24  R23-16  G15-8  B7-0
+// RGBA_8888 memory (little-endian byte order R, G, B, A) read as uint32_t:
+//   R7-0  G15-8  B23-16  A31-24  →  0xAABBGGRR
+//
+// A and G are already in the right positions; swap R and B.
+// ---------------------------------------------------------------------------
+static inline uint32_t argb_to_native(uint32_t argb) {
+    return (argb  & 0xFF00FF00u)       |   // A and G stay
+           ((argb >> 16) & 0xFFu)      |   // R → bits 7-0
+           ((argb & 0xFFu) << 16);         // B → bits 23-16
+}
+
+// ---------------------------------------------------------------------------
+// Premultiplies a native RGBA pixel (R in low byte, A in high byte on LE).
+//
+// Android ARGB_8888 bitmaps are premultiplied by default; writing
+// straight-alpha pixels causes the renderer to mis-interpret RGB,
+// distorting colors whenever A < 255.
+// ---------------------------------------------------------------------------
+static inline uint32_t premultiply(uint32_t rgba) {
+    const uint32_t a = rgba >> 24;
+    if (a == 0xFF) return rgba;
+    if (a == 0x00) return 0;
+    const uint32_t r = ( rgba        & 0xFFu) * a / 255u;
+    const uint32_t g = ((rgba >>  8) & 0xFFu) * a / 255u;
+    const uint32_t b = ((rgba >> 16) & 0xFFu) * a / 255u;
+    return r | (g << 8) | (b << 16) | (a << 24);
+}
+
+// ---------------------------------------------------------------------------
+// Per-byte average of two RGBA pixels (SWAR trick, no per-channel extract).
+// Computes floor((p + q) / 2) for each of the four bytes independently.
+// The 0x7F7F7F7F mask prevents carry leaking between adjacent bytes.
+// ---------------------------------------------------------------------------
+static inline uint32_t avg_color(uint32_t p, uint32_t q) {
+    return (p & q) + (((p ^ q) >> 1) & 0x7F7F7F7Fu);
+}
+
+// ---------------------------------------------------------------------------
+// Core pixel loop.
+//
+// The pattern within one period (= height):
+//   [0, gapSize)                      → color1  (background)
+//   [gapSize, gapSize + barHeight)    → color2  (first bar)
+//   [gapSize + barHeight, period)     → color3  (second bar, if present)
+//
+// The 45° skew is applied per-column: column x reads from the reference
+// column at (y + x) % period.  Since width ≤ period (checked by the
+// caller), y + x < 2·period, so a single compare-and-subtract replaces
+// the modulo.
+// ---------------------------------------------------------------------------
+static void draw_reply_line_pattern(
+        uint8_t * __restrict__ pixels,
+        uint32_t width, uint32_t height, uint32_t stride,
+        uint32_t c1, uint32_t c2, uint32_t c3,
+        uint32_t barHeight, bool hasColor3)
+{
+    const uint32_t period    = height;
+    const uint32_t barsTotal = hasColor3 ? 2u * barHeight : barHeight;
+    const uint32_t gapSize   = period > barsTotal ? period - barsTotal : 0u;
+    const uint32_t bar2End   = gapSize + barHeight;
+
+    // Build a reference column (color for each y at x = 0).
+    // At every boundary between two color regions the last pixel of the
+    // outgoing region is replaced with the average of the two colors,
+    // giving a 1-pixel anti-aliased transition on the 45° diagonal.
+    uint32_t ref[MAX_PERIOD];
+    for (uint32_t i = 0; i < period; ++i) {
+        uint32_t ci, cn;
+
+        if (i < gapSize)          ci = c1;
+        else if (i < bar2End)     ci = c2;
+        else                      ci = c3;
+
+        const uint32_t ni = (i + 1u < period) ? i + 1u : 0u;
+        if (ni < gapSize)         cn = c1;
+        else if (ni < bar2End)    cn = c2;
+        else                      cn = c3;
+
+        ref[i] = (ci != cn) ? avg_color(ci, cn) : ci;
+    }
+
+    // Fill each pixel: the 45° skew means column x reads from
+    // ref[(y + x) % period].  Instead of a per-pixel branch we split
+    // each row into at most two contiguous memcpy runs.
+    for (uint32_t y = 0; y < height; ++y) {
+        auto * __restrict__ row =
+                reinterpret_cast<uint32_t *>(pixels + y * stride);
+        const uint32_t split = period - y;
+        if (split >= width) {
+            memcpy(row, ref + y, width * sizeof(uint32_t));
+        } else {
+            memcpy(row, ref + y, split * sizeof(uint32_t));
+            memcpy(row + split, ref, (width - split) * sizeof(uint32_t));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// JNI entry point
+//
+// Java:  public static native boolean drawReplyLinePattern(
+//            Bitmap bitmap, int color1, int color2, int color3,
+//            int barHeight, boolean hasColor3);
+//        [org.telegram.messenger.Utilities]
+//
+// bitmap    — mutable ARGB_8888, width × period
+// color1    — background           (Java ARGB int, raw)
+// color2    — first bar color      (Java ARGB int, composited over color1)
+// color3    — second bar color     (Java ARGB int, composited over color1;
+//                                   ignored when hasColor3 == false)
+// barHeight — height of each bar in pixels (> 0)
+// hasColor3 — whether the second bar is drawn
+//
+// Returns true on success, false on any validation or locking error.
+// ---------------------------------------------------------------------------
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_org_telegram_messenger_Utilities_drawReplyLinePattern(
+        JNIEnv  *env,
+        jclass   /*clazz*/,
+        jobject  bitmap,
+        jint     color1,
+        jint     color2,
+        jint     color3,
+        jint     barHeight,
+        jboolean hasColor3)
+{
+    if (__builtin_expect(!bitmap, 0)) {
+        return JNI_FALSE;
+    }
+
+    AndroidBitmapInfo info{};
+    if (__builtin_expect(
+            AndroidBitmap_getInfo(env, bitmap, &info)
+            != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return JNI_FALSE;
+    }
+
+    if (__builtin_expect(
+            info.format != ANDROID_BITMAP_FORMAT_RGBA_8888   ||
+            info.width  == 0                                 ||
+            info.height == 0                                 ||
+            info.height >  MAX_PERIOD                        ||
+            info.width  >  info.height                       ||
+            info.stride <  info.width * 4u                   ||
+            barHeight   <= 0                                 ||
+            static_cast<uint32_t>(barHeight) > info.height,
+            0)) {
+        return JNI_FALSE;
+    }
+
+    void *pixels = nullptr;
+    if (__builtin_expect(
+            AndroidBitmap_lockPixels(env, bitmap, &pixels)
+            != ANDROID_BITMAP_RESULT_SUCCESS, 0)) {
+        return JNI_FALSE;
+    }
+
+    draw_reply_line_pattern(
+            static_cast<uint8_t *>(pixels),
+            info.width, info.height, info.stride,
+            premultiply(argb_to_native(static_cast<uint32_t>(color1))),
+            premultiply(argb_to_native(static_cast<uint32_t>(color2))),
+            hasColor3 ? premultiply(argb_to_native(static_cast<uint32_t>(color3))) : 0u,
+            static_cast<uint32_t>(barHeight),
+            hasColor3);
+
+    AndroidBitmap_unlockPixels(env, bitmap);
+    return JNI_TRUE;
 }

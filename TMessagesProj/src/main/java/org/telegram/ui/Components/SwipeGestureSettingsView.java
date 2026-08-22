@@ -312,9 +312,9 @@ public class SwipeGestureSettingsView extends FrameLayout {
             int backgroundColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite), Theme.getColor(Theme.key_chats_archiveBackground), 0.9f);//Theme.getColor(Theme.key_chats_archiveBackground);
             int iconColor = Theme.getColor(Theme.key_chats_archiveIcon);
             if (i == SWIPE_GESTURE_ARCHIVE) {
-                icons[i].setLayerColor("Arrow.**", backgroundColor);
-                icons[i].setLayerColor("Box2.**",iconColor);
-                icons[i].setLayerColor("Box1.**",iconColor);
+                icons[i].setLayerColor("Arrow", backgroundColor);
+                icons[i].setLayerColor("Box2",iconColor);
+                icons[i].setLayerColor("Box1",iconColor);
             } else {
                 icons[i].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
             }

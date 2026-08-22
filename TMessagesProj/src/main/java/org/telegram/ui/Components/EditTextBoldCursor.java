@@ -17,10 +17,12 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
@@ -33,6 +35,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
@@ -138,6 +141,7 @@ public class EditTextBoldCursor extends EditTextEffects {
 
     private boolean nextSetTextAnimated;
     private boolean transformHintToHeader;
+    private boolean transformHintToHeaderOnFocus = true;
     private boolean currentDrawHintAsHeader;
     private AnimatorSet headerTransformAnimation;
     private float headerAnimationProgress;
@@ -453,6 +457,12 @@ public class EditTextBoldCursor extends EditTextEffects {
         }
     }
 
+    public void setTransformHintToHeaderOnFocus(boolean value) {
+        if (transformHintToHeaderOnFocus == value) return;
+        transformHintToHeaderOnFocus = value;
+        checkHeaderVisibility(false);
+    }
+
     public void setAllowDrawCursor(boolean value) {
         allowDrawCursor = value;
         invalidate();
@@ -666,7 +676,8 @@ public class EditTextBoldCursor extends EditTextEffects {
     }
 
     private void checkHeaderVisibility(boolean animated) {
-        boolean newHintHeader = transformHintToHeader && (isFocused() || getText().length() > 0);
+        boolean newHintHeader = transformHintToHeader
+            && (getText().length() > 0 || transformHintToHeaderOnFocus && isFocused());
         if (currentDrawHintAsHeader != newHintHeader) {
             if (headerTransformAnimation != null) {
                 headerTransformAnimation.cancel();
@@ -683,6 +694,14 @@ public class EditTextBoldCursor extends EditTextEffects {
                 headerAnimationProgress = newHintHeader ? 1.0f : 0.0f;
             }
             invalidate();
+        }
+    }
+
+    @Override
+    protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
+        super.onTextChanged(text, start, lengthBefore, lengthAfter);
+        if (transformHintToHeader && !transformHintToHeaderOnFocus) {
+            checkHeaderVisibility(true);
         }
     }
 
@@ -1259,23 +1278,82 @@ public class EditTextBoldCursor extends EditTextEffects {
         return null;
     }
 
+    private Drawable mTextSelectHandleLeft;
+    private Drawable mTextSelectHandleRight;
+    private Drawable mTextSelectHandle;
+    private ColorFilter mHandlesColorFilter;
+    private int mHandlesColor;
+
+    private Drawable updateHandleDrawable(Drawable d, boolean mutate) {
+        if (d != null) {
+            if (mutate) {
+                d = d.mutate();
+            }
+            if (mHandlesColorFilter != null) {
+                d.setColorFilter(mHandlesColorFilter);
+            }
+        }
+
+        return d;
+    }
+
     public void setHandlesColor(int color) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || XiaomiUtilities.isMIUI()) {
             return;
         }
-        try {
-            Drawable left = getTextSelectHandleLeft();
-            left.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            setTextSelectHandleLeft(left);
+        if (mHandlesColor != color) {
+            mHandlesColor = color;
+            mHandlesColorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
 
-            Drawable middle = getTextSelectHandle();
-            middle.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            setTextSelectHandle(middle);
+            updateHandleDrawable(mTextSelectHandleLeft, false);
+            updateHandleDrawable(mTextSelectHandleRight, false);
+            updateHandleDrawable(mTextSelectHandle, false);
+        }
+    }
 
-            Drawable right = getTextSelectHandleRight();
-            right.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            setTextSelectHandleRight(right);
-        } catch (Exception ignore) {}
+    @Nullable
+    @Override
+    public Drawable getTextSelectHandleLeft() {
+        if (mTextSelectHandleLeft == null) {
+            mTextSelectHandleLeft = updateHandleDrawable(super.getTextSelectHandleLeft(), true);
+        }
+        return mTextSelectHandleLeft;
+    }
+
+    @Nullable
+    @Override
+    public Drawable getTextSelectHandleRight() {
+        if (mTextSelectHandleRight == null) {
+            mTextSelectHandleRight = updateHandleDrawable(super.getTextSelectHandleRight(), true);
+        }
+        return mTextSelectHandleRight;
+    }
+
+    @Nullable
+    @Override
+    public Drawable getTextSelectHandle() {
+        if (mTextSelectHandle == null) {
+            mTextSelectHandle = updateHandleDrawable(super.getTextSelectHandle(), true);
+        }
+        return mTextSelectHandle;
+    }
+
+    @Override
+    public void setTextSelectHandleLeft(@NonNull Drawable drawable) {
+        mTextSelectHandleLeft = updateHandleDrawable(drawable, true);
+        super.setTextSelectHandleLeft(mTextSelectHandleLeft);
+    }
+
+    @Override
+    public void setTextSelectHandleRight(@NonNull Drawable drawable) {
+        mTextSelectHandleRight = updateHandleDrawable(drawable, true);
+        super.setTextSelectHandleRight(mTextSelectHandleRight);
+    }
+
+    @Override
+    public void setTextSelectHandle(@NonNull Drawable drawable) {
+        mTextSelectHandle = updateHandleDrawable(drawable, true);
+        super.setTextSelectHandle(mTextSelectHandle);
     }
 
     private Runnable onPremiumMenuLockClickListener;

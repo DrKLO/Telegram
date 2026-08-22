@@ -8,7 +8,7 @@ object RULES {
             "UserFull", "ChatFull",
             "StarsTransaction", "StarGift",
             "SavedStarGift", "InputStorePaymentPurpose", //, "ChatTheme"
-            "ForumTopic"
+            "ForumTopic", "EphemeralMessage"
         ),
         ignoredTypes = setOf(
             "True",
@@ -74,7 +74,6 @@ object RULES {
                 "inputTakeoutFileLocation",
                 "inputPhotoLegacyFileLocation"
             ),
-            "KeyboardButton" to setOf("inputKeyboardButtonRequestPeer"),
             "InputPaymentCredentials" to setOf("inputPaymentCredentialsApplePay"),
             "InputStickerSet" to setOf("inputStickerSetAnimatedEmojiAnimations"),
             "InputWebFileLocation" to setOf("inputWebFileAudioAlbumThumbLocation"),

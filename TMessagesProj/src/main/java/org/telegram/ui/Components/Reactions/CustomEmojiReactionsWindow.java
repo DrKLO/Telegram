@@ -63,6 +63,9 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.ReactionsContainerLayout;
 import org.telegram.ui.Components.StableAnimator;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
@@ -310,6 +313,15 @@ public class CustomEmojiReactionsWindow {
         if (type != TYPE_MESSAGE_EFFECTS) {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 7);
         }
+    }
+
+    private BlurredBackgroundDrawable blurredBackgroundDrawable;
+    public void setBackgroundFactory(BlurredBackgroundDrawableViewFactory backgroundFactory, BlurredBackgroundProvider backgroundColorProvider) {
+        this.selectAnimatedEmojiDialog.searchBox.setUseCustomBackground();
+        this.blurredBackgroundDrawable = backgroundFactory.create(containerView, true)
+            .setColorProvider(backgroundColorProvider)
+            .setRadius(dp(12))
+            .setPadding(dp(8));
     }
 
     public void setLongPressEnabled(boolean isEnabled) {
@@ -859,8 +871,20 @@ public class CustomEmojiReactionsWindow {
             } else {
                 shadow.setAlpha((int) (Utilities.clamp(progressClpamped / 0.05f, 1f, 0f) * 255));
                 shadow.setBounds((int) drawingRect.left - shadowPad.left, (int) drawingRect.top - shadowPad.top, (int) drawingRect.right + shadowPad.right, (int) drawingRect.bottom + shadowPad.bottom);
-                shadow.draw(canvas);
-                canvas.drawRoundRect(drawingRect, radius, radius, backgroundPaint);
+
+                if (blurredBackgroundDrawable != null) {
+                    AndroidUtilities.rectTmp.set(drawingRect);
+                    AndroidUtilities.rectTmp.round(AndroidUtilities.rectTmp2);
+                    AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
+
+                    blurredBackgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
+                    blurredBackgroundDrawable.setAlpha(backgroundPaint.getAlpha());
+                    blurredBackgroundDrawable.setRadius(radius);
+                    blurredBackgroundDrawable.draw(canvas);
+                } else {
+                    shadow.draw(canvas);
+                    canvas.drawRoundRect(drawingRect, radius, radius, backgroundPaint);
+                }
             }
             if (reactionsContainerLayout.hintView != null) {
                 canvas.save();

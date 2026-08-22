@@ -3900,14 +3900,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.drawRect(tx - dp(8), 0, getMeasuredWidth(), getMeasuredHeight(), Theme.dialogs_pinnedPaint);
                 if (currentRevealProgress == 0) {
                     if (Theme.dialogs_archiveDrawableRecolored) {
-                        Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_archiveDrawable.setLayerColor("Arrow", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
                         Theme.dialogs_archiveDrawableRecolored = false;
                     }
                     if (Theme.dialogs_hidePsaDrawableRecolored) {
                         Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
-                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
                         Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
                         Theme.dialogs_hidePsaDrawableRecolored = false;
                     }
@@ -3928,14 +3928,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.restore();
 
                 if (!Theme.dialogs_archiveDrawableRecolored) {
-                    Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_archiveDrawable.setLayerColor("Arrow", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
                     Theme.dialogs_archiveDrawableRecolored = true;
                 }
                 if (!Theme.dialogs_hidePsaDrawableRecolored) {
                     Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
-                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
                     Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
                     Theme.dialogs_hidePsaDrawableRecolored = true;
                 }

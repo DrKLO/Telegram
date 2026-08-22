@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
@@ -144,6 +145,8 @@ import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProviderBuilder;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
@@ -321,7 +324,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
                     @Override
                     public void onWebAppSetActionBarColor(int colorKey, int color, boolean isOverrideColor) {
-                        int from = ((ColorDrawable) actionBar.getBackground()).getColor();
+                        int from = iBlur3SourceColor.getColor();
                         int to = color;
 
                         BotWebViewMenuContainer.ActionBarColorsAnimating actionBarColorsAnimating = new BotWebViewMenuContainer.ActionBarColorsAnimating();
@@ -333,9 +336,21 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         ValueAnimator animator = ValueAnimator.ofFloat(0, 1).setDuration(200);
                         animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                         animator.addUpdateListener(animation -> {
-                            float progress = (float) animation.getAnimatedValue();
-                            // actionBar.setBackgroundColor(ColorUtils.blendARGB(from, to, progress));
-                            webViewLayout.setCustomActionBarBackground(ColorUtils.blendARGB(from, to, progress));
+                            final float progress = (float) animation.getAnimatedValue();
+                            final int bgColor = ColorUtils.blendARGB(from, to, progress);
+
+                            overridenWebviewBackgroundColor = bgColor;
+                            hasOverridenWebviewBackgroundColor = true;
+                            if (actionBar != null) {
+                                actionBar.updateColors();
+                                actionBar.invalidate();
+                            }
+
+                            iBlur3SourceColor.setColor(bgColor);
+                            if (fadeView != null) {
+                                fadeView.invalidate();
+                            }
+                            webViewLayout.setCustomActionBarBackground(bgColor);
                             currentAttachLayout.invalidate();
                             sizeNotifierFrameLayout.invalidate();
                             actionBarColorsAnimating.updateActionBar(actionBar, progress);
@@ -2210,6 +2225,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
             }
         };
+        actionBar.alwaysApplyColorFilterToBackButton();
         actionBar.setForcedMenuWidth(dp(46));
         // actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
         actionBar.setBackButtonDrawable(new BackDrawable(false));
@@ -2804,7 +2820,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         showLayout(restrictedLayout);
                     } else {
                         if (locationLayout == null) {
-                            layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach);
+                            layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach && !restrictEphemeralMessageTypes);
                             if (locationActivityDelegate != null) {
                                 locationLayout.setDelegate(locationActivityDelegate);
                             } else {
@@ -4072,9 +4088,36 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         passcodeView = new PasscodeView(context);
         containerView.addView(passcodeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        actionBar.setupGlass(iBlur3FactoryLiquidGlass, BlurredBackgroundProviderImpl.attachMenuActionBar(resourcesProvider));
+        BlurredBackgroundProvider colorProvider = new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) -> {
+                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+                final int colorBg = Theme.getColor(isDark ? Theme.key_windowBackgroundGray : Theme.key_dialogBackgroundGray, r);
+                final int colorTarget = Theme.getColor(Theme.key_windowBackgroundWhite, r);
+                if (hasOverridenWebviewBackgroundColor) {
+                    return //overridenWebviewBackgroundColor;
+                             ColorUtils.blendARGB(colorTarget, overridenWebviewBackgroundColor, 0.75f);
+                }
+
+                return BlurredBackgroundProviderImpl.solveSrcColor(colorBg, colorTarget, alpha);
+            })
+            .setStrokeColorTop((r, isDark) -> hasOverridenWebviewBackgroundColor ? 0 : isDark ? 0x28FFFFFF : 0xFFFFFFFF)
+            .setStrokeColorBottom((r, isDark) -> hasOverridenWebviewBackgroundColor ? 0 : isDark ? 0x14FFFFFF : 0xFFFFFFFF)
+            .setShadowColor((r, isDark) -> {
+                if (hasOverridenWebviewBackgroundColor) {
+                    return AndroidUtilities.computePerceivedBrightness(overridenWebviewBackgroundColor) > 0.72f ? 0x20000000 : 0x40FFFFFF;
+                }
+                return isDark ? 0 : 0x20000000;
+            })
+            .setShadowLayer(dpf2(10 / 3f), 0, dpf2(2 / 3f))
+            .setStrokeWidth(dpf2(1), dpf2(2 / 3f))
+            .build();
+
+        actionBar.setupGlass(iBlur3FactoryLiquidGlass, colorProvider);
         animatorCurrentVisibleLayout.replace((long) LAYOUT_TYPE_PHOTO, false);
     }
+
+    private boolean hasOverridenWebviewBackgroundColor;
+    private int overridenWebviewBackgroundColor;
 
     private int getEmojiPadding() {
         if (currentAttachLayout == pollLayout && pollLayout.emojiView != null) {
@@ -4346,6 +4389,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             AndroidUtilities.setNavigationBarColor(this, navBarColor, false);
             AndroidUtilities.setLightNavigationBar(this, AndroidUtilities.computePerceivedBrightness(navBarColor) > 0.721);
         }
+        if (hasOverridenWebviewBackgroundColor) {
+            hasOverridenWebviewBackgroundColor = false;
+            actionBar.updateColors();
+            actionBar.invalidate();
+            onCurrentLayoutAnimatorChanged();
+        }
     }
 
     public static final int EDITMEDIA_TYPE_ANY = -1;
@@ -4450,7 +4499,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 return;
             }
             if (locationLayout == null) {
-                layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach);
+                layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach && !restrictEphemeralMessageTypes);
                 if (locationActivityDelegate != null) {
                     locationLayout.setDelegate(locationActivityDelegate);
                 } else if (baseFragment instanceof ChatActivity) {
@@ -4721,8 +4770,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
 
         if (actionBar != null) {
+            if (hasOverridenWebviewBackgroundColor && !(layout instanceof ChatAttachAlertBotWebViewLayout)) {
+                hasOverridenWebviewBackgroundColor = false;
+                actionBar.updateColors();
+                actionBar.invalidate();
+                onCurrentLayoutAnimatorChanged();
+            }
+
             final int menuWidth;
-            if (newId == LAYOUT_TYPE_PHOTO || newId == LAYOUT_TYPE_LOCATION) {
+            if (newId == LAYOUT_TYPE_PHOTO || newId == LAYOUT_TYPE_LOCATION || layout instanceof ChatAttachAlertBotWebViewLayout) {
                 menuWidth = dp(46);
             } else if (newId == LAYOUT_TYPE_DOCUMENTS) {
                 menuWidth = dp(84);
@@ -4735,6 +4791,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
 
     private void onCurrentLayoutAnimatorChanged(ReplaceAnimator<?> animator) {
+        onCurrentLayoutAnimatorChanged();
+    }
+
+    private void onCurrentLayoutAnimatorChanged() {
         if (shadowDrawable == null || containerView == null) {
             return;
         }
@@ -6020,7 +6080,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         ChatAttachAlert.AttachAlertLayout layoutToSet;
         if (isStoryLocationPicker || isBizLocationPicker || isLocationPicker) {
             if (locationLayout == null) {
-                layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach && !isLocationPicker);
+                layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext(), resourcesProvider, !isPollAttach && !isLocationPicker && !restrictEphemeralMessageTypes);
                 if (locationActivityDelegate != null) {
                     locationLayout.setDelegate(locationActivityDelegate);
                 } else {

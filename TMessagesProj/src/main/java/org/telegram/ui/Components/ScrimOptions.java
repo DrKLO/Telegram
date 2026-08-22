@@ -356,7 +356,9 @@ public class ScrimOptions extends Dialog {
 
             final ColorMatrix colorMatrixOptions = new ColorMatrix();
             colorMatrixOptions.setSaturation(Theme.isCurrentThemeDark() ? 2 : 3);
-            AndroidUtilities.adjustBrightnessColorMatrix(colorMatrixOptions, Theme.isCurrentThemeDark() ? -.2f : -.07f);
+            if (!Theme.isCurrentThemeDark()) {
+                AndroidUtilities.adjustBrightnessColorMatrix(colorMatrixOptions, Theme.isCurrentThemeDark() ? -.2f : -.07f);
+            }
             final Bitmap bitmapOptions = AndroidUtilities.applyColorMatrix(bitmap, colorMatrixOptions);
             bitmapOptions.setHasAlpha(false);
 

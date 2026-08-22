@@ -777,8 +777,8 @@ public class CaptionStory extends CaptionContainerView {
             int dotColor = 0xffDB4646;
             redDotPaint.setColor(dotColor);
             drawable.beginApplyLayerColors();
-            drawable.setLayerColor("Cup Red.**", dotColor);
-            drawable.setLayerColor("Box.**", dotColor);
+            drawable.setLayerColor("Cup Red", dotColor);
+            drawable.setLayerColor("Box", dotColor);
             drawable.commitApplyLayerColors();
         }
 

@@ -1543,7 +1543,7 @@ public class StickerMakerView extends FrameLayout implements NotificationCenter.
                 stickerUploader.sendToDialogId,
                 null, null, null, null, null,
                 true, 0, 0, false,
-                null, null, 0, 0, 0,
+                null, null, 0, 0,
                 null
             );
             if (loadingToast != null) {

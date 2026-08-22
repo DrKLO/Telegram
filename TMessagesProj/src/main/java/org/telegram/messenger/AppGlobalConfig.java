@@ -97,6 +97,9 @@ public class AppGlobalConfig {
     public final ConfigInt messageLengthLimitDefault = ofInt("message_length_limit_default", 4096);
     public final ConfigInt messageLengthLimitPremium = ofInt("message_length_limit_premium", 8192);
 
+    public final ConfigInt quickReplyMessagesLimit = ofInt("quick_reply_messages_limit", 20);
+    public final ConfigInt ephemeralWelcomeMessagesMax = ofInt("ephemeral_welcome_messages_max", 5);
+
     public final ConfigBoolean starsSpendTopUpInvoiceDisabled = ofBoolean("stars_spend_topup_invoice_disabled", false);
 
     /* * */

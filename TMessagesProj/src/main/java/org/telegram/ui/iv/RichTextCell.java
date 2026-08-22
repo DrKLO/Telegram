@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
@@ -15,14 +16,19 @@ import android.text.InputType;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.CodeHighlighting;
@@ -35,7 +41,10 @@ import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.CheckBoxBase;
+import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.QuoteCollapseButton;
+import org.telegram.ui.Components.QuoteSpan;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ReplyMessageLine;
 import org.telegram.ui.Components.UItem;
@@ -63,6 +72,13 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         default void onLanguageClick(BlockRow row, View button) {}
         default boolean onSelectAll(BlockRow row) { return false; }
         default boolean onPaste(BlockRow row, RichEditText editText) { return false; }
+        default int getListPaddingTop(BlockRow row) { return dp(8); }
+        default int getListPaddingBottom(BlockRow row) { return dp(11); }
+        default int getOrderedListMarkerWidth(BlockRow row, Paint paint) {
+            final String marker = (row != null ? row.num : 1) + ".";
+            return Math.max(dp(ORDERED_LIST_NUMBER_WIDTH_DP),
+                (int) Math.ceil(paint.measureText(marker)) + dp(10));
+        }
         default void onCommand(BlockRow row, int command) {}
         default void onSlashSuggest(RichTextCell cell, String query) {}
     }
@@ -74,11 +90,15 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
     public static final int CMD_ATTACH_PHOTO = 4;
     public static final int CMD_ATTACH_VIDEO = 5;
     public static final int CMD_DETAILS = 6;
+    public static final int CMD_BUTTON = 7;
 
     private static final int INDENT_DP_PER_LEVEL = 24;
-    private static final int BULLET_WIDTH_DP = 28;
+    private static final int BULLET_WIDTH_DP = 18;
+    private static final int ORDERED_LIST_NUMBER_WIDTH_DP = 28;
     /** Extra top padding a code (preformatted) cell reserves above its content for the language button. */
     private static final int CODE_TOP_LANG_ROOM_DP = 24;
+    private static final int CODE_BACKGROUND_OUTER_VPAD_DP = 7;
+    private static final int QUOTE_BACKGROUND_OUTER_VPAD_DP = 8;
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final LinearLayout row;
@@ -107,11 +127,21 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
     private ReplyMessageLine quoteLine;
     private Drawable quoteIcon;
 
+    // Collapse toggle for pageBlockBlockquote only (pullquote is unaffected).
+    private QuoteCollapseButton collapseButton;
+    private final RectF collapseButtonBounds = new RectF();
+    private boolean collapseButtonPressed;
+    private int collapseExtraHeight;
+    // Transient dim decoration for the body text past the first COLLAPSE_LINES lines while collapsed.
+    private CharacterStyle collapsedPart;
+    private int collapsedPartStart = -1, collapsedPartEnd = -1;
+    private boolean applyingCollapsedDecoration;
+
     public RichTextCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        setPadding(dp(16), dp(6), dp(16), 0);
+        setPadding(dp(16), dp(5), dp(16), dp(4.66f));
         setClipToPadding(false);
 
         row = new LinearLayout(context);
@@ -120,8 +150,23 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         indentSpacer = new View(context);
         row.addView(indentSpacer, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        bullet = new TextView(context);
-        bullet.setGravity(Gravity.CENTER);
+        bullet = new TextView(context) {
+            private final Paint markerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (currentRow != null && currentRow.level > 0 && currentRow.num == 0 && !currentRow.checkbox) {
+                    markerPaint.setColor(getCurrentTextColor());
+                    final float radius = AndroidUtilities.dpf2(4.3f) / 2f;
+                    final float cy = getBaseline() - getTextSize() * .35f;
+                    canvas.drawCircle(getWidth() / 2f, cy, radius, markerPaint);
+                } else {
+                    super.onDraw(canvas);
+                }
+            }
+        };
+        bullet.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        bullet.setPaddingRelative(dp(6), 0, 0, 0);
+        bullet.setSingleLine(true);
         bullet.setIncludeFontPadding(false);
         bullet.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         row.addView(bullet, LayoutHelper.createLinear(BULLET_WIDTH_DP, LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -188,9 +233,13 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             @Override
             public void onTextChanged(RichEditText et, Editable text) {
                 if (currentRow == null) return;
+                sizeHeaderEmojiToText(text);
+                updateListNumberStyle();
                 applyStyledTextToBlock(currentRow.block, text);
                 scheduleHighlight();
                 updateAuthorVisibility();
+                resetCollapsedIfTooShort();
+                updateCollapsedDecoration();
                 if (delegate != null) delegate.onTextChanged(currentRow);
                 if (delegate != null) delegate.onSlashSuggest(RichTextCell.this, slashQuery(text.toString()));
                 int mdCmd = matchMarkdownCommand(text.toString(), currentRow);
@@ -277,7 +326,9 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             }
         });
         editText.setDelegate(() -> {
+            if (applyingCollapsedDecoration) return;
             if (currentRow == null) return;
+            updateListNumberStyle();
             applyStyledTextToBlock(currentRow.block, editText.getText());
             if (delegate != null) delegate.onSpansChanged(currentRow);
         });
@@ -290,7 +341,7 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         addView(row, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
         authorEditText = new RichEditText(context, resourcesProvider);
-        authorEditText.setPadding(dp(2), dp(1), dp(2), dp(1));
+        authorEditText.setPadding(dp(2), dp(2), dp(2), dp(1));
         authorEditText.setAllowNewlines(false);
         authorEditText.setInputType(
             InputType.TYPE_CLASS_TEXT |
@@ -325,7 +376,17 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
                 if (currentRow == null) return;
                 persistAuthor();
                 if (delegate != null) delegate.onTextChanged(currentRow);
-                if (currentRow.block instanceof TL_iv.pageBlockPullquote) RichTextCell.this.invalidate();
+                if (currentRow.block instanceof TL_iv.pageBlockPullquote) {
+                    RichTextCell.this.invalidate();
+                } else if (currentRow.block instanceof TL_iv.pageBlockBlockquote) {
+                    // Author's last line drives the collapse-button overlap. Redraw is cheap; only
+                    // re-measure when the required extra height actually changes (a line-count change
+                    // already schedules its own layout pass via the EditText).
+                    RichTextCell.this.invalidate();
+                    if (RichTextCell.this.collapseButtonExtraHeightChanged()) {
+                        RichTextCell.this.requestLayout();
+                    }
+                }
             }
 
             @Override
@@ -432,10 +493,17 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         languageButton.setVisibility(View.VISIBLE);
     }
 
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return super.verifyDrawable(who) || collapseButton != null && collapseButton.verifyDrawable(who);
+    }
+
     public void bind(BlockRow row, Delegate delegate, boolean forceHint) {
         this.currentRow = row;
         this.delegate = delegate;
         this.forceHint = forceHint;
+        // The body Editable may be replaced below; force the dim decoration to reapply on next layout.
+        collapsedPartStart = collapsedPartEnd = -1;
         editText.setBlock(row.block);
         applyStyle(row.block);
         applyQuoteInset(row);
@@ -450,11 +518,15 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
                 RichTextStyle.setStyle(sb, 0, sb.length(), RichTextStyle.ITALIC, false);
                 styledText = sb;
             }
-            CharSequence styled = Emoji.replaceEmoji(styledText, editText.getPaint().getFontMetricsInt(), false);
+            CharSequence styled = Emoji.replaceEmoji(styledText, editText.getPaint().getFontMetricsInt(), false,
+                RichEditorListView.isHeading(row.block) ? .85f : 1f);
             editText.setTextSilently(styled);
+            sizeHeaderEmojiToText(editText.getText());
             editText.invalidateEffects();
             highlightedSnapshot = null;
         }
+        sizeHeaderEmojiToText(editText.getText());
+        updateListNumberStyle();
         bindAuthor(row.block);
         scheduleHighlight();
     }
@@ -462,6 +534,10 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
     public void rebindInPlace() {
         if (currentRow == null || delegate == null) return;
         bind(currentRow, delegate, forceHint);
+    }
+
+    void refreshListVerticalPadding() {
+        syncLiveListVerticalPadding();
     }
 
     private void bindAuthor(TL_iv.PageBlock block) {
@@ -709,6 +785,9 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         if (quoteIcon != null) {
             quoteIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
         }
+        if (quoteLine != null) {
+            RichBlockChrome.applyEditorQuoteColor(quoteLine, resourcesProvider);
+        }
     }
 
     private void applyListDecoration(BlockRow row) {
@@ -730,7 +809,27 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         } else {
             checkBoxView.setVisibility(View.GONE);
             bullet.setVisibility(View.VISIBLE);
-            bullet.setText(row.num == 0 ? ("•◦▪".charAt((level - 1) % 3) + "") : (row.num + "."));
+            final LinearLayout.LayoutParams bulletLayoutParams = (LinearLayout.LayoutParams) bullet.getLayoutParams();
+            final int markerWidth = row.num == 0
+                ? dp(BULLET_WIDTH_DP)
+                : delegate != null
+                    ? delegate.getOrderedListMarkerWidth(row, bullet.getPaint())
+                    : Math.max(dp(ORDERED_LIST_NUMBER_WIDTH_DP),
+                        (int) Math.ceil(bullet.getPaint().measureText(row.num + ".")) + dp(10));
+            if (bulletLayoutParams.width != markerWidth) {
+                bulletLayoutParams.width = markerWidth;
+                bullet.setLayoutParams(bulletLayoutParams);
+            }
+            bullet.setText(row.num == 0 ? "" : (row.num + "."));
+        }
+    }
+
+    private void updateListNumberStyle() {
+        final boolean bold = currentRow != null && currentRow.num > 0 && editText.length() > 0
+            && (editText.getCurrentStyle(0, 1) & RichTextStyle.BOLD) != 0;
+        bullet.setTypeface(bold ? AndroidUtilities.bold() : null);
+        if (currentRow != null && currentRow.num > 0) {
+            applyListDecoration(currentRow);
         }
     }
 
@@ -775,8 +874,10 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         editText.setCenterEmptyHint(false);
         editText.setHint(getHint());
         editText.setTextColorKey(Theme.key_windowBackgroundWhiteBlackText);
+        editText.setLineSpacing(0, 1f);
         if (block instanceof TL_iv.pageBlockPreformatted) {
-            setPadding(dp(16), dp(6) + dp(CODE_TOP_LANG_ROOM_DP), dp(16), dp(12));
+            setPadding(dp(16), dp(CODE_BACKGROUND_OUTER_VPAD_DP + CODE_TOP_LANG_ROOM_DP), dp(16),
+                dp(CODE_BACKGROUND_OUTER_VPAD_DP + 12));
             editText.setInputType(
                 InputType.TYPE_CLASS_TEXT |
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE |
@@ -786,8 +887,9 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             editText.setAllowNewlines(true);
             editText.setSoftEnterNewline(false);
             editText.setGravity(Gravity.TOP | Gravity.START);
-            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 1);
             editText.setTypeface(Typeface.MONOSPACE);
+            editText.setLineSpacing(editText.getPaint().getFontSpacing() * .30f, 1f);
             editText.setAccentHint(false);
         } else if (block instanceof TL_iv.pageBlockBlockquote) {
             editText.setInputType(
@@ -798,8 +900,8 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             editText.setAllowNewlines(false);
             editText.setSoftEnterNewline(false);
             editText.setGravity(Gravity.TOP | Gravity.START);
-            setPadding(dp(16 + 12), dp(6 + 8), dp(16 + 8), dp(8));
-            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
+            setPadding(dp(16 + 12), dp(QUOTE_BACKGROUND_OUTER_VPAD_DP + 8), dp(16 + 8), dp(QUOTE_BACKGROUND_OUTER_VPAD_DP + 8));
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(8, baseSize - 2));
             editText.setTypeface(null);
             editText.setAccentHint(true);
         } else if (block instanceof TL_iv.pageBlockPullquote) {
@@ -812,8 +914,8 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             editText.setSoftEnterNewline(true);
             editText.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
             editText.setCenterEmptyHint(true);
-            setPadding(dp(16 + 12 + 30), dp(6 + 8), dp(16 + 12 + 30), dp(8));
-            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
+            setPadding(dp(40), dp(QUOTE_BACKGROUND_OUTER_VPAD_DP + 8), dp(40), dp(QUOTE_BACKGROUND_OUTER_VPAD_DP + 8));
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(8, baseSize - 2));
             editText.setTypeface(AndroidUtilities.getTypeface("fonts/ritalic.ttf"));
             editText.setAccentHint(true);
         } else {
@@ -825,34 +927,60 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             editText.setAllowNewlines(false);
             editText.setSoftEnterNewline(false);
             editText.setGravity(Gravity.TOP | Gravity.START);
-            setPadding(dp(16), dp(6), dp(16), dp(0));
+            final boolean heading = block instanceof TL_iv.pageBlockHeading1
+                || block instanceof TL_iv.pageBlockHeading2
+                || block instanceof TL_iv.pageBlockHeading3
+                || block instanceof TL_iv.pageBlockHeading4
+                || block instanceof TL_iv.pageBlockHeading5
+                || block instanceof TL_iv.pageBlockHeading6;
+            setPadding(dp(16), dp(heading ? 11 : 5), dp(16), dp(heading ? 7f : 4.66f));
+            if (currentRow != null && currentRow.level > 0) {
+                setPadding(dp(16), delegate != null ? delegate.getListPaddingTop(currentRow) : dp(8), dp(16),
+                    delegate != null ? delegate.getListPaddingBottom(currentRow) : dp(11));
+            }
             if (block instanceof TL_iv.pageBlockHeading1) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 2);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 3);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockHeading2) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 1);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 2);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockHeading3) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 1);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockHeading4) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 1);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockHeading5) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 2);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 1);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockHeading6) {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 3);
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 2);
                 editText.setTypeface(AndroidUtilities.getTypeface("fonts/mw_bold.ttf"));
             } else if (block instanceof TL_iv.pageBlockFooter) {
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize - 2);
                 editText.setTypeface(null);
                 editText.setTextColorKey(Theme.key_chat_inReplyMessageText);
             } else {
-                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize);
+                final boolean paragraphInsideQuote = block instanceof TL_iv.pageBlockParagraph
+                    && currentRow != null && !currentRow.quoteIds.isEmpty();
+                editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP,
+                    paragraphInsideQuote ? Math.max(8, baseSize - 2) : baseSize);
                 editText.setTypeface(null);
             }
             editText.setAccentHint(false);
+        }
+    }
+
+    private void sizeHeaderEmojiToText(CharSequence text) {
+        if (currentRow == null || !RichEditorListView.isHeading(currentRow.block) || !(text instanceof Spanned)) return;
+        final Paint.FontMetricsInt metrics = editText.getPaint().getFontMetricsInt();
+        final int size = Math.max(1, Math.round(editText.getTextSize() * .85f / 1.2f));
+        for (Emoji.EmojiSpan span : ((Spanned) text).getSpans(0, text.length(), Emoji.EmojiSpan.class)) {
+            span.scale = .85f;
+        }
+        for (AnimatedEmojiSpan span : ((Spanned) text).getSpans(0, text.length(), AnimatedEmojiSpan.class)) {
+            span.replaceFontMetrics(metrics);
+            span.setSize(size);
         }
     }
 
@@ -1031,6 +1159,7 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         if (tl.equals("/map") || tl.equals("/location") || tl.equals("/loc")) return CMD_ATTACH_LOCATION;
         if (tl.equals("/latex") || tl.equals("/equation") || tl.equals("/math")) return CMD_MATH;
         if (tl.equals("/toggle") || tl.equals("/details")) return CMD_DETAILS;
+        if (tl.equals("/button")) return CMD_BUTTON;
         return CMD_NONE;
     }
 
@@ -1189,8 +1318,10 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        syncLiveListVerticalPadding();
         final int width = MeasureSpec.getSize(widthMeasureSpec);
         if (authorEditText.getVisibility() == View.GONE) {
+            collapseExtraHeight = 0;
             super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
             return;
         }
@@ -1203,11 +1334,78 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             MeasureSpec.makeMeasureSpec(innerW, MeasureSpec.EXACTLY),
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
         );
-        setMeasuredDimension(width, getPaddingTop() + row.getMeasuredHeight() + authorEditText.getMeasuredHeight() + getPaddingBottom());
+        final int baseHeight = getPaddingTop() + row.getMeasuredHeight() + authorEditText.getMeasuredHeight() + getPaddingBottom();
+        collapseExtraHeight = collapseButtonExtraHeight(width, baseHeight);
+        setMeasuredDimension(width, baseHeight + collapseExtraHeight);
+    }
+
+    /**
+     * List edges are structural state, not cell state. A visible cell can survive an adjacent
+     * item's list toggle or insertion without being rebound, so resolve its vertical padding
+     * from the delegate's current rows every time it is measured.
+     */
+    private void syncLiveListVerticalPadding() {
+        if (currentRow == null || currentRow.level <= 0 || delegate == null) return;
+        int top = delegate.getListPaddingTop(currentRow);
+        int bottom = delegate.getListPaddingBottom(currentRow);
+        if (currentRow.quoteFirst) top = RichBlockChrome.quoteTopPad(currentRow);
+        if (currentRow.quoteLast) bottom = RichBlockChrome.quoteBottomPad(currentRow);
+        if (top != getPaddingTop() || bottom != getPaddingBottom()) {
+            setPadding(getPaddingLeft(), top, getPaddingRight(), bottom);
+        }
+    }
+
+    // Extra bottom space so the collapse button clears the author's last line. Blockquote only,
+    // and only while the author field is visible (it is laid out at the block bottom, right where
+    // the button is anchored). Growing the block pushes the bottom-anchored button below the text.
+    private int collapseButtonExtraHeight(int width, int baseHeight) {
+        if (!hasCollapseButton() || authorEditText.getVisibility() != View.VISIBLE) {
+            return 0;
+        }
+        final Layout aLayout = authorEditText.getLayout();
+        if (aLayout == null || aLayout.getLineCount() <= 0) {
+            return 0;
+        }
+        ensureCollapseButton();
+
+        final int last = aLayout.getLineCount() - 1;
+        final int ay = getPaddingTop() + row.getMeasuredHeight();
+        final float authorRight = getPaddingLeft() + authorEditText.getPaddingLeft() + aLayout.getLineRight(last);
+        final float authorTop = ay + authorEditText.getPaddingTop() + aLayout.getLineTop(last);
+        final float authorBottom = ay + authorEditText.getPaddingTop() + aLayout.getLineBottom(last);
+
+        final int pad = dp(3.333f);
+        final float right = width - dp(16) - pad;
+        final float buttonLeft = right - collapseButton.width();
+        final int buttonHeight = collapseButton.height();
+        final float buttonTop = baseHeight - pad - buttonHeight;
+        final float buttonBottom = baseHeight - pad;
+
+        final boolean overlapX = authorRight > buttonLeft;
+        final boolean overlapY = authorBottom > buttonTop && authorTop < buttonBottom;
+        if (!overlapX || !overlapY) {
+            return 0;
+        }
+        // Final height at which the button's top sits just below the author's last line.
+        final float neededHeight = authorBottom + dp(4) + buttonHeight + pad;
+        return (int) Math.ceil(Math.max(0, neededHeight - baseHeight));
+    }
+
+    // True when the collapse-button overlap now needs a different amount of extra height than is
+    // currently applied. Cheap: reuses the already-measured children and the current author layout,
+    // so callers can gate requestLayout() instead of firing it on every keystroke.
+    private boolean collapseButtonExtraHeightChanged() {
+        final int width = getMeasuredWidth();
+        if (width <= 0) {
+            return true; // not measured yet — let a layout pass run
+        }
+        final int baseHeight = getPaddingTop() + row.getMeasuredHeight() + authorEditText.getMeasuredHeight() + getPaddingBottom();
+        return collapseButtonExtraHeight(width, baseHeight) != collapseExtraHeight;
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        updateCollapsedDecoration();
         if (authorEditText.getVisibility() == View.GONE) {
             super.onLayout(changed, left, top, right, bottom);
             return;
@@ -1230,7 +1428,7 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (currentRow != null && currentRow.block instanceof TL_iv.pageBlockPreformatted) {
-            bgPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_chat_inCodeBackground, resourcesProvider), .10f));
+            bgPaint.setColor(Theme.getColor(Theme.key_chat_inArticleCodeBackground, resourcesProvider));
             final int qStart = RichBlockChrome.quoteInset(currentRow);
             final int qEnd = RichBlockChrome.quoteInsetEnd(currentRow);
             int bgLeft = 0;
@@ -1242,13 +1440,16 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
                 bgRight = getWidth() - (RichBlockChrome.rtl() ? startInset : endInset);
             }
             final int r = bgLeft > 0 || bgRight < getWidth() ? dp(8) : 0;
-            canvas.drawRoundRect(bgLeft, dp(6), bgRight, getHeight(), r, r, bgPaint);
+            canvas.drawRoundRect(bgLeft, dp(CODE_BACKGROUND_OUTER_VPAD_DP), bgRight,
+                getHeight() - dp(CODE_BACKGROUND_OUTER_VPAD_DP), r, r, bgPaint);
         } else if (currentRow != null && currentRow.block instanceof TL_iv.pageBlockBlockquote) {
             if (quoteLine == null) {
                 quoteLine = new ReplyMessageLine(this);
                 quoteLine.check(null, null, null, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
+                RichBlockChrome.applyEditorQuoteColor(quoteLine, resourcesProvider);
             }
-            AndroidUtilities.rectTmp.set(dp(16), dp(6), getWidth() - dp(16), getHeight());
+            AndroidUtilities.rectTmp.set(dp(16), dp(QUOTE_BACKGROUND_OUTER_VPAD_DP), getWidth() - dp(16),
+                getHeight() - dp(QUOTE_BACKGROUND_OUTER_VPAD_DP));
             final float rad = (float) Math.floor(SharedConfig.bubbleRadius / 3f);
             quoteLine.drawBackground(canvas, AndroidUtilities.rectTmp, rad, rad, rad, 1.0f);
             quoteLine.drawLine(canvas, AndroidUtilities.rectTmp, 1.0f);
@@ -1256,6 +1457,7 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             if (quoteLine == null) {
                 quoteLine = new ReplyMessageLine(this);
                 quoteLine.check(null, null, null, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
+                RichBlockChrome.applyEditorQuoteColor(quoteLine, resourcesProvider);
             }
 
             if (quoteIcon == null) {
@@ -1293,17 +1495,19 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
                 left -= dp(30);
                 right += dp(30);
                 final float rad = (float) Math.floor(SharedConfig.bubbleRadius / 2f);
-                AndroidUtilities.rectTmp.set(left, dp(6), right, getHeight());
+                final int backgroundTop = dp(QUOTE_BACKGROUND_OUTER_VPAD_DP);
+                final int backgroundBottom = getHeight() - dp(QUOTE_BACKGROUND_OUTER_VPAD_DP);
+                AndroidUtilities.rectTmp.set(left, backgroundTop, right, backgroundBottom);
                 quoteLine.drawBackground(canvas, AndroidUtilities.rectTmp, rad, rad, rad, 1.0f);
 
                 canvas.save();
-                quoteIcon.setBounds((int) left + dp(8), dp(6 + 7), (int) left + dp(8) + quoteIcon.getIntrinsicWidth(), dp(6 + 7) + quoteIcon.getIntrinsicHeight());
+                quoteIcon.setBounds((int) left + dp(8), backgroundTop + dp(7), (int) left + dp(8) + quoteIcon.getIntrinsicWidth(), backgroundTop + dp(7) + quoteIcon.getIntrinsicHeight());
                 canvas.scale(-1.0f, -1.0f, quoteIcon.getBounds().centerX(), quoteIcon.getBounds().centerY());
                 quoteIcon.draw(canvas);
                 canvas.restore();
 
                 canvas.save();
-                quoteIcon.setBounds((int) right - dp(8) - quoteIcon.getIntrinsicWidth(), getHeight() - dp(7) - quoteIcon.getIntrinsicHeight(), (int) right - dp(8), getHeight() - dp(7));
+                quoteIcon.setBounds((int) right - dp(8) - quoteIcon.getIntrinsicWidth(), backgroundBottom - dp(7) - quoteIcon.getIntrinsicHeight(), (int) right - dp(8), backgroundBottom - dp(7));
                 canvas.scale(1.0f, -1.0f, quoteIcon.getBounds().centerX(), quoteIcon.getBounds().centerY());
                 quoteIcon.draw(canvas);
                 canvas.restore();
@@ -1342,6 +1546,153 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             }
         }
         super.dispatchDraw(canvas);
+        drawCollapseButton(canvas);
+    }
+
+    private boolean isBlockquote() {
+        return currentRow != null && currentRow.block instanceof TL_iv.pageBlockBlockquote;
+    }
+
+    // The collapse control only makes sense once the body is taller than the collapsed height.
+    private boolean hasCollapseButton() {
+        if (!isBlockquote()) {
+            return false;
+        }
+        final Layout layout = editText.getLayout();
+        return layout != null && layout.getLineCount() > QuoteSpan.COLLAPSE_LINES;
+    }
+
+    private void ensureCollapseButton() {
+        if (collapseButton == null) {
+            collapseButton = new QuoteCollapseButton(this);
+        }
+    }
+
+    // Drawn after super.dispatchDraw so it sits above the edit text. Blockquote only.
+    private void drawCollapseButton(Canvas canvas) {
+        if (!isBlockquote()) {
+            return;
+        }
+        ensureCollapseButton();
+        final TL_iv.pageBlockBlockquote block = (TL_iv.pageBlockBlockquote) currentRow.block;
+        final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+        final int pad = dp(3.333f);
+        final float right = getWidth() - dp(16) - pad;
+        final float bottom = getHeight() - dp(QUOTE_BACKGROUND_OUTER_VPAD_DP) - pad;
+        collapseButton.draw(canvas, collapseButtonBounds, right, bottom, color, block.collapsed, hasCollapseButton());
+    }
+
+    // Clears the collapsed flag once the body is too short for the collapse button to apply, so a
+    // later re-growth of the text does not resurrect a collapsed state the user never re-requested.
+    private void resetCollapsedIfTooShort() {
+        if (isBlockquote() && !hasCollapseButton()) {
+            final TL_iv.pageBlockBlockquote block = (TL_iv.pageBlockBlockquote) currentRow.block;
+            block.collapsed = false;
+        }
+    }
+
+    private void toggleCollapsed() {
+        if (!isBlockquote()) {
+            return;
+        }
+        final TL_iv.pageBlockBlockquote block = (TL_iv.pageBlockBlockquote) currentRow.block;
+        block.collapsed = !block.collapsed;
+        updateCollapsedDecoration();
+        invalidate();
+        // ASSUMPTION: reuse onTextChanged to mark the block dirty / persist. Replace with a
+        // dedicated delegate hook if the editor tracks metadata changes separately.
+        if (delegate != null) {
+            delegate.onTextChanged(currentRow);
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (hasCollapseButton() && collapseButton != null) {
+            final boolean hit = collapseButtonBounds.contains(ev.getX(), ev.getY());
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (hit) {
+                        collapseButtonPressed = true;
+                        collapseButton.setPressed(true);
+                        return true;
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (collapseButtonPressed) {
+                        collapseButton.setPressed(hit);
+                        return true;
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    if (collapseButtonPressed) {
+                        collapseButtonPressed = false;
+                        collapseButton.setPressed(false);
+                        if (hit) {
+                            toggleCollapsed();
+                        }
+                        return true;
+                    }
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    if (collapseButtonPressed) {
+                        collapseButtonPressed = false;
+                        collapseButton.setPressed(false);
+                        return true;
+                    }
+                    break;
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    // Dims the body text past the first COLLAPSE_LINES lines while the quote is collapsed, mirroring
+    // QuoteSpan.QuoteCollapsedPart. The span is a plain CharacterStyle (ignored by serialization) and
+    // is applied under a guard so it does not re-enter the span-change persist path. Idempotent:
+    // safe to call on every text change and layout pass.
+    private void updateCollapsedDecoration() {
+        if (!(editText.getText() instanceof Editable)) {
+            return;
+        }
+        final Editable text = editText.getText();
+        int start = -1, end = -1;
+        if (isBlockquote() && ((TL_iv.pageBlockBlockquote) currentRow.block).collapsed) {
+            final Layout layout = editText.getLayout();
+            if (layout != null && layout.getLineCount() > QuoteSpan.COLLAPSE_LINES) {
+                start = layout.getLineStart(QuoteSpan.COLLAPSE_LINES);
+                end = text.length();
+                if (start >= end) {
+                    start = end = -1;
+                }
+            }
+        }
+        if (start == collapsedPartStart && end == collapsedPartEnd) {
+            return;
+        }
+        applyingCollapsedDecoration = true;
+        try {
+            if (collapsedPart != null) {
+                text.removeSpan(collapsedPart);
+            }
+            if (start >= 0) {
+                if (collapsedPart == null) {
+                    collapsedPart = new CollapsedTextPart();
+                }
+                text.setSpan(collapsedPart, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        } finally {
+            applyingCollapsedDecoration = false;
+        }
+        collapsedPartStart = start;
+        collapsedPartEnd = end;
+    }
+
+    private class CollapsedTextPart extends CharacterStyle {
+        @Override
+        public void updateDrawState(TextPaint tp) {
+            final int accent = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+            tp.setColor(Theme.blendOver(Theme.multAlpha(tp.getColor(), 0.55f), Theme.multAlpha(accent, 0.40f)));
+        }
     }
 
     private static class CheckBoxView extends View {

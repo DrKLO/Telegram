@@ -39,6 +39,7 @@
     <item name="menu_settings" type="id"/>
     <item name="menu_reload_page" type="id"/>
     <item name="menu_delete_bot" type="id"/>
+    <item name="menu_report_bot" type="id"/>
     <item name="menu_tos_bot" type="id"/>
     <item name="menu_privacy" type="id"/>
     <item name="menu_add_to_home_screen_bot" type="id"/>
@@ -61,4 +62,7 @@
     <item name="passcode_btn_done" type="id"/>
 
     <item name="dragging" type="id"/>
+
+    <item name="tag_view_on_post_draw_state" type="id" />
+    <item name="tag_view_on_post_draw_root_state" type="id" />
 </resources>

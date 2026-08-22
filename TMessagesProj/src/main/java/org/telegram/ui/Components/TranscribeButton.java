@@ -275,13 +275,13 @@ public class TranscribeButton {
         }
         if (newColor) {
             inIconDrawable.beginApplyLayerColors();
-            inIconDrawable.setLayerColor("Artboard Outlines.**", this.iconColor);
+            inIconDrawable.setLayerColor("Artboard Outlines", this.iconColor);
             inIconDrawable.commitApplyLayerColors();
             inIconDrawable.setAllowDecodeSingleFrame(true);
             inIconDrawable.updateCurrentFrame(0, false);
             inIconDrawable.setAlpha(inIconDrawableAlpha = (int) (Color.alpha(color)));
             outIconDrawable.beginApplyLayerColors();
-            outIconDrawable.setLayerColor("Artboard Outlines.**", this.iconColor);
+            outIconDrawable.setLayerColor("Artboard Outlines", this.iconColor);
             outIconDrawable.commitApplyLayerColors();
             outIconDrawable.setAllowDecodeSingleFrame(true);
             outIconDrawable.updateCurrentFrame(0, false);
@@ -604,7 +604,7 @@ public class TranscribeButton {
 
         public void setColor(int color) {
             lottie.beginApplyLayerColors();
-            lottie.setLayerColor("Comp 1.**", color);
+            lottie.setLayerColor("Comp 1", color);
             lottie.commitApplyLayerColors();
             lottie.setAllowDecodeSingleFrame(true);
             lottie.updateCurrentFrame(0, false);

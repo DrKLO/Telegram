@@ -29,7 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -58,6 +58,8 @@ import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatAvatarContainer;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -66,6 +68,7 @@ import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
+import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.web.BotWebViewContainer;
 
@@ -267,6 +270,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                 addToHomeScreenItem.setVisibility(View.GONE);
             }
             botMenuItem.addSubItem(R.id.menu_tos_bot, R.drawable.menu_intro, LocaleController.getString(R.string.BotWebViewToS));
+            botMenuItem.addSubItem(R.id.menu_report_bot, R.drawable.msg_report, LocaleController.getString(R.string.BotWebViewReportBot));
         }
     }
 
@@ -711,6 +715,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                                 MediaDataController.getInstance(currentAccount).installShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
                             } else if (id == R.id.menu_tos_bot) {
                                 Browser.openUrl(getContext(), LocaleController.getString(R.string.BotWebViewToSLink));
+                            } else if (id == R.id.menu_report_bot) {
+                                ReportBottomSheet.openChat(currentAccount, getContext(), BulletinFactory.of(Bulletin.BulletinWindow.make(getContext()), null), botId);
                             }
                         }
                     });
@@ -985,6 +991,9 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
             TLRPC.TL_webViewResultUrl resultUrl = (TLRPC.TL_webViewResultUrl) response;
             queryId = resultUrl.query_id;
+            if (resultUrl.same_origin) {
+                webViewContainer.setTrustedOrigin(resultUrl.url);
+            }
             webViewContainer.loadUrl(currentAccount, resultUrl.url);
             swipeContainer.setWebView(webViewContainer.getWebView());
 

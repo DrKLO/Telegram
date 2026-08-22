@@ -29,19 +29,6 @@ public sealed class TlGen_ReplyMarkup : TlGen_Object {
     }
   }
 
-  public data class TL_replyInlineMarkup(
-    public val rows: List<TlGen_KeyboardButtonRow>,
-  ) : TlGen_ReplyMarkup() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      TlGen_Vector.serialize(stream, rows)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x48A30254U
-    }
-  }
-
   public data class TL_replyKeyboardForceReply(
     public val single_use: Boolean,
     public val selective: Boolean,
@@ -72,6 +59,7 @@ public sealed class TlGen_ReplyMarkup : TlGen_Object {
     public val single_use: Boolean,
     public val selective: Boolean,
     public val persistent: Boolean,
+    public val force_reply: Boolean,
     public val rows: List<TlGen_KeyboardButtonRow>,
     public val placeholder: String?,
   ) : TlGen_ReplyMarkup() {
@@ -83,6 +71,7 @@ public sealed class TlGen_ReplyMarkup : TlGen_Object {
         if (selective) result = result or 4U
         if (placeholder != null) result = result or 8U
         if (persistent) result = result or 16U
+        if (force_reply) result = result or 32U
         return result
       }
 
@@ -95,6 +84,28 @@ public sealed class TlGen_ReplyMarkup : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x85DD99D1U
+    }
+  }
+
+  public data class TL_replyInlineMarkup(
+    public val force_reply: Boolean,
+    public val rows: List<TlGen_KeyboardInlineButtonRow>,
+  ) : TlGen_ReplyMarkup() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (force_reply) result = result or 32U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      TlGen_Vector.serialize(stream, rows)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xB2B15770U
     }
   }
 
@@ -143,6 +154,19 @@ public sealed class TlGen_ReplyMarkup : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x3502758CU
+    }
+  }
+
+  public data class TL_replyInlineMarkup_layer228(
+    public val rows: List<TlGen_KeyboardButtonRow>,
+  ) : TlGen_Object {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      TlGen_Vector.serialize(stream, rows)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x48A30254U
     }
   }
 }

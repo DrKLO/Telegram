@@ -605,16 +605,16 @@ public class AvatarDrawable extends Drawable {
                 canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint);
                 if (Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));
                     Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawableRecolored = false;
                 }
             } else {
                 if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", color);
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", color);
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1", color);
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2", color);
                     Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawableRecolored = true;
                 }

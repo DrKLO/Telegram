@@ -37,6 +37,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -1285,51 +1286,51 @@ public class MessageEntityView extends EntityView {
         public Drawable getDrawable(String drawableKey) {
             if (drawableKey.equals(Theme.key_drawable_msgIn)) {
                 if (msgInDrawable == null) {
-                    msgInDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, false, resourcesProvider);
+                    msgInDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false, resourcesProvider);
                 }
                 return msgInDrawable;
             }
             if (drawableKey.equals(Theme.key_drawable_msgInSelected)) {
                 if (msgInDrawableSelected == null) {
-                    msgInDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, true, resourcesProvider);
+                    msgInDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, true, resourcesProvider);
                 }
                 return msgInDrawableSelected;
             }
             if (drawableKey.equals(Theme.key_drawable_msgOut)) {
                 if (msgOutDrawable == null) {
-                    msgOutDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false, resourcesProvider);
+                    msgOutDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, true, false, resourcesProvider);
                 }
                 return msgOutDrawable;
             }
             if (drawableKey.equals(Theme.key_drawable_msgOutSelected)) {
                 if (msgOutDrawableSelected == null) {
-                    msgOutDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, true, resourcesProvider);
+                    msgOutDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_TEXT, true, true, resourcesProvider);
                 }
                 return msgOutDrawableSelected;
             }
 
             if (drawableKey.equals(Theme.key_drawable_msgInMedia)) {
                 if (msgMediaInDrawable == null) {
-                    msgMediaInDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, false, false, resourcesProvider);
+                    msgMediaInDrawable = new MessageDrawable(MessageDrawable.TYPE_MEDIA, false, false, resourcesProvider);
                 }
                 msgMediaInDrawable.invalidateSelf();
                 return msgMediaInDrawable;
             }
             if (drawableKey.equals(Theme.key_drawable_msgInMediaSelected)) {
                 if (msgMediaInDrawableSelected == null) {
-                    msgMediaInDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, false, true, resourcesProvider);
+                    msgMediaInDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_MEDIA, false, true, resourcesProvider);
                 }
                 return msgMediaInDrawableSelected;
             }
             if (drawableKey.equals(Theme.key_drawable_msgOutMedia)) {
                 if (msgMediaOutDrawable == null) {
-                    msgMediaOutDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, false, resourcesProvider);
+                    msgMediaOutDrawable = new MessageDrawable(MessageDrawable.TYPE_MEDIA, true, false, resourcesProvider);
                 }
                 return msgMediaOutDrawable;
             }
             if (drawableKey.equals(Theme.key_drawable_msgOutMediaSelected)) {
                 if (msgMediaOutDrawableSelected == null) {
-                    msgMediaOutDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, true, resourcesProvider);
+                    msgMediaOutDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_MEDIA, true, true, resourcesProvider);
                 }
                 return msgMediaOutDrawableSelected;
             }
@@ -1342,10 +1343,10 @@ public class MessageEntityView extends EntityView {
             return isDark;
         }
     };
-    private Theme.MessageDrawable msgInDrawable, msgInDrawableSelected;
-    private Theme.MessageDrawable msgOutDrawable, msgOutDrawableSelected;
-    private Theme.MessageDrawable msgMediaInDrawable, msgMediaInDrawableSelected;
-    private Theme.MessageDrawable msgMediaOutDrawable, msgMediaOutDrawableSelected;
+    private MessageDrawable msgInDrawable, msgInDrawableSelected;
+    private MessageDrawable msgOutDrawable, msgOutDrawableSelected;
+    private MessageDrawable msgMediaInDrawable, msgMediaInDrawableSelected;
+    private MessageDrawable msgMediaOutDrawable, msgMediaOutDrawableSelected;
 
     public void setupTheme(StoryEntry entry) {
         if (entry == null) {

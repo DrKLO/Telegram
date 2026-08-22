@@ -7684,10 +7684,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
             themeButtonDrawable.beginApplyLayerColors();
             int color = Theme.getColor(Theme.key_chats_menuName, resourcesProvider);
-            themeButtonDrawable.setLayerColor("Sunny.**", color);
-            themeButtonDrawable.setLayerColor("Path 6.**", color);
-            themeButtonDrawable.setLayerColor("Path.**", color);
-            themeButtonDrawable.setLayerColor("Path 5.**", color);
+            themeButtonDrawable.setLayerColor("Sunny", color);
+            themeButtonDrawable.setLayerColor("Path 6", color);
+            themeButtonDrawable.setLayerColor("Path", color);
+            themeButtonDrawable.setLayerColor("Path 5", color);
             themeButtonDrawable.commitApplyLayerColors();
             themeButton = new ImageView(getContext());
             themeButton.setScaleType(ImageView.ScaleType.CENTER);

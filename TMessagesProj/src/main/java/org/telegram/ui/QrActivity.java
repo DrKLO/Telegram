@@ -1,7 +1,6 @@
 package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.readRes;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.Manifest;
@@ -67,7 +66,7 @@ import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.zxing.EncodeHintType;
-import com.google.zxing.qrcode.QRCodeWriter;
+import org.telegram.messenger.TelegramQRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -109,10 +108,8 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.RLottieDiceDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
-import org.telegram.ui.Components.RLottieNative;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.ThemeSmallPreviewView;
@@ -438,14 +435,14 @@ public class QrActivity extends BaseFragment {
             }
             fragmentView.postDelayed(() -> {
                 onItemSelected(currentTheme, 0, true);
-                if (logoOptimal == null) {
-                    final int s = dp(60);
-                    logoOptimal = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
-                    RLottieNative rLottieNative = RLottieNative.createFromRawJson(readRes(R.raw.plane_logo_plain), "plane_logo_plain", null);
-                    if (rLottieNative != null) {
-                        rLottieNative.getFrame(LOGO_OPTIMAL_FRAME, logoOptimal, false);
-                        rLottieNative.recycle();
-                    }
+
+                final RLottieDrawable d = logoImageView.getAnimatedDrawable();
+                if (logoOptimal == null && d != null) {
+                    logoOptimal = Bitmap.createBitmap(d.getIntrinsicWidth(), d.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+                    d.prepareForGenerateCache();
+                    d.setGeneratingFrame(LOGO_OPTIMAL_FRAME);
+                    d.getNextFrame(logoOptimal);
+                    d.releaseForGenerateCache();
                 }
             }, 17);
         }, 25);
@@ -1056,7 +1053,7 @@ public class QrActivity extends BaseFragment {
                 float xCenter = getWidth() / 2f, yCenter = top + (getWidth()) / 2f - padding;
                 int imageSize = Math.round((size - 32) / 4.65f / multiple) * multiple / 2;
                 canvas.drawCircle(xCenter, yCenter, imageSize * .75f, bitmapGradientPaint);
-                QRCodeWriter.drawSideQuads(canvas, padding, top, bitmapGradientPaint, 7, multiple, 16, size, .75f, radii, true);
+                TelegramQRCodeWriter.drawSideQuads(canvas, padding, top, bitmapGradientPaint, 7, multiple, 16, size, .75f, radii, true);
                 if (!logoCenterSet && centerChangedListener != null) {
                     centerChangedListener.onCenterChanged((int) (xCenter - imageSize * 0.75f), (int) (yCenter - imageSize * 0.75f), (int) (xCenter + imageSize * 0.75f), (int) (yCenter + imageSize * 0.75f));
                     logoCenterSet = true;
@@ -1311,7 +1308,7 @@ public class QrActivity extends BaseFragment {
             HashMap<EncodeHintType, Object> hints = new HashMap<>();
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
             hints.put(EncodeHintType.MARGIN, 0);
-            QRCodeWriter writer = new QRCodeWriter();
+            TelegramQRCodeWriter writer = new TelegramQRCodeWriter();
             int version;
             for (version = 3; version < 5; ++version) {
                 try {

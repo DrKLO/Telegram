@@ -57,20 +57,22 @@ public class RichDividerCell extends RichBlockCell
 
     @Override
     public void updateColors() {
-        paint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        paint.setColor(Theme.getColor(Theme.key_chat_inDivider, resourcesProvider));
         selectionPaint.setColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight, resourcesProvider));
     }
 
     @Override
     public void fillTextLayoutBlocks(ArrayList<TextSelectionHelper.TextLayoutBlock> out) {
         final int lo = regionLo();
-        final int third = Math.max(1, (regionHi() - lo) / 3);
-        out.add(RichBlockSelection.of(lo + third - dp(12), dp(2), lo + third * 2 + dp(12), dp(16)));
+        final int width = regionHi() - lo;
+        final int x1 = lo + width / 4;
+        final int x2 = regionHi() - width / 4;
+        out.add(RichBlockSelection.of(x1 - dp(12), 0, x2 + dp(12), dp(12)));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(18));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(12));
     }
 
     private boolean isCellSelected() {
@@ -86,19 +88,19 @@ public class RichDividerCell extends RichBlockCell
     @Override
     protected void onDraw(Canvas canvas) {
         final int lo = regionLo();
-        final int third = Math.max(1, (regionHi() - lo) / 3);
-        final int x1 = lo + third;
-        final int x2 = lo + third * 2;
-        paint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_chat_inReplyMessageText, resourcesProvider), 0.2f));
+        final int width = regionHi() - lo;
+        final int x1 = lo + width / 4;
+        final int x2 = regionHi() - width / 4;
         if (isCellSelected()) {
             canvas.drawRoundRect(
-                x1 - dp(12), dp(2), x2 + dp(12), dp(16),
+                x1 - dp(12), 0, x2 + dp(12), dp(12),
                 dp(6), dp(6),
                 selectionPaint
             );
         }
-        AndroidUtilities.rectTmp.set(x1, dp(8), x2, dp(10));
-        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(1), dp(1), paint);
+        final float top = (dp(12) - dp(1)) / 2f;
+        AndroidUtilities.rectTmp.set(x1, top, x2, top + dp(1));
+        canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(.5f), dp(.5f), paint);
     }
 
     public static final class Factory extends UItem.UItemFactory<RichDividerCell> {

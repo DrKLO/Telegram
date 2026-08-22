@@ -3086,7 +3086,6 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     public static int getAllowedLayoutsForIndex(int index) {
         if (index == PollAttachedMediaPack.INDEX_DESCRIPTION || index == PollAttachedMediaPack.INDEX_EXPLANATION) {
             return (1 << ChatAttachAlert.LAYOUT_TYPE_PHOTO)
-                | (1 << ChatAttachAlert.LAYOUT_TYPE_DOCUMENTS)
                 | (1 << ChatAttachAlert.LAYOUT_TYPE_MUSIC)
                 | (1 << ChatAttachAlert.LAYOUT_TYPE_LOCATION);
         } else {

@@ -35,7 +35,7 @@ public class RichDetailsEndCell extends View implements Theme.Colorable {
 
     @Override
     public void updateColors() {
-        paint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        paint.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsLine, resourcesProvider));
     }
 
     @Override

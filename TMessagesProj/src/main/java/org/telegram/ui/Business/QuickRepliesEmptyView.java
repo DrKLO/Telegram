@@ -54,12 +54,14 @@ public class QuickRepliesEmptyView extends LinearLayout {
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
+        titleView.setLineSpacing(dp(1.66f), 1);
         titleView.setGravity(Gravity.CENTER);
 
         descriptionView = new DotTextView(context);
         descriptionView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         descriptionView.setGravity(Gravity.CENTER);
-        descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        descriptionView.setLineSpacing(dp(2), 1);
         descriptionView.setGravity(Gravity.CENTER_HORIZONTAL);
 
         imageView = new RLottieImageView(context);
@@ -74,7 +76,14 @@ public class QuickRepliesEmptyView extends LinearLayout {
 
         int descriptionViewMargin = 12;
         descriptionView.setMaxWidth(dp(160));
-        if (QuickRepliesController.GREETING.equalsIgnoreCase(quickReplyName)) {
+
+        if (chatMode == ChatActivity.MODE_WELCOME_MESSAGES) {
+            imageView.setImageResource(R.drawable.large_greeting);
+            titleView.setText(LocaleController.getString(R.string.WelcomeMessageEmptyTitle));
+            descriptionViewMargin = 22;
+            descriptionView.setText(LocaleController.getString(R.string.WelcomeMessageEmptySubtitle));
+            descriptionView.setMaxWidth(Math.min(dp(160), HintView2.cutInFancyHalf(descriptionView.getText(), descriptionView.getPaint())));
+        } else if (QuickRepliesController.GREETING.equalsIgnoreCase(quickReplyName)) {
             imageView.setImageResource(R.drawable.large_greeting);
             titleView.setText(LocaleController.getString(R.string.BusinessGreetingIntroTitle));
             descriptionViewMargin = 22;
@@ -109,7 +118,7 @@ public class QuickRepliesEmptyView extends LinearLayout {
         }
 
         addView(imageView, LayoutHelper.createLinear(78, 78, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 17, 20, 9));
-        addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 0, 20, 9));
+        addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 0, 20, 6));
         addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, descriptionViewMargin, 0, descriptionViewMargin, descriptionView2 != null ? 9 : 19));
         if (descriptionView2 != null) {
             addView(descriptionView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 12, 0, 12, 19));

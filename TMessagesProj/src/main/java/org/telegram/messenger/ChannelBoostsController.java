@@ -47,8 +47,8 @@ public class ChannelBoostsController {
                         AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getContext(), fragment.getResourceProvider());
                         builder.setTitle(LocaleController.getString(R.string.AppName));
                         Map<String, Integer> colorsReplacement = new HashMap<>();
-                        colorsReplacement.put("info1.**", Theme.getColor(Theme.key_dialogTopBackground));
-                        colorsReplacement.put("info2.**", Theme.getColor(Theme.key_dialogTopBackground));
+                        colorsReplacement.put("info1", Theme.getColor(Theme.key_dialogTopBackground));
+                        colorsReplacement.put("info2", Theme.getColor(Theme.key_dialogTopBackground));
                         builder.setTopAnimation(R.raw.not_available, AlertsCreator.NEW_DENY_DIALOG_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground), colorsReplacement);
                         builder.setTopAnimationIsNew(true);
                         builder.setTitle(LocaleController.getString(R.string.ChannelPrivate));

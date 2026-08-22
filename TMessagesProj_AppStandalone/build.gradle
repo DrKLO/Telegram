@@ -43,6 +43,10 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
+    androidResources {
+        localeFilters += ["en", "ar", "de", "es", "it", "ko", "nl", "pt-rBR", "ru", "uk"]
+    }
+
     signingConfigs {
         debug {
             storeFile file("../TMessagesProj/config/release.keystore")
@@ -71,6 +75,7 @@ android {
             ndk.debugSymbolLevel = 'FULL'
         }
         standalone {
+            matchingFallbacks = ['release']
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release

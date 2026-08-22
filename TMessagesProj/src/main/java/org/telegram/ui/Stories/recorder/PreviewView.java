@@ -248,11 +248,6 @@ public class PreviewView extends FrameLayout {
                 public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
                     invalidateTextureViewHolder();
                 }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
             });
             audioPlayer.preparePlayer(Uri.fromFile(new File(entry.audioPath)), "other");
             checkVolumes();
@@ -895,11 +890,6 @@ public class PreviewView extends FrameLayout {
                 public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
                     invalidateTextureViewHolder();
                 }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
             });
 
             if (textureView != null) {
@@ -1081,14 +1071,6 @@ public class PreviewView extends FrameLayout {
                 @Override
                 public void onRenderedFirstFrame() {
 
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {}
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
                 }
             });
 

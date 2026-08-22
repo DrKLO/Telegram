@@ -18,7 +18,8 @@ public class HintsController {
         ChannelGiftHint("channelgifthint", 3, 0.2f),
         GroupEmojiPackHintShown("groupEmojiPackShownHint", 1, 1),
         AccountSwitchHint("accountswitchhint", 3, 1f),
-        
+        GiftMessageHint("giftMessaheHint", 3, 1f),
+
         GuestBotPrivacy(3, 1f);
 
         private final String name;

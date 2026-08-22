@@ -46,6 +46,18 @@ public class DrawableUtils {
         }
     }
 
+    public static void setBoundsIncreasePadding(Drawable drawable, int left, int top, int right, int bottom) {
+        if (drawable.getPadding(tmpRect)) {
+            drawable.setBounds(
+                    left - tmpRect.left,
+                    top - tmpRect.top,
+                    right + tmpRect.right,
+                    bottom + tmpRect.bottom);
+        } else {
+            drawable.setBounds(left, top, right, bottom);
+        }
+    }
+
     public static int getCommunityCardDrawableRadius(int size) {
         return size * 20 / 72;
     }

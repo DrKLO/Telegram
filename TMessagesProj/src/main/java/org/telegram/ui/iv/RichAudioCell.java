@@ -231,7 +231,7 @@ public class RichAudioCell extends RichBlockCell
         seekBarX = buttonX + dp(50) + size;
         final int width = getMeasuredWidth() > 0 ? getMeasuredWidth() : AndroidUtilities.displaySize.x;
         final int insR = blockRtl ? blockInset() : 0;
-        seekBarWidth = Math.max(0, width - seekBarX - dp(18) - insR);
+        seekBarWidth = Math.max(0, width - seekBarX - dp(16) - insR);
 
         final String author = audioAuthor();
         final String title = audioTitle();

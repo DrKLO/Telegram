@@ -36,6 +36,11 @@ public class BlockRow {
     public boolean firstBlock;
     public boolean singleParagraph;
 
+    // Details and table titles start in an auto-bold mode. This lives on the row rather than the
+    // recycled editor cell so explicitly removing bold keeps the mode disabled for this title.
+    public boolean titleAutoBold;
+    public boolean titleAutoBoldInitialized;
+
     public long authorQuoteId;
 
     public BlockRow(TL_iv.PageBlock block) {

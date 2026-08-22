@@ -70,6 +70,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.EmojiThemes;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
@@ -295,10 +296,10 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
         });
 
         resourceProvider = new ThemeDelegate();
-        msgInDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, false, resourceProvider);
-        msgInDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, false, true, resourceProvider);
-        msgOutDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, false, resourceProvider);
-        msgOutDrawableSelected = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_TEXT, true, true, resourceProvider);
+        msgInDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false, resourceProvider);
+        msgInDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, true, resourceProvider);
+        msgOutDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, true, false, resourceProvider);
+        msgOutDrawableSelected = new MessageDrawable(MessageDrawable.TYPE_TEXT, true, true, resourceProvider);
     }
 
     @Override
@@ -371,10 +372,10 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
         }
         sunDrawable.beginApplyLayerColors();
         int color = Theme.getColor(Theme.key_chats_menuName, resourceProvider);
-        sunDrawable.setLayerColor("Sunny.**", color);
-        sunDrawable.setLayerColor("Path 6.**", color);
-        sunDrawable.setLayerColor("Path.**", color);
-        sunDrawable.setLayerColor("Path 5.**", color);
+        sunDrawable.setLayerColor("Sunny", color);
+        sunDrawable.setLayerColor("Path 6", color);
+        sunDrawable.setLayerColor("Path", color);
+        sunDrawable.setLayerColor("Path 5", color);
         dayNightItem = actionBar.createMenu().addItem(1, sunDrawable);
 
         FrameLayout contentView = new FrameLayout(context);
@@ -2522,8 +2523,8 @@ public class ChannelColorActivity extends BaseFragment implements NotificationCe
 
     private Theme.ResourcesProvider parentResourcesProvider;
     private final SparseIntArray currentColors = new SparseIntArray();
-    private final Theme.MessageDrawable msgInDrawable, msgInDrawableSelected;
-    private final Theme.MessageDrawable msgOutDrawable, msgOutDrawableSelected;
+    private final MessageDrawable msgInDrawable, msgInDrawableSelected;
+    private final MessageDrawable msgOutDrawable, msgOutDrawableSelected;
     private final Drawable msgOutCheckReadDrawable, msgOutHalfCheckDrawable;
     private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     {

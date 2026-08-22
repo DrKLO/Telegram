@@ -3090,11 +3090,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Big", Theme.key_undo_background));
             themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Big 3", Theme.key_undo_infoColor));
             themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Small", Theme.key_undo_infoColor));
-            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Main.**", Theme.key_undo_infoColor));
-            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Top.**", Theme.key_undo_infoColor));
-            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Line.**", Theme.key_undo_infoColor));
-            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Big.**", Theme.key_undo_infoColor));
-            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Small.**", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Main", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Top", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Line", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Big", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Small", Theme.key_undo_infoColor));
         }
 
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_dialogBackground));

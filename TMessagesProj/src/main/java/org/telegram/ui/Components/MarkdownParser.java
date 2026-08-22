@@ -3,8 +3,6 @@ package org.telegram.ui.Components;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.find;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.text.TextUtils;
 import org.telegram.messenger.AndroidUtilities;
 
@@ -45,7 +43,6 @@ import java.util.Arrays;
 import io.noties.markwon.html.HtmlTag;
 import io.noties.markwon.html.MarkwonHtmlParser;
 import io.noties.markwon.html.MarkwonHtmlParserImpl;
-import ru.noties.jlatexmath.JLatexMathDrawable;
 
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -53,6 +50,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLObject;
+import org.telegram.ui.iv.Latex;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_iv;
 
@@ -238,28 +236,12 @@ public class MarkdownParser {
         final TL_iv.textMath out = new TL_iv.textMath();
         out.source = raw == null ? "" : raw.trim();
         out.tried = true;
-        try {
-            final JLatexMathDrawable drawable =
-                JLatexMathDrawable.builder(out.source)
-                    .textSize(dp(20))
-                    .build();
-            final int w = drawable.getIntrinsicWidth();
-            final int h = drawable.getIntrinsicHeight();
-            if (w > 0 && h > 0) {
-                final Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-                drawable.setBounds(0, 0, w, h);
-                drawable.draw(new Canvas(bm));
-                out.w = w;
-                out.h = h;
-                try {
-                    out.depth = drawable.icon().getIconDepth();
-                } catch (Throwable t) {
-                    FileLog.e(t);
-                }
-                out.bitmap = bm;
-            }
-        } catch (Throwable t) {
-            FileLog.e(t);
+        final Latex r = Latex.render(out.source, dp(20), true);
+        if (r != null) {
+            out.w = r.width;
+            out.h = r.height;
+            out.depth = r.depth;
+            out.bitmap = r.bitmap;
         }
         return out;
     }

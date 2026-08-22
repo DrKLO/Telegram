@@ -152,7 +152,6 @@ public final class DownloadHelper {
     Renderer[] renderers =
         renderersFactory.createRenderers(
             Util.createHandlerForCurrentOrMainLooper(),
-            null,
             new VideoRendererEventListener() {},
             new AudioRendererEventListener() {},
             (cues) -> {},

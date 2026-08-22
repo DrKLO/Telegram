@@ -10,6 +10,7 @@ org.telegram.tgnet.TLRPC.TL_folders_deleteFolder #1c295881
 org.telegram.tgnet.TLRPC.TL_forumTopic_layer147 #5920d6dc
 org.telegram.tgnet.TLRPC.TL_help_premiumPromo_layer140 #e0360f1b
 org.telegram.tgnet.TLRPC.TL_inputMessagesFilterPhotoVideoDocuments #d95e73bb
+org.telegram.tgnet.TLRPC.TL_messageActionChatJoinedViaCommunity #4a8bfe80
 org.telegram.tgnet.TLRPC.TL_messageActionCreatedBroadcastList #55555557
 org.telegram.tgnet.TLRPC.TL_messageActionLoginUnknownLocation #555555f5
 org.telegram.tgnet.TLRPC.TL_messageActionPhoneNumberRequest #01baa035
@@ -40,12 +41,15 @@ org.telegram.tgnet.TLRPC.TL_payments_requestRecurringPayment #146e958d
 org.telegram.tgnet.TLRPC.TL_peerNotifySettingsEmpty_layer77 #70a68512
 org.telegram.tgnet.TLRPC.TL_poll_toDelete #af746786
 org.telegram.tgnet.TLRPC.TL_premiumGiftOption #79c059f7
+org.telegram.tgnet.TLRPC.TL_replyInlineMarkup_layer228_old #58f7fcb6
 org.telegram.tgnet.TLRPC.TL_userStatusHidden #cf7d64b1
 org.telegram.tgnet.TLRPC.TL_user_layer185 #4fe9cce0
 org.telegram.tgnet.TLRPC.TL_videoEncrypted #55555553
 org.telegram.tgnet.TLRPC.TL_wallPaper_layer94 #f04f91ec
 org.telegram.tgnet.TLRPC.TL_webPageUrlPending #d41a5167
 org.telegram.tgnet.tl.TL_bots.exportBotToken #0063b089
+org.telegram.tgnet.tl.TL_ephemeral.TL_ephemeralMessage_layer229_old #8ef3e491
+org.telegram.tgnet.tl.TL_keyboard.TL_keyboardInlineButton_legacy #9c1c0c55
 org.telegram.tgnet.tl.TL_stars.TL_savedStarGift_layer221_2 #389bb419
 org.telegram.tgnet.tl.TL_stars.TL_starGiftUnique_layer215 #3a0893b8
 org.telegram.tgnet.tl.TL_stars.TL_starsSubscription_old #d073f1e6

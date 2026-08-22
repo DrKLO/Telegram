@@ -3,13 +3,14 @@ package org.telegram.ui.iv;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -23,10 +24,20 @@ public class RichTableCellHost extends FrameLayout {
         super(context);
 
         editText = new RichEditText(context, resourcesProvider);
-        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(8, SharedConfig.fontSize - 2));
         editText.setAllowNewlines(true);
-        editText.setPadding(dp(11), dp(9), dp(11), dp(9));
+        setCompact(false);
         addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
+    }
+
+    public void setCompact(boolean compact) {
+        if (compact) {
+            editText.setPadding(dp(5), dp(5), dp(5), dp(5));
+            editText.setMinHeight(dp(18));
+        } else {
+            editText.setPadding(dp(12), dp(8), dp(12), dp(9));
+            editText.setMinHeight(dp(36));
+        }
     }
 
     @Override
@@ -52,9 +63,30 @@ public class RichTableCellHost extends FrameLayout {
     public void bind(TL_iv.pageTableCell cell) {
         this.cell = cell;
         applyAlignment();
-        final CharSequence styled = Emoji.replaceEmoji(TableModel.readStyledText(cell), editText.getPaint().getFontMetricsInt(), false);
+        final CharSequence rawStyled = TableModel.readStyledText(cell);
+        final boolean autoBold = cell.header && (rawStyled.length() == 0
+            || (RichTextStyle.stylesFullyCovering(rawStyled, 0, rawStyled.length()) & RichTextStyle.BOLD) != 0);
+        editText.setAutoBold(autoBold);
+        final CharSequence styled = Emoji.replaceEmoji(rawStyled, editText.getPaint().getFontMetricsInt(), false);
         editText.setTextSilently(styled);
         editText.invalidateEffects();
+    }
+
+    public void applyHeaderWithDefaultBold(boolean header) {
+        if (cell == null) return;
+        final SpannableStringBuilder styled = new SpannableStringBuilder(editText.getText());
+        final boolean fullyBold = styled.length() > 0
+            && (RichTextStyle.stylesFullyCovering(styled, 0, styled.length()) & RichTextStyle.BOLD) != 0;
+        TableModel.setHeader(cell, header);
+        if (header) {
+            if (styled.length() > 0) {
+                RichTextStyle.setStyle(styled, 0, styled.length(), RichTextStyle.BOLD, true);
+            }
+        } else if (fullyBold) {
+            RichTextStyle.setStyle(styled, 0, styled.length(), RichTextStyle.BOLD, false);
+        }
+        TableModel.applyStyledText(cell, styled);
+        bind(cell);
     }
 
     public void refreshFromCell() {
@@ -81,10 +113,7 @@ public class RichTableCellHost extends FrameLayout {
         if (cell.align_right) textGravity = Gravity.TOP | Gravity.RIGHT;
         else if (cell.align_center) textGravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         editText.setGravity(textGravity);
-        if (cell.header) {
-            editText.setTypeface(AndroidUtilities.bold());
-        } else {
-            editText.setTypeface(null);
-        }
+        // Highlighting applies a real bold span so the user can remove bold from any range.
+        editText.setTypeface(null);
     }
 }

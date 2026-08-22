@@ -2834,16 +2834,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 public void onRenderedFirstFrame() {
 
                 }
-
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
             });
             videoPlayer.setTextureView(textureView);
             videoPlayer.preparePlayer(Uri.fromFile(file), "other");

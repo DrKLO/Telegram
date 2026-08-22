@@ -10,6 +10,7 @@ import android.text.style.CharacterStyle;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
@@ -159,6 +160,10 @@ public class RichHtml {
             out.append("<hr>");
             return;
         }
+        if (b instanceof TL_iv.pageBlockButtonRow) {
+            serializeButtonRow(out, (TL_iv.pageBlockButtonRow) b);
+            return;
+        }
         if (b instanceof TL_iv.pageBlockTable) {
             serializeTable(out, (TL_iv.pageBlockTable) b);
             return;
@@ -173,6 +178,10 @@ public class RichHtml {
         }
         if (b instanceof TL_iv.pageBlockAudio) {
             serializeSingleMedia(out, "audio", ((TL_iv.pageBlockAudio) b).audio_id, row.media, b);
+            return;
+        }
+        if (b instanceof TL_iv.pageBlockDocument) {
+            serializeSingleMedia(out, "document", ((TL_iv.pageBlockDocument) b).document_id, row.media, b);
             return;
         }
         if (RichEditorListView.isGallery(b)) {
@@ -212,7 +221,11 @@ public class RichHtml {
             return;
         }
         if (b instanceof TL_iv.pageBlockBlockquote) {
-            out.append("<blockquote>");
+            if (((TL_iv.pageBlockBlockquote) b).collapsed) {
+                out.append("<blockquote collapsed>");
+            } else {
+                out.append("<blockquote>");
+            }
             appendInline(out, slicedStyled(row, index, selFrom, selTo, sOff, eOff));
             appendAuthorCite(out, authorText(((TL_iv.pageBlockBlockquote) b).caption));
             out.append("</blockquote>");
@@ -267,7 +280,13 @@ public class RichHtml {
     private static void serializeTable(StringBuilder out, TL_iv.pageBlockTable t) {
         out.append("<table");
         if (t.bordered) out.append(" border=\"1\"");
-        if (t.striped) out.append(" class=\"striped\"");
+        if (t.striped || t.compact) {
+            out.append(" class=\"");
+            if (t.striped) out.append("striped");
+            if (t.striped && t.compact) out.append(' ');
+            if (t.compact) out.append("compact");
+            out.append('\"');
+        }
         out.append('>');
         CharSequence title = t.title != null ? RichTextStyle.toSpannable(t.title) : null;
         if (title != null && title.length() > 0) {
@@ -408,6 +427,22 @@ public class RichHtml {
         Spanned sp = (Spanned) cs;
         int n = cs.length();
         for (int pos = 0; pos < n; ) {
+            RichInlineButtonSpan inlineButton = null;
+            int inlineButtonEnd = -1;
+            for (RichInlineButtonSpan candidate : sp.getSpans(pos, Math.min(n, pos + 1), RichInlineButtonSpan.class)) {
+                final int start = sp.getSpanStart(candidate);
+                final int end = sp.getSpanEnd(candidate);
+                if (start <= pos && end > pos) {
+                    inlineButton = candidate;
+                    inlineButtonEnd = end;
+                    break;
+                }
+            }
+            if (inlineButton != null) {
+                appendInlineButton(out, inlineButton.getButton());
+                pos = Math.min(n, inlineButtonEnd);
+                continue;
+            }
             int next = sp.nextSpanTransition(pos, n, CharacterStyle.class);
             int flags = 0;
             for (TextStyleSpan span : sp.getSpans(pos, next, TextStyleSpan.class)) {
@@ -426,6 +461,52 @@ public class RichHtml {
             closeInline(out, flags, url, emojiId);
             pos = next;
         }
+    }
+
+    private static void appendInlineButton(StringBuilder out, TL_iv.textButton button) {
+        if (button == null || !RichInlineButtonSpan.isSupported(button.type)) return;
+        appendButton(out, button.text, button.type, button.style);
+    }
+
+    private static void appendButton(StringBuilder out, TL_iv.RichText text,
+                                     TL_keyboard.InlineButtonType type,
+                                     TL_keyboard.RichButtonStyle buttonStyle) {
+        if (!RichInlineButtonSpan.isSupported(type)) return;
+        out.append("<button");
+        if (type instanceof TL_keyboard.TL_inlineButtonTypeUrl) {
+            out.append(" data-type=\"url\" data-url=\"")
+                .append(escapeAttr(((TL_keyboard.TL_inlineButtonTypeUrl) type).url)).append("\"");
+        } else if (type instanceof TL_keyboard.TL_inlineButtonTypeCopy) {
+            out.append(" data-type=\"copy\" data-copy-text=\"")
+                .append(escapeAttr(((TL_keyboard.TL_inlineButtonTypeCopy) type).copy_text)).append("\"");
+        } else if (type instanceof TL_keyboard.TL_inlineButtonTypeUserProfile) {
+            out.append(" data-type=\"user-profile\" data-user-id=\"")
+                .append(((TL_keyboard.TL_inlineButtonTypeUserProfile) type).user_id).append("\"");
+        }
+        if (buttonStyle != null) {
+            final String style = buttonStyle.bg_primary ? "primary"
+                : buttonStyle.bg_danger ? "danger"
+                : buttonStyle.bg_success ? "success" : "default";
+            out.append(" data-style=\"").append(style).append("\"");
+        }
+        out.append(">");
+        appendInline(out, RichTextStyle.toSpannable(text));
+        out.append("</button>");
+    }
+
+    private static void serializeButtonRow(StringBuilder out, TL_iv.pageBlockButtonRow row) {
+        out.append("<div class=\"button-row\"");
+        if (row.align_left) out.append(" data-align=\"left\"");
+        else if (row.align_center) out.append(" data-align=\"center\"");
+        else if (row.align_right) out.append(" data-align=\"right\"");
+        else out.append(" data-align=\"fill\"");
+        out.append(">");
+        if (row.buttons != null) {
+            for (TL_keyboard.PageButton button : row.buttons) {
+                if (button != null) appendButton(out, button.text, button.type, button.style);
+            }
+        }
+        out.append("</div>");
     }
 
     private static void openInline(StringBuilder out, int flags, String url, long emojiId) {
@@ -512,7 +593,9 @@ public class RichHtml {
                 case "div": {
                     String cls = node.attr("class");
                     String low = cls == null ? "" : cls.toLowerCase();
-                    if (low.contains("collage")) {
+                    if (low.contains("button-row")) {
+                        rows.add(parseButtonRow(node));
+                    } else if (low.contains("collage")) {
                         addRow(rows, parseGallery(node, false));
                     } else if (low.contains("slideshow")) {
                         addRow(rows, parseGallery(node, true));
@@ -625,6 +708,7 @@ public class RichHtml {
         t.bordered = node.has("border");
         String cls = node.attr("class");
         t.striped = cls != null && cls.toLowerCase().contains("striped");
+        t.compact = cls != null && cls.toLowerCase().contains("compact");
         collectTableRows(node, t);
         if (t.rows.isEmpty()) {
             TL_iv.pageTableRow r = new TL_iv.pageTableRow();
@@ -633,6 +717,30 @@ public class RichHtml {
             t.rows.add(r);
         }
         return new BlockRow(t);
+    }
+
+    private static BlockRow parseButtonRow(Node node) {
+        final TL_iv.pageBlockButtonRow row = new TL_iv.pageBlockButtonRow();
+        final String align = node.attr("data-align");
+        row.align_left = "left".equalsIgnoreCase(align);
+        row.align_center = "center".equalsIgnoreCase(align);
+        row.align_right = "right".equalsIgnoreCase(align);
+        for (Node child : node.children) {
+            if (row.buttons.size() >= RichButtonRowCell.MAX_BUTTONS) break;
+            if (child.isText || !"button".equals(child.tag)) continue;
+            final TL_keyboard.InlineButtonType type = inlineButtonTypeOf(child);
+            if (type == null) continue;
+            final SpannableStringBuilder label = new SpannableStringBuilder();
+            appendChildrenInline(label, child, 0, null, 0);
+            final CharSequence trimmed = trim(label);
+            if (trimmed.length() == 0) continue;
+            final TL_keyboard.PageButton button = new TL_keyboard.PageButton();
+            button.text = RichTextStyle.fromSpannable(trimmed);
+            button.type = type;
+            button.style = inlineButtonStyleOf(child);
+            row.buttons.add(button);
+        }
+        return new BlockRow(row);
     }
 
     private static void collectTableRows(Node node, TL_iv.pageBlockTable t) {
@@ -692,6 +800,7 @@ public class RichHtml {
             case "img": return buildPhotoOrVideo(node, false);
             case "video": return buildPhotoOrVideo(node, true);
             case "audio": return buildAudio(node);
+            case "document": return buildDocument(node);
             case "location": return buildMap(node);
             case "div": {
                 String cls = node.attr("class");
@@ -719,6 +828,15 @@ public class RichHtml {
         a.audio_id = key;
         setEmptyCaption(a);
         return new BlockRow(a);
+    }
+
+    private static BlockRow buildDocument(Node node) {
+        long key = parseLongAttr(node.attr("src"), 0);
+        if (key <= 0) return null;
+        TL_iv.pageBlockDocument d = new TL_iv.pageBlockDocument();
+        d.document_id = key;
+        setEmptyCaption(d);
+        return new BlockRow(d);
     }
 
     private static BlockRow buildMap(Node node) {
@@ -959,7 +1077,7 @@ public class RichHtml {
         switch (tag) {
             case "b": case "strong": case "i": case "em": case "u": case "s": case "strike": case "del":
             case "code": case "tt": case "spoiler": case "sub": case "sup": case "a": case "br":
-            case "span": case "animated-emoji": case "font":
+            case "span": case "animated-emoji": case "font": case "button":
                 return true;
         }
         return false;
@@ -976,6 +1094,23 @@ public class RichHtml {
     }
 
     private static void appendInlineNode(SpannableStringBuilder sb, Node node, int flags, String url, long emojiId) {
+        if ("button".equals(node.tag)) {
+            final TL_keyboard.InlineButtonType type = inlineButtonTypeOf(node);
+            if (type != null) {
+                final SpannableStringBuilder label = new SpannableStringBuilder();
+                appendChildrenInline(label, node, flags, url, emojiId);
+                if (label.length() > 0) {
+                    final int start = sb.length();
+                    sb.append(label);
+                    final TL_iv.textButton button = new TL_iv.textButton();
+                    button.text = RichTextStyle.fromSpannable(label);
+                    button.type = type;
+                    button.style = inlineButtonStyleOf(node);
+                    sb.setSpan(new RichInlineButtonSpan(button), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                return;
+            }
+        }
         switch (node.tag) {
             case "br": appendStyled(sb, "\n", flags, url, emojiId); return;
             case "b": case "strong": flags |= RichTextStyle.BOLD; break;
@@ -1006,6 +1141,41 @@ public class RichHtml {
         appendChildrenInline(sb, node, flags, url, emojiId);
     }
 
+    private static TL_keyboard.InlineButtonType inlineButtonTypeOf(Node node) {
+        final String type = node.attr("data-type");
+        if ("url".equals(type)) {
+            final String value = node.attr("data-url");
+            if (TextUtils.isEmpty(value)) return null;
+            final TL_keyboard.TL_inlineButtonTypeUrl result = new TL_keyboard.TL_inlineButtonTypeUrl();
+            result.url = value;
+            return result;
+        }
+        if ("copy".equals(type)) {
+            final String value = node.attr("data-copy-text");
+            if (TextUtils.isEmpty(value)) return null;
+            final TL_keyboard.TL_inlineButtonTypeCopy result = new TL_keyboard.TL_inlineButtonTypeCopy();
+            result.copy_text = value;
+            return result;
+        }
+        if ("user-profile".equals(type)) {
+            final long userId = parseLongAttr(node.attr("data-user-id"), 0);
+            if (userId <= 0) return null;
+            final TL_keyboard.TL_inlineButtonTypeUserProfile result = new TL_keyboard.TL_inlineButtonTypeUserProfile();
+            result.user_id = userId;
+            return result;
+        }
+        return null;
+    }
+
+    private static TL_keyboard.RichButtonStyle inlineButtonStyleOf(Node node) {
+        final TL_keyboard.RichButtonStyle style = new TL_keyboard.RichButtonStyle();
+        final String value = node.attr("data-style");
+        style.bg_primary = "primary".equals(value);
+        style.bg_danger = "danger".equals(value);
+        style.bg_success = "success".equals(value);
+        return style;
+    }
+
     private static void appendStyled(SpannableStringBuilder sb, CharSequence text, int flags, String url, long emojiId) {
         if (text == null || text.length() == 0) return;
         int start = sb.length();
@@ -1021,7 +1191,7 @@ public class RichHtml {
             sb.setSpan(new TextStyleSpan(run, dp(SharedConfig.fontSize)), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         if (url != null) {
-            sb.setSpan(new URLSpanReplacement(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sb.setSpan(RichTextStyle.linkSpan(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
     }
 
