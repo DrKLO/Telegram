@@ -18,7 +18,7 @@
 	url = https://github.com/xiph/opusfile.git
 [submodule "TMessagesProj/lib/jlatexmath"]
 	path = TMessagesProj/lib/jlatexmath
-	url = git@github.com:dkaraush/jlatexmath-android.git
+	url = https://github.com/dkaraush/jlatexmath-android.git
 [submodule "TMessagesProj/jni/tlottie"]
 	path = TMessagesProj/jni/tlottie
 	url = https://github.com/dkaraush/tlottie.git
