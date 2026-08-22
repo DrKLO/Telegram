@@ -7,3 +7,18 @@
 [submodule "TMessagesProj/jni/third_party/ffmpeg"]
 	path = TMessagesProj/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg.git
+[submodule "TMessagesProj/jni/third_party/xiph/ogg"]
+	path = TMessagesProj/jni/third_party/xiph/ogg
+	url = https://github.com/xiph/ogg.git
+[submodule "TMessagesProj/jni/third_party/xiph/opus"]
+	path = TMessagesProj/jni/third_party/xiph/opus
+	url = https://github.com/xiph/opus.git
+[submodule "TMessagesProj/jni/third_party/xiph/opusfile"]
+	path = TMessagesProj/jni/third_party/xiph/opusfile
+	url = https://github.com/xiph/opusfile.git
+[submodule "TMessagesProj/lib/jlatexmath"]
+	path = TMessagesProj/lib/jlatexmath
+	url = git@github.com:dkaraush/jlatexmath-android.git
+[submodule "TMessagesProj/jni/tlottie"]
+	path = TMessagesProj/jni/tlottie
+	url = https://github.com/dkaraush/tlottie.git
