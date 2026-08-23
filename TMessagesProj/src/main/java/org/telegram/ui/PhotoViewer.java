@@ -7858,8 +7858,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             playButtonAccessibilityOverlay.setContentDescription(getString("AccActionPlay", R.string.AccActionPlay));
             playButtonAccessibilityOverlay.setFocusable(true);
             playButtonAccessibilityOverlay.setOnClickListener(v -> {
-                onActionClick(true);
-                checkProgress(0, false, true);
+                final int state = photoProgressViews[0] != null ? photoProgressViews[0].backgroundState : PROGRESS_NONE;
+                if (isVideoOnScreen() && (state == PROGRESS_PLAY || state == PROGRESS_PAUSE)) {
+                    manuallyPaused = true;
+                    toggleVideoPlayer();
+                } else {
+                    onActionClick(true);
+                    checkProgress(0, false, true);
+                }
             });
             containerView.addView(playButtonAccessibilityOverlay, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
         }
@@ -20520,6 +20526,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
 
+    // a video that is on screen is played and paused where it stands, while one that is not
+    // there yet has to be asked for: asking for one that is already playing prepares the player
+    // anew, which starts it over
+    private boolean isVideoOnScreen() {
+        return aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE
+            || photoViewerWebView != null && photoViewerWebView.isControllable();
+    }
+
     private void onActionClick(boolean download) {
         if (currentMessageObject == null && currentBotInlineResult == null && (pageBlocksAdapter == null || currentFileNames[0] == null) && sendPhotoType != SELECT_TYPE_NO_SELECT) {
             return;
@@ -20821,7 +20835,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
         if (containerView.getTag() != null) {
-            boolean drawTextureView = aspectRatioFrameLayout != null && aspectRatioFrameLayout.getVisibility() == View.VISIBLE || photoViewerWebView != null && photoViewerWebView.isControllable();
+            boolean drawTextureView = isVideoOnScreen();
 
             if (sharedMediaType == MediaDataController.MEDIA_FILE && currentMessageObject != null) {
                 if (!currentMessageObject.canPreviewDocument()) {
