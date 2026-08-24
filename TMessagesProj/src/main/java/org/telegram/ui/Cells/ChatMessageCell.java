@@ -3210,18 +3210,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             delegate.didPressImage(this, lastTouchX, lastTouchY, true);
                         }
                     } else if (currentMessageObject != null && !currentMessageObject.preview) {
-                        TLRPC.WebPage webPage = MessageObject.getMedia(currentMessageObject.messageOwner).webpage;
-                        if (webPage != null && !TextUtils.isEmpty(webPage.embed_url)/* && TextUtils.isEmpty(WebPlayerView.getYouTubeVideoId(webPage.embed_url))*/) {
-                            if (delegate != null) {
-                                delegate.needOpenWebView(currentMessageObject, webPage.embed_url, webPage.site_name, webPage.title, webPage.url, webPage.embed_width, webPage.embed_height);
-                            }
-                        } else if (webPage != null) {
-                            if (delegate != null) {
-                                delegate.didPressWebPage(this, webPage, webPage.url, MessageObject.getMedia(currentMessageObject.messageOwner).safe);
-                            } else {
-                                Browser.openUrl(getContext(), webPage.url);
-                            }
-                        }
+                        openLinkPreviewWebPage();
                     }
                     playSoundEffect(SoundEffectConstants.CLICK);
                     if (selectorDrawable[0] != null) {
@@ -26585,6 +26574,61 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return layoutHeight;
     }
 
+    // the card under a link is made of a site name, a title, an author and a description, each
+    // of them drawn on its own: put together they are what the card says
+    private CharSequence linkPreviewAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        appendLinkPreviewLayout(sb, siteNameLayout);
+        appendLinkPreviewLayout(sb, titleLayout);
+        appendLinkPreviewLayout(sb, authorLayout);
+        appendLinkPreviewLayout(sb, descriptionLayout);
+        return sb;
+    }
+
+    private void appendLinkPreviewLayout(StringBuilder sb, StaticLayout layout) {
+        if (layout == null) {
+            return;
+        }
+        final CharSequence text = layout.getText();
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        sb.append(text);
+    }
+
+    // a card that is only a picture is opened as a picture, which the message already offers, so
+    // the action is for the ones that stand for a page
+    private boolean hasOpenableLinkPreview() {
+        if (currentMessageObject == null || currentMessageObject.preview || !hasLinkPreview) {
+            return false;
+        }
+        if (drawPhotoImage && (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO || authorLayout == null && titleLayout == null && descriptionLayout == null && siteNameLayout == null)) {
+            return false;
+        }
+        final TLRPC.MessageMedia media = MessageObject.getMedia(currentMessageObject.messageOwner);
+        return media != null && media.webpage != null;
+    }
+
+    // what a press on the card under a link does when the card stands for a page. A finger and a
+    // screen reader both come here, so that the two cannot come to do different things
+    private void openLinkPreviewWebPage() {
+        TLRPC.WebPage webPage = MessageObject.getMedia(currentMessageObject.messageOwner).webpage;
+        if (webPage != null && !TextUtils.isEmpty(webPage.embed_url)/* && TextUtils.isEmpty(WebPlayerView.getYouTubeVideoId(webPage.embed_url))*/) {
+            if (delegate != null) {
+                delegate.needOpenWebView(currentMessageObject, webPage.embed_url, webPage.site_name, webPage.title, webPage.url, webPage.embed_width, webPage.embed_height);
+            }
+        } else if (webPage != null) {
+            if (delegate != null) {
+                delegate.didPressWebPage(this, webPage, webPage.url, MessageObject.getMedia(currentMessageObject.messageOwner).safe);
+            } else {
+                Browser.openUrl(getContext(), webPage.url);
+            }
+        }
+    }
+
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
@@ -26609,6 +26653,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     delegate.didPressOther(this, otherX, otherY);
                 }
+            }
+        } else if (action == R.id.acc_action_open_link_preview) {
+            if (hasOpenableLinkPreview()) {
+                openLinkPreviewWebPage();
             }
         } else if (action == R.id.acc_action_open_forwarded_origin) {
             if (delegate != null) {
@@ -27332,6 +27380,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         };
                         sb.setSpan(underlineSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
+                    // the card drawn under a link says nothing of itself: what it holds goes at
+                    // the very end of the message, once everything else has been said
+                    if (hasLinkPreview) {
+                        final CharSequence preview = linkPreviewAccessibilityText();
+                        if (!TextUtils.isEmpty(preview)) {
+                            sb.append("\n");
+                            sb.append(getString(R.string.LinkPreview));
+                            sb.append(", ");
+                            sb.append(preview);
+                        }
+                    }
                     accessibilityText = sb;
                     accessibilityTextUnread = unread;
                     accessibilityTextContentUnread = contentUnread;
@@ -27481,6 +27540,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
+                }
+                if (hasOpenableLinkPreview()) {
+                    // the action carries the card as well, so what the link leads to can be heard
+                    // from the list of actions without going back through the message for it
+                    final CharSequence preview = linkPreviewAccessibilityText();
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                        R.id.acc_action_open_link_preview,
+                        TextUtils.isEmpty(preview) ? getString(R.string.OpenUrlTitle) : TextUtils.concat(getString(R.string.OpenUrlTitle), ", ", preview)
+                    ));
                 }
                 if (drawSelectionBackground || getBackground() != null) {
                     info.setSelected(true);
