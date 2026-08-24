@@ -79,6 +79,7 @@ public class DownloadButton extends ImageView {
         setVisibility(View.GONE);
         setAlpha(0f);
 
+        setContentDescription(LocaleController.getString(R.string.SaveToGallery));
         setOnClickListener(e -> onClick());
 
         progressDrawable = new CircularProgressDrawable(dp(18), dp(2), 0xffffffff);

@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -53,6 +54,7 @@ public class PaintToolsView extends LinearLayout {
             buttons[a] = createView(i == 0, i == Brush.BRUSHES_LIST.size() + 1);
             int finalI = a;
             if (i == 0) {
+                buttons[a].setContentDescription(LocaleController.getString(R.string.AccDescrPaintColors));
                 buttons[a].setOnClickListener(v -> delegate.onColorPickerSelected());
             } else if (i > 0 && i <= Brush.BRUSHES_LIST.size()) {
                 Brush brush = Brush.BRUSHES_LIST.get(i - 1);
@@ -60,6 +62,8 @@ public class PaintToolsView extends LinearLayout {
                     continue;
                 }
                 buttons[a].setAnimation(brush.getIconRes(), 28, 28);
+                // a brush is drawn as its icon and nothing else, so it says which one it is
+                buttons[a].setContentDescription(LocaleController.getString(brushDescription(brush)));
                 buttons[a].setOnClickListener(v -> {
                     animateNextIndex(finalI);
                     delegate.onGetPalette().setCurrentBrush(finalI - 1);
@@ -67,11 +71,27 @@ public class PaintToolsView extends LinearLayout {
                 });
             } else if (i == Brush.BRUSHES_LIST.size() + 1) {
                 buttons[a].setImageResource(R.drawable.msg_add);
+                buttons[a].setContentDescription(LocaleController.getString(R.string.AccDescrPaintShapes));
                 buttons[a].setOnClickListener(v -> delegate.onAddButtonPressed(v));
             }
             addView(buttons[a]);
             a++;
         }
+    }
+
+    private static int brushDescription(Brush brush) {
+        if (brush instanceof Brush.Arrow) {
+            return R.string.PaintArrow;
+        } else if (brush instanceof Brush.Elliptical) {
+            return R.string.AccDescrPaintMarker;
+        } else if (brush instanceof Brush.Neon) {
+            return R.string.AccDescrPaintNeon;
+        } else if (brush instanceof Brush.Blurer) {
+            return R.string.AccDescrPaintBlur;
+        } else if (brush instanceof Brush.Eraser) {
+            return R.string.AccDescrPaintEraser;
+        }
+        return R.string.AccDescrPaintPen;
     }
 
     public void setSelectedIndex(int selectedIndex) {
