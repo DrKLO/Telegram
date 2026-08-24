@@ -66,6 +66,7 @@ public class PaintTextOptionsView extends FrameLayout implements NotificationCen
         setWillNotDraw(false);
 
         colorClickableView = new View(context);
+        colorClickableView.setContentDescription(LocaleController.getString(R.string.AccDescrPaintColors));
         colorClickableView.setOnClickListener(v -> delegate.onColorPickerSelected());
         addView(colorClickableView, LayoutHelper.createFrame(24, 24, Gravity.TOP, 0, 0, 16, 0));
 
@@ -76,6 +77,7 @@ public class PaintTextOptionsView extends FrameLayout implements NotificationCen
         drawable.setCustomEndFrame(20);
         drawable.setCurrentFrame(20);
         alignView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+        alignView.setContentDescription(LocaleController.getString(R.string.AccDescrTextAlignment));
         alignView.setOnClickListener(v -> setAlignment((currentAlign + 1) % 3, true));
         alignView.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
         addView(alignView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
@@ -83,6 +85,7 @@ public class PaintTextOptionsView extends FrameLayout implements NotificationCen
         outlineView = new ImageView(context);
         outlineView.setImageResource(R.drawable.msg_text_outlined);
         outlineView.setPadding(AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+        outlineView.setContentDescription(LocaleController.getString(R.string.AccDescrTextStyle));
         outlineView.setOnClickListener(v -> delegate.onTextOutlineSelected(v));
         addView(outlineView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
@@ -90,6 +93,7 @@ public class PaintTextOptionsView extends FrameLayout implements NotificationCen
         plusView.setImageResource(R.drawable.msg_add);
         plusView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         plusView.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        plusView.setContentDescription(LocaleController.getString(R.string.AccDescrPlaceText));
         plusView.setOnClickListener(v -> delegate.onNewTextSelected());
         plusView.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
         addView(plusView, LayoutHelper.createFrame(28, 28, Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
