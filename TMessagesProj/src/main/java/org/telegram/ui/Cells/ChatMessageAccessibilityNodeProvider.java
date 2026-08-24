@@ -369,6 +369,17 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     };
                     sb.setSpan(underlineSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+                // the card drawn under a link says nothing of itself: what it holds goes at
+                // the very end of the message, once everything else has been said
+                if (cell.hasLinkPreview) {
+                    final CharSequence preview = cell.linkPreviewAccessibilityText();
+                    if (!TextUtils.isEmpty(preview)) {
+                        sb.append("\n");
+                        sb.append(getString(R.string.LinkPreview));
+                        sb.append(", ");
+                        sb.append(preview);
+                    }
+                }
                 cell.accessibilityText = sb;
                 cell.accessibilityTextUnread = unread;
                 cell.accessibilityTextContentUnread = contentUnread;
@@ -518,6 +529,15 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             }
             if (cell.forwardedNameLayout[0] != null && cell.forwardedNameLayout[1] != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
+            }
+            if (cell.hasOpenableLinkPreview()) {
+                // the action carries the card as well, so what the link leads to can be heard
+                // from the list of actions without going back through the message for it
+                final CharSequence preview = cell.linkPreviewAccessibilityText();
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                    R.id.acc_action_open_link_preview,
+                    TextUtils.isEmpty(preview) ? getString(R.string.OpenUrlTitle) : TextUtils.concat(getString(R.string.OpenUrlTitle), ", ", preview)
+                ));
             }
             if (cell.drawSelectionBackground || cell.getBackground() != null) {
                 info.setSelected(true);
