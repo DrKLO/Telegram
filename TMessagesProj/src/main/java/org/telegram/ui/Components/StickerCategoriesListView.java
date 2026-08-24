@@ -558,6 +558,9 @@ public class StickerCategoriesListView extends RecyclerListView implements Theme
                         );
                     }
                 };
+                // the room kept before the first category is empty, and an empty stop in the way
+                // of what follows it says nothing worth hearing
+                view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             } else {
                 view = new CategoryButton(getContext());
             }
