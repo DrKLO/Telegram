@@ -3425,6 +3425,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             backDrawable.setRotatedColor(0xffffffff);
             backDrawable.setAnimationTime(220);
 //            closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider)));
+            closeView.setContentDescription(LocaleController.getString(R.string.AccDescrGoBack));
             addView(closeView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 16, 0, 16, 0));
             closeView.setOnClickListener(e -> {
                 if (onCloseClickListener != null) {

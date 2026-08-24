@@ -5074,6 +5074,17 @@
     <string name="AccDescrBrushType">Brush type</string>
     <string name="AccDescrPaint">Paint</string>
     <string name="AccDescrPlaceText">Place text</string>
+    <string name="AccDescrPaintColors">Colors</string>
+    <string name="AccDescrPaintColor">Color</string>
+    <string name="AccDescrPaintPen">Pen</string>
+    <string name="AccDescrPaintMarker">Marker</string>
+    <string name="AccDescrPaintNeon">Neon</string>
+    <string name="AccDescrPaintBlur">Blur</string>
+    <string name="AccDescrPaintEraser">Eraser</string>
+    <string name="AccDescrPaintShapes">Shapes</string>
+    <string name="AccDescrPaintSize">Brush size</string>
+    <string name="AccDescrTextAlignment">Text alignment</string>
+    <string name="AccDescrTextStyle">Text style</string>
     <string name="AccDescrPhotoEditor">Photo editor</string>
     <string name="AccDescrPhotoAdjust">Adjustments</string>
     <string name="AccDescrPhotoViewer">Photo viewer</string>
