@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -40,7 +41,7 @@ public class UpdateLayout extends IUpdateLayout {
         if (ApplicationLoader.applicationLoaderInstance.isDownloadingUpdate()) {
             final float progress = ApplicationLoader.applicationLoaderInstance.getDownloadingUpdateProgress();
             updateLayoutIcon.setProgress(progress, true);
-            updateTextView.setText(LocaleController.formatString(R.string.AppUpdateDownloading, (int) (progress * 100)));
+            setUpdateText(LocaleController.formatString(R.string.AppUpdateDownloading, (int) (progress * 100)), true);
             updateLayout.invalidate();
         }
     }
@@ -49,7 +50,25 @@ public class UpdateLayout extends IUpdateLayout {
         if (sideMenuContainer == null || updateLayout != null) {
             return;
         }
-        updateLayout = new FrameLayout(activity);
+        updateLayout = new FrameLayout(activity) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                // the bar is a button that draws itself, so it reports as one, and says what
+                // pressing it does, which its icon is all that tells everyone else
+                info.setClassName("android.widget.Button");
+                final int icon = updateLayoutIcon == null ? MediaActionDrawable.ICON_UPDATE : updateLayoutIcon.getIcon();
+                final CharSequence action;
+                if (icon == MediaActionDrawable.ICON_DOWNLOAD) {
+                    action = LocaleController.getString(R.string.AccActionDownload);
+                } else if (icon == MediaActionDrawable.ICON_CANCEL) {
+                    action = LocaleController.getString(R.string.AccActionCancelDownload);
+                } else {
+                    action = LocaleController.getString(R.string.AppUpdateNow);
+                }
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, action));
+            }
+        };
         updateLayout.setVisibility(View.INVISIBLE);
         updateLayout.setTranslationY(dp(44));
         updateLayout.setBackground(Theme.getSelectorDrawable(0x40ffffff, false));
@@ -84,8 +103,10 @@ public class UpdateLayout extends IUpdateLayout {
         updateTextView.setTypeface(AndroidUtilities.bold());
         updateTextView.setTextColor(0xffffffff);
         updateTextView.setGravity(Gravity.CENTER);
+        // the bar speaks for what it holds, so what it holds is left out of what is read
+        updateTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         updateLayout.addView(updateTextView, LayoutHelper.createFrameMatchParent());
-        updateTextView.setText(LocaleController.getString(R.string.AppUpdateBeta), false);
+        setUpdateText(LocaleController.getString(R.string.AppUpdateBeta), false);
 
         updateLayoutIcon = new RadialProgress2(updateTextView);
         updateLayoutIcon.setColors(0xffffffff, 0xffffffff, Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButton));
@@ -146,5 +167,10 @@ public class UpdateLayout extends IUpdateLayout {
 
     private void setUpdateText(String text, boolean animate) {
         updateTextView.setText(text, animate);
+        // what the bar says is drawn rather than laid out: a screen reader is told none of it
+        // unless the bar itself says it
+        if (updateLayout != null) {
+            updateLayout.setContentDescription(text);
+        }
     }
 }
