@@ -5016,6 +5016,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         private CountDownLatch waitingForFile;
         private MessagesStorage.IntCallback onFinishRunnable;
         private boolean isMusic;
+        private File downloadedFile;
 
         public MediaLoader(Context context, AccountInstance accountInstance, ArrayList<MessageObject> messages, MessagesStorage.IntCallback onFinish) {
             currentAccount = accountInstance;
@@ -5089,8 +5090,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             if (cancelled) {
                                 break;
                             }
-                            if (!sourceFile.exists()) {
-                                sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(message.messageOwner, true);
+                            File justDownloadedFile = downloadedFile;
+                            downloadedFile = null;
+                            if (justDownloadedFile != null && justDownloadedFile.exists()) {
+                                sourceFile = justDownloadedFile;
+                            } else if (!sourceFile.exists()) {
+                                sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToMessage(message.messageOwner, true);
                                 FileLog.d("saving file: correcting path from " + path + " to " + (sourceFile == null ? null : sourceFile.getAbsolutePath()));
                             }
                             if (sourceFile != null && sourceFile.exists()) {
@@ -5412,6 +5417,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             if (id == NotificationCenter.fileLoaded || id == NotificationCenter.fileLoadFailed) {
                 String fileName = (String) args[0];
                 if (loadingMessageObjects.remove(fileName) != null) {
+                    if (id == NotificationCenter.fileLoaded && args.length > 1 && args[1] instanceof File) {
+                        downloadedFile = (File) args[1];
+                    }
                     waitingForFile.countDown();
                 }
             } else if (id == NotificationCenter.fileLoadProgressChanged) {
