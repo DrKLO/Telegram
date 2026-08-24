@@ -2711,6 +2711,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         muteButton = new RLottieImageView(context);
         muteButton.setScaleType(ImageView.ScaleType.CENTER);
         muteButton.setImageResource(outputEntry != null && outputEntry.muted ? R.drawable.media_unmute : R.drawable.media_mute);
+        muteButton.setContentDescription(getString(outputEntry != null && outputEntry.muted ? R.string.Unmute : R.string.Mute));
         muteButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
         muteButton.setBackground(Theme.createSelectorDrawable(0x20ffffff));
         muteButton.setOnClickListener(e -> {
@@ -2741,6 +2742,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         muteButton.setAlpha(0f);
 
         playButton = new PlayPauseButton(context);
+        playButton.setContentDescription(getString(R.string.AccActionPause));
         playButton.setBackground(Theme.createSelectorDrawable(0x20ffffff));
         playButton.setVisibility(View.GONE);
         playButton.setAlpha(0f);
@@ -2748,6 +2750,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             boolean playing = previewView.isPlaying();
             previewView.play(!playing);
             playButton.drawable.setPause(!playing, true);
+            playButton.setContentDescription(getString(!playing ? R.string.AccActionPause : R.string.AccActionPlay));
         });
 
         actionBarButtons.addView(playButton, LayoutHelper.createLinear(46, 56, Gravity.TOP | Gravity.RIGHT));
@@ -5186,6 +5189,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             previewButtons.setButtonVisible(PreviewButtons.BUTTON_CROP, BuildVars.DEBUG_PRIVATE_VERSION && outputEntry != null && !outputEntry.isRepostMessage && !outputEntry.isCollage());
             previewButtons.setShareEnabled(!videoError && !captionEdit.isCaptionOverLimit() && (!MessagesController.getInstance(currentAccount).getStoriesController().hasStoryLimit(getCount()) || (outputEntry != null && (outputEntry.isEdit || outputEntry.botId != 0))));
             muteButton.setImageResource(outputEntry != null && outputEntry.muted ? R.drawable.media_unmute : R.drawable.media_mute);
+        muteButton.setContentDescription(getString(outputEntry != null && outputEntry.muted ? R.string.Unmute : R.string.Mute));
             previewView.setVisibility(View.VISIBLE);
             timelineView.setVisibility(View.VISIBLE);
             titleTextView.setVisibility(View.VISIBLE);
@@ -7693,6 +7697,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             themeButton.setScaleType(ImageView.ScaleType.CENTER);
             themeButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
             themeButton.setBackground(Theme.createSelectorDrawable(0x20ffffff));
+            themeButton.setContentDescription(getString(R.string.Theme));
             themeButton.setOnClickListener(e -> {
                 toggleTheme();
             });

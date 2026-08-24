@@ -560,6 +560,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             sb.setSpan(span, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             sb.append(" ").append(getString(R.string.StoriesCollage));
             button2View.setText(sb, false);
+            button2View.setContentDescription(getString(R.string.StoriesCollage));
             buttonsLayout.addView(button2View, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 0, 0, 0, 0));
             button2View.setOnClickListener(v -> {
                 if (buttonsLayout.getAlpha() < 0.25f) return;
@@ -574,6 +575,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             selectButton = new ImageView(context);
             selectButton.setScaleType(ImageView.ScaleType.CENTER);
             selectButton.setImageResource(R.drawable.floating_check);
+            selectButton.setContentDescription(getString(R.string.Select));
             selectButton.setBackground(Theme.createCircleDrawable(dp(56), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
             ScaleStateListAnimator.apply(selectButton, 0.1f, 1.5f);
             addView(selectButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 14, 14));
