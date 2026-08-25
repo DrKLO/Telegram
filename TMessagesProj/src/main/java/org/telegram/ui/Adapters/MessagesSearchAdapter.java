@@ -232,6 +232,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
         if (holder.getItemViewType() == 0) {
             DialogCell cell = (DialogCell) holder.itemView;
             cell.useSeparator = true;
+            cell.useFromUserAsAvatar = true;
             MessageObject messageObject = (MessageObject) getItem(position);
             int date;
             long did;
