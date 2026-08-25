@@ -22,3 +22,9 @@
 [submodule "TMessagesProj/jni/tlottie"]
 	path = TMessagesProj/jni/tlottie
 	url = https://github.com/dkaraush/tlottie.git
+[submodule "TMessagesProj/jni/third_party/openh264"]
+	path = TMessagesProj/jni/third_party/openh264
+	url = https://github.com/cisco/openh264.git
+[submodule "TMessagesProj/jni/third_party/libyuv"]
+	path = TMessagesProj/jni/third_party/libyuv
+	url = https://chromium.googlesource.com/libyuv/libyuv
