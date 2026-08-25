@@ -38,6 +38,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -3637,11 +3638,11 @@ public class NotificationsController extends BaseController implements Notificat
 
             IconCompat icon;
             if (avatar != null) {
-                icon = IconCompat.createWithAdaptiveBitmap(avatar);
+                icon = IconCompat.createWithAdaptiveBitmap(wrapBitmapForBubbleIcon(avatar));
             } else if (user != null) {
-                icon = IconCompat.createWithResource(ApplicationLoader.applicationContext, user.bot ? R.drawable.book_bot : R.drawable.book_user);
+                icon = buildAdaptiveBubbleIconFromResource(user.bot ? R.drawable.book_bot : R.drawable.book_user);
             } else {
-                icon = IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group);
+                icon = buildAdaptiveBubbleIconFromResource(R.drawable.book_group);
             }
             if (supportsBubble) {
                 NotificationCompat.BubbleMetadata.Builder bubbleBuilder =
@@ -3660,6 +3661,51 @@ public class NotificationsController extends BaseController implements Notificat
             FileLog.e(e);
         }
         return null;
+    }
+
+    private static final int ADAPTIVE_ICON_OUTER_DP = 108;
+    private static final int ADAPTIVE_ICON_INNER_DP = 72;
+
+    private static Bitmap wrapBitmapForBubbleIcon(Bitmap source) {
+        int outer = AndroidUtilities.dp(ADAPTIVE_ICON_OUTER_DP);
+        int inner = AndroidUtilities.dp(ADAPTIVE_ICON_INNER_DP);
+        int padding = (outer - inner) / 2;
+
+        try {
+            Bitmap wrapped = Bitmap.createBitmap(outer, outer, Bitmap.Config.ARGB_8888);
+            Bitmap scaled = Bitmap.createScaledBitmap(source, inner, inner, true);
+            Canvas canvas = new Canvas(wrapped);
+            canvas.drawBitmap(scaled, padding, padding, null);
+            if (scaled != source) {
+                scaled.recycle();
+            }
+            return wrapped;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return source;
+        }
+    }
+
+    private static IconCompat buildAdaptiveBubbleIconFromResource(int resId) {
+        Context context = ApplicationLoader.applicationContext;
+        int outer = AndroidUtilities.dp(ADAPTIVE_ICON_OUTER_DP);
+        int inner = AndroidUtilities.dp(ADAPTIVE_ICON_INNER_DP);
+        int padding = (outer - inner) / 2;
+
+        try {
+            Drawable drawable = context.getDrawable(resId);
+            if (drawable == null) {
+                return IconCompat.createWithResource(context, resId);
+            }
+            Bitmap wrapped = Bitmap.createBitmap(outer, outer, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(wrapped);
+            drawable.setBounds(padding, padding, padding + inner, padding + inner);
+            drawable.draw(canvas);
+            return IconCompat.createWithAdaptiveBitmap(wrapped);
+        } catch (Exception e) {
+            FileLog.e(e);
+            return IconCompat.createWithResource(context, resId);
+        }
     }
 
     @TargetApi(26)
