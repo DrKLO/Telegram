@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 
 import org.telegram.messenger.MediaDataController;
@@ -275,6 +276,51 @@ public class TlUtils {
 
             poll.shuffled_answers = new ArrayList<>(poll.answers);
             poll.shuffled_answers.sort((a1, a2) -> Long.compareUnsigned(a1.shuffle_hash, a2.shuffle_hash));
+        }
+    }
+
+    public static boolean tlEquals(TLObject object1, TLObject object2) {
+        if (object1 == object2) {
+            return true;
+        }
+        if (object1 == null || object2 == null) {
+            return false;
+        }
+
+        final int size1 = object1.getObjectSize();
+        final int size2 = object2.getObjectSize();
+        if (size1 != size2) {
+            return false;
+        }
+
+        try {
+            NativeByteBuffer data1 = new NativeByteBuffer(size1);
+            object1.serializeToStream(data1);
+            data1.rewind();
+
+            NativeByteBuffer data2 = new NativeByteBuffer(size2);
+            object2.serializeToStream(data2);
+            data2.rewind();
+
+            int remaining = size1;
+
+            while (remaining >= 8) {
+                if (data1.readInt64(true) != data2.readInt64(true)) {
+                    return false;
+                }
+                remaining -= 8;
+            }
+
+            while (remaining > 0) {
+                if (data1.readByte(true) != data2.readByte(true)) {
+                    return false;
+                }
+                remaining--;
+            }
+
+            return true;
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 }

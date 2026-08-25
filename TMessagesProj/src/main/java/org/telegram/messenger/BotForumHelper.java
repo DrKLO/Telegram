@@ -293,10 +293,37 @@ public class BotForumHelper extends BaseController {
 
     public boolean hasBotForumDrafts(long userId, int topicId) {
         LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
-        return messages != null && messages.size() > 0;
+        if (messages != null && messages.size() > 0) {
+            for (int a = 0, N = messages.size(); a < N; a++) {
+                if (!messages.valueAt(a).removed) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void removeAllMarkedAsRemovedMessages(long userId, int topicId) {
+        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
+        if (messages == null) {
+            return;
+        }
+
+        for (int a = 0, N = messages.size(); a < N; a++) {
+            BotDraftMessage draftMessage = messages.valueAt(a);
+            if (draftMessage.removed) {
+                getNotificationCenter().postNotificationName(NotificationCenter.botForumDraftDelete,
+                        new BotForumTextDraftDeleteNotification(userId, topicId, draftMessage.localMessageId));
+                botTextDraftsByRandomIds.remove(userId, topicId, draftMessage.randomId);
+                a--;
+                N--;
+            }
+        }
     }
 
     public MessageObject onBotForumDraftCheckNewMessages(long userId, int topicId, int messageId, String message) {
+        removeAllMarkedAsRemovedMessages(userId, topicId);
+
         LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
         if (messages == null) {
             return null;

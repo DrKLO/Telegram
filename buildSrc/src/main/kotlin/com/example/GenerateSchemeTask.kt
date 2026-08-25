@@ -14,7 +14,7 @@ import org.gradle.api.tasks.TaskAction
 import org.telegram.tlrpc.SchemeAllLayersParser
 import org.telegram.tlrpc.SchemeCodeGen
 import org.telegram.tlrpc.SchemeTlValidator
-import org.telegram.tlrpc.models.RULES
+import org.telegram.tlrpc.models.RulesHolder
 import org.telegram.tlrpc.models.TlObjectWithLayer
 import org.telegram.tlrpc.schema.TlSchemaJsonParser
 import org.telegram.tlrpc.telegram.TelegramCodeParser
@@ -64,7 +64,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
 
         val telegramClasses = TelegramCodeParser.parse(files)
         val tlSchemaFull = TlSchemaJsonParser.parse(resourcesDir, LAYER)
-        val tlSchemaFilter = tlSchemaFull.applyRules(RULES.rules)
+        val tlSchemaFilter = tlSchemaFull.applyRules(RulesHolder.rules)
 
         val undefinedTelegramClasses = telegramClasses.groupedByConstructorAll.filterKeys {
             it !in tlSchemaFull.magicsAll
@@ -77,7 +77,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         val classesByUniqueIds = telegramClasses.groupedByConstructorUnique
         val schema = SchemeAllLayersParser.parseAllLayers(resourcesDir)
 
-        val dep = RULES.rules.databaseTypes
+        val dep = RulesHolder.rules.databaseTypes
         val legacyConstrKeys = schema.schemes.map { s ->
             val types = dep
                 .mapNotNull { s.dependenciesTransitive[it] }
@@ -181,7 +181,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
             ) {
                 needSuper = false
             }
-            if (!RULES.rules.filterConstructor(constructor.tl.key.name)) continue
+            if (!RulesHolder.rules.filterConstructor(constructor.tl.key.name)) continue
 
             sealedClassBuilder.addType(
                 SchemeCodeGen.generateDataClass(
@@ -230,7 +230,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         var testIndex = 0;
 
         for (constructor in constructorsSorted) {
-            if (!RULES.rules.filterConstructor(constructor.tl.key.name)) continue
+            if (!RulesHolder.rules.filterConstructor(constructor.tl.key.name)) continue
 
             val isEncrypted = constructor in encrypted
             val isLegacy = constructor.layerLast < LAYER

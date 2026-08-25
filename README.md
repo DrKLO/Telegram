@@ -24,7 +24,7 @@ MTproto protocol manuals: https://core.telegram.org/mtproto
 
 **Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 35.
+You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
 
 1. Clone the Telegram source code with its submodules:
    ```bash
