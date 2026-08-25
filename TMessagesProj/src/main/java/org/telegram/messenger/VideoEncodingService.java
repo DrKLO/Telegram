@@ -8,9 +8,11 @@
 
 package org.telegram.messenger;
 
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.text.TextUtils;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -18,6 +20,7 @@ import androidx.core.app.NotificationManagerCompat;
 public class VideoEncodingService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
     private NotificationCompat.Builder builder;
+    private NotificationCompat.ProgressStyle progressStyle;
     private MediaController.VideoConvertMessage currentMessage;
     private static VideoEncodingService instance;
 
@@ -54,6 +57,12 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         }
     }
 
+    public static void cancelCurrent() {
+        if (instance != null && instance.currentMessage != null) {
+            SendMessagesHelper.getInstance(instance.currentAccount).cancelSendingMessage(instance.currentMessage.messageObject);
+        }
+    }
+
     public IBinder onBind(Intent arg2) {
         return null;
     }
@@ -87,7 +96,11 @@ public class VideoEncodingService extends Service implements NotificationCenter.
                 float progress = Math.min(1f, loadedSize / (float) totalSize);
                 Boolean enc = (Boolean) args[3];
                 int currentProgress = (int) (progress * 100);
-                builder.setProgress(100, currentProgress, currentProgress == 0);
+                if (progressStyle != null) {
+                    progressStyle.setProgress(currentProgress);
+                } else {
+                    builder.setProgress(100, currentProgress, currentProgress == 0);
+                }
                 updateNotification();
             }
         } else if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
@@ -134,6 +147,12 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setWhen(System.currentTimeMillis());
             builder.setChannelId(NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
             builder.setContentTitle(LocaleController.getString(R.string.AppName));
+            builder.setOngoing(true);
+            if (NotificationManagerCompat.from(ApplicationLoader.applicationContext).canPostPromotedNotifications()) {
+                builder.setRequestPromotedOngoing(true);
+            }
+            Intent cancelIntent = new Intent(ApplicationLoader.applicationContext, CancelVideoUploadReceiver.class);
+            builder.addAction(0, LocaleController.getString(R.string.Cancel), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 4, cancelIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
         }
         setCurrentMessage(videoConvertMessage);
         try {
@@ -150,6 +169,9 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         if (videoConvertMessage == null) {
             return;
         }
+        String name = videoConvertMessage.messageObject != null ? DialogObject.getName(videoConvertMessage.currentAccount, videoConvertMessage.messageObject.getDialogId()) : null;
+        builder.setContentTitle(TextUtils.isEmpty(name) ? LocaleController.getString(R.string.AppName) : name);
+
         boolean isGif = videoConvertMessage.messageObject != null && MessageObject.isGifMessage(videoConvertMessage.messageObject.messageOwner);
         if (videoConvertMessage.foregroundConversion) {
             builder.setTicker(LocaleController.getString(R.string.ConvertingVideo));
@@ -161,8 +183,10 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setTicker(LocaleController.getString(R.string.SendingVideo));
             builder.setContentText(LocaleController.getString(R.string.SendingVideo));
         }
-        int currentProgress = 0;
-        builder.setProgress(100, currentProgress, true);
+        progressStyle = new NotificationCompat.ProgressStyle()
+                .addProgressSegment(new NotificationCompat.ProgressStyle.Segment(100))
+                .setProgress(0);
+        builder.setStyle(progressStyle);
     }
 
     private void setCurrentMessage(MediaController.VideoConvertMessage message) {
