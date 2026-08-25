@@ -349,6 +349,14 @@ public class RecyclerAnimationScrollHelper {
                 animator.start();
             }
         });
+
+        // If the target layout matches the current one, onLayoutChange never fires and
+        // scrollEnabled/fastScrollAnimationRunning stay locked forever (list dead until restart).
+        recyclerView.postDelayed(() -> {
+            if (animator == null && recyclerView.fastScrollAnimationRunning) {
+                cancel();
+            }
+        }, 100);
     }
 
     public void cancel() {
@@ -359,6 +367,7 @@ public class RecyclerAnimationScrollHelper {
     private void clear() {
         recyclerView.setVerticalScrollBarEnabled(true);
         recyclerView.fastScrollAnimationRunning = false;
+        recyclerView.setScrollEnabled(true);
         final RecyclerView.Adapter adapter = recyclerView.getAdapter();
         if (adapter instanceof AnimatableAdapter)
             ((AnimatableAdapter) adapter).onAnimationEnd();
