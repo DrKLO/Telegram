@@ -18,6 +18,8 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.VibrationAttributes;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.SpannableString;
@@ -348,7 +350,25 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                     } else if (vibrate == 3) {
                         duration *= 2;
                     }
-                    vibrator.vibrate(new long[]{0, duration, 500}, 0);
+                    // Pre-notification rings from a background proc state (no foreground service yet),
+                    // so the vibration must be tagged with a background-allowed usage or Android 13+
+                    // drops it (VibratorManagerService: "is background ... USAGE_UNKNOWN").
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        vibrator.vibrate(
+                            VibrationEffect.createWaveform(new long[]{0, duration, 500}, 0),
+                            new VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_RINGTONE).build()
+                        );
+                    } else if (Build.VERSION.SDK_INT >= 26) {
+                        vibrator.vibrate(
+                            VibrationEffect.createWaveform(new long[]{0, duration, 500}, 0),
+                            new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build()
+                        );
+                    } else {
+                        vibrator.vibrate(new long[]{0, duration, 500}, 0);
+                    }
                 }
             }
         }
