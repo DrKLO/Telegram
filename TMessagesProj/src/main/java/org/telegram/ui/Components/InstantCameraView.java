@@ -2493,12 +2493,12 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         for (int a = input.lastWroteBuffer; a <= input.results; a++) {
                             if (a < input.results) {
                                 long totalTime = input.offset[a] - audioStartTime;
-                                if (!running && (input.offset[a] >= videoLast - desyncTime || totalTime >= 60_000000)) {
+                                if (!running && (input.offset[a] >= videoLast / 1000 - desyncTime || totalTime >= 60_000000)) {
                                     if (BuildVars.LOGS_ENABLED) {
                                         if (totalTime >= 60_000000) {
                                             FileLog.d("InstantCamera stop audio encoding because recorded time more than 60s");
                                         } else {
-                                            FileLog.d("InstantCamera stop audio encoding because of stoped video recording at " + input.offset[a] + " last video " + videoLast);
+                                            FileLog.d("InstantCamera stop audio encoding because of stoped video recording at " + input.offset[a] + " last video " + (videoLast / 1000));
                                         }
 
                                     }
@@ -2586,7 +2586,17 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 }
                 lastTimestamp = timestampNanos;
             } else {
-                alphaDt = dt = (timestampNanos - lastTimestamp);
+                long dtTimestamps = (timestampNanos - lastTimestamp);
+                long dtReal = (System.currentTimeMillis() - lastCommitedFrameTime) * 1000000;
+                if (dtTimestamps < 0 || Math.abs(dtReal - dtTimestamps) > 100_000_000) {
+                    dt = dtReal;
+                } else {
+                    dt = dtTimestamps;
+                }
+                if (dt < 0) {
+                    dt = 0;
+                }
+                alphaDt = dtTimestamps;
                 lastTimestamp = timestampNanos;
             }
             firstVideoFrameSincePause = false;
