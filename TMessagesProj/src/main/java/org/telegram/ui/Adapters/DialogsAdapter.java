@@ -429,7 +429,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                 return dialog != null && itemInternal.dialog != null && dialog.id == itemInternal.dialog.id && dialog.isFolder == itemInternal.dialog.isFolder;
             }
             if (viewType == VIEW_TYPE_ME_URL) {
-                return recentMeUrl != null && itemInternal.recentMeUrl != null && recentMeUrl.url != null && recentMeUrl.url.equals(recentMeUrl.url);
+                return recentMeUrl != null && itemInternal.recentMeUrl != null && recentMeUrl.url != null && recentMeUrl.url.equals(itemInternal.recentMeUrl.url);
             }
             if (viewType == VIEW_TYPE_USER) {
                 return contact != null && itemInternal.contact != null && contact.user_id == itemInternal.contact.user_id;
