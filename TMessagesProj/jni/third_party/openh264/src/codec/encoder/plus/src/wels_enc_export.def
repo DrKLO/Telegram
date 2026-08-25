@@ -1,5 +1,0 @@
-EXPORTS
-    WelsCreateSVCEncoder
-    WelsDestroySVCEncoder
-    WelsGetCodecVersion
-    WelsGetCodecVersionEx
