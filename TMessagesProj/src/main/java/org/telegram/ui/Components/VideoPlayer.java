@@ -271,6 +271,14 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             }
             player = builder.build();
 
+            // Default to MEDIA/MOVIE so AudioPolicyManager (Samsung in particular) routes the
+            // track to the AudioPlaybackCapture submix. UNKNOWN contentType is silently dropped
+            // from the submix on some HALs. Overridden by setStreamType() for earpiece routing.
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(), handleAudioFocus);
+
             player.addAnalyticsListener(this);
             player.addListener(this);
             player.addVideoListener(this);
@@ -289,6 +297,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 audioPlayer = new ExoPlayer.Builder(ApplicationLoader.applicationContext)
                         .setTrackSelector(trackSelector)
                         .setLoadControl(loadControl).buildSimpleExoPlayer();
+                audioPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(), true);
                 audioPlayer.addListener(new Player.Listener() {
 
                     @Override
@@ -1635,11 +1647,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         if (player != null) {
             player.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .setContentType(type == AudioManager.STREAM_VOICE_CALL ? C.AUDIO_CONTENT_TYPE_SPEECH : C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build(), handleAudioFocus);
         }
         if (audioPlayer != null) {
             audioPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(type == AudioManager.STREAM_VOICE_CALL ? C.USAGE_VOICE_COMMUNICATION : C.USAGE_MEDIA)
+                .setContentType(type == AudioManager.STREAM_VOICE_CALL ? C.AUDIO_CONTENT_TYPE_SPEECH : C.AUDIO_CONTENT_TYPE_MUSIC)
                 .build(), true);
         }
     }
