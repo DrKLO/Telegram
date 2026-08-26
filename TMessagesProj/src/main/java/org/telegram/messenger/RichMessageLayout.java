@@ -154,6 +154,7 @@ public class RichMessageLayout {
     private static final int ORDERED_LIST_MARKER_START_DP = 6;
 
     public final ArrayList<RichUnsupportedBlock> unsupportedBlocks = new ArrayList<>();
+    public final ArrayList<RichUnsupportedBlock> unsupportedBlocksRoot = new ArrayList<>();
     public final ArrayList<RichBlock> blocks = new ArrayList<>();
     public final ArrayList<QuoteBackground> quotes = new ArrayList<>();
     private Drawable pullquoteIcon;
@@ -353,6 +354,7 @@ public class RichMessageLayout {
         }
 
         unsupportedBlocks.clear();
+        unsupportedBlocksRoot.clear();
         blocks.clear();
         quotes.clear();
         anchors.clear();
@@ -1144,11 +1146,15 @@ public class RichMessageLayout {
             }
             return null;
         } else if (pageBlock instanceof TL_iv.pageBlockUnsupported) {
+            final int o = BitwiseUtils.hasFlag(textFlags, TEXT_FLAG_BLOCK_QUOTE) ? dp(6) : level > 0 ? dp(4) : 0;
             final RichUnsupportedBlock block = new RichUnsupportedBlock(this, new Rect(
-                -dp(7), Math.max(dp(14), padding.top),
-                -dp(7), Math.max(dp(14), padding.bottom)
-            ), maxWidth, blocks.size());
+                padding.left + o - dp(7), Math.max(dp(14), padding.top),
+                padding.right + o - dp(7), Math.max(dp(14), padding.bottom)
+            ), maxWidth, blocks.size(), level);
             unsupportedBlocks.add(block);
+            if (level == 0) {
+                unsupportedBlocksRoot.add(block);
+            }
             blocks.add(block);
             return block;
         } else if (pageBlock instanceof TL_iv.pageBlockDetails) {
@@ -1210,8 +1216,17 @@ public class RichMessageLayout {
         return !unsupportedBlocks.isEmpty();
     }
 
+    public boolean hasRootUnsupportedBlocks() {
+        return !unsupportedBlocksRoot.isEmpty();
+
+    }
+
     public ArrayList<RichUnsupportedBlock> getUnsupportedHoles() {
         return unsupportedBlocks;
+    }
+
+    public ArrayList<RichUnsupportedBlock> getUnsupportedHolesRoot() {
+        return unsupportedBlocksRoot;
     }
 
     public int getMinWidth() {
@@ -2766,6 +2781,31 @@ public class RichMessageLayout {
         private int pressedLinkStart, pressedLinkEnd;
         private AnimatedEmojiSpan pressedEmoji;
         private RichButtonSpan pressedButtonSpan;
+        private final RectF soleButtonHitBounds = new RectF();
+
+        private RichButtonSpan getSoleButtonSpan() {
+            if (!(layout.getText() instanceof Spanned)) return null;
+            final Spanned text = (Spanned) layout.getText();
+            final RichButtonSpan[] spans = text.getSpans(0, text.length(), RichButtonSpan.class);
+            if (spans.length != 1) return null;
+            final int spanStart = text.getSpanStart(spans[0]);
+            final int spanEnd = text.getSpanEnd(spans[0]);
+            for (int i = 0; i < text.length(); i++) {
+                if ((i < spanStart || i >= spanEnd) && !Character.isWhitespace(text.charAt(i))) {
+                    return null;
+                }
+            }
+            return spans[0];
+        }
+
+        private void setSoleButtonHitBounds(float left, float top, float right, float bottom) {
+            soleButtonHitBounds.set(left, top, right, bottom);
+        }
+
+        private boolean buttonContains(RichButtonSpan span, float x, float y) {
+            return span.contains(x, y, dp(8))
+                || (span == getSoleButtonSpan() && soleButtonHitBounds.contains(x, y));
+        }
 
         public boolean onTouchEvent(MotionEvent event) {
             final int act = event.getActionMasked();
@@ -2789,7 +2829,7 @@ public class RichMessageLayout {
                 final RichButtonSpan[] buttonSpans = getButtonSpans();
                 if (buttonSpans != null) {
                     for (RichButtonSpan span : buttonSpans) {
-                        if (span.contains(lx, ly)) {
+                        if (buttonContains(span, lx, ly)) {
                             if (span.isDisabled()) {
                                 return true;
                             }
@@ -2891,7 +2931,7 @@ public class RichMessageLayout {
             if (act == MotionEvent.ACTION_MOVE) {
                 if (pressedButtonSpan != null) {
                     // drop the press once the finger leaves the pill, same as a bot button row
-                    if (!pressedButtonSpan.contains(lx, ly)) {
+                    if (!buttonContains(pressedButtonSpan, lx, ly)) {
                         cancelLongPress();
                         pressedButtonSpan.setPressed(false);
                         pressedButtonSpan = null;
@@ -4479,6 +4519,11 @@ public class RichMessageLayout {
                         pressedCellText = (Text) cell.textLayout;
                         cellDx = cell.getTextX() - scrollX;
                         cellDy = titleHeight + cell.getTextY();
+                        pressedCellText.setSoleButtonHitBounds(
+                            cell.x - cell.getTextX(), cell.y - cell.getTextY(),
+                            cell.x + cell.getMeasuredWidth() - cell.getTextX(),
+                            cell.y + cell.getMeasuredHeight() - cell.getTextY()
+                        );
                         event.offsetLocation(-cellDx, -cellDy);
                         textHandlingTouch = pressedCellText.onTouchEvent(event);
                         event.offsetLocation(cellDx, cellDy);
@@ -4704,13 +4749,15 @@ public class RichMessageLayout {
         public final int unsupportedBlockWidth;
         public final int unsupportedBlockHeight;
         public final int index;
+        public final int level;
 
         public TornEdge.Params tornParams;
         public Bitmap tornBitmap;
 
-        public RichUnsupportedBlock(RichMessageLayout root, Rect padding, int maxWidth, int index) {
+        public RichUnsupportedBlock(RichMessageLayout root, Rect padding, int maxWidth, int index, int level) {
             super(root, padding, maxWidth);
             this.index = index;
+            this.level = level;
 
             unsupportedBlockDrawable = new UnsupportedBlockDrawable(root.resourcesProvider);
             unsupportedBlockDrawable.setCallback(this);
@@ -5735,6 +5782,11 @@ public class RichMessageLayout {
 
         public boolean contains(float x, float y) {
             return bounds.contains(x, y);
+        }
+
+        public boolean contains(float x, float y, float padding) {
+            return x >= bounds.left - padding && x < bounds.right + padding
+                && y >= bounds.top - padding && y < bounds.bottom + padding;
         }
 
         public void setPressed(boolean pressed) {

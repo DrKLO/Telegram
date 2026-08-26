@@ -6,13 +6,31 @@ buildscript {
         maven { url 'https://developer.huawei.com/repo/' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.android.tools.build:gradle:8.10.1'
         classpath 'com.google.gms:google-services:4.3.15'
         classpath 'com.huawei.agconnect:agcp:1.9.1.301'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
 }
 repositories {
     google()
+}
+
+// Strip JLatexMath fonts we don't ship (transitive AAR assets from
+// io.noties.markwon:ext-latex -> ru.noties:jlatexmath-android, ~764 KB total under
+// assets/org/scilab/forge/jlatexmath/fonts/). Has to live in the APK modules — a
+// library's androidResources.ignoreAssetsPattern doesn't filter packaging in apps
+// that consume it. Using subprojects keeps it in one place.
+//   keep:  base/, latin/, maths/, euler/  (\mathbb, \mathcal, \mathfrak still work)
+//   drop:  latin/optional/, maths/optional/  (~290 KB; \textbf/\textit/\mathds fall back)
+//          licences/                          (~20 KB; pure license text files)
+subprojects {
+    plugins.withId('com.android.application') {
+        android {
+            androidResources {
+                ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~:!optional:!licences:!*stmary*:!*eufb*'
+            }
+        }
+    }
 }

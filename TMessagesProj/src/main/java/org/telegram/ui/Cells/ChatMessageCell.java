@@ -12059,7 +12059,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 flagSecure = new FlagSecureReason(window, () ->
                     currentMessageObject != null && currentMessageObject.messageOwner != null && (
                         currentMessageObject.type == MessageObject.TYPE_PAID_MEDIA && (groupMedia == null || !groupMedia.hidden) ||
-                        currentMessageObject.messageOwner.noforwards ||
+                        currentMessageObject.messageOwner.noforwards && !currentMessageObject.isEphemeral() ||
                         currentMessageObject.isVoiceOnce() ||
                         currentMessageObject.hasRevealedExtendedMedia()
                     )
@@ -20377,12 +20377,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
 
         final boolean hasUnsupportedBlocks = currentMessageObject.richLayout != null && currentMessageObject.richLayout.hasUnsupportedBlocks();
+        final boolean hasRootUnsupportedBlocks = currentMessageObject.richLayout != null && currentMessageObject.richLayout.hasRootUnsupportedBlocks();
         ArrayList<RichMessageLayout.RichUnsupportedBlock> holes = null;
+        ArrayList<RichMessageLayout.RichUnsupportedBlock> holesRoot = null;
         if (!internal && hasUnsupportedBlocks) {
             holes = currentMessageObject.richLayout.getUnsupportedHoles();
+            holesRoot = currentMessageObject.richLayout.getUnsupportedHolesRoot();
         }
 
-        if (!internal && hasUnsupportedBlocks && holes != null && !holes.isEmpty()) {
+        if (!internal && hasRootUnsupportedBlocks && holes != null && !holes.isEmpty()) {
             //if (transitionParams != null && transitionParams.animateChange || currentMessageObject.richLayout.blockquoteAnimating || currentMessageObject.richLayout.detailsAnimating) {
                 layoutTextXY(false);
             //}
@@ -20391,8 +20394,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             boolean result = false;
             int bY = 0;
-            for (int a = 0, N = holes.size(); a <= N; a++) {
-                RichMessageLayout.RichUnsupportedBlock hole = a < N ? holes.get(a) : null;
+            for (int a = 0, N = holesRoot.size(); a <= N; a++) {
+                RichMessageLayout.RichUnsupportedBlock hole = a < N ? holesRoot.get(a) : null;
                 canvas.save();
                 if (hole != null) {
                     canvas.clipRect(0, a == 0 ? Integer.MIN_VALUE : textY + bY, getWidth(), textY + (int) hole.getY(transitionParams));
@@ -20449,24 +20452,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             if (drawBackground) {
                 for (int a = 0, N = holes.size(); a < N; a++) {
-                    RichMessageLayout.RichUnsupportedBlock hole = holes.get(a);
-                    final int tornWidth = backgroundRight - backgroundLeft;
-                    if (hole.tornBitmap == null || hole.tornBitmap.getWidth() < tornWidth) {
-                        hole.tornParams = new TornEdge.Params();
-                        hole.tornBitmap = TornEdge.createTearBitmap(hole.tornParams, tornWidth,
-                            currentMessageObject.getId() * 100 + hole.index);
-                    }
-
+                    final RichMessageLayout.RichUnsupportedBlock hole = holes.get(a);
                     final float t = textY + hole.getY(transitionParams);
                     final float b = t + hole.getHeight(transitionParams);
-                    canvas.save();
-                    canvas.clipRect(backgroundLeft, 0, backgroundRight, getHeight());
-                    TornEdge.drawTopEdge(canvas, hole.tornBitmap, hole.tornParams, tornWidth, backgroundLeft, t, paint);
-                    TornEdge.drawBottomEdge(canvas, hole.tornBitmap, hole.tornParams, tornWidth, backgroundLeft, b, paint);
-                    canvas.restore();
+                    if (hole.level == 0) {
+                        final int tornWidth = backgroundRight - backgroundLeft;
+                        if (hole.tornBitmap == null || hole.tornBitmap.getWidth() < tornWidth) {
+                            hole.tornParams = new TornEdge.Params();
+                            hole.tornBitmap = TornEdge.createTearBitmap(hole.tornParams, tornWidth,
+                                    currentMessageObject.getId() * 100 + hole.index);
+                        }
+                        canvas.save();
+                        canvas.clipRect(backgroundLeft, 0, backgroundRight, getHeight());
+                        TornEdge.drawTopEdge(canvas, hole.tornBitmap, hole.tornParams, tornWidth, backgroundLeft, t, paint);
+                        TornEdge.drawBottomEdge(canvas, hole.tornBitmap, hole.tornParams, tornWidth, backgroundLeft, b, paint);
+                        canvas.restore();
+                    }
                     AndroidUtilities.rectTmp.set(
-                        backgroundLeft + dp(3.33f), t + hole.padding.top,
-                        backgroundRight - dp(3.33f), b - hole.padding.bottom);
+                        backgroundLeft + (hole.padding.left + dp(7)) + dp(3.33f), t + hole.padding.top,
+                        backgroundRight - (hole.padding.right + dp(7)) - dp(3.33f), b - hole.padding.bottom);
                     drawServiceBackground(canvas, AndroidUtilities.rectTmp, dp(18), 1f);
                 }
             }

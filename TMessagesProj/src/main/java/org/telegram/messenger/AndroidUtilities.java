@@ -6693,6 +6693,10 @@ public class AndroidUtilities {
         return false;
     }
 
+    public static String getHelloWorld() {
+        return "Hello World!";
+    }
+
     public static String getBuildVersionInfo() {
         try {
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
