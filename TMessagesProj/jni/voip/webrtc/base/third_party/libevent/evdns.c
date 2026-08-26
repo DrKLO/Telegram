@@ -2496,8 +2496,11 @@ search_set_from_hostname(void) {
 static char *
 search_make_new(const struct search_state *const state, int n, const char *const base_name) {
 	const int base_len = strlen(base_name);
-	const char need_to_append_dot = base_name[base_len - 1] == '.' ? 0 : 1;
+	char need_to_append_dot;
 	struct search_domain *dom;
+
+	if (!base_len) return NULL;
+ 	need_to_append_dot = base_name[base_len - 1] == '.' ? 0 : 1;
 
 	for (dom = state->head; dom; dom = dom->next) {
 		if (!n--) {
