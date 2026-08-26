@@ -496,11 +496,6 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
 
     if (!proxyAddress->empty()) {
         if (LOGS_ENABLED) DEBUG_D("connection(%p) connecting via proxy %s:%d secret[%d]", this, proxyAddress->c_str(), proxyPort, (int) proxySecret->size());
-        if ((socketFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create proxy socket", this);
-            closeSocket(1, -1);
-            return;
-        }
         uint32_t tempBuffLength;
         if (proxySecret->empty()) {
             proxyAuthState = 1;
@@ -524,6 +519,8 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
         }
         socketAddress.sin_family = AF_INET;
         socketAddress.sin_port = htons(proxyPort);
+        socketAddress6.sin6_family = AF_INET6;
+        socketAddress6.sin6_port = htons(proxyPort);
         bool continueCheckAddress;
         if (inet_pton(AF_INET, proxyAddress->c_str(), &socketAddress.sin_addr.s_addr) != 1) {
             continueCheckAddress = true;
@@ -567,11 +564,6 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
         }
     } else {
         proxyAuthState = 0;
-        if ((socketFd = socket(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0)) < 0) {
-            if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create socket", this);
-            closeSocket(1, -1);
-            return;
-        }
         if (ipv6) {
             socketAddress6.sin6_family = AF_INET6;
             socketAddress6.sin6_port = htons(port);
@@ -613,6 +605,11 @@ void ConnectionSocket::openConnection(std::string address, uint16_t port, std::s
 }
 
 void ConnectionSocket::openConnectionInternal(bool ipv6) {
+    if ((socketFd = socket(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0)) < 0) {
+        if (LOGS_ENABLED) DEBUG_E("connection(%p) can't create socket", this);
+        closeSocket(1, -1);
+        return;
+    }
     int epolFd = ConnectionsManager::getInstance(instanceNum).epolFd;
     int yes = 1;
     if (setsockopt(socketFd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int))) {
@@ -1153,13 +1150,18 @@ void ConnectionSocket::onHostNameResolved(std::string host, std::string ip, bool
     ConnectionsManager::getInstance(instanceNum).scheduleTask([&, host, ip, ipv6] {
         if (waitingForHostResolve == host) {
             waitingForHostResolve = "";
+            bool ipv6_ = false;
             if (ip.empty() || inet_pton(AF_INET, ip.c_str(), &socketAddress.sin_addr.s_addr) != 1) {
-                if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, host.c_str());
-                closeSocket(1, -1);
-                return;
+                if (ip.empty() || inet_pton(AF_INET6, ip.c_str(), &socketAddress6.sin6_addr.s6_addr) != 1) {
+                    if (LOGS_ENABLED) DEBUG_E("connection(%p) can't resolve host %s address via delegate", this, host.c_str());
+                    closeSocket(1, -1);
+                    return;
+                } else {
+                    ipv6_ = true;
+                }
             }
             if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %s via delegate", this, host.c_str(), ip.c_str());
-            openConnectionInternal(ipv6);
+            openConnectionInternal(ipv6_);
         }
     });
 }
