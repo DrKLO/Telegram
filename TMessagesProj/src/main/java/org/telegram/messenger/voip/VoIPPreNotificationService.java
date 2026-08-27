@@ -18,6 +18,8 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.VibrationAttributes;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.SpannableString;
@@ -348,7 +350,18 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                     } else if (vibrate == 3) {
                         duration *= 2;
                     }
-                    vibrator.vibrate(new long[]{0, duration, 500}, 0);
+                    final long[] pattern = {0, duration, 500};
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        // Without attributes the vibration is classified as USAGE_UNKNOWN, which
+                        // the system ignores for background apps; USAGE_RINGTONE is allowed in
+                        // background and follows the system call vibration settings.
+                        vibrator.vibrate(
+                            VibrationEffect.createWaveform(pattern, 0),
+                            new VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_RINGTONE).build()
+                        );
+                    } else {
+                        vibrator.vibrate(pattern, 0);
+                    }
                 }
             }
         }
