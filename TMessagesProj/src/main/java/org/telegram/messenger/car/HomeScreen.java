@@ -83,6 +83,9 @@ public class HomeScreen extends Screen
      */
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
 
+    /** Voice-note URIs the host was granted read access to, so they can be revoked later. */
+    private final HashSet<Uri> grantedUris = new HashSet<>();
+
     private String activeTabId = TAB_NOTIFICATIONS;
     private boolean musicLoadKicked;
 
@@ -112,11 +115,19 @@ public class HomeScreen extends Screen
     }
 
     @Override
+    public void onDestroy(@NonNull LifecycleOwner owner) {
+        revokeHostGrants();
+    }
+
+    @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.activeAccountChanged) {
             // Unsubscribe from the outgoing account before currentAccount moves, or the
             // observer would be left registered on it forever.
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+            // Drop grants before switching: they point at the outgoing account's files, and
+            // the incoming account must not inherit read access to them.
+            revokeHostGrants();
             currentAccount = UserConfig.selectedAccount;
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
             pendingVoiceLoads.clear();
@@ -377,10 +388,35 @@ public class HomeScreen extends Screen
             }
             getCarContext().grantUriPermission(
                     host.getPackageName(), uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            grantedUris.add(uri);
             return true;
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    /**
+     * Drops the grants handed to the host, so read access does not outlive the drive.
+     *
+     * <p>Deliberately not tied to onPause or to a timer. The host reads the file when the
+     * user presses play, which can be long after the message appeared, so revoking on a
+     * delay -- as the notification code does for images that SystemUI reads immediately --
+     * would risk cutting playback. Bounding the grants to the screen's lifetime and to the
+     * active account keeps them from accumulating without that risk.
+     */
+    private void revokeHostGrants() {
+        if (grantedUris.isEmpty()) {
+            return;
+        }
+        for (Uri uri : grantedUris) {
+            try {
+                ApplicationLoader.applicationContext.revokeUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Throwable ignore) {
+                // Already gone, or never granted; nothing to undo.
+            }
+        }
+        grantedUris.clear();
     }
 
     // ===== Music tab =====
