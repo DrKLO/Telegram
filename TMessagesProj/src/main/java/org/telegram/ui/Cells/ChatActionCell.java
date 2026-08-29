@@ -34,6 +34,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -3963,6 +3964,15 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             info.setText(accessibilityText);
         }
         info.setEnabled(true);
+        reactionsLayoutInBubble.addAccessibilityActions(info);
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (reactionsLayoutInBubble.performAccessibilityAction(action)) {
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     public void setInvalidateColors(boolean invalidate) {

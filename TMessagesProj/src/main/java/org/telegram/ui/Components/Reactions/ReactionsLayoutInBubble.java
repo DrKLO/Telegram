@@ -21,6 +21,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -62,6 +63,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Stars.StarsReactionsSheet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -579,6 +581,78 @@ public class ReactionsLayoutInBubble {
         }
     }
 
+    // a reaction already on a message is given by touching it, which touch exploration cannot do:
+    // the reactions are drawn here and are no views of their own, so there is nothing to land on
+    // and nothing to press. Each is offered as an action of the message that carries it instead.
+    //
+    // an action needs an id that belongs to no other view. The framework hands those out, and they
+    // are kept so that a reaction keeps the same id for as long as the app runs.
+    private static int[] accessibilityActionIds = new int[0];
+
+    private static int getAccessibilityActionId(int index) {
+        if (index >= accessibilityActionIds.length) {
+            final int from = accessibilityActionIds.length;
+            accessibilityActionIds = Arrays.copyOf(accessibilityActionIds, index + 1);
+            for (int i = from; i <= index; ++i) {
+                accessibilityActionIds[i] = View.generateViewId();
+            }
+        }
+        return accessibilityActionIds[index];
+    }
+
+    // a custom reaction is drawn and never written: the plain emoji it was made after is the only
+    // thing there is to say of it, and where even that is missing it is called what the app calls
+    // it. A paid one is not an emoji at all and goes by its own name.
+    private CharSequence getReactionText(TLRPC.Reaction reaction) {
+        if (reaction instanceof TLRPC.TL_reactionEmoji) {
+            return ((TLRPC.TL_reactionEmoji) reaction).emoticon;
+        } else if (reaction instanceof TLRPC.TL_reactionCustomEmoji) {
+            final long documentId = ((TLRPC.TL_reactionCustomEmoji) reaction).document_id;
+            return MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(currentAccount, documentId), LocaleController.getString(R.string.AccDescrCustomEmoji));
+        } else if (reaction instanceof TLRPC.TL_reactionPaid) {
+            return LocaleController.getString(R.string.StarsReactionTitle);
+        }
+        return "";
+    }
+
+    private CharSequence getAccessibilityActionLabel(ReactionButton button) {
+        final TLRPC.ReactionCount reactionCount = button.getReactionCount();
+        final CharSequence text = getReactionText(reactionCount.reaction);
+        // stars given to a message stay given, so a paid reaction is only ever offered to be sent,
+        // however many have been sent already
+        final boolean given = reactionCount.chosen && !(reactionCount.reaction instanceof TLRPC.TL_reactionPaid);
+        if (reactionCount.count <= 0) {
+            return LocaleController.formatString(given ? R.string.AccActionUnreactWith : R.string.AccActionReactWith, text);
+        }
+        return LocaleController.formatPluralString(given ? "AccActionUnreactWithCount" : "AccActionReactWithCount", reactionCount.count, text);
+    }
+
+    public void addAccessibilityActions(AccessibilityNodeInfo info) {
+        for (int i = 0; i < reactionButtons.size(); ++i) {
+            final ReactionButton button = reactionButtons.get(i);
+            if (button.getReactionCount() == null) {
+                continue;
+            }
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(getAccessibilityActionId(i), getAccessibilityActionLabel(button)));
+        }
+    }
+
+    public boolean performAccessibilityAction(int action) {
+        for (int i = 0; i < reactionButtons.size(); ++i) {
+            final ReactionButton button = reactionButtons.get(i);
+            if (button.getReactionCount() == null) {
+                continue;
+            }
+            if (action == getAccessibilityActionId(i)) {
+                // where a reaction was given is where its animation is played from, so the middle
+                // of it is passed, as a touch on it would have been
+                didPressReaction(button.getReactionCount(), false, x + button.x + button.width / 2f, y + button.y + button.height / 2f);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void recordDrawingState() {
         lastDrawingReactionButtons.clear();
         for (int i = 0; i < reactionButtons.size(); i++) {
@@ -831,6 +905,10 @@ public class ReactionsLayoutInBubble {
         public int lastDrawnBackgroundColor;
         public int lastDrawnTagDotColor;
         boolean isSelected;
+
+        public TLRPC.ReactionCount getReactionCount() {
+            return reactionCount;
+        }
 
         public boolean inGroup;
         public boolean isTag;
