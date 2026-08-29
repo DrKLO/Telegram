@@ -14923,7 +14923,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (countView != null) {
                         if (mediaFastLocate) {
                             int total = totalImagesCount + totalImagesCountMerge;
-                            if (endReached[0] && mediaNewerReached) {
+                            if (isMediaThreadChat()) {
+                                // Comment threads: the in-memory list already contains the
+                                // loaded media, and it grows as older/newer pages arrive.
+                                // The counter is always "current position / currently loaded",
+                                // which is exact and never jumps or goes negative
+                                countView.updateShow(true, animated);
+                                countView.set(switchingToIndex + 1, imagesArr.size());
+                            } else if (endReached[0] && mediaNewerReached) {
                                 countView.updateShow(true, animated);
                                 countView.set(switchingToIndex + 1, imagesArr.size());
                             } else if (total > 0 && mediaDbTargetMid != 0 && mediaDbBefore + mediaDbAfter + 1 == total) {
