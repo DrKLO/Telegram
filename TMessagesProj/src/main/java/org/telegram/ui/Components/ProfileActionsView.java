@@ -1245,6 +1245,84 @@ public class ProfileActionsView extends View {
         }
     }
 
+    // the buttons are drawn by this view and are no views of their own, so a screen reader is
+    // handed a tree of its own making. Walking that tree by swiping found them, but exploring by
+    // touch asks the view underneath the finger which of its own parts is being touched, and a
+    // view that hands out a tree like this is asked nothing: the framework has no way of knowing
+    // where any of it lies. Nothing answered, so a finger passing over the buttons found only the
+    // row that holds them, and calling or writing to someone could not be reached by touch at all.
+    private int hoveredVirtualViewId = AccessibilityNodeProvider.HOST_VIEW_ID;
+
+    // which button the screen reader has put its focus on. Only the view drawing them can
+    // remember this, and it has to: a reader that asks the window which of its parts holds the
+    // focus, rather than trusting the reader's own bookkeeping, gets nothing unless we answer.
+    private int accessibilityFocusedVirtualViewId = AccessibilityNodeProvider.HOST_VIEW_ID;
+
+    @Override
+    public boolean dispatchHoverEvent(MotionEvent event) {
+        final int hover = event.getAction();
+        if (hover == MotionEvent.ACTION_HOVER_ENTER || hover == MotionEvent.ACTION_HOVER_MOVE) {
+            final int virtualViewId = virtualViewAt(event.getX(), event.getY());
+            setHoveredVirtualView(virtualViewId);
+            if (virtualViewId != AccessibilityNodeProvider.HOST_VIEW_ID) {
+                return true;
+            }
+        } else if (hover == MotionEvent.ACTION_HOVER_EXIT) {
+            setHoveredVirtualView(AccessibilityNodeProvider.HOST_VIEW_ID);
+        }
+        return super.dispatchHoverEvent(event);
+    }
+
+    private int virtualViewAt(float x, float y) {
+        for (int i = 0; i < actions.size(); ++i) {
+            final Action action = actions.get(i);
+            if (!action.isDeleted && !action.rect.isEmpty() && action.rect.contains(x, y)) {
+                return action.key;
+            }
+        }
+        return AccessibilityNodeProvider.HOST_VIEW_ID;
+    }
+
+    // exploring by touch is made of being told what a finger has come onto and what it has left:
+    // those two are what a screen reader moves its focus by, and they are what is sent here. The
+    // one come onto is sent first, so that nothing is left holding no focus in between.
+    private void setHoveredVirtualView(int virtualViewId) {
+        if (hoveredVirtualViewId == virtualViewId) {
+            return;
+        }
+        final int previous = hoveredVirtualViewId;
+        hoveredVirtualViewId = virtualViewId;
+        if (virtualViewId != AccessibilityNodeProvider.HOST_VIEW_ID) {
+            sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_HOVER_ENTER);
+        }
+        if (previous != AccessibilityNodeProvider.HOST_VIEW_ID) {
+            sendAccessibilityEventForVirtualView(previous, AccessibilityEvent.TYPE_VIEW_HOVER_EXIT);
+        }
+    }
+
+    private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
+        sendAccessibilityEventForVirtualView(viewId, eventType, null);
+    }
+
+    private void sendAccessibilityEventForVirtualView(int viewId, int eventType, String text) {
+        final AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+        // not on touch exploration being turned on: a screen reader may follow a finger by its
+        // own means without asking the system for it, and then it never had that turned on and
+        // never heard a word from us. Whether anything is listening is the system's to decide,
+        // and it drops what nothing is waiting for.
+        if (am != null && am.isEnabled()) {
+            AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
+            event.setPackageName(getContext().getPackageName());
+            event.setSource(ProfileActionsView.this, viewId);
+            if (text != null) {
+                event.getText().add(text);
+            }
+            if (getParent() != null) {
+                getParent().requestSendAccessibilityEvent(ProfileActionsView.this, event);
+            }
+        }
+    }
+
     private AccessibilityNodeProvider accessibilityNodeProvider;
     @Override
     public AccessibilityNodeProvider getAccessibilityNodeProvider() {
@@ -1281,7 +1359,11 @@ public class ProfileActionsView extends View {
                         info.setPackageName(getContext().getPackageName());
 
                         info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        info.addAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
+                        final boolean focused = accessibilityFocusedVirtualViewId == virtualViewId;
+                        info.setAccessibilityFocused(focused);
+                        info.addAction(focused
+                                ? AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS
+                                : AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
                         info.setClickable(true);
                         info.setFocusable(true);
                         info.setEnabled(true);
@@ -1320,7 +1402,16 @@ public class ProfileActionsView extends View {
                     if (button == null) return false;
 
                     if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
-                        sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+                        if (accessibilityFocusedVirtualViewId != virtualViewId) {
+                            accessibilityFocusedVirtualViewId = virtualViewId;
+                            sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+                        }
+                        return true;
+                    } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+                        if (accessibilityFocusedVirtualViewId == virtualViewId) {
+                            accessibilityFocusedVirtualViewId = AccessibilityNodeProvider.HOST_VIEW_ID;
+                            sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED);
+                        }
                         return true;
                     } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                         if (onActionClickListener != null) {
@@ -1332,23 +1423,13 @@ public class ProfileActionsView extends View {
                     return false;
                 }
 
-                private void sendAccessibilityEventForVirtualView(int viewId, int eventType) {
-                    sendAccessibilityEventForVirtualView(viewId, eventType, null);
-                }
-
-                private void sendAccessibilityEventForVirtualView(int viewId, int eventType, String text) {
-                    AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
-                    if (am.isTouchExplorationEnabled()) {
-                        AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
-                        event.setPackageName(getContext().getPackageName());
-                        event.setSource(ProfileActionsView.this, viewId);
-                        if (text != null) {
-                            event.getText().add(text);
-                        }
-                        if (getParent() != null) {
-                            getParent().requestSendAccessibilityEvent(ProfileActionsView.this, event);
-                        }
+                @Override
+                public AccessibilityNodeInfo findFocus(int focus) {
+                    if (focus == AccessibilityNodeInfo.FOCUS_ACCESSIBILITY
+                            && accessibilityFocusedVirtualViewId != HOST_VIEW_ID) {
+                        return createAccessibilityNodeInfo(accessibilityFocusedVirtualViewId);
                     }
+                    return super.findFocus(focus);
                 }
             };
         }
