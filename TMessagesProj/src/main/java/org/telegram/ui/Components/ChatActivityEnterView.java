@@ -586,6 +586,11 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
     };
 
+    // recording fades the record button out: a view of no alpha at all counts as gone to a
+    // screen reader, which would take the place it is reading away from it, so keep the least
+    // alpha there is, which draws nothing either
+    private static final float HIDDEN_BUTTON_ALPHA = 1 / 255f;
+
     boolean ctrlPressed = false;
     boolean shiftPressed = false;
 
@@ -6146,7 +6151,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             preferences.edit().putBoolean(isChannel ? "currentModeVideoChannel" : "currentModeVideo", visible).apply();
         }
         audioVideoSendButton.setState(isInVideoMode() ? ChatActivityEnterViewAnimatedIconView.State.VIDEO : ChatActivityEnterViewAnimatedIconView.State.VOICE, animated);
-        audioVideoSendButton.setContentDescription(getString(isInVideoMode() ? R.string.AccDescrVideoMessage : R.string.AccDescrVoiceMessage));
+        // the container is what a screen reader lands on, so describing the icon inside it as
+        // well leaves the record button reported twice at the very same place
+        audioVideoSendButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         audioVideoButtonContainer.setContentDescription(getString(isInVideoMode() ? R.string.AccDescrVideoMessage : R.string.AccDescrVoiceMessage));
         audioVideoSendButton.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
     }
@@ -8895,7 +8902,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 iconChanges.playTogether(ObjectAnimator.ofFloat(controlsView, View.ALPHA, 1));
             }
             if (audioVideoSendButton != null) {
-                iconChanges.playTogether(ObjectAnimator.ofFloat(audioVideoButtonContainer, View.ALPHA, 0));
+                iconChanges.playTogether(ObjectAnimator.ofFloat(audioVideoButtonContainer, View.ALPHA, HIDDEN_BUTTON_ALPHA));
             }
             if (botCommandsMenuButton != null) {
                 iconChanges.playTogether(
