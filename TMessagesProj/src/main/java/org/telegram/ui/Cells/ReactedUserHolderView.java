@@ -213,7 +213,7 @@ public class ReactedUserHolderView extends FrameLayout {
             Drawable likeDrawableFilled = ContextCompat.getDrawable(getContext(), R.drawable.media_like_active).mutate();
             reactView.setColorFilter(new PorterDuffColorFilter(0xFFFF2E38, PorterDuff.Mode.MULTIPLY));
             reactView.setImageDrawable(likeDrawableFilled);
-            contentDescription = LocaleController.formatString("AccDescrLike", R.string.AccDescrLike);
+            contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), LocaleController.getString(R.string.AccDescrLike));
         } else if (reaction != null) {
             ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction);
             if (visibleReaction.emojicon != null) {
@@ -239,7 +239,13 @@ public class ReactedUserHolderView extends FrameLayout {
                 }
                 hasReactImage = true;
             }
-            contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), visibleReaction.emojicon != null ? visibleReaction.emojicon : reaction);
+            String reactionText;
+            if (visibleReaction.emojicon != null) {
+                reactionText = visibleReaction.emojicon;
+            } else {
+                reactionText = MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(currentAccount, visibleReaction.documentId), LocaleController.getString(R.string.AccDescrCustomEmoji));
+            }
+            contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), reactionText);
         } else {
             if (reactView != null) {
                 reactView.setAnimatedEmojiDrawable(null);
