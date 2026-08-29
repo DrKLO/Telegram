@@ -811,7 +811,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             } else if (virtualViewId == REPLY) {
                 info.setEnabled(true);
                 StringBuilder sb = new StringBuilder();
-                sb.append(getString("Reply", R.string.Reply));
+                // the same place over a message holds a reply or, on a forwarded message, where
+                // it was forwarded from: it was called a reply either way
+                sb.append(getString(cell.replyPanelIsForward ? R.string.AccDescrForwarding : R.string.Reply));
                 sb.append(", ");
                 if (cell.replyNameLayout != null) {
                     sb.append(cell.replyNameLayout.getText());
@@ -981,7 +983,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         cell.delegate.didPressSideButton(cell);
                     }
                 } else if (virtualViewId == REPLY) {
-                    if (cell.delegate != null && (!cell.isThreadChat || cell.isMonoForum || cell.currentMessageObject.getReplyTopMsgId() != 0) && (cell.currentMessageObject.hasValidReplyMessageObject() || cell.hasReplyQuote || cell.currentMessageObject.messageOwner != null && cell.currentMessageObject.messageOwner.reply_to != null && cell.currentMessageObject.messageOwner.reply_to.reply_from != null)) {
+                    // what is drawn over a message is not always a reply: where it is a
+                    // forward, touching it goes to where the message came from, and that is
+                    // what is done here as well
+                    if (cell.replyPanelIsForward) {
+                        if (cell.delegate != null) {
+                            if (cell.currentForwardChannel != null) {
+                                cell.delegate.didPressChannelAvatar(cell, cell.currentForwardChannel, cell.currentMessageObject.messageOwner.fwd_from.channel_post, cell.lastTouchX, cell.lastTouchY, false);
+                            } else if (cell.currentForwardUser != null) {
+                                cell.delegate.didPressUserAvatar(cell, cell.currentForwardUser, cell.lastTouchX, cell.lastTouchY, false);
+                            } else if (cell.currentForwardName != null) {
+                                cell.delegate.didPressHiddenForward(cell);
+                            }
+                        }
+                    } else if (cell.delegate != null && (cell.currentMessageObject.hasValidReplyMessageObject() || cell.currentMessageObject.isReplyToStory() || cell.hasReplyQuote || cell.currentMessageObject.messageOwner != null && cell.currentMessageObject.messageOwner.reply_to != null && cell.currentMessageObject.messageOwner.reply_to.reply_from != null)) {
                         cell.delegate.didPressReplyMessage(cell, cell.currentMessageObject.getReplyMsgId(), 0, 0, false);
                     }
                 } else if (virtualViewId == FORWARD) {

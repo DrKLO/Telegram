@@ -1711,7 +1711,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     TLRPC.Chat currentForwardChannel;
     String currentForwardName;
     private String currentForwardNameString;
-    private boolean replyPanelIsForward;
+    boolean replyPanelIsForward;
     private boolean animationRunning;
     private boolean willRemoved;
     public AnimatedEmojiSpan.EmojiGroupedSpans animatedEmojiStack;
