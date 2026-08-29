@@ -26993,19 +26993,37 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    private int accessibilityAnnouncedSearchIndex = -1;
+
     private void updateSearchCountText() {
         if (searchCountText != null) {
             boolean animated = !LocaleController.isRTL;
+            final CharSequence text;
             if (searchLastCount < 0) {
-                searchCountText.setText("", animated);
+                text = "";
             } else if (searchLastCount == 0) {
-                searchCountText.setText(LocaleController.getString(R.string.NoResult), animated);
+                text = LocaleController.getString(R.string.NoResult);
             } else if (searchingFiltered) {
-                searchCountText.setText(LocaleController.formatPluralString("TaggedMessages", searchLastCount), animated);
+                text = LocaleController.formatPluralString("TaggedMessages", searchLastCount);
             } else if (chatMode == MODE_SEARCH || isMessagesSearchListVisible()) {
-                searchCountText.setText(LocaleController.formatPluralString("SearchMessagesResultCount", searchLastCount, LocaleController.formatNumber(searchLastCount, ' ')), animated);
+                text = LocaleController.formatPluralString("SearchMessagesResultCount", searchLastCount, LocaleController.formatNumber(searchLastCount, ' '));
             } else {
-                searchCountText.setText(LocaleController.formatString(R.string.Of, searchLastIndex + 1, searchLastCount), animated);
+                text = LocaleController.formatString(R.string.Of, searchLastIndex + 1, searchLastCount);
+            }
+            searchCountText.setText(text, animated);
+            // the count is drawn, so nothing reads it: give it what it shows, since the text it
+            // is set to only reaches it once the animation carrying it is over, and let it be
+            // reached by touch as well as by swiping
+            searchCountText.setContentDescription(text);
+            searchCountText.setImportantForAccessibility(TextUtils.isEmpty(text) ? View.IMPORTANT_FOR_ACCESSIBILITY_NO : View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            searchCountText.setFocusable(!TextUtils.isEmpty(text));
+            if (searchLastCount > 0 && searchLastIndex != accessibilityAnnouncedSearchIndex && AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+                if (accessibilityAnnouncedSearchIndex != -1) {
+                    searchCountText.announceForAccessibility(text);
+                }
+                accessibilityAnnouncedSearchIndex = searchLastIndex;
+            } else if (searchLastCount <= 0) {
+                accessibilityAnnouncedSearchIndex = -1;
             }
         }
     }
