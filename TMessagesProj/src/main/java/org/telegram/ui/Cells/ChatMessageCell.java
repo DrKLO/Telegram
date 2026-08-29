@@ -14385,6 +14385,52 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // a video and a piece of music are the two that are worth having on the phone before they are
+    // wanted, and the two whose downloads are long enough to be worth stopping. Everything else
+    // arrives before there is anything to say about it.
+    boolean hasMediaDownloadAction() {
+        if (currentMessageObject == null || documentAttach == null) {
+            return false;
+        }
+        if (documentAttachType != DOCUMENT_ATTACH_TYPE_VIDEO && documentAttachType != DOCUMENT_ATTACH_TYPE_MUSIC) {
+            return false;
+        }
+        if (currentMessageObject.isSending() || currentMessageObject.isEditing() || currentMessageObject.isSendError()) {
+            return false;
+        }
+        // what is already on the phone has nothing left to download
+        return !currentMessageObject.mediaExists && !currentMessageObject.attachPathExists;
+    }
+
+    boolean isMediaDownloading() {
+        return FileLoader.getInstance(currentAccount).isLoadingFile(FileLoader.getAttachFileName(documentAttach));
+    }
+
+    // pressing the message plays what it holds, and streams it where it can, which is not the same
+    // as keeping it: this only fetches the file, and stops fetching it, and says which of the two
+    // it is about to do. A download taken up again carries on from where it was stopped, as it
+    // does for the button that is drawn.
+    void performMediaDownloadAction() {
+        if (!hasMediaDownloadAction()) {
+            return;
+        }
+        if (isMediaDownloading()) {
+            currentMessageObject.loadingCancelled = true;
+            FileLoader.getInstance(currentAccount).cancelLoadFile(documentAttach);
+        } else {
+            currentMessageObject.loadingCancelled = false;
+            currentMessageObject.putInDownloadsStore = true;
+            if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
+                FileLoader.getInstance(currentAccount).loadFile(documentAttach, currentMessageObject, FileLoader.PRIORITY_NORMAL_UP, 0);
+            } else {
+                FileLoader.getInstance(currentAccount).loadFile(documentAttach, currentMessageObject, FileLoader.PRIORITY_NORMAL, currentMessageObject.shouldEncryptPhotoOrVideo() ? 2 : 0);
+            }
+            createLoadingProgressLayout(documentAttach);
+        }
+        updateButtonState(false, true, false);
+        invalidate();
+    }
+
     int getIconForCurrentState() {
         if (currentMessageObject == null || currentMessageObject.hasExtendedMedia()) {
             return MediaActionDrawable.ICON_NONE;
@@ -23145,6 +23191,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return true;
         } else if (action == R.id.acc_action_small_button) {
             didPressMiniButton(true);
+        } else if (action == R.id.acc_action_download) {
+            performMediaDownloadAction();
         } else if (action == R.id.acc_action_msg_options) {
             if (delegate != null) {
                 if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
