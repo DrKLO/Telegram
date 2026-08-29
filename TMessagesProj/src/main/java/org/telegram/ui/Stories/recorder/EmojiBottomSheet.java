@@ -25,6 +25,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -42,6 +43,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -50,6 +52,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -1849,6 +1854,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             private final EmojiListView listView;
             public ImageReceiver imageReceiver;
             private long documentId;
+            private TLRPC.Document document;
 
             public ImageReceiver.BackgroundThreadDrawHolder[] backgroundThreadDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
             public ImageReceiver imageReceiverToDraw;
@@ -1859,6 +1865,24 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 super(context);
                 setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
                 this.listView = parent;
+                setFocusable(true);
+            }
+
+            // what is in the cell is drawn, so it says for itself which emoji or sticker it holds
+            @Override
+            public void onInitializeAccessibilityNodeInfo(@NonNull AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                TLRPC.Document doc = document;
+                if (doc == null && documentId != 0) {
+                    doc = AnimatedEmojiDrawable.findDocument(currentAccount, documentId);
+                }
+                CharSequence description = doc == null ? null : MessageObject.findAnimatedEmojiEmoticon(doc, null);
+                if (TextUtils.isEmpty(description)) {
+                    description = LocaleController.getString(emoji ? R.string.Emoji : R.string.AttachSticker);
+                }
+                info.setContentDescription(description);
+                info.setEnabled(true);
+                info.setClickable(true);
             }
 
             public void setDrawable(Drawable drawable) {
@@ -1867,6 +1891,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 }
                 this.drawable = null;
                 documentId = 0;
+                document = null;
                 emoji = false;
                 if (imageReceiver == null) {
                     imageReceiver = new ImageReceiver();
@@ -1889,6 +1914,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 if (document != null) {
                     emoji = true;
                     documentId = document.id;
+                    this.document = document;
                     drawable = AnimatedEmojiDrawable.make(currentAccount, getCacheType(isSticker), document);
                     if (attached) {
                         drawable.addView(this);
@@ -1896,6 +1922,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 } else {
                     emoji = false;
                     documentId = 0;
+                    this.document = null;
                     drawable = null;
                 }
             }
@@ -1915,6 +1942,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 if (documentId != 0) {
                     emoji = true;
                     this.documentId = documentId;
+                    this.document = null;
                     drawable = AnimatedEmojiDrawable.make(currentAccount, getCacheType(isSticker), documentId);
                     if (attached) {
                         drawable.addView(this);
@@ -1922,6 +1950,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 } else {
                     emoji = false;
                     this.documentId = 0;
+                    this.document = null;
                     drawable = null;
                 }
             }
@@ -1943,6 +1972,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                         return;
                     }
                     documentId = document.id;
+                    this.document = document;
                     if (imageReceiver == null) {
                         imageReceiver = new ImageReceiver();
                         imageReceiver.setLayerNum(7);
@@ -1968,6 +1998,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                     imageReceiver.setImage(ImageLocation.getForDocument(document), filter, ImageLocation.getForDocument(thumb, document), "80_80", svgThumb, 0, null, document, 0);
                 } else if (imageReceiver != null) {
                     documentId = 0;
+                    this.document = null;
                     imageReceiver.clearImage();
                 }
             }
@@ -2464,6 +2495,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             searchImageDrawable.setIconState(SearchStateDrawable.State.STATE_SEARCH, false);
             searchImageDrawable.setColor(Theme.getColor(Theme.key_chat_emojiSearchIcon, resourcesProvider));
             searchImageView.setImageDrawable(searchImageDrawable);
+            searchImageView.setContentDescription(LocaleController.getString(R.string.Search));
             box.addView(searchImageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP));
 
             editText = new EditTextBoldCursor(context) {
@@ -2561,6 +2593,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             clear.setScaleX(.7f);
             clear.setScaleY(.7f);
             clear.setVisibility(View.GONE);
+            clear.setContentDescription(LocaleController.getString(R.string.ClearButton));
             clear.setOnClickListener(e -> clear());
             box.addView(clear, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP));
 
@@ -2655,6 +2688,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             if (!isprogress || editText.length() == 0 && (categoriesListView == null || categoriesListView.getSelectedCategory() == null) || force) {
                 boolean backButton = editText.length() > 0 || categoriesListView != null && categoriesListView.isCategoriesShown() && (categoriesListView != null && categoriesListView.isScrolledIntoOccupiedWidth() || categoriesListView.getSelectedCategory() != null);
                 searchImageDrawable.setIconState(backButton ? SearchStateDrawable.State.STATE_BACK : SearchStateDrawable.State.STATE_SEARCH);
+                searchImageView.setContentDescription(LocaleController.getString(backButton ? R.string.AccDescrGoBack : R.string.Search));
                 isprogress = false;
             }
         }
@@ -2704,13 +2738,29 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         private final RectF gifsRect = new RectF();
         private final RectF selectRect = new RectF();
 
+        private final TabsAccessibilityHelper accessibilityHelper;
+
         public TabsView(Context context) {
             super(context);
+
+            accessibilityHelper = new TabsAccessibilityHelper(this);
+            ViewCompat.setAccessibilityDelegate(this, accessibilityHelper);
+        }
+
+        @Override
+        protected boolean dispatchHoverEvent(MotionEvent event) {
+            if (accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+                return true;
+            }
+            return super.dispatchHoverEvent(event);
         }
 
         private float type;
         public void setType(float type) {
             this.type = type;
+            if (accessibilityHelper != null) {
+                accessibilityHelper.invalidateRoot();
+            }
             invalidate();
         }
 
@@ -2768,6 +2818,67 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 return stickersRect;
             } else {
                 return gifsRect;
+            }
+        }
+
+        private CharSequence getTabText(int t) {
+            if (t <= 0) {
+                return LocaleController.getString(R.string.Emoji);
+            } else if (t == 1) {
+                return LocaleController.getString(R.string.AccDescrStickers);
+            } else {
+                return LocaleController.getString(R.string.AccDescrGIFs);
+            }
+        }
+
+        // the three tabs are drawn on this view rather than laid out on it, so each of them is
+        // given a place of its own for a screen reader to land on and to select
+        private class TabsAccessibilityHelper extends ExploreByTouchHelper {
+
+            private final Rect tmpRect = new Rect();
+
+            public TabsAccessibilityHelper(@NonNull View host) {
+                super(host);
+            }
+
+            @Override
+            protected int getVirtualViewAt(float x, float y) {
+                for (int i = 0; i <= 2; ++i) {
+                    if (getRect(i).contains(x, y)) {
+                        return i;
+                    }
+                }
+                return HOST_ID;
+            }
+
+            @Override
+            protected void getVisibleVirtualViews(List<Integer> list) {
+                if (emojiLayout == null) {
+                    return;
+                }
+                for (int i = 0; i <= 2; ++i) {
+                    list.add(i);
+                }
+            }
+
+            @Override
+            protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+                final RectF rect = getRect(id);
+                tmpRect.set((int) rect.left, (int) rect.top, (int) rect.right, (int) rect.bottom);
+                info.setBoundsInParent(tmpRect);
+                info.setClassName("android.widget.Button");
+                info.setContentDescription(getTabText(id));
+                info.setSelected(Math.round(type) == id);
+                info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+            }
+
+            @Override
+            protected boolean onPerformActionForVirtualView(int id, int action, Bundle arguments) {
+                if (action == AccessibilityNodeInfoCompat.ACTION_CLICK && onTypeSelected != null) {
+                    onTypeSelected.run(id);
+                    return true;
+                }
+                return false;
             }
         }
 
@@ -2881,9 +2992,13 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         private final List<BaseWidget> widgets = new ArrayList<>();
 
+        private WidgetsAccessibilityHelper accessibilityHelper;
+
         public StoryWidgetsCell(Context context) {
             super(context);
             setPadding(0, 0, 0, 0);
+            accessibilityHelper = new WidgetsAccessibilityHelper(this);
+            ViewCompat.setAccessibilityDelegate(this, accessibilityHelper);
             if (canShowWidget(WIDGET_LINK))
                 widgets.add(new Button(WIDGET_LINK, R.drawable.msg_limit_links, LocaleController.getString(R.string.StoryWidgetLink)).needsPremium());
             if (canShowWidget(WIDGET_LOCATION))
@@ -2914,6 +3029,8 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
         private abstract class BaseWidget {
             int id;
+            // the widget is drawn, so what it is has to be said for it
+            CharSequence accessibilityText;
             float width, height;
             float layoutX = 0;
             int layoutLine = 0;
@@ -2942,6 +3059,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             public Button(int id, int iconId, String string) {
                 this.id = id;
+                this.accessibilityText = string;
                 this.drawable = getContext().getResources().getDrawable(iconId).mutate();
                 this.drawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 CharSequence text = string.toUpperCase();
@@ -2955,6 +3073,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             public Button(View view, int id, CharSequence text) {
                 this.id = id;
+                this.accessibilityText = text;
                 text = TextUtils.ellipsize(text, textPaint, AndroidUtilities.displaySize.x * .8f, TextUtils.TruncateAt.END);
                 this.layout = new StaticLayout(text, textPaint, 99999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
                 this.textWidth = this.layout.getLineCount() > 0 ? this.layout.getLineWidth(0) : 0;
@@ -2964,6 +3083,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             }
 
             public void setText(CharSequence text) {
+                this.accessibilityText = text;
                 text = TextUtils.ellipsize(text, textPaint, AndroidUtilities.displaySize.x * .8f, TextUtils.TruncateAt.END);
                 this.layout = new StaticLayout(text, textPaint, 99999, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
                 this.textWidth = this.layout.getLineCount() > 0 ? this.layout.getLineWidth(0) : 0;
@@ -3046,6 +3166,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
             ArrayList<ReactionsLayoutInBubble.VisibleReaction> visibleReactions = new ArrayList<>();
             ReactionWidget() {
                 id = WIDGET_REACTION;
+                accessibilityText = LocaleController.getString(R.string.Reactions);
                 width = AndroidUtilities.dp(44);
                 height = AndroidUtilities.dp(36);
 
@@ -3173,6 +3294,18 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
 
             final int height = dp(12 + 12) + y * dp(36) + (y - 1) * dp(12);
             setMeasuredDimension(width, height);
+
+            // a widget takes its place when it is drawn, which is of no use to a screen reader
+            // asking where it is: the same place is worked out here, where the rest of the
+            // measuring happens, and what a screen reader is told is brought up to date with it
+            for (final BaseWidget widget : widgets) {
+                final float left = getPaddingLeft() + ((width - getPaddingLeft() - getPaddingRight() - lineWidths[widget.layoutLine - 1]) / 2f) + widget.layoutX;
+                final float top = dp(12) + (widget.layoutLine - 1) * dp(36 + 12);
+                widget.bounds.set(left, top, left + widget.width, top + widget.height);
+            }
+            if (accessibilityHelper != null) {
+                accessibilityHelper.invalidateRoot();
+            }
         }
 
         @Override
@@ -3225,6 +3358,80 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
         private Utilities.Callback<Integer> onClickListener;
         public void setOnButtonClickListener(Utilities.Callback<Integer> listener) {
             onClickListener = listener;
+        }
+
+        // the list this cell sits in clears the delegate of everything it holds, which would take
+        // the widgets away from a screen reader again: the one that hands them over stays
+        @Override
+        public void setAccessibilityDelegate(AccessibilityDelegate delegate) {
+            if (delegate == null && accessibilityHelper != null) {
+                return;
+            }
+            super.setAccessibilityDelegate(delegate);
+        }
+
+        @Override
+        protected boolean dispatchHoverEvent(MotionEvent event) {
+            if (accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+                return true;
+            }
+            return super.dispatchHoverEvent(event);
+        }
+
+        // the widgets are drawn on this view rather than laid out on it, so each of them is given
+        // a place of its own for a screen reader to land on and to press
+        private class WidgetsAccessibilityHelper extends ExploreByTouchHelper {
+
+            private final Rect tmpRect = new Rect();
+
+            public WidgetsAccessibilityHelper(@NonNull View host) {
+                super(host);
+            }
+
+            @Override
+            protected int getVirtualViewAt(float x, float y) {
+                for (int i = 0; i < widgets.size(); ++i) {
+                    if (widgets.get(i).bounds.contains(x, y)) {
+                        return i;
+                    }
+                }
+                return HOST_ID;
+            }
+
+            @Override
+            protected void getVisibleVirtualViews(List<Integer> list) {
+                for (int i = 0; i < widgets.size(); ++i) {
+                    list.add(i);
+                }
+            }
+
+            @Override
+            protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+                if (id < 0 || id >= widgets.size()) {
+                    tmpRect.set(0, 0, 1, 1);
+                    info.setBoundsInParent(tmpRect);
+                    info.setContentDescription("");
+                    info.setVisibleToUser(false);
+                    return;
+                }
+                final BaseWidget widget = widgets.get(id);
+                tmpRect.set((int) widget.bounds.left, (int) widget.bounds.top, (int) widget.bounds.right, (int) widget.bounds.bottom);
+                info.setBoundsInParent(tmpRect);
+                info.setClassName("android.widget.Button");
+                info.setContentDescription(widget.accessibilityText == null ? "" : widget.accessibilityText);
+                // the cell is turned off by the list that holds it, and a widget on it is not
+                info.setEnabled(true);
+                info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+            }
+
+            @Override
+            protected boolean onPerformActionForVirtualView(int id, int action, Bundle arguments) {
+                if (action == AccessibilityNodeInfoCompat.ACTION_CLICK && onClickListener != null && id >= 0 && id < widgets.size()) {
+                    onClickListener.run(widgets.get(id).id);
+                    return true;
+                }
+                return false;
+            }
         }
 
         @Override
