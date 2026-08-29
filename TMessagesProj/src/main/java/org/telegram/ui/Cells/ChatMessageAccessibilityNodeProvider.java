@@ -387,6 +387,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(itemInfo.getRowIndex(), 1, 0, 1, false));
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_msg_options, getString("AccActionMessageOptions", R.string.AccActionMessageOptions)));
+            if (cell.hasSenderAvatarMenu()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_sender_avatar_menu, getString(R.string.AccActionSenderOptions)));
+            }
             int icon = cell.getIconForCurrentState();
             CharSequence actionLabel = null;
             switch (icon) {
