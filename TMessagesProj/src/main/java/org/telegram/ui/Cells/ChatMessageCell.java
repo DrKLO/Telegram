@@ -27762,7 +27762,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else if (virtualViewId == REPLY) {
                     info.setEnabled(true);
                     StringBuilder sb = new StringBuilder();
-                    sb.append(getString("Reply", R.string.Reply));
+                    // the same place over a message holds a reply or, on a forwarded message, where
+                    // it was forwarded from: it was called a reply either way
+                    sb.append(getString(replyPanelIsForward ? R.string.AccDescrForwarding : R.string.Reply));
                     sb.append(", ");
                     if (replyNameLayout != null) {
                         sb.append(replyNameLayout.getText());
@@ -27932,7 +27934,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             delegate.didPressSideButton(ChatMessageCell.this);
                         }
                     } else if (virtualViewId == REPLY) {
-                        if (delegate != null && (!isThreadChat || isMonoForum || currentMessageObject.getReplyTopMsgId() != 0) && (currentMessageObject.hasValidReplyMessageObject() || hasReplyQuote || currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.reply_to != null && currentMessageObject.messageOwner.reply_to.reply_from != null)) {
+                        // what is drawn over a message is not always a reply: where it is a
+                        // forward, touching it goes to where the message came from, and that is
+                        // what is done here as well
+                        if (replyPanelIsForward) {
+                            if (delegate != null) {
+                                if (currentForwardChannel != null) {
+                                    delegate.didPressChannelAvatar(ChatMessageCell.this, currentForwardChannel, currentMessageObject.messageOwner.fwd_from.channel_post, lastTouchX, lastTouchY, false);
+                                } else if (currentForwardUser != null) {
+                                    delegate.didPressUserAvatar(ChatMessageCell.this, currentForwardUser, lastTouchX, lastTouchY, false);
+                                } else if (currentForwardName != null) {
+                                    delegate.didPressHiddenForward(ChatMessageCell.this);
+                                }
+                            }
+                        } else if (delegate != null && (currentMessageObject.hasValidReplyMessageObject() || currentMessageObject.isReplyToStory() || hasReplyQuote || currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.reply_to != null && currentMessageObject.messageOwner.reply_to.reply_from != null)) {
                             delegate.didPressReplyMessage(ChatMessageCell.this, currentMessageObject.getReplyMsgId(), 0, 0, false);
                         }
                     } else if (virtualViewId == FORWARD) {
