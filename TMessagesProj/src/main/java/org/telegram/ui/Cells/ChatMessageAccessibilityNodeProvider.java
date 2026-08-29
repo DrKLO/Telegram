@@ -387,7 +387,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(itemInfo.getRowIndex(), 1, 0, 1, false));
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_msg_options, getString("AccActionMessageOptions", R.string.AccActionMessageOptions)));
-            int icon = cell.getIconForCurrentState();
+            int icon = cell.getIconForAccessibilityClick();
             CharSequence actionLabel = null;
             switch (icon) {
                 case MediaActionDrawable.ICON_PLAY:
