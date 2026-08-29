@@ -25,6 +25,7 @@
     <item name="sheet_attached_to_fragment_tag" type="id"/>
     <item name="current_animation" type="id"/>
     <item name="acc_action_small_button" type="id"/>
+    <item name="acc_action_download" type="id"/>
     <item name="acc_action_msg_options" type="id"/>
     <item name="acc_action_open_photo" type="id"/>
     <item name="acc_action_chat_preview" type="id"/>
