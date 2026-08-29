@@ -16719,12 +16719,65 @@ public class ChatActivity extends BaseFragment implements
         return dummyMessageCell.computeHeight(object, groupedMessagesMap.get(object.getGroupId()), withGroupCaption);
     }
 
+    private int accessibilityFocusedHighlightId = Integer.MAX_VALUE;
+    private Runnable focusHighlightedMessageRunnable;
+    private int pendingAccessibilityFocusId;
+
+    // a highlight is how a message that was jumped to tells itself apart, whether it came from a
+    // reply, a search result, a link or the profile: give a screen reader the same by taking it
+    // to that message, once for every jump
+    private void focusHighlightedMessageForAccessibility(ChatMessageCell cell) {
+        if (accessibilityFocusedHighlightId == highlightMessageId || !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        accessibilityFocusedHighlightId = highlightMessageId;
+        pendingAccessibilityFocusId = highlightMessageId;
+        tryFocusHighlightedMessage(highlightMessageId, 0);
+    }
+
+    // a message reached from far away, a link into a channel among them, is still loading when it
+    // is first highlighted, and the chat that opens around it takes the reading back to its start
+    // once it settles: keep taking it to the message until it stays there
+    private void tryFocusHighlightedMessage(int highlightId, int attempt) {
+        if (focusHighlightedMessageRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(focusHighlightedMessageRunnable);
+        }
+        focusHighlightedMessageRunnable = () -> {
+            focusHighlightedMessageRunnable = null;
+            if (pendingAccessibilityFocusId != highlightId || chatListView == null) {
+                return;
+            }
+            View message = null;
+            for (int i = 0; i < chatListView.getChildCount(); ++i) {
+                final View child = chatListView.getChildAt(i);
+                if (!(child instanceof ChatMessageCell)) {
+                    continue;
+                }
+                final MessageObject object = ((ChatMessageCell) child).getMessageObject();
+                if (object != null && object.getId() == highlightId) {
+                    message = child;
+                    break;
+                }
+            }
+            if (message != null && message.isShown() && !message.isAccessibilityFocused()) {
+                message.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+            }
+            if (attempt < 16 && (message == null || !message.isAccessibilityFocused())) {
+                tryFocusHighlightedMessage(highlightId, attempt + 1);
+            }
+        };
+        // coming from a search leaves which result it is to be told first, which is short and
+        // worth hearing before the message itself
+        AndroidUtilities.runOnUIThread(focusHighlightedMessageRunnable, attempt == 0 ? (searching ? 900 : 250) : 300);
+    }
+
     private void startMessageUnselect() {
         if (unselectRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(unselectRunnable);
         }
         unselectRunnable = () -> {
             highlightMessageId = Integer.MAX_VALUE;
+            accessibilityFocusedHighlightId = Integer.MAX_VALUE;
             highlightMessageQuoteFirst = false;
             highlightMessageQuoteFirstTime = 0;
             highlightMessageQuote = null;
@@ -34863,6 +34916,9 @@ public class ChatActivity extends BaseFragment implements
                 cell.setHighlighted(highlightMessageId != Integer.MAX_VALUE && messageObject != null && messageObject.getId() == highlightMessageId);
                 if (highlightMessageId != Integer.MAX_VALUE) {
                     startMessageUnselect();
+                    if (cell.isHighlighted()) {
+                        focusHighlightedMessageForAccessibility(cell);
+                    }
                 }
                 if (cell.isHighlighted() && highlightMessageQuote != null) {
                     final long now = System.currentTimeMillis();
@@ -37706,6 +37762,11 @@ public class ChatActivity extends BaseFragment implements
                     messageCell.setMessageObject(message, groupedMessages, pinnedBottom, pinnedTop, firstInChat, lastInChatList);
                     messageCell.setSpoilersSuppressed(chatListView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE);
                     messageCell.setHighlighted(highlightMessageId != Integer.MAX_VALUE && message.getId() == highlightMessageId);
+                    if (messageCell.isHighlighted()) {
+                        // a chat that opens around a message, as a link into a channel does,
+                        // brings it up here rather than through the rows it already holds
+                        focusHighlightedMessageForAccessibility(messageCell);
+                    }
                     if (messageCell.isHighlighted() && highlightMessageQuote != null) {
                         final long now = System.currentTimeMillis();
                         messageCell.setHighlightedText(highlightMessageQuote, true, highlightMessageQuoteOffset, highlightMessageQuoteFirst || now - highlightMessageQuoteFirstTime < 200);
