@@ -65,4 +65,28 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="acc_action_reaction_0" type="id" />
+    <item name="acc_action_reaction_1" type="id" />
+    <item name="acc_action_reaction_2" type="id" />
+    <item name="acc_action_reaction_3" type="id" />
+    <item name="acc_action_reaction_4" type="id" />
+    <item name="acc_action_reaction_5" type="id" />
+    <item name="acc_action_reaction_6" type="id" />
+    <item name="acc_action_reaction_7" type="id" />
+    <item name="acc_action_reaction_8" type="id" />
+    <item name="acc_action_reaction_9" type="id" />
+    <item name="acc_action_reaction_10" type="id" />
+    <item name="acc_action_reaction_11" type="id" />
+    <item name="acc_action_reaction_12" type="id" />
+    <item name="acc_action_reaction_13" type="id" />
+    <item name="acc_action_reaction_14" type="id" />
+    <item name="acc_action_reaction_15" type="id" />
+    <item name="acc_action_reaction_16" type="id" />
+    <item name="acc_action_reaction_17" type="id" />
+    <item name="acc_action_reaction_18" type="id" />
+    <item name="acc_action_reaction_19" type="id" />
+    <item name="acc_action_reaction_20" type="id" />
+    <item name="acc_action_reaction_21" type="id" />
+    <item name="acc_action_reaction_22" type="id" />
+    <item name="acc_action_reaction_23" type="id" />
 </resources>
