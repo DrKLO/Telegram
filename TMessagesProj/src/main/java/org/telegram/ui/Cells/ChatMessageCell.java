@@ -6364,6 +6364,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
 
+        accessibilityFocused = false;
+        accessibilityHovered = false;
+        readPlaybackPosition = null;
+
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.startSpoilers);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.stopSpoilers);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
@@ -26575,6 +26579,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = true;
+        } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = false;
+            readPlaybackPosition = null;
+        }
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
             return false;
         }
@@ -26624,6 +26634,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
         if (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo() || currentMessageObject.isMusic() && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
             if (seekBarAccessibilityDelegate.performAccessibilityActionInternal(action, arguments)) {
+                announcePlaybackPosition();
                 return true;
             }
         }
@@ -26652,6 +26663,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         int x = (int) getEventX(event);
         int y = (int) getEventY(event);
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
+            accessibilityHovered = true;
             for (int i = 0; i < accessibilityVirtualViewBounds.size(); i++) {
                 Rect rect = accessibilityVirtualViewBounds.valueAt(i);
                 if (rect.contains(x, y)) {
@@ -26665,8 +26677,57 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
             currentFocusedVirtualView = 0;
+            accessibilityHovered = false;
+            readPlaybackPosition = null;
         }
         return super.onHoverEvent(event);
+    }
+
+    private boolean accessibilityFocused;
+    private boolean accessibilityHovered;
+    private CharSequence readPlaybackPosition;
+
+    private boolean isReadByAccessibility() {
+        return accessibilityFocused || accessibilityHovered || isAccessibilityFocused();
+    }
+
+    private Runnable announcePlaybackPositionRunnable;
+
+    // after seeking, only the new position is of use, so report it instead of leaving it to
+    // the screen reader, which would read the whole message again
+    private CharSequence seekBarPositionDescription() {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        final int duration = (int) currentMessageObject.getDuration();
+        if (duration <= 0 || seekBarAccessibilityDelegate == null) {
+            return null;
+        }
+        final float progress = currentMessageObject.isMusic() || currentMessageObject.isVoice() && !useSeekBarWaveform ? seekBar.getProgress() : (useSeekBarWaveform ? seekBarWaveform.getProgress() : currentMessageObject.audioProgress);
+        final int position = Math.max(0, Math.min(duration, Math.round(progress * duration)));
+        return formatString(R.string.AccDescrPlayerDuration, LocaleController.formatDuration(position), LocaleController.formatDuration(duration));
+    }
+
+    private void announcePlaybackPosition() {
+        // the position kept while the message is read is the one before the seek
+        readPlaybackPosition = null;
+        if (announcePlaybackPositionRunnable != null) {
+            removeCallbacks(announcePlaybackPositionRunnable);
+        }
+        announcePlaybackPositionRunnable = () -> {
+            announcePlaybackPositionRunnable = null;
+            readPlaybackPosition = null;
+            CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(currentMessageObject);
+            if (playbackPosition == null) {
+                // a message that was never played is moved by its own slider, and nothing else
+                // knows where it stands
+                playbackPosition = seekBarPositionDescription();
+            }
+            if (playbackPosition != null) {
+                announceForAccessibility(playbackPosition);
+            }
+        };
+        postDelayed(announcePlaybackPositionRunnable, 400);
     }
 
     @Override
@@ -27326,10 +27387,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     accessibilityTextFileSize = fileSize;
                 }
 
+                CharSequence spokenText = accessibilityText;
+                CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(currentMessageObject);
+                if (playbackPosition != null) {
+                    // while the message is being read, keep reporting the position it was reached
+                    // at: a position that moves on every request looks like the message itself
+                    // changed and has screen readers read all of it again
+                    if (isReadByAccessibility() && !MediaController.getInstance().isMessagePaused()) {
+                        if (readPlaybackPosition == null) {
+                            readPlaybackPosition = playbackPosition;
+                        }
+                        playbackPosition = readPlaybackPosition;
+                    } else {
+                        readPlaybackPosition = null;
+                    }
+                    spokenText = TextUtils.concat(playbackPosition, ", ", accessibilityText);
+                }
+
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                    info.setContentDescription(accessibilityText.toString());
+                    info.setContentDescription(spokenText.toString());
                 } else {
-                    info.setText(accessibilityText);
+                    info.setText(spokenText);
                 }
 
                 info.setEnabled(true);

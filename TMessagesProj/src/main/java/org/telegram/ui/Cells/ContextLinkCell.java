@@ -1091,7 +1091,8 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 sbuf.append(descriptionLayout.getText());
             }
         }
-        info.setText(sbuf);
+        final CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(currentMessageObject);
+        info.setText(playbackPosition != null ? playbackPosition + ", " + sbuf : sbuf);
         if (checkBox != null && checkBox.isChecked()) {
             info.setCheckable(true);
             info.setChecked(true);
