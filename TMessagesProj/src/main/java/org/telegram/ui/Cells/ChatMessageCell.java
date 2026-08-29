@@ -23145,6 +23145,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return true;
         } else if (action == R.id.acc_action_small_button) {
             didPressMiniButton(true);
+        } else if (reactionsLayoutInBubble != null && reactionsLayoutInBubble.performAccessibilityAction(action)) {
+            return true;
         } else if (action == R.id.acc_action_msg_options) {
             if (delegate != null) {
                 if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
