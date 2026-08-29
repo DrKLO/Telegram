@@ -1839,11 +1839,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             if (currentReaction != null) {
                 if (currentReaction.emojicon != null) {
                     info.setText(currentReaction.emojicon);
-                    info.setEnabled(true);
                 } else {
-                    info.setText(LocaleController.getString(R.string.AccDescrCustomEmoji));
-                    info.setEnabled(true);
+                    info.setText(MessageObject.describeCustomEmoji(currentAccount, currentReaction.documentId));
                 }
+                info.setEnabled(true);
             }
         }
 

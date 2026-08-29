@@ -5833,6 +5833,7 @@
     <string name="BanUserMonoforum">Ban User From Channel</string>
     <string name="UnbanUserMonoforum">Ban User From Channel</string>
     <string name="AccDescrCustomEmoji">Custom emoji</string>
+    <string name="AccDescrCustomEmojiNamed">%1$s, custom emoji</string>
     <string name="RecentlyUsed">Recently Used</string>
     <string name="PopularReactions">Popular</string>
     <string name="EmojiPackCollectibles">Collectibles</string>
