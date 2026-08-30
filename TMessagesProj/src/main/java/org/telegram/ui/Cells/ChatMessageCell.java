@@ -17368,6 +17368,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public void updateButtonState(boolean ifSame, boolean animated, boolean fromSet) {
+        final int previousButtonState = buttonState;
+        final int previousMiniButtonState = miniButtonState;
+        updateButtonStateInternal(ifSame, animated, fromSet);
+        // what a message offers to do is read off the state of its button: it downloads, or it
+        // cancels what is downloading, or it plays. Nothing said that state had changed, so a
+        // screen reader went on offering to download a file that was already on its way, until
+        // the message was left and returned to.
+        if ((buttonState != previousButtonState || miniButtonState != previousMiniButtonState) && AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+        }
+    }
+
+    private void updateButtonStateInternal(boolean ifSame, boolean animated, boolean fromSet) {
         if (currentMessageObject == null) {
             return;
         }
