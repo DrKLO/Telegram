@@ -5457,10 +5457,32 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
     }
 
+    // the avatar of a chat answers to a touch of its own, which touch exploration has no way of
+    // giving it: it holds a story to be watched, or it leads to the community the chat belongs to.
+    // Where it answers to nothing, the touch goes through to the chat, and so there is nothing to
+    // offer here either.
+    private boolean hasAvatarAction() {
+        // the archive comes by it too: its avatar holds the stories that were put away
+        return !isTopic && !isShareToStoryCell && storyParams.isAvatarActionable();
+    }
+
+    // a chat that leads to a community leads there whether or not it also holds a story, as a
+    // touch on it would
+    private boolean avatarOpensCommunity() {
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        final TLRPC.User user = currentDialogId > 0 ? messagesController.getUser(currentDialogId) : null;
+        final TLRPC.Chat chat = currentDialogId > 0 ? null : messagesController.getChat(-currentDialogId);
+        return storyParams.isAvatarClickable(currentDialogId, chat, user);
+    }
+
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (action == R.id.acc_action_chat_preview && parentFragment != null) {
             parentFragment.showChatPreview(this);
+            return true;
+        }
+        if (action == R.id.acc_action_open_avatar && hasAvatarAction()) {
+            storyParams.performAvatarAction(this);
             return true;
         }
         return super.performAccessibilityAction(action, arguments);
@@ -5476,6 +5498,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
             if (!isFolderCell() && parentFragment != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_chat_preview, getString(R.string.AccActionChatPreview)));
+            }
+            if (hasAvatarAction()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_avatar, getString(avatarOpensCommunity() ? R.string.AccActionOpenCommunity : R.string.ViewStory)));
             }
         }
         if (checkBox != null && checkBox.isChecked()) {
