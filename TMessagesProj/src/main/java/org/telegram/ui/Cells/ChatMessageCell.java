@@ -27255,7 +27255,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (currentMessageObject.messageOwner.reactions != null && currentMessageObject.messageOwner.reactions.results != null) {
                         if (currentMessageObject.messageOwner.reactions.results.size() == 1) {
                             TLRPC.ReactionCount reaction = currentMessageObject.messageOwner.reactions.results.get(0);
-                            String emoticon = reaction.reaction instanceof TLRPC.TL_reactionEmoji ? ((TLRPC.TL_reactionEmoji) reaction.reaction).emoticon : "";
+                            CharSequence emoticon = MessageObject.describeReaction(currentAccount, reaction.reaction);
                             if (reaction.count == 1) {
                                 sb.append("\n");
                                 boolean isMe = false;
@@ -27284,7 +27284,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             final int count = currentMessageObject.messageOwner.reactions.results.size();
                             for (int i = 0; i < count; ++i) {
                                 TLRPC.ReactionCount reactionCount = currentMessageObject.messageOwner.reactions.results.get(i);
-                                String emoticon = reactionCount.reaction instanceof TLRPC.TL_reactionEmoji ? ((TLRPC.TL_reactionEmoji) reactionCount.reaction).emoticon : "";
+                                CharSequence emoticon = MessageObject.describeReaction(currentAccount, reactionCount.reaction);
                                 if (reactionCount != null) {
                                     sb.append(emoticon).append(" ").append(reactionCount.count + "");
                                     if (i + 1 < count) {

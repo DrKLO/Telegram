@@ -10670,6 +10670,36 @@ public class MessageObject {
         return null;
     }
 
+    // a custom emoji is drawn and never written, so a screen reader is left with nothing to read
+    // of it: what it stands for is the plain emoji the document carries beside it, which is said
+    // here, together with the word that keeps it apart from that plain emoji itself
+    public static CharSequence describeCustomEmoji(TLRPC.Document document) {
+        final String emoticon = findAnimatedEmojiEmoticon(document, null);
+        if (TextUtils.isEmpty(emoticon)) {
+            return getString(R.string.AccDescrCustomEmoji);
+        }
+        return formatString(R.string.AccDescrCustomEmojiNamed, emoticon);
+    }
+
+    // the document of a custom emoji is only ever read from the cache: this runs while a node is
+    // being filled in for a screen reader, which is no place to wait on the network, and an emoji
+    // that is drawn on screen has been fetched already
+    public static CharSequence describeCustomEmoji(int currentAccount, long documentId) {
+        return describeCustomEmoji(AnimatedEmojiDrawable.findDocument(currentAccount, documentId));
+    }
+
+    // reactions come in three kinds, and only the plain one carries something to read as it is
+    public static CharSequence describeReaction(int currentAccount, TLRPC.Reaction reaction) {
+        if (reaction instanceof TLRPC.TL_reactionEmoji) {
+            return ((TLRPC.TL_reactionEmoji) reaction).emoticon;
+        } else if (reaction instanceof TLRPC.TL_reactionCustomEmoji) {
+            return describeCustomEmoji(currentAccount, ((TLRPC.TL_reactionCustomEmoji) reaction).document_id);
+        } else if (reaction instanceof TLRPC.TL_reactionPaid) {
+            return getString(R.string.StarsReactionTitle);
+        }
+        return "";
+    }
+
     public static String findAnimatedEmojiEmoticon(TLRPC.Document document) {
         return findAnimatedEmojiEmoticon(document, "\uD83D\uDE00");
     }
