@@ -16951,7 +16951,32 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         );
     }
 
-    private String getAuthorName() {
+    // who a message is from was only ever read where it was a person. An admin who posts without
+    // their name, and anyone who posts as a channel, are the chat itself, and were passed over as
+    // though the message had come from nobody at all: the message was read and the sender was not,
+    // so a run of messages from several of them could not be told apart.
+    //
+    // inside a channel it stays unsaid. Every post there comes from the channel, and naming it over
+    // each one says nothing that being in the channel has not already said. A channel that signs
+    // its posts with the person behind them is another matter, and that person is named.
+    //
+    // what is asked here is who sent a message, and not whether a name happens to be drawn over it:
+    // a name is drawn once above a run of messages, and not at all above a photo or a voice message,
+    // and none of that changes who any of them are from.
+    boolean isNeedAccessibilityAuthorName() {
+        if (!isChat || currentMessageObject == null || currentMessageObject.isOut()) {
+            return false;
+        }
+        if (currentUser != null) {
+            return true;
+        }
+        if (currentChat == null) {
+            return false;
+        }
+        return isMegagroup || currentChat.signature_profiles;
+    }
+
+    String getAuthorName() {
         if (currentUser != null) {
             return UserObject.getUserName(currentUser);
         } else if (currentChat != null) {
