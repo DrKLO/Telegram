@@ -19752,6 +19752,31 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         );
     }
 
+    // who a message is from was only ever read where it was a person. An admin who posts without
+    // their name, and anyone who posts as a channel, are the chat itself, and were passed over as
+    // though the message had come from nobody at all: the message was read and the sender was not,
+    // so a run of messages from several of them could not be told apart.
+    //
+    // inside a channel it stays unsaid. Every post there comes from the channel, and naming it over
+    // each one says nothing that being in the channel has not already said. A channel that signs
+    // its posts with the person behind them is another matter, and that person is named.
+    //
+    // what is asked here is who sent a message, and not whether a name happens to be drawn over it:
+    // a name is drawn once above a run of messages, and not at all above a photo or a voice message,
+    // and none of that changes who any of them are from.
+    private boolean isNeedAccessibilityAuthorName() {
+        if (!isChat || currentMessageObject == null || currentMessageObject.isOut()) {
+            return false;
+        }
+        if (currentUser != null) {
+            return true;
+        }
+        if (currentChat == null) {
+            return false;
+        }
+        return isMegagroup || currentChat.signature_profiles;
+    }
+
     private String getAuthorName() {
         if (currentUser != null) {
             return UserObject.getUserName(currentUser);
@@ -27081,9 +27106,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final long fileSize = currentMessageObject != null ? currentMessageObject.loadedFileSize : 0;
                 if (accessibilityText == null || accessibilityTextUnread != unread || accessibilityTextContentUnread != contentUnread || accessibilityTextFileSize != fileSize) {
                     SpannableStringBuilder sb = new SpannableStringBuilder();
-                    if (isChat && currentUser != null && !currentMessageObject.isOut()) {
-                        sb.append(UserObject.getUserName(currentUser));
-                        sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    if (isNeedAccessibilityAuthorName()) {
+                        sb.append(getAuthorName());
+                        if (currentUser != null) {
+                            sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
                         final CharSequence adminText = getAdminAccessibilityText();
                         if (!TextUtils.isEmpty(adminText)) {
                             if (adminLayoutIsTag) {
