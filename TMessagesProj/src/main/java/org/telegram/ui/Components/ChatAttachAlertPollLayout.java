@@ -2542,6 +2542,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         });
                     }
                     cell.setIconsColor(Theme.key_pollCreateIcons);
+                    cell.setupRemoveAccessibilityAction();
                     cell.supportMultiselect();
                     cell.getCheckBox().setColor(-1, Theme.key_pollCreateIcons, Theme.key_checkboxCheck);
                     // cell.getCheckBox().setCirclePaintProvider(obj -> checkboxPaint);
