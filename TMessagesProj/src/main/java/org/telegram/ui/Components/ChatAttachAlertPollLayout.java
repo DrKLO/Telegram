@@ -617,6 +617,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 } else if (view instanceof PollCreateCheckCell) {
                     ((PollCreateCheckCell) view).setChecked(checked);
                 }
+                announceRowsChanged(position, checked);
                 checkDoneButton();
             }
         });
@@ -1373,6 +1374,31 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             textView.setTag(key);
         } else {
             textCell.setText2("");
+        }
+    }
+
+    /**
+     * Six of the settings put rows on the screen or take them away, and one of them puts a box
+     * beside every option as well. All a screen reader hears is that a switch was turned: what
+     * appeared under it is found only by going back and looking for it. Say what was added, by the
+     * name of the thing that was added.
+     */
+    private void announceRowsChanged(int position, boolean checked) {
+        if (!AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        CharSequence added = null;
+        if (position == poll2vQuizRow && checked) {
+            added = getString(R.string.PollTapToSelect);
+        } else if (position == poll2vLimitDurationRow && checked) {
+            added = getString(R.string.PollV2LimitDuration);
+        } else if (position == poll2vLimitByCountryRow.row && checked) {
+            added = getString(R.string.PollV2AllowedCountries);
+        } else if (position == allowMarkingRow && checked && allowAddingRow >= 0) {
+            added = getString(R.string.TodoAllowAddingTasks);
+        }
+        if (added != null) {
+            listView.announceForAccessibility(added);
         }
     }
 
