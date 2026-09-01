@@ -1367,12 +1367,14 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         if (left <= max - max * 0.7f) {
             textCell.setText2(String.format("%d", left));
+            textCell.setAccessibilityCharactersLeft(left);
             SimpleTextView textView = textCell.getTextView2();
             int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
             textView.setTextColor(getThemedColor(key));
             textView.setTag(key);
         } else {
             textCell.setText2("");
+            textCell.setAccessibilityCharactersLeft(-1);
         }
     }
 
@@ -2121,6 +2123,8 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                 textCell.setCheckboxMultiselect(multipleChoise, false);
                 int index = position - answerStartRow;
                 textCell.setTextAndHint(answers[index], getString(todo ? R.string.TodoTaskPlaceholder : R.string.OptionHint), true);
+                // every option is drawn with the same hint, so one reads exactly like the next
+                textCell.setFieldLabel(LocaleController.formatString(todo ? R.string.AccDescrTodoTaskNumber : R.string.AccDescrPollOptionNumber, index + 1, answersCount));
                 textCell.setTag(null);
                 if (requestFieldFocusAtPosition == position) {
                     EditTextBoldCursor editText = textCell.getTextView();
