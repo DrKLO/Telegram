@@ -958,6 +958,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         private Text author;
         public AnimatedEmojiSpan.EmojiGroupedSpans animatedEmoji;
         private TLRPC.PollAnswer answer;
+        private ArrayList<TLRPC.Peer> recentVoters;
         private TLRPC.TodoItem task;
         private boolean translated;
         public int selectorDrawableColor;
@@ -5989,6 +5990,34 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return StaticLayoutEx.createStaticLayout(stringBuilder, paint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, dp(1), false, TextUtils.TruncateAt.END, maxWidth, maxLines, true);
     }
 
+
+    /**
+     * The names behind the faces drawn on a poll. A few of the last to vote are shown beside the
+     * kind of poll and beside every answer they picked, and they are shown to everyone who can see
+     * the poll, from the moment there are any: the list of votes behind the button at the bottom
+     * only opens once this account has voted or the poll has closed, so until then the faces are
+     * the only place these names are.
+     *
+     * The server sends them for a public poll alone, and this asks for that as well, so nothing is
+     * ever said that is not also drawn.
+     */
+    private CharSequence pollRecentVoterNames(ArrayList<TLRPC.Peer> peers) {
+        if (peers == null || peers.isEmpty() || lastPoll == null || !lastPoll.public_voters) {
+            return null;
+        }
+        final StringBuilder names = new StringBuilder();
+        for (int a = 0; a < peers.size(); a++) {
+            final String name = DialogObject.getName(DialogObject.getPeerDialogId(peers.get(a)));
+            if (TextUtils.isEmpty(name)) {
+                continue;
+            }
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(name);
+        }
+        return names.length() == 0 ? null : formatString(R.string.AccDescrPollVotedBy, names);
+    }
 
     private void didClickedPollImage(ChatMessageCell cell, ImageReceiver imageReceiver, TLRPC.PollAnswer answer, TLRPC.MessageMedia media, float x, float y, int unshuffledIndex) {
         /*if (unshuffledIndex == PollAttachedMediaPack.INDEX_DESCRIPTION) {
@@ -11702,6 +11731,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 button.pollButtonDrawable.setVotersVisible(isCouterVisible, prevButton != null && !messageIdChanged);
                                 button.pollButtonDrawable.setVotersCount(answer.voters, prevButton != null && !messageIdChanged);
                                 button.pollButtonDrawable.setRecentVoters(answer.recent_voters, prevButton != null && !messageIdChanged);
+                                button.recentVoters = answer.recent_voters;
 
                                 final float votersCountWidth = button.pollButtonDrawable.getVotersCountTargetWidth();
                                 button.moveTitleByCounter = isTitleRtl && titleLinesCount == 1 && (titleLastLineAvail - dp(10)) > votersCountWidth;
@@ -27203,6 +27233,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         sb.append(title);
+                        final CharSequence recentVoters = pollRecentVoterNames(lastPollResultsObj == null ? null : lastPollResultsObj.recent_voters);
+                        if (recentVoters != null) {
+                            sb.append(", ");
+                            sb.append(recentVoters);
+                        }
                     }
                     if (documentAttach != null) {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -27648,6 +27683,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         if (lastPoll != null && lastPoll.quiz && (button.chosen || button.correct)) {
                             sb.append(", ").append(button.correct ? getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer) : getString("AccDescrQuizIncorrectAnswer", R.string.AccDescrQuizIncorrectAnswer));
                         }
+                    }
+                    final CharSequence answerVoters = pollRecentVoterNames(button.recentVoters);
+                    if (answerVoters != null) {
+                        sb.append(", ").append(answerVoters);
                     }
                     info.setText(sb);
                     info.setEnabled(true);
