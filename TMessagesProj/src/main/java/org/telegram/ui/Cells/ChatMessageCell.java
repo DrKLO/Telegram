@@ -1214,7 +1214,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     boolean drawInstantView;
     RectF contactRect;
     ChatMessageContact contact;
-    private ChatMessagePoll poll;
+    ChatMessagePoll poll;
     public int drawInstantViewType;
     public CharSequence instantViewButtonText;
     int imageBackgroundSideColor;
