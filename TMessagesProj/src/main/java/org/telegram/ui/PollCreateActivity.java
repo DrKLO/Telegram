@@ -89,6 +89,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class PollCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate {
 
     private ActionBarMenuItem doneItem;
+    private CharSequence doneItemText;
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     private RecyclerView.LayoutManager layoutManager;
@@ -516,7 +517,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneItem = menu.addItem(done_button, todo ? getString(onlyAdding ? R.string.TodoAddTasksButton : R.string.TodoEditTasksButton) : getString(R.string.Create).toUpperCase());
+        doneItemText = todo ? getString(onlyAdding ? R.string.TodoAddTasksButton : R.string.TodoEditTasksButton) : getString(R.string.Create).toUpperCase();
+        doneItem = menu.addItem(done_button, doneItemText);
 
         listAdapter = new ListAdapter(context);
 
@@ -932,6 +934,53 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         }
         doneItem.setEnabled(quizPoll && checksCount == 0 || enabled);
         doneItem.setAlpha(enabled ? 1.0f : 0.5f);
+        // a dimmed button says it is disabled and nothing more. What is missing is written on the
+        // screen, in a red count or an unmarked answer, and a screen reader is left to guess
+        final CharSequence why = enabled ? null : disabledReason();
+        doneItem.setContentDescription(TextUtils.isEmpty(why) ? doneItem.getContentDescription() : TextUtils.concat(doneItemText, ", ", why));
+    }
+
+    /**
+     * The first thing standing in the way of sending, in the order the screen is filled in. What is
+     * missing is only ever shown: a count turning red, an answer left unmarked, a hint that fades
+     * away. A dimmed button on its own says nothing about which of them it is.
+     */
+    private CharSequence disabledReason() {
+        final int maxQuestionLength = todo ? getMessagesController().todoTitleLengthMax : ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH;
+        final int maxAnswerLength = todo ? getMessagesController().todoItemLengthMax : ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
+        if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString))) {
+            return getString(todo ? R.string.AccDescrTodoNoTitle : R.string.AccDescrPollNoQuestion);
+        }
+        if (questionString.length() > maxQuestionLength) {
+            return getString(todo ? R.string.AccDescrTodoTitleTooLong : R.string.AccDescrPollQuestionTooLong);
+        }
+        if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
+            return getString(R.string.AccDescrPollExplanationTooLong);
+        }
+        int count = 0;
+        for (int a = 0; a < answers.length; a++) {
+            if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
+                if (answers[a].length() > maxAnswerLength) {
+                    return getString(todo ? R.string.AccDescrTodoTaskTooLong : R.string.AccDescrPollOptionTooLong);
+                }
+                count++;
+            }
+        }
+        if (count < (todo ? 1 : 2)) {
+            return getString(todo ? R.string.AccDescrTodoNoTasks : R.string.AccDescrPollNoOptions);
+        }
+        if (quizPoll) {
+            int checksCount = 0;
+            for (int a = 0; a < answersChecks.length; a++) {
+                if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a])) && answersChecks[a]) {
+                    checksCount++;
+                }
+            }
+            if (checksCount < 1) {
+                return getString(R.string.PollTapToSelect);
+            }
+        }
+        return null;
     }
 
     private void updateRows() {
