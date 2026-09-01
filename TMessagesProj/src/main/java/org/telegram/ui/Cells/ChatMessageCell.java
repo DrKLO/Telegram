@@ -27025,6 +27025,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         public static final int CONTACT_VIEW = 491;
         public static final int CONTACT_ADD = 490;
         public static final int CONTACT_MESSAGE = 489;
+        public static final int POLL_ADD_OPTION = 488;
         private Path linkPath = new Path();
         private RectF rectF = new RectF();
         private Rect rect = new Rect();
@@ -27424,6 +27425,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.addChild(ChatMessageCell.this, POLL_BUTTONS_START + i);
                     i++;
                 }
+                // a poll that lets anyone add an answer has a button under the last one for it.
+                // It is a control of its own, drawn like the answers above it, and there was
+                // nothing of it in the tree at all: it could be neither found nor pressed
+                // whether a poll lets answers be added is worked out for a poll alone, so a cell
+                // used again for a message that is not one keeps the answer of the poll it held
+                // before. The button is drawn for a poll only; ask for one here as well
+                if (pollAllowAdding && pollAddButtonDrawable != null && currentMessageObject.isPoll()) {
+                    info.addChild(ChatMessageCell.this, POLL_ADD_OPTION);
+                }
                 if (drawInstantView && !instantButtonRect.isEmpty()) {
                     info.addChild(ChatMessageCell.this, INSTANT_VIEW);
                 }
@@ -27677,6 +27687,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     rect.offset(pos[0], pos[1]);
                     info.setBoundsInScreen(rect);
                     info.setClickable(true);
+                } else if (virtualViewId == POLL_ADD_OPTION) {
+                    if (!getPollAddButtonBounds(rect)) {
+                        return null;
+                    }
+                    info.setClassName("android.widget.Button");
+                    info.setEnabled(true);
+                    info.setText(getString(R.string.PollAddAnOption));
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    info.setBoundsInParent(rect);
+                    // the bounds go into the map the cell hit tests against, so the button is
+                    // found by a finger on the screen as well as by swiping to it
+                    if (accessibilityVirtualViewBounds.get(virtualViewId) == null || !accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
+                        accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
+                    }
+                    rect.offset(pos[0], pos[1]);
+                    info.setBoundsInScreen(rect);
+                    info.setClickable(true);
                 } else if (virtualViewId == INSTANT_VIEW) {
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
@@ -27903,6 +27930,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
                             answers.add(button.answer);
                             delegate.didPressVoteButtons(ChatMessageCell.this, answers, -1, 0, 0);
+                        }
+                        sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
+                    } else if (virtualViewId == POLL_ADD_OPTION) {
+                        if (delegate != null && currentMessageObject.isPoll()) {
+                            delegate.didPressAddPollOptionButton(ChatMessageCell.this);
                         }
                         sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (virtualViewId == POLL_HINT) {
