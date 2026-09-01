@@ -21,6 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -30,6 +31,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
@@ -86,6 +88,57 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
     private AnimatorSet checkBoxAnimation;
     private boolean alwaysShowText2;
     private ChatActivityEnterViewAnimatedIconView emojiButton;
+    private ReorderDelegate reorderDelegate;
+
+    /** What a row of a poll can be asked to do besides being typed into. */
+    public interface ReorderDelegate {
+        boolean canMoveUp(PollEditTextCell cell);
+        boolean canMoveDown(PollEditTextCell cell);
+        void moveUp(PollEditTextCell cell);
+        void moveDown(PollEditTextCell cell);
+    }
+
+    /**
+     * Rows are put in order by holding a press and dragging, which leaves a screen reader with no
+     * way to do it at all. The two actions here do the same thing a drag does, and they go on the
+     * field rather than on the handle beside it, because the field is what is stopped at.
+     */
+    public void setReorderDelegate(ReorderDelegate delegate) {
+        reorderDelegate = delegate;
+        if (delegate == null) {
+            return;
+        }
+        textView.setAccessibilityDelegate(new AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                if (reorderDelegate == null) {
+                    return;
+                }
+                if (reorderDelegate.canMoveUp(PollEditTextCell.this)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_up, LocaleController.getString(R.string.AccActionMoveUp)));
+                }
+                if (reorderDelegate.canMoveDown(PollEditTextCell.this)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_down, LocaleController.getString(R.string.AccActionMoveDown)));
+                }
+            }
+
+            @Override
+            public boolean performAccessibilityAction(View host, int action, Bundle args) {
+                if (reorderDelegate != null) {
+                    if (action == R.id.acc_action_move_up && reorderDelegate.canMoveUp(PollEditTextCell.this)) {
+                        reorderDelegate.moveUp(PollEditTextCell.this);
+                        return true;
+                    }
+                    if (action == R.id.acc_action_move_down && reorderDelegate.canMoveDown(PollEditTextCell.this)) {
+                        reorderDelegate.moveDown(PollEditTextCell.this);
+                        return true;
+                    }
+                }
+                return super.performAccessibilityAction(host, action, args);
+            }
+        });
+    }
 
     public PollEditTextCell(Context context, OnClickListener onDelete) {
         this(context, false, TYPE_DEFAULT, onDelete);
