@@ -65,4 +65,20 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="acc_action_copy_text_0" type="id" />
+    <item name="acc_action_copy_text_1" type="id" />
+    <item name="acc_action_copy_text_2" type="id" />
+    <item name="acc_action_copy_text_3" type="id" />
+    <item name="acc_action_copy_text_4" type="id" />
+    <item name="acc_action_copy_text_5" type="id" />
+    <item name="acc_action_copy_text_6" type="id" />
+    <item name="acc_action_copy_text_7" type="id" />
+    <item name="acc_action_copy_text_8" type="id" />
+    <item name="acc_action_copy_text_9" type="id" />
+    <item name="acc_action_copy_text_10" type="id" />
+    <item name="acc_action_copy_text_11" type="id" />
+    <item name="acc_action_copy_text_12" type="id" />
+    <item name="acc_action_copy_text_13" type="id" />
+    <item name="acc_action_copy_text_14" type="id" />
+    <item name="acc_action_copy_text_15" type="id" />
 </resources>
