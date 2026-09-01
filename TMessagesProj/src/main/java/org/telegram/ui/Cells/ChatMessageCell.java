@@ -2903,6 +2903,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return pressedEffect;
     }
 
+    boolean isTodoItemDone(int index, PollButton button) {
+        // while the tick is still travelling the box holds the newer answer of the two
+        if (pollCheckBox != null && index >= 0 && index < pollCheckBox.length && pollCheckBox[index] != null) {
+            return pollCheckBox[index].isChecked();
+        }
+        return button != null && button.chosen;
+    }
+
     public void didPressVoteHint() {
         /*
         if (delegate != null) {

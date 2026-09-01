@@ -689,7 +689,27 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 }
                 ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
                 StringBuilder sb = new StringBuilder(button.title.getText());
-                if (!cell.pollVoted) {
+                if (button.task != null) {
+                    // an item of a checklist is ticked or it is not, and that is the whole of
+                    // what it says. Nothing of it reached a screen reader: a list with half of
+                    // it done read exactly like an untouched one. Where the list cannot be
+                    // ticked at all a bullet is drawn instead of a box, so it is not offered
+                    // as one either, and what is done is said in words, as the line through
+                    // the title says it on the screen
+                    if (cell.currentMessageObject.canCompleteTodo()) {
+                        info.setClassName("android.widget.CheckBox");
+                        info.setCheckable(true);
+                        info.setChecked(cell.isTodoItemDone(buttonIndex, button));
+                        if (button.author != null && cell.isTodoItemDone(buttonIndex, button)) {
+                            sb.append(", ").append(formatString(R.string.AccDescrTodoDoneBy, button.author.getText()));
+                        }
+                    } else {
+                        info.setClassName("android.widget.TextView");
+                        if (cell.isTodoItemDone(buttonIndex, button)) {
+                            sb.append(", ").append(getString(R.string.AccDescrTodoDone));
+                        }
+                    }
+                } else if (!cell.pollVoted) {
                     info.setClassName("android.widget.Button");
                 } else {
                     info.setSelected(button.chosen);
