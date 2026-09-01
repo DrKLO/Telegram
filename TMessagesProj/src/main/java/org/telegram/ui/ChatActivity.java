@@ -28170,6 +28170,12 @@ public class ChatActivity extends BaseFragment implements
         topPanelLayout.setViewVisible(alertView, true);
         alertNameTextView.setText(name);
         alertTextView.setText(Emoji.replaceEmoji(message.replace('\n', ' '), alertTextView.getPaint().getFontMetricsInt(), false));
+        // this is the whole of what a bot can answer a press on one of its buttons with
+        // without asking for a dialog. It is put at the top of the chat for three seconds and
+        // then taken away; nothing is focused and nothing is said, so the answer never reached
+        // a screen reader at all
+        AndroidUtilities.makeAccessibilityAnnouncement(name + ", " + message.replace('\n', ' '));
+
         if (hideAlertViewRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(hideAlertViewRunnable);
         }
