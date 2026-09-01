@@ -1080,6 +1080,31 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         }
     }
 
+    // dragging a row into place is the only way the screen has of putting the items in order, so
+    // the same move is offered as two actions on the field of every item
+    private final PollEditTextCell.ReorderDelegate reorderDelegate = new PollEditTextCell.ReorderDelegate() {
+        @Override
+        protected int getFirstRow() {
+            return answerStartRow;
+        }
+
+        @Override
+        protected int getCount() {
+            return answersCount;
+        }
+
+        // when only new items are being added, the ones already sent stay where they are
+        @Override
+        protected int getFirstMovable() {
+            return onlyAdding ? oldAnswersCount : 0;
+        }
+
+        @Override
+        protected void swap(int fromPosition, int toPosition) {
+            listAdapter.swapElements(fromPosition, toPosition);
+        }
+    };
+
     private void addNewField() {
         resetSuggestEmojiPanel();
         answersChecks[answersCount] = false;
@@ -2037,6 +2062,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                         }
                         return false;
                     });
+                    cell.setReorderDelegate(reorderDelegate);
                     view = cell;
                     break;
                 }
