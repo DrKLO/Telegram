@@ -73,6 +73,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
@@ -1290,6 +1291,50 @@ public class Bulletin {
 
         public void setWrapWidth() {
             wrapWidth = true;
+        }
+
+        /**
+         * A bulletin says itself out loud only where its layout was given words to say, and three
+         * of them were never given any: the one for a changed app icon, the one a bot shows while
+         * it downloads a file, and the one an advert is shown in. They appear and go away again
+         * with nothing said at all.
+         *
+         * What is written on them is right there in the views they are built from, so read it off
+         * those. A layout that names itself keeps doing so, and one written later is not silent
+         * for having been forgotten.
+         */
+        @Override
+        protected CharSequence getAccessibilityText() {
+            final StringBuilder sb = new StringBuilder();
+            appendAccessibilityText(this, sb);
+            return sb.length() == 0 ? null : sb;
+        }
+
+        private void appendAccessibilityText(ViewGroup group, StringBuilder out) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                final View child = group.getChildAt(i);
+                // the button beside a bulletin is reached and read on its own
+                if (child == null || child.getVisibility() != VISIBLE || child == button || child == timerView) {
+                    continue;
+                }
+                CharSequence text = null;
+                if (child instanceof TextView) {
+                    text = ((TextView) child).getText();
+                } else if (child instanceof SimpleTextView) {
+                    text = ((SimpleTextView) child).getText();
+                } else if (child instanceof AnimatedTextView) {
+                    text = ((AnimatedTextView) child).getText();
+                } else if (child instanceof ViewGroup) {
+                    appendAccessibilityText((ViewGroup) child, out);
+                    continue;
+                }
+                if (!TextUtils.isEmpty(text)) {
+                    if (out.length() > 0) {
+                        out.append(", ");
+                    }
+                    out.append(text);
+                }
+            }
         }
 
         @Override
