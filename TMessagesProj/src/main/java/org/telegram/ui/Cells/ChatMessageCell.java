@@ -971,6 +971,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         Text author;
         public AnimatedEmojiSpan.EmojiGroupedSpans animatedEmoji;
         TLRPC.PollAnswer answer;
+        ArrayList<TLRPC.Peer> recentVoters;
         TLRPC.TodoItem task;
         boolean translated;
         public int selectorDrawableColor;
@@ -1214,7 +1215,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     boolean drawInstantView;
     RectF contactRect;
     ChatMessageContact contact;
-    private ChatMessagePoll poll;
+    ChatMessagePoll poll;
     public int drawInstantViewType;
     public CharSequence instantViewButtonText;
     int imageBackgroundSideColor;
@@ -5450,6 +5451,34 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return StaticLayoutEx.createStaticLayout(stringBuilder, paint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, dp(1), false, TextUtils.TruncateAt.END, maxWidth, maxLines, true);
     }
 
+
+    /**
+     * The names behind the faces drawn on a poll. A few of the last to vote are shown beside the
+     * kind of poll and beside every answer they picked, and they are shown to everyone who can see
+     * the poll, from the moment there are any: the list of votes behind the button at the bottom
+     * only opens once this account has voted or the poll has closed, so until then the faces are
+     * the only place these names are.
+     *
+     * The server sends them for a public poll alone, and this asks for that as well, so nothing is
+     * ever said that is not also drawn.
+     */
+    CharSequence pollRecentVoterNames(ArrayList<TLRPC.Peer> peers) {
+        if (peers == null || peers.isEmpty() || lastPoll == null || !lastPoll.public_voters) {
+            return null;
+        }
+        final StringBuilder names = new StringBuilder();
+        for (int a = 0; a < peers.size(); a++) {
+            final String name = DialogObject.getName(DialogObject.getPeerDialogId(peers.get(a)));
+            if (TextUtils.isEmpty(name)) {
+                continue;
+            }
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(name);
+        }
+        return names.length() == 0 ? null : formatString(R.string.AccDescrPollVotedBy, names);
+    }
 
     void didClickedPollImage(ChatMessageCell cell, ImageReceiver imageReceiver, TLRPC.PollAnswer answer, TLRPC.MessageMedia media, float x, float y, int unshuffledIndex) {
         /*if (unshuffledIndex == PollAttachedMediaPack.INDEX_DESCRIPTION) {

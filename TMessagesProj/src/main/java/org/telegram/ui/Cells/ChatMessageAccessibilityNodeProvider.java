@@ -252,6 +252,11 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         }
                     }
                     sb.append(title);
+                    final CharSequence recentVoters = cell.pollRecentVoterNames(cell.poll.lastResultsObj == null ? null : cell.poll.lastResultsObj.recent_voters);
+                    if (recentVoters != null) {
+                        sb.append(", ");
+                        sb.append(recentVoters);
+                    }
                 }
                 if (cell.documentAttach != null) {
                     if (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -697,6 +702,10 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     if (cell.lastPoll != null && cell.lastPoll.quiz && (button.chosen || button.correct)) {
                         sb.append(", ").append(button.correct ? getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer) : getString("AccDescrQuizIncorrectAnswer", R.string.AccDescrQuizIncorrectAnswer));
                     }
+                }
+                final CharSequence answerVoters = cell.pollRecentVoterNames(button.recentVoters);
+                if (answerVoters != null) {
+                    sb.append(", ").append(answerVoters);
                 }
                 info.setText(sb);
                 info.setEnabled(true);
