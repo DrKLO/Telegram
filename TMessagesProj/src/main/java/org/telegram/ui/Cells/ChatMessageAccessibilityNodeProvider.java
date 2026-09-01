@@ -252,6 +252,15 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         }
                     }
                     sb.append(title);
+                    // the explanation of a quiz is drawn under the poll once its button has
+                    // been pressed. It was never spoken: the button could be pressed, and
+                    // what it opened stayed unread
+                    if (cell.currentMessageObject.expandedExplanation && !TextUtils.isEmpty(cell.poll.currentExplanation)) {
+                        sb.append("\n");
+                        sb.append(getString(R.string.QuizExplanationTitle));
+                        sb.append(", ");
+                        sb.append(cell.poll.currentExplanation);
+                    }
                 }
                 if (cell.documentAttach != null) {
                     if (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -716,8 +725,18 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             } else if (virtualViewId == POLL_HINT) {
                 info.setClassName("android.widget.Button");
                 info.setEnabled(true);
-                info.setText(getString(R.string.AccDescrQuizExplanation));
-                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                // the same button opens the explanation and closes it again, so which of the
+                // two it is now has to be said on the button itself: a name alone leaves no
+                // way of knowing whether pressing it will open or close
+                final boolean explanationOpen = cell.currentMessageObject != null && cell.currentMessageObject.expandedExplanation;
+                info.setText(TextUtils.concat(
+                    getString(R.string.AccDescrQuizExplanation), ", ",
+                    getString(explanationOpen ? R.string.AccDescrExpanded : R.string.AccDescrCollapsed)
+                ));
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_CLICK,
+                    getString(explanationOpen ? R.string.PollCollapse : R.string.PollExpand)
+                ));
                 rect.set(cell.pollHintX - dp(8), cell.pollHintY - dp(8), cell.pollHintX + dp(32), cell.pollHintY + dp(32));
                 info.setBoundsInParent(rect);
                 if (cell.accessibilityVirtualViewBounds.get(virtualViewId) == null || !cell.accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
