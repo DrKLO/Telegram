@@ -21,6 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -30,6 +31,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
@@ -383,6 +385,37 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             return;
         }
         deleteImageView.callOnClick();
+    }
+
+    /**
+     * On a poll the button for removing an option is hidden to make room for the one that attaches
+     * something, and the only way left of removing it is to empty the field and then press back
+     * once more on an empty field. There is nothing on the screen that says so. Put the same
+     * removal on the field as an action, but only where the button itself is not there to be
+     * pressed, so it is not offered twice.
+     */
+    public void setupRemoveAccessibilityAction() {
+        if (deleteImageView == null) {
+            return;
+        }
+        textView.setAccessibilityDelegate(new AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                if (deleteImageView != null && deleteImageView.getVisibility() != VISIBLE && isEnabled()) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_remove_option, LocaleController.getString(R.string.Delete)));
+                }
+            }
+
+            @Override
+            public boolean performAccessibilityAction(View host, int action, Bundle args) {
+                if (action == R.id.acc_action_remove_option) {
+                    callOnDelete();
+                    return true;
+                }
+                return super.performAccessibilityAction(host, action, args);
+            }
+        });
     }
 
     public void setShowNextButton(boolean value) {
