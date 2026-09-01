@@ -6,8 +6,10 @@ import android.graphics.Canvas;
 
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.poll.PollAttachedMedia;
 
 public class PollAttachedMediaGallery extends PollAttachedMedia {
@@ -19,6 +21,11 @@ public class PollAttachedMediaGallery extends PollAttachedMedia {
         this.photoEntry = sendingMediaInfo.originalPhotoEntry;
         imageReceiver.setRoundRadius(dp(7));
         setupImageReceiver(imageReceiver);
+    }
+
+    @Override
+    public CharSequence getAccessibilityName() {
+        return LocaleController.getString(photoEntry != null && photoEntry.isVideo ? R.string.AttachVideo : R.string.AttachPhoto);
     }
 
     private void setupImageReceiver(ImageReceiver imageReceiver) {
