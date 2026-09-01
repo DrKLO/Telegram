@@ -3790,6 +3790,55 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return result;
     }
 
+    private boolean isPollOptionTickable(PollButton button) {
+        return button != null && button.answer != null && lastPoll != null && currentMessageObject != null
+            && lastPoll.multiple_choice && !pollVoted && !pollClosed && !pollResultsPreview
+            && !pollHasVoteRestrictions && !currentMessageObject.scheduled;
+    }
+
+    private boolean isPollOptionTicked(int index, PollButton button) {
+        if (pollCheckBox != null && index >= 0 && index < pollCheckBox.length && pollCheckBox[index] != null) {
+            return pollCheckBox[index].isChecked();
+        }
+        return currentMessageObject != null && button.answer != null && currentMessageObject.checkedVotes.contains(button.answer);
+    }
+
+    private void performPollOptionClick(int index, PollButton button) {
+        if (delegate == null || button == null) {
+            return;
+        }
+        if (button.task != null) {
+            toggleTodoCheck(index, true);
+            return;
+        }
+        if (button.answer == null) {
+            return;
+        }
+        if (currentMessageObject.scheduled) {
+            Toast.makeText(getContext(), getString(currentMessageObject.isTodo() ? R.string.MessageScheduledTodo : R.string.MessageScheduledVote), Toast.LENGTH_LONG).show();
+            return;
+        }
+        ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
+        answers.add(button.answer);
+        if (pollVoted || pollClosed) {
+            delegate.didLongPressPollOption(this, button.answer);
+        } else if (pollHasVoteRestrictions) {
+            delegate.didPressVoteButtons(this, answers, button.count, button.x + dp(50), button.y + namesOffset);
+        } else if (lastPoll != null && lastPoll.multiple_choice) {
+            if (currentMessageObject.checkedVotes.contains(button.answer)) {
+                currentMessageObject.checkedVotes.remove(button.answer);
+            } else {
+                currentMessageObject.checkedVotes.add(button.answer);
+            }
+            if (pollCheckBox != null && index >= 0 && index < pollCheckBox.length && pollCheckBox[index] != null) {
+                pollCheckBox[index].setChecked(currentMessageObject.checkedVotes.contains(button.answer), true);
+            }
+            checkInstantButtonForPoll(true);
+        } else {
+            delegate.didPressVoteButtons(this, answers, -1, 0, 0);
+        }
+    }
+
     public void didPressVoteHint() {
         /*
         if (delegate != null) {
@@ -27640,11 +27689,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     PollButton button = pollButtons.get(buttonIndex);
                     StringBuilder sb = new StringBuilder(button.title.getText());
-                    if (!pollVoted) {
+                    if (isPollOptionTickable(button)) {
+                        // the tick beside an option is state, so it is left to the screen reader
+                        // to say in its own words rather than written into the text
+                        info.setClassName("android.widget.CheckBox");
+                        info.setCheckable(true);
+                        info.setChecked(isPollOptionTicked(buttonIndex, button));
+                    } else if (!pollVoted) {
                         info.setClassName("android.widget.Button");
                     } else {
                         info.setSelected(button.chosen);
                         sb.append(", ").append(button.percent).append("%");
+                        if (button.answer != null) {
+                            // the number beside the bar, which only the bar carried until now
+                            sb.append(", ").append(formatPluralString(lastPoll != null && lastPoll.quiz ? "Answer" : "Vote", button.count));
+                        }
                         if (lastPoll != null && lastPoll.quiz && (button.chosen || button.correct)) {
                             sb.append(", ").append(button.correct ? getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer) : getString("AccDescrQuizIncorrectAnswer", R.string.AccDescrQuizIncorrectAnswer));
                         }
@@ -27652,6 +27711,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setText(sb);
                     info.setEnabled(true);
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    // a long press on an option opens the menu that belongs to it, where who
+                    // added it, quoting it and removing it are. A press held on the screen got
+                    // there; nothing offered it to a screen reader
+                    if (delegate != null && (button.answer != null || button.task != null)) {
+                        info.setLongClickable(true);
+                        info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+                    }
 
                     final int y = button.y + namesOffset;
                     final int w = backgroundWidth - dp(76);
@@ -27899,11 +27965,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             return false;
                         }
                         PollButton button = pollButtons.get(buttonIndex);
-                        if (delegate != null) {
-                            ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
-                            answers.add(button.answer);
-                            delegate.didPressVoteButtons(ChatMessageCell.this, answers, -1, 0, 0);
-                        }
+                        // a press went straight to sending a vote, whatever the option was: an
+                        // option of a poll that takes more than one answer was sent on its own
+                        // instead of being ticked, and one of a poll already voted in or closed
+                        // sent a vote again instead of opening the menu it has. Do what a press
+                        // on the option itself does
+                        performPollOptionClick(buttonIndex, button);
                         sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (virtualViewId == POLL_HINT) {
                         didPressVoteHint();
@@ -27957,6 +28024,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         transcribeButton.onTap();
                     }
                 } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+                    if (virtualViewId >= POLL_BUTTONS_START && virtualViewId < BOT_BUTTONS_START) {
+                        int buttonIndex = virtualViewId - POLL_BUTTONS_START;
+                        if (buttonIndex >= pollButtons.size()) {
+                            return false;
+                        }
+                        PollButton button = pollButtons.get(buttonIndex);
+                        if (delegate != null) {
+                            if (button.task != null) {
+                                delegate.didLongPressToDoButton(ChatMessageCell.this, button.task);
+                            } else if (button.answer != null) {
+                                delegate.didLongPressPollOption(ChatMessageCell.this, button.answer);
+                            }
+                            sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+                        }
+                        return true;
+                    }
                     ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);
                     if (link != null && delegate != null) {
                         delegate.didPressUrl(ChatMessageCell.this, link, true);
