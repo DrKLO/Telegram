@@ -3195,6 +3195,21 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return result;
     }
 
+    // a screen reader reaches the poll through these; the work is done in ChatMessagePoll
+    boolean isPollOptionTickable(PollButton button) {
+        return poll != null && poll.isPollOptionTickable(button);
+    }
+
+    boolean isPollOptionTicked(int index, PollButton button) {
+        return poll != null && poll.isPollOptionTicked(index, button);
+    }
+
+    void performPollButtonPress(int index) {
+        if (poll != null) {
+            poll.performPollButtonPress(index);
+        }
+    }
+
     void setInstantButtonPressed(boolean pressed) {
         if (instantButtonBounce == null) {
             instantButtonBounce = new ButtonBounce(this);
