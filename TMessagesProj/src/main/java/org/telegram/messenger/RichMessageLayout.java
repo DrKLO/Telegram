@@ -806,6 +806,60 @@ public class RichMessageLayout {
         block.listChecked = checked;
     }
 
+    // the code and the runs of monospace text of the message, in the order they are read, for a
+    // screen reader to copy: a tap on either copies it, and a screen reader has no such tap
+    public ArrayList<CharSequence> getAccessibilityCopyableTexts() {
+        final ArrayList<CharSequence> out = new ArrayList<>();
+        for (RichBlock block : blocks) {
+            if (!block.isVisible()) {
+                continue;
+            }
+            if (block instanceof RichPreformattedBlock) {
+                final String plain = ((RichPreformattedBlock) block).plain;
+                if (!TextUtils.isEmpty(plain)) {
+                    out.add(plain);
+                }
+                continue;
+            }
+            final TextSelectionHelper.TextLayoutBlock[] texts = block.getText();
+            if (texts == null) {
+                continue;
+            }
+            for (TextSelectionHelper.TextLayoutBlock t : texts) {
+                if (!(t instanceof Text) || ((Text) t).layout == null || !(((Text) t).layout.getText() instanceof Spanned)) {
+                    continue;
+                }
+                final Spanned spanned = (Spanned) ((Text) t).layout.getText();
+                final StyleSpan[] spans = spanned.getSpans(0, spanned.length(), StyleSpan.class);
+                Arrays.sort(spans, (a, b) -> spanned.getSpanStart(a) - spanned.getSpanStart(b));
+                int runStart = -1, runEnd = -1;
+                for (StyleSpan span : spans) {
+                    if (!hasFlag(span.flags, TEXT_FLAG_MONO)) {
+                        continue;
+                    }
+                    final int s = spanned.getSpanStart(span), e = spanned.getSpanEnd(span);
+                    if (s < 0 || e <= s) {
+                        continue;
+                    }
+                    // one run of monospace text can be held by several spans side by side
+                    if (runStart >= 0 && s <= runEnd) {
+                        runEnd = Math.max(runEnd, e);
+                    } else {
+                        if (runStart >= 0) {
+                            out.add(spanned.subSequence(runStart, runEnd).toString());
+                        }
+                        runStart = s;
+                        runEnd = e;
+                    }
+                }
+                if (runStart >= 0) {
+                    out.add(spanned.subSequence(runStart, runEnd).toString());
+                }
+            }
+        }
+        return out;
+    }
+
     public static int setBlockFlags(int textFlags, int blockFlags) {
         if (blockFlags == 0) return textFlags;
         return (textFlags &~ TEXT_FLAG_BLOCKS) | blockFlags;
