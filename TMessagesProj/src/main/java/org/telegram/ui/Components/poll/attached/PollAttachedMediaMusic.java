@@ -9,6 +9,8 @@ import android.view.View;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.R;
+import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.MediaActionDrawable;
@@ -39,6 +41,11 @@ public class PollAttachedMediaMusic extends PollAttachedMedia {
         }
 
         radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
+    }
+
+    @Override
+    public CharSequence getAccessibilityName() {
+        return LocaleController.getString(R.string.AttachMusic);
     }
 
     @Override

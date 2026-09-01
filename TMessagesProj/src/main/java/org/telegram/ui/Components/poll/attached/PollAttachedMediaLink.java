@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 
@@ -24,6 +25,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -58,6 +60,12 @@ public class PollAttachedMediaLink extends PollAttachedMedia implements Drawable
 
     public TLRPC.WebPage getWebPage() {
         return webPage;
+    }
+
+    @Override
+    public CharSequence getAccessibilityName() {
+        // the address itself is what tells one link from another
+        return TextUtils.isEmpty(url) ? LocaleController.getString(R.string.LinkPreview) : url;
     }
 
     public void setWebPage(TLRPC.WebPage webPage, boolean progress, boolean animated) {
