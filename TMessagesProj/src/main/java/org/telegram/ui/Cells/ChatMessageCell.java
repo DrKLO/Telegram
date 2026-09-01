@@ -5451,6 +5451,53 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
 
+    CharSequence pollMediaDescription(TLRPC.MessageMedia media) {
+        if (media == null) {
+            return null;
+        }
+        if (media instanceof TLRPC.TL_messageMediaPhoto) {
+            return getString(R.string.AttachPhoto);
+        }
+        if (media instanceof TLRPC.TL_messageMediaGeo || media instanceof TLRPC.TL_messageMediaGeoLive || media instanceof TLRPC.TL_messageMediaVenue) {
+            return getString(R.string.AttachLocation);
+        }
+        if (media instanceof TLRPC.TL_messageMediaWebPage) {
+            return getString(R.string.LinkPreview);
+        }
+        final TLRPC.Document document = media.document;
+        if (document != null) {
+            if (MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true)) {
+                return getString(R.string.AttachSticker);
+            }
+            if (MessageObject.isGifDocument(document)) {
+                return getString(R.string.AttachGif);
+            }
+            if (MessageObject.isVideoDocument(document)) {
+                return getString(R.string.AttachVideo);
+            }
+            if (MessageObject.isMusicDocument(document)) {
+                return getString(R.string.AttachMusic);
+            }
+            if (MessageObject.isVoiceDocument(document)) {
+                return getString(R.string.AttachAudio);
+            }
+            final String name = FileLoader.getDocumentFileName(document);
+            if (!TextUtils.isEmpty(name)) {
+                return name;
+            }
+        }
+        return getString(R.string.AttachDocument);
+    }
+
+    boolean hasPollDescriptionMedia() {
+        return poll != null && poll.contentDrawable != null && poll.contentDrawable.isHasMedia() && poll.contentDrawable.getMedia() != null;
+    }
+
+    boolean hasPollExplanationMedia() {
+        return currentMessageObject != null && currentMessageObject.expandedExplanation
+            && poll != null && poll.explanationDrawable != null && poll.explanationDrawable.isHasMedia() && poll.explanationDrawable.getMedia() != null;
+    }
+
     void didClickedPollImage(ChatMessageCell cell, ImageReceiver imageReceiver, TLRPC.PollAnswer answer, TLRPC.MessageMedia media, float x, float y, int unshuffledIndex) {
         /*if (unshuffledIndex == PollAttachedMediaPack.INDEX_DESCRIPTION) {
             if (pollContentDrawable != null && pollContentDrawable.getMedia() != null && pollContentDrawable.getMedia().document != null && (pollContentDrawable.isFile() || pollContentDrawable.isMusic())) {
@@ -23152,6 +23199,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else {
                     delegate.didPressOther(this, otherX, otherY);
                 }
+            }
+        } else if (action == R.id.acc_action_open_poll_media) {
+            if (hasPollDescriptionMedia()) {
+                final Rect bounds = poll.contentDrawable.getBounds();
+                didClickedPollImage(this, poll.contentDrawable.getImageReceiver(), null, poll.contentDrawable.getMedia(), bounds.centerX(), bounds.centerY(), PollAttachedMediaPack.INDEX_DESCRIPTION);
+            }
+        } else if (action == R.id.acc_action_open_poll_explanation_media) {
+            if (hasPollExplanationMedia()) {
+                final Rect bounds = poll.explanationDrawable.getBounds();
+                didClickedPollImage(this, poll.explanationDrawable.getImageReceiver(), null, poll.explanationDrawable.getMedia(), bounds.centerX(), bounds.centerY(), PollAttachedMediaPack.INDEX_EXPLANATION);
             }
         } else if (action == R.id.acc_action_open_forwarded_origin) {
             if (delegate != null) {

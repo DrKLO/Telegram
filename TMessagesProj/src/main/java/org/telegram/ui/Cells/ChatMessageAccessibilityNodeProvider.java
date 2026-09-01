@@ -252,6 +252,17 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         }
                     }
                     sb.append(title);
+                    // a poll can carry a picture, a sticker, a place, a piece of music or a
+                    // file of its own, and its explanation can carry another. Both are drawn
+                    // on the card and neither was ever spoken
+                    if (cell.hasPollDescriptionMedia()) {
+                        sb.append(", ");
+                        sb.append(cell.pollMediaDescription(cell.poll.contentDrawable.getMedia()));
+                    }
+                    if (cell.hasPollExplanationMedia()) {
+                        sb.append(", ");
+                        sb.append(formatString(R.string.AccDescrPollExplanationMedia, cell.pollMediaDescription(cell.poll.explanationDrawable.getMedia())));
+                    }
                 }
                 if (cell.documentAttach != null) {
                     if (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -519,6 +530,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.forwardedNameLayout[0] != null && cell.forwardedNameLayout[1] != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
             }
+            // opening what a poll carries is a thing to do with the message, so it is an
+            // action rather than another stop to swipe past on every poll
+            if (cell.hasPollDescriptionMedia()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                    R.id.acc_action_open_poll_media,
+                    TextUtils.concat(getString(R.string.Open), ", ", cell.pollMediaDescription(cell.poll.contentDrawable.getMedia()))
+                ));
+            }
+            if (cell.hasPollExplanationMedia()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                    R.id.acc_action_open_poll_explanation_media,
+                    TextUtils.concat(getString(R.string.Open), ", ", formatString(R.string.AccDescrPollExplanationMedia, cell.pollMediaDescription(cell.poll.explanationDrawable.getMedia())))
+                ));
+            }
             if (cell.drawSelectionBackground || cell.getBackground() != null) {
                 info.setSelected(true);
             }
@@ -689,6 +714,11 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 }
                 ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
                 StringBuilder sb = new StringBuilder(button.title.getText());
+                final boolean answerHasMedia = button.answer != null && button.answer.media != null
+                    && button.pollButtonDrawable != null && button.pollButtonDrawable.isHasMedia();
+                if (answerHasMedia) {
+                    sb.append(", ").append(cell.pollMediaDescription(button.answer.media));
+                }
                 if (!cell.pollVoted) {
                     info.setClassName("android.widget.Button");
                 } else {
@@ -701,6 +731,14 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setText(sb);
                 info.setEnabled(true);
                 info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                if (answerHasMedia) {
+                    // the picture of an answer opens on its own; a press on the answer votes.
+                    // The two are kept apart here as they are on the screen
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                        R.id.acc_action_open_poll_media,
+                        TextUtils.concat(getString(R.string.Open), ", ", cell.pollMediaDescription(button.answer.media))
+                    ));
+                }
 
                 final int y = button.y + cell.namesOffset;
                 final int w = cell.backgroundWidth - dp(76);
@@ -1004,6 +1042,18 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                 } else if (virtualViewId == TRANSCRIBE && cell.transcribeButton != null) {
                     cell.transcribeButton.onTap();
+                }
+            } else if (action == R.id.acc_action_open_poll_media) {
+                if (virtualViewId >= POLL_BUTTONS_START && virtualViewId < BOT_BUTTONS_START) {
+                    int buttonIndex = virtualViewId - POLL_BUTTONS_START;
+                    if (buttonIndex >= cell.pollButtons.size()) {
+                        return false;
+                    }
+                    ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
+                    if (button.answer != null && button.answer.media != null && button.pollButtonDrawable != null) {
+                        final Rect bounds = button.pollButtonDrawable.getBounds();
+                        cell.didClickedPollImage(cell, button.pollButtonDrawable.getImageReceiver(), button.answer, button.answer.media, bounds.centerX(), bounds.centerY(), button.answer.unshuffled_index);
+                    }
                 }
             } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
                 ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);
