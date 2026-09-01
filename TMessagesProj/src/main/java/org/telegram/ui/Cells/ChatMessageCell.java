@@ -3800,6 +3800,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (delegate != null) {
                 delegate.forceUpdate(this, true);
             }
+            // the explanation is part of what the message says, so opening or closing it leaves a
+            // screen reader on a message whose text is no longer the one it read
+            if (AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+                sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+            }
         }
     }
 
@@ -27201,6 +27206,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         sb.append(title);
+                        // the explanation of a quiz is drawn under the poll once its button has
+                        // been pressed. It was never spoken: the button could be pressed, and
+                        // what it opened stayed unread
+                        if (currentMessageObject.expandedExplanation && !TextUtils.isEmpty(currentExplanation)) {
+                            sb.append("\n");
+                            sb.append(getString(R.string.QuizExplanationTitle));
+                            sb.append(", ");
+                            sb.append(currentExplanation);
+                        }
                     }
                     if (documentAttach != null) {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
@@ -27665,8 +27679,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 } else if (virtualViewId == POLL_HINT) {
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
-                    info.setText(getString(R.string.AccDescrQuizExplanation));
-                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    // the same button opens the explanation and closes it again, so which of the
+                    // two it is now has to be said on the button itself: a name alone leaves no
+                    // way of knowing whether pressing it will open or close
+                    final boolean explanationOpen = currentMessageObject != null && currentMessageObject.expandedExplanation;
+                    info.setText(TextUtils.concat(
+                        getString(R.string.AccDescrQuizExplanation), ", ",
+                        getString(explanationOpen ? R.string.AccDescrExpanded : R.string.AccDescrCollapsed)
+                    ));
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_CLICK,
+                        getString(explanationOpen ? R.string.PollCollapse : R.string.PollExpand)
+                    ));
                     rect.set(pollHintX - dp(8), pollHintY - dp(8), pollHintX + dp(32), pollHintY + dp(32));
                     info.setBoundsInParent(rect);
                     if (accessibilityVirtualViewBounds.get(virtualViewId) == null || !accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
