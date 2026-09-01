@@ -1072,12 +1072,14 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         }
         if (left <= max - max * 0.7f) {
             textCell.setText2(String.format("%d", left));
+            textCell.setAccessibilityCharactersLeft(left);
             SimpleTextView textView = textCell.getTextView2();
             int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
             ThemeBind.textColor(textView, key);
             textView.setTag(key);
         } else {
             textCell.setText2("");
+            textCell.setAccessibilityCharactersLeft(-1);
         }
     }
 
@@ -1625,6 +1627,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 textCell.textView.setEnabled(enabled);
                 ThemeBind.textColor(textCell.textView, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, enabled ? 1.0f : 0.6f), getResourceProvider());
                 textCell.setTextAndHint(answers[index], getString(todo ? R.string.TodoTaskPlaceholder : R.string.OptionHint), true);
+                // every item is drawn with the same hint, so one reads exactly like the next
+                textCell.setFieldLabel(LocaleController.formatString(todo ? R.string.AccDescrTodoTaskNumber : R.string.AccDescrPollOptionNumber, index + 1, answersCount));
                 textCell.setTag(null);
                 if (textCell.deleteImageView != null) {
                     textCell.deleteImageView.setVisibility(enabled ? View.VISIBLE : View.GONE);
