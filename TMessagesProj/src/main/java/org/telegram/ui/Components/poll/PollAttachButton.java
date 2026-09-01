@@ -8,10 +8,13 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -74,6 +77,22 @@ public class PollAttachButton extends View {
         attachedMedia = media;
         if (isAttachedToWindow() && attachedMedia != null) {
             attachedMedia.attach(this);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        // this is a bare view drawn by hand, so nothing about it was ever spoken: neither what it
+        // does, nor that something is already attached to it, nor what that something is. Once
+        // there is media the icon is replaced by a thumbnail of it, and a press then goes to
+        // replacing it rather than to adding
+        info.setClassName("android.widget.Button");
+        final CharSequence name = attachedMedia == null ? null : attachedMedia.getAccessibilityName();
+        if (TextUtils.isEmpty(name)) {
+            info.setContentDescription(LocaleController.getString(R.string.AccDescrAttachButton));
+        } else {
+            info.setContentDescription(TextUtils.concat(LocaleController.getString(R.string.Change), ", ", name));
         }
     }
 

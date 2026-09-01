@@ -6,6 +6,8 @@ import android.view.View;
 import androidx.annotation.CallSuper;
 
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 
 public abstract class PollAttachedMedia {
     protected final ImageReceiver imageReceiver = new ImageReceiver();
@@ -23,5 +25,10 @@ public abstract class PollAttachedMedia {
 
     protected void draw(Canvas canvas, int w, int h) {
 
+    }
+
+    /** What this is, in one word, for a screen reader that cannot see the thumbnail. */
+    public CharSequence getAccessibilityName() {
+        return LocaleController.getString(R.string.AttachDocument);
     }
 }
