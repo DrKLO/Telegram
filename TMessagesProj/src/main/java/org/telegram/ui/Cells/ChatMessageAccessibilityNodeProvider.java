@@ -206,6 +206,15 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         }
                     }
                     sb.append(messageText);
+                    // a game emoji is thrown and lands on something, and what it landed on is
+                    // in the message from the moment it arrives: the animation only plays it
+                    // out. None of it was said, so a screen reader was told a game had been
+                    // sent and never how it went
+                    final CharSequence outcome = cell.diceAccessibilityOutcome();
+                    if (!TextUtils.isEmpty(outcome)) {
+                        sb.append(", ");
+                        sb.append(outcome);
+                    }
                 }
                 if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
                     if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {
