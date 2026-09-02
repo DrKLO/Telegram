@@ -6008,6 +6008,111 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private static final int SLOT_MACHINE_CODE_POINT = 0x1F3B0;
+    private static final int DARTS_CODE_POINT = 0x1F3AF;
+    private static final int BASKETBALL_CODE_POINT = 0x1F3C0;
+    private static final int FOOTBALL_CODE_POINT = 0x26BD;
+    private static final int BOWLING_CODE_POINT = 0x1F3B3;
+
+    /**
+     * What a thrown game emoji landed on. The number is the whole of it for most of them; a slot
+     * machine keeps three reels packed into the one number and is read out as the three of them.
+     */
+    private CharSequence diceAccessibilityOutcome() {
+        if (currentMessageObject == null || !currentMessageObject.isDice()) {
+            return null;
+        }
+        final int value = currentMessageObject.getDiceValue();
+        if (value <= 0) {
+            // still on its way: the server has not said yet how it landed
+            return null;
+        }
+        final String emoji = currentMessageObject.getDiceEmoji();
+        if (isDiceEmoji(emoji, SLOT_MACHINE_CODE_POINT)) {
+            return slotAccessibilityOutcome(value);
+        }
+        final StringBuilder sb = new StringBuilder();
+        sb.append(value);
+        // the number on its own means nothing for a game that is thrown at something: say what
+        // became of the throw as well, in the words the game is played in
+        final int outcome = diceAccessibilityOutcomeWord(emoji, value);
+        if (outcome != 0) {
+            sb.append(", ").append(getString(outcome));
+            return sb;
+        }
+        // for a game this does not know, whether the throw won is the server's to say, and it
+        // says it for the ones it knows about
+        final MessagesController.DiceFrameSuccess success = MessagesController.getInstance(currentAccount).diceSuccess.get(emoji);
+        if (success != null && success.num == value) {
+            sb.append(", ").append(getString(R.string.AccDescrDiceWin));
+        }
+        return sb;
+    }
+
+    /**
+     * What became of a throw, where the game says so. A die is only a die: it lands on a number
+     * and there is nothing to win, which is why the app itself marks no roll of it a success. The
+     * rest are thrown at something and either got there or did not.
+     */
+    private static int diceAccessibilityOutcomeWord(String emoji, int value) {
+        if (isDiceEmoji(emoji, DARTS_CODE_POINT)) {
+            if (value == 6) {
+                return R.string.AccDescrDiceBullseye;
+            }
+            return value == 1 ? R.string.AccDescrDiceMissed : R.string.AccDescrDiceOnTarget;
+        }
+        if (isDiceEmoji(emoji, BASKETBALL_CODE_POINT)) {
+            return value >= 4 ? R.string.AccDescrDiceScored : R.string.AccDescrDiceMissed;
+        }
+        if (isDiceEmoji(emoji, FOOTBALL_CODE_POINT)) {
+            return value >= 3 ? R.string.AccDescrDiceGoal : R.string.AccDescrDiceMissed;
+        }
+        if (isDiceEmoji(emoji, BOWLING_CODE_POINT)) {
+            if (value == 6) {
+                return R.string.AccDescrDiceStrike;
+            }
+            // how many pins the ones between knock down is not written down anywhere the app can
+            // read, so only the two ends are named and the number speaks for the rest
+            return value == 1 ? R.string.AccDescrDiceMissed : 0;
+        }
+        return 0;
+    }
+
+    private static boolean isDiceEmoji(String emoji, int codePoint) {
+        return new String(Character.toChars(codePoint)).equals(emoji);
+    }
+
+    // the three reels of a slot machine are packed into the one number, two bits to a reel, the
+    // same way they are taken apart to be drawn
+    private CharSequence slotAccessibilityOutcome(int value) {
+        final int raw = value - 1;
+        final int[] reels = { raw & 3, raw >> 2 & 3, raw >> 4 & 3 };
+        final StringBuilder sb = new StringBuilder();
+        for (int reel : reels) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(getString(slotAccessibilityReel(reel)));
+        }
+        if (reels[0] == 3 && reels[1] == 3 && reels[2] == 3) {
+            sb.append(", ").append(getString(R.string.AccDescrSlotJackpot));
+        }
+        return sb;
+    }
+
+    private static int slotAccessibilityReel(int reel) {
+        switch (reel) {
+            case 0:
+                return R.string.AccDescrSlotBar;
+            case 1:
+                return R.string.AccDescrSlotBerries;
+            case 2:
+                return R.string.AccDescrSlotLemon;
+            default:
+                return R.string.AccDescrSlotSeven;
+        }
+    }
+
     private void didClickedImage() {
         if (currentMessageObject.hasMediaSpoilers() && !currentMessageObject.needDrawBluredPreview() && !currentMessageObject.isMediaSpoilersRevealed) {
             if (delegate != null && currentMessageObject.isSensitive()) {
@@ -27157,6 +27262,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         sb.append(messageText);
+                        // a game emoji is thrown and lands on something, and what it landed on is
+                        // in the message from the moment it arrives: the animation only plays it
+                        // out. None of it was said, so a screen reader was told a game had been
+                        // sent and never how it went
+                        final CharSequence outcome = diceAccessibilityOutcome();
+                        if (!TextUtils.isEmpty(outcome)) {
+                            sb.append(", ");
+                            sb.append(outcome);
+                        }
                     }
                     if (documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO)) {
                         if (buttonState == 1 && loadingProgressLayout != null) {
