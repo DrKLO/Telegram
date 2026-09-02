@@ -5580,6 +5580,44 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(". ");
             }
         }
+        // what the row shows in place of the last message: somebody typing, a draft left
+        // unfinished, or the topics of a forum. All three are built by the cell and drawn, and all
+        // three were passed over here, because this text is put together again from the message
+        // rather than taken from what is on the screen. So a chat somebody was typing in, a chat
+        // holding a draft, and a forum all read as their last message and nothing else
+        final CharSequence typing = printingStringType >= 0 && typingLayout != null ? typingLayout.getText() : null;
+        if (!TextUtils.isEmpty(typing)) {
+            sb.append(typing);
+            sb.append(". ");
+            event.setContentDescription(sb);
+            setContentDescription(sb);
+            return;
+        }
+        if (draftVoice || draftMessage != null) {
+            final CharSequence draft = messageLayout == null ? null : messageLayout.getText();
+            sb.append(getString(R.string.Draft));
+            if (!TextUtils.isEmpty(draft) && !TextUtils.equals(draft, getString(R.string.Draft))) {
+                sb.append(", ");
+                sb.append(draft);
+            }
+            sb.append(". ");
+            event.setContentDescription(sb);
+            setContentDescription(sb);
+            return;
+        }
+        if (isForumCell() && messageLayout != null && !TextUtils.isEmpty(messageLayout.getText())) {
+            // a forum is drawn on two lines: the topics that have something new in them, and under
+            // them the message that is newest of all
+            sb.append(messageLayout.getText());
+            sb.append(". ");
+            if (buttonLayout != null && !TextUtils.isEmpty(buttonLayout.getText())) {
+                sb.append(buttonLayout.getText());
+                sb.append(". ");
+            }
+            event.setContentDescription(sb);
+            setContentDescription(sb);
+            return;
+        }
         if (encryptedChat == null) {
             StringBuilder messageString = new StringBuilder();
             messageString.append(message.messageText);
