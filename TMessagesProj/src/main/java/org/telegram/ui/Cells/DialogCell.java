@@ -2978,6 +2978,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         }
         updateThumbsPosition();
+        updateAccessibilityText();
     }
 
     public void setTitleOverride(String s) {
@@ -5540,6 +5541,29 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     @Override
     public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
         super.onPopulateAccessibilityEvent(event);
+        final CharSequence text = buildAccessibilityText();
+        event.setContentDescription(text);
+        setContentDescription(text);
+    }
+
+    /**
+     * The text of a row is kept on the row itself as well as put on the event, because a screen
+     * reader handed nothing but an event stops at the first symbol it meets and says no more.
+     *
+     * What is kept has to be kept true. The rows of the list are used again for other chats as it
+     * is scrolled and as folders are switched, and this was only ever called while an event was
+     * being filled in, so a row used again for another chat went on carrying the text of the one
+     * before it. A reader that looks at the row before the event reaches it reads that older text
+     * first, breaks off partway when the right one arrives, and reads the right one after.
+     */
+    private void updateAccessibilityText() {
+        if (!AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        setContentDescription(buildAccessibilityText());
+    }
+
+    private CharSequence buildAccessibilityText() {
         StringBuilder sb = new StringBuilder();
         if (titleOverride != null) {
             sb.append(titleOverride);
@@ -5610,9 +5634,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             sb.append(". ");
         }
         if (message == null || currentDialogFolderId != 0) {
-            event.setContentDescription(sb);
-            setContentDescription(sb);
-            return;
+            return sb;
         }
         int lastDate = lastMessageDate;
         if (lastMessageDate == 0) {
@@ -5658,8 +5680,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(messageString);
             }
         }
-        event.setContentDescription(sb);
-        setContentDescription(sb);
+        return sb;
     }
 
     private MessageObject getCaptionMessage() {
