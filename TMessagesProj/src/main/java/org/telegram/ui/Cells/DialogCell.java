@@ -5485,6 +5485,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
     }
 
+    // only ever looked up in what has already been fetched: this runs while a node is being
+    // filled in, which is no place to wait on the network, and a status that is drawn is there
+    private CharSequence emojiStatusAccessibilityName() {
+        Long documentId = null;
+        if (user != null) {
+            documentId = UserObject.getEmojiStatusDocumentId(user);
+        } else if (chat != null && DialogObject.getEmojiStatusDocumentId(chat.emoji_status) != 0) {
+            documentId = DialogObject.getEmojiStatusDocumentId(chat.emoji_status);
+        }
+        if (documentId == null || documentId == 0) {
+            return null;
+        }
+        final String emoticon = MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(currentAccount, documentId), null);
+        return TextUtils.isEmpty(emoticon) ? null : emoticon;
+    }
+
     @Override
     public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
         super.onPopulateAccessibilityEvent(event);
@@ -5533,16 +5549,65 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(". ");
             }
         }
+        // the badges drawn beside the name. A warning that a chat is a scam or a fake is the one
+        // that matters most of all, and none of them were ever said
+        if (drawScam == 1) {
+            sb.append(getString(R.string.ScamMessage));
+            sb.append(". ");
+        } else if (drawScam == 2) {
+            sb.append(getString(R.string.FakeMessage));
+            sb.append(". ");
+        }
         if (drawVerified) {
             sb.append(getString(R.string.AccDescrVerified));
+            sb.append(". ");
+        }
+        if (drawBotVerified) {
+            sb.append(getString(R.string.AccDescrChatBotVerified));
+            sb.append(". ");
+        }
+        if (drawPremium) {
+            // an account that chose a status wears it in place of the star, and which one it chose
+            // is the whole of what is drawn there. A custom emoji is a drawing of a plain one, and
+            // that is what there is to read of it
+            final CharSequence status = emojiStatusAccessibilityName();
+            sb.append(TextUtils.isEmpty(status) ? getString(R.string.AccDescrPremium) : status);
+            sb.append(". ");
+        }
+        if (isHiddenInCommunity) {
+            sb.append(getString(R.string.AccDescrChatHiddenInCommunity));
             sb.append(". ");
         }
         if (dialogMuted) {
             sb.append(getString(R.string.AccDescrNotificationsMuted));
             sb.append(". ");
+        } else if (drawUnmute) {
+            // a topic left with its sound on inside a chat that is silent draws a mark of its own
+            sb.append(getString(R.string.AccDescrNotificationsUnmuted));
+            sb.append(". ");
         }
         if (isOnline()) {
             sb.append(getString(R.string.AccDescrUserOnline));
+            sb.append(". ");
+        }
+        if (hasCall) {
+            sb.append(getString(R.string.AccDescrChatVoiceChatActive));
+            sb.append(". ");
+        }
+        // a ring is drawn around the picture where there is a story, and it is drawn in colour
+        // while the story has not been watched. There is an action for opening one, but nothing
+        // said there was one waiting, which is the whole of what the ring is for
+        if (currentDialogId != 0 && !isTopic && !isDialogFolder()
+            && MessagesController.getInstance(currentAccount).getStoriesController().hasUnreadStories(currentDialogId)) {
+            sb.append(getString(R.string.AccDescrChatUnreadStories));
+            sb.append(". ");
+        }
+        if (showTtl && ttlPeriod > 0) {
+            sb.append(LocaleController.formatString(R.string.AutoDeleteAfter, LocaleController.formatTTLString(ttlPeriod)));
+            sb.append(". ");
+        }
+        if (getIsPinned()) {
+            sb.append(getString(R.string.AccDescrChatPinned));
             sb.append(". ");
         }
         if (unreadCount > 0) {
@@ -5557,7 +5622,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             sb.append(getString(R.string.AccDescrMentionReaction));
             sb.append(". ");
         }
+        if (drawPollVotesMention) {
+            sb.append(getString(R.string.AccDescrChatUnreadPollVotes));
+            sb.append(". ");
+        }
         if (message == null || currentDialogFolderId != 0) {
+            appendFolders(sb);
             event.setContentDescription(sb);
             setContentDescription(sb);
             return;
@@ -5606,8 +5676,23 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(messageString);
             }
         }
+        appendFolders(sb);
         event.setContentDescription(sb);
         setContentDescription(sb);
+    }
+
+    // which folders a chat is in is the last thing about it, and it is said last, after the
+    // message, with a word in front so it is not taken for part of what was said
+    private void appendFolders(StringBuilder sb) {
+        if (!hasTags()) {
+            return;
+        }
+        final CharSequence folders = tags.getAccessibilityText();
+        if (TextUtils.isEmpty(folders)) {
+            return;
+        }
+        sb.append(LocaleController.formatString(R.string.AccDescrChatInFolders, folders));
+        sb.append(". ");
     }
 
     private MessageObject getCaptionMessage() {
