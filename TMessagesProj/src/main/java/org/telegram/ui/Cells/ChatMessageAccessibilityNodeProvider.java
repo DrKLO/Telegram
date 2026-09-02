@@ -957,7 +957,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 } else if (virtualViewId == POLL_HINT) {
                     cell.didPressVoteHint();
                 } else if (virtualViewId == INSTANT_VIEW) {
-                    if (cell.delegate != null) {
+                    if (cell.lastPoll != null) {
+                        cell.performPollInstantButton();
+                    } else if (cell.delegate != null) {
                         cell.delegate.didPressInstantButton(cell, cell.drawInstantViewType);
                     }
                 } else if (virtualViewId == CONTACT) {
