@@ -3790,6 +3790,46 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return result;
     }
 
+    /**
+     * What a press on the button under a poll does. Most of what it can be is worked out here and
+     * nowhere else: sending the answers that were ticked, looking at the results without voting,
+     * and going back from them. Only two of the things it can be are passed on to the chat, so an
+     * action that passed the press on and nothing more did nothing at all for the rest — the very
+     * button that sends a poll that takes more than one answer among them.
+     */
+    private void performPollInstantButton() {
+        if (delegate == null || currentMessageObject == null) {
+            return;
+        }
+        if (currentMessageObject.scheduled) {
+            Toast.makeText(getContext(), getString(R.string.MessageScheduledVoteResults), Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (pollInInputNewOption) {
+            delegate.didPressInstantButton(this, INSTANT_BUTTON_TYPE_ADD_OPTION);
+        } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VIEW_VOTES_PUBLIC_LIST) {
+            delegate.didPressInstantButton(this, INSTANT_BUTTON_TYPE_VIEW_VOTES_PUBLIC_LIST);
+        } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VOTE_MULTISELECT) {
+            if (!currentMessageObject.checkedVotes.isEmpty()) {
+                pollVoteInProgressNum = -1;
+                pollVoteInProgress = true;
+                vibrateOnPollVote = true;
+                voteCurrentProgressTime = 0.0f;
+                firstCircleLength = true;
+                voteCurrentCircleLength = 360;
+                voteRisingCircleLength = false;
+            }
+            delegate.didPressVoteButtons(this, currentMessageObject.checkedVotes, -1, 0, namesOffset);
+        } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VIEW_VOTES_AS_AUTHOR_LIST) {
+            currentMessageObject.forceShowPollResults = true;
+            pollVoteInProgress = true;
+            delegate.didTogglePollPreview(this);
+        } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_BACK_TO_VOTE) {
+            currentMessageObject.forceShowPollResults = false;
+            delegate.didTogglePollPreview(this);
+        }
+    }
+
     public void didPressVoteHint() {
         /*
         if (delegate != null) {
@@ -3830,33 +3870,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (instantPressed) {
                 if (delegate != null) {
                     if (lastPoll != null) {
-                        if (currentMessageObject.scheduled) {
-                            Toast.makeText(getContext(), getString(R.string.MessageScheduledVoteResults), Toast.LENGTH_LONG).show();
-                        } else {
-                            if (pollInInputNewOption) {
-                                delegate.didPressInstantButton(this, ChatMessageCell.INSTANT_BUTTON_TYPE_ADD_OPTION);
-                            } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VIEW_VOTES_PUBLIC_LIST) {
-                                delegate.didPressInstantButton(this, INSTANT_BUTTON_TYPE_VIEW_VOTES_PUBLIC_LIST);
-                            } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VOTE_MULTISELECT) {
-                                if (!currentMessageObject.checkedVotes.isEmpty()) {
-                                    pollVoteInProgressNum = -1;
-                                    pollVoteInProgress = true;
-                                    vibrateOnPollVote = true;
-                                    voteCurrentProgressTime = 0.0f;
-                                    firstCircleLength = true;
-                                    voteCurrentCircleLength = 360;
-                                    voteRisingCircleLength = false;
-                                }
-                                delegate.didPressVoteButtons(this, currentMessageObject.checkedVotes, -1, 0, namesOffset);
-                            } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_VIEW_VOTES_AS_AUTHOR_LIST) {
-                                currentMessageObject.forceShowPollResults = true;
-                                pollVoteInProgress = true;
-                                delegate.didTogglePollPreview(this);
-                            } else if (drawInstantViewType == INSTANT_BUTTON_TYPE_BACK_TO_VOTE) {
-                                currentMessageObject.forceShowPollResults = false;
-                                delegate.didTogglePollPreview(this);
-                            }
-                        }
+                        performPollInstantButton();
                     } else {
                         delegate.didPressInstantButton(this, drawInstantViewType);
                     }
@@ -27908,7 +27922,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else if (virtualViewId == POLL_HINT) {
                         didPressVoteHint();
                     } else if (virtualViewId == INSTANT_VIEW) {
-                        if (delegate != null) {
+                        if (lastPoll != null) {
+                            performPollInstantButton();
+                        } else if (delegate != null) {
                             delegate.didPressInstantButton(ChatMessageCell.this, drawInstantViewType);
                         }
                     } else if (virtualViewId == CONTACT) {
