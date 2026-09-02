@@ -179,6 +179,53 @@ public class GiveawayMessageCell {
         textDividerPaint.setTextAlign(Paint.Align.CENTER);
     }
 
+
+    /** Everything the card holds, in the order it is drawn. */
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        appendLayout(sb, titleLayout);
+        appendLayout(sb, additionPrizeLayout);
+        appendLayout(sb, topLayout);
+        for (int a = 0; a < chatTitles.length; a++) {
+            if (!TextUtils.isEmpty(chatTitles[a])) {
+                append(sb, chatTitles[a]);
+            }
+        }
+        appendLayout(sb, countriesLayout);
+        appendLayout(sb, bottomLayout);
+        return sb;
+    }
+
+    private static void appendLayout(StringBuilder sb, StaticLayout layout) {
+        if (layout != null) {
+            append(sb, layout.getText());
+        }
+    }
+
+    private static void append(StringBuilder sb, CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        // the card is laid out in lines, and a line break is nothing to say
+        sb.append(AndroidUtilities.replaceNewLines(text));
+    }
+
+    /** How many of the chats it names can be opened, and what each of them is called. */
+    public int getChatCount() {
+        return chats == null ? 0 : chats.length;
+    }
+
+    public CharSequence getChatTitle(int index) {
+        return chatTitles != null && index >= 0 && index < chatTitles.length ? chatTitles[index] : null;
+    }
+
+    public Rect getChatBounds(int index) {
+        return clickRect != null && index >= 0 && index < clickRect.length ? clickRect[index] : null;
+    }
+
     public boolean checkMotionEvent(MotionEvent event) {
         if (messageObject == null || !messageObject.isGiveaway()) {
             return false;
