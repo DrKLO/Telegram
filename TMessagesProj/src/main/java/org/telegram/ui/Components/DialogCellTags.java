@@ -172,6 +172,22 @@ public class DialogCellTags {
         return changed;
     }
 
+    /** The folders a chat is in, as they are written on the row. */
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        for (int a = 0; a < tags.size(); a++) {
+            final Tag tag = tags.get(a);
+            if (tag == null || tag.text == null || TextUtils.isEmpty(tag.text.getText())) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(tag.text.getText());
+        }
+        return sb;
+    }
+
     public boolean isEmpty() {
         return tags.isEmpty();
     }
