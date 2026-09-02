@@ -14923,7 +14923,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (countView != null) {
                         if (mediaFastLocate) {
                             int total = totalImagesCount + totalImagesCountMerge;
-                            if (endReached[0] && mediaNewerReached) {
+                            if (isMediaThreadChat()) {
+                                countView.updateShow(true, animated);
+                                countView.set(switchingToIndex + 1, imagesArr.size());
+                            } else if (endReached[0] && mediaNewerReached) {
                                 countView.updateShow(true, animated);
                                 countView.set(switchingToIndex + 1, imagesArr.size());
                             } else if (total > 0 && mediaDbTargetMid != 0 && mediaDbBefore + mediaDbAfter + 1 == total) {
@@ -17767,6 +17770,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         currentFiltered = chatActivity != null && chatActivity.isFiltered();
 
         this.topicId = topicId;
+        if (chatActivity != null && chatActivity.isComments) {
+            this.topicId = chatActivity.getThreadMessageId();
+        }
         selectedPhotosAdapter.notifyDataSetChanged();
         this.pageBlocksAdapter = pageBlocksAdapter;
         setAvatarFor = null;

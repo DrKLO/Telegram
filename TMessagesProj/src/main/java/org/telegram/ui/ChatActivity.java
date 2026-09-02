@@ -1404,6 +1404,14 @@ public class ChatActivity extends BaseFragment implements
         return isTopic || chatMode == MODE_SAVED || chatMode == MODE_QUICK_REPLIES || chatMode == MODE_SUGGESTIONS ? threadMessageId : 0L;
     }
 
+    public long getThreadMessageId() {
+        return threadMessageId;
+    }
+
+    public long getMediaGalleryTopicId() {
+        return threadMessageId != 0 ? threadMessageId : getTopicId();
+    }
+
     public int getQuickReplyId() {
         return chatMode == MODE_QUICK_REPLIES ? (int) threadMessageId : 0;
     }
