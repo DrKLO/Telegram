@@ -4354,7 +4354,7 @@ public class MessagesStorage extends BaseController {
                 return false;
             }
             id = document.id;
-            type = DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = DownloadController.getDocumentAutoDownloadType(document);
         } else if (photo != null) {
             TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
             if (photoSize != null) {
@@ -12847,7 +12847,7 @@ public class MessagesStorage extends BaseController {
                                 object.flags |= 1;
                             } else if (document != null) {
                                 id = document.id;
-                                type = DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT;
+                                type = DownloadController.getDocumentAutoDownloadType(document);
                                 object = new TLRPC.TL_messageMediaDocument();
                                 object.document = document;
                                 object.flags |= 1;
