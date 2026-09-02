@@ -192,6 +192,7 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.MsgClockDrawable;
 import org.telegram.ui.Components.PostRunnableHolder;
 import org.telegram.ui.Components.Premium.boosts.BoostCounterSpan;
+import org.telegram.ui.Components.Premium.boosts.cells.msg.GiveawayAccessibilityCard;
 import org.telegram.ui.Components.Premium.boosts.cells.msg.GiveawayMessageCell;
 import org.telegram.ui.Components.Premium.boosts.cells.msg.GiveawayResultsMessageCell;
 import org.telegram.ui.Components.QuoteHighlight;
@@ -5467,6 +5468,22 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (delegate != null) {
             delegate.didPressPollMedia(cell, imageReceiver, answer, media, x, y, unshuffledIndex);
         }
+    }
+
+    // the chats a giveaway runs in, and the winners it ended with, are drawn as a row of buttons
+    // that open them. They are drawn by hand and are no views of their own, so touch exploration
+    // had nothing to land on and nothing to press
+    GiveawayAccessibilityCard giveawayAccessibilityCard() {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        if (currentMessageObject.isGiveaway()) {
+            return giveawayMessageCell;
+        }
+        if (currentMessageObject.isGiveawayResults()) {
+            return giveawayResultsMessageCell;
+        }
+        return null;
     }
 
     void didClickedImage() {

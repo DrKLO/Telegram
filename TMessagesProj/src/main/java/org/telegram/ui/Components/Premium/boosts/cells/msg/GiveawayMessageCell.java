@@ -58,7 +58,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-public class GiveawayMessageCell {
+public class GiveawayMessageCell implements GiveawayAccessibilityCard {
 
     private static final Map<Integer, String> monthsToEmoticon = new HashMap<>();
 
@@ -177,6 +177,36 @@ public class GiveawayMessageCell {
         textPaint.setTextSize(dp(14));
         textDividerPaint.setTextSize(dp(14));
         textDividerPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+
+    @Override
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        GiveawayAccessibilityCard.appendLayout(sb, titleLayout);
+        GiveawayAccessibilityCard.appendLayout(sb, additionPrizeLayout);
+        GiveawayAccessibilityCard.appendLayout(sb, topLayout);
+        for (int a = 0; a < chatTitles.length; a++) {
+            GiveawayAccessibilityCard.append(sb, chatTitles[a]);
+        }
+        GiveawayAccessibilityCard.appendLayout(sb, countriesLayout);
+        GiveawayAccessibilityCard.appendLayout(sb, bottomLayout);
+        return sb;
+    }
+
+    @Override
+    public int getAccessibilityButtonCount() {
+        return chats == null ? 0 : chats.length;
+    }
+
+    @Override
+    public CharSequence getAccessibilityButtonTitle(int index) {
+        return index >= 0 && index < chatTitles.length ? chatTitles[index] : null;
+    }
+
+    @Override
+    public Rect getAccessibilityButtonBounds(int index) {
+        return clickRect != null && index >= 0 && index < clickRect.length ? clickRect[index] : null;
     }
 
     public boolean checkMotionEvent(MotionEvent event) {
