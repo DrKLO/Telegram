@@ -577,6 +577,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY, boolean asForward) {
         }
 
+        /** Whether holding the avatar of a sender opens anything in this chat. */
+        default boolean canLongPressAvatar(ChatMessageCell cell) {
+            return false;
+        }
+
         default boolean didLongPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY) {
             return false;
         }
@@ -17237,6 +17242,45 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // the avatar of whoever sent a message opens a menu when it is held down: their profile, a
+    // chat with them, a mention of them, and a search of what they have said here. The avatar is
+    // drawn by the cell and is no view of its own, so touch exploration had nothing to hold, and
+    // none of it could be reached.
+    private boolean hasSenderAvatarMenu() {
+        if (!isAvatarVisible || currentMessageObject == null || delegate == null) {
+            return false;
+        }
+        // whether holding the avatar leads anywhere is for the chat to answer: it opens in a
+        // group and in a chat with yourself, and nowhere else. A sender with no picture still has
+        // the menu, only without the picture drawn above it
+        if (!delegate.canLongPressAvatar(this)) {
+            return false;
+        }
+        return currentUser != null && currentUser.id != 0 || currentChat != null;
+    }
+
+    // held down is what it is asked to be, so that whatever the menu comes to hold is come by the
+    // same way it is by everyone else
+    private boolean performSenderAvatarMenu() {
+        if (!hasSenderAvatarMenu()) {
+            return false;
+        }
+        if (currentUser != null) {
+            return delegate.didLongPressUserAvatar(this, currentUser, lastTouchX, lastTouchY);
+        }
+        final int id;
+        if (currentMessageObject.messageOwner.fwd_from != null) {
+            if ((currentMessageObject.messageOwner.fwd_from.flags & 16) != 0) {
+                id = currentMessageObject.messageOwner.fwd_from.saved_from_msg_id;
+            } else {
+                id = currentMessageObject.messageOwner.fwd_from.channel_post;
+            }
+        } else {
+            id = 0;
+        }
+        return delegate.didLongPressChannelAvatar(this, currentChat, id, lastTouchX, lastTouchY);
+    }
+
     private int getIconForCurrentState() {
         if (currentMessageObject == null || currentMessageObject.hasExtendedMedia()) {
             return MediaActionDrawable.ICON_NONE;
@@ -26590,6 +26634,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return true;
         } else if (action == R.id.acc_action_small_button) {
             didPressMiniButton(true);
+        } else if (action == R.id.acc_action_sender_avatar_menu) {
+            performSenderAvatarMenu();
         } else if (action == R.id.acc_action_msg_options) {
             if (delegate != null) {
                 if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
@@ -27338,6 +27384,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(itemInfo.getRowIndex(), 1, 0, 1, false));
                 }
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_msg_options, getString("AccActionMessageOptions", R.string.AccActionMessageOptions)));
+                if (hasSenderAvatarMenu()) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_sender_avatar_menu, getString(R.string.AccActionSenderOptions)));
+                }
                 int icon = getIconForCurrentState();
                 CharSequence actionLabel = null;
                 switch (icon) {

@@ -39686,6 +39686,11 @@ public class ChatActivity extends BaseFragment implements
         }
 
         @Override
+        public boolean canLongPressAvatar(ChatMessageCell cell) {
+            return isAvatarPreviewerEnabled();
+        }
+
+        @Override
         public boolean didLongPressUserAvatar(ChatMessageCell cell, TLRPC.User user, float touchX, float touchY) {
             if (isAvatarPreviewerEnabled()) {
                 final boolean enableMention = currentChat != null && (bottomChannelButtonsLayout == null || bottomChannelButtonsLayout.getVisibility() != View.VISIBLE) && (bottomOverlay == null || bottomOverlay.getVisibility() != View.VISIBLE);

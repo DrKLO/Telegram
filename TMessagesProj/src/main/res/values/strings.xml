@@ -4998,6 +4998,7 @@
     <string name="AccActionCancelDownload">Cancel download</string>
     <string name="AccActionOpenFile">Open file</string>
     <string name="AccActionMessageOptions">Message options</string>
+    <string name="AccActionSenderOptions">Sender options</string>
     <string name="AccActionOpenForwardedOrigin">Forwarded origin</string>
     <string name="AccActionEnterSelectionMode">Enter selection mode</string>
     <string name="AccActionChatPreview">Chat Preview</string>
