@@ -27158,6 +27158,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         sb.append(messageText);
                     }
+                    // an effect is chosen when a message is sent and drawn on it ever after: it is
+                    // as much a part of what was sent as the words are, and it was never said
+                    final TLRPC.TL_availableEffect effect = getEffect();
+                    if (effect != null && !TextUtils.isEmpty(effect.emoticon)) {
+                        sb.append(", ");
+                        sb.append(formatString(R.string.AccDescrMessageEffect, effect.emoticon));
+                    }
                     if (documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO)) {
                         if (buttonState == 1 && loadingProgressLayout != null) {
                             sb.append("\n");
