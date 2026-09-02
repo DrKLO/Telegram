@@ -207,6 +207,13 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                     sb.append(messageText);
                 }
+                // an effect is chosen when a message is sent and drawn on it ever after: it is
+                // as much a part of what was sent as the words are, and it was never said
+                final TLRPC.TL_availableEffect effect = cell.getEffect();
+                if (effect != null && !TextUtils.isEmpty(effect.emoticon)) {
+                    sb.append(", ");
+                    sb.append(formatString(R.string.AccDescrMessageEffect, effect.emoticon));
+                }
                 if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
                     if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {
                         sb.append("\n");
