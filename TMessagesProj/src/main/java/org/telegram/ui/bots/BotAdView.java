@@ -116,6 +116,7 @@ public class BotAdView extends FrameLayout {
         closeView.setImageResource(R.drawable.msg_close);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         ThemeBind.colorFilter(closeView, Theme.key_chat_topPanelClose, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(v -> {
 
         });

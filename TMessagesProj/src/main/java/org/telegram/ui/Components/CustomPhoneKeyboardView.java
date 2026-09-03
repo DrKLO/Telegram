@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.LocaleController;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.graphics.PorterDuff;
@@ -157,6 +159,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         ThemeBind.colorFilter(backButton, Theme.key_windowBackgroundWhiteBlackText, PorterDuff.Mode.SRC_ATOP);
         int pad = dp(11);
         backButton.setPadding(pad, pad, pad, pad);
+        backButton.setContentDescription(LocaleController.getString(R.string.AccDescrBackspace));
         backButton.setOnClickListener(v -> {});
         addView(views[11] = backButton);
 

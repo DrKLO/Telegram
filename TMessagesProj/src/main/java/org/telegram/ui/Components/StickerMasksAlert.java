@@ -213,6 +213,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             clearSearchImageView.setScaleY(0.1f);
             clearSearchImageView.setAlpha(0.0f);
             addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 14, 14, 0));
+            clearSearchImageView.setContentDescription(LocaleController.getString(R.string.ClearButton));
             clearSearchImageView.setOnClickListener(v -> {
                 searchEditText.setText("");
                 AndroidUtilities.showKeyboard(searchEditText);
@@ -769,6 +770,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             emojiButton.setBackground(rippleDrawable);
         }
         itemsLayout.addView(emojiButton, LayoutHelper.createLinear(70, 48));
+        emojiButton.setContentDescription(LocaleController.getString(R.string.Emoji));
         emojiButton.setOnClickListener(v -> {
             if (currentType == MediaDataController.TYPE_EMOJIPACKS) {
                 return;
@@ -796,6 +798,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             stickersButton.setBackground(rippleDrawable);
         }
         itemsLayout.addView(stickersButton, LayoutHelper.createLinear(70, 48));
+        stickersButton.setContentDescription(LocaleController.getString(R.string.AccDescrStickers));
         stickersButton.setOnClickListener(v -> {
             if (currentType == MediaDataController.TYPE_IMAGE) {
                 return;
@@ -824,6 +827,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                 masksButton.setBackground(rippleDrawable);
             }
             itemsLayout.addView(masksButton, LayoutHelper.createLinear(70, 48));
+            masksButton.setContentDescription(LocaleController.getString(R.string.Masks));
             masksButton.setOnClickListener(v -> {
                 if (currentType == MediaDataController.TYPE_MASK) {
                     return;

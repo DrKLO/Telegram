@@ -4774,6 +4774,7 @@ public class AlertsCreator {
             });
         }
         final HintView2[] notifyHint = new HintView2[1];
+        notifyItem.setContentDescription(getString(R.string.Notifications));
         notifyItem.setOnClickListener(v -> {
             notify[0] = !notify[0];
             if (notify[0]) {

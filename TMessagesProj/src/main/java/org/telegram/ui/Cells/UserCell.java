@@ -949,6 +949,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
                 addView(closeView, LayoutHelper.createFrame(30, 30, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 0));
             }
+            closeView.setContentDescription(getString(R.string.Close));
             closeView.setOnClickListener(onClick);
         }
     }

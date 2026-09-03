@@ -51,6 +51,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         closeView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = AndroidUtilities.dp(8);
         closeView.setPadding(closeViewPadding, closeViewPadding, closeViewPadding, closeViewPadding);

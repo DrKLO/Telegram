@@ -117,6 +117,7 @@ public class JoinGroupAlert extends BottomSheet {
         closeView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
+        closeView.setContentDescription(getString(R.string.Close));
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = dp(8);
         closeView.setPadding(closeViewPadding, closeViewPadding, closeViewPadding, closeViewPadding);

@@ -1082,6 +1082,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
             optionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
             optionsView.setScaleType(ImageView.ScaleType.CENTER);
             ThemeBind.colorFilter(optionsView, Theme.key_stickers_menu, PorterDuff.Mode.SRC_ATOP);
+            optionsView.setContentDescription(getString(R.string.AccDescrMoreOptions));
             optionsView.setOnClickListener(view -> {
                 if (invite == null) {
                     return;
