@@ -1596,6 +1596,18 @@ public class RichMessageLayout {
         }
     }
 
+    /**
+     * Whether the button that opens the rest of a message cut short is on the screen, and where it
+     * is. Its place is worked out while it is drawn, the same way the blocks above it are.
+     */
+    public boolean hasShowMoreButton() {
+        return isPart && !showMoreRect.isEmpty();
+    }
+
+    public void getShowMoreBounds(Rect out) {
+        showMoreRect.round(out);
+    }
+
     private void drawShowMoreButton(Canvas canvas, int contentBottom) {
         final int color = getThemedColor(isOut() ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText);
 
