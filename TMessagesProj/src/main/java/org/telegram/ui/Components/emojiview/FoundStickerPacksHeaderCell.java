@@ -52,6 +52,7 @@ public class FoundStickerPacksHeaderCell extends FrameLayout implements Theme.Co
     }
 
     public void setOnBackClickListener(OnClickListener listener) {
+        backButton.setContentDescription(LocaleController.getString(R.string.Back));
         backButton.setOnClickListener(listener);
     }
 

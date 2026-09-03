@@ -671,6 +671,7 @@ public class ShareTopView extends FrameLayout implements NotificationCenter.Noti
             closeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
             closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 1, dp(18)));
             closeButton.setVisibility(GONE);
+            closeButton.setContentDescription(LocaleController.getString(R.string.Close));
             closeButton.setOnClickListener(v -> dismissWebPagePreview());
             container.addView(closeButton, LayoutHelper.createLinear(36, 36, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
         }

@@ -191,6 +191,7 @@ public class ThemeEditorView {
                 clearSearchImageView.setScaleY(0.1f);
                 clearSearchImageView.setAlpha(0.0f);
                 addView(clearSearchImageView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 14, 11, 14, 0));
+                clearSearchImageView.setContentDescription(LocaleController.getString(R.string.ClearButton));
                 clearSearchImageView.setOnClickListener(v -> {
                     searchEditText.setText("");
                     AndroidUtilities.showKeyboard(searchEditText);

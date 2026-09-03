@@ -5038,6 +5038,10 @@
     <string name="AccDescrEditing">Editing</string>
     <string name="AccDescrPasscodeLock">Lock application</string>
     <string name="AccDescrBackspace">Backspace</string>
+    <string name="AccDescrCurvesTool">Curves</string>
+    <string name="AccDescrColorPicker">Color picker</string>
+    <string name="AccDescrFlashlight">Flashlight</string>
+    <string name="AccDescrInsertIntoSearch">Insert into search</string>
     <string name="AccDescrFingerprint">Fingerprint</string>
     <string name="AccDescrPrevious">Previous</string>
     <string name="AccDescrRepeatOff">Repeat, off</string>

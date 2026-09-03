@@ -194,6 +194,7 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
 
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
         otherItem = menu.addItem(0, R.drawable.ic_ab_other);
+        otherItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         otherItem.addSubItem(R.id.menu_open_bot, R.drawable.msg_bot, LocaleController.getString(R.string.BotWebViewOpenBot));
         settingsItem = otherItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
         settingsItem.setVisibility(View.GONE);

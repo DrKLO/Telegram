@@ -1,5 +1,7 @@
 package org.telegram.ui.Stories;
 
+import org.telegram.messenger.LocaleController;
+
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
 import android.animation.Animator;
@@ -620,6 +622,7 @@ public class LiveStoryPipOverlay implements NotificationCenter.NotificationCente
 
         ImageView closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.pip_video_close);
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems));
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         closeButton.setPadding(padding, padding, padding, padding);
@@ -628,6 +631,7 @@ public class LiveStoryPipOverlay implements NotificationCenter.NotificationCente
 
         ImageView expandButton = new ImageView(context);
         expandButton.setImageResource(R.drawable.pip_video_expand);
+        expandButton.setContentDescription(LocaleController.getString(R.string.AccExitFullscreen));
         expandButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems));
         expandButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         expandButton.setPadding(padding, padding, padding, padding);

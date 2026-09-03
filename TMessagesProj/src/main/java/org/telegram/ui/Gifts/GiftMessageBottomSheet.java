@@ -452,6 +452,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
         closeButton.setBackground(Blur3Utils.wrapCenteredDrawable(
             Theme.createServiceDrawable(AndroidUtilities.dp(16), closeButton, containerView, getThemedPaint(Theme.key_paint_chatActionBackground)),
             dp(32), dp(32)));
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         closeButton.setOnClickListener(v -> dismiss());
         containerView.addView(closeButton, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
 

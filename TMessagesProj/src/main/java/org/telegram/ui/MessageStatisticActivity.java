@@ -595,6 +595,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             ActionBarMenu menu = actionBar.createMenu();
             menu.clearItems();
             ActionBarMenuItem headerItem = menu.addItem(0, R.drawable.ic_ab_other);
+        headerItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             headerItem.addSubItem(1, R.drawable.msg_stats, LocaleController.getString(R.string.ViewChannelStats));
         }
     }
