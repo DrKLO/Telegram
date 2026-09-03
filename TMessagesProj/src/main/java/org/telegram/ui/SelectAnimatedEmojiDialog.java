@@ -5302,6 +5302,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             });
             clear.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(15)));
             clear.setAlpha(0f);
+            clear.setContentDescription(LocaleController.getString(R.string.ClearButton));
             clear.setOnClickListener(e -> {
                 input.setText("");
                 search(null, true, false);

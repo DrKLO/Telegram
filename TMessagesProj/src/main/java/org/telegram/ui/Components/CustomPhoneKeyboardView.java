@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.LocaleController;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
@@ -155,6 +157,7 @@ public class CustomPhoneKeyboardView extends ViewGroup {
         backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         int pad = dp(11);
         backButton.setPadding(pad, pad, pad, pad);
+        backButton.setContentDescription(LocaleController.getString(R.string.AccDescrBackspace));
         backButton.setOnClickListener(v -> {});
         addView(views[11] = backButton);
 
