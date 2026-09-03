@@ -74,6 +74,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
     public static final int CONTACT_VIEW = 491;
     public static final int CONTACT_ADD = 490;
     public static final int CONTACT_MESSAGE = 489;
+    public static final int SHOW_MORE = 487;
     private Path linkPath = new Path();
     private RectF rectF = new RectF();
     private Rect rect = new Rect();
@@ -473,6 +474,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.addChild(cell, POLL_BUTTONS_START + i);
                 i++;
             }
+            // the button that opens the rest of a message cut short. It is drawn by hand
+            // under the text and is no view of its own, so nothing said the message went on,
+            // and there was no way to ask for the rest of it
+            if (cell.hasShowMoreButton()) {
+                info.addChild(cell, SHOW_MORE);
+            }
             if (cell.drawInstantView && !cell.instantButtonRect.isEmpty()) {
                 info.addChild(cell, INSTANT_VIEW);
             }
@@ -726,6 +733,25 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 rect.offset(pos[0], pos[1]);
                 info.setBoundsInScreen(rect);
                 info.setClickable(true);
+            } else if (virtualViewId == SHOW_MORE) {
+                if (!cell.hasShowMoreButton()) {
+                    return null;
+                }
+                info.setClassName("android.widget.Button");
+                info.setEnabled(true);
+                info.setText(getString(R.string.ShowMore));
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                cell.currentMessageObject.richLayout.getShowMoreBounds(rect);
+                rect.offset(cell.textX, cell.textY);
+                info.setBoundsInParent(rect);
+                // the bounds go into the map the cell hit tests against, so a finger on the
+                // screen finds it as well as a swipe
+                if (cell.accessibilityVirtualViewBounds.get(virtualViewId) == null || !cell.accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
+                    cell.accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
+                }
+                rect.offset(pos[0], pos[1]);
+                info.setBoundsInScreen(rect);
+                info.setClickable(true);
             } else if (virtualViewId == INSTANT_VIEW) {
                 info.setClassName("android.widget.Button");
                 info.setEnabled(true);
@@ -956,6 +982,11 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                 } else if (virtualViewId == POLL_HINT) {
                     cell.didPressVoteHint();
+                } else if (virtualViewId == SHOW_MORE) {
+                    if (cell.delegate != null && cell.hasShowMoreButton()) {
+                        cell.delegate.didPressShowMore(cell);
+                    }
+                    cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                 } else if (virtualViewId == INSTANT_VIEW) {
                     if (cell.delegate != null) {
                         cell.delegate.didPressInstantButton(cell, cell.drawInstantViewType);
