@@ -14045,6 +14045,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             videoTimelineView.setAlpha(1.0f);
         }
         muteDrawable.setMuted(false, false);
+        muteButton.setContentDescription(LocaleController.getString(R.string.Sound));
         editorDoneLayout.setVisibility(View.GONE);
         captionTextViewSwitcher.setTag(null);
         captionTextViewSwitcher.setVisibility(View.INVISIBLE);
@@ -21204,11 +21205,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     videoTimelineView.setMaxProgressDiff(1.0f);
                     videoTimelineView.setMode(VideoTimelinePlayView.MODE_VIDEO);
                 }
-//                muteItem.setContentDescription(getString("NoSound", R.string.NoSound));
+                muteButton.setContentDescription(LocaleController.getString(R.string.NoSound));
             } else {
                 actionBarContainer.setSubtitle(currentSubtitle);
                 muteDrawable.setMuted(false, true);
-//                muteItem.setContentDescription(getString("Sound", R.string.Sound));
+                muteButton.setContentDescription(LocaleController.getString(R.string.Sound));
                 if (compressItem.getTag() != null) {
                     compressItem.setAlpha(1.0f);
                     compressItem.setEnabled(true);

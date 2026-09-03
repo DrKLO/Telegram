@@ -778,6 +778,23 @@ public class EmojiView extends FrameLayout implements
 
         private int type;
         private ImageView searchImageView;
+
+        /**
+         * The picture at the left of the search box. For most of its life it is a magnifying
+         * glass that answers no press at all, and it stood in the way as a button with no name
+         * and nothing to do: the box beside it is what opens a search. Once a search is under way
+         * it turns into an arrow back that empties the box, and only then is it a button.
+         */
+        private void updateSearchImageAccessibility() {
+            if (searchImageView == null || searchStateDrawable == null) {
+                return;
+            }
+            final boolean isBack = searchStateDrawable.getIconState() == SearchStateDrawable.State.STATE_BACK;
+            searchImageView.setImportantForAccessibility(isBack
+                ? View.IMPORTANT_FOR_ACCESSIBILITY_YES
+                : View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            searchImageView.setContentDescription(isBack ? getString(R.string.Back) : null);
+        }
         private SearchStateDrawable searchStateDrawable;
         private EditTextBoldCursor searchEditText;
         private View shadowView;
@@ -848,6 +865,7 @@ public class EmojiView extends FrameLayout implements
             searchStateDrawable.setColor(glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiSearchIcon));
             searchImageView.setScaleType(ImageView.ScaleType.CENTER);
             searchImageView.setImageDrawable(searchStateDrawable);
+            updateSearchImageAccessibility();
             searchImageView.setOnClickListener(e -> {
                 if (searchStateDrawable.getIconState() == SearchStateDrawable.State.STATE_BACK) {
                     searchEditText.setText("");
@@ -1098,6 +1116,7 @@ public class EmojiView extends FrameLayout implements
             isprogress = progress;
             if (progress) {
                 searchStateDrawable.setIconState(SearchStateDrawable.State.STATE_PROGRESS);
+                updateSearchImageAccessibility();
             } else {
                 updateButton(true);
             }
@@ -1111,6 +1130,7 @@ public class EmojiView extends FrameLayout implements
             if (!isInProgress() || searchEditText.length() == 0 && (categoriesListView == null || categoriesListView.getSelectedCategory() == null) || force) {
                 boolean backButton = searchEditText.length() > 0 || categoriesListView != null && categoriesListView.isCategoriesShown() && (categoriesListView.isScrolledIntoOccupiedWidth() || categoriesListView.getSelectedCategory() != null);
                 searchStateDrawable.setIconState(backButton ? SearchStateDrawable.State.STATE_BACK : SearchStateDrawable.State.STATE_SEARCH);
+                updateSearchImageAccessibility();
                 isprogress = false;
             }
         }

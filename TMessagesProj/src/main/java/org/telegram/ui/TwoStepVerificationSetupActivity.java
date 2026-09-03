@@ -289,6 +289,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         if (currentType == TYPE_EMAIL_CONFIRM) {
             ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+            item.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             item.addSubItem(item_abort, LocaleController.getString(R.string.AbortPasswordMenu));
         }
 

@@ -77,6 +77,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         closeView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)));
         actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(v -> this.dismiss());
 
         to_lang = TranslateAlert2.getToLanguage();

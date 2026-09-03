@@ -1,5 +1,8 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -85,6 +88,7 @@ public class DebugRecordingCanvasReplayFragment extends BaseFragment {
         playButton = new ImageButton(context);
         updatePlayButtonIcon();
         playButton.setBackgroundColor(Color.TRANSPARENT);
+        playButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
         playButton.setOnClickListener(v -> togglePlayback());
 
         // SeekBar

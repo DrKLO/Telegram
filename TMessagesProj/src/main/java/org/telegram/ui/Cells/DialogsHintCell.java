@@ -174,6 +174,7 @@ public class DialogsHintCell extends FrameLayout {
     public void setOnCloseListener(OnClickListener closeListener) {
         chevronView.setVisibility(INVISIBLE);
         closeView.setVisibility(VISIBLE);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(closeListener);
     }
 

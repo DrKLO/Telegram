@@ -125,6 +125,7 @@ public class CommunityPendingRequestCell extends FrameLayout implements Theme.Co
 
         requesterAvatarView = new BackupImageView(context);
         requesterAvatarView.setRoundRadius(dp(8));
+        requesterAvatarView.setContentDescription(LocaleController.getString(R.string.AccDescrProfilePicture));
         requesterAvatarView.setOnClickListener(v -> {
             if (delegate != null) {
                 delegate.onClickGroupOwner(userDialogId);

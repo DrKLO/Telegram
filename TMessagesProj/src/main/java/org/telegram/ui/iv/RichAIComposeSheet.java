@@ -86,6 +86,7 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
         closeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
         ScaleStateListAnimator.apply(closeButton);
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         closeButton.setOnClickListener(v -> dismiss());
         topView.addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 10, 12, 0));
 

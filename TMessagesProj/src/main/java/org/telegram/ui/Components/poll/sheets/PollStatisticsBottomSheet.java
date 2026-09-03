@@ -42,7 +42,7 @@ public class PollStatisticsBottomSheet extends BottomSheetWithRecyclerListView {
         recyclerListView.setSections(true);
 
         ActionBarMenu m = actionBar.createMenu();
-        m.addItem(-1, R.drawable.ic_close_white);
+        m.addItem(-1, R.drawable.ic_close_white).setContentDescription(LocaleController.getString(R.string.Close));
         m.setTranslationX(-dp(5));
 
         adapter.update(false);

@@ -306,6 +306,7 @@ public class VideoAds {
         final CloseDrawable closeDrawable = new CloseDrawable(layout.buttonView, ad.min_display_duration, ad.max_display_duration, currentBulletinPassedTime);
         closeDrawable.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, bulletinFactory.getResourcesProvider()));
         layout.buttonView.setImageDrawable(closeDrawable);
+        layout.buttonView.setContentDescription(LocaleController.getString(R.string.Close));
         layout.buttonView.setOnClickListener(v -> {
             if (closeDrawable.isCrossAvailable()) {
                 if (bulletin != null) {

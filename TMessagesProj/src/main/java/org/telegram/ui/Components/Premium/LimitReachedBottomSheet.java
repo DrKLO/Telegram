@@ -1371,6 +1371,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                             imageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
                             imageView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
                             frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 15, 0, 15, 0));
+                            imageView.setContentDescription(LocaleController.getString(R.string.Statistics));
                             imageView.setOnClickListener(v -> {
                                 statisticClickRunnable.run();
                                 dismiss();

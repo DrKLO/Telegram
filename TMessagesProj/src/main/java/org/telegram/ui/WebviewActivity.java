@@ -176,9 +176,10 @@ public class WebviewActivity extends BaseFragment {
             }
         });
         ActionBarMenu menu = actionBar.createMenu();
-        progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54));
+        progressItem = menu.addItemWithWidth(share, R.drawable.share, AndroidUtilities.dp(54), LocaleController.getString(R.string.ShareFile));
         if (type == TYPE_GAME) {
             ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        menuItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString(R.string.OpenInExternalApp));
 
             actionBar.setTitle(currentGame);

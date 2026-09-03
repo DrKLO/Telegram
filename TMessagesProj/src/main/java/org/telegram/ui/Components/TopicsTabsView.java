@@ -396,6 +396,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         ImageView button = new ImageView(context);
         button.setImageResource(iconRes);
         button.setScaleType(ImageView.ScaleType.CENTER);
+        button.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         button.setOnClickListener(onClickListener);
         ScaleStateListAnimator.apply(button);
         return button;

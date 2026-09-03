@@ -1250,6 +1250,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         }
 
         ActionBarMenuItem otherItem = actionBar.createMenu().addItem(other_id, R.drawable.ic_ab_other);
+        otherItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         clearDatabaseItem = otherItem.addSubItem(clear_database_id, R.drawable.msg_delete, LocaleController.getString(R.string.ClearLocalDatabase));
         clearDatabaseItem.setIconColor(Theme.getColor(Theme.key_text_RedRegular));
         clearDatabaseItem.setTextColor(Theme.getColor(Theme.key_text_RedBold));

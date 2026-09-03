@@ -4243,6 +4243,7 @@ public class ChatActivity extends BaseFragment implements
 
         if (UserObject.isBotForumWithEditableTopics(currentUser) && chatMode == 0) {
             topicCreateItem = menu.addItem(chat_menu_topic_create, R.drawable.menu_topic_add_30);
+            topicCreateItem.setContentDescription(LocaleController.getString(R.string.CreateTopic));
         }
 
         if (currentEncryptedChat == null && (chatMode == 0 || chatMode == MODE_SAVED || chatMode == MODE_SUGGESTIONS) && !isReport()) {

@@ -112,6 +112,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         menuView = new ImageView(context);
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
+        menuView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         menuView.setOnClickListener(e -> {
             final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (UserConfig.getInstance(currentAccount).isPremium() || chat != null && chat.autotranslation) {

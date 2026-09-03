@@ -1263,6 +1263,7 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
         this.anchorSendButton.copyTo(this.sendButton);
         this.sendButton.open.set(sendButton.open.get(), true);
         this.sendButton.setOnClickListener(onClick);
+        this.sendButton.setContentDescription(anchorSendButton.getContentDescription() != null ? anchorSendButton.getContentDescription() : LocaleController.getString(R.string.Send));
         containerView.addView(this.sendButton, new ViewGroup.LayoutParams(sendButton.getWidth(), sendButton.getHeight()));
         sendButtonWidth = anchorSendButton.width(sendButton.getHeight());
         sendButtonInitialPosition[0] += anchorSendButton.getWidth() - anchorSendButton.width(sendButton.getHeight()) - dp(6);

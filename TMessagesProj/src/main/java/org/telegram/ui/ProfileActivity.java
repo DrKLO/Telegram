@@ -9955,6 +9955,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (menu.getItem(10) == null) {
             if (animatingItem == null) {
                 animatingItem = menu.addItem(10, R.drawable.ic_ab_other);
+            animatingItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             }
         }
 

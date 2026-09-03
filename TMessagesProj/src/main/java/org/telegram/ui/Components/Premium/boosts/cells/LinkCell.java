@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
+import org.telegram.messenger.LocaleController;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -61,6 +63,7 @@ public class LinkCell extends FrameLayout {
         imageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         imageView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
         addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 15, 0, 17, 0));
+        imageView.setContentDescription(LocaleController.getString(R.string.Copy));
         imageView.setOnClickListener(v -> AndroidUtilities.addToClipboard(link));
     }
 

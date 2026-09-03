@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.LocaleController;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.MessagesController.findUpdates;
@@ -79,6 +81,7 @@ public class CreateGroupCallSheet extends BottomSheetWithRecyclerListView {
         closeButton.setColorFilter(new PorterDuffColorFilter(0xFF848D94, PorterDuff.Mode.SRC_IN));
         topView.addView(closeButton, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.TOP, 0, 14, 14, 0));
         ScaleStateListAnimator.apply(closeButton);
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         closeButton.setOnClickListener(v -> dismiss());
 
         final FrameLayout imageBackgroundView = new FrameLayout(context);

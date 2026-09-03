@@ -1746,6 +1746,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             });
             if (dialog_id == profileActivity.getUserConfig().getClientUserId() && profileActivity instanceof MediaActivity && canShowSearchItem()) {
                 searchItemIcon = menu.addItem(11, R.drawable.outline_header_search);
+            searchItemIcon.setContentDescription(LocaleController.getString(R.string.Search));
             }
             searchItem = menu.addItem(0, 0).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
