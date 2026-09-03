@@ -387,31 +387,27 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setCollectionItemInfo(AccessibilityNodeInfo.CollectionItemInfo.obtain(itemInfo.getRowIndex(), 1, 0, 1, false));
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_msg_options, getString("AccActionMessageOptions", R.string.AccActionMessageOptions)));
-            int icon = cell.getIconForCurrentState();
-            CharSequence actionLabel = null;
-            switch (icon) {
-                case MediaActionDrawable.ICON_PLAY:
-                    actionLabel = getString("AccActionPlay", R.string.AccActionPlay);
-                    break;
-                case MediaActionDrawable.ICON_PAUSE:
-                    actionLabel = getString("AccActionPause", R.string.AccActionPause);
-                    break;
-                case MediaActionDrawable.ICON_FILE:
-                    actionLabel = getString("AccActionOpenFile", R.string.AccActionOpenFile);
-                    break;
-                case MediaActionDrawable.ICON_DOWNLOAD:
-                    actionLabel = getString("AccActionDownload", R.string.AccActionDownload);
-                    break;
-                case MediaActionDrawable.ICON_CANCEL:
-                    actionLabel = getString("AccActionCancelDownload", R.string.AccActionCancelDownload);
-                    break;
-                default:
-                    if (cell.currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
-                        actionLabel = getString("CallAgain", R.string.CallAgain);
-                    }
+            final CharSequence mediaActionLabel = cell.mediaAccessibilityActionLabel();
+            if (cell.checkBoxVisible) {
+                // a tick is drawn beside this message, so the chat is choosing messages and
+                // this is one it can take. Whether it has been taken was drawn and never said,
+                // so going back over them told nothing of which had been chosen
+                final boolean selected = cell.delegate != null && cell.delegate.isMessageSelected(cell.currentMessageObject);
+                info.setCheckable(true);
+                info.setChecked(selected);
+                final CharSequence selectLabel = getString(selected ? R.string.Deselect : R.string.Select);
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, selectLabel));
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, selectLabel));
+                // what a press would have done to the media is not lost while messages are
+                // being chosen: it can be asked for by name, and only where a message carries
+                // something to play, open or fetch
+                if (mediaActionLabel != null) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_media, mediaActionLabel));
+                }
+            } else {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, mediaActionLabel));
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, getString("AccActionEnterSelectionMode", R.string.AccActionEnterSelectionMode)));
             }
-            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, actionLabel));
-            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, getString("AccActionEnterSelectionMode", R.string.AccActionEnterSelectionMode)));
             int smallIcon = cell.getMiniIconForCurrentState();
             if (smallIcon == MediaActionDrawable.ICON_DOWNLOAD) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, getString("AccActionDownload", R.string.AccActionDownload)));
@@ -519,9 +515,10 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.forwardedNameLayout[0] != null && cell.forwardedNameLayout[1] != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
             }
-            if (cell.drawSelectionBackground || cell.getBackground() != null) {
-                info.setSelected(true);
-            }
+            // whether a message has been chosen is said once, by the tick it now carries.
+            // It was said twice: this called it chosen as well, going by the background drawn
+            // behind it rather than by what has actually been chosen, and a cell with any
+            // background at all was called chosen whether it was or not
             return info;
         } else {
             AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain();
