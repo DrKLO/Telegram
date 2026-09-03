@@ -247,6 +247,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         if (botCollapseItem == null) {
             ActionBarMenu menu = parentEnterView.getParentFragment().getActionBar().createMenu();
             botCollapseItem = menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more);
+        botCollapseItem.setContentDescription(LocaleController.getString(R.string.AccDescrCollapsePanel));
             menu.removeView(botCollapseItem);
             menu.addView(botCollapseItem, 0);
             botCollapseItem.setOnClickListener(v -> {
@@ -258,6 +259,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         if (botMenuItem == null) {
             ActionBarMenu menu = parentEnterView.getParentFragment().getActionBar().createMenu();
             botMenuItem = menu.addItem(1000, R.drawable.ic_ab_other);
+        botMenuItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             botMenuItem.setVisibility(GONE);
 
             botMenuItem.addSubItem(R.id.menu_reload_page, R.drawable.msg_retry, LocaleController.getString(R.string.BotWebViewReloadPage));

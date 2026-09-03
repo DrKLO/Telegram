@@ -100,6 +100,7 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
         optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
         optionsButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP));
         addView(optionsButton, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 5, 0, 5, 0));
+        optionsButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         optionsButton.setOnClickListener(v -> {
 
         });

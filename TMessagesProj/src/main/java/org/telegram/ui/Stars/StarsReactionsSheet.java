@@ -337,6 +337,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         closeView.setImageResource(R.drawable.ic_close_white);
         closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
         ScaleStateListAnimator.apply(closeView);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(v -> dismiss());
 
 //        ScaleStateListAnimator.apply(balanceView);

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.LocaleController;
+
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -458,11 +460,14 @@ public class PipVideoOverlay implements IPipSourceDelegate {
         if (!isPlaying) {
             if (isVideoCompleted) {
                 playPauseButton.setImageResource(R.drawable.pip_replay_large);
+                playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
             } else {
                 playPauseButton.setImageResource(R.drawable.pip_play_large);
+                playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
             }
         } else {
             playPauseButton.setImageResource(R.drawable.pip_pause_large);
+            playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPause));
             AndroidUtilities.runOnUIThread(progressRunnable, 500);
         }
     }
@@ -1062,6 +1067,7 @@ public class PipVideoOverlay implements IPipSourceDelegate {
 
         ImageView closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.pip_video_close);
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         closeButton.setPadding(padding, padding, padding, padding);
@@ -1070,6 +1076,7 @@ public class PipVideoOverlay implements IPipSourceDelegate {
 
         ImageView expandButton = new ImageView(context);
         expandButton.setImageResource(R.drawable.pip_video_expand);
+        expandButton.setContentDescription(LocaleController.getString(R.string.AccExitFullscreen));
         expandButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
         expandButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         expandButton.setPadding(padding, padding, padding, padding);

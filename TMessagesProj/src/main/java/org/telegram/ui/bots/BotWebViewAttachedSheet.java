@@ -1013,8 +1013,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
             }
         }
 
-        menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more);
+        menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more).setContentDescription(LocaleController.getString(R.string.AccDescrCollapsePanel));
         ActionBarMenuItem otherItem = optionsItem = menu.addItem(0, R.drawable.ic_ab_other);
+        otherItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         otherItem.addSubItem(R.id.menu_open_bot, R.drawable.msg_bot, LocaleController.getString(R.string.BotWebViewOpenBot));
         settingsItem = otherItem.addSubItem(R.id.menu_settings, R.drawable.msg_settings, LocaleController.getString(R.string.BotWebViewSettings));
         settingsItem.setVisibility(View.GONE);

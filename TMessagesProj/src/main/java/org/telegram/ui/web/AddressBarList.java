@@ -391,6 +391,7 @@ public class AddressBarList extends FrameLayout {
             }
             listView.adapter.update(true);
         });
+        currentCopyView.setContentDescription(LocaleController.getString(R.string.Copy));
         currentCopyView.setOnClickListener(onCopyClick);
 
         hideCurrent = false;
@@ -573,6 +574,7 @@ public class AddressBarList extends FrameLayout {
             setColors(parent.listBackgroundColor, parent.textColor);
             iconView.setImageResource(type == 0 ? R.drawable.msg_clear_recent : R.drawable.msg_search);
             textView.setText(query);
+            insertView.setContentDescription(LocaleController.getString(R.string.AccDescrInsertIntoSearch));
             insertView.setOnClickListener(onInsertClick);
             setTopBottom(parent.grayBackgroundColor, parent.rippleColor, top, bottom);
             dividerPaint.setColor(Theme.multAlpha(parent.textColor, .1f));

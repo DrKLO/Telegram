@@ -670,6 +670,7 @@ public class CameraScanActivity extends BaseFragment {
                 galleryButton.setImageResource(R.drawable.qr_gallery);
                 galleryButton.setBackgroundDrawable(Theme.createSelectorDrawableFromDrawables(Theme.createCircleDrawable(dp(60), 0x22ffffff), Theme.createCircleDrawable(dp(60), 0x44ffffff)));
                 viewGroup.addView(galleryButton);
+                galleryButton.setContentDescription(LocaleController.getString(R.string.Gallery));
                 galleryButton.setOnClickListener(currentImage -> {
                     if (getParentActivity() == null) {
                         return;
@@ -732,6 +733,7 @@ public class CameraScanActivity extends BaseFragment {
             flashButton.setImageResource(R.drawable.qr_flashlight);
             flashButton.setBackgroundDrawable(Theme.createCircleDrawable(dp(60), 0x22ffffff));
             viewGroup.addView(flashButton);
+            flashButton.setContentDescription(LocaleController.getString(R.string.AccDescrFlashlight));
             flashButton.setOnClickListener(currentImage -> {
                 if (cameraView == null) {
                     return;

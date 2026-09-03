@@ -714,6 +714,7 @@ public class ReportBottomSheet extends BottomSheet {
                 btnBack.setImageDrawable(backDrawable = new BackDrawable(false));
                 backDrawable.setColor(0xffffffff);
                 addView(btnBack, LayoutHelper.createFrame(24, 24, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 16, 16, 16, 0));
+                btnBack.setContentDescription(LocaleController.getString(R.string.Back));
                 btnBack.setOnClickListener(e -> {
                     if (onBackClickListener != null) {
                         onBackClickListener.run();

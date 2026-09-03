@@ -2237,6 +2237,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             closeView.setImageResource(R.drawable.msg_close);
             ScaleStateListAnimator.apply(closeView);
             addView(closeView, LayoutHelper.createFrame(28, 28, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
+            closeView.setContentDescription(LocaleController.getString(R.string.Close));
             closeView.setOnClickListener(v -> dismiss.run());
             closeView.setVisibility(View.GONE);
 //            addView(resellPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 24, Gravity.LEFT | Gravity.TOP, 12, 14, 0, 0));
@@ -2248,6 +2249,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             ScaleStateListAnimator.apply(craftView);
             if (onCraftClick != null) {
                 addView(craftView, LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.RIGHT, 0, 5, 5 + 42, 0));
+                craftView.setContentDescription(LocaleController.getString(R.string.GiftCraft));
                 craftView.setOnClickListener(onCraftClick);
             }
             craftView.setVisibility(View.GONE);
@@ -4333,6 +4335,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 deleteView.setImageResource(R.drawable.menu_delete_old);
                 deleteView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
                 ScaleStateListAnimator.apply(deleteView);
+                deleteView.setContentDescription(LocaleController.getString(R.string.Delete));
                 deleteView.setOnClickListener(v -> {
                     showDeleteDescriptionAlert(detailsText);
                 });
@@ -8648,6 +8651,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             helpButton.setImageResource(R.drawable.outline_question_mark);
             helpButton.setBackground(new RoundRectStrokeDrawable(dp(24), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
             buttonsLayout.addView(helpButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 14, 14, 14, 14));
+            helpButton.setContentDescription(LocaleController.getString(R.string.SettingsHelp));
             helpButton.setOnClickListener(v -> {
                 if (buttonsLayout.getAlpha() < 1) return;
                 onClose.run();
@@ -8658,6 +8662,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             closeButton.setImageResource(R.drawable.msg_close);
             closeButton.setBackground(new RoundRectStrokeDrawable(dp(24), Theme.multAlpha(0xFFFFFFFF, 0.08f)));
             buttonsLayout.addView(closeButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.RIGHT, 14, 14, 14, 14));
+            closeButton.setContentDescription(LocaleController.getString(R.string.Close));
             closeButton.setOnClickListener(v -> {
                 if (buttonsLayout.getAlpha() < 1) return;
                 onClose.run();
