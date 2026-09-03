@@ -1252,6 +1252,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final MaskDrawable[] selectorMaskDrawable = new MaskDrawable[2];
     private int[] selectorDrawableMaskType = new int[2];
     private RectF instantButtonRect = new RectF();
+    // where the button under a link preview is, for the tree to point at. The rect the touch code
+    // hit tests against is only filled in for the older style that draws the button on its own
+    // below the preview; the style that draws it inside the preview leaves it empty, and touches
+    // on it are taken by the preview as a whole. Keeping a rect of our own means the button can be
+    // named and reached without giving the touch code a region it never had.
+    private final RectF instantButtonAccessibilityRect = new RectF();
     private LoadingDrawable instantButtonLoading;
     private final int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private float animatingLoadingProgressProgress;
@@ -16088,6 +16094,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     SpoilerEffect.layoutDrawMaybe(instantViewLayout, canvas);
                     canvas.restore();
                 }
+                // the whole row under the divider is the button, from the line above it down to
+                // the bottom of the preview
+                instantButtonAccessibilityRect.set(linkX, startY + linkPreviewHeight + dp(2), linkX + width, startY + linkPreviewHeight + dp(42));
             } else {
                 int instantY = startY + linkPreviewHeight + dp(currentMessageObject.isUnsupported() ? -5 : 10);
                 if (instantButtonLoading != null && !loading && !instantButtonLoading.isDisappeared() && !instantButtonLoading.isDisappearing()) {
@@ -16102,6 +16111,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     instantButtonLoading.resetDisappear();
                 }
                 instantButtonRect.set(linkX, instantY, linkX + instantWidth, instantY + dp(36));
+                instantButtonAccessibilityRect.set(instantButtonRect);
                 float scale = instantButtonBounce.getScale(.02f);
                 boolean scaleRestore = scale != 1;
                 if (scaleRestore) {
@@ -27424,7 +27434,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.addChild(ChatMessageCell.this, POLL_BUTTONS_START + i);
                     i++;
                 }
-                if (drawInstantView && !instantButtonRect.isEmpty()) {
+                if (drawInstantView && !instantButtonAccessibilityRect.isEmpty()) {
                     info.addChild(ChatMessageCell.this, INSTANT_VIEW);
                 }
                 if (drawContact && contactRect != null && !contactRect.isEmpty()) {
@@ -27684,7 +27694,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         info.setText(instantViewLayout.getText());
                     }
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    instantButtonRect.round(rect);
+                    instantButtonAccessibilityRect.round(rect);
                     info.setBoundsInParent(rect);
                     if (accessibilityVirtualViewBounds.get(virtualViewId) == null || !accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
                         accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
