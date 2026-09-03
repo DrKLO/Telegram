@@ -16,6 +16,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -597,6 +598,13 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 if (doAppearAnimation && !first) {
                     currentPackButton.newly = false;
                 }
+            }
+            // a tab for a pack is drawn as one of the emoji in it, and that is what it was called
+            // by: the emoji, where the pack was known by its picture, and nothing at all where it
+            // was known by a drawing of its own. The name of the pack is what the tab stands for
+            if (currentPackButton != null && newPack != null && newPack.set != null
+                    && !TextUtils.isEmpty(newPack.set.title)) {
+                currentPackButton.setContentDescription(newPack.set.title);
             }
         }
         if (settingsTab != null) {

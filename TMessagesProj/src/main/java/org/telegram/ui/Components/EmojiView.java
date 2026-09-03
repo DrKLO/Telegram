@@ -944,6 +944,10 @@ public class EmojiView extends FrameLayout implements
                 }
             });
             clear.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(15)));
+            clear.setContentDescription(getString(R.string.ClearButton));
+            // it was left standing with nothing drawn of it until the first letter was typed, so
+            // it could be found and pressed while there was nothing yet to clear
+            clear.setVisibility(GONE);
             clear.setAlpha(0f);
             clear.setOnClickListener(e -> {
                 searchEditText.setText("");
@@ -6950,7 +6954,9 @@ public class EmojiView extends FrameLayout implements
                             icon = groupStickerSet != null ? R.drawable.msg_mini_customize : R.drawable.msg_close;
                         }
                         TLRPC.Chat chat = info != null ? MessagesController.getInstance(currentAccount).getChat(info.id) : null;
-                        cell.setText(LocaleController.formatString("CurrentGroupStickers", R.string.CurrentGroupStickers, chat != null ? chat.title : "Group Stickers"), icon);
+                        // the button beside this heading either hides the group's stickers or
+                        // opens them to be changed. Which of the two was drawn and never said
+                        cell.setText(LocaleController.formatString("CurrentGroupStickers", R.string.CurrentGroupStickers, chat != null ? chat.title : "Group Stickers"), icon, getString(icon == R.drawable.msg_close ? R.string.Hide : R.string.GroupStickers));
                     } else {
                         Object object = cache.get(position);
                         if (object instanceof TLRPC.TL_messages_stickerSet) {
@@ -7112,17 +7118,43 @@ public class EmojiView extends FrameLayout implements
         }
     }
 
+    /**
+     * What to call an emoji in the grid. A custom one is a picture standing in for an ordinary
+     * emoji, and that ordinary one is the only word there is for it. Nothing was said for them at
+     * all, and in the search results nothing was said for any emoji: a cell used again kept the
+     * name of whatever it held before, so the answers to a search were called by other names.
+     */
+    private CharSequence emojiAccessibilityLabel(String coloredCode, TLRPC.Document document, Long customEmojiId) {
+        if (!TextUtils.isEmpty(coloredCode)) {
+            return coloredCode;
+        }
+        if (document == null && customEmojiId != null) {
+            document = AnimatedEmojiDrawable.findDocument(currentAccount, customEmojiId);
+        }
+        if (document != null) {
+            final String emoticon = MessageObject.findAnimatedEmojiEmoticon(document, null);
+            if (!TextUtils.isEmpty(emoticon)) {
+                return emoticon;
+            }
+        }
+        return null;
+    }
+
     public static class EmojiPackExpand extends FrameLayout {
         public TextView textView;
 
         public EmojiPackExpand(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
+            // the rest of a pack is asked for by a button showing how many more there are. The
+            // count is all it says, and a bare number is no answer to what pressing it does
+            setContentDescription(getString(R.string.ShowMore));
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(11), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider), 99)));
             textView.setTypeface(AndroidUtilities.bold());
             textView.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(1.66f), AndroidUtilities.dp(6), AndroidUtilities.dp(2f));
+            textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         }
     }
@@ -7374,7 +7406,7 @@ public class EmojiView extends FrameLayout implements
                         imageView.setSpan(null);
                     }
                     imageView.setTag(code);
-                    imageView.setContentDescription(coloredCode);
+                    imageView.setContentDescription(emojiAccessibilityLabel(coloredCode, customEmoji, customEmojiId));
                     break;
                 }
                 case VIEW_TYPE_HEADER: {
@@ -8202,6 +8234,7 @@ public class EmojiView extends FrameLayout implements
                         imageView.setSpan(null);
                     }
                     imageView.setTag(code);
+                    imageView.setContentDescription(emojiAccessibilityLabel(coloredCode, document, customEmojiId));
                     break;
                 }
                 case VIEW_TYPE_HEADER: {
@@ -8656,11 +8689,20 @@ public class EmojiView extends FrameLayout implements
             switch (holder.getItemViewType()) {
                 case 0: {
                     ContextLinkCell cell = (ContextLinkCell) holder.itemView;
+                    // one gif is drawn much as another and there is nothing to tell them apart by
+                    // ear, so a whole page of them was the one word over and over, with no way of
+                    // knowing how far along it one had come
+                    final int index, total;
                     if (firstResultItem >= 0 && position >= firstResultItem) {
-                        cell.setLink(results.get(position - firstResultItem), bot, true, false, false, true);
+                        index = position - firstResultItem;
+                        total = results.size();
+                        cell.setLink(results.get(index), bot, true, false, false, true);
                     } else {
-                        cell.setGif(recentGifs.get(position - (addSearch ? 1 : 0)), false);
+                        index = position - (addSearch ? 1 : 0);
+                        total = recentItemsCount;
+                        cell.setGif(recentGifs.get(index), false);
                     }
+                    cell.setContentDescription(getString(R.string.AttachGif) + ", " + LocaleController.formatString(R.string.Of, index + 1, total));
                     break;
                 }
             }
