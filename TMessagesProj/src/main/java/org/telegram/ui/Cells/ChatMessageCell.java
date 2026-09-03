@@ -1232,6 +1232,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final MaskDrawable[] selectorMaskDrawable = new MaskDrawable[2];
     int[] selectorDrawableMaskType = new int[2];
     RectF instantButtonRect = new RectF();
+    // where the button under a link preview is, for the tree to point at. The rect the touch code
+    // hit tests against is only filled in for the older style that draws the button on its own
+    // below the preview; the style that draws it inside the preview leaves it empty, and touches
+    // on it are taken by the preview as a whole. Keeping a rect of our own means the button can be
+    // named and reached without giving the touch code a region it never had.
+    final RectF instantButtonAccessibilityRect = new RectF();
     final int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
     private float animatingLoadingProgressProgress;
     CharSequence accessibilityText;
