@@ -1608,7 +1608,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     backgroundPlayAnimationView.setAlpha(backgroundGradientColor1 != 0 ? 1.0f : 0.0f);
                     backgroundPlayAnimationView.setTag(backgroundGradientColor1 != 0 ? 1 : null);
                     backgroundButtonsContainer.addView(backgroundPlayAnimationView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-                    backgroundPlayAnimationView.setOnClickListener(new View.OnClickListener() {
+                    // // nothing but a picture turning: there is no answer here for a reader, and it stood in the way as a button that said nothing
+        backgroundPlayAnimationView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        backgroundPlayAnimationView.setOnClickListener(new View.OnClickListener() {
 
                         int rotation = 0;
 
@@ -1773,7 +1775,8 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     messagesPlayAnimationView.setScaleY(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.1f);
                     messagesPlayAnimationView.setAlpha(accent.myMessagesGradientAccentColor1 != 0 ? 1.0f : 0.0f);
                     messagesButtonsContainer.addView(messagesPlayAnimationView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
-                    messagesPlayAnimationView.setOnClickListener(new View.OnClickListener() {
+                    messagesPlayAnimationView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        messagesPlayAnimationView.setOnClickListener(new View.OnClickListener() {
 
                         int rotation = 0;
 
