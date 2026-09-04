@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
@@ -223,6 +224,10 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             checkBox.setDrawUnchecked(true);
             checkBox.setChecked(true, false);
             checkBox.setAlpha(0.0f);
+            // a view left at no opacity is still in the tree a screen reader walks, so hiding it
+            // by opacity alone leaves a check box on every option that is neither seen nor of any
+            // use, and one that reads as ticked at that
+            checkBox.setVisibility(INVISIBLE);
             checkBox.setDrawBackgroundAsArc(8);
             addView(checkBox, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 6, 2, 6, 0));
             checkBox.setOnClickListener(v -> {
@@ -438,16 +443,30 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             checkBoxAnimation = null;
         }
         checkBox.setTag(show ? 1 : null);
+        if (show) {
+            checkBox.setVisibility(VISIBLE);
+        }
         if (animated) {
             checkBoxAnimation = new AnimatorSet();
             checkBoxAnimation.playTogether(
                     ObjectAnimator.ofFloat(checkBox, View.ALPHA, show ? 1.0f : 0.0f),
                     ObjectAnimator.ofFloat(moveImageView, View.ALPHA, show ? 0.0f : 1.0f));
             checkBoxAnimation.setDuration(180);
+            checkBoxAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (!show) {
+                        checkBox.setVisibility(INVISIBLE);
+                    }
+                }
+            });
             checkBoxAnimation.start();
         } else {
             checkBox.setAlpha(show ? 1.0f : 0.0f);
             moveImageView.setAlpha(show ? 0.0f : 1.0f);
+            if (!show) {
+                checkBox.setVisibility(INVISIBLE);
+            }
         }
     }
 
