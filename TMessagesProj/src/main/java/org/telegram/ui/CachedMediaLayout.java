@@ -1029,6 +1029,7 @@ public class CachedMediaLayout extends FrameLayout implements NestedSizeNotifier
             checkBox.setDrawBackgroundAsArc(14);
             checkBox.setColor(Theme.key_checkbox, Theme.key_radioBackground, Theme.key_checkboxCheck);
             View checkBoxClickableView = new View(getContext());
+            checkBoxClickableView.setContentDescription(LocaleController.getString(R.string.Select));
             checkBoxClickableView.setOnClickListener(v -> {
                 onCheckBoxPressed();
             });
