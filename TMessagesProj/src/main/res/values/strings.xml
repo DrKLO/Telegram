@@ -5145,6 +5145,14 @@
     <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
     <string name="AccDescrQuizIncorrectAnswer">Incorrect answer</string>
     <string name="AccDescrQuizExplanation">Explanation</string>
+    <string name="AccDescrChatPinned">Pinned</string>
+    <string name="AccDescrChatBotVerified">Verified bot</string>
+    <string name="AccDescrChatVoiceChatActive">Voice chat in progress</string>
+    <string name="AccDescrChatUnreadPollVotes">With new poll votes</string>
+    <string name="AccDescrNotificationsUnmuted">Notifications on</string>
+    <string name="AccDescrChatUnreadStories">With new stories</string>
+    <string name="AccDescrChatHiddenInCommunity">Hidden in the community</string>
+    <string name="AccDescrChatInFolders">In %s</string>
     <string name="AccDescrPipMode">Picture-in-Picture mode</string>
     <string name="AccDescrVoipMicOn">Microphone is on</string>
     <string name="AccDescrVoipMicOff">Microphone is off</string>
