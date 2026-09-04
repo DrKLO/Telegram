@@ -3790,6 +3790,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return result;
     }
 
+    private boolean isTodoItemDone(int index, PollButton button) {
+        // while the tick is still travelling the box holds the newer answer of the two
+        if (pollCheckBox != null && index >= 0 && index < pollCheckBox.length && pollCheckBox[index] != null) {
+            return pollCheckBox[index].isChecked();
+        }
+        return button != null && button.chosen;
+    }
+
     public void didPressVoteHint() {
         /*
         if (delegate != null) {
@@ -27640,7 +27648,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     PollButton button = pollButtons.get(buttonIndex);
                     StringBuilder sb = new StringBuilder(button.title.getText());
-                    if (!pollVoted) {
+                    if (button.task != null) {
+                        // an item of a checklist is ticked or it is not, and that is the whole of
+                        // what it says. Nothing of it reached a screen reader: a list with half of
+                        // it done read exactly like an untouched one. Where the list cannot be
+                        // ticked at all a bullet is drawn instead of a box, so it is not offered
+                        // as one either, and what is done is said in words, as the line through
+                        // the title says it on the screen
+                        if (currentMessageObject.canCompleteTodo()) {
+                            info.setClassName("android.widget.CheckBox");
+                            info.setCheckable(true);
+                            info.setChecked(isTodoItemDone(buttonIndex, button));
+                            if (button.author != null && isTodoItemDone(buttonIndex, button)) {
+                                sb.append(", ").append(formatString(R.string.AccDescrTodoDoneBy, button.author.getText()));
+                            }
+                        } else {
+                            info.setClassName("android.widget.TextView");
+                            if (isTodoItemDone(buttonIndex, button)) {
+                                sb.append(", ").append(getString(R.string.AccDescrTodoDone));
+                            }
+                        }
+                    } else if (!pollVoted) {
                         info.setClassName("android.widget.Button");
                     } else {
                         info.setSelected(button.chosen);
