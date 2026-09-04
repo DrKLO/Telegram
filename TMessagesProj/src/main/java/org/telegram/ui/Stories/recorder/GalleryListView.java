@@ -1005,10 +1005,23 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             setDraft(false);
             if (photoEntry == null) {
                 accessibilityText = null;
-            } else if (photoEntry.isVideo) {
-                accessibilityText = LocaleController.getString(R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration);
             } else {
-                accessibilityText = LocaleController.getString(R.string.AttachPhoto);
+                // the day a picture was taken is written under it in the gallery the chat attaches
+                // from, and said there too. Here it was written and never said, so one picture was
+                // told from the next by nothing at all: a hundred of them all called photo
+                final StringBuilder sb = new StringBuilder();
+                if (photoEntry.isLivePhoto()) {
+                    sb.append(LocaleController.getString(R.string.AttachLivePhoto));
+                } else if (photoEntry.isVideo) {
+                    sb.append(LocaleController.getString(R.string.AttachVideo));
+                    sb.append(", ");
+                    sb.append(LocaleController.formatDuration(photoEntry.duration));
+                } else {
+                    sb.append(LocaleController.getString(R.string.AttachPhoto));
+                }
+                sb.append(". ");
+                sb.append(LocaleController.getInstance().getFormatterStats().format(photoEntry.dateTaken * 1000L));
+                accessibilityText = sb;
             }
             loadBitmap(photoEntry);
             invalidate();
