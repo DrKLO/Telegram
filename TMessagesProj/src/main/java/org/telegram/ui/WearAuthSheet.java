@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.LocaleController;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -275,6 +277,7 @@ public class WearAuthSheet {
         sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         sheet.fixNavigationBar(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
 
+        accountSelectorLayout.setContentDescription(LocaleController.getString(R.string.Account));
         accountSelectorLayout.setOnClickListener(v -> {
             ItemOptions i = ItemOptions.makeOptions(sheet.container, sheet.getResourcesProvider(), accountSelectorInnerLayout);
             for (int account : accountNumbers) {
