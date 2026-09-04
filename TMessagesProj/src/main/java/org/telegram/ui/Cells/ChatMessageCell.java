@@ -27204,6 +27204,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         sb.append(title);
                     }
+                    // a checklist is drawn with the same two lines a poll is: what kind of list it
+                    // is, under the title, and how much of it is done, under the items. Neither was
+                    // ever spoken, because the block above is only entered for a poll, so all a
+                    // checklist said was its title
+                    if (currentMessageObject.isTodo()) {
+                        if (docTitleLayout != null && !TextUtils.isEmpty(docTitleLayout.getText())) {
+                            sb.append(", ");
+                            sb.append(docTitleLayout.getText());
+                        }
+                        if (animatedInfoLayout != null && !TextUtils.isEmpty(animatedInfoLayout.getText())) {
+                            sb.append(", ");
+                            sb.append(animatedInfoLayout.getText());
+                        }
+                    }
                     if (documentAttach != null) {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
                             sb.append(", ");
