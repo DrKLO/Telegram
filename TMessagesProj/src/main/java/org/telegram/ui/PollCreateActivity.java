@@ -1080,6 +1080,61 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         }
     }
 
+    // dragging a row into place is the only way the screen has of putting the items in order, so
+    // the same move is offered as two actions on the field of every item
+    private final PollEditTextCell.ReorderDelegate reorderDelegate = new PollEditTextCell.ReorderDelegate() {
+        private int indexOf(PollEditTextCell cell) {
+            final RecyclerView.ViewHolder holder = listView.findContainingViewHolder(cell);
+            if (holder == null) {
+                return -1;
+            }
+            final int position = holder.getAdapterPosition();
+            if (position == RecyclerView.NO_POSITION || answerStartRow < 0) {
+                return -1;
+            }
+            final int index = position - answerStartRow;
+            if (index < 0 || index >= answersCount) {
+                return -1;
+            }
+            // when only new items are being added, the ones already sent stay where they are
+            return onlyAdding && index < oldAnswersCount ? -1 : index;
+        }
+
+        private boolean movable(int index) {
+            return index >= 0 && index < answersCount && (!onlyAdding || index >= oldAnswersCount);
+        }
+
+        @Override
+        public boolean canMoveUp(PollEditTextCell cell) {
+            final int index = indexOf(cell);
+            return index > 0 && movable(index - 1);
+        }
+
+        @Override
+        public boolean canMoveDown(PollEditTextCell cell) {
+            final int index = indexOf(cell);
+            return index >= 0 && movable(index + 1);
+        }
+
+        @Override
+        public void moveUp(PollEditTextCell cell) {
+            move(indexOf(cell), -1);
+        }
+
+        @Override
+        public void moveDown(PollEditTextCell cell) {
+            move(indexOf(cell), 1);
+        }
+
+        private void move(int index, int by) {
+            if (!movable(index) || !movable(index + by)) {
+                return;
+            }
+            listAdapter.swapElements(answerStartRow + index, answerStartRow + index + by);
+            listView.announceForAccessibility(LocaleController.formatString(R.string.AccDescrPollOptionMoved, index + 1 + by, answersCount));
+        }
+    };
+
     private void addNewField() {
         resetSuggestEmojiPanel();
         answersChecks[answersCount] = false;
@@ -2037,6 +2092,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                         }
                         return false;
                     });
+                    cell.setReorderDelegate(reorderDelegate);
                     view = cell;
                     break;
                 }
