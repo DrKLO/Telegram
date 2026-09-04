@@ -648,6 +648,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     }
 
     public void setOnCheckClickListener(OnClickListener onCheckClickListener) {
+        checkFrame.setContentDescription(getString(R.string.Select));
         checkFrame.setOnClickListener(onCheckClickListener);
     }
 

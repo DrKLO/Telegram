@@ -368,6 +368,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
         };
         topView.addView(avatarTouchView, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
+        avatarTouchView.setContentDescription(getString(R.string.AccDescrChangeProfilePicture));
         avatarTouchView.setOnClickListener(v -> {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
             if (user == null) {
