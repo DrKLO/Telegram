@@ -27156,7 +27156,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 messageText = ssb;
                             }
                         }
-                        sb.append(messageText);
+                        // a poll names itself twice over: once as the kind of message it is, and
+                        // again under its question, where the kind is said in full. Leave the
+                        // first of the two out and let the fuller one stand
+                        final boolean namedByPoll = currentMessageObject.isPoll() && lastPoll != null
+                            && TextUtils.equals(messageText, currentMessageObject.getMediaTitle(MessageObject.getMedia(currentMessageObject.messageOwner)));
+                        if (!namedByPoll) {
+                            sb.append(messageText);
+                        }
                     }
                     if (documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO)) {
                         if (buttonState == 1 && loadingProgressLayout != null) {
@@ -27183,9 +27190,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     if (lastPoll != null) {
-                        sb.append(", ");
-                        sb.append(lastPoll.question.text);
-                        sb.append(", ");
+                        // the kind of poll comes before the question, the way it is drawn: the
+                        // line above the question is what says a poll is a poll
                         String title;
                         if (pollClosed) {
                             title = getString("FinalResults", R.string.FinalResults);
@@ -27202,7 +27208,41 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 title = getString("AnonymousPoll", R.string.AnonymousPoll);
                             }
                         }
+                        sb.append(", ");
                         sb.append(title);
+                        sb.append(", ");
+                        sb.append(lastPoll.question.text);
+                        // the counter under a poll, and the state the poll is in. All of it is
+                        // written on the card, so a sighted reader has it without touching
+                        // anything, while nothing here was ever said out loud
+                        sb.append(", ");
+                        if (lastPollResultsVoters == 0) {
+                            sb.append(getString(lastPoll.quiz ? R.string.NoVotesQuiz : R.string.NoVotes));
+                        } else {
+                            sb.append(formatPluralString(lastPoll.quiz ? "Answer" : "Vote", lastPollResultsVoters));
+                        }
+                        if (lastPoll.multiple_choice && !pollVoted && !pollClosed) {
+                            sb.append(", ");
+                            sb.append(getString(R.string.AccDescrPollMultipleChoice));
+                        }
+                        if (pollVoted) {
+                            sb.append(", ");
+                            sb.append(getString(R.string.AccDescrPollVoted));
+                        }
+                        if (!pollClosed) {
+                            if (lastPoll.hide_results_until_close && !lastPoll.creator) {
+                                sb.append(", ");
+                                sb.append(getString(R.string.PollResultsWillLater));
+                            }
+                            final int closeDate = lastPoll.close_date;
+                            if (closeDate > 0 && closeDate > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                                // the card counts down by the second. Saying when the poll closes
+                                // instead of how long is left keeps this text still, so the message
+                                // is not reported as changed over and over
+                                sb.append(", ");
+                                sb.append(formatString(R.string.AccDescrPollClosesAt, LocaleController.formatDateTime(closeDate, true)));
+                            }
+                        }
                     }
                     if (documentAttach != null) {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
