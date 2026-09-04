@@ -2086,12 +2086,17 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         cell.setDivider(pollLimitDuration != 0 || pollLimitDeadline != 0);
                     }
 
+                    // a setting that cannot be changed is marked only with a padlock on its
+                    // switch, and a press on it does nothing at all
                     if (position == poll2vQuizRow) {
                         cell.getCheckBox().setIconVisible(quizOnly, false);
+                        cell.setLocked(quizOnly ? getString(R.string.AccDescrPollQuizLocked) : null);
                     } else if (position == poll2vAllowAddingRow) {
                         cell.getCheckBox().setIconVisible(quizPoll || anonymousPoll, false);
+                        cell.setLocked(quizPoll || anonymousPoll ? getString(R.string.AccDescrPollAddingOptionsLocked) : null);
                     } else {
                         cell.getCheckBox().setIconVisible(false, false);
+                        cell.setLocked(null);
                     }
                     break;
                 }
