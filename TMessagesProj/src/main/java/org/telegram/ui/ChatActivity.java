@@ -42073,6 +42073,32 @@ public class ChatActivity extends BaseFragment implements
         }
 
         @Override
+        public boolean isMessageSelected(MessageObject message) {
+            if (message == null) {
+                return false;
+            }
+            final int index = message.getDialogId() == dialog_id ? 0 : 1;
+            return selectedMessagesIds[index].indexOfKey(message.getId()) >= 0;
+        }
+
+        @Override
+        public void didPressSelect(ChatMessageCell cell) {
+            if (cell == null || isInsideContainer || inPreviewMode) {
+                return;
+            }
+            // the two halves of what holding a message down does: it starts the chat choosing
+            // messages where it was not, and where it already is, it takes this one or puts it
+            // back. Both are the paths a hand takes, so nothing new can be chosen a new way
+            final float x = cell.getMeasuredWidth() / 2f;
+            final float y = cell.getMeasuredHeight() / 2f;
+            if (actionBar.isActionModeShowed() || isReport()) {
+                processRowSelect(cell, false, x, y);
+            } else {
+                createMenu(cell, false, true, x, y, true);
+            }
+        }
+
+        @Override
         public boolean onAccessibilityAction(int action, Bundle arguments) {
             if (action == AccessibilityNodeInfo.ACTION_CLICK || action == R.id.acc_action_small_button || action == R.id.acc_action_msg_options) {
                 if (inPreviewMode && allowExpandPreviewByClick) {
