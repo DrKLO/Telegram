@@ -1726,6 +1726,100 @@ public class ChatActivity extends BaseFragment implements
         return chatListView;
     }
 
+    private boolean focusedWhereTheChatOpened;
+    private Runnable focusOnOpenRunnable;
+
+    /**
+     * Take a screen reader to the place the chat opens at.
+     *
+     * A chat does not open at the bottom of itself. Where it opens is worked out before anything
+     * is drawn: at the place it was left, if it was left part way up; at the first unread message,
+     * where there are unread messages; and at the last message otherwise. Someone who can see the
+     * screen is given that place by the chat simply being there. A reader was left wherever it
+     * happened to be, which is usually the bar along the top, so none of it reached the one person
+     * who cannot tell where the chat opened by looking.
+     *
+     * The place is not guessed at here. Each of the three is a message the chat itself names, and
+     * the line saying where the unread messages start is drawn at the first of them, so the same
+     * three answers are found by asking what is on the screen.
+     */
+    private void focusWhereTheChatOpensForAccessibility() {
+        if (focusedWhereTheChatOpened || !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        focusedWhereTheChatOpened = true;
+        tryFocusWhereTheChatOpened(0);
+    }
+
+    /**
+     * A chat goes on settling after it first has messages in it: more arrive, the list is measured
+     * again, and anything put on the screen too early is moved off it. So this asks again, a few
+     * times, and stops the moment it has landed — or the moment the reader has been moved
+     * somewhere by the person using it, whose choice outranks this one.
+     */
+    private void tryFocusWhereTheChatOpened(int attempt) {
+        if (focusOnOpenRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(focusOnOpenRunnable);
+        }
+        focusOnOpenRunnable = () -> {
+            focusOnOpenRunnable = null;
+            if (chatListView == null || fragmentView == null || !fragmentView.isAttachedToWindow()) {
+                return;
+            }
+            final View target = whereTheChatOpened();
+            if (target != null && target.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)) {
+                return;
+            }
+            if (attempt < 6) {
+                tryFocusWhereTheChatOpened(attempt + 1);
+            }
+        };
+        AndroidUtilities.runOnUIThread(focusOnOpenRunnable, attempt == 0 ? 400 : 250);
+    }
+
+    /**
+     * What the chat opened at, out of what is on the screen: the line saying where the unread
+     * messages start, if it is there; else the message the chat was told to open at, which is the
+     * one it was left on; else the newest message, which is where a chat with nothing waiting in
+     * it opens.
+     */
+    private View whereTheChatOpened() {
+        if (chatListView == null) {
+            return null;
+        }
+        View newest = null;
+        int newestPosition = Integer.MAX_VALUE;
+        View openedAt = null;
+        for (int i = 0; i < chatListView.getChildCount(); ++i) {
+            final View child = chatListView.getChildAt(i);
+            if (child instanceof ChatUnreadCell) {
+                return child;
+            }
+            final MessageObject message;
+            if (child instanceof ChatMessageCell) {
+                message = ((ChatMessageCell) child).getMessageObject();
+            } else if (child instanceof ChatActionCell) {
+                message = ((ChatActionCell) child).getMessageObject();
+            } else {
+                continue;
+            }
+            if (message == null) {
+                continue;
+            }
+            if (startLoadFromMessageIdSaved != 0 && message.getId() == startLoadFromMessageIdSaved) {
+                openedAt = child;
+            }
+            // a chat is kept newest first and drawn upside down, so the newest message on the
+            // screen is the one lowest in the list rather than the one laid out first
+            final int position = chatListView.getChildAdapterPosition(child);
+            if (position != RecyclerView.NO_POSITION && position < newestPosition) {
+                newestPosition = position;
+                newest = child;
+            }
+        }
+        return openedAt != null ? openedAt : newest;
+    }
+
     private void startMultiselect(int position) {
         if (isInsideContainer) {
             return;
@@ -21721,6 +21815,7 @@ public class ChatActivity extends BaseFragment implements
         chatWasReset = false;
 
         if (isFirstLoading) {
+            focusWhereTheChatOpensForAccessibility();
             AndroidUtilities.runOnUIThread(() -> {
                 resumeDelayedFragmentAnimation();
 
