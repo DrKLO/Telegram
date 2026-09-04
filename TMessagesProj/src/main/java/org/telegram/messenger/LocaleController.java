@@ -2916,22 +2916,40 @@ public class LocaleController {
     public static String stringForMessageListDate(long date) {
         try {
             date *= 1000;
-            if (Math.abs(System.currentTimeMillis() - date) >= 31536000000L) {
-                return getInstance().getFormatterYear().format(new Date(date));
-            } else {
-                Calendar rightNow = Calendar.getInstance();
-                int day = rightNow.get(Calendar.DAY_OF_YEAR);
-                rightNow.setTimeInMillis(date);
-                int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+            long now = System.currentTimeMillis();
 
-                int dayDiff = dateDay - day;
-                if (dayDiff == 0 || dayDiff == -1 && System.currentTimeMillis() - date < 60 * 60 * 8 * 1000) {
-                    return getInstance().getFormatterDay().format(new Date(date));
-                } else if (dayDiff > -7 && dayDiff <= -1) {
-                    return getInstance().getFormatterWeek().format(new Date(date));
-                } else {
-                    return getInstance().getFormatterDayMonth().format(new Date(date));
-                }
+            Calendar rightNow = Calendar.getInstance();
+
+            rightNow.setTimeInMillis(now);
+            int currentYear = rightNow.get(Calendar.YEAR);
+            rightNow.set(Calendar.HOUR_OF_DAY, 0);
+            rightNow.set(Calendar.MINUTE, 0);
+            rightNow.set(Calendar.SECOND, 0);
+            rightNow.set(Calendar.MILLISECOND, 0);
+            long todayStart = rightNow.getTimeInMillis();
+
+            rightNow.setTimeInMillis(date);
+            int dateYear = rightNow.get(Calendar.YEAR);
+            rightNow.set(Calendar.HOUR_OF_DAY, 0);
+            rightNow.set(Calendar.MINUTE, 0);
+            rightNow.set(Calendar.SECOND, 0);
+            rightNow.set(Calendar.MILLISECOND, 0);
+            long dateStart = rightNow.getTimeInMillis();
+
+            // Whole calendar days between the two dates. Rounding keeps this exact
+            // across DST transitions, where a local day is not 24h long.
+            long dayDiff = Math.round((dateStart - todayStart) / 86400000.0);
+
+            if (dayDiff == 0 || dayDiff == -1 && now - date < 60 * 60 * 8 * 1000) {
+                return getInstance().getFormatterDay().format(new Date(date));
+            } else if (dayDiff > -7 && dayDiff <= -1) {
+                return getInstance().getFormatterWeek().format(new Date(date));
+            } else if (dateYear == currentYear) {
+                return getInstance().getFormatterDayMonth().format(new Date(date));
+            } else {
+                // A different calendar year must never be rendered as a bare
+                // "MMM dd" - without the year that label is ambiguous.
+                return getInstance().getFormatterYear().format(new Date(date));
             }
         } catch (Exception e) {
             FileLog.e(e);
