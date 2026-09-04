@@ -5548,6 +5548,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (unreadCount > 0) {
             sb.append(LocaleController.formatPluralString("NewMessages", unreadCount));
             sb.append(". ");
+        } else if (markUnread) {
+            // a chat marked unread by hand carries the same badge with nothing written in it
+            sb.append(getString(R.string.AccDescrChatMarkedUnread));
+            sb.append(". ");
         }
         if (mentionCount > 0) {
             sb.append(LocaleController.formatPluralString("AccDescrMentionCount", mentionCount));
@@ -5573,6 +5577,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             sb.append(LocaleController.formatString("AccDescrReceivedDate", R.string.AccDescrReceivedDate, date));
         }
         sb.append(". ");
+        // how far your own last message got is drawn beside the time, as a clock, one tick, two
+        // ticks or a mark in red, and none of it was ever said. A message that failed to send
+        // looked no different from one that arrived
+        if (drawError) {
+            sb.append(getString(R.string.AccDescrMsgSendingError));
+            sb.append(". ");
+        } else if (drawClock) {
+            sb.append(getString(R.string.AccDescrMsgSending));
+            sb.append(". ");
+        } else if (drawCheck2) {
+            sb.append(getString(drawCheck1 ? R.string.AccDescrMsgRead : R.string.AccDescrMsgUnread));
+            sb.append(". ");
+        }
         if (chat != null && !message.isOut() && message.isFromUser() && message.messageOwner.action == null) {
             TLRPC.User fromUser = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id);
             if (fromUser != null) {
