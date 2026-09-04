@@ -769,6 +769,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     public void updateDoneItemEnabled() {
         doneItem.setEnabled(currentAttachLayout == null ? false : currentAttachLayout.isDoneItemEnabled());
+        // a dimmed button says it is disabled and nothing more. What is missing is written on the
+        // screen, in a red count or an unmarked answer, and a screen reader is left to guess
+        final CharSequence why = currentAttachLayout == null ? null : currentAttachLayout.getDoneItemAccessibilityText();
+        doneItem.setContentDescription(TextUtils.isEmpty(why) ? null : TextUtils.concat(doneItem.getText(), ", ", why));
         float alpha = 0.0f;
         if (currentAttachLayout != null) {
             alpha += (currentAttachLayout.isDoneItemEnabled() ? 1.0f : 0.5f) * (nextAttachLayout == null ? 1.0f : translationProgress);
@@ -824,6 +828,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         public boolean isDoneItemEnabled() {
             return false;
+        }
+
+        /** Why the done button cannot be pressed yet, for a screen reader that cannot see it. */
+        public CharSequence getDoneItemAccessibilityText() {
+            return null;
         }
 
         public boolean hasDoneItem() {
