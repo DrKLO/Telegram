@@ -6008,6 +6008,61 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private CharSequence giveawayAccessibilityText() {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        if (currentMessageObject.isGiveaway()) {
+            return giveawayMessageCell.getAccessibilityText();
+        }
+        if (currentMessageObject.isGiveawayResults()) {
+            return giveawayResultsMessageCell.getAccessibilityText();
+        }
+        return null;
+    }
+
+    // the chats a giveaway runs in, and the winners it ended with, are drawn as a row of buttons
+    // that open them. They are drawn by hand and are no views of their own, so touch exploration
+    // had nothing to land on and nothing to press
+    private int giveawayAccessibilityButtonCount() {
+        if (currentMessageObject == null) {
+            return 0;
+        }
+        if (currentMessageObject.isGiveaway()) {
+            return giveawayMessageCell.getChatCount();
+        }
+        if (currentMessageObject.isGiveawayResults()) {
+            return giveawayResultsMessageCell.getUserCount();
+        }
+        return 0;
+    }
+
+    private CharSequence giveawayAccessibilityButtonTitle(int index) {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        if (currentMessageObject.isGiveaway()) {
+            return giveawayMessageCell.getChatTitle(index);
+        }
+        if (currentMessageObject.isGiveawayResults()) {
+            return giveawayResultsMessageCell.getUserTitle(index);
+        }
+        return null;
+    }
+
+    private Rect giveawayAccessibilityButtonBounds(int index) {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        if (currentMessageObject.isGiveaway()) {
+            return giveawayMessageCell.getChatBounds(index);
+        }
+        if (currentMessageObject.isGiveawayResults()) {
+            return giveawayResultsMessageCell.getUserBounds(index);
+        }
+        return null;
+    }
+
     private void didClickedImage() {
         if (currentMessageObject.hasMediaSpoilers() && !currentMessageObject.needDrawBluredPreview() && !currentMessageObject.isMediaSpoilersRevealed) {
             if (delegate != null && currentMessageObject.isSensitive()) {
@@ -27025,6 +27080,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         public static final int CONTACT_VIEW = 491;
         public static final int CONTACT_ADD = 490;
         public static final int CONTACT_MESSAGE = 489;
+        // well clear of the ids that stand for one button each, which run down from 499: a range
+        // that reached up into them would answer for every one of them and hide the lot
+        public static final int GIVEAWAY_BUTTONS_START = 300;
+        public static final int GIVEAWAY_BUTTONS_END = 400;
         private Path linkPath = new Path();
         private RectF rectF = new RectF();
         private Rect rect = new Rect();
@@ -27157,6 +27216,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                         sb.append(messageText);
+                        // a giveaway is a card drawn by hand: the prize, who can take part, the
+                        // chats it runs in, the countries it is open to and the day the winners
+                        // are picked. None of it is text of the message, so none of it was said
+                        // and the message was as good as empty
+                        final CharSequence giveaway = giveawayAccessibilityText();
+                        if (!TextUtils.isEmpty(giveaway)) {
+                            sb.append(", ");
+                            sb.append(giveaway);
+                        }
                     }
                     if (documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO)) {
                         if (buttonState == 1 && loadingProgressLayout != null) {
@@ -27424,6 +27492,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.addChild(ChatMessageCell.this, POLL_BUTTONS_START + i);
                     i++;
                 }
+                for (int g = 0; g < giveawayAccessibilityButtonCount(); g++) {
+                    if (!TextUtils.isEmpty(giveawayAccessibilityButtonTitle(g))) {
+                        info.addChild(ChatMessageCell.this, GIVEAWAY_BUTTONS_START + g);
+                    }
+                }
                 if (drawInstantView && !instantButtonRect.isEmpty()) {
                     info.addChild(ChatMessageCell.this, INSTANT_VIEW);
                 }
@@ -27677,6 +27750,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     rect.offset(pos[0], pos[1]);
                     info.setBoundsInScreen(rect);
                     info.setClickable(true);
+                } else if (virtualViewId >= GIVEAWAY_BUTTONS_START && virtualViewId < GIVEAWAY_BUTTONS_END) {
+                    final int index = virtualViewId - GIVEAWAY_BUTTONS_START;
+                    final CharSequence title = giveawayAccessibilityButtonTitle(index);
+                    final Rect bounds = giveawayAccessibilityButtonBounds(index);
+                    if (TextUtils.isEmpty(title) || bounds == null || bounds.isEmpty()) {
+                        return null;
+                    }
+                    info.setClassName("android.widget.Button");
+                    info.setEnabled(true);
+                    info.setText(title);
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    rect.set(bounds);
+                    info.setBoundsInParent(rect);
+                    // the bounds go into the map the cell hit tests against, so a finger on the
+                    // screen finds them as well as a swipe
+                    if (accessibilityVirtualViewBounds.get(virtualViewId) == null || !accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
+                        accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
+                    }
+                    rect.offset(pos[0], pos[1]);
+                    info.setBoundsInScreen(rect);
+                    info.setClickable(true);
                 } else if (virtualViewId == INSTANT_VIEW) {
                     info.setClassName("android.widget.Button");
                     info.setEnabled(true);
@@ -27907,6 +28001,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (virtualViewId == POLL_HINT) {
                         didPressVoteHint();
+                    } else if (virtualViewId >= GIVEAWAY_BUTTONS_START && virtualViewId < GIVEAWAY_BUTTONS_END) {
+                        if (delegate != null) {
+                            delegate.didPressGiveawayChatButton(ChatMessageCell.this, virtualViewId - GIVEAWAY_BUTTONS_START);
+                        }
+                        sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (virtualViewId == INSTANT_VIEW) {
                         if (delegate != null) {
                             delegate.didPressInstantButton(ChatMessageCell.this, drawInstantViewType);
