@@ -1234,7 +1234,6 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_SEND_NOW = 100;
     public final static int OPTION_EDIT_SCHEDULE_TIME = 102;
     public final static int OPTION_SPEED_PROMO = 103;
-    public final static int OPTION_OPEN_PROFILE = 104;
     public final static int OPTION_FACT_CHECK = 106;
     public final static int OPTION_EDIT_PRICE = 107;
     public final static int OPTION_GIFT = 108;
@@ -30883,12 +30882,6 @@ public class ChatActivity extends BaseFragment implements
             final ArrayList<Integer> options = new ArrayList<>();
             View optionsView = null;
 
-            if (AndroidUtilities.isAccessibilityScreenReaderEnabled() && message.messageOwner != null && message.messageOwner.from_id != null && message.messageOwner.from_id.user_id != getUserConfig().clientUserId && chatMode != MODE_SAVED) {
-                items.add(LocaleController.getString(R.string.OpenProfile));
-                options.add(OPTION_OPEN_PROFILE);
-                icons.add(R.drawable.msg_user_search);
-            }
-
             if (!getUserConfig().isPremium() && !getMessagesController().premiumFeaturesBlocked() && message.getDocument() != null && message.getDocument().size >= 150 * 1024 * 1024 && FileLoader.getInstance(currentAccount).isLoadingFile(FileLoader.getAttachFileName(message.getDocument())) && chatMode != MODE_SAVED) {
                 items.add(LocaleController.getString(R.string.PremiumSpeedPromo));
                 options.add(OPTION_SPEED_PROMO);
@@ -34248,11 +34241,6 @@ public class ChatActivity extends BaseFragment implements
             }
             case OPTION_SPEED_PROMO: {
                 showDialog(new PremiumFeatureBottomSheet(ChatActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED, true));
-                break;
-            }
-            case OPTION_OPEN_PROFILE: {
-                TLRPC.Peer from = selectedObject.messageOwner.from_id;
-                openUserProfile(from.user_id != 0 ? from.user_id : from.channel_id != 0 ? from.channel_id : from.chat_id);
                 break;
             }
             case OPTION_FACT_CHECK: {
