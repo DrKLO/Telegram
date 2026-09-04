@@ -39,6 +39,10 @@ public class TopViewCell extends LinearLayout implements Theme.Colorable {
         imageView.setOnClickListener(v -> {
             imageView.getImageReceiver().startAnimation();
         });
+        // the picture at the top of the screen plays its animation again when pressed, and that
+        // is the whole of what pressing it does. It has no words and nothing to say, so a screen
+        // reader stopped on it and said nothing; there is no name to give it that would be true
+        imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(imageView, LayoutHelper.createLinear(90, 90, Gravity.CENTER, 0, 9, 0, 9));
 
         titleView = new LinkSpanDrawable.LinksTextView(context);
