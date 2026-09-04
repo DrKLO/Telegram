@@ -382,6 +382,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     ActionBarMenuSubItem switchItem;
                     if (type == TYPE_SETUP_CODE) {
                         otherItem = menu.addItem(0, R.drawable.ic_ab_other);
+        otherItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
                         switchItem = otherItem.addSubItem(ID_SWITCH_TYPE, R.drawable.msg_permissions, LocaleController.getString(R.string.PasscodeSwitchToPassword));
                     } else switchItem = null;
 
@@ -539,6 +540,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                     }
                 });
 
+                passwordButton.setContentDescription(LocaleController.getString(R.string.SettingsHelp));
                 passwordButton.setOnClickListener(v -> {
                     isPasswordShown.set(!isPasswordShown.get());
 

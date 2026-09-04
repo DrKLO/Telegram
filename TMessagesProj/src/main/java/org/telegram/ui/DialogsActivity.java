@@ -3296,6 +3296,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         fragmentSearchField.setPivotY(0);
         if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
             speedItem = menu.addItem(-47, R.drawable.avd_speed);
+            speedItem.setContentDescription(LocaleController.getString(R.string.Speed));
             AndroidUtilities.removeFromParent(speedItem);
             speedItem.setOnClickListener(v -> showDialog(new PremiumFeatureBottomSheet(DialogsActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED, true)));
 
@@ -6727,6 +6728,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionModeCloseView.setImageDrawable(new BackDrawable(true));
             actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
             actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
+            actionModeCloseView.setContentDescription(LocaleController.getString(R.string.Close));
             actionModeCloseView.setOnClickListener(v -> hideActionMode(true));
             actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
             actionModeViews.add(actionModeCloseView);

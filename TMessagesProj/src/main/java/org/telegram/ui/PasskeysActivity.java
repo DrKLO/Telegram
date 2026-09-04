@@ -259,6 +259,7 @@ public class PasskeysActivity extends BaseFragment {
             } else {
                 subtitleView.setText(LocaleController.formatString(R.string.PasskeyCreatedOn, LocaleController.formatDateTime(passkey.date, false)));
             }
+            optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsView.setOnClickListener(onOptions);
             setWillNotDraw(!(needDivider = divider));
         }

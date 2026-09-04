@@ -5514,6 +5514,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         callMessageHideButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_graySectionText, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         callMessageHideButton.setScaleType(ImageView.ScaleType.CENTER);
         callMessageHideButton.setImageResource(R.drawable.arrow_more);
+        callMessageHideButton.setContentDescription(LocaleController.getString(R.string.AccDescrCollapsePanel));
         callMessageHideButton.setOnClickListener(v -> hideKeyboardOrEmojiView());
 
         callMessageSendButton = new ImageView(context);
@@ -5521,6 +5522,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         callMessageSendButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         callMessageSendButton.setScaleType(ImageView.ScaleType.CENTER);
         callMessageSendButton.setImageResource(R.drawable.ic_send);
+        callMessageSendButton.setContentDescription(LocaleController.getString(R.string.Send));
         callMessageSendButton.setOnClickListener(v -> {
             CharSequence text = callMessageEnterView.getText();
             TLRPC.TL_textWithEntities toSend = new TLRPC.TL_textWithEntities();

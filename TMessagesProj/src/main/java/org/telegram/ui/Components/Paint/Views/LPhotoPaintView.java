@@ -542,6 +542,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         undoButton.setImageResource(R.drawable.photo_undo2);
         undoButton.setPadding(dp(3), dp(3), dp(3), dp(3));
         undoButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        undoButton.setContentDescription(LocaleController.getString(R.string.Undo));
         undoButton.setOnClickListener(v -> {
             if (renderView != null && renderView.getCurrentBrush() instanceof Brush.Shape) {
                 renderView.clearShape();

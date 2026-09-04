@@ -91,6 +91,7 @@ public class ColorPickerBottomSheet extends BottomSheet {
         pipetteView.setImageResource(R.drawable.picker);
         pipetteView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         pipetteView.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        pipetteView.setContentDescription(LocaleController.getString(R.string.AccDescrColorPicker));
         pipetteView.setOnClickListener(v -> {
             if (pipetteDelegate.isPipetteVisible()) {
                 return;
@@ -127,6 +128,7 @@ public class ColorPickerBottomSheet extends BottomSheet {
         doneView.setImageResource(R.drawable.ic_ab_done);
         doneView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         doneView.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        doneView.setContentDescription(LocaleController.getString(R.string.Done));
         doneView.setOnClickListener(v -> {
             dismiss();
         });

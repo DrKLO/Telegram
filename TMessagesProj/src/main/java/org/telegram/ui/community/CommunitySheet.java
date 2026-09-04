@@ -772,9 +772,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             ActionBarMenu menu = actionBar.createMenu();
             menu.setGlassMode(true);
             menu.setTranslationX(-dp(7));
-            menu.addItem(3, R.drawable.outline_header_search);
+            menu.addItem(3, R.drawable.outline_header_search).setContentDescription(LocaleController.getString(R.string.Search));
             if (ChatObject.hasAdminRights(currentCommunity)) {
-                menu.addItem(2, R.drawable.msg_download_settings);
+                menu.addItem(2, R.drawable.msg_download_settings).setContentDescription(LocaleController.getString(R.string.Settings));
             }
 
             ButtonWithCounterView bottomButton = new ButtonWithCounterView(getContext(), resourcesProvider);
@@ -899,7 +899,7 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             ActionBarMenu menu = actionBar.createMenu();
             menu.setGlassMode(true);
             menu.setTranslationX(-dp(7));
-            menu.addItem(3, R.drawable.outline_header_search);
+            menu.addItem(3, R.drawable.outline_header_search).setContentDescription(LocaleController.getString(R.string.Search));
 
             closeChatToCommunityButton = new ButtonWithCounterView(getContext(), resourcesProvider);
             closeChatToCommunityButton.setRound();

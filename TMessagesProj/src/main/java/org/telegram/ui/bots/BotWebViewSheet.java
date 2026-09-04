@@ -1439,7 +1439,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         }
 
         if (onVerifiedAge == null) {
-            menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more);
+            menu.addItem(R.id.menu_collapse_bot, R.drawable.arrow_more).setContentDescription(LocaleController.getString(R.string.AccDescrCollapsePanel));
         }
         optionsItem = menu.addItem(0, optionsIcon = new BotFullscreenButtons.OptionsIcon(getContext()));
         optionsItem.setOnClickListener(v -> {

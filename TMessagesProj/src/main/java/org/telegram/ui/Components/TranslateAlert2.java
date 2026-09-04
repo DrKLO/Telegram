@@ -1207,6 +1207,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             backButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
             backButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             backButton.setAlpha(0f);
+            backButton.setContentDescription(LocaleController.getString(R.string.Back));
             backButton.setOnClickListener(e -> dismiss());
             addView(backButton, LayoutHelper.createFrame(54, 54, Gravity.TOP, 1, 1, 1, 1));
 

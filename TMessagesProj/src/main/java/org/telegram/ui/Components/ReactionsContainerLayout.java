@@ -2566,6 +2566,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     premiumLockIconView.setScaleY(0f);
                     premiumLockIconView.setPadding(dp(1), dp(1), dp(1), dp(1));
                     premiumLockContainer.addView(premiumLockIconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+                    premiumLockIconView.setContentDescription(LocaleController.getString(R.string.PremiumMore));
                     premiumLockIconView.setOnClickListener(v -> {
                         int[] position = new int[2];
                         v.getLocationOnScreen(position);

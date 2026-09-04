@@ -2173,6 +2173,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
 
             final ActionBarMenu menu = actionBar.createMenu();
             final ActionBarMenuItem other = menu.addItem(1, R.drawable.ic_ab_other);
+        other.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {

@@ -1070,11 +1070,11 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 if (currentWallpaper instanceof WallpapersListActivity.FileWallpaper) {
                     WallpapersListActivity.FileWallpaper fileWallpaper = (WallpapersListActivity.FileWallpaper) currentWallpaper;
                     if (fileWallpaper.originalPath != null) {
-                        menu2.addItem(OPTION_PHOTO_EDIT, R.drawable.msg_header_draw);
+                        menu2.addItem(OPTION_PHOTO_EDIT, R.drawable.msg_header_draw).setContentDescription(LocaleController.getString(R.string.AccDescrPhotoEditor));
                     }
                 }
                 if (dialogId == 0 && (BuildVars.DEBUG_PRIVATE_VERSION && Theme.getActiveTheme().getAccent(false) != null || currentWallpaper instanceof WallpapersListActivity.ColorWallpaper && !Theme.DEFAULT_BACKGROUND_SLUG.equals(((WallpapersListActivity.ColorWallpaper) currentWallpaper).slug) || currentWallpaper instanceof TLRPC.TL_wallPaper)) {
-                    menu2.addItem(5, R.drawable.msg_header_share);
+                    menu2.addItem(5, R.drawable.msg_header_share).setContentDescription(LocaleController.getString(R.string.ShareFile));
                 }
                 if (dialogId != 0 && shouldShowDayNightIcon) {
                     sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, dp(28), dp(28), true, null);
