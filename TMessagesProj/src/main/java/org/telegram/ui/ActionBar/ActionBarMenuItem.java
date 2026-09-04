@@ -1278,11 +1278,15 @@ public class ActionBarMenuItem extends FrameLayout {
 
     public void setSearchFieldHint(CharSequence hint) {
         searchFieldHint = hint;
+        // the button is called by the hint of the field it opens, and it can be called that from
+        // the moment the hint is given. The field is not built until the search is opened, and
+        // naming the button was left waiting on the field — so until it had been pressed, which
+        // is the one thing that cannot be done without knowing what it is, it had no name at all
+        setContentDescription(hint);
         if (searchFieldCaption == null) {
             return;
         }
         searchField.setHint(hint);
-        setContentDescription(hint);
     }
 
     public void setSearchFieldText(CharSequence text, boolean animated) {
