@@ -514,11 +514,9 @@ public class TelegramMediaSession {
         @Override
         public void onPlay() {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-            if (messageObject == null) {
-                if (lastSelectedDialog != 0) {
-                    onPlayFromMediaId(lastSelectedDialog + "_" + 0, null);
-                }
-            } else {
+            // A generic Play command should only resume the current item. Selecting a
+            // new item from the browse catalog requires onPlayFromMediaId or search.
+            if (messageObject != null) {
                 MediaController.getInstance().playMessage(messageObject);
             }
         }
