@@ -3779,7 +3779,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
             delegate.didPressSuggestionButton();
         });
-        suggestButton.setContentDescription(getString(R.string.AccDescrAttachButton));
+        // this button offers the message as a post rather than sending it, and it was called
+        // what the button beside it is called: a reader was told it attaches media, which is what
+        // the other one does and this one does not
+        suggestButton.setContentDescription(getString(R.string.PostSuggestionsOfferTitle));
     }
 
     private boolean suggestButtonVisible;
