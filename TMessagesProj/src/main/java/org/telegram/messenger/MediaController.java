@@ -2948,6 +2948,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
         int index = currentPlayList.indexOf(messageObject);
+        if (index < 0) {
+            // MessageObject overloads equals(MessageObject) but does not override
+            // equals(Object), so indexOf() compares by identity and misses an
+            // equivalent object coming from a rebuilt playlist.
+            for (int a = 0, N = currentPlayList.size(); a < N; a++) {
+                MessageObject object = currentPlayList.get(a);
+                if (object != null && object.getId() == messageObject.getId() && object.getDialogId() == messageObject.getDialogId()) {
+                    index = a;
+                    break;
+                }
+            }
+        }
         if (index >= 0) {
             currentPlaylistNum = index;
         }
