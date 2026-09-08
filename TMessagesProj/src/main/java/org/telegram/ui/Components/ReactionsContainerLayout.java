@@ -1842,6 +1842,12 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     info.setText(LocaleController.getString(R.string.AccDescrCustomEmoji));
                     info.setEnabled(true);
                 }
+                // the one that has been picked - the effect a message is to be sent with, or the
+                // reaction already left on it - is drawn smaller and on a circle of its own, and
+                // that drawing was the whole of what said so. What had been picked read exactly
+                // as what had not, and a press said nothing of what it had just done
+                info.setCheckable(true);
+                info.setChecked(selected);
             }
         }
 
