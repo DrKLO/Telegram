@@ -26571,6 +26571,84 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return layoutHeight;
     }
 
+    // a channel that signs its posts with the person behind them draws that person's picture
+    // beside every post, and a tap on the picture opens them. The picture is drawn by the cell and
+    // is no view of its own, so touch exploration had nothing to tap: the person was named over
+    // every post and could not be reached from any of them.
+    //
+    // in a group the same picture is held down rather than tapped, and what that opens is a menu
+    // the chat builds. A channel opens no such menu, so what is offered here is the tap itself.
+    private boolean hasSignedPostAuthorAction() {
+        if (!isAvatarVisible || currentMessageObject == null || delegate == null) {
+            return false;
+        }
+        if (currentMessageObject.isSponsored() || currentMessageObject.getDialogId() >= 0) {
+            return false;
+        }
+        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-currentMessageObject.getDialogId());
+        if (!ChatObject.isChannelAndNotMegaGroup(chat) || !chat.signature_profiles) {
+            return false;
+        }
+        // a picture standing for a forward whose sender is hidden opens no one
+        return currentUser != null && currentUser.id != 0 || currentChat != null;
+    }
+
+    // the chat a tap on the picture is answered with. A post forwarded into the channel opens
+    // where it came from; anything else stays with the channel the post was made in
+    private TLRPC.Chat signedPostAuthorTargetChat() {
+        TLRPC.Chat chat = currentChat;
+        if (currentMessageObject != null && currentMessageObject.messageOwner.fwd_from != null
+            && (currentMessageObject.messageOwner.fwd_from.flags & 16) == 0 && currentForwardChannel != null) {
+            chat = currentForwardChannel;
+        }
+        return chat != null ? chat : currentChat;
+    }
+
+    private int signedPostAuthorTargetPostId() {
+        if (currentMessageObject == null || currentMessageObject.messageOwner.fwd_from == null) {
+            return 0;
+        }
+        if ((currentMessageObject.messageOwner.fwd_from.flags & 16) != 0) {
+            return currentMessageObject.messageOwner.fwd_from.saved_from_msg_id;
+        }
+        return currentMessageObject.messageOwner.fwd_from.channel_post;
+    }
+
+    // named by what the tap opens and not by what the picture is drawn in. A channel that signs
+    // its posts keeps itself as the chat of every cell and names the person only in the message,
+    // so a name taken from the cell called opening a person opening a channel.
+    private CharSequence getSignedPostAuthorActionLabel() {
+        if (currentUser != null) {
+            return getString(R.string.OpenProfile);
+        }
+        final TLRPC.Chat target = signedPostAuthorTargetChat();
+        if (target != null && target.signature_profiles && currentMessageObject != null) {
+            final long did = DialogObject.getPeerDialogId(currentMessageObject.messageOwner.from_id);
+            // the channel signing in its own name opens its own page, which is a profile as much
+            // as a person's is
+            if (did > 0 || did == currentMessageObject.getDialogId()) {
+                return getString(R.string.OpenProfile);
+            }
+            if (did < 0) {
+                final TLRPC.Chat signer = MessagesController.getInstance(currentAccount).getChat(-did);
+                return getString(ChatObject.isChannelAndNotMegaGroup(signer) ? R.string.OpenChannel2 : R.string.OpenGroup2);
+            }
+        }
+        return getString(ChatObject.isChannelAndNotMegaGroup(target) ? R.string.OpenChannel2 : R.string.OpenGroup2);
+    }
+
+    // tapped the way the picture is tapped, so that a reader comes to whatever a tap comes to
+    private void performSignedPostAuthorAction() {
+        if (!hasSignedPostAuthorAction()) {
+            return;
+        }
+        if (currentUser != null) {
+            delegate.didPressUserAvatar(this, currentUser, lastTouchX, lastTouchY, false);
+            return;
+        }
+        delegate.didPressChannelAvatar(this, signedPostAuthorTargetChat(), signedPostAuthorTargetPostId(), lastTouchX, lastTouchY, false);
+    }
+
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
@@ -26619,6 +26697,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 }
             }
+        } else if (action == R.id.acc_action_sender_profile) {
+            performSignedPostAuthorAction();
         }
         if (currentMessageObject.isVoice() || currentMessageObject.isRoundVideo() || currentMessageObject.isMusic() && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
             if (seekBarAccessibilityDelegate.performAccessibilityActionInternal(action, arguments)) {
@@ -27367,6 +27447,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (drawSummarizeButton || drawSummaryReply) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
+                }
+                if (hasSignedPostAuthorAction()) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_sender_profile, getSignedPostAuthorActionLabel()));
                 }
                 if (currentMessageObject.textLayoutBlocks != null) {
                     for (MessageObject.TextLayoutBlock block : currentMessageObject.textLayoutBlocks) {
