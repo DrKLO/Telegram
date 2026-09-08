@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -120,6 +121,19 @@ public class SelectorCountryCell extends BaseCell {
         } else {
             checkBox.animate().cancel();
             checkBox.setAlpha(alpha);
+        }
+    }
+
+    // the tick beside a country is the whole of what says it is one of the countries chosen, and
+    // it was only drawn: the country read the same whether it had been taken or left, and a press
+    // on it said nothing of which of the two it had just done
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (checkBox.getVisibility() == View.VISIBLE) {
+            info.setClassName("android.widget.CheckBox");
+            info.setCheckable(true);
+            info.setChecked(checkBox.isChecked());
         }
     }
 
