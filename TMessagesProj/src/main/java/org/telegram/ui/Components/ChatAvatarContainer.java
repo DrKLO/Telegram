@@ -30,6 +30,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -1301,10 +1302,58 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                     animatedSubtitleTextView.setTextColor(overrideSubtitleColor);
                 }
             }
+            announceSubtitleChange(newSubtitle);
         } else {
             lastSubtitle = newSubtitle;
         }
         checkActionBar(animated);
+    }
+
+    private CharSequence announcedSubtitle;
+
+    // the line under the name says whether the person is online, when they were last seen, and
+    // that they are writing something. It is written where it can be seen at a glance and changes
+    // on its own, but a screen reader is only given it again when the header is reached again, so
+    // someone sitting on the header while the person came online, or started writing, was told
+    // nothing at all.
+    //
+    // Say the line again when it changes, and only then, and only while the header is the thing
+    // being read: anywhere else it would talk over the messages.
+    private void announceSubtitleChange(CharSequence newSubtitle) {
+        if (TextUtils.isEmpty(newSubtitle) || TextUtils.equals(newSubtitle, announcedSubtitle)) {
+            return;
+        }
+        // the header can be showing something else of its own for a while, and what is kept for
+        // afterwards is not what anyone is reading
+        if (getSubtitleTextView() == null || getSubtitleTextView().getVisibility() != VISIBLE) {
+            return;
+        }
+        final CharSequence previous = announcedSubtitle;
+        announcedSubtitle = newSubtitle;
+        // the first line a header is given is the one it opens with, and opening the chat reads
+        // it out already
+        if (previous == null || !isHeaderReadOutByAccessibility()) {
+            return;
+        }
+        announceForAccessibility(newSubtitle);
+    }
+
+    private boolean isHeaderReadOutByAccessibility() {
+        final AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (am == null || !am.isEnabled() || !am.isTouchExplorationEnabled()) {
+            return false;
+        }
+        if (isAccessibilityFocused()) {
+            return true;
+        }
+        // the header is read as one thing or as its parts, depending on what the reader settles
+        // on, so any of them holding the focus is the header being read
+        for (int i = 0; i < getChildCount(); i++) {
+            if (getChildAt(i).isAccessibilityFocused()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static CharSequence getChatSubtitle(TLRPC.Chat chat, TLRPC.ChatFull info, int onlineCount) {
