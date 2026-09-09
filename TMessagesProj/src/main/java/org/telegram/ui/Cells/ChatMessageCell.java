@@ -26571,12 +26571,33 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return layoutHeight;
     }
 
+    // a message that holds nothing to open answers a press with nothing at all: a text message,
+    // and a poll or a checklist, whose answers are pressed on their own and whose card is not.
+    // What a press on the screen does to such a message is hold it, and what holding it opens is
+    // the menu of the message, so that is what a press asks for here. The menu keeps the one
+    // place it is offered by name, which is where a reader looks for it.
+    private boolean pressOpensMessageOptions() {
+        if (currentMessageObject == null || drawVideoImageButton) {
+            return false;
+        }
+        if (currentMessageObject.type != MessageObject.TYPE_TEXT && currentMessageObject.type != MessageObject.TYPE_POLL) {
+            return false;
+        }
+        return getIconForCurrentState() == MediaActionDrawable.ICON_NONE;
+    }
+
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
             return false;
         }
         if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+            if (pressOpensMessageOptions()) {
+                if (delegate != null) {
+                    delegate.didPressOther(this, otherX, otherY);
+                }
+                return true;
+            }
             int icon = getIconForCurrentState();
             if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
                 didPressButton(true, false);
