@@ -1256,6 +1256,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     CharSequence accessibilityText;
     private boolean accessibilityTextUnread, accessibilityTextContentUnread;
     private long accessibilityTextFileSize;
+    private boolean accessibilityTextMediaDownloaded;
+    private int accessibilityStateMessageId = Integer.MIN_VALUE;
+    private boolean accessibilityStateDownloaded, accessibilityStateContentUnread, accessibilityStateUnread;
+    private CharSequence accessibilityStateReactions;
     private boolean wasTranscriptionOpen;
     private Path instantLinkArrowPath;
     private Paint instantLinkArrowPaint;
@@ -18061,6 +18065,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public void onSuccessDownload(String fileName) {
+        checkAccessibilityStateChanges();
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER && currentMessageObject.isDice()) {
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             setCurrentDiceValue(true);
@@ -20119,10 +20124,133 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     protected void onDraw(Canvas canvas) {
         drawInternal(canvas);
     }
+    // what a message keeps as a file of its own: a picture, a voice, a video, a round video, a
+    // gif, a piece of music or a file. Everything else it holds is words, and words are here as
+    // soon as the message is
+    private boolean hasAccessibilityDownloadState() {
+        if (currentMessageObject == null || currentMessageObject.isSending() || currentMessageObject.isSendError() || currentMessageObject.isEditing()) {
+            return false;
+        }
+        switch (currentMessageObject.type) {
+            case MessageObject.TYPE_PHOTO:
+            case MessageObject.TYPE_VOICE:
+            case MessageObject.TYPE_VIDEO:
+            case MessageObject.TYPE_ROUND_VIDEO:
+            case MessageObject.TYPE_GIF:
+            case MessageObject.TYPE_FILE:
+            case MessageObject.TYPE_MUSIC:
+                return true;
+        }
+        return false;
+    }
+
+    private boolean isMediaDownloadedForAccessibility() {
+        return currentMessageObject != null && (currentMessageObject.mediaExists || currentMessageObject.attachPathExists);
+    }
+
+    // only the message a screen reader is sitting on is spoken to: anything else would talk over
+    // whatever is being read somewhere else in the chat
+    private boolean isReadOutByAccessibility() {
+        if (!isAccessibilityFocused()) {
+            return false;
+        }
+        final AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+        return am != null && am.isEnabled() && am.isTouchExplorationEnabled();
+    }
+
+    // a message changes under the reader: the file arrives, a voice is played, a message is seen.
+    // All of it is drawn, and the words a reader is given are only built again the next time the
+    // message is reached, so someone sitting on a message heard none of it and had to leave and
+    // come back to find out. Say the piece that changed, and nothing else.
+    private void checkAccessibilityStateChanges() {
+        if (currentMessageObject == null) {
+            return;
+        }
+        final boolean downloaded = hasAccessibilityDownloadState() && isMediaDownloadedForAccessibility();
+        final boolean contentUnread = currentMessageObject.isContentUnread();
+        final boolean unread = currentMessageObject.isOut() && !currentMessageObject.scheduled && currentMessageObject.isUnread();
+        final CharSequence reactions = saysReactionChanges() ? getReactionsAccessibilityState() : null;
+        final int id = currentMessageObject.getId();
+        // a cell is used again for another message, and what the last one was doing is nothing to
+        // say about this one
+        if (accessibilityStateMessageId != id) {
+            accessibilityStateMessageId = id;
+        } else if (isReadOutByAccessibility()) {
+            final StringBuilder changed = new StringBuilder();
+            if (downloaded && !accessibilityStateDownloaded) {
+                appendAccessibilityStateChange(changed, getString(R.string.AccDescrMediaDownloaded));
+            }
+            if (!contentUnread && accessibilityStateContentUnread) {
+                appendAccessibilityStateChange(changed, getString(R.string.AccDescrMsgPlayed));
+            }
+            if (!unread && accessibilityStateUnread) {
+                appendAccessibilityStateChange(changed, getString(R.string.AccDescrMsgRead));
+            }
+            if (!TextUtils.isEmpty(reactions) && !TextUtils.equals(reactions, accessibilityStateReactions)) {
+                appendAccessibilityStateChange(changed, reactions);
+            }
+            if (changed.length() > 0) {
+                announceForAccessibility(changed);
+            }
+        }
+        accessibilityStateDownloaded = downloaded;
+        accessibilityStateContentUnread = contentUnread;
+        accessibilityStateUnread = unread;
+        accessibilityStateReactions = reactions;
+    }
+
+    private void appendAccessibilityStateChange(StringBuilder sb, CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        sb.append(text);
+    }
+
+    // a reaction arriving is something that happens to a message while it sits there, and it is
+    // drawn under it without a word said. In a channel they arrive by the hundred and would talk
+    // over everything else, so this is for the chats where a reaction is one person answering
+    private boolean saysReactionChanges() {
+        if (currentMessageObject == null) {
+            return false;
+        }
+        final long did = currentMessageObject.getDialogId();
+        if (did >= 0) {
+            return true;
+        }
+        return !ChatObject.isChannelAndNotMegaGroup(MessagesController.getInstance(currentAccount).getChat(-did));
+    }
+
+    // the reactions as they now stand, in the form the message itself reads them out in: what is
+    // under the message and how many gave each of them
+    private CharSequence getReactionsAccessibilityState() {
+        if (currentMessageObject == null || currentMessageObject.messageOwner.reactions == null || currentMessageObject.messageOwner.reactions.results == null) {
+            return null;
+        }
+        final StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < currentMessageObject.messageOwner.reactions.results.size(); ++i) {
+            final TLRPC.ReactionCount reactionCount = currentMessageObject.messageOwner.reactions.results.get(i);
+            if (reactionCount == null || reactionCount.count <= 0) {
+                continue;
+            }
+            final String emoticon = reactionCount.reaction instanceof TLRPC.TL_reactionEmoji
+                ? ((TLRPC.TL_reactionEmoji) reactionCount.reaction).emoticon
+                : getString(R.string.AccDescrCustomEmoji);
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(emoticon).append(" ").append(reactionCount.count);
+        }
+        return sb.length() > 0 ? sb : null;
+    }
+
     public void drawInternal(Canvas canvas) {
         if (currentMessageObject == null) {
             return;
         }
+        checkAccessibilityStateChanges();
         if (!wasLayout) {
             onLayout(false, getLeft(), getTop(), getRight(), getBottom());
         }
@@ -27077,7 +27205,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final boolean unread = currentMessageObject != null && currentMessageObject.isOut() && !currentMessageObject.scheduled && currentMessageObject.isUnread();
                 final boolean contentUnread = currentMessageObject != null && currentMessageObject.isContentUnread();
                 final long fileSize = currentMessageObject != null ? currentMessageObject.loadedFileSize : 0;
-                if (accessibilityText == null || accessibilityTextUnread != unread || accessibilityTextContentUnread != contentUnread || accessibilityTextFileSize != fileSize) {
+                final boolean mediaDownloaded = isMediaDownloadedForAccessibility();
+                if (accessibilityText == null || accessibilityTextUnread != unread || accessibilityTextContentUnread != contentUnread || accessibilityTextFileSize != fileSize || accessibilityTextMediaDownloaded != mediaDownloaded) {
                     SpannableStringBuilder sb = new SpannableStringBuilder();
                     if (isChat && currentUser != null && !currentMessageObject.isOut()) {
                         sb.append(UserObject.getUserName(currentUser));
@@ -27212,6 +27341,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             sb.append(AndroidUtilities.formatFileSize(documentAttach.size));
                         }
                     }
+                    // whether what the message holds is already on the phone is drawn as the
+                    // button over it and was never said, though it is what decides what pressing
+                    // the message does. It comes after the length and the size, where the button
+                    // is drawn
+                    if (hasAccessibilityDownloadState()) {
+                        sb.append(", ");
+                        sb.append(getString(isMediaDownloadedForAccessibility() ? R.string.AccDescrMediaDownloaded : R.string.AccDescrMediaNotDownloaded));
+                    }
                     if (currentMessageObject.isVoiceTranscriptionOpen()) {
                         sb.append("\n");
                         sb.append(currentMessageObject.getVoiceTranscription());
@@ -27322,6 +27459,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     accessibilityTextUnread = unread;
                     accessibilityTextContentUnread = contentUnread;
                     accessibilityTextFileSize = fileSize;
+                    accessibilityTextMediaDownloaded = mediaDownloaded;
                 }
 
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
