@@ -24557,8 +24557,9 @@ public class ChatActivity extends BaseFragment implements
         int t = chatListView.getHeight();
         int b = 0;
 
+        int a = startRow;
         long groupId = 0;
-        for (int a = startRow; ; a++) {
+        while (true) {
             final View view = chatListView.findViewByPosition(a);
             final MessageObject messageObject;
             final int padding;
@@ -24596,9 +24597,8 @@ public class ChatActivity extends BaseFragment implements
         int t = chatListView.getHeight();
         int b = 0;
 
-        int a = startRow;
         long groupId = 0;
-        while (true) {
+        for (int a = startRow; ; a++) {
             final View view = chatListView.findViewByPosition(a);
             if (view == null) {
                 break;
