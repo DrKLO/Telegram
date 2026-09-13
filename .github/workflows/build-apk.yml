@@ -1,0 +1,62 @@
+name: Build Devgram APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK 21 (Telegram ke liye stable)
+        run: |
+          sdkmanager --install "ndk;21.4.7075529"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+
+      - name: Grant permission
+        run: chmod +x gradlew
+
+      - name: Set API ID/HASH (agar secrets hain to)
+        run: |
+          if [ -n "${{ secrets.API_ID }}" ]; then
+            sed -i "s/APP_ID = .*/APP_ID = ${{ secrets.API_ID }};/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+            sed -i 's/APP_HASH = ".*"/APP_HASH = "${{ secrets.API_HASH }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+            echo "API set from secrets"
+          else
+            echo "No secrets, using default API"
+          fi
+
+      - name: Build APK
+        run: |
+          ./gradlew :TMessagesProj:assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" --stacktrace
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Devgram-APK
+          path: |
+            TMessagesProj/build/outputs/apk/afat/release/*.apk
+            TMessagesProj/build/outputs/apk/**/*.apk
+
+      - name: Show Build Log on Fail
+        if: failure()
+        run: |
+          find . -name "*.log" -type f | head -20
+          ls -lh TMessagesProj/build/outputs/ || true
