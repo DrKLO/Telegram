@@ -1,4 +1,4 @@
-name: Build Devgram APK - Remastered by Dev
+name: Build Devgram APK
 
 on:
   push:
@@ -9,42 +9,54 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install NDK
+      - name: Install NDK 21 (Telegram ke liye stable)
         run: |
-          sdkmanager --install "ndk;25.1.8937393"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+          sdkmanager --install "ndk;21.4.7075529"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/21.4.7075529" >> $GITHUB_ENV
 
-      - run: chmod +x gradlew
+      - name: Grant permission
+        run: chmod +x gradlew
 
-      - name: Set API ID and Hash from GitHub Secrets
+      - name: Set API ID/HASH (agar secrets hain to)
         run: |
-          sed -i "s/APP_ID = .*/APP_ID = ${{ secrets.API_ID }};/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
-          sed -i 's/APP_HASH = ".*"/APP_HASH = "${{ secrets.API_HASH }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          if [ -n "${{ secrets.API_ID }}" ]; then
+            sed -i "s/APP_ID = .*/APP_ID = ${{ secrets.API_ID }};/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+            sed -i 's/APP_HASH = ".*"/APP_HASH = "${{ secrets.API_HASH }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+            echo "API set from secrets"
+          else
+            echo "No secrets, using default API"
+          fi
 
-      - name: Build Devgram Release APK
-        run: ./gradlew assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+      - name: Build APK
+        run: |
+          ./gradlew :TMessagesProj:assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" --stacktrace
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: Devgram-APK-Remastered-by-Dev
+          name: Devgram-APK
           path: |
             TMessagesProj/build/outputs/apk/afat/release/*.apk
+            TMessagesProj/build/outputs/apk/**/*.apk
 
-      - uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v1.0-${{ github.run_number }}
-          name: Devgram - Remastered by Dev
-          files: TMessagesProj/build/outputs/apk/afat/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Show Build Log on Fail
+        if: failure()
+        run: |
+          find . -name "*.log" -type f | head -20
+          ls -lh TMessagesProj/build/outputs/ || true
