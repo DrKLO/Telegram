@@ -1,0 +1,68 @@
+name: Build Devgram APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: |
+          sdkmanager --install "ndk;25.1.8937393"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Devgram Release APK
+        run: |
+          ./gradlew assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+
+      - name: Upload Devgram APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Devgram-APK-Remastered-by-Dev
+          path: |
+            TMessagesProj/build/outputs/apk/afat/release/*.apk
+            app/build/outputs/apk/**/*.apk
+            **/build/outputs/apk/**/*.apk
+
+      - name: Create Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0-${{ github.run_number }}
+          name: Devgram - Remastered by Dev v1.0-${{ github.run_number }}
+          body: |
+            Devgram APK - Remastered by Dev
+            - APK Name: Devgram
+            - App Pin: 709177
+            - Bot/Song/EQ Pin: 56530
+            - Channel: https://t.me/tech_zone_dev
+            - Group: https://t.me/high_table_dev
+            - Logo: Black Telegram Icon
+            - All English Fixed
+          files: |
+            TMessagesProj/build/outputs/apk/afat/release/*.apk
+            app/build/outputs/apk/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
