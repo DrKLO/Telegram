@@ -899,6 +899,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private ActionBarMenuItem videoItem;
     private ActionBarMenuSubItem allMediaItem;
     private ActionBarMenuSlider.SpeedSlider speedItem;
+    private ChooseAudioTrackLayout chooseAudioTrackLayout;
+    private ActionBarMenuSubItem audioTrackItem;
     private ActionBarMenuSubItem loopItem;
     private ActionBarMenuSubItem galleryButton;
     private ActionBarPopupWindow.GapView galleryGap;
@@ -5808,11 +5810,27 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoQualityLayout = new LinearLayout(activityContext);
         videoQualityLayout.setOrientation(LinearLayout.VERTICAL);
         videoItem.getPopupLayout().addView(videoQualityLayout);
+        chooseAudioTrackLayout = new ChooseAudioTrackLayout(activityContext, videoItem.getPopupLayout().getSwipeBack());
+        audioTrackItem = videoItem.addSwipeBackItem(R.drawable.msg_voice_headphones, null, getString(R.string.VideoPlayerAudioTrack), chooseAudioTrackLayout.layout);
+        audioTrackItem.setColors(0xfffafafa, 0xfffafafa);
+        audioTrackItem.setSelectorColor(0x0fffffff);
+        audioTrackItem.setVisibility(View.GONE);
+        videoItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
+            @Override
+            public void onShowSubMenu() {
+                updateAudioTrackItems();
+            }
+
+            @Override
+            public void onHideSubMenu() {
+            }
+        });
         loopItem = videoItem.addSubItem(gallery_menu_loop, R.drawable.menu_video_loop, LocaleController.getString(R.string.VideoPlayerLoop));
         loopItem.setSelectorColor(0x0fffffff);
         castItemButton = new CastMediaRouteButton(activityContext) {
             @Override
             public void stateUpdated(boolean connected) {
+                updateAudioTrackItems();
                 if (castItem != null) {
                     castItem.setEnabledByColor(connected, 0xFFFFFFFF, 0xFF73B4EC);
                     castItem.setSelectorColor(connected ? 0x0F73B4EC : 0x0fffffff);
@@ -8508,6 +8526,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    private void updateAudioTrackItems() {
+        if (audioTrackItem != null && chooseAudioTrackLayout != null) {
+            boolean available = chooseAudioTrackLayout.update(CastSync.isActive() ? null : videoPlayer);
+            audioTrackItem.setVisibility(available ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private int lastQualityIndexSelected;
     private void updateQualityItems() {
         if (videoPlayer == null || videoPlayer.getQualitiesCount() <= 1) {
@@ -10491,6 +10516,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 firstFrameView.clear();
             }
             videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+                @Override
+                public void onTracksChanged() {
+                    updateAudioTrackItems();
+                }
 
                 private boolean firstState = true;
 
@@ -10958,6 +10987,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             videoPlayer.releasePlayer(true);
             videoPlayer = null;
+            updateAudioTrackItems();
         } else {
             playerWasPlaying = false;
         }

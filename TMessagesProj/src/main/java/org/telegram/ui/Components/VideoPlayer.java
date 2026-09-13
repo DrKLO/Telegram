@@ -124,6 +124,9 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public interface VideoPlayerDelegate {
+        default void onTracksChanged() {
+        }
+
         void onStateChanged(boolean playWhenReady, int playbackState);
         void onError(VideoPlayer player, Exception e);
         void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio);
@@ -305,6 +308,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public void preparePlayerLoop(Uri videoUri, String videoType, Uri audioUri, String audioType) {
+        clearAudioTrackSelection();
         this.videoQualities = null;
         this.videoQualityToSelect = null;
         this.videoUri = videoUri;
@@ -385,6 +389,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public void preparePlayer(Uri uri, String type, int priority, long videoByteOffset) {
+        clearAudioTrackSelection();
         this.videoQualities = null;
         this.videoQualityToSelect = null;
         this.videoUri = uri;
@@ -407,6 +412,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     }
 
     public void preparePlayer(ArrayList<Quality> qualities, Quality select) {
+        clearAudioTrackSelection();
         this.videoQualities = qualities;
         this.videoQualityToSelect = select;
         this.videoUri = null;
@@ -660,6 +666,71 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return selectedQualityIndex;
     }
 
+    public static final class AudioTrack {
+        public final Format format;
+        public final boolean selected;
+        private final TrackGroup group;
+        private final List<Integer> indices;
+
+        private AudioTrack(Tracks.Group group, List<Integer> indices) {
+            this.group = group.getMediaTrackGroup();
+            this.indices = indices;
+            format = group.getTrackFormat(indices.get(0));
+            selected = group.isSelected();
+        }
+    }
+
+    public ArrayList<AudioTrack> getAudioTracks() {
+        ArrayList<AudioTrack> result = new ArrayList<>();
+        if (player == null || mixedAudio || audioDisabled) {
+            return result;
+        }
+        for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
+            if (group.getType() != C.TRACK_TYPE_AUDIO) {
+                continue;
+            }
+            ArrayList<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < group.length; i++) {
+                if (group.isTrackSupported(i)) {
+                    indices.add(i);
+                }
+            }
+            if (!indices.isEmpty()) {
+                if (!group.isAdaptiveSupported() && indices.size() > 1) {
+                    int index = indices.get(0);
+                    for (int supportedIndex : indices) {
+                        if (group.isTrackSelected(supportedIndex)) {
+                            index = supportedIndex;
+                            break;
+                        }
+                    }
+                    indices.clear();
+                    indices.add(index);
+                }
+                result.add(new AudioTrack(group, indices));
+            }
+        }
+        return result;
+    }
+
+    public void selectAudioTrack(AudioTrack track) {
+        // A menu can outlive its media source or a change in decoder capabilities.
+        for (AudioTrack current : getAudioTracks()) {
+            if (current.group == track.group) {
+                trackSelector.setParameters(trackSelector.getParameters().buildUpon()
+                        .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                        .setOverrideForType(new TrackSelectionOverride(current.group, current.indices))
+                        .build());
+                return;
+            }
+        }
+    }
+
+    private void clearAudioTrackSelection() {
+        trackSelector.setParameters(trackSelector.getParameters().buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_AUDIO).build());
+    }
+
     private TrackSelectionOverride getQualityTrackSelection(VideoUri videoUri) {
         try {
             int qualityOrder = manifestUris.indexOf(videoUri);
@@ -740,7 +811,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 reset = true;
             } else if (hlsManifest != null) {
                 autoIsOriginal = false;
-                trackSelector.setParameters(trackSelector.getParameters().buildUpon().clearOverrides().build());
+                trackSelector.setParameters(trackSelector.getParameters().buildUpon().clearOverridesOfType(C.TRACK_TYPE_VIDEO).build());
                 if (!currentStreamIsHls) {
                     currentStreamIsHls = true;
                     player.setMediaSource(mediaSourceFromUri(hlsManifest, 0, "hls"), false);
@@ -773,7 +844,7 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                     player.setMediaSource(mediaSourceFromUri(hlsManifest, 0, "hls"), false);
                     reset = true;
                 }
-                TrackSelectionParameters.Builder selector = trackSelector.getParameters().buildUpon().clearOverrides();
+                TrackSelectionParameters.Builder selector = trackSelector.getParameters().buildUpon().clearOverridesOfType(C.TRACK_TYPE_VIDEO);
                 for (VideoUri uri : quality.uris) {
                     TrackSelectionOverride override = getQualityTrackSelection(uri);
                     if (override == null) continue;
@@ -1991,6 +2062,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
     @Override
     public void onTracksChanged(Tracks tracks) {
         Player.Listener.super.onTracksChanged(tracks);
+        if (delegate != null) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (delegate != null) {
+                    delegate.onTracksChanged();
+                }
+            });
+        }
         if (onQualityChangeListener != null) {
             AndroidUtilities.runOnUIThread(onQualityChangeListener);
         }
