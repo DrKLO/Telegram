@@ -27,6 +27,8 @@ import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.ClipData;
+import android.content.ClipDescription;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -34,6 +36,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
@@ -64,6 +67,7 @@ import android.os.SystemClock;
 import android.os.Vibrator;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.telephony.TelephonyManager;
 import android.text.Layout;
 import android.text.Spannable;
@@ -83,6 +87,9 @@ import android.util.Property;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
+import android.webkit.MimeTypeMap;
+import android.view.DragAndDropPermissions;
+import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -4556,6 +4563,7 @@ public class ChatActivity extends BaseFragment implements
         }
         removingFromParent = false;
         fragmentView = contentView = new ChatActivityFragmentView(context, parentLayout);
+        contentView.setOnDragListener((v, event) -> handleDragEvent(event));
         invalidateBlurredSourcesView = new OnPostDrawView(context, true, this::invalidateMergedVisibleBlurredPositionsAndSourcesImpl);
         contentView.addView(invalidateBlurredSourcesView);
 
@@ -47216,6 +47224,244 @@ public class ChatActivity extends BaseFragment implements
             chatActivityFadeView.setClipBounds(hasSideInsets ? null : clipBoundsTmp);
         }
     }
+
+    private boolean handleDragEvent(DragEvent event) {
+        int action = event.getAction();
+        switch (action) {
+            case DragEvent.ACTION_DRAG_STARTED: {
+                if (event.getLocalState() != null) {
+                    return false;
+                }
+                ClipDescription description = event.getClipDescription();
+                return description != null && (
+                        description.hasMimeType("image/*") ||
+                        description.hasMimeType("video/*") ||
+                        description.hasMimeType("application/*") ||
+                        description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
+                );
+            }
+            case DragEvent.ACTION_DRAG_ENTERED:
+                return true;
+            case DragEvent.ACTION_DRAG_EXITED:
+                return true;
+            case DragEvent.ACTION_DRAG_ENDED:
+                return true;
+            case DragEvent.ACTION_DROP:
+                if (event.getClipData() != null) {
+                    Object permissions = null;
+                    if (Build.VERSION.SDK_INT >= 24) {
+                        Activity activity = getParentActivity();
+                        if (activity != null) {
+                            permissions = activity.requestDragAndDropPermissions(event);
+                        }
+                    }
+                    processDroppedData(event.getClipData(), permissions);
+                }
+                return true;
+        }
+        return false;
+    }
+
+    private void processDroppedData(ClipData clipData, Object permissions) {
+        final Activity parentActivity = getParentActivity();
+        if (parentActivity == null) {
+            if (Build.VERSION.SDK_INT >= 24 && permissions instanceof DragAndDropPermissions) {
+                ((DragAndDropPermissions) permissions).release();
+            }
+            return;
+        }
+
+        final StringBuilder textToAppend = new StringBuilder();
+        final ArrayList<Uri> uris = new ArrayList<>();
+        for (int i = 0; i < clipData.getItemCount(); i++) {
+            ClipData.Item item = clipData.getItemAt(i);
+            if (item.getUri() != null) {
+                uris.add(item.getUri());
+            } else if (item.getText() != null) {
+                if (textToAppend.length() > 0) {
+                    textToAppend.append("\n");
+                }
+                textToAppend.append(item.getText());
+            }
+        }
+
+        if (textToAppend.length() > 0 && chatActivityEnterView != null) {
+            final EditTextCaption messageEditText = chatActivityEnterView.messageEditText;
+            if (messageEditText != null) {
+                int start = messageEditText.getSelectionStart();
+                int end = messageEditText.getSelectionEnd();
+                if (start < 0) {
+                    messageEditText.append(textToAppend);
+                } else {
+                    messageEditText.getText().replace(Math.min(start, end), Math.max(start, end), textToAppend);
+                }
+            }
+        }
+
+        if (uris.isEmpty()) {
+            if (Build.VERSION.SDK_INT >= 24 && permissions instanceof DragAndDropPermissions) {
+                ((DragAndDropPermissions) permissions).release();
+            }
+            return;
+        }
+
+        final ContentResolver contentResolver = parentActivity.getContentResolver();
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                final File cacheDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+                final ArrayList<SendMessagesHelper.SendingMediaInfo> copiedMedia = new ArrayList<>();
+                final ArrayList<Uri> copiedDocuments = new ArrayList<>();
+
+                for (Uri uri : uris) {
+                    String mimeType = contentResolver.getType(uri);
+                    String fileName = null;
+                    if ("content".equals(uri.getScheme())) {
+                        try (Cursor cursor = contentResolver.query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                            if (cursor != null && cursor.moveToFirst()) {
+                                fileName = cursor.getString(0);
+                            }
+                        } catch (Exception ignore) {}
+                    }
+                    if (TextUtils.isEmpty(fileName)) {
+                        fileName = uri.getLastPathSegment();
+                    }
+                    fileName = FileLoader.fixFileName(fileName);
+
+                    String ext = null;
+                    if (mimeType != null) {
+                        ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+                    }
+                    if (TextUtils.isEmpty(ext) && !TextUtils.isEmpty(fileName)) {
+                        int dot = fileName.lastIndexOf('.');
+                        if (dot != -1) {
+                            ext = fileName.substring(dot + 1);
+                        }
+                    }
+
+                    if (mimeType == null && !TextUtils.isEmpty(ext)) {
+                        mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext.toLowerCase());
+                    }
+
+                    boolean isVideo = mimeType != null && mimeType.startsWith("video/");
+                    boolean isImage = mimeType != null && mimeType.startsWith("image/");
+
+                    File file;
+                    if (isImage || isVideo) {
+                        String generatedName = AndroidUtilities.generateFileName(isVideo ? 1 : 0, ext);
+                        if (isVideo && !TextUtils.isEmpty(ext) && !ext.equalsIgnoreCase("mp4")) {
+                            if (generatedName.endsWith(".mp4")) {
+                                generatedName = generatedName.substring(0, generatedName.length() - 4) + "." + ext;
+                            }
+                        }
+                        file = new File(cacheDir, generatedName);
+                    } else {
+                        String nameToUse = fileName;
+                        if (TextUtils.isEmpty(nameToUse)) {
+                            nameToUse = "file_" + System.currentTimeMillis();
+                            if (!TextUtils.isEmpty(ext)) {
+                                nameToUse += "." + ext;
+                            }
+                        }
+                        file = new File(cacheDir, nameToUse);
+                        int count = 1;
+                        while (file.exists()) {
+                            int dotIdx = nameToUse.lastIndexOf('.');
+                            if (dotIdx != -1) {
+                                file = new File(cacheDir, nameToUse.substring(0, dotIdx) + "_" + count + nameToUse.substring(dotIdx));
+                            } else {
+                                file = new File(cacheDir, nameToUse + "_" + count);
+                            }
+                            count++;
+                        }
+                    }
+
+                    if (copyUriToFile(contentResolver, uri, file)) {
+                        if (isImage || isVideo) {
+                            SendMessagesHelper.SendingMediaInfo newInfo = new SendMessagesHelper.SendingMediaInfo();
+                            newInfo.path = file.getAbsolutePath();
+                            newInfo.isVideo = isVideo;
+                            copiedMedia.add(newInfo);
+                        } else {
+                            copiedDocuments.add(Uri.fromFile(file));
+                        }
+                    }
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    if (copiedMedia.size() == 1 && copiedDocuments.isEmpty()) {
+                        ArrayList<Object> entries = new ArrayList<>();
+                        final MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, -1, 0, copiedMedia.get(0).path, 0, copiedMedia.get(0).isVideo, 0, 0, 0);
+                        entries.add(photoEntry);
+
+                        PhotoViewer.getInstance().setParentActivity(ChatActivity.this, themeDelegate);
+                        PhotoViewer.getInstance().openPhotoForSelect(entries, 0, 0, false, new PhotoViewer.EmptyPhotoViewerProvider() {
+                            @Override
+                            public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
+                                ChatActivity.this.sendMedia(photoEntry, videoEditedInfo, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, 0);
+                            }
+                        }, ChatActivity.this);
+                    } else if (!copiedMedia.isEmpty()) {
+                        final int albumsCount = (int) Math.ceil(copiedMedia.size() / 10f);
+                        for (int i = 0; i < albumsCount; ++i) {
+                            int count = Math.min(10, copiedMedia.size() - (i * 10));
+                            ArrayList<SendMessagesHelper.SendingMediaInfo> batch = new ArrayList<>();
+                            for (int a = 0; a < count; a++) {
+                                SendMessagesHelper.SendingMediaInfo info = copiedMedia.get(i * 10 + a);
+                                SendMessagesHelper.SendingMediaInfo batchInfo = new SendMessagesHelper.SendingMediaInfo();
+                                batchInfo.path = info.path;
+                                batchInfo.isVideo = info.isVideo;
+                                batch.add(batchInfo);
+                            }
+                            if (i == 0) {
+                                fillEditingMediaWithCaption(null, null);
+                            }
+                            SendMessagesHelper.prepareSendingMedia(getAccountInstance(), batch, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, false, true, editingMessageObject, true, 0, 0, chatMode, false, null, getMessageChatSendParams(), 0, false, 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
+                        }
+                        afterMessageSend();
+                    }
+
+                    for (Uri docUri : copiedDocuments) {
+                        sendUriAsDocument(docUri);
+                    }
+                });
+            } finally {
+                if (Build.VERSION.SDK_INT >= 24 && permissions instanceof DragAndDropPermissions) {
+                    ((DragAndDropPermissions) permissions).release();
+                }
+            }
+        });
+    }
+
+    private boolean copyUriToFile(ContentResolver contentResolver, Uri uri, File dest) {
+        InputStream is = null;
+        FileOutputStream os = null;
+        try {
+            is = contentResolver.openInputStream(uri);
+            os = new FileOutputStream(dest);
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                os.write(buffer, 0, read);
+            }
+            return true;
+        } catch (Exception e) {
+            FileLog.e(e);
+            if (dest.exists()) {
+                dest.delete();
+            }
+        } finally {
+            try {
+                if (is != null) is.close();
+                if (os != null) os.close();
+            } catch (Exception ignore) {}
+        }
+        return false;
+    }
+
+
 
     private void sendDebugRichMessage() {
         TLRPC.WebPage src = ArticleViewer.debugCopiedRichMessageWebPage;
