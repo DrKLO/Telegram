@@ -1,4 +1,4 @@
-name: Build Devgram APK
+name: Build Devgram APK - Remastered by Dev
 
 on:
   push:
@@ -8,61 +8,43 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: true
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
       - name: Install NDK
         run: |
           sdkmanager --install "ndk;25.1.8937393"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
-          echo "NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - run: chmod +x gradlew
+
+      - name: Set API ID and Hash from GitHub Secrets
+        run: |
+          sed -i "s/APP_ID = .*/APP_ID = ${{ secrets.API_ID }};/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i 's/APP_HASH = ".*"/APP_HASH = "${{ secrets.API_HASH }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
 
       - name: Build Devgram Release APK
-        run: |
-          ./gradlew assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
+        run: ./gradlew assembleAfatRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4g"
 
-      - name: Upload Devgram APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Devgram-APK-Remastered-by-Dev
           path: |
             TMessagesProj/build/outputs/apk/afat/release/*.apk
-            app/build/outputs/apk/**/*.apk
-            **/build/outputs/apk/**/*.apk
 
-      - name: Create Release
-        if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v1
         with:
           tag_name: v1.0-${{ github.run_number }}
-          name: Devgram - Remastered by Dev v1.0-${{ github.run_number }}
-          body: |
-            Devgram APK - Remastered by Dev
-            - APK Name: Devgram
-            - App Pin: 709177
-            - Bot/Song/EQ Pin: 56530
-            - Channel: https://t.me/tech_zone_dev
-            - Group: https://t.me/high_table_dev
-            - Logo: Black Telegram Icon
-            - All English Fixed
-          files: |
-            TMessagesProj/build/outputs/apk/afat/release/*.apk
-            app/build/outputs/apk/**/*.apk
+          name: Devgram - Remastered by Dev
+          files: TMessagesProj/build/outputs/apk/afat/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
