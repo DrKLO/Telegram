@@ -1,3 +1,6 @@
+[submodule "TMessagesProj/jni/tlottie"]
+	path = TMessagesProj/jni/tlottie
+	url = https://github.com/dkaraush/tlottie.git
 [submodule "TMessagesProj/jni/third_party/libvpx"]
 	path = TMessagesProj/jni/third_party/libvpx
 	url = https://github.com/webmproject/libvpx.git
@@ -7,24 +10,30 @@
 [submodule "TMessagesProj/jni/third_party/ffmpeg"]
 	path = TMessagesProj/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg.git
-[submodule "TMessagesProj/jni/third_party/xiph/ogg"]
-	path = TMessagesProj/jni/third_party/xiph/ogg
-	url = https://github.com/xiph/ogg.git
-[submodule "TMessagesProj/jni/third_party/xiph/opus"]
-	path = TMessagesProj/jni/third_party/xiph/opus
-	url = https://github.com/xiph/opus.git
-[submodule "TMessagesProj/jni/third_party/xiph/opusfile"]
-	path = TMessagesProj/jni/third_party/xiph/opusfile
-	url = https://github.com/xiph/opusfile.git
 [submodule "TMessagesProj/lib/jlatexmath"]
 	path = TMessagesProj/lib/jlatexmath
 	url = https://github.com/dkaraush/jlatexmath-android.git
-[submodule "TMessagesProj/jni/tlottie"]
-	path = TMessagesProj/jni/tlottie
-	url = https://github.com/dkaraush/tlottie.git
-[submodule "TMessagesProj/jni/third_party/openh264"]
-	path = TMessagesProj/jni/third_party/openh264
-	url = https://github.com/cisco/openh264.git
+[submodule "TMessagesProj/jni/third_party/xiph/ogg"]
+	path = TMessagesProj/jni/third_party/xiph/ogg
+	url = https://github.com/xiph/ogg.git
+[submodule "TMessagesProj/jni/third_party/xiph/opusfile"]
+	path = TMessagesProj/jni/third_party/xiph/opusfile
+	url = https://github.com/xiph/opusfile.git
+[submodule "TMessagesProj/jni/third_party/xiph/opus"]
+	path = TMessagesProj/jni/third_party/xiph/opus
+	url = https://github.com/xiph/opus.git
 [submodule "TMessagesProj/jni/third_party/libyuv"]
 	path = TMessagesProj/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
+[submodule "TMessagesProj/jni/third_party/openh264"]
+	path = TMessagesProj/jni/third_party/openh264
+	url = https://github.com/cisco/openh264.git
+[submodule "TMessagesProj/jni/third_party/boringssl"]
+	path = TMessagesProj/jni/third_party/boringssl
+	url = https://github.com/google/boringssl.git
+[submodule "TMessagesProj/jni/td"]
+	path = TMessagesProj/jni/td
+	url = https://github.com/tdlib/td.git
+[submodule "TMessagesProj_Modules/media"]
+	path = TMessagesProj_Modules/media
+	url = https://github.com/Arseny271/media.git
