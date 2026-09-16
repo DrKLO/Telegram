@@ -198,6 +198,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         tab.props.responseTime = loadedResponseTime;
         tab.ready = webViewContainer != null && webViewContainer.isPageLoaded();
         tab.lastUrl = webViewContainer != null ? webViewContainer.getUrlLoaded() : null;
+        tab.sameOrigin = webViewContainer != null && webViewContainer.isBridgeRestrictedToOrigin();
+        tab.trustedOrigin = webViewContainer != null ? webViewContainer.getTrustedOrigin() : null;
         tab.themeIsDark = Theme.isCurrentThemeDark();
         tab.settings = settingsItem != null && settingsItem.getVisibility() == View.VISIBLE;
         tab.main = mainButtonSettings;
@@ -226,19 +228,19 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         if (tab == null || tab.props == null) return false;
 //        setBackgroundColor(tab.backgroundColor, false);
 //        setActionBarColor(tab.actionBarColor, tab.overrideActionBarColor, false);
-        if (tab.webView != null) {
-//            tab.webView.resumeTimers();
-            tab.webView.onResume();
-            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
-        } else {
-            tab.props.response = null;
-            tab.props.responseTime = 0;
-        }
         currentAccount = tab.props.currentAccount;
         botId = tab.props.botId;
         botUrl = tab.props.buttonUrl;
         loadedResponse = tab.props.response;
         loadedResponseTime = tab.props.responseTime;
+        if (tab.webView != null) {
+//            tab.webView.resumeTimers();
+            tab.webView.onResume();
+            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy, tab.trustedOrigin, tab.sameOrigin);
+        } else {
+            tab.props.response = null;
+            tab.props.responseTime = 0;
+        }
         loadWebView();
         return true;
     }
@@ -991,10 +993,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
             TLRPC.TL_webViewResultUrl resultUrl = (TLRPC.TL_webViewResultUrl) response;
             queryId = resultUrl.query_id;
-            if (resultUrl.same_origin) {
-                webViewContainer.setTrustedOrigin(resultUrl.url);
-            }
-            webViewContainer.loadUrl(currentAccount, resultUrl.url);
+            webViewContainer.loadUrl(currentAccount, resultUrl.url, resultUrl.same_origin);
             swipeContainer.setWebView(webViewContainer.getWebView());
 
             AndroidUtilities.runOnUIThread(pollRunnable, POLL_PERIOD);

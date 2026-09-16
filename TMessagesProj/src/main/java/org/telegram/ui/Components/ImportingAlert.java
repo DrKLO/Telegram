@@ -136,7 +136,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         textView.setEllipsize(TextUtils.TruncateAt.END);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 17, 20, 17, 0));
 
-        completedDrawable = new RLottieDrawable(R.raw.import_finish, "" + R.raw.import_finish, AndroidUtilities.dp(120), AndroidUtilities.dp(120), false, null);
+        completedDrawable = new RLottieDrawable(R.raw.import_finish, AndroidUtilities.dp(120), AndroidUtilities.dp(120), false, null);
         completedDrawable.setAllowDecodeSingleFrame(true);
 
         imageView = new RLottieImageView(context);

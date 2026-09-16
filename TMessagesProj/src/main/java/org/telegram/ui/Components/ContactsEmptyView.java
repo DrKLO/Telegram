@@ -99,7 +99,7 @@ public class ContactsEmptyView extends LinearLayout {
     }
 
     private void setSticker() {
-        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(110), dp(110)));
+        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, dp(110), dp(110)));
     }
 
     @Override

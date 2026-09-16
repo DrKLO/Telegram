@@ -1,0 +1,28 @@
+Build environment
+Generated: 2026-08-24T19:58:23Z
+Host OS: Darwin
+Host arch: arm64
+ABIs: arm64-v8a armeabi-v7a x86_64 x86
+API: 21
+Jobs: 18
+Android SDK: /Users/arsen/Library/Android/sdk
+Android NDK: /Users/arsen/Library/Android/sdk/ndk/27.2.12479018
+NDK version: 27.2.12479018
+NDK host tag: darwin-x86_64
+Clang            Android (12470979, +pgo, -bolt, +lto, -mlgo, based on r522817c) clang version 18.0.3 (https://android.googlesource.com/toolchain/llvm-project d8003a456d14a3deb8054cdaa529ffbf02d9b262) | /Users/arsen/Library/Android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang
+CMake            cmake version 3.22.1-g37088a8 | /Users/arsen/Library/Android/sdk/cmake/3.22.1/bin/cmake
+Ninja            1.13.2 | /opt/homebrew/bin/ninja
+Make             GNU Make 3.81 | /usr/bin/make
+NASM             NASM version 3.02 compiled on Jun 29 2026 | /opt/homebrew/bin/nasm
+Yasm             <not installed>
+Meson            1.12.0 | /opt/homebrew/bin/meson
+pkg-config       3.0.5 | /opt/homebrew/bin/pkg-config
+gperf            GNU gperf 3.3 | /opt/homebrew/bin/gperf
+Python           Python 3.14.7 | /opt/homebrew/bin/python3
+Rust             rustc 1.98.0 (88d9e12ae 2026-08-18) | /Users/arsen/.cargo/bin/rustc
+Cargo            cargo 1.98.0 (797e8a9bc 2026-08-05) | /Users/arsen/.cargo/bin/cargo
+Go               <not installed>
+Perl              | /usr/bin/perl
+SOURCE_DATE_EPOCH: 1
+TZ: UTC
+LC_ALL: C

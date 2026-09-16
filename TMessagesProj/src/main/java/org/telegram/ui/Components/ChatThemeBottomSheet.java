@@ -180,7 +180,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
 
         int drawableColor = getThemedColor(Theme.key_featuredStickers_addButton);
         int drawableSize = dp(28);
-        darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, false, null);
+        darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, drawableSize, drawableSize, false, null);
         forceDark = !Theme.getActiveTheme().isDark();
         setForceDark(Theme.getActiveTheme().isDark(), false);
         darkThemeDrawable.setAllowDecodeSingleFrame(true);

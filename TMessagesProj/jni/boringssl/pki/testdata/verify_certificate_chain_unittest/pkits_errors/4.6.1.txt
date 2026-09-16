@@ -1,3 +1,0 @@
------ Certificate i=1 (CN=Missing basicConstraints CA,O=Test Certificates 2011,C=US) -----
-ERROR: Does not have Basic Constraints
-

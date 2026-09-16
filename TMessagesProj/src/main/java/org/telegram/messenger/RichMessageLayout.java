@@ -5253,7 +5253,7 @@ public class RichMessageLayout {
             // is still capped to maxWidth and fades the clipped end when it has to be narrower.
             final int oneLineWidth = Math.max(1,
                 (int) Math.ceil(Layout.getDesiredWidth(formatted, layout.textPaint)) + dp(2));
-            text = new Text(layout, formatted, oneLineWidth, Layout.Alignment.ALIGN_CENTER);
+            text = new Text(layout, formatted, 100_000, Layout.Alignment.ALIGN_CENTER);
             text.setDrawAtOrigin(true);
             text.doNotInvalidateEmojiInParent = true;
 

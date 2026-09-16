@@ -1,6 +1,0 @@
------ Certificate i=0 (CN=Invalid DSA Signature EE Certificate Test6,O=Test Certificates 2011,C=US) -----
-ERROR: Unacceptable signature algorithm
-
------ Certificate i=1 (CN=DSA CA,O=Test Certificates 2011,C=US) -----
-ERROR: Unacceptable public key
-

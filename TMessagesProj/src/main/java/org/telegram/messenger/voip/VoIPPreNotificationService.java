@@ -353,10 +353,10 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                     long[] pattern = new long[]{0, duration, 500};
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         vibrator.vibrate(
-                            VibrationEffect.createWaveform(pattern, 0),
-                            new VibrationAttributes.Builder()
-                                .setUsage(VibrationAttributes.USAGE_RINGTONE) // required for background apps
-                                .build());
+                                VibrationEffect.createWaveform(pattern, 0),
+                                new VibrationAttributes.Builder()
+                                    .setUsage(VibrationAttributes.USAGE_RINGTONE) // required for background apps
+                                    .build());
                     } else {
                         vibrator.vibrate(pattern, 0);
                     }

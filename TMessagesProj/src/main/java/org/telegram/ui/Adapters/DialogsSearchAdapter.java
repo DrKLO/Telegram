@@ -2415,7 +2415,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             setOrientation(LinearLayout.VERTICAL);
 
             BackupImageView imageView = new BackupImageView(context);
-            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(120), dp(120)));
+            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, dp(120), dp(120)));
             addView(imageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 27, 0, 0));
 
             TextView titleView = new TextView(context);

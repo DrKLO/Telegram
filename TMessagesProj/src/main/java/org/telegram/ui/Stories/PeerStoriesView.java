@@ -8217,9 +8217,9 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             optionsDrawable = ContextCompat.getDrawable(context, R.drawable.media_more);
             pipDrawable = ContextCompat.getDrawable(context, R.drawable.menu_stream_pip);
             deleteDrawable = ContextCompat.getDrawable(context, R.drawable.msg_delete);
-            muteDrawable = new RLottieDrawable(R.raw.media_mute_unmute, "media_mute_unmute", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            muteDrawable = new RLottieDrawable(R.raw.media_mute_unmute, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
            // muteDrawable = new ReplaceableIconDrawable(context);
-            noSoundDrawable = new RLottieDrawable(R.raw.media_mute_unmute, "media_mute_unmute", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            noSoundDrawable = new RLottieDrawable(R.raw.media_mute_unmute, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
             noSoundDrawable.setCurrentFrame(20, false, true);
             noSoundDrawable.stop();
           //  muteDrawable = new CrossOutDrawable(context, R.drawable.msg_unmute, -1);

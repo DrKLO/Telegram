@@ -1,6 +1,6 @@
 package org.telegram.messenger;
 
-import com.google.android.exoplayer2.util.Consumer;
+import androidx.media3.common.util.Consumer;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;

@@ -3,8 +3,6 @@ package org.telegram.ui.Stories;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.ilerp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
-import static org.telegram.ui.Stories.HighlightMessageSheet.TIER_COLOR1;
-import static org.telegram.ui.Stories.HighlightMessageSheet.getTierOption;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -17,19 +15,16 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
-import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
@@ -38,9 +33,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -208,7 +200,7 @@ public class PaidReactionButton extends View {
                 drawable.recycle(true);
             }
             final int asset = effectAssets[Utilities.fastRandom.nextInt(effectAssets.length)];
-            RLottieDrawable drawable = new RLottieDrawable(asset, "" + asset, dp(70), dp(70));
+            RLottieDrawable drawable = new RLottieDrawable(asset, dp(70), dp(70));
             drawable.setMasterParent(this);
             drawable.setAllowDecodeSingleFrame(true);
             drawable.setAutoRepeat(0);
@@ -264,7 +256,7 @@ public class PaidReactionButton extends View {
 
                 if (withEffect) {
                     final int asset = effectAssets[Utilities.fastRandom.nextInt(effectAssets.length)];
-                    effect = new RLottieDrawable(asset, "" + asset, dp(70), dp(70));
+                    effect = new RLottieDrawable(asset, dp(70), dp(70));
                     effect.setMasterParent(view);
                     effect.setAllowDecodeSingleFrame(true);
                     effect.setAutoRepeat(0);

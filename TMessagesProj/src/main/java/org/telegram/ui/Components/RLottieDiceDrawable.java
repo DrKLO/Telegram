@@ -43,7 +43,7 @@ public class RLottieDiceDrawable extends RLottieDrawable {
         if (TextUtils.isEmpty(jsonString)) {
             return;
         }
-        nativePtr = RLottieNative.createFromRawJson(jsonString, "dice", metaData, null);
+        nativePtr = RLottieNative.createFromRawJson(jsonString, metaData);
     }
 
     public boolean hasBaseDice() {
@@ -73,7 +73,7 @@ public class RLottieDiceDrawable extends RLottieDrawable {
                 });
                 return;
             }
-            secondNativePtr = RLottieNative.createFromRawJson(jsonString, "dice", null);
+            secondNativePtr = RLottieNative.createFromRawJson(jsonString);
             final int framesCountToSet = secondNativePtr != null ? secondNativePtr.getFrameCount() : 0;
             final int fpsCountToSet = secondNativePtr != null ? secondNativePtr.getFps() : 0;
             AndroidUtilities.runOnUIThread(() -> {
@@ -115,7 +115,7 @@ public class RLottieDiceDrawable extends RLottieDrawable {
         }
         loadingInBackground = true;
         Utilities.globalQueue.postRunnable(() -> {
-            nativePtr = RLottieNative.createFromRawJson(jsonString, "dice", metaData, null);
+            nativePtr = RLottieNative.createFromRawJson(jsonString, metaData);
             AndroidUtilities.runOnUIThread(() -> {
                 loadingInBackground = false;
                 if (!secondLoadingInBackground && destroyAfterLoading) {

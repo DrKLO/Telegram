@@ -4,7 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.util.Log;
 
-import com.google.android.exoplayer2.C;
+import androidx.media3.common.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;

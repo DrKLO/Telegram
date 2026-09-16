@@ -51,6 +51,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
     private final Theme.ResourcesProvider resourcesProvider;
     private final Context context;
     private RecyclerListView listView;
+    private final boolean sections;
     private List<Item> items;
     private HashMap<Long, Integer> chatsParticipantsCount = new HashMap<>();
     private View.OnClickListener topSectionClickListener;
@@ -61,9 +62,13 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
     public boolean needChecks2;
 
     public SelectorAdapter(Context context, boolean needChecks, Theme.ResourcesProvider resourcesProvider) {
+        this(context, needChecks, true, resourcesProvider);
+    }
+    public SelectorAdapter(Context context, boolean needChecks, boolean sections, Theme.ResourcesProvider resourcesProvider) {
         this.context = context;
         this.needChecks = needChecks;
         this.resourcesProvider = resourcesProvider;
+        this.sections = sections;
         BoostRepository.loadParticipantsCount(result -> {
             chatsParticipantsCount.clear();
             chatsParticipantsCount.putAll(result);
@@ -129,6 +134,7 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
         View view;
         if (viewType == VIEW_TYPE_PAD) {
             view = new View(context);
+            view.setTag(RecyclerListView.TAG_NOT_SECTION);
         } else if (viewType == VIEW_TYPE_USER) {
             view = new SelectorUserCell(context, needChecks, needChecks2, resourcesProvider, isGreenSelector);
         } else if (viewType == VIEW_TYPE_NO_USERS) {
@@ -139,10 +145,22 @@ public class SelectorAdapter extends AdapterWithDiffUtils {
             view = searchEmptyView;
         } else if (viewType == VIEW_TYPE_LETTER) {
             view = new SelectorLetterCell(context, resourcesProvider);
+            view.setTag(RecyclerListView.TAG_NOT_SECTION);
+            if (sections) {
+                view.setBackground(null);
+            }
         } else if (viewType == VIEW_TYPE_COUNTRY) {
             view = new SelectorCountryCell(context, resourcesProvider);
+            view.setTag(RecyclerListView.TAG_NOT_SECTION);
+            if (sections) {
+                view.setBackground(null);
+            }
         } else if (viewType == VIEW_TYPE_TOP_SECTION) {
             view = new GraySectionCell(context, resourcesProvider);
+            view.setTag(RecyclerListView.TAG_NOT_SECTION);
+            if (sections) {
+                view.setBackground(null);
+            }
         } else if (viewType == VIEW_TYPE_BUTTON) {
             TextCell cell = new TextCell(context, resourcesProvider);
             cell.leftPadding = 23 - 7;

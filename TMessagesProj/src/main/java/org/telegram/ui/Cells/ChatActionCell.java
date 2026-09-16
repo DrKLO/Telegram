@@ -782,7 +782,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 forceWasUnread = messageObject.wasUnread;
                 imageReceiver.setAllowStartLottieAnimation(false);
                 imageReceiver.setDelegate(giftStickerDelegate);
-                imageReceiver.setImageBitmap(new RLottieDrawable(R.raw.premium_gift, messageObject.getId() + "_" + R.raw.premium_gift, dp(160), dp(160)));
+                imageReceiver.setImageBitmap(new RLottieDrawable(R.raw.premium_gift, dp(160), dp(160)));
             } else {
                 TLRPC.TL_messages_stickerSet set = null;
                 TLRPC.Document document = null;

@@ -1077,7 +1077,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     menu2.addItem(5, R.drawable.msg_header_share);
                 }
                 if (dialogId != 0 && shouldShowDayNightIcon) {
-                    sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, dp(28), dp(28), true, null);
+                    sunDrawable = new RLottieDrawable(R.raw.sun, dp(28), dp(28), true, null);
                     dayNightItem = menu2.addItem(OPTION_DAY_NIGHT, sunDrawable);
 
                     sunDrawable.setPlayInDirectionOfCustomEndFrame(true);

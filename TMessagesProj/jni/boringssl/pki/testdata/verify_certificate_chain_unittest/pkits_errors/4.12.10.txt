@@ -1,4 +1,0 @@
------ Certificate i=0 (CN=inhibitAnyPolicy1 subCA2,O=Test Certificates 2011,C=US) -----
-ERROR: No valid policy
-ERROR: No valid policy
-

@@ -7592,7 +7592,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     public void setIconMuted(boolean muted, boolean animated) {
         if (muteButtonDrawable == null) {
-            muteButtonDrawable = new RLottieDrawable(R.raw.media_mute_unmute, "media_mute_unmute", AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            muteButtonDrawable = new RLottieDrawable(R.raw.media_mute_unmute, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
             muteButtonDrawable.multiplySpeed(1.5f);
         }
         muteButton.setAnimation(muteButtonDrawable);
@@ -7673,7 +7673,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     public ImageView getThemeButton() {
         if (themeButton == null) {
-            themeButtonDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, dp(28), dp(28), true, null);
+            themeButtonDrawable = new RLottieDrawable(R.raw.sun_outline, dp(28), dp(28), true, null);
             themeButtonDrawable.setPlayInDirectionOfCustomEndFrame(true);
             if (!(outputEntry != null && outputEntry.isDark)) {
                 themeButtonDrawable.setCustomEndFrame(0);

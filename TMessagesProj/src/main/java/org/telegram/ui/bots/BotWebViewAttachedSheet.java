@@ -240,6 +240,8 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         tab.ready = webViewContainer != null && webViewContainer.isPageLoaded();
         tab.themeIsDark = Theme.isCurrentThemeDark();
         tab.lastUrl = webViewContainer != null ? webViewContainer.getUrlLoaded() : null;
+        tab.sameOrigin = webViewContainer != null && webViewContainer.isBridgeRestrictedToOrigin();
+        tab.trustedOrigin = webViewContainer != null ? webViewContainer.getTrustedOrigin() : null;
         tab.expanded = swipeContainer != null && ((1f - Math.min(swipeContainer.getTopActionBarOffsetY(), swipeContainer.getTranslationY() - swipeContainer.getTopActionBarOffsetY()) / swipeContainer.getTopActionBarOffsetY()) > .5f) || forceExpnaded || isFullSize();
         tab.fullsize = isFullSize();
         tab.expandedOffset = swipeContainer != null ? swipeContainer.getOffsetY() : Float.MAX_VALUE;
@@ -290,7 +292,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         if (tab.webView != null) {
 //            tab.webView.resumeTimers();
             tab.webView.onResume();
-            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
+            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy, tab.trustedOrigin, tab.sameOrigin);
             webViewContainer.setState(tab.ready || tab.webView.isPageLoaded(), tab.lastUrl);
             if (Theme.isCurrentThemeDark() != tab.themeIsDark) {
 //                webViewContainer.notifyThemeChanged();
@@ -1295,12 +1297,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
             queryId = 0;
             url = resultUrl.url;
         }
-        if (sameOrigin) {
-            webViewContainer.setTrustedOrigin(url);
-        }
         if (url != null && !fromTab) {
             MediaDataController.getInstance(currentAccount).increaseWebappRating(requestProps.botId);
-            webViewContainer.loadUrl(currentAccount, url);
+            webViewContainer.loadUrl(currentAccount, url, sameOrigin);
         }
         AndroidUtilities.runOnUIThread(pollRunnable, pollTimeout);
         if (swipeContainer != null) {

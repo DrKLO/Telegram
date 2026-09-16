@@ -21,9 +21,9 @@
 #include <memory>
 
 extern "C" {
-#include "ffmpeg/include/libavcodec/avcodec.h"
-#include "ffmpeg/include/libavformat/avformat.h"
-#include "ffmpeg/include/libavutil/imgutils.h"
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+#include "libavutil/imgutils.h"
 }  // extern "C"
 
 #include "api/video/color_space.h"

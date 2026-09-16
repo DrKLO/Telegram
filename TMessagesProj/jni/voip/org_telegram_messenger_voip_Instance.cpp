@@ -17,11 +17,7 @@
 #include <map>
 
 #include "pc/video_track.h"
-#include "legacy/InstanceImplLegacy.h"
 #include "InstanceImpl.h"
-#include "libtgvoip/os/android/AudioOutputOpenSLES.h"
-#include "libtgvoip/os/android/AudioInputOpenSLES.h"
-#include "libtgvoip/os/android/JNIUtilities.h"
 #include "tgcalls/VideoCaptureInterface.h"
 #include "tgcalls/v2/InstanceV2Impl.h"
 #include "tgcalls/v2/InstanceV2ReferenceImpl.h"
@@ -31,7 +27,6 @@
 using namespace tgcalls;
 
 const auto RegisterTag = Register<InstanceImpl>();
-const auto RegisterTagLegacy = Register<InstanceImplLegacy>();
 const auto RegisterTagV2_4_0_1 = Register<InstanceV2Impl>();
 const auto RegisterTagV2_4_1_2 = Register<InstanceV2ReferenceImpl>();
 
@@ -40,6 +35,50 @@ jclass FingerprintClass;
 jclass FinalStateClass;
 jclass NativeInstanceClass;
 jmethodID FinalStateInitMethod;
+
+JavaVM* sharedJVM;
+
+extern "C" {
+int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env) {
+    env->GetJavaVM(&sharedJVM);
+    return JNI_TRUE;
+}
+}
+
+namespace tgvoip{
+    namespace jni{
+
+        inline JNIEnv *GetEnv() {
+            JNIEnv *env = nullptr;
+            sharedJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+            return env;
+        }
+
+        inline void DoWithJNI(std::function<void(JNIEnv*)> f){
+            JNIEnv *env=GetEnv();
+            bool didAttach=false;
+            if(!env){
+                sharedJVM->AttachCurrentThread(&env, NULL);
+                didAttach=true;
+            }
+
+            f(env);
+
+            if(didAttach){
+                sharedJVM->DetachCurrentThread();
+            }
+        }
+
+        inline std::string JavaStringToStdString(JNIEnv* env, jstring jstr){
+            if(!jstr)
+                return "";
+            const char* jchars=env->GetStringUTFChars(jstr, NULL);
+            std::string str(jchars);
+            env->ReleaseStringUTFChars(jstr, jchars);
+            return str;
+        }
+    }
+}
 
 class RequestMediaChannelDescriptionTaskJava : public RequestMediaChannelDescriptionTask {
 public:
@@ -906,18 +945,13 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
 }
 extern "C"
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setGlobalServerConfig(JNIEnv *env, jobject obj, jstring serverConfigJson) {
-    SetLegacyGlobalServerConfig(tgvoip::jni::JavaStringToStdString(env, serverConfigJson));
-}
-
-extern "C"
-JNIEXPORT jstring JNICALL Java_org_telegram_messenger_voip_NativeInstance_getVersion(JNIEnv *env, jobject obj) {
-    return env->NewStringUTF(tgvoip::VoIPController::GetVersion());
+    // SetLegacyGlobalServerConfig(tgvoip::jni::JavaStringToStdString(env, serverConfigJson));
 }
 
 extern "C"
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setBufferSize(JNIEnv *env, jobject obj, jint size) {
-    tgvoip::audio::AudioOutputOpenSLES::nativeBufferSize = (unsigned int) size;
-    tgvoip::audio::AudioInputOpenSLES::nativeBufferSize = (unsigned int) size;
+    //tgvoip::audio::AudioOutputOpenSLES::nativeBufferSize = (unsigned int) size;
+    //tgvoip::audio::AudioInputOpenSLES::nativeBufferSize = (unsigned int) size;
 }
 
 extern "C"
@@ -1275,7 +1309,7 @@ Java_org_telegram_messenger_voip_NativeInstance_setConferenceCallId(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jobjectArray JNICALL
-Java_org_telegram_messenger_voip_NativeInstance_getAllVersions(JNIEnv* env) {
+Java_org_telegram_messenger_voip_NativeInstance_getAllVersions(JNIEnv* env, jclass clazz) {
     std::vector<std::string> v = tgcalls::Meta::Versions();
     jclass stringClass = env->FindClass("java/lang/String");
     if (!stringClass) {

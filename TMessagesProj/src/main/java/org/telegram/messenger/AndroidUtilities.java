@@ -146,13 +146,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
-import com.google.android.exoplayer2.util.Consumer;
+import androidx.media3.common.util.Consumer;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.proxy.ProxySettings;
 import org.telegram.messenger.utils.CustomHtml;
 import org.telegram.messenger.utils.DebugRecordingCanvas;
 import org.telegram.tgnet.ConnectionsManager;
@@ -212,7 +213,6 @@ import java.io.RandomAccessFile;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.IDN;
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -4597,57 +4597,9 @@ public class AndroidUtilities {
             }
             Uri data = intent.getData();
             if (data != null) {
-                String user = null;
-                String password = null;
-                String port = null;
-                String address = null;
-                String secret = null;
-                String scheme = data.getScheme();
-                if (scheme != null) {
-                    if ((scheme.equals("http") || scheme.equals("https"))) {
-                        String host = data.getHost().toLowerCase();
-                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
-                            String path = data.getPath();
-                            if (path != null) {
-                                if (path.startsWith("/socks") || path.startsWith("/proxy")) {
-                                    address = data.getQueryParameter("server");
-                                    if (AndroidUtilities.checkHostForPunycode(address)) {
-                                        address = IDN.toASCII(address, IDN.ALLOW_UNASSIGNED);
-                                    }
-                                    port = data.getQueryParameter("port");
-                                    user = data.getQueryParameter("user");
-                                    password = data.getQueryParameter("pass");
-                                    secret = data.getQueryParameter("secret");
-                                }
-                            }
-                        }
-                    } else if (scheme.equals("tg")) {
-                        String url = data.toString();
-                        if (url.startsWith("tg:proxy") || url.startsWith("tg://proxy") || url.startsWith("tg:socks") || url.startsWith("tg://socks")) {
-                            url = url.replace("tg:proxy", "tg://telegram.org").replace("tg://proxy", "tg://telegram.org").replace("tg://socks", "tg://telegram.org").replace("tg:socks", "tg://telegram.org");
-                            data = Uri.parse(url);
-                            address = data.getQueryParameter("server");
-                            if (AndroidUtilities.checkHostForPunycode(address)) {
-                                address = IDN.toASCII(address, IDN.ALLOW_UNASSIGNED);
-                            }
-                            port = data.getQueryParameter("port");
-                            user = data.getQueryParameter("user");
-                            password = data.getQueryParameter("pass");
-                            secret = data.getQueryParameter("secret");
-                        }
-                    }
-                }
-                if (!TextUtils.isEmpty(address) && !TextUtils.isEmpty(port)) {
-                    if (user == null) {
-                        user = "";
-                    }
-                    if (password == null) {
-                        password = "";
-                    }
-                    if (secret == null) {
-                        secret = "";
-                    }
-                    if (invoked) showProxyAlert(activity, address, port, user, password, secret);
+                final ProxySettings proxySettings = ProxySettings.fromUri(data);
+                if (proxySettings != null && proxySettings.isValid()) {
+                    if (invoked) showProxyAlert(activity, proxySettings);
                     return true;
                 }
             }
@@ -4684,7 +4636,17 @@ public class AndroidUtilities {
         return true;
     }
 
-    public static void showProxyAlert(Activity activity, final String address, final String port, final String user, final String password, final String secret) {
+    public static void showProxyAlert(Activity activity, final ProxySettings settings) {
+        if (settings == null || !settings.isValid()) {
+            return;
+        }
+
+        final String address = settings.getAddress();
+        final int port = settings.getPort();
+        final String user = settings.getUser();
+        final String password = settings.getPassword();
+        final String secret = settings.getSecret();
+
         final BottomSheet.Builder builder = new BottomSheet.Builder(activity);
         builder.setApplyTopPadding(false);
         builder.setApplyBottomPadding(false);
@@ -4704,8 +4666,8 @@ public class AndroidUtilities {
         if (!TextUtils.isEmpty(address)) {
             tableView.addRow(getString(R.string.UseProxyAddress), address);
         }
-        if (!TextUtils.isEmpty(port)) {
-            tableView.addRow(getString(R.string.UseProxyPort), port);
+        if (port != 0) {
+            tableView.addRow(getString(R.string.UseProxyPort), Integer.toString(port));
         }
         if (!TextUtils.isEmpty(secret)) {
             tableView.addRow(getString(R.string.UseProxySecret), secret);
@@ -4732,7 +4694,8 @@ public class AndroidUtilities {
                 statusTextView[0].setText(getString(R.string.ProxyBottomSheetChecking) + "...");
                 statusTextView[0].clear();
                 try {
-                    ConnectionsManager.getInstance(UserConfig.selectedAccount).checkProxy(address, Integer.parseInt(port), user, password, secret, time -> AndroidUtilities.runOnUIThread(() -> {
+                    ConnectionsManager.getInstance(UserConfig.selectedAccount).checkProxy(settings, time -> AndroidUtilities.runOnUIThread(() -> {
+                        checking[0] = false;
                         if (time == -1) {
                             statusTextView[0].setText(getString(R.string.Unavailable));
                             statusTextView[0].setTextColor(Theme.getColor(Theme.key_text_RedRegular));
@@ -4742,6 +4705,7 @@ public class AndroidUtilities {
                         }
                     }));
                 } catch (NumberFormatException ignored) {
+                    checking[0] = false;
                     statusTextView[0].setText(getString(R.string.Unavailable));
                     statusTextView[0].setTextColor(Theme.getColor(Theme.key_text_RedRegular));
                 }
@@ -4775,35 +4739,13 @@ public class AndroidUtilities {
         buttonView.setOnClickListener(v -> {
             SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
             editor.putBoolean("proxy_enabled", true);
-            editor.putString("proxy_ip", address);
-            int p = Utilities.parseInt(port);
-            editor.putInt("proxy_port", p);
-
-            SharedConfig.ProxyInfo info;
-            if (TextUtils.isEmpty(secret)) {
-                editor.remove("proxy_secret");
-                if (TextUtils.isEmpty(password)) {
-                    editor.remove("proxy_pass");
-                } else {
-                    editor.putString("proxy_pass", password);
-                }
-                if (TextUtils.isEmpty(user)) {
-                    editor.remove("proxy_user");
-                } else {
-                    editor.putString("proxy_user", user);
-                }
-                info = new SharedConfig.ProxyInfo(address, p, user, password, "");
-            } else {
-                editor.remove("proxy_pass");
-                editor.remove("proxy_user");
-                editor.putString("proxy_secret", secret);
-                info = new SharedConfig.ProxyInfo(address, p, "", "", secret);
-            }
+            settings.toSharedPreferences(editor);
             editor.commit();
 
+            final SharedConfig.ProxyInfo info = new SharedConfig.ProxyInfo(settings);
             SharedConfig.currentProxy = SharedConfig.addProxy(info);
 
-            ConnectionsManager.setProxySettings(true, address, p, user, password, secret);
+            ConnectionsManager.setProxySettings(true, settings);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
             if (activity instanceof LaunchActivity) {
                 INavigationLayout layout = ((LaunchActivity) activity).getActionBarLayout();

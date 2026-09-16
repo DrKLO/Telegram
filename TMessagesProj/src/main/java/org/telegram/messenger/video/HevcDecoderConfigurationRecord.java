@@ -12,7 +12,7 @@ import com.coremedia.iso.IsoTypeReader;
 import com.coremedia.iso.IsoTypeWriter;
 import com.coremedia.iso.boxes.SampleDescriptionBox;
 import com.coremedia.iso.boxes.sampleentry.VisualSampleEntry;
-import com.google.android.exoplayer2.util.Log;
+
 import com.googlecode.mp4parser.authoring.tracks.CleanInputStream;
 import com.googlecode.mp4parser.authoring.tracks.h265.H265TrackImpl;
 import com.googlecode.mp4parser.authoring.tracks.h265.NalUnitHeader;

@@ -81,7 +81,7 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
         blobDrawable.generateBlob();
         blobDrawable2.generateBlob();
 
-        bigMicDrawable = new RLottieDrawable(R.raw.voice_outlined, "" + R.raw.voice_outlined, AndroidUtilities.dp(22), AndroidUtilities.dp(30), true, null);
+        bigMicDrawable = new RLottieDrawable(R.raw.voice_outlined, AndroidUtilities.dp(22), AndroidUtilities.dp(30), true, null);
         setWillNotDraw(false);
 
         muteButton = new RLottieImageView(context);

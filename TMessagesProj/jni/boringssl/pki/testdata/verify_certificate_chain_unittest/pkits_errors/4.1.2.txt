@@ -1,3 +1,0 @@
------ Certificate i=1 (CN=Bad Signed CA,O=Test Certificates 2011,C=US) -----
-ERROR: VerifySignedData failed
-

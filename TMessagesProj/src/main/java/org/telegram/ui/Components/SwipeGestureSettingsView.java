@@ -300,7 +300,7 @@ public class SwipeGestureSettingsView extends FrameLayout {
                     rawId = R.raw.swipe_disabled;
                     break;
             }
-            icons[i] = new RLottieDrawable(rawId, "" + rawId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            icons[i] = new RLottieDrawable(rawId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
             updateIconColor(i);
         }
 

@@ -20,7 +20,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
@@ -174,7 +173,7 @@ public class SeekSpeedDrawable extends Drawable {
         final float hintShown = animatedHintShown.set(this.showHint && this.shown);
         if (hintShown > 0) {
             if (hintDrawable == null) {
-                hintDrawable = new RLottieDrawable(R.raw.seek_speed_hint, "" + R.raw.seek_speed_hint, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
+                hintDrawable = new RLottieDrawable(R.raw.seek_speed_hint, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
                 hintDrawable.setAllowDecodeSingleFrame(true);
                 hintDrawable.setCallback(new Callback() {
                     @Override

@@ -1024,13 +1024,13 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 AndroidUtilities.updateViewVisibilityAnimated(showPasswordButton, false, 0.1f, false);
 
                 animationDrawables = new RLottieDrawable[7];
-                animationDrawables[0] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle1, "" + R.raw.tsv_setup_monkey_idle1, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[1] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle2, "" + R.raw.tsv_setup_monkey_idle2, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[2] = new RLottieDrawable(R.raw.tsv_monkey_close, "" + R.raw.tsv_monkey_close, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[3] = new RLottieDrawable(R.raw.tsv_setup_monkey_peek, "" + R.raw.tsv_setup_monkey_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[4] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek_to_idle, "" + R.raw.tsv_setup_monkey_close_and_peek_to_idle, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[5] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek, "" + R.raw.tsv_setup_monkey_close_and_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[6] = new RLottieDrawable(R.raw.tsv_setup_monkey_tracking, "" + R.raw.tsv_setup_monkey_tracking, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[0] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle1, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[1] = new RLottieDrawable(R.raw.tsv_setup_monkey_idle2, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[2] = new RLottieDrawable(R.raw.tsv_monkey_close, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[3] = new RLottieDrawable(R.raw.tsv_setup_monkey_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[4] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek_to_idle, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[5] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
+                animationDrawables[6] = new RLottieDrawable(R.raw.tsv_setup_monkey_tracking, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[6].setPlayInDirectionOfCustomEndFrame(true);
                 animationDrawables[6].setCustomEndFrame(19);
                 animationDrawables[2].setOnFinishCallback(finishCallback, 97);

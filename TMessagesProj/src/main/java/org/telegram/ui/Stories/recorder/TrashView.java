@@ -9,18 +9,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RadialGradient;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.text.Layout;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -50,7 +44,7 @@ public class TrashView extends View {
         circlePaint.setShadowLayer(dpf2(3f), 0, dp(1.66f), 0x30000000);
         greyPaint.setColor(0x33000000);
 
-        drawable = new RLottieDrawable(R.raw.group_pip_delete_icon, "" + R.raw.group_pip_delete_icon, dp(48), dp(48), true, null);
+        drawable = new RLottieDrawable(R.raw.group_pip_delete_icon, dp(48), dp(48), true, null);
         drawable.setMasterParent(this);
         drawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
         drawable.setPlayInDirectionOfCustomEndFrame(true);

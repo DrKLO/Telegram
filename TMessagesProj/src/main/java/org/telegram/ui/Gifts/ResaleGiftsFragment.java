@@ -1227,7 +1227,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             setOrientation(VERTICAL);
 
             imageView = new BackupImageView(context);
-            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
+            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, dp(130), dp(130)));
             addView(imageView, LayoutHelper.createLinear(64, 64, Gravity.CENTER, 0, 32, 0, 0));
 
             textView = new TextView(context);
@@ -1288,7 +1288,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL));
 
             imageView = new BackupImageView(context);
-            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
+            imageView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, dp(130), dp(130)));
             layout.addView(imageView, LayoutHelper.createLinear(130, 130, Gravity.CENTER));
 
             titleView = new TextView(context);

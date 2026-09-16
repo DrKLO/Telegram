@@ -1,4 +1,0 @@
-basicConstraints = critical,@section
-[section]
-CA = true
-

@@ -56,7 +56,7 @@ public class SuggestBirthdayActionLayout {
         this.view = view;
         this.resourcesProvider = resourcesProvider;
 
-        sticker = new RLottieDrawable(R.raw.cake, "cake", dp(66), dp(66), true, null);
+        sticker = new RLottieDrawable(R.raw.cake, dp(66), dp(66), true, null);
         sticker.restart();
 //        sticker = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES_LARGE, 5370999492914976897L);
         bounce = new ButtonBounce(view);

@@ -1,14 +1,13 @@
 package org.telegram.messenger.pip;
 
 import android.app.Activity;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
+import androidx.media3.session.MediaSession;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
@@ -149,22 +148,16 @@ public class PipActivityController {
         final boolean oldMediaSession = oldSource != null && oldSource.needMediaSession;
         final boolean newMediaSession = newSource != null && newSource.needMediaSession;
         if (oldMediaSession != newMediaSession) {
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(null);
-                mediaSessionConnector = null;
-            }
             if (mediaSession != null) {
-                mediaSession.setActive(false);
                 mediaSession.release();
                 mediaSession = null;
                 // Log.i(PipSource.TAG, "[MEDIA] stop media session");
             }
 
             if (newSource != null) {
-                mediaSession = new MediaSessionCompat(activity, "pip-media-session");
-                mediaSession.setQueue(null);
-                mediaSession.setActive(true);
-                mediaSessionConnector = new MediaSessionConnector(mediaSession);
+                mediaSession = new MediaSession.Builder(activity, newSource.player)
+                        .setId("pip-media-session")
+                        .build();
 
                 // Log.i(PipSource.TAG, "[MEDIA] start media session");
             }
@@ -175,8 +168,8 @@ public class PipActivityController {
         }
 
         if (newSource != null) {
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(newSource.player);
+            if (mediaSession != null && mediaSession.getPlayer() != newSource.player) {
+                mediaSession.setPlayer(newSource.player);
             }
             pipContentView.bringToFront();
             newSource.state2.onReceiveMaxPriority();
@@ -191,8 +184,7 @@ public class PipActivityController {
         pipContentView.invalidate();
     }
 
-    private MediaSessionCompat mediaSession;
-    MediaSessionConnector mediaSessionConnector;
+    private MediaSession mediaSession;
 
 
 
@@ -219,8 +211,8 @@ public class PipActivityController {
     void dispatchSourceParamsChanged(PipSource source) {
         if (maxPrioritySource == source) {
             PipUtils.applyPictureInPictureParams(activity, source);
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(source.player);
+            if (mediaSession != null && mediaSession.getPlayer() != source.player) {
+                mediaSession.setPlayer(source.player);
             }
         }
         pipContentView.invalidate();

@@ -156,7 +156,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         recyclerView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
 
         if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
-            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
             darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);
             darkThemeDrawable.beginApplyLayerColors();
             darkThemeDrawable.commitApplyLayerColors();

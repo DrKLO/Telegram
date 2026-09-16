@@ -56,7 +56,7 @@ public class BotCommandsMenuView extends View {
             invalidate();
         }
     };
-    RLottieDrawable webViewAnimation = new RLottieDrawable(R.raw.bot_webview_sheet_to_cross, String.valueOf(R.raw.bot_webview_sheet_to_cross) + hashCode(), AndroidUtilities.dp(20), AndroidUtilities.dp(20));
+    RLottieDrawable webViewAnimation = new RLottieDrawable(R.raw.bot_webview_sheet_to_cross, AndroidUtilities.dp(20), AndroidUtilities.dp(20));
     public boolean expanded;
     float expandProgress;
 

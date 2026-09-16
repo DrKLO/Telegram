@@ -276,7 +276,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
     private void setSticker() {
         if (stickerType == STICKER_TYPE_NO_CONTACTS || stickerType == STICKER_TYPE_SEARCH) {
-            stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, "utyan_empty", dp(130), dp(130)));
+            stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_empty, dp(130), dp(130)));
             return;
         }
 

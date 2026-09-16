@@ -1,7 +1,0 @@
------ Certificate i=0 (CN=Invalid Mapping From anyPolicy EE Certificate Test7,O=Test Certificates 2011,C=US) -----
-ERROR: No valid policy
-ERROR: No valid policy
-
------ Certificate i=1 (CN=Mapping From anyPolicy CA,O=Test Certificates 2011,C=US) -----
-ERROR: PolicyMappings must not map anyPolicy
-

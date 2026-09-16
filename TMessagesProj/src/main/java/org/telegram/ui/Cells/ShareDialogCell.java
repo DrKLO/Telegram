@@ -490,7 +490,7 @@ public class ShareDialogCell extends FrameLayout implements NotificationCenter.N
             paint.setShader(gradient);
 
             if (animate) {
-                lottieDrawable = new RLottieDrawable(R.raw.story_repost, "story_repost", dp(42), dp(42), true, null);
+                lottieDrawable = new RLottieDrawable(R.raw.story_repost, dp(42), dp(42), true, null);
                 lottieDrawable.setMasterParent(parentView);
                 AndroidUtilities.runOnUIThread(lottieDrawable::start, 450);
                 drawable = null;

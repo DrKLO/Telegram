@@ -17,7 +17,7 @@
 #include "api/video_codecs/video_decoder.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.h"
-#include <libvpx/vp8cx.h>
+#include <vpx/vp8cx.h>
 
 namespace webrtc {
 

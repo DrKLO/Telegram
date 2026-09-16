@@ -1,3 +1,0 @@
-This directory contains tools for setting up a hermetic toolchain on the
-continuous integration bots. It is in the repository for convenience and can be
-ignored in development.

@@ -1,8 +1,0 @@
-chain: chain.pem
-last_cert_trust: TRUSTED_ANCHOR
-utc_time: DEFAULT
-key_purpose: CLIENT_AUTH
-expected_errors:
------ Certificate i=0 (CN=Target) -----
-WARNING: Certificate does not have extended key usage
-

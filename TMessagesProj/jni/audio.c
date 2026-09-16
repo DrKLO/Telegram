@@ -557,15 +557,25 @@ JNIEXPORT jint Java_org_telegram_messenger_MediaController_isOpusFile(JNIEnv *en
 static inline void set_bits(uint8_t *bytes, int32_t bitOffset, int32_t value) {
     bytes += bitOffset / 8;
     bitOffset %= 8;
-    *((int32_t *) bytes) |= (value << bitOffset);
+
+    uint16_t bits = (uint16_t) (value << bitOffset);
+    bytes[0] |= (uint8_t) bits;
+    bytes[1] |= (uint8_t) (bits >> 8);
 }
 
 JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JNIEnv *env, jclass class, jshortArray array, jint length) {
 
     jshort *sampleBuffer = (*env)->GetShortArrayElements(env, array, 0);
+    if (sampleBuffer == NULL) {
+        return NULL;
+    }
 
     const int32_t resultSamples = 100;
-    uint16_t *samples = malloc(100 * 2);
+    uint16_t *samples = calloc(resultSamples, sizeof(uint16_t));
+    if (samples == NULL) {
+        (*env)->ReleaseShortArrayElements(env, array, sampleBuffer, JNI_ABORT);
+        return NULL;
+    }
     uint64_t sampleIndex = 0;
     uint16_t peakSample = 0;
     int32_t sampleRate = (int32_t) MAX(1, length / resultSamples);
@@ -600,18 +610,22 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JN
         }
     }
 
-    (*env)->ReleaseShortArrayElements(env, array, sampleBuffer, 0);
+    (*env)->ReleaseShortArrayElements(env, array, sampleBuffer, JNI_ABORT);
 
     uint32_t bitstreamLength = resultSamples * 5 / 8 + 1;
-    jbyteArray *result = (*env)->NewByteArray(env, bitstreamLength);
+    jbyteArray result = (*env)->NewByteArray(env, bitstreamLength);
     if (result) {
-        uint8_t *bytes = malloc(bitstreamLength + 4);
-        memset(bytes, 0, bitstreamLength + 4);
-        for (int32_t i = 0; i < resultSamples; i++) {
-            int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
-            set_bits(bytes, i * 5, value & 31);
+        uint8_t *bytes = calloc(bitstreamLength + 4, 1);
+        if (bytes != NULL) {
+            for (int32_t i = 0; i < resultSamples; i++) {
+                int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
+                set_bits(bytes, i * 5, value & 31);
+            }
+            (*env)->SetByteArrayRegion(env, result, 0, bitstreamLength, (jbyte *) bytes);
+            free(bytes);
+        } else {
+            result = NULL;
         }
-        (*env)->SetByteArrayRegion(env, result, 0, bitstreamLength, (jbyte *) bytes);
     }
     free(samples);
     
@@ -622,6 +636,9 @@ int16_t *sampleBuffer = NULL;
 
 JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNIEnv *env, jclass class, jstring path) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
+    if (pathStr == NULL) {
+        return NULL;
+    }
     jbyteArray result = 0;
     
     int error = OPUS_OK;
@@ -631,145 +648,183 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
         const uint32_t resultSamples = 100;
         int32_t sampleRate = MAX(1, (int32_t) (totalSamples / resultSamples));
 
-        uint16_t *samples = malloc(100 * 2);
+        uint16_t *samples = calloc(resultSamples, sizeof(uint16_t));
 
         size_t bufferSize = 1024 * 128;
         if (sampleBuffer == NULL) {
             sampleBuffer = malloc(bufferSize);
         }
-        uint64_t sampleIndex = 0;
-        uint16_t peakSample = 0;
 
-        int32_t index = 0;
+        if (samples != NULL && sampleBuffer != NULL) {
+            uint64_t sampleIndex = 0;
+            uint16_t peakSample = 0;
 
-        while (1) {
-            int readSamples = op_read(opusFile, sampleBuffer, bufferSize / 2, NULL);
-            for (int32_t i = 0; i < readSamples; i++) {
-                uint16_t sample = (uint16_t) abs(sampleBuffer[i]);
-                if (sample > peakSample) {
-                    peakSample = sample;
+            int32_t index = 0;
+            int decodeFailed = 0;
+
+            while (1) {
+                int readSamples = op_read(opusFile, sampleBuffer, bufferSize / 2, NULL);
+                if (readSamples < 0) {
+                    LOGE("getWaveform: op_read failed: %d", readSamples);
+                    decodeFailed = 1;
+                    break;
                 }
-                if (sampleIndex++ % sampleRate == 0) {
-                    if (index < resultSamples) {
-                        samples[index++] = peakSample;
+                if (readSamples == 0) {
+                    break;
+                }
+                for (int32_t i = 0; i < readSamples; i++) {
+                    uint16_t sample = (uint16_t) abs(sampleBuffer[i]);
+                    if (sample > peakSample) {
+                        peakSample = sample;
                     }
-                    peakSample = 0;
+                    if (sampleIndex++ % sampleRate == 0) {
+                        if (index < resultSamples) {
+                            samples[index++] = peakSample;
+                        }
+                        peakSample = 0;
+                    }
                 }
             }
-            if (readSamples == 0) {
-                break;
+
+            if (!decodeFailed) {
+                int64_t sumSamples = 0;
+                for (int32_t i = 0; i < resultSamples; i++) {
+                    sumSamples += samples[i];
+                }
+                uint16_t peak = (uint16_t) (sumSamples * 1.8f / resultSamples);
+                if (peak < 2500) {
+                    peak = 2500;
+                }
+
+                for (int32_t i = 0; i < resultSamples; i++) {
+                    uint16_t sample = (uint16_t) ((int64_t) samples[i]);
+                    if (sample > peak) {
+                        samples[i] = peak;
+                    }
+                }
+
+                uint32_t bitstreamLength = (resultSamples * 5) / 8 + 1;
+                result = (*env)->NewByteArray(env, bitstreamLength);
+                if (result) {
+                    uint8_t *bytes = calloc(bitstreamLength + 4, 1);
+                    if (bytes != NULL) {
+                        for (int32_t i = 0; i < resultSamples; i++) {
+                            int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
+                            set_bits(bytes, i * 5, value & 31);
+                        }
+
+                        (*env)->SetByteArrayRegion(env, result, 0, bitstreamLength, (jbyte *) bytes);
+                        free(bytes);
+                    } else {
+                        result = NULL;
+                    }
+                }
             }
         }
 
-        int64_t sumSamples = 0;
-        for (int32_t i = 0; i < resultSamples; i++) {
-            sumSamples += samples[i];
-        }
-        uint16_t peak = (uint16_t) (sumSamples * 1.8f / resultSamples);
-        if (peak < 2500) {
-            peak = 2500;
-        }
-
-        for (int32_t i = 0; i < resultSamples; i++) {
-            uint16_t sample = (uint16_t) ((int64_t) samples[i]);
-            if (sample > peak) {
-                samples[i] = peak;
-            }
-        }
-
-        //free(sampleBuffer);
-        op_free(opusFile);
-
-        uint32_t bitstreamLength = (resultSamples * 5) / 8 + 1;
-        result = (*env)->NewByteArray(env, bitstreamLength);
-        if (result) {
-            uint8_t *bytes = malloc(bitstreamLength + 4);
-            memset(bytes, 0, bitstreamLength + 4);
-
-            for (int32_t i = 0; i < resultSamples; i++) {
-                int32_t value = MIN(31, abs((int32_t) samples[i]) * 31 / peak);
-                set_bits(bytes, i * 5, value & 31);
-            }
-
-            (*env)->SetByteArrayRegion(env, result, 0, bitstreamLength, (jbyte *) bytes);
-        }
         free(samples);
+        op_free(opusFile);
     }
-    
-    if (pathStr != 0) {
-        (*env)->ReleaseStringUTFChars(env, path, pathStr);
-    }
-    
+
+    (*env)->ReleaseStringUTFChars(env, path, pathStr);
     return result;
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveformLoader_init(JNIEnv *env, jobject obj, jstring pathJStr, jint count) {
     const char *path = (*env)->GetStringUTFChars(env, pathJStr, 0);
+    if (path == NULL) {
+        return;
+    }
+    if (count <= 0) {
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+        return;
+    }
 
     AVFormatContext *formatContext = avformat_alloc_context();
     if (!formatContext) {
-        // Handle error
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
         return;
     }
 
     int res;
     if ((res = avformat_open_input(&formatContext, path, NULL, NULL)) != 0) {
         LOGD("avformat_open_input error %s", av_err2str(res));
-        // Handle error
         avformat_free_context(formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
         return;
     }
 
     if (avformat_find_stream_info(formatContext, NULL) < 0) {
-        // Handle error
         avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
         return;
     }
 
     AVCodec *codec = NULL;
     int audioStreamIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
-    if (audioStreamIndex < 0) {
+    if (audioStreamIndex < 0 || codec == NULL) {
         LOGD("av_find_best_stream error %s", av_err2str(audioStreamIndex));
-        // Handle error
         avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
         return;
     }
 
     AVCodecContext *codecContext = avcodec_alloc_context3(codec);
-    avcodec_parameters_to_context(codecContext, formatContext->streams[audioStreamIndex]->codecpar);
+    if (codecContext == NULL) {
+        avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+        return;
+    }
+    if (avcodec_parameters_to_context(codecContext, formatContext->streams[audioStreamIndex]->codecpar) < 0) {
+        avcodec_free_context(&codecContext);
+        avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+        return;
+    }
 
     int64_t duration_in_microseconds = formatContext->duration;
     double duration_in_seconds = (double)duration_in_microseconds / AV_TIME_BASE;
 
     if (avcodec_open2(codecContext, codec, NULL) < 0) {
-        // Handle error
         avcodec_free_context(&codecContext);
         avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
         return;
     }
 
-    // Obtain the class and method to callback
     jclass cls = (*env)->GetObjectClass(env, obj);
     jmethodID mid = (*env)->GetMethodID(env, cls, "receiveChunk", "([SI)V");
 
     AVFrame *frame = av_frame_alloc();
+    if (frame == NULL) {
+        avcodec_free_context(&codecContext);
+        avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+        return;
+    }
     AVPacket packet;
 
-    int sampleRate = codecContext->sample_rate;  // Sample rate from FFmpeg's codec context
+    int sampleRate = codecContext->sample_rate;
     int skip = 4;
-    int barWidth = (int) round((double) duration_in_seconds * sampleRate / count / (1 + skip)); // Assuming you have 'duration' and 'count' defined somewhere
+    int barWidth = (int) round((double) duration_in_seconds * sampleRate / count / (1 + skip));
 
     int channels = codecContext->ch_layout.nb_channels;
+    if (channels <= 0) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codecContext);
+        avformat_close_input(&formatContext);
+        (*env)->ReleaseStringUTFChars(env, pathJStr, path);
+        return;
+    }
 
     short peak = 0;
     int currentCount = 0;
     int index = 0;
     int chunkIndex = 0;
-    short waveformChunkData[32];  // Allocate the chunk array
+    short waveformChunkData[32] = {0};
 
     while (av_read_frame(formatContext, &packet) >= 0) {
         if (packet.stream_index == audioStreamIndex) {
-            // Decode the audio packet
             int response = avcodec_send_packet(codecContext, &packet);
 
             while (response >= 0) {
@@ -777,7 +832,6 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
                 if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
                     break;
                 } else if (response < 0) {
-                    // Handle error
                     break;
                 }
 
@@ -796,19 +850,16 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
                         switch (codecContext->sample_fmt) {
                             case AV_SAMPLE_FMT_S16:
                             case AV_SAMPLE_FMT_S16P:
-                                // Signed 16-bit PCM
                                 sample_value = *(int16_t *)data;
                                 break;
 
                             case AV_SAMPLE_FMT_FLT:
                             case AV_SAMPLE_FMT_FLTP:
-                                // 32-bit float, scale to 16-bit PCM range
                                 sample_value = (short)(*(float *)data * 32767.0f);
                                 break;
 
                             case AV_SAMPLE_FMT_U8:
                             case AV_SAMPLE_FMT_U8P:
-                                // Unsigned 8-bit PCM, scale to 16-bit PCM range
                                 sample_value = (*(uint8_t *)data - 128) * 256;
                                 break;
 
@@ -824,14 +875,15 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
                         index++;
                         if (index - chunkIndex >= sizeof(waveformChunkData) / sizeof(short) || index >= count) {
                             jshortArray waveformData = (*env)->NewShortArray(env, sizeof(waveformChunkData) / sizeof(short));
+                            if (waveformData == NULL) {
+                                break;
+                            }
                             (*env)->SetShortArrayRegion(env, waveformData, 0, sizeof(waveformChunkData) / sizeof(short), waveformChunkData);
                             (*env)->CallVoidMethod(env, obj, mid, waveformData, sizeof(waveformChunkData) / sizeof(short));
 
-                            // Reset the chunk data
                             memset(waveformChunkData, 0, sizeof(waveformChunkData));
                             chunkIndex = index;
 
-                            // Delete local reference to avoid memory leak
                             (*env)->DeleteLocalRef(env, waveformData);
                         }
                         peak = 0;
@@ -846,7 +898,6 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
                     }
                     currentCount++;
 
-                    // Skip logic
                     i += skip;
                     if (i >= frame->nb_samples) {
                         break;
@@ -861,7 +912,6 @@ JNIEXPORT void JNICALL Java_org_telegram_ui_Stories_recorder_FfmpegAudioWaveform
             break;
         }
 
-        // Check for stopping flag
         jfieldID fid = (*env)->GetFieldID(env, cls, "running", "Z");
         jboolean running = (*env)->GetBooleanField(env, obj, fid);
         if (running == JNI_FALSE) {
@@ -893,6 +943,12 @@ int cropOpusAudio(const char *inputPath, const char *outputPath, float startTime
 
     int channels = head->channel_count;
     opus_int64 total_source_samples = op_pcm_total(opusFile, -1);
+    if (total_source_samples < 0) {
+        LOGE("Failed to get source sample count: %lld", (long long) total_source_samples);
+        op_free(opusFile);
+        return 0;
+    }
+
     opus_int32 rate = 48000;
 
     opus_int64 start_sample = MAX(0, MIN(total_source_samples, (opus_int64) ((startTimeMs / 1000.0) * rate)));
@@ -925,13 +981,22 @@ int cropOpusAudio(const char *inputPath, const char *outputPath, float startTime
         return 0;
     }
 
+    int success = 1;
     opus_int64 remaining_samples = crop_length;
     while (remaining_samples > 0) {
         int max_samples = (int) MIN(960, remaining_samples / channels);
-        if (max_samples <= 0) break;
-
+        if (max_samples <= 0) {
+            break;
+        }
         int samples_read = op_read(opusFile, buffer, max_samples * channels, NULL);
-        if (samples_read <= 0) break;
+        if (samples_read < 0) {
+            LOGE("Decoding error from op_read(): %d", samples_read);
+            success = 0;
+            break;
+        }
+        if (samples_read == 0) {
+            break;
+        }
         remaining_samples -= samples_read;
 
         int end = remaining_samples <= 0;
@@ -939,21 +1004,25 @@ int cropOpusAudio(const char *inputPath, const char *outputPath, float startTime
         size_t byte_count = samples_read * sizeof(int16_t);
         if (!writeFrame((uint8_t *)buffer, byte_count, end)) {
             LOGE("Failed to write frame");
-            free(buffer);
-            cleanupRecorder();
-            op_free(opusFile);
-            return 0;
+            success = 0;
+            break;
         }
     }
 
     free(buffer);
     cleanupRecorder();
     op_free(opusFile);
-    return 1;
+
+    return success;
 }
 
 int append_stream(OggOpusFile *of, int16_t* buffer, int channels, int is_last) {
     opus_int64 total_source_samples = op_pcm_total(of, -1);
+    if (total_source_samples < 0) {
+        LOGE("Failed to get source sample count: %lld",(long long) total_source_samples);
+        return 0;
+    }
+
     while (total_source_samples > 0) {
         int samples_read = op_read(of, buffer, frame_size, NULL);
         if (samples_read < 0) {
@@ -983,6 +1052,10 @@ int joinOpusAudios(const char* file1, const char* file2, const char* dest) {
     OggOpusFile *opusFile2 = op_open_file(file2, &error);
     if (!opusFile2 || error != OPUS_OK) {
         LOGE("Failed to open input opus file2: %s", opus_strerror(error));
+        if (opusFile2 != NULL) {
+            op_free(opusFile2);
+        }
+        op_free(opusFile1);
         return 0;
     }
 
@@ -1020,15 +1093,17 @@ int joinOpusAudios(const char* file1, const char* file2, const char* dest) {
         return 0;
     }
 
-    append_stream(opusFile1, buffer, channels, 0);
-    append_stream(opusFile2, buffer, channels, 1);
+    int success = append_stream(opusFile1, buffer, channels, 0);
+    if (success) {
+        success = append_stream(opusFile2, buffer, channels, 1);
+    }
 
     free(buffer);
     cleanupRecorder();
     op_free(opusFile1);
     op_free(opusFile2);
 
-    return 1;
+    return success;
 }
 
 JNIEXPORT jboolean Java_org_telegram_messenger_MediaController_cropOpusFile(JNIEnv *env, jclass class, jstring src, jstring dst, jlong startMs, jlong endMs) {

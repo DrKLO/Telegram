@@ -1,3 +1,0 @@
------ Certificate i=0 (CN=Invalid requireExplicitPolicy EE Certificate Test3,O=Test Certificates 2011,C=US) -----
-ERROR: No valid policy
-

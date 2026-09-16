@@ -114,8 +114,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -126,7 +124,6 @@ import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileStreamLoadOperation;
 import org.telegram.messenger.ImageLoader;
@@ -164,7 +161,6 @@ import org.telegram.ui.ActionBar.BottomSheetTabDialog;
 import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
@@ -15484,11 +15480,11 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
             if (webView != null) {
                 webView.onResume();
-                pageLayout.webViewContainer.replaceWebView(UserConfig.selectedAccount, webView, proxy);
+                pageLayout.webViewContainer.replaceWebView(UserConfig.selectedAccount, webView, proxy, lastUrl, false);
                 pageLayout.setWebBgColor(true, actionBarColor);
                 pageLayout.setWebBgColor(false, backgroundColor);
             } else if (lastUrl != null) {
-                pageLayout.webViewContainer.loadUrl(UserConfig.selectedAccount, lastUrl);
+                pageLayout.webViewContainer.loadUrl(UserConfig.selectedAccount, lastUrl, false);
             }
         }
         

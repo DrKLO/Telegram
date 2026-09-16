@@ -1,3 +1,0 @@
------ Certificate i=1 (CN=pathLenConstraint0 subCA,O=Test Certificates 2011,C=US) -----
-ERROR: max_path_length reached
-

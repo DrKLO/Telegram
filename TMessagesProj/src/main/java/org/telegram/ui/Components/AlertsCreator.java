@@ -4496,7 +4496,7 @@ public class AlertsCreator {
         }
 
         final RLottieImageView notifyItem = new RLottieImageView(context);
-        final RLottieDrawable notifyIcon = new RLottieDrawable(R.raw.notify_toggle, "notify_toggle", dp(24), dp(24), true, null);
+        final RLottieDrawable notifyIcon = new RLottieDrawable(R.raw.notify_toggle, dp(24), dp(24), true, null);
         notifyIcon.setAllowDecodeSingleFrame(true);
         notifyIcon.setPlayInDirectionOfCustomEndFrame(true);
         notifyIcon.start();

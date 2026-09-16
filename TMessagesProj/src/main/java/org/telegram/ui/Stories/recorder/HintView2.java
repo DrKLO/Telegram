@@ -47,7 +47,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -59,7 +58,6 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -304,7 +302,7 @@ public class HintView2 extends View {
     }
 
     public HintView2 setIcon(int resId) {
-        RLottieDrawable icon = new RLottieDrawable(resId, "" + resId, dp(34), dp(34));
+        RLottieDrawable icon = new RLottieDrawable(resId, dp(34), dp(34));
         icon.start();
         return setIcon(icon);
     }

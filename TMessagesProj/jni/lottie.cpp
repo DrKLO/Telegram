@@ -167,7 +167,7 @@ JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_RLottieNative_nCreate(
 }
 
 JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_RLottieNative_nCreateWithJson(
-        JNIEnv *env, jclass, jstring json, jstring, jintArray data, jintArray colorReplacement,
+        JNIEnv *env, jclass, jstring json, jintArray data, jintArray colorReplacement,
         jobjectArray layerNames, jintArray layerColors) {
     if (json == nullptr) return 0;
     const char *chars = env->GetStringUTFChars(json, nullptr);

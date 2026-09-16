@@ -278,7 +278,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
             micIconView = new RLottieImageView(context);
             micIconView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(9), AndroidUtilities.dp(9), AndroidUtilities.dp(9));
             micIconView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(48), ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.3f))));
-            RLottieDrawable micIcon = new RLottieDrawable(R.raw.voice_mini, "" + R.raw.voice_mini, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
+            RLottieDrawable micIcon = new RLottieDrawable(R.raw.voice_mini, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
             micIconView.setAnimation(micIcon);
             micIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             micEnabled = true;

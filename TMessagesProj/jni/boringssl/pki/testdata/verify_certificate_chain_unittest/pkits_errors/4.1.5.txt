@@ -1,6 +1,0 @@
------ Certificate i=1 (CN=DSA Parameters Inherited CA,O=Test Certificates 2011,C=US) -----
-ERROR: Unacceptable signature algorithm
-
------ Certificate i=2 (CN=DSA CA,O=Test Certificates 2011,C=US) -----
-ERROR: Unacceptable public key
-

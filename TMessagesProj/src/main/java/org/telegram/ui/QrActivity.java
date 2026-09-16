@@ -1161,7 +1161,7 @@ public class QrActivity extends BaseFragment {
                 return;
             }
             if (hasTimer && loadingMatrix == null) {
-                loadingMatrix = new RLottieDrawable(R.raw.qr_matrix, "qr_matrix", dp(200), dp(200));
+                loadingMatrix = new RLottieDrawable(R.raw.qr_matrix, dp(200), dp(200));
                 loadingMatrix.setMasterParent(this);
                 loadingMatrix.getPaint().setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
                 loadingMatrix.setAutoRepeat(1);
@@ -1536,7 +1536,7 @@ public class QrActivity extends BaseFragment {
 
             int drawableColor = fragment.getThemedColor(Theme.key_featuredStickers_addButton);
             int drawableSize = dp(28);
-            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, "" + R.raw.sun_outline, drawableSize, drawableSize, false, null);
+            darkThemeDrawable = new RLottieDrawable(R.raw.sun_outline, drawableSize, drawableSize, false, null);
             forceDark = !Theme.getActiveTheme().isDark();
             setForceDark(Theme.getActiveTheme().isDark(), false);
             darkThemeDrawable.setPlayInDirectionOfCustomEndFrame(true);

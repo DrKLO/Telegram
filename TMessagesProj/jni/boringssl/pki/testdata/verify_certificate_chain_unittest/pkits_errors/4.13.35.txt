@@ -1,3 +1,0 @@
------ Certificate i=0 (CN=Invalid URI nameConstraints EE Certificate Test35,O=Test Certificates 2011,C=US) -----
-ERROR: Not permitted by name constraints
-

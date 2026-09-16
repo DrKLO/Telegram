@@ -8,20 +8,21 @@ import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.AssetDataSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.FileDataSource;
+import androidx.annotation.OptIn;
+import androidx.media3.common.C;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.datasource.AssetDataSource;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSpec;
+import androidx.media3.datasource.FileDataSource;
+
 import com.google.android.gms.cast.MediaMetadata;
-import com.google.android.gms.common.images.WebImage;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import fi.iki.elonen.NanoHTTPD;
 
+@OptIn(markerClass = UnstableApi.class)
 public class ChromecastFileServer extends NanoHTTPD {
     private static final String TAG = "CAST_SERVER";
     private static final int PORT = 61578;

@@ -57,7 +57,7 @@ public class BottomPagerTabs extends View {
             customEndFrameMid = endFrameMid;
             customEndFrameEnd = endFrameEnd;
 
-            drawable = new RLottieDrawable(resId, "" + resId, dp(29), dp(29));
+            drawable = new RLottieDrawable(resId, dp(29), dp(29));
             drawable.setMasterParent(BottomPagerTabs.this);
             drawable.setAllowDecodeSingleFrame(true);
             drawable.setPlayInDirectionOfCustomEndFrame(true);

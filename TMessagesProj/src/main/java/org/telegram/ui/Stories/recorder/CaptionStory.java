@@ -768,7 +768,7 @@ public class CaptionStory extends CaptionContainerView {
         public RecordDot(View parent) {
             this.parent = parent;
             int resId = R.raw.chat_audio_record_delete_3;
-            drawable = new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), false, null);
+            drawable = new RLottieDrawable(resId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), false, null);
             drawable.setInvalidateOnProgressSet(true);
             updateColors();
         }

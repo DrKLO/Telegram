@@ -7696,22 +7696,22 @@ public class Theme {
             if (dialogs_hidePsaDrawable != null) {
                 dialogs_hidePsaDrawable.recycle(false);
             }
-            dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", dp(36), dp(36), false, null);
-            dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", dp(36), dp(36), false, null);
-            dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, "chats_unarchive", dp(36), dp(36), false, null);
-            dialogs_pinArchiveDrawable = new RLottieDrawable(R.raw.chats_hide, "chats_hide", dp(36), dp(36), false, null);
-            dialogs_unpinArchiveDrawable = new RLottieDrawable(R.raw.chats_unhide, "chats_unhide", dp(36), dp(36), false, null);
-            dialogs_hidePsaDrawable = new RLottieDrawable(R.raw.chat_audio_record_delete, "chats_psahide", dp(30), dp(30), false, null);
+            dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, dp(36), dp(36), false, null);
+            dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, dp(36), dp(36), false, null);
+            dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, dp(36), dp(36), false, null);
+            dialogs_pinArchiveDrawable = new RLottieDrawable(R.raw.chats_hide, dp(36), dp(36), false, null);
+            dialogs_unpinArchiveDrawable = new RLottieDrawable(R.raw.chats_unhide, dp(36), dp(36), false, null);
+            dialogs_hidePsaDrawable = new RLottieDrawable(R.raw.chat_audio_record_delete, dp(30), dp(30), false, null);
 
-            dialogs_swipeMuteDrawable = new RLottieDrawable(R.raw.swipe_mute, "swipe_mute", dp(36), dp(36), false, null);
-            dialogs_swipeUnmuteDrawable = new RLottieDrawable(R.raw.swipe_unmute, "swipe_unmute", dp(36), dp(36), false, null);
+            dialogs_swipeMuteDrawable = new RLottieDrawable(R.raw.swipe_mute, dp(36), dp(36), false, null);
+            dialogs_swipeUnmuteDrawable = new RLottieDrawable(R.raw.swipe_unmute, dp(36), dp(36), false, null);
 
-            dialogs_swipeReadDrawable = new RLottieDrawable(R.raw.swipe_read, "swipe_read", dp(36), dp(36), false, null);
-            dialogs_swipeUnreadDrawable = new RLottieDrawable(R.raw.swipe_unread, "swipe_unread", dp(36), dp(36), false, null);
-            dialogs_swipeDeleteDrawable = new RLottieDrawable(R.raw.swipe_delete, "swipe_delete", dp(36), dp(36), false, null);
-            dialogs_swipeUnpinDrawable = new RLottieDrawable(R.raw.swipe_unpin, "swipe_unpin", dp(36), dp(36), false, null);
-            dialogs_swipePinDrawable = new RLottieDrawable(R.raw.swipe_pin, "swipe_pin", dp(36), dp(36), false, null);
-            dialogs_swipeCommunityUngroup = new RLottieDrawable(R.raw.swipe_community_ungroup, "swipe_community_ungroup", dp(28), dp(28), false, null);
+            dialogs_swipeReadDrawable = new RLottieDrawable(R.raw.swipe_read, dp(36), dp(36), false, null);
+            dialogs_swipeUnreadDrawable = new RLottieDrawable(R.raw.swipe_unread, dp(36), dp(36), false, null);
+            dialogs_swipeDeleteDrawable = new RLottieDrawable(R.raw.swipe_delete, dp(36), dp(36), false, null);
+            dialogs_swipeUnpinDrawable = new RLottieDrawable(R.raw.swipe_unpin, dp(36), dp(36), false, null);
+            dialogs_swipePinDrawable = new RLottieDrawable(R.raw.swipe_pin, dp(36), dp(36), false, null);
+            dialogs_swipeCommunityUngroup = new RLottieDrawable(R.raw.swipe_community_ungroup, dp(28), dp(28), false, null);
 
             applyCommonTheme();
         }

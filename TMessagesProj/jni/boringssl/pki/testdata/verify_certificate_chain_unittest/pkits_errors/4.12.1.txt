@@ -1,4 +1,0 @@
------ Certificate i=0 (CN=Invalid inhibitAnyPolicy EE Certificate Test1,O=Test Certificates 2011,C=US) -----
-ERROR: No valid policy
-ERROR: No valid policy
-

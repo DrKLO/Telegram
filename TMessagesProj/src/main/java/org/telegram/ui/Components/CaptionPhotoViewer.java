@@ -9,8 +9,6 @@ import static org.telegram.ui.ActionBar.Theme.RIPPLE_MASK_CIRCLE_20DP;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -402,7 +400,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
         hint.setTranslationY((-Math.min(dp(34), getEditTextHeight()) - dp(14)) * (isAtTop() ? -1.0f : 1.0f));
         hint.setText(text);
         final int iconResId = value > 0 ? R.raw.fire_on : R.raw.fire_off;
-        RLottieDrawable icon = new RLottieDrawable(iconResId, "" + iconResId, dp(34), dp(34));
+        RLottieDrawable icon = new RLottieDrawable(iconResId, dp(34), dp(34));
         icon.start();
         hint.setIcon(icon);
         hint.show();

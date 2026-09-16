@@ -605,7 +605,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 avatarEditor.playAnimation();
             });
 
-            cameraDrawable = new RLottieDrawable(R.raw.camera, "" + R.raw.camera, AndroidUtilities.dp(60), AndroidUtilities.dp(60), false, null);
+            cameraDrawable = new RLottieDrawable(R.raw.camera, AndroidUtilities.dp(60), AndroidUtilities.dp(60), false, null);
 
             avatarEditor = new RLottieImageView(context) {
                 @Override

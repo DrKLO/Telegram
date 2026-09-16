@@ -1,3 +1,0 @@
------ Certificate i=0 (CN=Invalid DN nameConstraints EE Certificate Test15,OU=excludedSubtree1,O=Test Certificates 2011,C=US) -----
-ERROR: Not permitted by name constraints
-

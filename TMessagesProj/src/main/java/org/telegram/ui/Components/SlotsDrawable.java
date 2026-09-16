@@ -236,7 +236,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                         FileLoader.getInstance(account).loadFile(document, stickerSet, FileLoader.PRIORITY_NORMAL, 1);
                     });
                 } else {
-                    final RLottieNative lottieNative = RLottieNative.createFromRawJson(json, "dice", metaData, null);
+                    final RLottieNative lottieNative = RLottieNative.createFromRawJson(json, metaData);
                     lottieNatives[a] = lottieNative;
                     frameCounts[a] = metaData[0];
                 }
@@ -347,7 +347,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                         FileLoader.getInstance(account).loadFile(document, stickerSet, FileLoader.PRIORITY_NORMAL, 1);
                     });
                 } else {
-                    final RLottieNative lottieNative = RLottieNative.createFromRawJson(json, "dice", metaData, null);
+                    final RLottieNative lottieNative = RLottieNative.createFromRawJson(json, metaData);
                     if (a <= 2) {
                         secondLottieNatives[a] = lottieNative;
                         secondFrameCounts[a] = metaData[0];

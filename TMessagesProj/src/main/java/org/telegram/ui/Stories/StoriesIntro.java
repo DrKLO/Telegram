@@ -193,7 +193,7 @@ public class StoriesIntro extends FrameLayout {
             super(context);
             this.header = header;
             this.subHeader = subHeader;
-            lottieDrawable = new RLottieDrawable(rawRes, "" + rawRes, AndroidUtilities.dp(36), AndroidUtilities.dp(36), true, null);
+            lottieDrawable = new RLottieDrawable(rawRes, AndroidUtilities.dp(36), AndroidUtilities.dp(36), true, null);
             lottieDrawable.setAutoRepeat(1);
             lottieDrawable.setMasterParent(this);
 

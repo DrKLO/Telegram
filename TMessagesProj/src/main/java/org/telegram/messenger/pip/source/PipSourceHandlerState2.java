@@ -10,7 +10,7 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.Player;
+import androidx.media3.common.Player;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;

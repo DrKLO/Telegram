@@ -40,7 +40,7 @@ public class GalleryEmptyView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
 
         stickerView = new BackupImageView(context);
-        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_gallery, "utyan_gallery", dp(110), dp(110)));
+        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_gallery, dp(110), dp(110)));
 
         if (!AndroidUtilities.isTablet()) {
             addView(stickerView, LayoutHelper.createLinear(110, 110, Gravity.CENTER_HORIZONTAL | Gravity.TOP));

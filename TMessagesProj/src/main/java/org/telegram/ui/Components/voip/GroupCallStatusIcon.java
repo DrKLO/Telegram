@@ -68,8 +68,8 @@ public class GroupCallStatusIcon {
     private boolean mutedByMe;
 
     public GroupCallStatusIcon() {
-        micDrawable = new RLottieDrawable(R.raw.voice_mini, "" + R.raw.voice_mini, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
-        shakeHandDrawable = new RLottieDrawable(R.raw.hand_2, "" + R.raw.hand_2, AndroidUtilities.dp(15), AndroidUtilities.dp(15), true, null);
+        micDrawable = new RLottieDrawable(R.raw.voice_mini, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
+        shakeHandDrawable = new RLottieDrawable(R.raw.hand_2, AndroidUtilities.dp(15), AndroidUtilities.dp(15), true, null);
     }
 
     private Runnable updateRunnable = () -> {

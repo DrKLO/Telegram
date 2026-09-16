@@ -43,9 +43,9 @@ import android.widget.ImageView;
 
 import androidx.annotation.Keep;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import androidx.media3.common.C;
+import androidx.media3.exoplayer.ExoPlayer;
+import org.telegram.ui.AspectRatioFrameLayout;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

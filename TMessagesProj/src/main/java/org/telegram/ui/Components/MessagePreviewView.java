@@ -64,7 +64,6 @@ import org.telegram.ui.Cells.IMessageCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
-import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.PremiumPreviewFragment;
@@ -2462,13 +2461,13 @@ public class MessagePreviewView extends FrameLayout {
 
         // R.raw.media_shrink, R.raw.media_enlarge
         public RLottieToggleDrawable(View view, int state1Res, int state2Res) {
-            state1 = new RLottieDrawable(state1Res, "" + state1Res, dp(24), dp(24));
+            state1 = new RLottieDrawable(state1Res, dp(24), dp(24));
             state1.setMasterParent(view);
             state1.setAllowDecodeSingleFrame(true);
             state1.setPlayInDirectionOfCustomEndFrame(true);
             state1.setAutoRepeat(0);
 
-            state2 = new RLottieDrawable(state2Res, "" + state2Res, dp(24), dp(24));
+            state2 = new RLottieDrawable(state2Res, dp(24), dp(24));
             state2.setMasterParent(view);
             state2.setAllowDecodeSingleFrame(true);
             state2.setPlayInDirectionOfCustomEndFrame(true);

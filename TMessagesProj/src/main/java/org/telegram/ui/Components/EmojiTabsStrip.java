@@ -850,7 +850,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                lottieDrawable = new RLottieDrawable(lottieId, "" + lottieId, AndroidUtilities.dp(24), AndroidUtilities.dp(24), false, null);
+                lottieDrawable = new RLottieDrawable(lottieId, AndroidUtilities.dp(24), AndroidUtilities.dp(24), false, null);
                 lottieDrawable.setBounds(AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(27), AndroidUtilities.dp(27));
                 lottieDrawable.setMasterParent(this);
                 lottieDrawable.setAllowDecodeSingleFrame(true);

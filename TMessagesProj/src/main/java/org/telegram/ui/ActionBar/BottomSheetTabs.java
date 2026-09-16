@@ -940,6 +940,8 @@ public class BottomSheetTabs extends FrameLayout {
         public BotWebViewContainer.MyWebView webView;
         public View view2;
         public Object proxy;
+        public boolean sameOrigin;
+        public String trustedOrigin;
         public int viewWidth, viewHeight;
         public int viewScroll;
         public boolean expanded;

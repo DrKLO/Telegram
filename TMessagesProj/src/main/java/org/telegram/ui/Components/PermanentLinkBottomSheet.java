@@ -70,7 +70,7 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         linkActionView = new LinkActionView(context, fragment, this, chatId, true, isChannel);
         linkActionView.setPermanent(true);
         imageView = new RLottieImageView(context);
-        linkIcon = new RLottieDrawable(R.raw.shared_link_enter, "" + R.raw.shared_link_enter, AndroidUtilities.dp(90), AndroidUtilities.dp(90), false, null);
+        linkIcon = new RLottieDrawable(R.raw.shared_link_enter, AndroidUtilities.dp(90), AndroidUtilities.dp(90), false, null);
         linkIcon.setCustomEndFrame(42);
         imageView.setAnimation(linkIcon);
         linkActionView.setUsers(0, null);
