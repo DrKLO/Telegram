@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Pair;
 import android.util.SparseArray;
 
@@ -33,6 +34,7 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 
 public class DownloadController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
@@ -1510,6 +1512,7 @@ public class DownloadController extends BaseController implements NotificationCe
         }
         TLRPC.Document document = parentObject.getDocument();
         AndroidUtilities.runOnUIThread(() -> {
+            reportedMissingMessages.remove(document.id);
             boolean removed = false;
             for (int i = 0; i < downloadingFiles.size(); i++) {
                 if (downloadingFiles.get(i).getDocument() != null && downloadingFiles.get(i).getDocument().id == document.id) {
@@ -1580,6 +1583,9 @@ public class DownloadController extends BaseController implements NotificationCe
 
     }
 
+    private final HashSet<Long> reportedMissingMessages = new HashSet<>();
+    private long lastMissingMessageBulletinTime;
+
     public void onDownloadFail(MessageObject parentObject, int reason) {
         if (parentObject == null) {
             return;
@@ -1587,19 +1593,41 @@ public class DownloadController extends BaseController implements NotificationCe
 
         AndroidUtilities.runOnUIThread(() -> {
             boolean removed = false;
+            boolean changed = false;
             TLRPC.Document parentDocument = parentObject.getDocument();
             for (int i = 0; i < downloadingFiles.size(); i++) {
                 TLRPC.Document downloadingDocument = downloadingFiles.get(i).getDocument();
-                if (downloadingDocument == null || parentDocument != null && downloadingDocument.id == parentDocument.id) {
+                if (downloadingDocument == null) {
+                    // an entry without a document can never be matched against a failing download,
+                    // and treating it as the failed one removes an unrelated file and reports an
+                    // error for a download that is still fine
+                    downloadingFiles.remove(i);
+                    changed = true;
+                    i--;
+                    continue;
+                }
+                if (parentDocument != null && downloadingDocument.id == parentDocument.id) {
                     downloadingFiles.remove(i);
                     removed = true;
                     break;
                 }
             }
-            if (removed) {
+            if (removed || changed) {
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            }
+            if (removed) {
                 if (reason == 0) {
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("MessageNotFound", R.string.MessageNotFound));
+                    // every queued download whose message was deleted fails on its own, and each
+                    // failure hides the visible bulletin and shows an identical one in its place, so a
+                    // queue of such files keeps "Message doesn't exist" flickering on screen for as
+                    // long as the retries last. Report a given file once, and collapse a burst of
+                    // different files into the single bulletin that is already on screen
+                    long key = parentDocument != null ? parentDocument.id : parentObject.getId();
+                    long now = SystemClock.elapsedRealtime();
+                    if (reportedMissingMessages.add(key) && now - lastMissingMessageBulletinTime > Bulletin.DURATION_LONG) {
+                        lastMissingMessageBulletinTime = now;
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("MessageNotFound", R.string.MessageNotFound));
+                    }
                 } else if (reason == -1) {
                     LaunchActivity.checkFreeDiscSpaceStatic(2);
                 }
