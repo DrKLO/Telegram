@@ -1,0 +1,76 @@
+name: Build XGram APK
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache NDK build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            TMessagesProj/.cxx
+          key: ${{ runner.os }}-ndk-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-ndk-
+
+      - name: Setup config files
+        run: |
+          cp gradle.properties.example gradle.properties
+          cp local.properties.example local.properties
+          echo "TELEGRAM_APP_ID=33758413" >> local.properties
+          echo "TELEGRAM_APP_HASH=e9fe420e4e170ff123fd27c3f63c440e" >> local.properties
+          echo "RELEASE_KEY_ALIAS=androiddebugkey" >> gradle.properties
+          echo "RELEASE_KEY_PASSWORD=android" >> gradle.properties
+          echo "RELEASE_STORE_PASSWORD=android" >> gradle.properties
+          cat > /tmp/google-services.json << 'EOF'
+          {"project_info":{"project_id":"xgram","project_number":"1","firebase_url":"https://xgram.firebaseio.com","storage_bucket":"xgram.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:1:android:abc","android_client_info":{"package_name":"me.xgram.messenger"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:1:android:def","android_client_info":{"package_name":"me.xgram.messenger.beta"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}
+          EOF
+          cp /tmp/google-services.json TMessagesProj/google-services.json
+          cp /tmp/google-services.json TMessagesProj_App/google-services.json
+          cp /tmp/google-services.json TMessagesProj_AppStandalone/google-services.json
+
+      - name: Enable buildConfig
+        run: |
+          sed -i '/android {/a\    buildFeatures { buildConfig true }' TMessagesProj/build.gradle
+
+      - name: Create debug keystore
+        run: |
+          mkdir -p TMessagesProj/config
+          keytool -genkey -v -keystore TMessagesProj/config/release.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=XGram,O=RK,C=IR"
+
+      - name: Rename to XGram
+        run: |
+          find . -name "strings.xml" | xargs sed -i 's/Telegram/XGram/g'
+          find . -name "strings.xml" | xargs sed -i 's/telegram/xgram/g'
+          find . \( -name "*.kt" -o -name "*.java" \) | xargs grep -l "Telegram" 2>/dev/null | xargs sed -i 's/Telegram/XGram/g' 2>/dev/null || true
+          find . \( -name "*.kt" -o -name "*.java" -o -name "*.gradle" -o -name "AndroidManifest.xml" \) | xargs grep -l "me.chat_t.messenger" 2>/dev/null | xargs sed -i 's/me\.chat_t\.messenger/me.xgram.messenger/g' 2>/dev/null || true
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --no-daemon -x lint 2>&1 | tail -30
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xgram-apk
+          path: TMessagesProj_App/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
