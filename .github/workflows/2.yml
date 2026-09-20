@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-java@v4
         with:
@@ -60,8 +62,6 @@ jobs:
         run: |
           find . -name "strings.xml" | xargs sed -i 's/Telegram/XGram/g'
           find . -name "strings.xml" | xargs sed -i 's/telegram/xgram/g'
-          # خط زیر کلاس‌ها را عوض می‌کند و کامپایل را می‌شکند، فعلاً غیرفعال است
-          # find . \( -name "*.kt" -o -name "*.java" \) | xargs grep -l "Telegram" 2>/dev/null | xargs sed -i 's/Telegram/XGram/g' 2>/dev/null || true
           find . \( -name "*.kt" -o -name "*.java" -o -name "*.gradle" -o -name "AndroidManifest.xml" \) | xargs grep -l "me.chat_t.messenger" 2>/dev/null | xargs sed -i 's/me\.chat_t\.messenger/me.xgram.messenger/g' 2>/dev/null || true
 
       - name: Build APK
