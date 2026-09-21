@@ -1966,7 +1966,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                     String host = data.getHost().toLowerCase();
                                     Matcher prefixMatcher = PREFIX_T_ME_PATTERN.matcher(host);
                                     boolean isPrefix = prefixMatcher.find();
-                                    if (host.equals("telegram.me") || host.equals("app.chat-t.me") || host.equals("telegram.dog") || isPrefix) {
+                                    if (host.equals("app.chat-t.me") || isPrefix) {
                                         if (isPrefix) {
                                             data = Uri.parse("https://app.chat-t.me/" + prefixMatcher.group(1) + (TextUtils.isEmpty(data.getPath()) ? "" : data.getPath()) + (TextUtils.isEmpty(data.getQuery()) ? "" : "?" + data.getQuery()));
                                         }
