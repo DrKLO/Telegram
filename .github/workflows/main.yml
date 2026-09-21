@@ -87,11 +87,11 @@ jobs:
           chmod +x gradlew
           ./gradlew :TMessagesProj_App:assembleAfatDebug --no-daemon -x lint --stacktrace --console=plain 2>&1 | tee build.log
           exit ${PIPESTATUS[0]}
-
-      - name: Show errors
+- name: Show errors
         if: failure()
-        run: grep -nE "What went wrong|FAILED|error:|e: file|fatal error|undefined reference" -A6 build.log | head -120
-
+        run: |
+          grep -nE "What went wrong|FAILED|error:|e: file|fatal error|undefined reference" -A6 build.log | head -120
+          
       - name: List APKs
         if: always()
         run: find . -name "*.apk" -type f
