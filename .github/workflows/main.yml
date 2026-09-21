@@ -1,4 +1,4 @@
-name: Build XGram APK
+ name: Build XGram APK
 
 on:
   push:
