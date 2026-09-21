@@ -8,8 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -17,11 +19,11 @@ jobs:
         run: |
           git submodule sync --recursive
           git submodule update --init --recursive || true
-          echo "--- .gitmodules"; cat .gitmodules || true
           ls -la TMessagesProj_Modules/media | head -20 || true
           test -f TMessagesProj_Modules/media/core_settings.gradle
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -54,19 +56,21 @@ jobs:
           EOF
           find . -name "google-services.json" -not -path "*/build/*" -not -path "./.git/*" -exec cp /tmp/google-services.json {} \;
           for d in TMessagesProj TMessagesProj_App TMessagesProj_AppStandalone; do
-            [ -d "$d" ] && cp /tmp/google-services.json "$d/google-services.json"
+            if [ -d "$d" ]; then cp /tmp/google-services.json "$d/google-services.json"; fi
           done
 
       - name: Verify google-services
         run: |
-          find . -name "google-services.json" -not -path "*/build/*" -not -path "./.git/*" | while read f; do
+          find . -name "google-services.json" -not -path "*/build/*" -not -path "./.git/*" | while read -r f; do
             echo "== $f"
             grep -o '"package_name":"[^"]*"' "$f"
           done
 
       - name: Enable buildConfig
         run: |
-          grep -q "buildConfig" TMessagesProj/build.gradle || sed -i '/android {/a\    buildFeatures { buildConfig true }' TMessagesProj/build.gradle
+          if ! grep -qE "buildConfig[[:space:]]*(=[[:space:]]*)?true" TMessagesProj/build.gradle; then
+            sed -i '/android {/a\    buildFeatures { buildConfig true }' TMessagesProj/build.gradle
+          fi
 
       - name: Create debug keystore
         run: |
@@ -78,20 +82,33 @@ jobs:
             -storepass android -keypass android \
             -dname "CN=XGram,O=RK,C=IR"
 
-      - name: Rename to XGram
+      - name: Rename Telegram to XGram
         run: |
           find . -name "strings.xml" -not -path "*/build/*" -print0 | xargs -0 -r perl -0pi -e 's/>([^<]*)</">" . ($1 =~ s{Telegram}{XGram}gr) . "<"/ge'
+
+      - name: Rename package name
+        run: |
+          grep -rl --include="*.gradle" --include="gradle.properties" --include="AndroidManifest.xml" --include="*.java" --include="*.kt" --include="*.xml" --exclude-dir=build --exclude-dir=.git --exclude-dir=.gradle "me.chat_t.messenger" . | xargs -r sed -i 's/me\.chat_t\.messenger/me.xgram.messenger/g' || true
 
       - name: Build APK
         run: |
           chmod +x gradlew
           ./gradlew :TMessagesProj_App:assembleAfatDebug --no-daemon -x lint --stacktrace --console=plain 2>&1 | tee build.log
           exit ${PIPESTATUS[0]}
-- name: Show errors
+
+      - name: Show errors
         if: failure()
         run: |
           grep -nE "What went wrong|FAILED|error:|e: file|fatal error|undefined reference" -A6 build.log | head -120
-          
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+
       - name: List APKs
         if: always()
         run: find . -name "*.apk" -type f
