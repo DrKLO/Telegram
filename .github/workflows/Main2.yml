@@ -1,0 +1,98 @@
+name: Build XGram APK
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache NDK build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            TMessagesProj/.cxx
+          key: ${{ runner.os }}-ndk-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-ndk-
+
+      - name: Setup config files
+        run: |
+          [ -f gradle.properties.example ] && cp gradle.properties.example gradle.properties || touch gradle.properties
+          [ -f local.properties.example ] && cp local.properties.example local.properties || touch local.properties
+          echo "TELEGRAM_APP_ID=33758413" >> local.properties
+          echo "TELEGRAM_APP_HASH=e9fe420e4e170ff123fd27c3f63c440e" >> local.properties
+          echo "RELEASE_KEY_ALIAS=androiddebugkey" >> gradle.properties
+          echo "RELEASE_KEY_PASSWORD=android" >> gradle.properties
+          echo "RELEASE_STORE_PASSWORD=android" >> gradle.properties
+
+      - name: Setup google-services.json
+        run: |
+          cat > /tmp/google-services.json << 'EOF'
+          {"project_info":{"project_id":"xgram","project_number":"1","firebase_url":"https://xgram.firebaseio.com","storage_bucket":"xgram.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:1:android:a1","android_client_info":{"package_name":"me.chat_t.messenger"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:1:android:a2","android_client_info":{"package_name":"me.chat_t.messenger.beta"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:1:android:a3","android_client_info":{"package_name":"me.xgram.messenger"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}},{"client_info":{"mobilesdk_app_id":"1:1:android:a4","android_client_info":{"package_name":"me.xgram.messenger.beta"}},"api_key":[{"current_key":"test"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}
+          EOF
+          # جایگزینی همه‌ی فایل‌های موجود (root ماژول و src/*)
+          find . -name "google-services.json" -not -path "*/build/*" -not -path "./.git/*" -exec cp /tmp/google-services.json {} \;
+          # اطمینان از وجود فایل در ریشه‌ی ماژول‌ها
+          for d in TMessagesProj TMessagesProj_App TMessagesProj_AppStandalone; do
+            [ -d "$d" ] && cp /tmp/google-services.json "$d/google-services.json"
+          done
+
+      - name: Verify google-services
+        run: |
+          find . -name "google-services.json" -not -path "*/build/*" -not -path "./.git/*" | while read f; do
+            echo "== $f"
+            grep -o '"package_name":"[^"]*"' "$f"
+          done
+
+      - name: Enable buildConfig
+        run: |
+          grep -q "buildConfig" TMessagesProj/build.gradle || sed -i '/android {/a\    buildFeatures { buildConfig true }' TMessagesProj/build.gradle
+
+      - name: Create debug keystore
+        run: |
+          mkdir -p TMessagesProj/config
+          rm -f TMessagesProj/config/release.keystore
+          keytool -genkey -v -keystore TMessagesProj/config/release.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=XGram,O=RK,C=IR"
+
+      - name: Rename to XGram
+        run: |
+          find . -name "strings.xml" -not -path "*/build/*" -print0 | xargs -0 -r perl -0pi -e 's/>([^<]*)</">" . ($1 =~ s{Telegram}{XGram}gr) . "<"/ge'
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --no-daemon -x lint --stacktrace --console=plain 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Show errors
+        if: failure()
+        run: grep -nE "What went wrong|FAILED|error:|e: file|fatal error|undefined reference" -A6 build.log | head -120
+
+      - name: List APKs
+        if: always()
+        run: find . -name "*.apk" -type f
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xgram-apk
+          path: TMessagesProj_App/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
