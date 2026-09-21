@@ -1515,7 +1515,7 @@ public class LinkManager {
                     String host = uri.getHost().toLowerCase();
                     Matcher prefixMatcher = LaunchActivity.PREFIX_T_ME_PATTERN.matcher(host);
                     boolean isPrefix = prefixMatcher.find();
-                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog") || isPrefix) {
+                    if (host.equals("telegram.me") || host.equals("app.chat-t.me") || host.equals("telegram.dog") || isPrefix) {
                         ArrayList<String> segments = new ArrayList<>(uri.getPathSegments());
                         if (segments.size() > 0 && segments.get(0).equals("s")) {
                             segments.remove(0);
