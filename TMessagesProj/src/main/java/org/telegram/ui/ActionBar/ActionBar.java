@@ -1757,7 +1757,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
             }).start();
         }
-        titleActionRunnable = action != null ? action : lastRunnable;
+        if (titleId == R.string.ConnectingToProxyWithDots) {
+    titleActionRunnable = null;
+} else {
+    titleActionRunnable = action != null ? action : lastRunnable;
+}
     }
 
     public boolean isSearchFieldVisible() {
