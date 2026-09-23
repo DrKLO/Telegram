@@ -155,6 +155,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private static final int ANIMATOR_ID_SEARCH_PAGE_VISIBLE = 0;
 
+    private static final boolean SHOW_ASK_A_QUESTION = false;
+    private static final boolean SHOW_TELEGRAM_FEATURES = true;
+
     private final BoolAnimator animatorSearchPageVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_PAGE_VISIBLE,
             this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
 
@@ -736,11 +739,43 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
             items.add(UItem.asShadow(null));
 
-        items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
-        items.add(SettingCell.Factory.of(17, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_ask, getString(R.string.AskAQuestion)));
-        items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
-        items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
-        items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
+items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
+
+if (SHOW_ASK_A_QUESTION) {
+    items.add(SettingCell.Factory.of(
+        17,
+        IconBackgroundColors.ORANGE.top,
+        IconBackgroundColors.ORANGE.bottom,
+        R.drawable.settings_ask,
+        getString(R.string.AskAQuestion)
+    ));
+}
+
+items.add(SettingCell.Factory.of(
+    18,
+    IconBackgroundColors.BLUE_LIGHT.top,
+    IconBackgroundColors.BLUE_LIGHT.bottom,
+    R.drawable.settings_faq,
+    getString(R.string.TelegramFAQ)
+));
+
+if (SHOW_TELEGRAM_FEATURES) {
+    items.add(SettingCell.Factory.of(
+        23,
+        IconBackgroundColors.PURPLE.top,
+        IconBackgroundColors.PURPLE.bottom,
+        R.drawable.settings_features,
+        getString(R.string.TelegramFeatures)
+    ));
+}
+
+items.add(SettingCell.Factory.of(
+    19,
+    IconBackgroundColors.GREEN.top,
+    IconBackgroundColors.GREEN.bottom,
+    R.drawable.settings_policy,
+    getString(R.string.PrivacyPolicy)
+));
 
         if (BuildVars.LOGS_ENABLED || BuildVars.DEBUG_PRIVATE_VERSION) {
             items.add(UItem.asShadow(null));
@@ -873,13 +908,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 FileLog.cleanupLogs();
                 break;
             case 23: {
-                if (MessagesController.getInstance(currentAccount).isFrozen()) {
-                    AccountFrozenAlert.show(currentAccount);
-                } else {
-                    Browser.openUrl(getContext(), LocaleController.getString(R.string.TelegramFeaturesUrl));
-                }
-                break;
-            }
+    if (MessagesController.getInstance(currentAccount).isFrozen()) {
+        AccountFrozenAlert.show(currentAccount);
+    } else {
+        Browser.openUrl(getContext(), "https://app.chat-t.me/news");
+    }
+    break;
+}
         }
     }
 

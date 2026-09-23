@@ -123,6 +123,7 @@ public class QrActivity extends BaseFragment {
     private static final ArrayMap<String, int[]> qrColorsMap = new ArrayMap<>();
     private static final int LOGO_OPTIMAL_FRAME = 33;
     private static List<EmojiThemes> cachedThemes;
+    private static final boolean ENABLE_QR_THEMES = false;
 
     static {
         qrColorsMap.put("\uD83C\uDFE0d",    new int[]{ 0xFF71B654, 0xFF2C9077, 0xFF9ABB3E, 0xFF68B55E });
@@ -401,28 +402,51 @@ public class QrActivity extends BaseFragment {
         canvas.setBitmap(null);
 
         themesViewController = new ThemeListViewController(this, getParentActivity().getWindow());
-        themeLayout = themesViewController.rootLayout;
+themeLayout = themesViewController.rootLayout;
 
-        themesViewController.onCreate();
-        themesViewController.setItemSelectedListener((theme, position) -> QrActivity.this.onItemSelected(theme, position, true));
-        themesViewController.titleView.setText(getString(R.string.QrCode));
-        themesViewController.progressView.setViewType(FlickerLoadingView.QR_TYPE);
-        themesViewController.shareButton.setOnClickListener(v -> {
-            themesViewController.shareButton.setClickable(false);
-            performShare();
-        });
-        if (themesViewController.scanButtonWrap != null) {
-            themesViewController.scanButtonWrap.setOnClickListener(v -> {
-                if (getParentActivity() == null) {
-                    return;
-                }
-                if (Build.VERSION.SDK_INT >= 23 && getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                    getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE);
-                    return;
-                }
-                openCameraScanActivity(this);
-            });
+themesViewController.onCreate();
+themesViewController.setItemSelectedListener((theme, position) -> QrActivity.this.onItemSelected(theme, position, true));
+themesViewController.titleView.setText(getString(R.string.QrCode));
+themesViewController.progressView.setViewType(FlickerLoadingView.QR_TYPE);
+
+themesViewController.shareButton.setOnClickListener(v -> {
+    themesViewController.shareButton.setClickable(false);
+    performShare();
+});
+
+if (themesViewController.scanButtonWrap != null) {
+    themesViewController.scanButtonWrap.setOnClickListener(v -> {
+        if (getParentActivity() == null) {
+            return;
         }
+
+        if (Build.VERSION.SDK_INT >= 23 &&
+                getParentActivity().checkSelfPermission(Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+            getParentActivity().requestPermissions(
+                    new String[]{Manifest.permission.CAMERA},
+                    ActionIntroActivity.CAMERA_PERMISSION_REQUEST_CODE
+            );
+            return;
+        }
+
+        openCameraScanActivity(this);
+    });
+}
+
+if (ENABLE_QR_THEMES) {
+    rootLayout.addView(
+            themeLayout,
+            LayoutHelper.createFrame(
+                    LayoutHelper.MATCH_PARENT,
+                    LayoutHelper.WRAP_CONTENT,
+                    Gravity.BOTTOM
+            )
+    );
+} else {
+    themeLayout.setVisibility(View.GONE);
+}
         rootLayout.addView(themeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         currMotionDrawable.setIndeterminateAnimation(true);
@@ -447,24 +471,35 @@ public class QrActivity extends BaseFragment {
             }, 17);
         }, 25);
 
-        fragmentView.postDelayed(() -> {
-            firstOpen = false;
-            if (cachedThemes == null || cachedThemes.isEmpty()) {
-                ChatThemeController.getInstance(currentAccount).requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
-                    @Override
-                    public void onComplete(List<EmojiThemes> result) {
-                        onDataLoaded(result);
-                        cachedThemes = result;
-                    }
-                    @Override
-                    public void onError(TLRPC.TL_error error) {
-                        Toast.makeText(getParentActivity(), error.text, Toast.LENGTH_SHORT).show();
-                    }
-                }, true);
-            } else {
-                onDataLoaded(cachedThemes);
-            }
-        }, firstOpen ? 250 : 0);
+        if (ENABLE_QR_THEMES) {
+    fragmentView.postDelayed(() -> {
+        firstOpen = false;
+
+        if (cachedThemes == null || cachedThemes.isEmpty()) {
+            ChatThemeController.getInstance(currentAccount)
+                    .requestAllChatThemes(new ResultCallback<List<EmojiThemes>>() {
+                        @Override
+                        public void onComplete(List<EmojiThemes> result) {
+                            onDataLoaded(result);
+                            cachedThemes = result;
+                        }
+
+                        @Override
+                        public void onError(TLRPC.TL_error error) {
+                            Toast.makeText(
+                                    getParentActivity(),
+                                    error.text,
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        }
+                    }, true);
+        } else {
+            onDataLoaded(cachedThemes);
+        }
+    }, firstOpen ? 250 : 0);
+} else {
+    firstOpen = false;
+}
 
         prevSystemUiVisibility = getParentActivity().getWindow().getDecorView().getSystemUiVisibility();
         applyScreenSettings();
@@ -802,7 +837,7 @@ public class QrActivity extends BaseFragment {
         }
         canvas.setBitmap(null);
 
-        themeLayout.setVisibility(View.VISIBLE);
+        themeLayout.setVisibility(ENABLE_QR_THEMES ? View.VISIBLE : View.GONE);
         closeImageView.setVisibility(View.VISIBLE);
         logoImageView.setVisibility(View.VISIBLE);
 

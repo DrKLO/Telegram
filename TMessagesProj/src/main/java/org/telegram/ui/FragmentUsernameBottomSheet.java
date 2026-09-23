@@ -45,6 +45,7 @@ public class FragmentUsernameBottomSheet {
 
     public static final int TYPE_USERNAME = 0;
     public static final int TYPE_PHONE = 1;
+    private static final boolean ENABLE_USERNAME_DESCRIPTION = false;
 
     public static void open(
         Context context,
@@ -151,12 +152,22 @@ public class FragmentUsernameBottomSheet {
 
         layout.addView(chipLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL, 42, 10, 42, 18));
 
-        TextView descriptionView = new TextView(context);
-        descriptionView.setGravity(Gravity.CENTER);
-        descriptionView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        descriptionView.setText(messageSpanned);
-        layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 19));
+        if (ENABLE_USERNAME_DESCRIPTION) {
+    TextView descriptionView = new TextView(context);
+    descriptionView.setGravity(Gravity.CENTER);
+    descriptionView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+    descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+    descriptionView.setText(messageSpanned);
+    layout.addView(
+        descriptionView,
+        LayoutHelper.createLinear(
+            LayoutHelper.MATCH_PARENT,
+            LayoutHelper.WRAP_CONTENT,
+            Gravity.CENTER_HORIZONTAL,
+            32, 0, 32, 19
+        )
+    );
+}
 
         ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider).setRound();
         button.setText(getString(R.string.FragmentUsernameOpen), false);

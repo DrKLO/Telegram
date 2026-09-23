@@ -95,7 +95,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
 
     public static final int TYPE_DEVICES = 0;
     public static final int TYPE_WEB_SESSIONS = 1;
-
+    private static final boolean SHOW_ADD_DEVICE = false;
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     private EmptyTextProgressView emptyView;
@@ -754,7 +754,11 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         botSessionsEndRow = -1;
         otherSessionsTerminateDetail = -1;
         noOtherSessionsRow = -1;
-        qrCodeRow = -1;
+        if (SHOW_ADD_DEVICE) {
+    qrCodeRow = rowCount++;
+} else {
+    qrCodeRow = -1;
+}
         qrCodeDividerRow = -1;
         ttlHeaderRow = -1;
         ttlRow = -1;

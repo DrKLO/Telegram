@@ -224,6 +224,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
     private final static int done_button = 1;
 
+    // --- hidden items ---
+    private static final boolean HIDE_WELCOME_MESSAGES = true;
+    private static final boolean HIDE_STATS_AND_BOOSTS = true;
+    private static final boolean HIDE_ADD_TO_COMMUNITY = true;
+
     private boolean hasUploadedPhoto;
     private final List<AnimatedEmojiDrawable> preloadedReactions = new ArrayList<>();
 
@@ -1232,6 +1237,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     ChatActivity chatActivity = new ChatActivity(args);
                     presentFragment(chatActivity);
                 });
+                if (HIDE_WELCOME_MESSAGES) {
+                    welcomeMessagesCell.setVisibility(View.GONE);
+                }
                 checkWelcomeMessagesValue();
             }
 
@@ -1288,6 +1296,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 statsAndBoosts.setOnClickListener(v -> {
                     presentFragment(StatisticActivity.create(currentChat, false));
                 });
+                if (HIDE_STATS_AND_BOOSTS) {
+                    statsAndBoosts.setVisibility(View.GONE);
+                }
             }
 
             infoContainer.addView(reactionsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -1567,6 +1578,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     R.string.CommunityAddChannelToCommunityInfo :
                     R.string.CommunityAddGroupToCommunityInfo));
 
+                if (HIDE_ADD_TO_COMMUNITY) {
+                    communityCell.setVisibility(View.GONE);
+                    communityInfoCell.setVisibility(View.GONE);
+                }
+
                 linearLayout1.addView(communityCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 linearLayout1.addView(communityInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             }
@@ -1643,7 +1659,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
             publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLinks), LocaleController.formatString(R.string.BotPublicLinksCount, usernamesActive, currentUser.usernames.size()), R.drawable.msg_link2, true);
         } else {
-            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), "t.me/" + currentUser.username, R.drawable.msg_link2, true);
+            publicLinkCell.setTextAndValueAndIcon(getString(R.string.BotPublicLink), "app.chat-t.me/" + currentUser.username, R.drawable.msg_link2, true);
         }
     }
 

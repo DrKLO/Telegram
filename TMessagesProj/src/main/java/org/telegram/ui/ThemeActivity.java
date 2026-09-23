@@ -256,6 +256,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private final static int reset_settings = 4;
     private final static int day_night_switch = 5;
 
+    // --- hidden sections ---
+    private static final boolean HIDE_APP_ICON_SECTION = true;      // انتخاب آیکون برنامه
+    private static final boolean HIDE_SENSITIVE_CONTENT_ROW = true; // نمایش محتوای +18
+
     private RLottieDrawable sunDrawable;
 
     private boolean highlightSensitiveRow;
@@ -671,9 +675,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             chatListRow = rowCount++;
             chatListInfoRow = rowCount++;
 
-            appIconHeaderRow = rowCount++;
-            appIconSelectorRow = rowCount++;
-            appIconShadowRow = rowCount++;
+            if (!HIDE_APP_ICON_SECTION) {
+                appIconHeaderRow = rowCount++;
+                appIconSelectorRow = rowCount++;
+                appIconShadowRow = rowCount++;
+            }
 
             swipeGestureHeaderRow = rowCount++;
             swipeGestureRow = rowCount++;
@@ -698,9 +704,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             otherHeaderRow = rowCount++;
             directShareRow = rowCount++;
-            TL_account.contentSettings contentSettings = getMessagesController().getContentSettings();
-            if (contentSettings != null && contentSettings.sensitive_can_change) {
-                sensitiveContentRow = rowCount++;
+            if (!HIDE_SENSITIVE_CONTENT_ROW) {
+                TL_account.contentSettings contentSettings = getMessagesController().getContentSettings();
+                if (contentSettings != null && contentSettings.sensitive_can_change) {
+                    sensitiveContentRow = rowCount++;
+                }
             }
             sendByEnterRow = rowCount++;
             distanceRow = rowCount++;
@@ -961,7 +969,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             menuItem.addSubItem(create_theme, R.drawable.msg_palette, getString("CreateNewThemeMenu", R.string.CreateNewThemeMenu));
             menuItem.addSubItem(reset_settings, R.drawable.msg_reset, getString("ThemeResetToDefaults", R.string.ThemeResetToDefaults));
 
-            if (getMessagesController().getContentSettings() == null) {
+            if (!HIDE_SENSITIVE_CONTENT_ROW && getMessagesController().getContentSettings() == null) {
                 getMessagesController().getContentSettings(settings -> {
                     if (listView != null && listView.isAttachedToWindow() && listAdapter != null) {
                         if ((sensitiveContentRow >= 0) == (settings != null && settings.sensitive_can_change)) {
@@ -1499,13 +1507,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             listView.setItemAnimator(itemAnimator);
         }
 
-        if (highlightSensitiveRow) {
+        if (highlightSensitiveRow && !HIDE_SENSITIVE_CONTENT_ROW) {
             updateRows(false);
             highlightSensitiveRow = false;
             listView.scrollToPosition(listAdapter.getItemCount() - 1);
             AndroidUtilities.runOnUIThread(() -> {
                 listView.highlightRow(() -> sensitiveContentRow);
             }, 200);
+        } else {
+            highlightSensitiveRow = false;
         }
 
         return fragmentView;
