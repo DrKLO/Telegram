@@ -353,6 +353,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean wasDrawn;
     public boolean hasMainTabs;
 
+    // =============================
+// Custom Top Menu Items
+// =============================
+
+private static final boolean ENABLE_OFFICIAL_CHANNEL = true;
+private static final boolean ENABLE_NEW_CHANNEL = true;
+private static final boolean ENABLE_CONTACTS = true;
+
+private static final String OFFICIAL_CHANNEL_URL = "https://app.chat-t.me/news";
+
     public MessagesStorage.TopicKey getOpenedDialogId() {
         return openedDialogId;
     }
@@ -13728,6 +13738,27 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             Bundle args = new Bundle();
             presentFragment(new GroupCreateActivity(args));
         });
+        if (ENABLE_OFFICIAL_CHANNEL) {
+    io.add(R.drawable.msg_channel, "کانال رسمی", () -> {
+        Browser.openUrl(getContext(), OFFICIAL_CHANNEL_URL);
+    });
+}
+
+if (ENABLE_NEW_CHANNEL) {
+    io.add(R.drawable.msg_channel, "کانال جدید", () -> {
+        Bundle args = new Bundle();
+        args.putInt("step", 0);
+        presentFragment(new ChannelCreateActivity(args));
+    });
+}
+
+if (ENABLE_CONTACTS) {
+    io.add(R.drawable.msg_contacts, "مخاطبین", () -> {
+        Bundle args = new Bundle();
+        args.putBoolean("destroyAfterSelect", true);
+        presentFragment(new ContactsActivity(args));
+    });
+}
         io.add(R.drawable.outline_saved_24, getString(R.string.SavedMessages), () -> {
             Bundle args = new Bundle();
             args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
