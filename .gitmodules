@@ -37,3 +37,9 @@
 [submodule "TMessagesProj_Modules/media"]
 	path = TMessagesProj_Modules/media
 	url = https://github.com/Arseny271/media.git
+[submodule "TMessagesProj/jni/third_party/absl"]
+	path = TMessagesProj/jni/third_party/absl
+	url = https://github.com/abseil/abseil-cpp.git
+[submodule "TMessagesProj/jni/third_party/wamr"]
+	path = TMessagesProj/jni/third_party/wamr
+	url = https://github.com/wasm-micro-runtime/wasm-micro-runtime.git
