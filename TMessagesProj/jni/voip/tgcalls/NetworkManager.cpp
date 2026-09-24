@@ -116,7 +116,7 @@ void NetworkManager::start() {
         _turnCustomizer.reset(new TurnCustomizerImpl());
     }
     
-    _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers, false, 0, _thread->socketserver()));
+    _relayPortFactory.reset(new ReflectorRelayPortFactory(_rtcServers, false, 0, _thread->socketserver(), false));
     
     _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), _turnCustomizer.get(), _relayPortFactory.get()));
 

@@ -34,6 +34,7 @@ import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -273,18 +274,25 @@ public class TelegramMediaSession {
                 }
                 cursor.dispose();
                 if (!dialogs.isEmpty()) {
-                    String ids = TextUtils.join(",", dialogs);
                     cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US,
-                            "SELECT uid, data, mid FROM media_v4 WHERE uid IN (%s) AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC",
-                            ids, MediaDataController.MEDIA_MUSIC));
+                        "SELECT uid, data, mid FROM media_v4 WHERE uid != 0 AND mid > 0 AND type = %d ORDER BY uid, date DESC, mid DESC", MediaDataController.MEDIA_MUSIC));
                     while (cursor.next()) {
+                        long did = cursor.longValue(0);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            continue;
+                        }
+
                         NativeByteBuffer data = cursor.byteBufferValue(1);
-                        if (data == null) continue;
+                        if (data == null) {
+                            continue;
+                        }
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
                         data.reuse();
-                        if (!MessageObject.isMusicMessage(message)) continue;
-                        long did = cursor.longValue(0);
+                        if (!MessageObject.isMusicMessage(message)) {
+                            continue;
+                        }
+
                         message.id = cursor.intValue(2);
                         message.dialog_id = did;
                         ArrayList<MessageObject> arrayList = musicObjects.get(did);
@@ -296,14 +304,22 @@ public class TelegramMediaSession {
                             musicQueues.put(did, queueList);
                         }
                         MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
-                        arrayList.add(0, messageObject);
+                        arrayList.add(messageObject);
+
                         MediaDescriptionCompat.Builder builder = new MediaDescriptionCompat.Builder()
-                                .setMediaId(did + "_" + arrayList.size());
-                        builder.setTitle(messageObject.getMusicTitle());
-                        builder.setSubtitle(messageObject.getMusicAuthor());
-                        queueList.add(0, new MediaSessionCompat.QueueItem(builder.build(), queueList.size()));
+                                .setMediaId(did + "_" + arrayList.size())
+                                .setTitle(messageObject.getMusicTitle())
+                                .setSubtitle(messageObject.getMusicAuthor());
+                        queueList.add(new MediaSessionCompat.QueueItem(builder.build(), queueList.size()));
                     }
                     cursor.dispose();
+                    for (int i = 0; i < musicObjects.size(); i++) {
+                        Collections.reverse(musicObjects.valueAt(i));
+                    }
+                    for (int i = 0; i < musicQueues.size(); i++) {
+                        Collections.reverse(musicQueues.valueAt(i));
+                    }
+
                     if (!usersToLoad.isEmpty()) {
                         ArrayList<TLRPC.User> usersArrayList = new ArrayList<>();
                         messagesStorage.getUsersInternal(usersToLoad, usersArrayList);

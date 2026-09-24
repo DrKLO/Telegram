@@ -11,6 +11,8 @@
 #include "platform/PlatformInterface.h"
 #include "StaticThreads.h"
 #include "GroupNetworkManager.h"
+#include "group/GroupFrameTransformer.h"
+#include "group/GroupAudioCapturePostProcessor.h"
 
 #include "api/audio_codecs/audio_decoder_factory_template.h"
 #include "api/audio_codecs/audio_encoder_factory_template.h"
@@ -36,7 +38,6 @@
 #include "modules/audio_coding/include/audio_coding_module.h"
 #include "common_audio/include/audio_util.h"
 #include "modules/audio_device/include/audio_device_data_observer.h"
-#include "common_audio/resampler/include/resampler.h"
 #include "modules/rtp_rtcp/source/rtp_util.h"
 #include "api/environment/environment_factory.h"
 #include "api/peer_connection_interface.h"
@@ -56,6 +57,7 @@
 #include "AudioDeviceHelper.h"
 #include "FakeAudioDeviceModule.h"
 #include "StreamingMediaContext.h"
+#include "StreamingAudioRenderer.h"
 #ifdef WEBRTC_IOS
 #include "platform/darwin/iOS/tgcalls_audio_device_module_ios.h"
 #endif
@@ -65,13 +67,6 @@
 #include <iostream>
 
 
-#ifndef USE_RNNOISE
-#define USE_RNNOISE 1
-#endif
-
-#if USE_RNNOISE
-#include "rnnoise.h"
-#endif
 
 #include "GroupJoinPayloadInternal.h"
 #include "FieldTrialsConfig.h"
@@ -449,42 +444,6 @@ struct RequestedMediaChannelDescriptions {
     }
 };
 
-static const int kVadResultHistoryLength = 8;
-
-class VadHistory {
-private:
-    float _vadResultHistory[kVadResultHistoryLength];
-
-public:
-    VadHistory() {
-        for (int i = 0; i < kVadResultHistoryLength; i++) {
-            _vadResultHistory[i] = 0.0f;
-        }
-    }
-
-    ~VadHistory() {
-    }
-
-    bool update(float vadProbability) {
-        for (int i = 1; i < kVadResultHistoryLength; i++) {
-            _vadResultHistory[i - 1] = _vadResultHistory[i];
-        }
-        _vadResultHistory[kVadResultHistoryLength - 1] = vadProbability;
-
-        float movingAverage = 0.0f;
-        for (int i = 0; i < kVadResultHistoryLength; i++) {
-            movingAverage += _vadResultHistory[i];
-        }
-        movingAverage /= (float)kVadResultHistoryLength;
-
-        bool vadResult = false;
-        if (movingAverage > 0.8f) {
-            vadResult = true;
-        }
-
-        return vadResult;
-    }
-};
 
 class CombinedVad {
 private:
@@ -708,172 +667,7 @@ private:
 
 };
 
-struct NoiseSuppressionConfiguration {
-    NoiseSuppressionConfiguration(bool isEnabled_) :
-    isEnabled(isEnabled_) {
 
-    }
-
-    bool isEnabled = false;
-};
-
-#if USE_RNNOISE
-class AudioCapturePostProcessor : public webrtc::CustomProcessing {
-public:
-    AudioCapturePostProcessor(std::function<void(GroupLevelValue const &)> updated, std::shared_ptr<NoiseSuppressionConfiguration> noiseSuppressionConfiguration, std::vector<float> *externalAudioSamples, webrtc::Mutex *externalAudioSamplesMutex) :
-    _updated(updated),
-    _noiseSuppressionConfiguration(noiseSuppressionConfiguration),
-    _externalAudioSamples(externalAudioSamples),
-    _externalAudioSamplesMutex(externalAudioSamplesMutex) {
-        int frameSize = rnnoise_get_frame_size();
-        _frameSamples.resize(frameSize);
-
-        _denoiseState = rnnoise_create(nullptr);
-    }
-
-    virtual ~AudioCapturePostProcessor() {
-        if (_denoiseState) {
-            rnnoise_destroy(_denoiseState);
-        }
-    }
-
-private:
-    virtual void Initialize(int sample_rate_hz, int num_channels) override {
-    }
-
-    virtual void Process(webrtc::AudioBuffer *buffer) override {
-        if (!buffer) {
-            return;
-        }
-        if (buffer->num_channels() != 1) {
-            return;
-        }
-        if (!_denoiseState) {
-            return;
-        }
-        if (buffer->num_frames() != _frameSamples.size()) {
-            return;
-        }
-
-        float sourcePeak = 0.0f;
-        float *sourceSamples = buffer->channels()[0];
-        for (int i = 0; i < _frameSamples.size(); i++) {
-            sourcePeak = std::max(std::fabs(sourceSamples[i]), sourcePeak);
-        }
-
-        if (_noiseSuppressionConfiguration->isEnabled) {
-            float vadProbability = 0.0f;
-            if (sourcePeak >= 0.01f) {
-                vadProbability = rnnoise_process_frame(_denoiseState, _frameSamples.data(), buffer->channels()[0]);
-                if (_noiseSuppressionConfiguration->isEnabled) {
-                    memcpy(buffer->channels()[0], _frameSamples.data(), _frameSamples.size() * sizeof(float));
-                }
-            }
-
-            float peak = 0;
-            int peakCount = 0;
-            const float *samples = buffer->channels_const()[0];
-            for (int i = 0; i < buffer->num_frames(); i++) {
-                float sample = samples[i];
-                if (sample < 0) {
-                    sample = -sample;
-                }
-                if (peak < sample) {
-                    peak = sample;
-                }
-                peakCount += 1;
-            }
-
-            bool vadStatus = _history.update(vadProbability);
-
-            _peakCount += peakCount;
-            if (_peak < peak) {
-                _peak = peak;
-            }
-            if (_peakCount >= 4400) {
-                float level = _peak / 4000.0f;
-                _peak = 0;
-                _peakCount = 0;
-
-                _updated(GroupLevelValue{
-                    level,
-                    vadStatus,
-                });
-            }
-        } else {
-            float peak = 0;
-            int peakCount = 0;
-            const float *samples = buffer->channels_const()[0];
-            for (int i = 0; i < buffer->num_frames(); i++) {
-                float sample = samples[i];
-                if (sample < 0) {
-                    sample = -sample;
-                }
-                if (peak < sample) {
-                    peak = sample;
-                }
-                peakCount += 1;
-            }
-
-            _peakCount += peakCount;
-            if (_peak < peak) {
-                _peak = peak;
-            }
-            if (_peakCount >= 1200) {
-                float level = _peak / 8000.0f;
-                _peak = 0;
-                _peakCount = 0;
-
-                _updated(GroupLevelValue{
-                    level,
-                    level >= 1.0f,
-                });
-            }
-        }
-
-        if (_externalAudioSamplesMutex && _externalAudioSamples) {
-            _externalAudioSamplesMutex->Lock();
-            if (!_externalAudioSamples->empty()) {
-                float *bufferData = buffer->channels()[0];
-                int takenSamples = 0;
-                for (int i = 0; i < _externalAudioSamples->size() && i < _frameSamples.size(); i++) {
-                    float sample = (*_externalAudioSamples)[i];
-                    sample += bufferData[i];
-                    sample = std::min(sample, 32768.f);
-                    sample = std::max(sample, -32768.f);
-                    bufferData[i] = sample;
-                    takenSamples++;
-                }
-                if (takenSamples != 0) {
-                    _externalAudioSamples->erase(_externalAudioSamples->begin(), _externalAudioSamples->begin() + takenSamples);
-                }
-            }
-            _externalAudioSamplesMutex->Unlock();
-        }
-    }
-
-    virtual std::string ToString() const override {
-        return "CustomPostProcessing";
-    }
-
-    virtual void SetRuntimeSetting(webrtc::AudioProcessing::RuntimeSetting setting) override {
-    }
-
-private:
-    std::function<void(GroupLevelValue const &)> _updated;
-    std::shared_ptr<NoiseSuppressionConfiguration> _noiseSuppressionConfiguration;
-
-    DenoiseState *_denoiseState = nullptr;
-    std::vector<float> _frameSamples;
-    int32_t _peakCount = 0;
-    float _peak = 0;
-    VadHistory _history;
-    SparseVad _vad;
-
-    std::vector<float> *_externalAudioSamples = nullptr;
-    webrtc::Mutex *_externalAudioSamplesMutex = nullptr;
-};
-#endif
 
 class AudioInjectionPostProcessor : public webrtc::CustomProcessing {
 public:
@@ -1002,374 +796,6 @@ private:
     GroupLevelValue _value;
 };
 
-class AudioLevelAndSpeechHolder {
-public:
-    AudioLevelAndSpeechHolder() {
-    }
-
-    void set(uint8_t audioLevel, bool hasSpeech) {
-        webrtc::MutexLock lock(&_mutex);
-        _audioLevel = audioLevel;
-        _hasSpeech = hasSpeech;
-    }
-
-    std::pair<uint8_t, bool> get() {
-        webrtc::MutexLock lock(&_mutex);
-        return std::make_pair(_audioLevel, _hasSpeech);
-    }
-
-private:
-    webrtc::Mutex _mutex;
-    uint8_t _audioLevel = 0;
-    bool _hasSpeech = false;
-};
-
-// Constants for H264 NAL unit types and headers
-static constexpr uint8_t kTypeMask = 0x1F;
-static constexpr uint8_t kFuA = 28;
-static constexpr uint8_t kIdr = 5;
-static constexpr uint8_t kSps = 7;
-static constexpr uint8_t kPps = 8;
-static constexpr uint8_t kSei = 6;
-static constexpr uint8_t kStapA = 24;
-static constexpr size_t kNalHeaderSize = 1;
-static constexpr size_t kFuAHeaderSize = 2;
-constexpr size_t kLengthFieldSize = 2;
-constexpr size_t kStapAHeaderSize = kNalHeaderSize + kLengthFieldSize;
-
-// Calculate bytes needed to include PPS ID in a slice header
-size_t calculateSliceHeaderBytesForPpsId(const uint8_t* data, size_t size) {
-    if (size < 2)
-        return 0;
-
-    // Convert to RBSP format (remove emulation prevention bytes)
-    std::vector<uint8_t> rbsp = webrtc::H264::ParseRbsp(data, size);
-    if (rbsp.size() < 2)
-        return 0;
-
-    // Create a bitstream reader for the RBSP data (skipping NAL header)
-    // We need to skip the NAL header (1 byte) but still read from the start of the slice header
-    rtc::ArrayView<const uint8_t> rbspView(rbsp.data() + 1, rbsp.size() - 1);
-    webrtc::BitstreamReader reader(rbspView);
-
-    // first_mb_in_slice: ue(v)
-    reader.ReadExponentialGolomb();
-    if (!reader.Ok()) {
-        return 4; // Default if parsing fails
-    }
-
-    // slice_type: ue(v)
-    reader.ReadExponentialGolomb();
-    if (!reader.Ok()) {
-        return 4; // Default if parsing fails
-    }
-
-    // pic_parameter_set_id: ue(v) - THIS IS WHAT WE NEED
-    reader.ReadExponentialGolomb();
-    if (!reader.Ok()) {
-        return 4; // Default if parsing fails
-    }
-
-    // Calculate how many bytes we've read so far, plus 1 for NAL header
-    // The consumed bits divided by 8 (rounded up) gives us the bytes read
-    size_t bitsConsumed = rbspView.size() * 8 - reader.RemainingBitCount();
-    size_t bytesRead = 1 + (bitsConsumed + 7) / 8; // +1 for NAL header, +7 for ceiling division
-
-    // Add a margin to ensure we get all the PPS ID data
-    return bytesRead + 1;
-}
-
-/**
- * Calculates the size of the H264 header that needs to remain
- * unencrypted for Jitsi Videobridge to properly process the packet.
- *
- * This function works with WebRTC's Annex B format H.264 frames and ensures
- * the PPS ID is included in the unencrypted portion.
- *
- * @param frame The H264 RTP payload in Annex B format
- * @return The size of the header that must remain unencrypted
- */
-uint32_t calculateH264FramePlaintextHeaderSize(rtc::ArrayView<const uint8_t> frame) {
-    if (frame.empty()) {
-        return 0;
-    }
-
-    // Find all NAL units in the frame
-    std::vector<webrtc::H264::NaluIndex> naluIndices =
-        webrtc::H264::FindNaluIndices(frame.data(), frame.size());
-
-    if (naluIndices.empty()) {
-        // No valid NAL units found
-        return 0;
-    }
-
-    // Track the maximum offset we need to keep unencrypted
-    size_t maxOffset = 0;
-
-    for (const auto& naluIndex : naluIndices) {
-        // Start by including the start code and NAL header
-        size_t headerEndOffset = naluIndex.payload_start_offset + kNalHeaderSize;
-
-        // Check if we have enough data to read the NAL unit type
-        if (naluIndex.payload_size >= kNalHeaderSize) {
-            // Get NAL unit type from the first byte after start code
-            uint8_t nalType = frame[naluIndex.payload_start_offset] & kTypeMask;
-
-            // Extend header size based on NAL unit type
-            if (nalType == kFuA) {
-                // For fragmented units, we need the FU header as well
-                if (naluIndex.payload_size >= kFuAHeaderSize) {
-                    headerEndOffset = naluIndex.payload_start_offset + kFuAHeaderSize;
-
-                    // For the first fragment, we also need to include PPS ID
-                    bool isStartBit = (frame[naluIndex.payload_start_offset + 1] & 0x80) != 0;
-                    if (isStartBit) {
-                        // Get original NAL type from the FU header
-                        uint8_t originalNalType = frame[naluIndex.payload_start_offset + 1] & kTypeMask;
-
-                        // If this is an IDR or non-IDR slice, include enough for PPS ID
-                        if (originalNalType == kIdr || originalNalType == 1) {
-                            // Add extra bytes to include PPS ID (typical size: 1-3 bytes after FU header)
-                            headerEndOffset += 4; // Conservative estimate
-                        }
-                    }
-                }
-            } else if (nalType == kStapA) {
-                // For aggregation packets, we need the STAP-A header and first NAL's length field
-                if (naluIndex.payload_size >= kStapAHeaderSize) {
-                    headerEndOffset = naluIndex.payload_start_offset + kStapAHeaderSize;
-
-                    // Try to get the type of the first aggregated NAL
-                    if (naluIndex.payload_size > kStapAHeaderSize) {
-                        uint8_t firstNalType = frame[naluIndex.payload_start_offset + kStapAHeaderSize] & kTypeMask;
-
-                        // If this is an IDR or non-IDR slice, include enough for PPS ID
-                        if (firstNalType == kIdr || firstNalType == 1) {
-                            // Add extra bytes to include PPS ID
-                            headerEndOffset += 4; // Conservative estimate
-                        }
-                    }
-                }
-            }
-            // For slice NAL units (IDR=5 or non-IDR=1), include PPS ID
-            else if (nalType == kIdr || nalType == 1) {
-                // Calculate bytes needed to include PPS ID
-                size_t ppsIdBytes = calculateSliceHeaderBytesForPpsId(
-                    frame.data() + naluIndex.payload_start_offset,
-                    naluIndex.payload_size);
-
-                headerEndOffset = naluIndex.payload_start_offset + ppsIdBytes;
-                maxOffset = std::max(maxOffset, headerEndOffset);
-                break;
-            }
-            // For keyframe related NAL units, ensure we keep their header
-            else if (nalType == kSps || nalType == kPps || nalType == kSei) {
-                // SPS and PPS need to be kept entirely in plaintext
-                headerEndOffset = naluIndex.payload_start_offset + naluIndex.payload_size;
-            }
-        }
-
-        // Update the maximum offset
-        maxOffset = std::max(maxOffset, headerEndOffset);
-    }
-
-    return static_cast<uint32_t>(maxOffset);
-}
-
-// VP8 Payload Header constants
-constexpr uint8_t P_BIT = 0x01;  // Inverse key frame flag (0=key frame, 1=delta frame)
-                                // In bit position 0
-
-/**
- * Calculates the size of the VP8 header that needs to remain
- * unencrypted for proper frame handling.
- *
- * For VP8:
- * - If it's a key frame (P=0), leave 10 bytes unencrypted to cover the full uncompressed VP8 header
- * - If it's a delta frame (P=1), leave 1 byte unencrypted (just the payload header)
- *
- * Based on VP8 payload header format in RFC 7741 section 4.3:
- *     0 1 2 3 4 5 6 7
- *    +-+-+-+-+-+-+-+-+
- *    |Size0|H| VER |P|
- *    +-+-+-+-+-+-+-+-+
- * The diagram shows bit positions where P is at position 7 (leftmost bit).
- *
- * @param frame The VP8 payload data (after RTP header and VP8 payload descriptor)
- * @return The size of the header that must remain unencrypted
- */
-uint32_t calculateVp8FramePlaintextHeaderSize(rtc::ArrayView<const uint8_t> frame) {
-    // Ensure we have at least 1 byte
-    if (frame.empty()) {
-        return 0;
-    }
-    
-    // First byte of VP8 payload header
-    uint8_t first_byte = frame[0];
-    
-    // Check P bit (inverse key frame flag) - bit 7 (0x80)
-    bool is_key_frame = (first_byte & P_BIT) == 0;
-    
-    if (is_key_frame) {
-        // For key frames, leave 10 bytes unencrypted to cover the full uncompressed VP8 header
-        // This includes the frame dimensions
-        return frame.size() >= 10 ? 10 : ((uint32_t)frame.size());
-    } else {
-        // For delta frames, just leave 1 byte unencrypted (payload header)
-        return 1;
-    }
-}
-
-enum class FrameTransformerPayloadType {
-    Unknown,
-    Opus,
-    H264,
-    VP8
-};
-
-class FrameTransformer : public webrtc::FrameTransformerInterface {
-public:
-    FrameTransformer(bool isEncryptor, std::function<std::vector<uint8_t>(std::vector<uint8_t> const &, int64_t, bool, int32_t)> transform, int64_t userId, std::map<int32_t, FrameTransformerPayloadType> const &payloadTypeMapping, std::function<std::pair<uint8_t, bool>()> getAudioLevelAndSpeech, std::function<void(uint8_t, bool)> setAudioLevelAndSpeech) :
-    _isEncryptor(isEncryptor),
-    _transform(transform),
-    _userId(userId),
-    _payloadTypeMapping(payloadTypeMapping),
-    _getAudioLevelAndSpeech(getAudioLevelAndSpeech),
-    _setAudioLevelAndSpeech(setAudioLevelAndSpeech) {
-    }
-
-    virtual void RegisterTransformedFrameCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback) override {
-        webrtc::MutexLock lock(&_mutex);
-        assert(_sinkCallback == nullptr);
-        _sinkCallback = callback;
-    }
-
-    virtual void RegisterTransformedFrameSinkCallback(rtc::scoped_refptr<webrtc::TransformedFrameCallback> callback, uint32_t ssrc) override {
-        webrtc::MutexLock lock(&_mutex);
-        _sinkCallbackBySsrc[ssrc] = callback;
-    }
-
-    virtual void UnregisterTransformedFrameSinkCallback(uint32_t ssrc) override {
-        webrtc::MutexLock lock(&_mutex);
-        _sinkCallbackBySsrc.erase(ssrc);
-    }
-
-    virtual void Transform(std::unique_ptr<webrtc::TransformableFrameInterface> frame) override {
-        webrtc::MutexLock lock(&_mutex);
-
-        const auto ssrc = frame->GetSsrc();
-        const auto i = _sinkCallbackBySsrc.find(ssrc);
-        const auto sink = (i != _sinkCallbackBySsrc.end() && i->second)
-            ? i->second.get()
-            : _sinkCallback.get();
-        if (!sink) {
-            return;
-        }
-
-        FrameTransformerPayloadType payloadType = FrameTransformerPayloadType::Unknown;
-        const auto foundPayloadType = _payloadTypeMapping.find(frame->GetPayloadType());
-        if (foundPayloadType != _payloadTypeMapping.end()) {
-            payloadType = foundPayloadType->second;
-        }
-
-        if (_isEncryptor) {
-            if (payloadType == FrameTransformerPayloadType::H264 || payloadType == FrameTransformerPayloadType::VP8) {
-                uint32_t plaintextHeaderSize =  0;
-                if (payloadType == FrameTransformerPayloadType::H264) {
-                    plaintextHeaderSize = calculateH264FramePlaintextHeaderSize(frame->GetData());
-                } else if (payloadType == FrameTransformerPayloadType::VP8) {
-                    plaintextHeaderSize = calculateVp8FramePlaintextHeaderSize(frame->GetData());
-                }
-
-                if (plaintextHeaderSize > (uint32_t)frame->GetData().size()) {
-                    plaintextHeaderSize = (uint32_t)frame->GetData().size();
-                }
-
-                std::vector<uint8_t> frameData;
-                frameData.resize(frame->GetData().size());
-                std::copy(frame->GetData().begin(), frame->GetData().end(), frameData.begin());
-
-                auto result = _transform(frameData, _userId, _isEncryptor, plaintextHeaderSize);
-
-                if (!result.empty()) {
-                    frame->SetData(result);
-                    sink->OnTransformedFrame(std::move(frame));
-                }
-            } else {
-                std::vector<uint8_t> buffer;
-                buffer.resize(frame->GetData().size() + 1 + 1);
-                std::copy(frame->GetData().begin(), frame->GetData().end(), buffer.begin());
-                
-                buffer[buffer.size() - 1 - 1] = 0x01;
-                std::pair<uint8_t, bool> audioLevelAndSpeech = std::make_pair(0, false);
-                if (_getAudioLevelAndSpeech) {
-                    audioLevelAndSpeech = _getAudioLevelAndSpeech();
-                }
-                uint8_t encodedAudioLevelAndSpeech = 0;
-                if (audioLevelAndSpeech.second) {
-                    encodedAudioLevelAndSpeech = encodedAudioLevelAndSpeech | 0x80;
-                }
-                encodedAudioLevelAndSpeech |= audioLevelAndSpeech.first & 0x7f;
-                buffer[buffer.size() - 1] = encodedAudioLevelAndSpeech;
-                
-                auto result = _transform(buffer, _userId, _isEncryptor, 0);
-                if (!result.empty()) {
-                    frame->SetData(result);
-                    sink->OnTransformedFrame(std::move(frame));
-                }
-            }
-        } else {
-            if (payloadType != FrameTransformerPayloadType::Opus) {
-                std::vector<uint8_t> encryptedFrame;
-                encryptedFrame.resize(frame->GetData().size());
-                std::copy(frame->GetData().begin(), frame->GetData().end(), encryptedFrame.begin());
-                
-                auto decryptedFrame = _transform(encryptedFrame, _userId, false, 0);
-                if (!decryptedFrame.empty()) {
-                    frame->SetData(decryptedFrame);
-                    sink->OnTransformedFrame(std::move(frame));
-                }
-            } else {
-                std::vector<uint8_t> buffer;
-                buffer.resize(frame->GetData().size());
-                std::copy(frame->GetData().begin(), frame->GetData().end(), buffer.begin());
-                
-                auto result = _transform(buffer, _userId, false, 0);
-                if (!result.empty()) {
-                    if (result.size() >= 2) {
-                        uint8_t extensionFlags = result[result.size() - 2];
-                        if (extensionFlags & 0x01) {
-                            uint8_t audioLevelAndSpeech = result[result.size() - 1];
-                            if (_setAudioLevelAndSpeech) {
-                                bool hasSpeech = (audioLevelAndSpeech & 0x80) != 0;
-                                uint8_t audioLevel = audioLevelAndSpeech & 0x7f;
-                                _setAudioLevelAndSpeech(audioLevel, hasSpeech);
-                            }
-
-                            result.resize(result.size() - 2);
-                        } else {
-                            result.resize(result.size() - 1);
-                        }
-                    }
-                    
-                    frame->SetData(result);
-                    sink->OnTransformedFrame(std::move(frame));
-                }
-            }
-        }
-    }
-
-private:
-    bool _isEncryptor = false;
-    std::function<std::vector<uint8_t>(std::vector<uint8_t> const &, int64_t, bool, int32_t)> _transform;
-    int64_t _userId = 0;
-    std::map<int32_t, FrameTransformerPayloadType> _payloadTypeMapping;
-    std::function<std::pair<uint8_t, bool>()> _getAudioLevelAndSpeech;
-    std::function<void(uint8_t, bool)> _setAudioLevelAndSpeech;
-    webrtc::Mutex _mutex;
-    rtc::scoped_refptr<webrtc::TransformedFrameCallback> _sinkCallback;
-    std::map<uint32_t, rtc::scoped_refptr<webrtc::TransformedFrameCallback>> _sinkCallbackBySsrc;
-};
 
 class IncomingAudioChannel : public sigslot::has_slots<> {
 public:
@@ -1776,35 +1202,15 @@ public:
         _mutex.Unlock();
 
         if (context) {
-            if (_samplesToResample.size() < 480 * num_channels) {
-                _samplesToResample.resize(480 * num_channels);
-            }
-            memset(_samplesToResample.data(), 0, _samplesToResample.size() * sizeof(int16_t));
-
-            context->getAudio(_samplesToResample.data(), 480, num_channels, 48000);
-
-            if (_resamplerFrequency != samples_per_sec || _resamplerNumChannels != num_channels) {
-                _resamplerFrequency = samples_per_sec;
-                _resamplerNumChannels = num_channels;
-                _resampler = std::make_unique<webrtc::Resampler>();
-                if (_resampler->Reset(48000, samples_per_sec, num_channels) == -1) {
-                    _resampler = nullptr;
-                }
-            }
-
-            if (_resampler) {
-                size_t outLen = 0;
-                _resampler->Push(_samplesToResample.data(), _samplesToResample.size(), (int16_t *)audio_samples, num_samples * num_channels, outLen);
-            }
+            _renderer.render([&context](int16_t *samples, size_t numSamples, size_t numChannels, uint32_t sampleRate) {
+                context->getAudio(samples, numSamples, numChannels, sampleRate);
+            }, audio_samples, num_samples, num_channels, samples_per_sec);
         }
     }
 
 private:
     webrtc::Mutex _mutex;
-    std::unique_ptr<webrtc::Resampler> _resampler;
-    uint32_t _resamplerFrequency = 0;
-    size_t _resamplerNumChannels = 0;
-    std::vector<int16_t> _samplesToResample;
+    StreamingAudioRenderer _renderer;
     std::shared_ptr<StreamingMediaContext> _streamingContext;
 };
 
@@ -1940,6 +1346,7 @@ public:
     _activitiesUpdated(descriptor.ssrcActivityUpdated),
     _onAudioFrame(descriptor.onAudioFrame),
     _requestMediaChannelDescriptions(descriptor.requestMediaChannelDescriptions),
+    _dataChannelMessageReceived(descriptor.dataChannelMessageReceived),
     _requestCurrentTime(descriptor.requestCurrentTime),
     _requestAudioBroadcastPart(descriptor.requestAudioBroadcastPart),
     _requestVideoBroadcastPart(descriptor.requestVideoBroadcastPart),
@@ -1967,8 +1374,7 @@ public:
     _initialInputDeviceId(std::move(descriptor.initialInputDeviceId)),
     _initialOutputDeviceId(std::move(descriptor.initialOutputDeviceId)),
     _missingPacketBuffer(50),
-    _onMutedSpeechActivityDetected(std::move(descriptor.onMutedSpeechActivityDetected)),
-    _platformContext(descriptor.platformContext) {
+    _onMutedSpeechActivityDetected(std::move(descriptor.onMutedSpeechActivityDetected)) {
         assert(_threads->getMediaThread()->IsCurrent());
 
         _threads->getWorkerThread()->BlockingCall([this] {
@@ -2031,6 +1437,7 @@ public:
             "WebRTC-VP8ConferenceTemporalLayers/1/"
             "WebRTC-Audio-MinimizeResamplingOnMobile/Enabled/"
             "WebRTC-BweLossExperiment/Enabled/"
+            "WebRTC-Video-DiscardPacketsWithUnknownSsrc/Enabled/"
         );
 
         bool takeAudioLevelFromNetwork = _e2eEncryptDecrypt == nullptr;
@@ -2139,8 +1546,8 @@ public:
         peerConnectionFactoryDeps.audio_encoder_factory = webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus, webrtc::AudioEncoderL16>();
         peerConnectionFactoryDeps.audio_decoder_factory = webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus, webrtc::AudioDecoderL16>();
 
-        peerConnectionFactoryDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext, false, _videoContentType == VideoContentType::Screencast);
-        peerConnectionFactoryDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
+        peerConnectionFactoryDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(false, _videoContentType == VideoContentType::Screencast);
+        peerConnectionFactoryDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory();
 
 #if USE_RNNOISE
         if (_audioLevelsUpdated && audioProcessor) {
@@ -2296,7 +1703,7 @@ public:
             _outgoingVideoChannel->send_channel()->SetVideoSend(_outgoingVideoSsrcs.simulcastLayers[0].ssrc, nullptr, nullptr);
             _channelManager->DestroyChannel(_outgoingVideoChannel);
         });
-		_outgoingVideoChannel = nullptr;
+        _outgoingVideoChannel = nullptr;
     }
 
     void createOutgoingVideoChannel() {
@@ -3029,7 +2436,7 @@ public:
         webrtc::BitrateConstraints preferences;
         webrtc::BitrateSettings settings;
         if (_getVideoSource) {
-            settings.min_bitrate_bps = _minOutgoingVideoBitrateKbit * 1024;
+            preferences.min_bitrate_bps = _minOutgoingVideoBitrateKbit * 1024;
             if (resetStartBitrate) {
                 preferences.start_bitrate_bps = std::max(preferences.min_bitrate_bps, 400 * 1000);
             }
@@ -3050,10 +2457,10 @@ public:
         settings.start_bitrate_bps = preferences.start_bitrate_bps;
         settings.max_bitrate_bps = preferences.max_bitrate_bps;
 
-		_threads->getWorkerThread()->BlockingCall([&]() {
+        _threads->getWorkerThread()->BlockingCall([&]() {
             _call->GetTransportControllerSend()->SetSdpBitrateParameters(preferences);
-			_call->SetClientBitratePreferences(settings);
-		});
+            _call->SetClientBitratePreferences(settings);
+        });
     }
 
     void setIsRtcConnected(bool isConnected) {
@@ -3105,6 +2512,7 @@ public:
         GroupNetworkState effectiveNetworkState;
         effectiveNetworkState.isConnected = isEffectivelyConnected;
         effectiveNetworkState.isTransitioningFromBroadcastToRtc = isTransitioningFromBroadcastToRtc;
+        effectiveNetworkState.connectionMode = _connectionMode;
 
         if (_effectiveNetworkState.isConnected != effectiveNetworkState.isConnected || _effectiveNetworkState.isTransitioningFromBroadcastToRtc != effectiveNetworkState.isTransitioningFromBroadcastToRtc) {
             _effectiveNetworkState = effectiveNetworkState;
@@ -3179,6 +2587,11 @@ public:
     }
 
     void receiveDataChannelMessage(std::string const &message) {
+        // Forward to app callback (for ActiveVideoSsrcs, etc.)
+        if (_dataChannelMessageReceived) {
+            _dataChannelMessageReceived(message);
+        }
+
         std::string parsingError;
         auto json = json11::Json::parse(message, parsingError);
         if (json.type() != json11::Json::OBJECT) {
@@ -3430,6 +2843,17 @@ public:
             _connectionMode = connectionMode;
             _isUnifiedBroadcast = isUnifiedBroadcast;
             onConnectionModeUpdated(previousMode, keepBroadcastIfWasEnabled);
+            
+            GroupNetworkState effectiveNetworkState = _effectiveNetworkState;
+            effectiveNetworkState.connectionMode = _connectionMode;
+
+            if (_effectiveNetworkState.connectionMode != effectiveNetworkState.connectionMode) {
+                _effectiveNetworkState = effectiveNetworkState;
+
+                if (_networkStateUpdated) {
+                    _networkStateUpdated(_effectiveNetworkState);
+                }
+            }
         }
     }
 
@@ -3481,7 +2905,6 @@ public:
                     StreamingMediaContext::StreamingMediaContextArguments arguments;
                     const auto weak = std::weak_ptr<GroupInstanceCustomInternal>(shared_from_this());
                     arguments.threads = _threads;
-                    arguments.platformContext = _platformContext;
                     arguments.isUnifiedBroadcast = _isUnifiedBroadcast;
                     arguments.requestCurrentTime = _requestCurrentTime;
                     arguments.requestAudioBroadcastPart = _requestAudioBroadcastPart;
@@ -3621,7 +3044,7 @@ public:
         }
 
         _getVideoSource = std::move(getVideoSource);
-		updateVideoSend();
+        updateVideoSend();
         if (resetBitrate) {
             adjustBitratePreferences(true);
         }
@@ -4233,9 +3656,10 @@ private:
     std::function<void(GroupActivitiesUpdate const &)> _activitiesUpdated;
     std::function<void(uint32_t, const AudioFrame &)> _onAudioFrame;
     std::function<std::shared_ptr<RequestMediaChannelDescriptionTask>(std::vector<uint32_t> const &, std::function<void(std::vector<MediaChannelDescription> &&)>)> _requestMediaChannelDescriptions;
+    std::function<void(std::string const &)> _dataChannelMessageReceived;
     std::function<std::shared_ptr<BroadcastPartTask>(std::function<void(int64_t)>)> _requestCurrentTime;
-    std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> _requestAudioBroadcastPart;
-    std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> _requestVideoBroadcastPart;
+    std::function<std::shared_ptr<BroadcastPartTask>(int64_t, int64_t, std::function<void(BroadcastPart &&)>)> _requestAudioBroadcastPart;
+    std::function<std::shared_ptr<BroadcastPartTask>(int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> _requestVideoBroadcastPart;
     std::shared_ptr<VideoCaptureInterface> _videoCapture;
     std::shared_ptr<VideoSinkImpl> _videoCaptureSink;
     std::function<webrtc::scoped_refptr<webrtc::VideoTrackSourceInterface>()> _getVideoSource;
@@ -4339,7 +3763,6 @@ private:
     webrtc::scoped_refptr<webrtc::PendingTaskSafetyFlag> _networkThreadSafery;
 
     std::function<void(bool)> _onMutedSpeechActivityDetected;
-    std::shared_ptr<PlatformContext> _platformContext;
 
     std::map<int32_t, FrameTransformerPayloadType> _payloadTypeMapping;
 };

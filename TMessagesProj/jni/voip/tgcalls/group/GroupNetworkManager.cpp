@@ -418,7 +418,7 @@ void GroupNetworkManager::resetDtlsSrtpTransport() {
     transportChannel->SetIceParameters(localIceParameters);
     const bool isOutgoing = false;
     transportChannel->SetIceRole(isOutgoing ? cricket::ICEROLE_CONTROLLING : cricket::ICEROLE_CONTROLLED);
-    transportChannel->SetRemoteIceMode(cricket::ICEMODE_LITE);
+    transportChannel->SetRemoteIceMode(cricket::ICEMODE_FULL);
 
     transportChannel->SignalIceTransportStateChanged.connect(this, &GroupNetworkManager::transportStateChanged);
     transportChannel->SignalReadPacket.connect(this, &GroupNetworkManager::transportPacketReceived);

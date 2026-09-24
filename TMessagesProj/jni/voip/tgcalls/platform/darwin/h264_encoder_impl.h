@@ -14,6 +14,7 @@
 #ifndef WEBRTC_MODULES_VIDEO_CODING_CODECS_H264_H264_ENCODER_IMPL_H_
 #define WEBRTC_MODULES_VIDEO_CODING_CODECS_H264_H264_ENCODER_IMPL_H_
 
+#include <cstdint>
 #include "modules/video_coding/codecs/h264/include/h264.h"
 
 #include <vector>

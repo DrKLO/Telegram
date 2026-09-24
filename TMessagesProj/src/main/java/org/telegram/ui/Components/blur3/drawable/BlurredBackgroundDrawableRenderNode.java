@@ -94,11 +94,13 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
         renderNodeInvalidated = true;
     }
 
+    @Override
     public boolean hasDisplayList() {
         return renderNode.hasDisplayList();
     }
 
-    private void updateDisplayList() {
+    @Override
+    public void updateDisplayList() {
         final float offsetX = sourceOffsetX;
         final float offsetY = sourceOffsetY;
 

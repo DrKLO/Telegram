@@ -5,6 +5,12 @@
 
 namespace tgcalls {
 
+// Test-only knob. By default the fake platform's video factories advertise
+// their formats in the order the iOS platform factories do (see
+// FakeInterface.cpp for why that matters); pass `true` to expose the raw
+// builtin-factory order instead.
+void setFakePlatformBuiltinCodecOrder(bool useBuiltinOrder);
+
 class FakeInterface : public PlatformInterface {
  public:
   std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory(bool preferHardwareEncoding, bool isScreencast) override;

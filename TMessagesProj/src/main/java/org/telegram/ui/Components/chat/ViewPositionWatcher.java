@@ -84,7 +84,7 @@ public final class ViewPositionWatcher implements
         ensureListening();
 
         if (multiwindow) {
-            view.getViewTreeObserver().addOnPreDrawListener(this);
+            new ViewOnPreDraw(view, this);
         }
     }
 
@@ -250,5 +250,76 @@ public final class ViewPositionWatcher implements
         final float b = t + view.getHeight();
         out.set(l, t, r, b);
         return true;
+    }
+
+
+
+
+
+
+
+    private static class ViewOnPreDraw {
+
+        private final View view;
+        private final ViewTreeObserver.OnPreDrawListener listener;
+
+        private ViewTreeObserver viewTreeObserver;
+
+        public ViewOnPreDraw(
+                @NonNull View view,
+                @NonNull ViewTreeObserver.OnPreDrawListener listener
+        ) {
+            this.view = view;
+            this.listener = listener;
+
+            view.addOnAttachStateChangeListener(attachStateChangeListener);
+
+            if (view.isAttachedToWindow()) {
+                attach();
+            }
+        }
+
+        private final View.OnAttachStateChangeListener attachStateChangeListener =
+                new View.OnAttachStateChangeListener() {
+                    @Override
+                    public void onViewAttachedToWindow(@NonNull View v) {
+                        attach();
+                    }
+
+                    @Override
+                    public void onViewDetachedFromWindow(@NonNull View v) {
+                        detach();
+                    }
+                };
+
+        private void attach() {
+            ViewTreeObserver observer = view.getViewTreeObserver();
+            if (viewTreeObserver == observer) {
+                return;
+            }
+
+            detach();
+
+            viewTreeObserver = observer;
+            if (observer.isAlive()) {
+                observer.addOnPreDrawListener(listener);
+            }
+        }
+
+        private void detach() {
+            if (viewTreeObserver == null) {
+                return;
+            }
+
+            if (viewTreeObserver.isAlive()) {
+                viewTreeObserver.removeOnPreDrawListener(listener);
+            }
+            viewTreeObserver = null;
+        }
+
+        public void destroy() {
+            detach();
+            view.removeOnAttachStateChangeListener(attachStateChangeListener);
+        }
     }
 }

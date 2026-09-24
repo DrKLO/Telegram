@@ -16,6 +16,10 @@
 @implementation RTC_OBJC_TYPE (RTCAudioSession)
 (Configuration)
 
+- (BOOL)setConfiguration : (RTC_OBJC_TYPE(RTCAudioSessionConfiguration) *)configuration error: (NSError **)outError {
+    return [self setConfiguration:configuration error:outError disableRecording:false];
+}
+
     - (BOOL)setConfiguration : (RTC_OBJC_TYPE(RTCAudioSessionConfiguration) *)configuration error
     : (NSError **)outError disableRecording:(BOOL)disableRecording {
   return [self setConfiguration:configuration

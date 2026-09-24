@@ -1,6 +1,7 @@
 #ifndef TGCALLS_INSTANCE_IMPL_H
 #define TGCALLS_INSTANCE_IMPL_H
 
+#include <cstdint>
 #include "Instance.h"
 
 namespace tgcalls {

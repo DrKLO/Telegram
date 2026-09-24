@@ -26,10 +26,9 @@ public:
         std::shared_ptr<Threads> threads;
         bool isUnifiedBroadcast = false;
         std::function<std::shared_ptr<BroadcastPartTask>(std::function<void(int64_t)>)> requestCurrentTime;
-        std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestAudioBroadcastPart;
-        std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> requestVideoBroadcastPart;
+        std::function<std::shared_ptr<BroadcastPartTask>(int64_t, int64_t, std::function<void(BroadcastPart &&)>)> requestAudioBroadcastPart;
+        std::function<std::shared_ptr<BroadcastPartTask>(int64_t, int64_t, int32_t, VideoChannelDescription::Quality, std::function<void(BroadcastPart &&)>)> requestVideoBroadcastPart;
         std::function<void(uint32_t, float, bool)> updateAudioLevel;
-        std::shared_ptr<PlatformContext> platformContext;
     };
 
 public:

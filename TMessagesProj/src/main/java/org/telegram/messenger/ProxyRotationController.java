@@ -3,7 +3,6 @@ package org.telegram.messenger;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
 
-import org.telegram.proxy.ProxySettings;
 import org.telegram.tgnet.ConnectionsManager;
 
 import java.util.ArrayList;
@@ -74,9 +73,6 @@ public class ProxyRotationController implements NotificationCenter.NotificationC
             SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
             editor.putBoolean("proxy_enabled", true);
             info.settings.toSharedPreferences(editor);
-            if (!info.settings.getSecret().isEmpty()) {
-                editor.putBoolean("proxy_enabled_calls", false);
-            }
             editor.apply();
 
             SharedConfig.currentProxy = info;

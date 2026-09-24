@@ -1,6 +1,7 @@
 #ifndef TGCALLS_DIRECT_CONNECTION_CHANNEL_H
 #define TGCALLS_DIRECT_CONNECTION_CHANNEL_H
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>

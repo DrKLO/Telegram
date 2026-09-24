@@ -4,6 +4,8 @@
 
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "media/base/media_engine.h"
+#include "media/base/sdp_video_format_utils.h"
 
 #include <sstream>
 
@@ -64,6 +66,11 @@ absl::optional<SsrcGroup> SsrcGroup_parse(json11::Json::object const &object) {
             RTC_LOG(LS_ERROR) << "Signaling: ssrcs item must be a string or a number";
             return absl::nullopt;
         }
+    }
+
+    if (result.ssrcs.empty()) {
+        RTC_LOG(LS_ERROR) << "Signaling: ssrc group must contain at least one ssrc";
+        return absl::nullopt;
     }
 
     return result;
@@ -723,13 +730,13 @@ absl::optional<MediaStateMessage> MediaStateMessage_parse(json11::Json::object c
             RTC_LOG(LS_ERROR) << "Signaling: videoRotation must be a number";
             return absl::nullopt;
         }
-        if (videoState->second.int_value() == 0) {
+        if (videoRotation->second.int_value() == 0) {
             message.videoRotation = MediaStateMessage::VideoRotation::Rotation0;
-        } else if (videoState->second.int_value() == 90) {
+        } else if (videoRotation->second.int_value() == 90) {
             message.videoRotation = MediaStateMessage::VideoRotation::Rotation90;
-        } else if (videoState->second.int_value() == 180) {
+        } else if (videoRotation->second.int_value() == 180) {
             message.videoRotation = MediaStateMessage::VideoRotation::Rotation180;
-        } else if (videoState->second.int_value() == 270) {
+        } else if (videoRotation->second.int_value() == 270) {
             message.videoRotation = MediaStateMessage::VideoRotation::Rotation270;
         } else {
             RTC_LOG(LS_ERROR) << "Signaling: videoRotation must be one of [0, 90, 180, 270]";
@@ -813,6 +820,167 @@ absl::optional<Message> Message::parse(const std::vector<uint8_t> &data) {
         RTC_LOG(LS_ERROR) << "Signaling: unknown message type " << type->second.string_value();
         return absl::nullopt;
     }
+}
+
+MediaContent convertContentInfoToSignalingContent(cricket::ContentInfo const &content) {
+    MediaContent mappedContent;
+
+    switch (content.media_description()->type()) {
+        case cricket::MediaType::MEDIA_TYPE_AUDIO: {
+            mappedContent.type = MediaContent::Type::Audio;
+
+            for (const auto &codec : content.media_description()->as_audio()->codecs()) {
+                PayloadType mappedPayloadType;
+                mappedPayloadType.id = codec.id;
+                mappedPayloadType.name = codec.name;
+                mappedPayloadType.clockrate = codec.clockrate;
+                mappedPayloadType.channels = (uint32_t)codec.channels;
+
+                for (const auto &feedbackType : codec.feedback_params.params()) {
+                    FeedbackType mappedFeedbackType;
+                    mappedFeedbackType.type = feedbackType.id();
+                    mappedFeedbackType.subtype = feedbackType.param();
+                    mappedPayloadType.feedbackTypes.push_back(std::move(mappedFeedbackType));
+                }
+
+                for (const auto &parameter : codec.params) {
+                    mappedPayloadType.parameters.push_back(std::make_pair(parameter.first, parameter.second));
+                }
+                std::sort(mappedPayloadType.parameters.begin(), mappedPayloadType.parameters.end(), [](std::pair<std::string, std::string> const &lhs, std::pair<std::string, std::string> const &rhs) -> bool {
+                    return lhs.first < rhs.first;
+                });
+
+                mappedContent.payloadTypes.push_back(std::move(mappedPayloadType));
+            }
+            break;
+        }
+        case cricket::MediaType::MEDIA_TYPE_VIDEO: {
+            mappedContent.type = MediaContent::Type::Video;
+
+            for (const auto &codec : content.media_description()->as_video()->codecs()) {
+                PayloadType mappedPayloadType;
+                mappedPayloadType.id = codec.id;
+                mappedPayloadType.name = codec.name;
+                mappedPayloadType.clockrate = codec.clockrate;
+                mappedPayloadType.channels = 0;
+
+                for (const auto &feedbackType : codec.feedback_params.params()) {
+                    FeedbackType mappedFeedbackType;
+                    mappedFeedbackType.type = feedbackType.id();
+                    mappedFeedbackType.subtype = feedbackType.param();
+                    mappedPayloadType.feedbackTypes.push_back(std::move(mappedFeedbackType));
+                }
+
+                for (const auto &parameter : codec.params) {
+                    mappedPayloadType.parameters.push_back(std::make_pair(parameter.first, parameter.second));
+                }
+                std::sort(mappedPayloadType.parameters.begin(), mappedPayloadType.parameters.end(), [](std::pair<std::string, std::string> const &lhs, std::pair<std::string, std::string> const &rhs) -> bool {
+                    return lhs.first < rhs.first;
+                });
+
+                mappedContent.payloadTypes.push_back(std::move(mappedPayloadType));
+            }
+            break;
+        }
+        default: {
+            RTC_FATAL() << "Unknown media type";
+            break;
+        }
+    }
+
+    if (!content.media_description()->streams().empty()) {
+        mappedContent.ssrc = content.media_description()->streams()[0].first_ssrc();
+        for (const auto &ssrcGroup : content.media_description()->streams()[0].ssrc_groups) {
+            SsrcGroup mappedSsrcGroup;
+            mappedSsrcGroup.semantics = ssrcGroup.semantics;
+            mappedSsrcGroup.ssrcs = ssrcGroup.ssrcs;
+            mappedContent.ssrcGroups.push_back(std::move(mappedSsrcGroup));
+        }
+    }
+
+    for (const auto &extension : content.media_description()->rtp_header_extensions()) {
+        mappedContent.rtpExtensions.push_back(extension);
+    }
+
+    return mappedContent;
+}
+
+cricket::ContentInfo convertSignalingContentToContentInfo(std::string const &contentId, MediaContent const &content, webrtc::RtpTransceiverDirection direction) {
+    std::unique_ptr<cricket::MediaContentDescription> contentDescription;
+
+    switch (content.type) {
+        case MediaContent::Type::Audio: {
+            auto audioDescription = std::make_unique<cricket::AudioContentDescription>();
+
+            for (const auto &payloadType : content.payloadTypes) {
+                cricket::AudioCodec mappedCodec = cricket::CreateAudioCodec((int)payloadType.id, payloadType.name, (int)payloadType.clockrate, payloadType.channels);
+                for (const auto &parameter : payloadType.parameters) {
+                    mappedCodec.params.insert(parameter);
+                }
+                for (const auto &feedbackParam : payloadType.feedbackTypes) {
+                    mappedCodec.AddFeedbackParam(cricket::FeedbackParam(feedbackParam.type, feedbackParam.subtype));
+                }
+                audioDescription->AddCodec(mappedCodec);
+            }
+
+            contentDescription = std::move(audioDescription);
+
+            break;
+        }
+        case MediaContent::Type::Video: {
+            auto videoDescription = std::make_unique<cricket::VideoContentDescription>();
+
+            for (const auto &payloadType : content.payloadTypes) {
+                webrtc::SdpVideoFormat videoFormat(payloadType.name);
+                for (const auto &parameter : payloadType.parameters) {
+                    videoFormat.parameters.insert(parameter);
+                }
+                cricket::VideoCodec mappedCodec = cricket::CreateVideoCodec(videoFormat);
+                mappedCodec.id = (int)payloadType.id;
+                for (const auto &feedbackParam : payloadType.feedbackTypes) {
+                    mappedCodec.AddFeedbackParam(cricket::FeedbackParam(feedbackParam.type, feedbackParam.subtype));
+                }
+                videoDescription->AddCodec(mappedCodec);
+            }
+
+            contentDescription = std::move(videoDescription);
+
+            break;
+        }
+        default: {
+            RTC_FATAL() << "Unknown media type";
+            break;
+        }
+    }
+
+    cricket::StreamParams streamParams;
+    streamParams.id = contentId;
+    streamParams.set_stream_ids({ contentId });
+    streamParams.add_ssrc(content.ssrc);
+    for (const auto &ssrcGroup : content.ssrcGroups) {
+        streamParams.ssrc_groups.push_back(cricket::SsrcGroup(ssrcGroup.semantics, ssrcGroup.ssrcs));
+        for (const auto &ssrc : ssrcGroup.ssrcs) {
+            if (!streamParams.has_ssrc(ssrc)) {
+                streamParams.add_ssrc(ssrc);
+            }
+        }
+    }
+    contentDescription->AddStream(streamParams);
+
+    for (const auto &extension : content.rtpExtensions) {
+        contentDescription->AddRtpHeaderExtension(extension);
+    }
+
+    contentDescription->set_direction(direction);
+    contentDescription->set_rtcp_mux(true);
+
+    cricket::ContentInfo mappedContentInfo(cricket::MediaProtocolType::kRtp);
+    mappedContentInfo.name = contentId;
+    mappedContentInfo.rejected = false;
+    mappedContentInfo.bundle_only = false;
+    mappedContentInfo.set_media_description(std::move(contentDescription));
+
+    return mappedContentInfo;
 }
 
 } // namespace signaling

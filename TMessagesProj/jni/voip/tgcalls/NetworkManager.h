@@ -1,6 +1,7 @@
 #ifndef TGCALLS_NETWORK_MANAGER_H
 #define TGCALLS_NETWORK_MANAGER_H
 
+#include <cstdint>
 #include "rtc_base/thread.h"
 
 #include "EncryptedConnection.h"

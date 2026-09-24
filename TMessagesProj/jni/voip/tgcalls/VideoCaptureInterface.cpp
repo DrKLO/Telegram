@@ -1,7 +1,6 @@
 #include "VideoCaptureInterface.h"
 
 #include "VideoCaptureInterfaceImpl.h"
-#include "tgnet/FileLog.h"
 
 namespace tgcalls {
 

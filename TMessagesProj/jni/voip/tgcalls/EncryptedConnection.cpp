@@ -154,6 +154,54 @@ absl::optional<rtc::CopyOnWriteBuffer> EncryptedConnection::decryptRawPacket(rtc
     return resultBuffer;
 }
 
+absl::optional<rtc::CopyOnWriteBuffer> EncryptedConnection::encryptFullPlaintextPacket(rtc::CopyOnWriteBuffer const &packet) {
+    if (packet.size() < 5) {
+        return absl::nullopt;
+    }
+    auto encryptedPacket = encryptPrepared(packet);
+    rtc::CopyOnWriteBuffer encryptedBuffer;
+    encryptedBuffer.AppendData(encryptedPacket.bytes.data(), encryptedPacket.bytes.size());
+    return encryptedBuffer;
+}
+
+absl::optional<rtc::CopyOnWriteBuffer> EncryptedConnection::decryptFullPlaintextPacket(rtc::CopyOnWriteBuffer const &buffer) {
+    if (buffer.size() < 21 || buffer.size() > kMaxIncomingPacketSize) {
+        return absl::nullopt;
+    }
+
+    const auto x = (_key.isOutgoing ? 8 : 0) + (_type == Type::Signaling ? 128 : 0);
+    const auto key = _key.value->data();
+    const auto msgKey = reinterpret_cast<const uint8_t*>(buffer.data());
+    const auto encryptedData = msgKey + 16;
+    const auto dataSize = buffer.size() - 16;
+
+    auto aesKeyIv = PrepareAesKeyIv(key, msgKey, x);
+
+    auto decryptionBuffer = rtc::Buffer(dataSize);
+    AesProcessCtr(
+        MemorySpan{ encryptedData, dataSize },
+        decryptionBuffer.data(),
+        std::move(aesKeyIv));
+
+    const auto msgKeyLarge = ConcatSHA256(
+        MemorySpan{ key + 88 + x, 32 },
+        MemorySpan{ decryptionBuffer.data(), decryptionBuffer.size() });
+    if (ConstTimeIsDifferent(msgKeyLarge.data() + 8, msgKey, 16)) {
+        return absl::nullopt;
+    }
+
+    const auto incomingSeq = ReadSeq(decryptionBuffer.data());
+    const auto incomingCounter = CounterFromSeq(incomingSeq);
+    if (!registerIncomingCounter(incomingCounter)) {
+        // We've received that packet already.
+        return absl::nullopt;
+    }
+
+    rtc::CopyOnWriteBuffer resultBuffer;
+    resultBuffer.AppendData(decryptionBuffer.data(), decryptionBuffer.size());
+    return resultBuffer;
+}
+
 auto EncryptedConnection::prepareForSending(const Message &message)
 -> absl::optional<EncryptedPacket> {
     const auto messageRequiresAck = absl::visit([](const auto &data) {
@@ -485,6 +533,7 @@ auto EncryptedConnection::processPacket(
     auto firstMessageRequiringAck = true;
     auto newRequiringAckReceived = false;
 
+    const auto packetCounter = CounterFromSeq(packetSeq);
     auto currentSeq = packetSeq;
     auto currentCounter = CounterFromSeq(currentSeq);
     rtc::ByteBufferReader reader(rtc::ArrayView<const uint8_t>(
@@ -516,7 +565,9 @@ auto EncryptedConnection::processPacket(
             const auto messageRequiresAck = ((currentSeq & kMessageRequiresAckSeqBit) != 0);
             const auto skipMessage = messageRequiresAck
                 ? !registerSentAck(currentCounter, firstMessageRequiringAck)
-                : (additionalMessage && !registerIncomingCounter(currentCounter));
+                : (additionalMessage
+                    && (currentCounter > packetCounter
+                        || !registerIncomingCounter(currentCounter)));
             if (messageRequiresAck) {
                 firstMessageRequiringAck = false;
                 if (!skipMessage) {
@@ -571,6 +622,7 @@ auto EncryptedConnection::processRawPacket(
     auto firstMessageRequiringAck = true;
     auto newRequiringAckReceived = false;
 
+    const auto packetCounter = CounterFromSeq(packetSeq);
     auto currentSeq = packetSeq;
     auto currentCounter = CounterFromSeq(currentSeq);
     rtc::ByteBufferReader reader(rtc::ArrayView<const uint8_t>(
@@ -605,7 +657,9 @@ auto EncryptedConnection::processRawPacket(
                 const auto messageRequiresAck = ((currentSeq & kMessageRequiresAckSeqBit) != 0);
                 const auto skipMessage = messageRequiresAck
                     ? !registerSentAck(currentCounter, firstMessageRequiringAck)
-                    : (additionalMessage && !registerIncomingCounter(currentCounter));
+                    : (additionalMessage
+                        && (currentCounter > packetCounter
+                            || !registerIncomingCounter(currentCounter)));
                 if (messageRequiresAck) {
                     firstMessageRequiringAck = false;
                     if (!skipMessage) {

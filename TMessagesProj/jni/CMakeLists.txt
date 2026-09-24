@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -DANDROID -g")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_FLAGS "-DANDROID -g")
 set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=implicit-function-declaration")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -flto=full")
@@ -18,6 +22,37 @@ add_subdirectory(
         third_party/libyuv
         ${CMAKE_CURRENT_BINARY_DIR}/libyuv
         EXCLUDE_FROM_ALL)
+
+# Abseil
+set(ABSL_PROPAGATE_CXX_STD ON)
+set(ABSL_BUILD_TESTING OFF)
+set(ABSL_ENABLE_INSTALL OFF)
+add_subdirectory(
+        third_party/absl
+        ${CMAKE_CURRENT_BINARY_DIR}/absl
+        EXCLUDE_FROM_ALL)
+
+add_library(webrtc_absl INTERFACE)
+target_link_libraries(webrtc_absl INTERFACE
+        absl::base
+        absl::strings
+        absl::str_format
+        absl::cord
+        absl::synchronization
+        absl::time
+        absl::status
+        absl::statusor
+        absl::hash
+        absl::flat_hash_map
+        absl::flat_hash_set
+        absl::flags
+        absl::flags_parse
+        absl::random_random
+        absl::random_distributions
+        absl::crc32c
+        absl::log
+        absl::check
+)
 
 add_library(avutil STATIC IMPORTED)
 set_target_properties(avutil PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/lib/${ANDROID_ABI}/libavutil.a)
@@ -193,6 +228,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         third_party/xiph/opusfile/include
         third_party/xiph/ogg/include
         third_party/libyuv/include
+        third_party/absl
         third_party/boringssl/include
         openssl/include
         prebuild/include/${ANDROID_ABI}
@@ -214,7 +250,9 @@ target_link_options(${NATIVE_LIB} PRIVATE "-Wl,-z,common-page-size=16384")
 target_link_options(${NATIVE_LIB} PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map")
 target_link_libraries(${NATIVE_LIB}
         -Wl,--whole-archive rnnoise openh264 voipandroid -Wl,--no-whole-archive
+        webrtc_absl
         tgcalls
+        wasm
         tgcalls_tp
         tgnet
         tlottie

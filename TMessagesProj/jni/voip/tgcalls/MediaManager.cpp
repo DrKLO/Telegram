@@ -250,8 +250,7 @@ MediaManager::MediaManager(
     std::function<void(float, float)> audioLevelsUpdated,
     std::function<webrtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
     bool enableHighBitrateVideo,
-    std::vector<std::string> preferredCodecs,
-    std::shared_ptr<PlatformContext> platformContext) :
+    std::vector<std::string> preferredCodecs) :
 _thread(thread),
 _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
 _sendSignalingMessage(std::move(sendSignalingMessage)),
@@ -263,8 +262,7 @@ _protocolVersion(protocolVersion),
 _outgoingVideoState(videoCapture ? VideoState::Active : VideoState::Inactive),
 _webrtcEnvironment(webrtc::EnvironmentFactory().Create()),
 _videoCapture(std::move(videoCapture)),
-_enableHighBitrateVideo(enableHighBitrateVideo),
-_platformContext(platformContext) {
+_enableHighBitrateVideo(enableHighBitrateVideo) {
     bool rewriteFrameRotation = false;
     switch (_protocolVersion) {
         case ProtocolVersion::V0:
@@ -321,15 +319,13 @@ _platformContext(platformContext) {
     peerConnectionFactoryDeps.audio_encoder_factory = webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>();
     peerConnectionFactoryDeps.audio_decoder_factory = webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>();
 
-    peerConnectionFactoryDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext);
-    peerConnectionFactoryDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
+    peerConnectionFactoryDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory();
+    peerConnectionFactoryDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory();
 
 	_myVideoFormats = ComposeSupportedFormats(
         peerConnectionFactoryDeps.video_encoder_factory->GetSupportedFormats(),
         peerConnectionFactoryDeps.video_decoder_factory->GetSupportedFormats(),
-        preferredCodecs,
-        _platformContext
-    );
+        preferredCodecs);
 
     webrtc::AudioProcessingBuilder builder;
     std::unique_ptr<AudioCapturePostProcessor> audioProcessor = std::make_unique<AudioCapturePostProcessor>([this](float level) {

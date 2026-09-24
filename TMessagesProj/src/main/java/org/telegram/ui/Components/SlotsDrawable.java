@@ -48,104 +48,105 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
 
     @Override
     @WorkerThread
-    protected int loadFrameRunnableImpl() {
+    protected int beforeLoadFrameImpl() {
         if (isRecycled) {
             return LOAD_FRAME_RESULT_RECYCLED;
         }
         if (nativePtr == null || isDice == 2 && secondNativePtr == null) {
             return LOAD_FRAME_RESULT_ERROR;
         }
+        return LOAD_FRAME_RESULT_OK;
+    }
+
+    @Override
+    @WorkerThread
+    protected int loadFrameRunnableImpl(Bitmap bitmap, boolean needClearBitmap) {
         if (backgroundBitmapTmp == null) {
             try {
                 backgroundBitmapTmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             } catch (Throwable e) {
                 FileLog.e(e);
+                return LOAD_FRAME_RESULT_ERROR;
             }
         }
-        if (backgroundBitmap == null) {
-            try {
-                backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
-        if (backgroundBitmap != null && backgroundBitmapTmp != null) {
-            try {
-                int result;
-                if (isDice == 1) {
-                    result = -1;
-                    for (int a = 0; a < lottieNatives.length; a++) {
-                        result = lottieNatives[a].getFrame(frameNums[a], backgroundBitmapTmp, a == 0);
-                        if (a == 0) {
-                            continue;
-                        }
-                        if (frameNums[a] + 1 < frameCounts[a]) {
-                            frameNums[a]++;
-                        } else if (a != 4) {
-                            frameNums[a] = 0;
-                            nextFrameIsLast = false;
-                            if (secondNativePtr != null) {
-                                isDice = 2;
-                            }
-                        }
-                    }
-                } else {
-                    if (setLastFrame) {
-                        for (int a = 0; a < secondFrameNums.length; a++) {
-                            secondFrameNums[a] = secondFrameCounts[a] - 1;
-                        }
-                    }
-                    if (playWinAnimation) {
-                        if (frameNums[0] + 1 < frameCounts[0]) {
-                            frameNums[0]++;
-                        } else {
-                            frameNums[0] = -1;
-                        }
-                    }
 
-                    lottieNatives[0].getFrame(Math.max(frameNums[0], 0), backgroundBitmapTmp, true);
-                    for (int a = 0; a < secondLottieNatives.length; a++) {
-                        secondLottieNatives[a].getFrame(secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmapTmp, false);
-                        if (!nextFrameIsLast) {
-                            if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
-                                secondFrameNums[a]++;
-                            } else {
-                                secondFrameNums[a] = -1;
-                            }
-                        }
+
+        int result;
+        if (isDice == 1) {
+            result = -1;
+            for (int a = 0; a < lottieNatives.length; a++) {
+                result = lottieNatives[a].getFrame(frameNums[a], backgroundBitmapTmp, a == 0);
+                if (a == 0) {
+                    continue;
+                }
+                if (frameNums[a] + 1 < frameCounts[a]) {
+                    frameNums[a]++;
+                } else if (a != 4) {
+                    frameNums[a] = 0;
+                    nextFrameIsLast = false;
+                    if (secondNativePtr != null) {
+                        isDice = 2;
                     }
-                    result = lottieNatives[4].getFrame(frameNums[4], backgroundBitmapTmp, false);
-                    if (frameNums[4] + 1 < frameCounts[4]) {
-                        frameNums[4]++;
-                    }
-                    if (secondFrameNums[0] == -1 && secondFrameNums[1] == -1 && secondFrameNums[2] == -1) {
-                        nextFrameIsLast = true;
-                        autoRepeatPlayCount++;
-                    }
-                    if (left == right && right == center) {
-                        if (secondFrameNums[0] == secondFrameCounts[0] - 100) {
-                            playWinAnimation = true;
-                            if (left == ReelValue.sevenWin) {
-                                Runnable runnable = onFinishCallback == null ? null : onFinishCallback.get();
-                                if (runnable != null) {
-                                    AndroidUtilities.runOnUIThread(runnable);
-                                }
-                            }
-                        }
+                }
+            }
+        } else {
+            if (setLastFrame) {
+                for (int a = 0; a < secondFrameNums.length; a++) {
+                    secondFrameNums[a] = secondFrameCounts[a] - 1;
+                }
+            }
+            if (playWinAnimation) {
+                if (frameNums[0] + 1 < frameCounts[0]) {
+                    frameNums[0]++;
+                } else {
+                    frameNums[0] = -1;
+                }
+            }
+
+            lottieNatives[0].getFrame(Math.max(frameNums[0], 0), backgroundBitmapTmp, true);
+            for (int a = 0; a < secondLottieNatives.length; a++) {
+                secondLottieNatives[a].getFrame(secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmapTmp, false);
+                if (!nextFrameIsLast) {
+                    if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
+                        secondFrameNums[a]++;
                     } else {
-                        frameNums[0] = -1;
+                        secondFrameNums[a] = -1;
                     }
                 }
-                if (result < 0) {
-                    return LOAD_FRAME_RESULT_ERROR;
+            }
+            result = lottieNatives[4].getFrame(frameNums[4], backgroundBitmapTmp, false);
+            if (frameNums[4] + 1 < frameCounts[4]) {
+                frameNums[4]++;
+            }
+            if (secondFrameNums[0] == -1 && secondFrameNums[1] == -1 && secondFrameNums[2] == -1) {
+                nextFrameIsLast = true;
+                autoRepeatPlayCount++;
+            }
+            if (left == right && right == center) {
+                if (secondFrameNums[0] == secondFrameCounts[0] - 100) {
+                    playWinAnimation = true;
+                    if (left == ReelValue.sevenWin) {
+                        Runnable runnable = onFinishCallback == null ? null : onFinishCallback.get();
+                        if (runnable != null) {
+                            AndroidUtilities.runOnUIThread(runnable);
+                        }
+                    }
                 }
-                Utilities.copyBitmaps(backgroundBitmapTmp, backgroundBitmap);
-                nextRenderingBitmap = backgroundBitmap;
-            } catch (Exception e) {
-                FileLog.e(e);
+            } else {
+                frameNums[0] = -1;
             }
         }
+        if (result < 0) {
+            return LOAD_FRAME_RESULT_ERROR;
+        }
+        Utilities.copyBitmaps(backgroundBitmapTmp, bitmap);
         return LOAD_FRAME_RESULT_OK;
+    }
+
+    @Override
+    @WorkerThread
+    protected void afterLoadFrameImpl() {
+
     }
 
     private ReelValue reelValue(int rawValue) {
@@ -362,7 +363,7 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
                 return;
             }
             AndroidUtilities.runOnUIThread(() -> {
-                if (instant && nextRenderingBitmap == null && renderingBitmap == null && loadFrameTask == null) {
+                if (instant && bothRenderingBitmapsAreNull() && loadFrameTask == null) {
                     isDice = 2;
                     setLastFrame = true;
                 }

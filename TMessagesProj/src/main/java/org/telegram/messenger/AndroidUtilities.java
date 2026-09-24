@@ -153,7 +153,7 @@ import com.google.android.gms.tasks.Task;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.proxy.ProxySettings;
+import org.telegram.utils.proxy.ProxySettings;
 import org.telegram.messenger.utils.CustomHtml;
 import org.telegram.messenger.utils.DebugRecordingCanvas;
 import org.telegram.tgnet.ConnectionsManager;
@@ -6665,14 +6665,25 @@ public class AndroidUtilities {
         return null;
     }
 
+    public static StackTraceElement[] dumpStackTrace() {
+        return Thread.currentThread().getStackTrace();
+    }
 
     public static void printStackTrace(String tag) {
         if (!BuildConfig.DEBUG_PRIVATE_VERSION) {
             return;
         }
 
-        final String t = "[" + tag + "]";
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        printStackTrace(elements, tag);
+    }
+
+    public static void printStackTrace(StackTraceElement[] elements, String tag) {
+        if (!BuildConfig.DEBUG_PRIVATE_VERSION) {
+            return;
+        }
+
+        final String t = "[" + tag + "]";
         for (int a = 3, N = Math.min(elements.length, 14); a < N; a++) {
             FileLog.d(t + " " + elements[a]);
         }
@@ -6822,7 +6833,9 @@ public class AndroidUtilities {
 
     public static Insets getDefaultWindowInsets(WindowInsetsCompat insets, boolean withIme) {
         final int insetsType = WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout();
-        final Insets systemInsets = insets.getInsetsIgnoringVisibility(insetsType);
+        final Insets systemInsets = Insets.max(
+            insets.getInsetsIgnoringVisibility(insetsType),
+            insets.getInsets(insetsType));
 
         if (withIme) {
             final Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());

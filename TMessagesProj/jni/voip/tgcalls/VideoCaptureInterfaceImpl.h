@@ -63,14 +63,11 @@ public:
     void setOnFatalError(std::function<void()> error) override;
     void setOnPause(std::function<void(bool)> pause) override;
     void setOnIsActiveUpdated(std::function<void(bool)> onIsActiveUpdated) override;
-    std::shared_ptr<PlatformContext> getPlatformContext() override;
 
 	ThreadLocalObject<VideoCaptureInterfaceObject> *object();
 
 private:
 	ThreadLocalObject<VideoCaptureInterfaceObject> _impl;
-
-    std::shared_ptr<PlatformContext> _platformContext;
 
 };
 

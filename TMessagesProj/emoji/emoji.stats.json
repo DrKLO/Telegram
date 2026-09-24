@@ -1,0 +1,36 @@
+{
+  "pack_bytes": 3492338,
+  "original_bytes": 4553463,
+  "previous_bytes": 3608212,
+  "saving_from_original_bytes": 1061125,
+  "saving_from_original_percent": 23.30369215693638,
+  "saving_from_previous_bytes": 115874,
+  "saving_from_previous_percent": 3.2113966695970193,
+  "emoji_count": 3606,
+  "internal_mask_count": 363,
+  "codec_counts": {
+    "1": 2254,
+    "2": 836,
+    "0": 252,
+    "4": 610,
+    "3": 17
+  },
+  "prediction_counts": {
+    "0": 2353,
+    "2": 513,
+    "1": 251,
+    "6": 95,
+    "3": 77,
+    "4": 610,
+    "5": 70
+  },
+  "joint_records": 575,
+  "joint_roots": 163,
+  "refitted_split_records": 123,
+  "exact_flexible_records": 56,
+  "compressed_palette_records": 149,
+  "native_lossy_records": 16,
+  "max_record_bytes": 3248,
+  "sha256": "c4200fd8b0efbf2267297c084f23f8f490d03a1c55d76c87ea2f844328769652",
+  "rebuild_identical": true
+}

@@ -1,12 +1,14 @@
 #ifndef TGCALLS_SIGNALING_H
 #define TGCALLS_SIGNALING_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 #include "absl/types/variant.h"
 #include "absl/types/optional.h"
 #include "api/rtp_parameters.h"
+#include "pc/session_description.h"
 
 namespace tgcalls {
 
@@ -183,6 +185,9 @@ struct Message {
     std::vector<uint8_t> serialize() const;
     static absl::optional<Message> parse(const std::vector<uint8_t> &data);
 };
+
+MediaContent convertContentInfoToSignalingContent(cricket::ContentInfo const &content);
+cricket::ContentInfo convertSignalingContentToContentInfo(std::string const &contentId, MediaContent const &content, webrtc::RtpTransceiverDirection direction);
 
 };
 

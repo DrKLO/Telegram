@@ -7,16 +7,51 @@
 #include "rtc_base/logging.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "media/sctp/sctp_transport_factory.h"
+#include "media/sctp/dcsctp_transport.h"
+#include "v2/CustomDcSctpSocket.h"
+#include "net/dcsctp/public/dcsctp_socket_factory.h"
+#include "system_wrappers/include/clock.h"
 
 #include "FieldTrialsConfig.h"
 
 namespace tgcalls {
 
+// Factory that creates CustomDcSctpSocket (with the t1 timer backoff cap fix)
+// instead of the stock DcSctpSocket, with optional timer overrides for the
+// signaling channel.
+class CustomDcSctpSocketFactory : public dcsctp::DcSctpSocketFactory {
+public:
+    explicit CustomDcSctpSocketFactory(SignalingSctpConnection::Options opts = {})
+        : _opts(opts) {}
+
+    std::unique_ptr<dcsctp::DcSctpSocketInterface> Create(
+        absl::string_view log_prefix,
+        dcsctp::DcSctpSocketCallbacks& callbacks,
+        std::unique_ptr<dcsctp::PacketObserver> packet_observer,
+        const dcsctp::DcSctpOptions& options) override {
+        dcsctp::DcSctpOptions opts = options;
+        if (_opts.t1InitTimeoutMs > 0) {
+            opts.t1_init_timeout = dcsctp::DurationMs(_opts.t1InitTimeoutMs);
+        }
+        if (_opts.t1CookieTimeoutMs > 0) {
+            opts.t1_cookie_timeout = dcsctp::DurationMs(_opts.t1CookieTimeoutMs);
+        }
+        if (_opts.maxBackoffMs > 0) {
+            opts.max_timer_backoff_duration = dcsctp::DurationMs(_opts.maxBackoffMs);
+        }
+        return std::make_unique<dcsctp::CustomDcSctpSocket>(
+            log_prefix, callbacks, std::move(packet_observer), opts);
+    }
+private:
+    SignalingSctpConnection::Options _opts;
+};
+
 class SignalingPacketTransport : public rtc::PacketTransportInternal {
 public:
-    SignalingPacketTransport(std::shared_ptr<Threads> threads, std::function<void(const std::vector<uint8_t> &)> emitData) :
+    SignalingPacketTransport(std::shared_ptr<Threads> threads, std::function<void(const std::vector<uint8_t> &)> emitData, bool writable) :
     _threads(threads),
     _emitData(emitData),
+    _writable(writable),
     _transportName("signaling") {
     }
 
@@ -28,12 +63,19 @@ public:
         SignalReadPacket.emit(this, (const char *)data.data(), data.size(), -1, 0);
     }
 
+    void setWritable(bool writable) {
+        if (_writable != writable) {
+            _writable = writable;
+            SignalWritableState.emit(this);
+        }
+    }
+
     virtual const std::string& transport_name() const override {
         return _transportName;
     }
 
     virtual bool writable() const override {
-        return true;
+        return _writable;
     }
 
     virtual bool receiving() const override {
@@ -81,23 +123,27 @@ private:
     std::shared_ptr<Threads> _threads;
     std::function<void(const std::vector<uint8_t> &)> _onIncomingData;
     std::function<void(const std::vector<uint8_t> &)> _emitData;
+    bool _writable;
     std::string _transportName;
 };
 
-SignalingSctpConnection::SignalingSctpConnection(std::shared_ptr<Threads> threads, std::function<void(const std::vector<uint8_t> &)> onIncomingData, std::function<void(const std::vector<uint8_t> &)> emitData) :
+SignalingSctpConnection::SignalingSctpConnection(std::shared_ptr<Threads> threads, std::function<void(const std::vector<uint8_t> &)> onIncomingData, std::function<void(const std::vector<uint8_t> &)> emitData, bool isInitiator, Options options) :
 _threads(threads),
 _emitData(emitData),
 _onIncomingData(onIncomingData) {
     _threads->getNetworkThread()->BlockingCall([&]() {
-        _packetTransport = std::make_unique<SignalingPacketTransport>(threads, emitData);
+        _packetTransport = std::make_unique<SignalingPacketTransport>(threads, emitData, /*writable=*/isInitiator);
 
-        _sctpTransportFactory.reset(new cricket::SctpTransportFactory(_threads->getNetworkThread()));
-
-        _sctpTransport = _sctpTransportFactory->CreateSctpTransport(_packetTransport.get());
+        // Use DcSctpTransport directly with CustomDcSctpSocketFactory so the
+        // signaling SCTP gets the t1 timer backoff cap fix (the stock
+        // DcSctpSocket doesn't wire max_timer_backoff_duration to t1 timers).
+        _sctpTransport = std::make_unique<webrtc::DcSctpTransport>(
+            _threads->getNetworkThread(),
+            _packetTransport.get(),
+            webrtc::Clock::GetRealTimeClock(),
+            std::make_unique<CustomDcSctpSocketFactory>(options));
         _sctpTransport->OpenStream(0);
         _sctpTransport->SetDataChannelSink(this);
-
-        // TODO: should we disconnect the data channel sink?
 
         _sctpTransport->Start(5000, 5000, 262144);
     });
@@ -126,7 +172,8 @@ void SignalingSctpConnection::OnReadyToSend() {
         } else {
             _isReadyToSend = false;
             _pendingData.push_back(data);
-            RTC_LOG(LS_INFO) << "SignalingSctpConnection: send error, storing data until ready to send (" << _pendingData.size() << " items)";
+            RTC_LOG(LS_WARNING) << "SignalingSctpConnection: OnReadyToSend flush error '" << sendError.message() << "' (type=" << ToString(sendError.type()) << "), storing data until ready to send (" << _pendingData.size() << " items)";
+            break;
         }
     }
 }
@@ -144,7 +191,6 @@ void SignalingSctpConnection::OnDataReceived(int channel_id, webrtc::DataMessage
 SignalingSctpConnection::~SignalingSctpConnection() {
     _threads->getNetworkThread()->BlockingCall([&]() {
         _sctpTransport.reset();
-        _sctpTransportFactory.reset();
         _packetTransport.reset();
     });
 }
@@ -154,6 +200,7 @@ void SignalingSctpConnection::start() {
 
 void SignalingSctpConnection::receiveExternal(const std::vector<uint8_t> &data) {
     _threads->getNetworkThread()->BlockingCall([&]() {
+        _packetTransport->setWritable(true);
         _packetTransport->receiveData(data);
     });
 }
@@ -173,7 +220,7 @@ void SignalingSctpConnection::send(const std::vector<uint8_t> &data) {
             if (!sendError.ok()) {
                 _isReadyToSend = false;
                 _pendingData.push_back(data);
-                RTC_LOG(LS_INFO) << "SignalingSctpConnection: send error, storing data until ready to send (" << _pendingData.size() << " items)";
+                RTC_LOG(LS_WARNING) << "SignalingSctpConnection: send error '" << sendError.message() << "' (type=" << ToString(sendError.type()) << "), storing data until ready to send (" << _pendingData.size() << " items)";
             } else {
                 RTC_LOG(LS_INFO) << "SignalingSctpConnection: sent data of " << data.size() << " bytes";
             }

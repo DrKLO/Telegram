@@ -458,10 +458,10 @@ static bool CopyNV12VideoFrameToNV12PixelBuffer(const webrtc::NV12BufferInterfac
         strongCloneLayer = nil;
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            __strong AVSampleBufferDisplayLayer *object = (__bridge_transfer AVSampleBufferDisplayLayer *)opaqueReference;
+            __unused __strong AVSampleBufferDisplayLayer *object = (__bridge_transfer AVSampleBufferDisplayLayer *)opaqueReference;
             object = nil;
 
-            __strong AVSampleBufferDisplayLayer *cloneObject = (__bridge_transfer AVSampleBufferDisplayLayer *)cloneLayerReference;
+            __unused __strong AVSampleBufferDisplayLayer *cloneObject = (__bridge_transfer AVSampleBufferDisplayLayer *)cloneLayerReference;
             cloneObject = nil;
         });
     });
@@ -716,18 +716,6 @@ static bool CopyNV12VideoFrameToNV12PixelBuffer(const webrtc::NV12BufferInterfac
 - (void)addFrame:(const webrtc::VideoFrame&)frame {
     std::shared_ptr<webrtc::VideoFrame> videoFrame = std::make_shared<webrtc::VideoFrame>(frame);
     [self renderFrame:videoFrame];
-}
-
-static NSString * _Nonnull shiftString(NSString *string, int key) {
-    NSMutableString *result = [[NSMutableString alloc] init];
-
-    for (int i = 0; i < (int)[string length]; i++) {
-        unichar c = [string characterAtIndex:i];
-        c += key;
-        [result appendString:[NSString stringWithCharacters:&c length:1]];
-    }
-
-    return result;
 }
 
 /*- (void)addAsCloneTarget:(VideoSampleBufferView *)sourceView {

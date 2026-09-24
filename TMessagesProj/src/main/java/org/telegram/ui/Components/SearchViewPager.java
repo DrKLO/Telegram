@@ -1394,14 +1394,24 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         return tabsView;
     }
 
+    private NotificationCenter.ObserversGroup observersGroup;
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.channelRecommendationsLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogDeleted);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogsNeedReload);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.reloadWebappsHints);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
+        if (observersGroup != null) {
+            observersGroup.removeAllObservers();
+            observersGroup = null;
+        }
+
+        observersGroup = NotificationCenter.getInstance(currentAccount)
+            .createObserversGroup(this)
+            .add(NotificationCenter.channelRecommendationsLoaded)
+            .add(NotificationCenter.dialogDeleted)
+            .add(NotificationCenter.dialogsNeedReload)
+            .add(NotificationCenter.reloadWebappsHints)
+            .add(NotificationCenter.storiesListUpdated);
+
         attached = true;
 
         if (channelsSearchAdapter != null) {
@@ -1416,11 +1426,11 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attached = false;
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.channelRecommendationsLoaded);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogDeleted);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogsNeedReload);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.reloadWebappsHints);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.storiesListUpdated);
+
+        if (observersGroup != null) {
+            observersGroup.removeAllObservers();
+            observersGroup = null;
+        }
     }
 
     @Override

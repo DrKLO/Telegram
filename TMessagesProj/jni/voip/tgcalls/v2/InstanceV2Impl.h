@@ -1,6 +1,7 @@
 #ifndef TGCALLS_INSTANCEV2_IMPL_H
 #define TGCALLS_INSTANCEV2_IMPL_H
 
+#include <cstdint>
 #include "Instance.h"
 #include "StaticThreads.h"
 

@@ -146,7 +146,10 @@ static UIDeviceOrientation deviceOrientation(UIInterfaceOrientation orientation)
         }
         
         NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         _orientation = deviceOrientation([[UIApplication sharedApplication] statusBarOrientation]);
+#pragma clang diagnostic pop
         _rotation = RTCVideoRotation_90;
         
         switch (_orientation) {
@@ -235,6 +238,8 @@ static UIDeviceOrientation deviceOrientation(UIInterfaceOrientation orientation)
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 + (NSArray<AVCaptureDevice *> *)captureDevices {
     if (@available(iOS 10.0, *)) {
         AVCaptureDeviceDiscoverySession *session = [AVCaptureDeviceDiscoverySession discoverySessionWithDeviceTypes:@[AVCaptureDeviceTypeBuiltInWideAngleCamera] mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionUnspecified];
@@ -249,6 +254,7 @@ static UIDeviceOrientation deviceOrientation(UIInterfaceOrientation orientation)
         return result;
     }
 }
+#pragma clang diagnostic pop
 
 + (NSArray<AVCaptureDeviceFormat *> *)supportedFormatsForDevice:(AVCaptureDevice *)device {
   // Support opening the device in any format. We make sure it's converted to a format we
@@ -395,7 +401,7 @@ static UIDeviceOrientation deviceOrientation(UIInterfaceOrientation orientation)
 
     CVPixelBufferLockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
 
-    auto resultBuffer = rtc::make_ref_counted<webrtc::I420Buffer>(CVPixelBufferGetWidth(pixelBuffer), CVPixelBufferGetHeight(pixelBuffer));
+    auto resultBuffer = rtc::make_ref_counted<webrtc::I420Buffer>((int)CVPixelBufferGetWidth(pixelBuffer), (int)CVPixelBufferGetHeight(pixelBuffer));
 
     switch (pixelFormat) {
         case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:

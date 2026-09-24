@@ -1,6 +1,7 @@
 #ifndef TGCALLS_SIGNALING_CONNECTION_H_
 #define TGCALLS_SIGNALING_CONNECTION_H_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 

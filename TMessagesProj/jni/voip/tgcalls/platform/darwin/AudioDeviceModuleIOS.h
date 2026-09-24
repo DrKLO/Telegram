@@ -1,6 +1,7 @@
 #ifndef TGCALLS_AUDIO_DEVICE_MODULE_IOS
 #define TGCALLS_AUDIO_DEVICE_MODULE_IOS
 
+#include <cstdint>
 #include "platform/PlatformInterface.h"
 
 namespace tgcalls {

@@ -89,6 +89,13 @@ public class AnimatedEmojiDrawable extends Drawable {
     public static final int CACHE_TYPE_NOANIMATE_FOLDER = 26;
 
     private static SparseArray<LongSparseArray<AnimatedEmojiDrawable>> globalEmojiCache;
+
+    public static void dropGlobalEmojiCache() {
+        if (globalEmojiCache != null) {
+            globalEmojiCache.clear();
+        }
+    }
+
     private static boolean LOG_MEMORY_LEAK = false;
 
     @NonNull

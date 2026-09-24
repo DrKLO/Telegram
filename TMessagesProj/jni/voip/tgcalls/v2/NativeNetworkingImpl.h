@@ -3,6 +3,7 @@
 
 #ifdef WEBRTC_WIN
 // Compiler errors in conflicting Windows headers if not included here.
+#include <cstdint>
 #include <winsock2.h>
 #endif // WEBRTC_WIN
 

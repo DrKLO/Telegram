@@ -254,7 +254,8 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             } else {
                 factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
             }
-            factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+            factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
+            // factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             ExoPlayer.Builder builder = new ExoPlayer.Builder(ApplicationLoader.applicationContext).setRenderersFactory(factory)
                     .setTrackSelector(trackSelector)
                     .setLoadControl(loadControl);

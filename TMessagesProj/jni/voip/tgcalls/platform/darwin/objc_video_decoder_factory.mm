@@ -73,7 +73,7 @@ class ObjCVideoDecoder : public VideoDecoder {
     return WEBRTC_VIDEO_CODEC_OK;
   }
 
-  int32_t Release() override { return [decoder_ releaseDecoder]; }
+  int32_t Release() override { return (int32_t)[decoder_ releaseDecoder]; }
 
   const char *ImplementationName() const override { return implementation_name_.c_str(); }
 

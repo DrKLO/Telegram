@@ -67,7 +67,7 @@ static void decompressionOutputCallback(void *decoderRef,
       initWithBuffer:frameBuffer
             rotation:RTCVideoRotation_0
          timeStampNs:CMTimeGetSeconds(timestamp) * rtc::kNumNanosecsPerSec];
-  decodedFrame.timeStamp = decodeParams->timestamp;
+  decodedFrame.timeStamp = (int32_t)decodeParams->timestamp;
   decodeParams->callback(decodedFrame);
   }
 }

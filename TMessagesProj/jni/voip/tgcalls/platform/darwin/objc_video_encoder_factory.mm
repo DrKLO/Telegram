@@ -49,7 +49,7 @@ class ObjCVideoEncoder : public VideoEncoder {
   int32_t InitEncode(const VideoCodec *codec_settings, const Settings &encoder_settings) override {
     RTC_OBJC_TYPE(RTCVideoEncoderSettings) *settings =
         [[RTC_OBJC_TYPE(RTCVideoEncoderSettings) alloc] initWithNativeVideoCodec:codec_settings];
-    return [encoder_ startEncodeWithSettings:settings
+    return (int32_t)[encoder_ startEncodeWithSettings:settings
                                numberOfCores:encoder_settings.number_of_cores];
   }
 
@@ -79,7 +79,7 @@ class ObjCVideoEncoder : public VideoEncoder {
     return WEBRTC_VIDEO_CODEC_OK;
   }
 
-  int32_t Release() override { return [encoder_ releaseEncoder]; }
+  int32_t Release() override { return (int32_t)[encoder_ releaseEncoder]; }
 
   int32_t Encode(const VideoFrame &frame,
                  const std::vector<VideoFrameType> *frame_types) override {
@@ -90,7 +90,7 @@ class ObjCVideoEncoder : public VideoEncoder {
       [rtcFrameTypes addObject:@(RTCFrameType(frame_types->at(i)))];
     }
 
-    result = [encoder_ encode:ToObjCVideoFrame(frame)
+    result = (int32_t)[encoder_ encode:ToObjCVideoFrame(frame)
           codecSpecificInfo:nil
                  frameTypes:rtcFrameTypes];
     }
@@ -109,7 +109,7 @@ class ObjCVideoEncoder : public VideoEncoder {
     info.implementation_name = implementation_name_;
 
     RTC_OBJC_TYPE(RTCVideoEncoderQpThresholds) *qp_thresholds = [encoder_ scalingSettings];
-    info.scaling_settings = qp_thresholds ? ScalingSettings(qp_thresholds.low, qp_thresholds.high) :
+    info.scaling_settings = qp_thresholds ? ScalingSettings((int)qp_thresholds.low, (int)qp_thresholds.high) :
                                             ScalingSettings::kOff;
 
     info.is_hardware_accelerated = true;

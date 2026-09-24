@@ -8,6 +8,7 @@ idea {
     module {
         excludeDirs += [
             file('jni/td'),
+            file('jni/third_party/absl'),
             file('jni/third_party/boringssl'),
             file('jni/third_party/dav1d'),
             file('jni/third_party/ffmpeg'),

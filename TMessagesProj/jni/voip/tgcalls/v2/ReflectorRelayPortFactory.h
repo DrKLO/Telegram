@@ -1,6 +1,7 @@
 #ifndef TGCALLS_REFLECTOR_RELAY_PORT_FACTORY_H
 #define TGCALLS_REFLECTOR_RELAY_PORT_FACTORY_H
 
+#include <cstdint>
 #include "p2p/client/relay_port_factory_interface.h"
 
 #include "Instance.h"
@@ -15,7 +16,7 @@ namespace tgcalls {
 
 class ReflectorRelayPortFactory : public cricket::RelayPortFactoryInterface {
 public:
-    ReflectorRelayPortFactory(std::vector<RtcServer> servers, bool standaloneReflectorMode, uint32_t standaloneReflectorRoleId, rtc::SocketFactory *underlyingSocketFactory);
+    ReflectorRelayPortFactory(std::vector<RtcServer> servers, bool standaloneReflectorMode, uint32_t standaloneReflectorRoleId, rtc::SocketFactory *underlyingSocketFactory, bool resolveRemoteCandidateIp);
     ~ReflectorRelayPortFactory() override;
     
     // This variant is used for UDP connection to the relay server
@@ -30,6 +31,7 @@ private:
     bool _standaloneReflectorMode = false;
     uint32_t _standaloneReflectorRoleId = 0;
     rtc::SocketFactory *_underlyingSocketFactory = nullptr;
+    bool _resolveRemoteCandidateIp = false;
 };
 
 } // namespace tgcalls

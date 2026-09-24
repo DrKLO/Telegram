@@ -2695,8 +2695,6 @@
     <string name="UseProxyTelegramInfo">MTProto proxy settings.</string>
     <string name="UseProxyTelegramInfo2">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>
     <string name="UseProxyWebInfo">WEB proxy uses an HTTPS page inside a private WebView. Enter a hostname without a scheme or path and a 16-byte MTProxy secret. This proof of concept requires a current Android System WebView and is intended for foreground testing.</string>
-    <string name="UseProxyForCalls">Use proxy for calls</string>
-    <string name="UseProxyForCallsInfo">Proxy servers may degrade the quality of your calls.</string>
     <string name="ConnectingToProxyEnable">Enable</string>
     <string name="LowDiskSpaceTitle">Attention</string>
     <string name="LowDiskSpaceMessage">Your device is almost out of disk space. To free some space, you can set up Telegram to cache only recent media.</string>

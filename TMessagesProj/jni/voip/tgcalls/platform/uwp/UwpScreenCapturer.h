@@ -1,6 +1,7 @@
 #ifndef TGCALLS_UWP_SCREEN_CAPTURER_H
 #define TGCALLS_UWP_SCREEN_CAPTURER_H
 
+#include <cstdint>
 #include "api/scoped_refptr.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_source_interface.h"

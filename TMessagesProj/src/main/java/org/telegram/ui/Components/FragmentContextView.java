@@ -1395,27 +1395,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         visible = false;
         notificationsLocker.unlock();
         topPadding = 0;
-        if (isLocation) {
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.liveLocationsChanged);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.liveLocationsCacheChanged);
-        } else {
+
+        removeObservers();
+        if (!isLocation) {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidReset);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidStart);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.groupCallUpdated);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.groupCallTypingsUpdated);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.historyImportProgressChanged);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.liveStoryUpdated);
-                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
                 GroupCallMessagesController.getInstance(a).unsubscribeFromCallMessages(0, this);
             }
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.messagePlayingSpeedChanged);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didStartedCall);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didEndCall);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.groupCallVisibilityChanged);
         }
 
         if (currentStyle == STYLE_ACTIVE_GROUP_CALL || currentStyle == STYLE_CONNECTING_GROUP_CALL) {
@@ -1428,31 +1413,57 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         wasDraw = false;
     }
 
+    private final NotificationCenter.ObserversGroup[] observersGroup = new NotificationCenter.ObserversGroup[UserConfig.MAX_ACCOUNT_COUNT];
+    private NotificationCenter.ObserversGroup globalObserversGroup;
+
+    private void removeObservers() {
+        if (globalObserversGroup != null) {
+            globalObserversGroup.removeAllObservers();
+            globalObserversGroup = null;
+        }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (observersGroup[a] != null) {
+                observersGroup[a].removeAllObservers();
+                observersGroup[a] = null;
+            }
+        }
+    }
+
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        removeObservers();
+
         if (isLocation) {
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.liveLocationsChanged);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.liveLocationsCacheChanged);
+            globalObserversGroup = NotificationCenter.getGlobalInstance()
+                .createObserversGroup(this)
+                .add(NotificationCenter.liveLocationsChanged)
+                .add(NotificationCenter.liveLocationsCacheChanged);
             checkLiveLocation(true);
         } else {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidReset);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidStart);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.groupCallUpdated);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.groupCallTypingsUpdated);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.historyImportProgressChanged);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.liveStoryUpdated);
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+                observersGroup[a] = NotificationCenter.getInstance(a)
+                    .createObserversGroup(this)
+                    .add(NotificationCenter.messagePlayingDidReset)
+                    .add(NotificationCenter.messagePlayingPlayStateChanged)
+                    .add(NotificationCenter.messagePlayingDidStart)
+                    .add(NotificationCenter.groupCallUpdated)
+                    .add(NotificationCenter.groupCallTypingsUpdated)
+                    .add(NotificationCenter.historyImportProgressChanged)
+                    .add(NotificationCenter.liveStoryUpdated)
+                    .add(NotificationCenter.messagePlayingProgressDidChanged);
                 GroupCallMessagesController.getInstance(a).subscribeToCallMessages(0, this);
             }
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.messagePlayingSpeedChanged);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didStartedCall);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didEndCall);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.groupCallVisibilityChanged);
+
+            globalObserversGroup = NotificationCenter.getGlobalInstance()
+                .createObserversGroup(this)
+                .add(NotificationCenter.messagePlayingSpeedChanged)
+                .add(NotificationCenter.didStartedCall)
+                .add(NotificationCenter.didEndCall)
+                .add(NotificationCenter.webRtcSpeakerAmplitudeEvent)
+                .add(NotificationCenter.webRtcMicAmplitudeEvent)
+                .add(NotificationCenter.groupCallVisibilityChanged);
 
             if (LivePlayer.recording != null) {
                 checkLiveStory(true);

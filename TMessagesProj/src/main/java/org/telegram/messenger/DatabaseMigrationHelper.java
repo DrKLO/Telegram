@@ -1688,6 +1688,11 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 177").stepThis().dispose();
             version = 177;
         }
+        if (version == 177) {
+            database.executeFast("CREATE INDEX IF NOT EXISTS media_v4_music_browse_idx ON media_v4(uid, date DESC, mid DESC) WHERE type = 4 AND mid > 0 AND uid != 0;").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 178").stepThis().dispose();
+            version = 178;
+        }
 
         return version;
     }

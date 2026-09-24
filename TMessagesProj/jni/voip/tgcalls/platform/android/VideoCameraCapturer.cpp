@@ -23,7 +23,7 @@ void VideoCameraCapturer::setState(VideoState state) {
         _stateUpdated(_state);
     }
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    auto context = (AndroidContext *) _platformContext.get();
+    AndroidContext *context = (AndroidContext *) _platformContext.get();
     jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "onStateChanged", "(JI)V");
     env->CallVoidMethod(context->getJavaCapturer(), methodId, (jlong) (intptr_t) this, (jint) state);
 }
@@ -31,7 +31,7 @@ void VideoCameraCapturer::setState(VideoState state) {
 void VideoCameraCapturer::setPreferredCaptureAspectRatio(float aspectRatio) {
     _aspectRatio = aspectRatio;
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
-    auto context = (AndroidContext *) _platformContext.get();
+    AndroidContext *context = (AndroidContext *) _platformContext.get();
     jmethodID methodId = env->GetMethodID(context->getJavaCapturerClass(), "onAspectRatioRequested", "(F)V");
     env->CallVoidMethod(context->getJavaCapturer(), methodId, (jfloat) aspectRatio);
 }

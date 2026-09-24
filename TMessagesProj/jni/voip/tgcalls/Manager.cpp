@@ -101,8 +101,7 @@ _signalBarsUpdated(std::move(descriptor.signalBarsUpdated)),
 _audioLevelsUpdated(std::move(descriptor.audioLevelsUpdated)),
 _createAudioDeviceModule(std::move(descriptor.createAudioDeviceModule)),
 _enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo),
-_dataSaving(descriptor.config.dataSaving),
-_platformContext(descriptor.platformContext) {
+_dataSaving(descriptor.config.dataSaving) {
 	assert(_thread->IsCurrent());
 	assert(_stateUpdated != nullptr);
 	assert(_signalingDataEmitted != nullptr);
@@ -222,7 +221,7 @@ void Manager::start() {
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(StaticThreads::getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelsUpdated = _audioLevelsUpdated, preferredCodecs = _preferredCodecs, createAudioDeviceModule = _createAudioDeviceModule, platformContext = _platformContext]() {
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(StaticThreads::getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelsUpdated = _audioLevelsUpdated, preferredCodecs = _preferredCodecs, createAudioDeviceModule = _createAudioDeviceModule]() {
 		return std::make_shared<MediaManager>(
             StaticThreads::getMediaThread(),
 			isOutgoing,
@@ -243,8 +242,7 @@ void Manager::start() {
             audioLevelsUpdated,
 			createAudioDeviceModule,
 			enableHighBitrateVideo,
-            preferredCodecs,
-            platformContext);
+            preferredCodecs);
 	}));
     _networkManager->perform([](NetworkManager *networkManager) {
         networkManager->start();
@@ -265,11 +263,11 @@ void Manager::receiveSignalingData(const std::vector<uint8_t> &data) {
 
 void Manager::receiveMessage(DecryptedMessage &&message) {
 	const auto data = &message.message.data;
-	if (const auto candidatesList = absl::get_if<CandidatesListMessage>(data)) {
+	if (absl::get_if<CandidatesListMessage>(data)) {
 		_networkManager->perform([message = std::move(message)](NetworkManager *networkManager) mutable {
 			networkManager->receiveSignalingMessage(std::move(message));
 		});
-	} else if (const auto videoFormats = absl::get_if<VideoFormatsMessage>(data)) {
+	} else if (absl::get_if<VideoFormatsMessage>(data)) {
 		_mediaManager->perform([message = std::move(message)](MediaManager *mediaManager) mutable {
 			mediaManager->receiveMessage(std::move(message));
 		});

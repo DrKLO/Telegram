@@ -110,9 +110,9 @@ static bool CopyVideoFrameToNV12PixelBuffer(id<RTCI420Buffer> frameBuffer, CVPix
     return false;
   }
   uint8_t *dstY = reinterpret_cast<uint8_t *>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0));
-  int dstStrideY = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
+  int dstStrideY = (int)CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
   uint8_t *dstUV = reinterpret_cast<uint8_t *>(CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1));
-  int dstStrideUV = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
+  int dstStrideUV = (int)CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
   // Convert I420 to NV12.
   int ret = libyuv::I420ToNV12(frameBuffer.dataY,
                                frameBuffer.strideY,
@@ -280,6 +280,8 @@ CFStringRef ExtractProfile(const webrtc::H264ProfileLevelId &profile_level_id) {
         case webrtc::H264Level::kLevel2_2:
           return kVTProfileLevel_H264_High_AutoLevel;
       }
+      case webrtc::H264Profile::kProfilePredictiveHigh444:
+          return kVTProfileLevel_H264_High_AutoLevel;
   }
   return {};
 }
@@ -428,8 +430,8 @@ NSUInteger GetMaxSampleRate(const webrtc::H264ProfileLevelId &profile_level_id) 
       if (!pixelBuffer) {
         return WEBRTC_VIDEO_CODEC_ERROR;
       }
-      int dstWidth = CVPixelBufferGetWidth(pixelBuffer);
-      int dstHeight = CVPixelBufferGetHeight(pixelBuffer);
+      int dstWidth = (int)CVPixelBufferGetWidth(pixelBuffer);
+      int dstHeight = (int)CVPixelBufferGetHeight(pixelBuffer);
       if ([rtcPixelBuffer requiresScalingToWidth:dstWidth height:dstHeight]) {
         int size =
             [rtcPixelBuffer bufferSizeForCroppingAndScalingToWidth:dstWidth height:dstHeight];
@@ -831,7 +833,6 @@ NSUInteger GetMaxSampleRate(const webrtc::H264ProfileLevelId &profile_level_id) 
                                                                   RTCVideoContentTypeUnspecified;
   frame.flags = webrtc::VideoSendTiming::kInvalid;
 
-  int qp;
   _h264BitstreamParser.ParseBitstream(*buffer);
   frame.qp = @(_h264BitstreamParser.GetLastSliceQp().value_or(-1));
 

@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueuePoolBackground;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
@@ -58,7 +57,7 @@ public class RLottieDiceDrawable extends RLottieDrawable {
         if (TextUtils.isEmpty(jsonString)) {
             return false;
         }
-        if (instant && nextRenderingBitmap == null && renderingBitmap == null && loadFrameTask == null) {
+        if (instant && bothRenderingBitmapsAreNull() && loadFrameTask == null) {
             isDice = 2;
             setLastFrame = true;
         }
@@ -136,72 +135,67 @@ public class RLottieDiceDrawable extends RLottieDrawable {
         return false;
     }
 
+    @Override
     @WorkerThread
-    protected int loadFrameRunnableImpl() {
+    protected int beforeLoadFrameImpl() {
         if (isRecycled) {
             return LOAD_FRAME_RESULT_RECYCLED;
         }
         if (nativePtr == null || isDice == 2 && secondNativePtr == null) {
             return LOAD_FRAME_RESULT_ERROR;
         }
-        boolean needClearBitmap = true;
-        if (backgroundBitmap == null) {
-            try {
-                backgroundBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                needClearBitmap = false;
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
-        if (backgroundBitmap != null) {
-            try {
-                final RLottieNative ptrToUse;
-                if (isDice == 1) {
-                    ptrToUse = nativePtr;
-                } else if (isDice == 2) {
-                    ptrToUse = secondNativePtr;
-                    if (setLastFrame) {
-                        currentFrame = secondFramesCount - 1;
-                    }
-                } else {
-                    ptrToUse = nativePtr;
-                }
-
-                final int framesPerUpdates = 1;
-                final int result = ptrToUse.getFrame(currentFrame, backgroundBitmap, needClearBitmap);
-                if (result < 0) {
-                    return LOAD_FRAME_RESULT_ERROR;
-                }
-
-                nextRenderingBitmap = backgroundBitmap;
-
-                if (isDice == 1) {
-                    if (currentFrame + framesPerUpdates < (diceSwitchFramesCount == -1 ? metaData[0] : diceSwitchFramesCount)) {
-                        currentFrame += framesPerUpdates;
-                    } else {
-                        currentFrame = 0;
-                        nextFrameIsLast = false;
-                        if (secondNativePtr != null) {
-                            isDice = 2;
-                        }
-                        if (resetVibrationAfterRestart) {
-                            vibrationPattern = null;
-                            resetVibrationAfterRestart = false;
-                        }
-                    }
-                } else if (isDice == 2) {
-                    if (currentFrame + framesPerUpdates < secondFramesCount) {
-                        currentFrame += framesPerUpdates;
-                    } else {
-                        nextFrameIsLast = true;
-                        autoRepeatPlayCount++;
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }
         return LOAD_FRAME_RESULT_OK;
+    }
+
+    @Override
+    @WorkerThread
+    protected int loadFrameRunnableImpl(Bitmap bitmap, boolean needClearBitmap) {
+        final RLottieNative ptrToUse;
+        if (isDice == 1) {
+            ptrToUse = nativePtr;
+        } else if (isDice == 2) {
+            ptrToUse = secondNativePtr;
+            if (setLastFrame) {
+                currentFrame = secondFramesCount - 1;
+            }
+        } else {
+            ptrToUse = nativePtr;
+        }
+
+        final int result = ptrToUse.getFrame(currentFrame, bitmap, needClearBitmap);
+        if (result < 0) {
+            return LOAD_FRAME_RESULT_ERROR;
+        }
+
+        return LOAD_FRAME_RESULT_OK;
+    }
+
+    @Override
+    @WorkerThread
+    protected void afterLoadFrameImpl() {
+        final int framesPerUpdates = 1;
+        if (isDice == 1) {
+            if (currentFrame + framesPerUpdates < (diceSwitchFramesCount == -1 ? metaData[0] : diceSwitchFramesCount)) {
+                currentFrame += framesPerUpdates;
+            } else {
+                currentFrame = 0;
+                nextFrameIsLast = false;
+                if (secondNativePtr != null) {
+                    isDice = 2;
+                }
+                if (resetVibrationAfterRestart) {
+                    vibrationPattern = null;
+                    resetVibrationAfterRestart = false;
+                }
+            }
+        } else if (isDice == 2) {
+            if (currentFrame + framesPerUpdates < secondFramesCount) {
+                currentFrame += framesPerUpdates;
+            } else {
+                nextFrameIsLast = true;
+                autoRepeatPlayCount++;
+            }
+        }
     }
 
     @Override

@@ -10,13 +10,17 @@ extern "C" {
 
 namespace tgcalls {
 
+/*
+#if TARGET_IPHONE_SIMULATOR
+#else
 static enum AVPixelFormat getDarwinPreferredPixelFormat(__unused AVCodecContext *ctx, __unused const enum AVPixelFormat *pix_fmts) {
     return AV_PIX_FMT_VIDEOTOOLBOX;
 }
+#endif*/
 
 void setupDarwinVideoDecoding(AVCodecContext *codecContext) {
     return;
-    
+/*
 #if TARGET_IPHONE_SIMULATOR
 #else
     if (!codecContext) {
@@ -24,7 +28,7 @@ void setupDarwinVideoDecoding(AVCodecContext *codecContext) {
     }
     av_hwdevice_ctx_create(&codecContext->hw_device_ctx, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0);
     codecContext->get_format = getDarwinPreferredPixelFormat;
-#endif
+#endif*/
 }
 
 webrtc::scoped_refptr<webrtc::VideoFrameBuffer> createDarwinPlatformFrameFromData(AVFrame const *frame) {

@@ -39,6 +39,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -414,7 +415,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     // ===
 
     public static class AnimatedEmojiHolder implements InvalidateHolder {
-        private final View view;
+        private final WeakReference<View> view;
         private final boolean invalidateInParent;
         public Layout layout;
         public AnimatedEmojiSpan span;
@@ -432,7 +433,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         private ImageReceiver.BackgroundThreadDrawHolder[] backgroundDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
 
         public AnimatedEmojiHolder(View view, boolean invalidateInParent) {
-            this.view = view;
+            this.view = new WeakReference<>(view);
             this.invalidateInParent = invalidateInParent;
         }
 
@@ -509,12 +510,15 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
 
         public void invalidate() {
-            if (view != null) {
-                if (invalidateInParent && view.getParent() != null) {
-                    ((View) view.getParent()).invalidate();
-                } else {
-                    view.invalidate();
-                }
+            final View view = this.view.get();
+            if (view == null) {
+                return;
+            }
+
+            if (invalidateInParent && view.getParent() != null) {
+                ((View) view.getParent()).invalidate();
+            } else {
+                view.invalidate();
             }
         }
     }
@@ -883,12 +887,12 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     private static class SpansChunk {
 
         Layout layout;
-        final View view;
+        final WeakReference<View> view;
         ArrayList<AnimatedEmojiHolder> holders = new ArrayList<>();
         DrawingInBackgroundThreadDrawable backgroundThreadDrawable;
         private final boolean allowBackgroundRendering;
 
-        public SpansChunk(View view, Layout layout, boolean allowBackgroundRendering) {
+        public SpansChunk(WeakReference<View> view, Layout layout, boolean allowBackgroundRendering) {
             this.layout = layout;
             this.view = view;
             this.allowBackgroundRendering = allowBackgroundRendering;
@@ -956,9 +960,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                             }
                         }
                         backgroundHolders.clear();
-                        if (view != null && view.getParent() != null) {
-                            ((View) view.getParent()).invalidate();
-                        }
+                        invalidate();
                     }
 
                     @Override
@@ -968,6 +970,11 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
 
                     @Override
                     public void onResume() {
+                        invalidate();
+                    }
+
+                    private void invalidate() {
+                        final View view = SpansChunk.this.view.get();
                         if (view != null && view.getParent() != null) {
                             ((View) view.getParent()).invalidate();
                         }

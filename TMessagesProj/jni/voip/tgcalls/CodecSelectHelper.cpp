@@ -23,7 +23,7 @@ bool CompareFormats(const VideoFormat &a, const VideoFormat &b) {
 	}
 }
 
-int FormatPriority(const VideoFormat &format, const std::vector<std::string> &preferredCodecs, std::shared_ptr<PlatformContext> platformContext) {
+int FormatPriority(const VideoFormat &format, const std::vector<std::string> &preferredCodecs) {
 	static const auto kCodecs = {
 		std::string(cricket::kAv1CodecName),
 #ifndef WEBRTC_DISABLE_H265
@@ -33,13 +33,13 @@ int FormatPriority(const VideoFormat &format, const std::vector<std::string> &pr
 		std::string(cricket::kVp8CodecName),
         std::string(cricket::kVp9CodecName),
 	};
-	static const auto kSupported = [platformContext] {
+	static const auto kSupported = [] {
 		const auto platform = PlatformInterface::SharedInstance();
 
 		auto result = std::vector<std::string>();
 		result.reserve(kCodecs.size());
 		for (const auto &codec : kCodecs) {
-			if (platform->supportsEncoding(codec, platformContext)) {
+			if (platform->supportsEncoding(codec)) {
 				result.push_back(codec);
 			}
 		}
@@ -64,19 +64,19 @@ int FormatPriority(const VideoFormat &format, const std::vector<std::string> &pr
 	return -1;
 }
 
-bool ComparePriorities(const VideoFormat &a, const VideoFormat &b, const std::vector<std::string> &preferredCodecs, std::shared_ptr<PlatformContext> platformContext) {
-	return FormatPriority(a, preferredCodecs, platformContext) < FormatPriority(b, preferredCodecs, platformContext);
+bool ComparePriorities(const VideoFormat &a, const VideoFormat &b, const std::vector<std::string> &preferredCodecs) {
+	return FormatPriority(a, preferredCodecs) < FormatPriority(b, preferredCodecs);
 }
 
-std::vector<VideoFormat> FilterAndSortEncoders(std::vector<VideoFormat> list, const std::vector<std::string> &preferredCodecs, std::shared_ptr<PlatformContext> platformContext) {
+std::vector<VideoFormat> FilterAndSortEncoders(std::vector<VideoFormat> list, const std::vector<std::string> &preferredCodecs) {
 	const auto listBegin = begin(list);
 	const auto listEnd = end(list);
-    std::sort(listBegin, listEnd, [&preferredCodecs, platformContext](const VideoFormat &lhs, const VideoFormat &rhs) {
-        return ComparePriorities(lhs, rhs, preferredCodecs, platformContext);
+    std::sort(listBegin, listEnd, [&preferredCodecs](const VideoFormat &lhs, const VideoFormat &rhs) {
+        return ComparePriorities(lhs, rhs, preferredCodecs);
     });
 	auto eraseFrom = listBegin;
 	auto eraseTill = eraseFrom;
-	while (eraseTill != listEnd && FormatPriority(*eraseTill, preferredCodecs, platformContext) == -1) {
+	while (eraseTill != listEnd && FormatPriority(*eraseTill, preferredCodecs) == -1) {
 		++eraseTill;
 	}
 	if (eraseTill != eraseFrom) {
@@ -153,14 +153,13 @@ std::vector<VideoFormat> RemoveScalabilityModes(
 VideoFormatsMessage ComposeSupportedFormats(
 		std::vector<VideoFormat> encoders,
 		std::vector<VideoFormat> decoders,
-        const std::vector<std::string> &preferredCodecs,
-        std::shared_ptr<PlatformContext> platformContext) {
+        const std::vector<std::string> &preferredCodecs) {
 	// We don't pass scalability_modes through signaling,
 	// So we have to remove them here, otherwise lists are different.
 	encoders = RemoveScalabilityModes(std::move(encoders));
 	decoders = RemoveScalabilityModes(std::move(decoders));
 
-	encoders = FilterAndSortEncoders(std::move(encoders), preferredCodecs, platformContext);
+	encoders = FilterAndSortEncoders(std::move(encoders), preferredCodecs);
 
 	auto result = VideoFormatsMessage();
 	result.encodersCount = (int)encoders.size();

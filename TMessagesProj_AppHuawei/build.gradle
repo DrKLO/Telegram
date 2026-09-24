@@ -79,7 +79,7 @@ android {
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
         release {

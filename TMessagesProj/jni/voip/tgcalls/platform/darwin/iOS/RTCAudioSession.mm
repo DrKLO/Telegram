@@ -365,7 +365,7 @@ ABSL_CONST_INIT thread_local bool mutex_locked = false;
   // Attempt to activate if we're not active.
   // Attempt to deactivate if we're active and it's the last unbalanced call.
   if (shouldSetActive && false) {
-    AVAudioSession *session = self.session;
+    /*AVAudioSession *session = self.session;
     // AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation is used to ensure
     // that other audio sessions that were interrupted by our session can return
     // to their active state. It is recommended for VoIP apps to use this
@@ -377,7 +377,7 @@ ABSL_CONST_INIT thread_local bool mutex_locked = false;
                            error:&error];
     if (outError) {
       *outError = error;
-    }
+    }*/
   }
   if (success) {
     if (active) {

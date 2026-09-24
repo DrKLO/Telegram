@@ -28,6 +28,7 @@ build_scripts=(
     build_ffmpeg.sh
     build_tlottie.sh
     build_tdlib.sh
+    build_wamr.sh
 )
 
 for script in "${build_scripts[@]}"; do

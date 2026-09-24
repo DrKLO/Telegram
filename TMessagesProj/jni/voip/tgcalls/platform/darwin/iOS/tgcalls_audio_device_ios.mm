@@ -259,8 +259,8 @@ int32_t AudioDeviceIOS::StopPlayout() {
   int average_number_of_playout_callbacks_between_glitches = 100000;
   RTC_DCHECK_GE(num_playout_callbacks_, num_detected_playout_glitches_);
   if (num_detected_playout_glitches_ > 0) {
-    average_number_of_playout_callbacks_between_glitches =
-        num_playout_callbacks_ / num_detected_playout_glitches_;
+    average_number_of_playout_callbacks_between_glitches = (int32_t)(
+    num_playout_callbacks_ / num_detected_playout_glitches_);
   }
   RTC_HISTOGRAM_COUNTS_100000("WebRTC.Audio.AveragePlayoutCallbacksBetweenGlitches",
                               average_number_of_playout_callbacks_between_glitches);
@@ -403,9 +403,9 @@ OSStatus AudioDeviceIOS::OnDeliverRecordedData(AudioUnitRenderActionFlags* flags
   AudioBufferList audio_buffer_list;
   audio_buffer_list.mNumberBuffers = 1;
   AudioBuffer* audio_buffer = &audio_buffer_list.mBuffers[0];
-  audio_buffer->mNumberChannels = record_parameters_.channels();
+  audio_buffer->mNumberChannels = (uint32_t)record_parameters_.channels();
   audio_buffer->mDataByteSize =
-      record_audio_buffer_.size() * VoiceProcessingAudioUnit::kBytesPerSample;
+      (uint32_t)(record_audio_buffer_.size() * VoiceProcessingAudioUnit::kBytesPerSample);
   audio_buffer->mData = reinterpret_cast<int8_t*>(record_audio_buffer_.data());
 
   // Obtain the recorded audio samples by initiating a rendering cycle.

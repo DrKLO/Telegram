@@ -1152,12 +1152,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (giftPremiumText != null) {
             giftPremiumText.detach();
         }
-
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdatePremiumGiftStickers);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateTonGiftStickers);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starGiftsLoaded);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        if (observersGroup != null) {
+            observersGroup.removeAllObservers();
+            observersGroup = null;
+        }
         avatarStoryParams.onDetachFromWindow();
 
         transitionParams.onDetach();
@@ -1176,6 +1174,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         return attachedToWindow;
     }
 
+    private NotificationCenter.ObserversGroup observersGroup;
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -1187,11 +1187,19 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         if (giftPremiumText != null) {
             giftPremiumText.attach();
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdatePremiumGiftStickers);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdateTonGiftStickers);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starGiftsLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+
+        if (observersGroup != null) {
+            observersGroup.removeAllObservers();
+            observersGroup = null;
+        }
+
+        observersGroup = NotificationCenter.getInstance(currentAccount)
+            .createObserversGroup(this)
+            .addGlobal(NotificationCenter.emojiLoaded)
+            .add(NotificationCenter.didUpdatePremiumGiftStickers)
+            .add(NotificationCenter.didUpdateTonGiftStickers)
+            .add(NotificationCenter.starGiftsLoaded)
+            .add(NotificationCenter.diceStickersDidLoad);
 
         if (currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_SUGGEST_PHOTO) {
             setMessageObject(currentMessageObject, true);

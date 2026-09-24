@@ -6,8 +6,6 @@
 
 namespace tgcalls {
 
-class PlatformContext;
-
 struct CommonFormats {
 	std::vector<webrtc::SdpVideoFormat> list;
 	int myEncoderIndex = -1;
@@ -21,8 +19,7 @@ struct CommonCodecs {
 VideoFormatsMessage ComposeSupportedFormats(
 	std::vector<webrtc::SdpVideoFormat> encoders,
 	std::vector<webrtc::SdpVideoFormat> decoders,
-    const std::vector<std::string> &preferredCodecs,
-	std::shared_ptr<PlatformContext> platformContext);
+    const std::vector<std::string> &preferredCodecs);
 
 CommonFormats ComputeCommonFormats(
 	const VideoFormatsMessage &my,

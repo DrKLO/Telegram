@@ -760,10 +760,20 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
 #endif
   config.active_reset_srtp_params = configuration.active_reset_srtp_params;
 
-  // DTLS has to be enabled to use SCTP.
-  if (dtls_enabled_) {
-    config.sctp_factory = context_->sctp_transport_factory();
-  }
+  // TGCALLS PATCH: SCTP no longer requires DTLS.
+  //
+  // Upstream gates this on dtls_enabled_ because SCTP would otherwise run
+  // unprotected. tgcalls disables DTLS deliberately when the media is already
+  // protected by an mtproto layer below ICE, which carries its own shared key -
+  // so DTLS is redundant, and paying for its handshake and record framing is
+  // exactly what we are avoiding.
+  //
+  // The DtlsTransport object still exists under disable_encryption (it is passed
+  // to CreateUnencryptedRtpTransport), and an inactive one is a pure passthrough
+  // to ICE (dtls_transport.cc:431), so SCTP rides straight through it into
+  // mtproto - matching 13.0.0, where the data channel shares the mtproto
+  // transport (NativeNetworkingImpl.cpp:690).
+  config.sctp_factory = context_->sctp_transport_factory();
 
   config.ice_transport_factory = ice_transport_factory_.get();
   config.on_dtls_handshake_error_ =

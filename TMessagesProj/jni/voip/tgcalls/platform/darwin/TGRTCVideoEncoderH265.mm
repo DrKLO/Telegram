@@ -113,10 +113,10 @@ bool CopyVideoFrameToPixelBuffer(id<RTCI420Buffer> frameBuffer,
 
   uint8_t* dstY = reinterpret_cast<uint8_t*>(
       CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0));
-  int dstStrideY = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
+  int dstStrideY = (int)CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0);
   uint8_t* dstUV = reinterpret_cast<uint8_t*>(
       CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1));
-  int dstStrideUV = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
+  int dstStrideUV = (int)CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1);
   // Convert I420 to NV12.
   int ret = libyuv::I420ToNV12(
       frameBuffer.dataY, frameBuffer.strideY, frameBuffer.dataU,
@@ -276,8 +276,8 @@ void compressionOutputCallback(void* encoder,
       if (!pixelBuffer) {
         return WEBRTC_VIDEO_CODEC_ERROR;
       }
-      int dstWidth = CVPixelBufferGetWidth(pixelBuffer);
-      int dstHeight = CVPixelBufferGetHeight(pixelBuffer);
+      int dstWidth = (int)CVPixelBufferGetWidth(pixelBuffer);
+      int dstHeight = (int)CVPixelBufferGetHeight(pixelBuffer);
       if ([rtcPixelBuffer requiresScalingToWidth:dstWidth height:dstHeight]) {
         int size =
             [rtcPixelBuffer bufferSizeForCroppingAndScalingToWidth:dstWidth

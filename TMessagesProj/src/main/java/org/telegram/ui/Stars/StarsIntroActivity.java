@@ -2798,7 +2798,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             if (TextUtils.isEmpty(stringRes)) {
                 headerView.subtitleView.setText("");
             } else {
-                String str = LocaleController.nullable(formatString(stringRes, LocaleController.getStringResId(stringRes), botName));
+                String str = LocaleController.nullable(formatString(stringRes, 0, botName));
                 if (str == null) {
                     str = getString(stringRes);
                 }
