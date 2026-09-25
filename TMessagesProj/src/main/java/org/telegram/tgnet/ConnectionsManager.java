@@ -79,8 +79,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLException;
-
-@OptIn(markerClass = UnstableApi.class)
 public class ConnectionsManager extends BaseController {
 
     public final static int ConnectionTypeGeneric = 1;

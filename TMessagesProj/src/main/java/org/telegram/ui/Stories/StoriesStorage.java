@@ -2,11 +2,7 @@ package org.telegram.ui.Stories;
 
 import android.text.TextUtils;
 
-import androidx.annotation.OptIn;
 import androidx.collection.LongSparseArray;
-
-import androidx.media3.common.util.Consumer;
-import androidx.media3.common.util.UnstableApi;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -21,6 +17,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.Timer;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -33,7 +30,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-@OptIn(markerClass = UnstableApi.class)
 public class StoriesStorage {
 
     private static final int EXPIRE_AFTER = 60 * 60 * 24;//one day
@@ -46,7 +42,7 @@ public class StoriesStorage {
 
     }
 
-    public void getAllStories(Consumer<TL_stories.TL_stories_allStories> consumer) {
+    public void getAllStories(Utilities.Callback<TL_stories.TL_stories_allStories> consumer) {
         storage.getStorageQueue().postRunnable(() -> {
             SQLiteDatabase database = storage.getDatabase();
             SQLiteCursor cursor = null;
@@ -122,7 +118,7 @@ public class StoriesStorage {
                 }
             }
             if (failed) {
-                AndroidUtilities.runOnUIThread(() -> consumer.accept(null));
+                AndroidUtilities.runOnUIThread(() -> consumer.run(null));
                 return;
             }
             TL_stories.TL_stories_allStories storiesResponse = new TL_stories.TL_stories_allStories();
@@ -142,7 +138,7 @@ public class StoriesStorage {
             }
             Collections.sort(storiesResponse.peer_stories, Comparator.comparingInt(o -> -o.stories.get(o.stories.size() - 1).date));
 
-            AndroidUtilities.runOnUIThread(() -> consumer.accept(storiesResponse));
+            AndroidUtilities.runOnUIThread(() -> consumer.run(storiesResponse));
         });
     }
 
@@ -346,10 +342,10 @@ public class StoriesStorage {
     }
 
 
-    public void getStories(long dialogId, Consumer<TL_stories.PeerStories> consumer) {
+    public void getStories(long dialogId, Utilities.Callback<TL_stories.PeerStories> consumer) {
         storage.getStorageQueue().postRunnable(() -> {
             TL_stories.PeerStories finalUserStories = getStoriesInternal(dialogId);
-            AndroidUtilities.runOnUIThread(() -> consumer.accept(finalUserStories));
+            AndroidUtilities.runOnUIThread(() -> consumer.run(finalUserStories));
         });
     }
 
@@ -767,7 +763,7 @@ public class StoriesStorage {
         return storyItem;
     }
 
-    public void getMaxReadIds(Consumer<LongSparseIntArray> consumer) {
+    public void getMaxReadIds(Utilities.Callback<LongSparseIntArray> consumer) {
         storage.getStorageQueue().postRunnable(() -> {
             SQLiteDatabase database = storage.getDatabase();
             SQLiteCursor cursor = null;
@@ -783,7 +779,7 @@ public class StoriesStorage {
                 storage.checkSQLException(e);
             }
             AndroidUtilities.runOnUIThread(() -> {
-                consumer.accept(longSparseIntArray);
+                consumer.run(longSparseIntArray);
             });
         });
     }

@@ -129,9 +129,9 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
 
     private @Nullable WeakReference<View> parentView;
 
-    private final ReferenceList<View> secondParentViews = new ReferenceList<>();
+    private final ReferenceList<View> secondParentViews = new ReferenceList<>(true);
 
-    private final ReferenceList<ImageReceiver> parents = new ReferenceList<>();
+    private final ReferenceList<ImageReceiver> parents = new ReferenceList<>(true);
 
     private AnimatedFileDrawableStream stream;
 

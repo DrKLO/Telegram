@@ -5,17 +5,12 @@ import android.content.DialogInterface;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import androidx.media3.common.util.Consumer;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
@@ -32,7 +27,7 @@ public class WebAppDisclaimerAlert {
     private AlertDialog alert;
     private TextView positiveButton;
 
-    public static void show(Context context, Consumer<Boolean> consumer, TLRPC.User withSendMessage, Runnable dismissed) {
+    public static void show(Context context, Utilities.Callback<Boolean> consumer, TLRPC.User withSendMessage, Runnable dismissed) {
         WebAppDisclaimerAlert alert = new WebAppDisclaimerAlert();
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
@@ -41,9 +36,7 @@ public class WebAppDisclaimerAlert {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         TextView textView = new TextView(context);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            textView.setLetterSpacing(0.025f);
-        }
+        textView.setLetterSpacing(0.025f);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 24, 0));
@@ -70,7 +63,7 @@ public class WebAppDisclaimerAlert {
         }), "", false, false);
         alertDialog.setView(linearLayout);
         alertDialog.setPositiveButton(LocaleController.getString(R.string.Continue), (dialog, which) -> {
-            consumer.accept(true);
+            consumer.run(true);
             dismissing[0] = true;
             dialog.dismiss();
         });

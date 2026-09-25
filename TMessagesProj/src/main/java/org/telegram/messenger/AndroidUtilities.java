@@ -146,7 +146,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
-import androidx.media3.common.util.Consumer;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
@@ -6318,33 +6317,33 @@ public class AndroidUtilities {
         return new Pair<>(0, 0);
     }
 
-    public static void forEachViews(View view, Consumer<View> consumer) {
+    public static void forEachViews(View view, Utilities.Callback<View> consumer) {
         if (view instanceof ViewGroup) {
             ViewGroup viewGroup = (ViewGroup) view;
             for (int i = 0; i < viewGroup.getChildCount(); i++) {
-                consumer.accept(view);
+                consumer.run(view);
                 forEachViews(viewGroup.getChildAt(i), consumer);
             }
         } else {
-            consumer.accept(view);
+            consumer.run(view);
         }
     }
 
-    public static void forEachViews(RecyclerView recyclerView, Consumer<View> consumer) {
+    public static void forEachViews(RecyclerView recyclerView, Utilities.Callback<View> consumer) {
         if (recyclerView == null) {
             return;
         }
         for (int i = 0; i < recyclerView.getChildCount(); i++) {
-            consumer.accept(recyclerView.getChildAt(i));
+            consumer.run(recyclerView.getChildAt(i));
         }
         for (int i = 0; i < recyclerView.getCachedChildCount(); i++) {
-            consumer.accept(recyclerView.getCachedChildAt(i));
+            consumer.run(recyclerView.getCachedChildAt(i));
         }
         for (int i = 0; i < recyclerView.getHiddenChildCount(); i++) {
-            consumer.accept(recyclerView.getHiddenChildAt(i));
+            consumer.run(recyclerView.getHiddenChildAt(i));
         }
         for (int i = 0; i < recyclerView.getAttachedScrapChildCount(); i++) {
-            consumer.accept(recyclerView.getAttachedScrapChildAt(i));
+            consumer.run(recyclerView.getAttachedScrapChildAt(i));
         }
     }
 

@@ -1693,6 +1693,11 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 178").stepThis().dispose();
             version = 178;
         }
+        if (version == 178) {
+            database.executeFast("DELETE FROM downloading_documents").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 179").stepThis().dispose();
+            version = 179;
+        }
 
         return version;
     }

@@ -612,7 +612,7 @@ public class ChatActivity extends BaseFragment implements
     private float intoTopViewTop;
     private ChatActionCell infoTopView;
     private int hideDateDelay = 500;
-    public InstantCameraView instantCameraView;
+    public InstantCameraViewBase instantCameraView;
     private View overlayView;
     private boolean currentFloatingDateOnScreen;
     private boolean currentFloatingTopicOnScreen;
@@ -10707,13 +10707,36 @@ public class ChatActivity extends BaseFragment implements
         if (instantCameraView != null || !CameraView.isCameraAllowed() || getContext() == null) {
             return;
         }
-        instantCameraView = new InstantCameraView(getContext(), this, themeDelegate, true) {
-            @Override
-            public void startAnimation(boolean open, boolean fromPaused) {
-                super.startAnimation(open, fromPaused);
-                animatorRoundMessageCameraVisibility.setValue(open, true);
+        instantCameraView = InstantCameraViewBase.create(
+                getContext(),
+                this,
+                themeDelegate,
+                true
+        );
+        instantCameraView.setAnimationCallback((open, fromPaused) ->
+                animatorRoundMessageCameraVisibility.setValue(open, true));
+        instantCameraView.setTrimCallback((start, end) -> {
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setVideoTimelineTrim(start, end);
             }
-        };
+        });
+        instantCameraView.setRecordingUiFrameCallback(
+                new InstantCameraViewBase.RecordingUiFrameCallback() {
+                    @Override
+                    public void onActiveChanged(boolean active) {
+                        if (chatActivityEnterView != null) {
+                            chatActivityEnterView.setRoundVideoUiFrameClockActive(active);
+                        }
+                    }
+
+                    @Override
+                    public void onFrame(long durationMs) {
+                        if (chatActivityEnterView != null) {
+                            chatActivityEnterView.onRoundVideoUiFrame(durationMs);
+                        }
+                    }
+                }
+        );
         instantCameraView.setClipToPadding(false);
         instantCameraView.setButtonsBackground(glassBackgroundDrawableFactory, blurredBackgroundColorProvider);
 
@@ -35591,7 +35614,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
 
-        final InstantCameraView.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
+        final InstantCameraViewBase.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
         AnimatorSet allAnimators = new AnimatorSet();
         allAnimators.playTogether(
                 ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, 0.5f),
@@ -37730,8 +37753,8 @@ public class ChatActivity extends BaseFragment implements
                                     messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
                                     ImageReceiver imageReceiver = messageCell.getPhotoImage();
                                     float w = imageReceiver.getImageWidth();
-                                    RectOld rect = instantCameraView.getCameraRect();
-                                    float scale = w / rect.width;
+                                    RectF rect = instantCameraView.getCameraRect();
+                                    float scale = w / rect.width();
                                     int[] position = new int[2];
                                     messageCell.getTransitionParams().ignoreAlpha = true;
                                     messageCell.setAlpha(0.0f);
@@ -37739,9 +37762,11 @@ public class ChatActivity extends BaseFragment implements
                                     messageCell.getLocationOnScreen(position);
                                     position[0] += imageReceiver.getImageX() - messageCell.getAnimationOffsetX();
                                     position[1] += imageReceiver.getImageY() + messageCell.getPaddingTop() - messageCell.getTranslationY();
-                                    final InstantCameraView.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
-                                    cameraContainer.setPivotX(0.0f);
-                                    cameraContainer.setPivotY(0.0f);
+                                    final InstantCameraViewBase.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
+                                    int[] cameraPosition = new int[2];
+                                    cameraContainer.getLocationOnScreen(cameraPosition);
+                                    cameraContainer.setPivotX(rect.left - cameraPosition[0]);
+                                    cameraContainer.setPivotY(rect.top - cameraPosition[1]);
                                     AnimatorSet animatorSet = new AnimatorSet();
 
                                     cameraContainer.setImageReceiver(imageReceiver);
@@ -37750,13 +37775,13 @@ public class ChatActivity extends BaseFragment implements
                                     animatorSet.playTogether(
                                             ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, scale),
                                             ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, scale),
-                                            ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, position[1] - rect.y),
+                                            ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, position[1] - rect.top),
                                             ObjectAnimator.ofFloat(instantCameraView.getButtonsLayout(), View.ALPHA, 0.0f),
                                             ObjectAnimator.ofInt(instantCameraView.getPaint(), AnimationProperties.PAINT_ALPHA, 0),
                                             ObjectAnimator.ofFloat(instantCameraView.getMuteImageView(), View.ALPHA, 0.0f)
                                     );
                                     animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-                                    ObjectAnimator o = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, position[0] - rect.x);
+                                    ObjectAnimator o = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, position[0] - rect.left);
                                     o.setInterpolator(CubicBezierInterpolator.DEFAULT);
 
                                     allAnimators.playTogether(o, animatorSet);

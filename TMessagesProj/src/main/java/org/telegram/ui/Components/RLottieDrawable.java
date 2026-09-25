@@ -752,7 +752,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable, Bitma
     }
 
     private @Nullable WeakReference<View> masterParent;
-    private final ReferenceList<ImageReceiver> parentViews = new ReferenceList<>();
+    private final ReferenceList<ImageReceiver> parentViews = new ReferenceList<>(true);
 
     @UiThread
     protected void invalidateInternal() {

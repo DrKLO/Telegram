@@ -86,6 +86,7 @@ public class TelegramMediaSession {
     private final LongSparseArray<TLRPC.Chat> chats = new LongSparseArray<>();
     private final LongSparseArray<ArrayList<MessageObject>> musicObjects = new LongSparseArray<>();
     private final LongSparseArray<ArrayList<MediaSessionCompat.QueueItem>> musicQueues = new LongSparseArray<>();
+    private final LongSparseArray<ArrayList<Runnable>> pendingMusicLoads = new LongSparseArray<>();
 
     private Paint roundPaint;
     private RectF bitmapRect;
@@ -140,6 +141,7 @@ public class TelegramMediaSession {
         chats.clear();
         musicObjects.clear();
         musicQueues.clear();
+        pendingMusicLoads.clear();
         try {
             session.setQueue(null);
             session.setQueueTitle(null);
@@ -243,29 +245,56 @@ public class TelegramMediaSession {
         });
     }
 
+    private static final class PendingBrowseRequest {
+        final String parentMediaId;
+        final BrowseChildrenCallback callback;
+
+        PendingBrowseRequest(String parentMediaId, BrowseChildrenCallback callback) {
+            this.parentMediaId = parentMediaId;
+            this.callback = callback;
+        }
+    }
+
+    private final ArrayList<PendingBrowseRequest> pendingBrowseRequests = new ArrayList<>();
+
     public void loadBrowseChildren(String parentMediaId, BrowseChildrenCallback callback) {
-        if (chatsLoaded) {
-            callback.onResult(loadChildrenSync(parentMediaId));
+        if (!chatsLoaded) {
+            pendingBrowseRequests.add(new PendingBrowseRequest(parentMediaId, callback));
+            loadChats();
             return;
         }
+
+        long did = getDialogIdFromMediaId(parentMediaId);
+        if (did != 0 && musicObjects.get(did) == null) {
+            loadMusicForDialog(did, () -> callback.onResult(loadChildrenSync(parentMediaId)));
+            return;
+        }
+
+        callback.onResult(loadChildrenSync(parentMediaId));
+    }
+
+    private void loadChats() {
         if (loadingChats) {
-            // queue up: when load completes we still want a response. Caller may detach result.
-            // For simplicity, attempt again once done by polling on the storage queue.
+            return;
         }
         loadingChats = true;
-        MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
+
+        final int account = currentAccount;
+        MessagesStorage messagesStorage = MessagesStorage.getInstance(account);
         messagesStorage.getStorageQueue().postRunnable(() -> {
+            ArrayList<Long> loadedDialogs = new ArrayList<>();
+            LongSparseArray<TLRPC.User> loadedUsers = new LongSparseArray<>();
+            LongSparseArray<TLRPC.Chat> loadedChats = new LongSparseArray<>();
             try {
                 ArrayList<Long> usersToLoad = new ArrayList<>();
                 ArrayList<Long> chatsToLoad = new ArrayList<>();
-                SQLiteCursor cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US,
-                        "SELECT DISTINCT uid FROM media_v4 WHERE uid != 0 AND mid > 0 AND type = %d", MediaDataController.MEDIA_MUSIC));
+                SQLiteCursor cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT DISTINCT uid FROM media_v4 WHERE uid != 0 AND mid > 0 AND type = %d", MediaDataController.MEDIA_MUSIC));
                 while (cursor.next()) {
                     long dialogId = cursor.longValue(0);
                     if (DialogObject.isEncryptedDialog(dialogId)) {
                         continue;
                     }
-                    dialogs.add(dialogId);
+                    loadedDialogs.add(dialogId);
                     if (DialogObject.isUserDialog(dialogId)) {
                         usersToLoad.add(dialogId);
                     } else {
@@ -273,81 +302,136 @@ public class TelegramMediaSession {
                     }
                 }
                 cursor.dispose();
-                if (!dialogs.isEmpty()) {
-                    cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US,
-                        "SELECT uid, data, mid FROM media_v4 WHERE uid != 0 AND mid > 0 AND type = %d ORDER BY uid, date DESC, mid DESC", MediaDataController.MEDIA_MUSIC));
-                    while (cursor.next()) {
-                        long did = cursor.longValue(0);
-                        if (DialogObject.isEncryptedDialog(did)) {
-                            continue;
-                        }
 
-                        NativeByteBuffer data = cursor.byteBufferValue(1);
-                        if (data == null) {
-                            continue;
-                        }
-                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, UserConfig.getInstance(currentAccount).clientUserId);
-                        data.reuse();
-                        if (!MessageObject.isMusicMessage(message)) {
-                            continue;
-                        }
-
-                        message.id = cursor.intValue(2);
-                        message.dialog_id = did;
-                        ArrayList<MessageObject> arrayList = musicObjects.get(did);
-                        ArrayList<MediaSessionCompat.QueueItem> queueList = musicQueues.get(did);
-                        if (arrayList == null) {
-                            arrayList = new ArrayList<>();
-                            musicObjects.put(did, arrayList);
-                            queueList = new ArrayList<>();
-                            musicQueues.put(did, queueList);
-                        }
-                        MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
-                        arrayList.add(messageObject);
-
-                        MediaDescriptionCompat.Builder builder = new MediaDescriptionCompat.Builder()
-                                .setMediaId(did + "_" + arrayList.size())
-                                .setTitle(messageObject.getMusicTitle())
-                                .setSubtitle(messageObject.getMusicAuthor());
-                        queueList.add(new MediaSessionCompat.QueueItem(builder.build(), queueList.size()));
+                if (!usersToLoad.isEmpty()) {
+                    ArrayList<TLRPC.User> usersArrayList = new ArrayList<>();
+                    messagesStorage.getUsersInternal(usersToLoad, usersArrayList);
+                    for (TLRPC.User user : usersArrayList) {
+                        loadedUsers.put(user.id, user);
                     }
-                    cursor.dispose();
-                    for (int i = 0; i < musicObjects.size(); i++) {
-                        Collections.reverse(musicObjects.valueAt(i));
-                    }
-                    for (int i = 0; i < musicQueues.size(); i++) {
-                        Collections.reverse(musicQueues.valueAt(i));
-                    }
-
-                    if (!usersToLoad.isEmpty()) {
-                        ArrayList<TLRPC.User> usersArrayList = new ArrayList<>();
-                        messagesStorage.getUsersInternal(usersToLoad, usersArrayList);
-                        for (TLRPC.User user : usersArrayList) {
-                            users.put(user.id, user);
-                        }
-                    }
-                    if (!chatsToLoad.isEmpty()) {
-                        ArrayList<TLRPC.Chat> chatsArrayList = new ArrayList<>();
-                        messagesStorage.getChatsInternal(TextUtils.join(",", chatsToLoad), chatsArrayList);
-                        for (TLRPC.Chat chat : chatsArrayList) {
-                            chats.put(chat.id, chat);
-                        }
+                }
+                if (!chatsToLoad.isEmpty()) {
+                    ArrayList<TLRPC.Chat> chatsArrayList = new ArrayList<>();
+                    messagesStorage.getChatsInternal(TextUtils.join(",", chatsToLoad), chatsArrayList);
+                    for (TLRPC.Chat chat : chatsArrayList) {
+                        loadedChats.put(chat.id, chat);
                     }
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             }
+
             AndroidUtilities.runOnUIThread(() -> {
+                if (account != currentAccount) {
+                    return;
+                }
+                dialogs.clear();
+                dialogs.addAll(loadedDialogs);
+                users.clear();
+                for (int i = 0; i < loadedUsers.size(); i++) {
+                    users.put(loadedUsers.keyAt(i), loadedUsers.valueAt(i));
+                }
+                chats.clear();
+                for (int i = 0; i < loadedChats.size(); i++) {
+                    chats.put(loadedChats.keyAt(i), loadedChats.valueAt(i));
+                }
                 chatsLoaded = true;
                 loadingChats = false;
                 if (lastSelectedDialog == 0 && !dialogs.isEmpty()) {
                     lastSelectedDialog = dialogs.get(0);
                 }
-                applyQueueFor(lastSelectedDialog);
-                callback.onResult(loadChildrenSync(parentMediaId));
+
+                ArrayList<PendingBrowseRequest> requests = new ArrayList<>(pendingBrowseRequests);
+                pendingBrowseRequests.clear();
+                for (int i = 0; i < requests.size(); i++) {
+                    PendingBrowseRequest request = requests.get(i);
+                    loadBrowseChildren(request.parentMediaId, request.callback);
+                }
             });
         });
+    }
+
+    private void loadMusicForDialog(long did, Runnable onLoaded) {
+        ArrayList<Runnable> callbacks = pendingMusicLoads.get(did);
+        if (callbacks != null) {
+            if (onLoaded != null) {
+                callbacks.add(onLoaded);
+            }
+            return;
+        }
+
+        callbacks = new ArrayList<>();
+        if (onLoaded != null) {
+            callbacks.add(onLoaded);
+        }
+        pendingMusicLoads.put(did, callbacks);
+
+        final int account = currentAccount;
+        MessagesStorage messagesStorage = MessagesStorage.getInstance(account);
+        messagesStorage.getStorageQueue().postRunnable(() -> {
+            ArrayList<MessageObject> arrayList = new ArrayList<>();
+            ArrayList<MediaSessionCompat.QueueItem> queueList = new ArrayList<>();
+            try {
+                SQLiteCursor cursor = messagesStorage.getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v4 WHERE uid = %d AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC", did, MediaDataController.MEDIA_MUSIC));
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data == null) {
+                        continue;
+                    }
+                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    message.readAttachPath(data, UserConfig.getInstance(account).clientUserId);
+                    data.reuse();
+                    if (!MessageObject.isMusicMessage(message)) {
+                        continue;
+                    }
+
+                    message.id = cursor.intValue(1);
+                    message.dialog_id = did;
+                    MessageObject messageObject = new MessageObject(account, message, false, true);
+                    arrayList.add(messageObject);
+                    MediaDescriptionCompat.Builder builder = new MediaDescriptionCompat.Builder()
+                            .setMediaId(did + "_" + arrayList.size())
+                            .setTitle(messageObject.getMusicTitle())
+                            .setSubtitle(messageObject.getMusicAuthor());
+                    queueList.add(new MediaSessionCompat.QueueItem(builder.build(), queueList.size()));
+                }
+                cursor.dispose();
+                Collections.reverse(arrayList);
+                Collections.reverse(queueList);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+
+            AndroidUtilities.runOnUIThread(() -> {
+                if (account != currentAccount) {
+                    return;
+                }
+                musicObjects.put(did, arrayList);
+                musicQueues.put(did, queueList);
+                ArrayList<Runnable> loadedCallbacks = pendingMusicLoads.get(did);
+                pendingMusicLoads.remove(did);
+                if (did == lastSelectedDialog) {
+                    applyQueueFor(did);
+                }
+                if (loadedCallbacks != null) {
+                    for (int i = 0; i < loadedCallbacks.size(); i++) {
+                        loadedCallbacks.get(i).run();
+                    }
+                }
+            });
+        });
+    }
+
+    private long getDialogIdFromMediaId(String parentMediaId) {
+        if (parentMediaId == null || !parentMediaId.startsWith(MEDIA_ID_CHAT_PREFIX)) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(parentMediaId.substring(MEDIA_ID_CHAT_PREFIX.length()));
+        } catch (Exception e) {
+            FileLog.e(e);
+            return 0;
+        }
     }
 
     private List<MediaBrowser.MediaItem> loadChildrenSync(String parentMediaId) {
@@ -633,8 +717,12 @@ public class TelegramMediaSession {
                 long did = Long.parseLong(args[0]);
                 int id = Integer.parseInt(args[1]);
                 ArrayList<MessageObject> arrayList = musicObjects.get(did);
+                if (arrayList == null) {
+                    loadMusicForDialog(did, () -> onPlayFromMediaId(mediaId, extras));
+                    return;
+                }
                 ArrayList<MediaSessionCompat.QueueItem> queueList = musicQueues.get(did);
-                if (arrayList == null || id < 0 || id >= arrayList.size()) return;
+                if (id < 0 || id >= arrayList.size()) return;
                 lastSelectedDialog = did;
                 MessagesController.getNotificationsSettings(currentAccount).edit()
                         .putLong("auto_lastSelectedDialog", did).apply();
