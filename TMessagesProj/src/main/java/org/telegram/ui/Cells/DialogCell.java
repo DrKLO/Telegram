@@ -49,6 +49,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
@@ -501,6 +502,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private TLRPC.Chat chat;
     private TLRPC.EncryptedChat encryptedChat;
     private CharSequence lastPrintString;
+    // the one row a screen reader is on. Kept for the class rather than for each row so that a
+    // row falling silent needs nothing to be delivered to it: the moment another row is reached,
+    // the one before it is no longer the row being read, whether or not it was ever told so
+    private static DialogCell accessibilityReadRow;
+    private CharSequence accessibilityStatePrint;
+    private boolean accessibilityStateOnline;
+    private int accessibilityStateUnread = -1;
+    private int accessibilityStateMentions = -1;
+    private int accessibilityStateReactionMentions = -1;
+    private int accessibilityStateSendState = Integer.MIN_VALUE;
+    private long accessibilityStateDialogId;
     private int printingStringType;
     private boolean draftVoice;
     private TLRPC.DraftMessage draftMessage;
@@ -904,6 +916,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        releaseAccessibilityReadRow();
         isSliding = false;
         drawRevealBackground = false;
         currentRevealProgress = 0.0f;
@@ -2941,6 +2954,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         }
         updateThumbsPosition();
+        checkAccessibilityStateChanges();
     }
 
     public void setTitleOverride(String s) {
@@ -3759,6 +3773,138 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private GradientDrawable archiveFadeGradientDrawable;
     private int archiveFadeGradientDrawableColor;
 
+    // only the one row a reader is on is spoken to. A row becomes that row when the reader asks
+    // it for the focus or the finger comes onto it, and stops being it the moment another row is
+    // reached, or the focus is taken away, or the finger leaves, or the row goes off the screen,
+    // or the row is handed to another chat. Kept for the class rather than for each row so that
+    // the row before the one being read falls silent on its own, without anything having to
+    // reach it, since what reaches a row is not certain
+    private boolean isReadOutByAccessibility() {
+        if (accessibilityReadRow != this || !isShown()) {
+            return false;
+        }
+        final AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+        return am != null && am.isEnabled() && am.isTouchExplorationEnabled();
+    }
+
+    // a chat changes under the reader: someone comes online, someone starts writing, a message
+    // arrives. The row is drawn again for every one of them, and the words a reader is given are
+    // built again only the next time the row is reached, so a reader sitting on a chat heard
+    // nothing of it. Say the piece that changed, and nothing else.
+    // what the other side is doing is asked for where the row asks for it. The words the row
+    // draws are built only when it is told to build its layout again, and it is not always told:
+    // a chat can go from writing to recording a voice while the row keeps the words it had
+    private CharSequence getAccessibilityPrintingString() {
+        if (isForumCell() || !isDialogCell && !isTopic) {
+            return null;
+        }
+        // asked for the way the row asks for it. Where somebody keeps their last seen to
+        // themselves the app answers the list with nothing about what they are doing, and the row
+        // draws nothing, so there is nothing to say either: what is heard is what is there
+        final CharSequence print = MessagesController.getInstance(currentAccount).getPrintingString(currentDialogId, getTopicId(), true);
+        if (TextUtils.isEmpty(print)) {
+            return null;
+        }
+        // the dots of "typing..." are a picture of waiting and are not read out, and the mark a
+        // name is put into is not a word either
+        return TextUtils.replace(print, new String[]{"...", "**oo**"}, new String[]{"", ""});
+    }
+
+    private void checkAccessibilityStateChanges() {
+        final CharSequence print = getAccessibilityPrintingString();
+        final boolean online = isOnline();
+        final int unread = unreadCount;
+        final int mentions = mentionCount;
+        final int reactionMentions = reactionMentionCount;
+        final int sendState = getAccessibilitySendState();
+        // the row is used again for another chat, and what the last one was doing is nothing to
+        // say about this one. Nor is being read: whoever was reading it was reading the chat that
+        // was here before
+        if (accessibilityStateDialogId != currentDialogId) {
+            accessibilityStateDialogId = currentDialogId;
+            releaseAccessibilityReadRow();
+        } else if (isReadOutByAccessibility()) {
+            final StringBuilder changed = new StringBuilder();
+            // what the other side is doing right now: writing, recording a voice, sending a
+            // picture, playing a game. The app has a line for each of them and it is that line
+            // that is said, so a new kind of doing needs nothing added here
+            if (!TextUtils.isEmpty(print) && !TextUtils.equals(print, accessibilityStatePrint)) {
+                appendAccessibilityStateChange(changed, print);
+            }
+            if (online && !accessibilityStateOnline) {
+                appendAccessibilityStateChange(changed, getString(R.string.AccDescrUserOnline));
+            }
+            if (accessibilityStateUnread >= 0 && unread > accessibilityStateUnread) {
+                appendAccessibilityStateChange(changed, LocaleController.formatPluralString("NewMessages", unread));
+            }
+            if (accessibilityStateMentions >= 0 && mentions > accessibilityStateMentions) {
+                appendAccessibilityStateChange(changed, LocaleController.formatPluralString("AccDescrMentionCount", mentions));
+            }
+            if (accessibilityStateReactionMentions >= 0 && reactionMentions > accessibilityStateReactionMentions) {
+                appendAccessibilityStateChange(changed, getString(R.string.AccDescrMentionReaction));
+            }
+            // our own last message goes from being sent to having arrived to having been seen,
+            // and the ticks beside it are the whole of what says so
+            if (accessibilityStateSendState != Integer.MIN_VALUE && sendState != accessibilityStateSendState) {
+                appendAccessibilityStateChange(changed, getAccessibilitySendStateText(sendState));
+            }
+            if (changed.length() > 0) {
+                announceForAccessibility(changed);
+            }
+        }
+        accessibilityStatePrint = print;
+        accessibilityStateOnline = online;
+        accessibilityStateUnread = unread;
+        accessibilityStateMentions = mentions;
+        accessibilityStateReactionMentions = reactionMentions;
+        accessibilityStateSendState = sendState;
+    }
+
+    private void appendAccessibilityStateChange(StringBuilder sb, CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        sb.append(text);
+    }
+
+    private static final int ACC_SEND_STATE_NONE = 0;
+    private static final int ACC_SEND_STATE_SENDING = 1;
+    private static final int ACC_SEND_STATE_SENT = 2;
+    private static final int ACC_SEND_STATE_SEEN = 3;
+    private static final int ACC_SEND_STATE_ERROR = 4;
+
+    private int getAccessibilitySendState() {
+        if (drawError) {
+            return ACC_SEND_STATE_ERROR;
+        }
+        if (drawClock) {
+            return ACC_SEND_STATE_SENDING;
+        }
+        if (drawCheck2) {
+            return drawCheck1 ? ACC_SEND_STATE_SEEN : ACC_SEND_STATE_SENT;
+        }
+        return ACC_SEND_STATE_NONE;
+    }
+
+    private CharSequence getAccessibilitySendStateText(int sendState) {
+        switch (sendState) {
+            case ACC_SEND_STATE_ERROR:
+                return getString(R.string.AccDescrMsgSendingError);
+            case ACC_SEND_STATE_SENDING:
+                return getString(R.string.AccDescrMsgSending);
+            case ACC_SEND_STATE_SENT:
+                return getString(R.string.AccDescrMsgUnread);
+            case ACC_SEND_STATE_SEEN:
+                return getString(R.string.AccDescrMsgRead);
+        }
+        // a message that came from the other side carries no ticks, and there is nothing to say
+        // about it here
+        return null;
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3768,6 +3914,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (!visibleOnScreen) {
             return;
         }
+        checkAccessibilityStateChanges();
 
         boolean needInvalidate = false;
 
@@ -5459,11 +5606,33 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+            accessibilityReadRow = this;
+        } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+            releaseAccessibilityReadRow();
+        }
         if (action == R.id.acc_action_chat_preview && parentFragment != null) {
             parentFragment.showChatPreview(this);
             return true;
         }
         return super.performAccessibilityAction(action, arguments);
+    }
+
+    @Override
+    public boolean onHoverEvent(MotionEvent event) {
+        final int action = event.getAction();
+        if (action == MotionEvent.ACTION_HOVER_ENTER || action == MotionEvent.ACTION_HOVER_MOVE) {
+            accessibilityReadRow = this;
+        } else if (action == MotionEvent.ACTION_HOVER_EXIT) {
+            releaseAccessibilityReadRow();
+        }
+        return super.onHoverEvent(event);
+    }
+
+    private void releaseAccessibilityReadRow() {
+        if (accessibilityReadRow == this) {
+            accessibilityReadRow = null;
+        }
     }
 
     @Override
