@@ -1376,6 +1376,53 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
     }
 
+    // dragging a row into place is the only way the screen has of putting the options in order,
+    // so the same move is offered as two actions on the field of every option
+    private final PollEditTextCell.ReorderDelegate reorderDelegate = new PollEditTextCell.ReorderDelegate() {
+        private int indexOf(PollEditTextCell cell) {
+            final RecyclerView.ViewHolder holder = listView.findContainingViewHolder(cell);
+            if (holder == null) {
+                return -1;
+            }
+            final int position = holder.getAdapterPosition();
+            if (position == RecyclerView.NO_POSITION || answerStartRow < 0) {
+                return -1;
+            }
+            final int index = position - answerStartRow;
+            return index >= 0 && index < answersCount ? index : -1;
+        }
+
+        @Override
+        public boolean canMoveUp(PollEditTextCell cell) {
+            return indexOf(cell) > 0;
+        }
+
+        @Override
+        public boolean canMoveDown(PollEditTextCell cell) {
+            final int index = indexOf(cell);
+            return index >= 0 && index < answersCount - 1;
+        }
+
+        @Override
+        public void moveUp(PollEditTextCell cell) {
+            move(indexOf(cell), -1);
+        }
+
+        @Override
+        public void moveDown(PollEditTextCell cell) {
+            move(indexOf(cell), 1);
+        }
+
+        private void move(int index, int by) {
+            if (index < 0 || index + by < 0 || index + by >= answersCount) {
+                return;
+            }
+            listView.setItemAnimator(itemAnimator);
+            listAdapter.swapElements(answerStartRow + index, answerStartRow + index + by);
+            listView.announceForAccessibility(LocaleController.formatString(R.string.AccDescrPollOptionMoved, index + 1 + by, answersCount));
+        }
+    };
+
     private void addNewField() {
         resetSuggestEmojiPanel();
         listView.setItemAnimator(itemAnimator);
@@ -2538,6 +2585,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         });
                     }
                     cell.setIconsColor(Theme.key_pollCreateIcons);
+                    cell.setReorderDelegate(reorderDelegate);
                     cell.supportMultiselect();
                     cell.getCheckBox().setColor(-1, Theme.key_pollCreateIcons, Theme.key_checkboxCheck);
                     // cell.getCheckBox().setCirclePaintProvider(obj -> checkboxPaint);
