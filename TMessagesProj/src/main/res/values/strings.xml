@@ -5001,6 +5001,7 @@
     <string name="AccActionOpenForwardedOrigin">Forwarded origin</string>
     <string name="AccActionEnterSelectionMode">Enter selection mode</string>
     <string name="AccActionChatPreview">Chat Preview</string>
+    <string name="AccActionOpenCommunity">Open community</string>
     <string name="AccActionOpenTranscription">Open Voice Transcription</string>
     <string name="AccActionCloseTranscription">Close Transcription</string>
     <string name="AccDescrEmojiButton">Emoji, stickers, and GIFs</string>
