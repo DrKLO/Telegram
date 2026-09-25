@@ -328,6 +328,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         backButton.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 16, 16));
         backButton.setImageResource(R.drawable.ic_ab_back);
         backButton.setScaleType(ImageView.ScaleType.CENTER);
+        backButton.setContentDescription(LocaleController.getString(R.string.Back));
         backButton.setOnClickListener(v -> dismiss());
         ScaleStateListAnimator.apply(backButton);
         headerView.addView(backButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 12, 14, 0, 0));
@@ -335,6 +336,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         headerPlay = new ImageView(context);
         headerPlay.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 16, 16));
         headerPlay.setImageResource(R.drawable.filled_gift_pause_24);
+        headerPlay.setContentDescription(LocaleController.getString(R.string.AccActionPause));
         headerPlay.setScaleType(ImageView.ScaleType.CENTER);
         headerPlay.setOnClickListener(v -> {
             // AndroidUtilities.dumpCanvas(container);

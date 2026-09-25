@@ -1526,6 +1526,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
                 searchButton.setImageResource(R.drawable.outline_header_search);
                 searchButton.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 searchButton.setBackground(Theme.createSelectorDrawable(436207615));
+                searchButton.setContentDescription(LocaleController.getString(R.string.Search));
                 searchButton.setOnClickListener(view -> openSearch());
                 addView(searchButton, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
             }

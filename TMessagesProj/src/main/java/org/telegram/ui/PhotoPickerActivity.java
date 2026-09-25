@@ -521,6 +521,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (isDocumentsPicker) {
             ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+            menuItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
                 @Override
                 public void onShowSubMenu() {

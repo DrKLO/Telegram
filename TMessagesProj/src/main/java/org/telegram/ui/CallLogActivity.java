@@ -1242,6 +1242,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			actionModeCloseView.setImageDrawable(new BackDrawable(true));
 			actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
 			actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
+			actionModeCloseView.setContentDescription(LocaleController.getString(R.string.Close));
 			actionModeCloseView.setOnClickListener(v -> hideActionMode(true));
 			actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
 			actionModeViews.add(actionModeCloseView);
@@ -1877,6 +1878,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
             }
         }.show());
 		if (creator) {
+			optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
 			optionsView.setOnClickListener(v -> ItemOptions.makeOptions(sheet.getContainer(), resourcesProvider, optionsView)
                 .add(R.drawable.menu_link_revoke, getString(R.string.GroupCallCreatedLinkRevoke), revoke)
                 .setOnTopOfScrim()

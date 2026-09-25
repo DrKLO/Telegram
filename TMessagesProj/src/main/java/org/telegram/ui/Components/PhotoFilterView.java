@@ -532,6 +532,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         tuneItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
         tuneItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(tuneItem, LayoutHelper.createLinear(56, 48));
+        tuneItem.setContentDescription(LocaleController.getString(R.string.AccDescrPhotoAdjust));
         tuneItem.setOnClickListener(v -> {
             selectedTool = 0;
             tuneItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
@@ -545,6 +546,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         blurItem.setImageResource(R.drawable.msg_photo_blur);
         blurItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(blurItem, LayoutHelper.createLinear(56, 48));
+        blurItem.setContentDescription(LocaleController.getString(R.string.LiteOptionsBlur2));
         blurItem.setOnClickListener(v -> {
             selectedTool = 1;
             tuneItem.setColorFilter(null);
@@ -561,6 +563,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         curveItem.setImageResource(R.drawable.msg_photo_curve);
         curveItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         linearLayout.addView(curveItem, LayoutHelper.createLinear(56, 48));
+        curveItem.setContentDescription(LocaleController.getString(R.string.AccDescrCurvesTool));
         curveItem.setOnClickListener(v -> {
             selectedTool = 2;
             tuneItem.setColorFilter(null);

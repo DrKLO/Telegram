@@ -198,6 +198,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         addView(rightShadowView, LayoutHelper.createFrame(160, LayoutHelper.MATCH_PARENT, Gravity.RIGHT));
 
         addView(backButton, LayoutHelper.createFrame(56, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        backButton.setContentDescription(LocaleController.getString(R.string.Back));
         backButton.setOnClickListener(view -> onBackPressed());
 
         pinButton = new ImageView(context) {

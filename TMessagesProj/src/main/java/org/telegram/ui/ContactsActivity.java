@@ -309,6 +309,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             actionModeCloseView.setImageDrawable(new BackDrawable(true));
             actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
             actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
+            actionModeCloseView.setContentDescription(LocaleController.getString(R.string.Close));
             actionModeCloseView.setOnClickListener(v -> hideActionMode());
             actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
         }

@@ -412,6 +412,7 @@ public class StickerSetCell extends FrameLayout {
     public void setDeleteAction(OnClickListener action) {
         if (deleteView != null) {
             deleteView.setVisibility(action == null ? View.GONE : View.VISIBLE);
+            deleteView.setContentDescription(LocaleController.getString(R.string.Delete));
             deleteView.setOnClickListener(action);
         }
     }

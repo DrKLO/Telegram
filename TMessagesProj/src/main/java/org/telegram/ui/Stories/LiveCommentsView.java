@@ -432,6 +432,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         arrowButton.setRotation(90.0f);
         arrowButton.setBackground(Theme.createSelectorDrawable(0x40FFFFFF));
 //        addView(arrowButton, LayoutHelper.createFrame(26, 26, Gravity.LEFT | Gravity.BOTTOM, 10, 9, 10, 9));
+        arrowButton.setContentDescription(LocaleController.getString(R.string.Send));
         arrowButton.setOnClickListener(v -> {
             setCollapsed(!collapsed, true);
         });

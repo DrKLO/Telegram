@@ -149,6 +149,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
                 .show();
         });
 
+        timerButton.setContentDescription(LocaleController.getString(R.string.SetTimer));
         timerButton.setOnClickListener(e -> {
             if (timerPopup != null && timerPopup.isShown()) {
                 timerPopup.dismiss();
@@ -289,6 +290,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
     }
 
     public void setOnAddPhotoClick(View.OnClickListener listener) {
+        addPhotoButton.setContentDescription(LocaleController.getString(R.string.AttachPhoto));
         addPhotoButton.setOnClickListener(listener);
     }
 

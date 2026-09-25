@@ -1282,6 +1282,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         playlist = MediaController.getInstance().getPlaylist();
         if (isMyList()) {
             addItem = menu.addItem(8, R.drawable.msg_add);
+        addItem.setContentDescription(LocaleController.getString(R.string.Add));
         }
         searchItem = menu.addItem(0, R.drawable.outline_header_search)
             .setIsSearchField(true)

@@ -830,6 +830,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
         b.setCustomView(linearLayout);
 
         BottomSheet sheet = b.create();
+        imageView1.setContentDescription(LocaleController.getString(R.string.AccDescrProfilePicture));
         imageView1.setOnClickListener(v -> {
             final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
             if (lastFragment != null) {

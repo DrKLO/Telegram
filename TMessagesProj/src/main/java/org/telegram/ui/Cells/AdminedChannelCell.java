@@ -78,6 +78,7 @@ public class AdminedChannelCell extends FrameLayout {
             deleteButton = new ImageView(context);
             deleteButton.setScaleType(ImageView.ScaleType.CENTER);
             deleteButton.setImageResource(R.drawable.msg_panel_clear);
+            deleteButton.setContentDescription(LocaleController.getString(R.string.Delete));
             deleteButton.setOnClickListener(onClickListener);
             deleteButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
             deleteButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));

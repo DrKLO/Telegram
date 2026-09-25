@@ -174,6 +174,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         closeView.setImageResource(R.drawable.ic_close_white);
         closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
         ScaleStateListAnimator.apply(closeView);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(v -> dismiss());
         headerLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 6, 0));
 

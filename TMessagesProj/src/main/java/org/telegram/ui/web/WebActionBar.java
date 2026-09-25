@@ -343,6 +343,7 @@ public class WebActionBar extends FrameLayout {
         clearButton.setBackground(clearButtonSelector = Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         clearButton.setVisibility(GONE);
         clearButton.setAlpha(0f);
+        clearButton.setContentDescription(LocaleController.getString(R.string.ClearButton));
         clearButton.setOnClickListener(v -> {
             searchEditText.setText("");
         });

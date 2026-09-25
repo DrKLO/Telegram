@@ -110,6 +110,7 @@ public class SelectorUserCell extends BaseCell {
     public void setOptions(View.OnClickListener listener) {
         if (listener != null) {
             optionsView.setVisibility(View.VISIBLE);
+            optionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsView.setOnClickListener(listener);
         } else {
             optionsView.setVisibility(View.GONE);
@@ -120,10 +121,12 @@ public class SelectorUserCell extends BaseCell {
         hasAudioView = audio != null;
         audioView.setVisibility(hasAudioView && showCallButtons ? View.VISIBLE : View.GONE);
 //        audioView.setAlpha(hasAudioView && showCallButtons ? 1.0f : 0.0f);
+        audioView.setContentDescription(LocaleController.getString(R.string.Call));
         audioView.setOnClickListener(audio);
         hasVideoView = video != null;
         videoView.setVisibility(hasVideoView && showCallButtons ? View.VISIBLE : View.GONE);
 //        videoView.setAlpha(hasVideoView && showCallButtons ? 1.0f : 0.0f);
+        videoView.setContentDescription(LocaleController.getString(R.string.VideoCall));
         videoView.setOnClickListener(video);
     }
 
