@@ -191,13 +191,18 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isDialogTranslatable(long dialogId) {
-        return (
-            translatableDialogs.contains(dialogId) &&
-            isFeatureAvailable(dialogId) &&
-            !DialogObject.isEncryptedDialog(dialogId) &&
-            getUserConfig().getClientUserId() != dialogId
-            /* DialogObject.isChatDialog(dialogId) &&*/
-        );
+        if (!translatableDialogs.contains(dialogId) ||
+            !isFeatureAvailable(dialogId) ||
+            DialogObject.isEncryptedDialog(dialogId) ||
+            getUserConfig().getClientUserId() == dialogId) {
+            return false;
+        }
+        String from = getDialogDetectedLanguage(dialogId);
+        String to = getDialogTranslateTo(dialogId);
+        if (from != null && (from.equals(to) || isLanguageRestricted(from))) {
+            return false;
+        }
+        return true;
     }
 
     public boolean isTranslateDialogHidden(long dialogId) {
