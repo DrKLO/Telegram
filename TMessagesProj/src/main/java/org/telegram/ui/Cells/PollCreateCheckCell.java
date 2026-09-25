@@ -40,6 +40,7 @@ public class PollCreateCheckCell extends FrameLayout {
     private final ImageView imageView;
     private final Switch checkBox;
     private boolean animationsEnabled;
+    private CharSequence lockedReason;
     private boolean divider;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -97,6 +98,15 @@ public class PollCreateCheckCell extends FrameLayout {
         checkBox.setContentDescription(text);
     }
 
+    /**
+     * Why this setting cannot be changed at the moment, or null while it can. A locked setting is
+     * only marked with a small padlock on its switch, and a press on it does nothing, so a screen
+     * reader offered a switch that would not move and said nothing about why.
+     */
+    public void setLocked(CharSequence reason) {
+        lockedReason = reason;
+    }
+
     public void setDivider(boolean divider) {
         this.divider = divider;
         invalidate();
@@ -141,6 +151,11 @@ public class PollCreateCheckCell extends FrameLayout {
         if (multilineValueTextView != null && !TextUtils.isEmpty(multilineValueTextView.getText())) {
             sb.append("\n");
             sb.append(multilineValueTextView.getText());
+        }
+        if (!TextUtils.isEmpty(lockedReason)) {
+            sb.append("\n");
+            sb.append(lockedReason);
+            info.setEnabled(false);
         }
         info.setContentDescription(sb);
         info.setCheckable(true);
