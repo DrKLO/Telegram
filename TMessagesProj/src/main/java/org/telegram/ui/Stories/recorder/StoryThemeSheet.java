@@ -47,6 +47,7 @@ public class StoryThemeSheet extends FrameLayout {
         backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP));
         backButtonDrawable = new BackDrawable(true);
         backButtonView.setImageDrawable(backButtonDrawable);
+        backButtonView.setContentDescription(LocaleController.getString(R.string.AccDescrGoBack));
         backButtonView.setOnClickListener(v -> {
             dismiss();
         });
