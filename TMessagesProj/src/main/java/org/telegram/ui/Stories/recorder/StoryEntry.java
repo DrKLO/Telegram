@@ -1267,7 +1267,6 @@ public class StoryEntry {
             info.backgroundPath = backgroundFile == null ? null : backgroundFile.getPath();
 
             long generalOffset = 0;
-            final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
             if (isVideo && videoPath != null && !isCollage()) {
                 info.originalPath = videoPath;
                 info.isPhoto = false;
@@ -1290,6 +1289,7 @@ public class StoryEntry {
                 info.estimatedDuration = info.endTime - info.startTime;
                 info.volume = videoVolume;
                 info.muted = muted;
+                final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, info.bitrate, true);
                 info.estimatedSize = (long) (params[0][AnimatedFileInfo.PARAM_NUM_AUDIO_FRAME_SIZE] + params[0][AnimatedFileInfo.PARAM_NUM_DURATION] / 1000.0f * encoderBitrate / 8);
                 info.estimatedSize = Math.max(file.length(), info.estimatedSize);
                 info.filterState = filterState;
@@ -1350,6 +1350,7 @@ public class StoryEntry {
                 info.volume = 1f;
                 info.bitrate = -1;
                 info.framerate = 30;
+                final int encoderBitrate = MediaController.extractRealEncoderBitrate(info.resultWidth, info.resultHeight, 0, true);
                 info.estimatedSize = (long) (duration / 1000.0f * encoderBitrate / 8);
                 info.filterState = null;
             }
