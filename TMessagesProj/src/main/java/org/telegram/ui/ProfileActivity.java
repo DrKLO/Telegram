@@ -7496,10 +7496,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == bioRow && (userInfo == null || TextUtils.isEmpty(userInfo.about))) {
                 return false;
             }
-            if (editRow(view, position)) return true;
             if (view instanceof AboutLinkCell && ((AboutLinkCell) view).onClick()) {
                 return false;
             }
+            if (editRow(view, position)) return true;
             String text;
             if (position == locationRow) {
                 text = chatInfo != null && chatInfo.location instanceof TLRPC.TL_channelLocation ? ((TLRPC.TL_channelLocation) chatInfo.location).address : null;
