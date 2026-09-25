@@ -5145,6 +5145,16 @@
     <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
     <string name="AccDescrQuizIncorrectAnswer">Incorrect answer</string>
     <string name="AccDescrQuizExplanation">Explanation</string>
+    <string name="AccDescrPollNoQuestion">Ask a question first</string>
+    <string name="AccDescrPollNoOptions">Add an option first</string>
+    <string name="AccDescrPollQuestionTooLong">The question is too long</string>
+    <string name="AccDescrPollOptionTooLong">An option is too long</string>
+    <string name="AccDescrPollDescriptionTooLong">The description is too long</string>
+    <string name="AccDescrPollExplanationTooLong">The explanation is too long</string>
+    <string name="AccDescrTodoNoTitle">Give the checklist a title first</string>
+    <string name="AccDescrTodoNoTasks">Add a task first</string>
+    <string name="AccDescrTodoTitleTooLong">The title is too long</string>
+    <string name="AccDescrTodoTaskTooLong">A task is too long</string>
     <string name="AccDescrPipMode">Picture-in-Picture mode</string>
     <string name="AccDescrVoipMicOn">Microphone is on</string>
     <string name="AccDescrVoipMicOff">Microphone is off</string>

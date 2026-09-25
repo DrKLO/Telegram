@@ -1107,6 +1107,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     private boolean doneItemEnabled;
+    private CharSequence doneItemDisabledReason;
     private void checkDoneButton() {
         boolean enabled = true;
         int checksCount = 0;
@@ -1148,12 +1149,64 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         parentAlert.setAllowNestedScroll(allowNesterScroll);
         doneItemEnabled = enabled;
+        doneItemDisabledReason = enabled ? null : disabledReason();
         parentAlert.updateDoneItemEnabled();
     }
 
     @Override
     public boolean isDoneItemEnabled() {
         return doneItemEnabled;
+    }
+
+    @Override
+    public CharSequence getDoneItemAccessibilityText() {
+        return doneItemDisabledReason;
+    }
+
+    /**
+     * The first thing standing in the way of sending, in the order the screen is filled in. What is
+     * missing is only ever shown: a count turning red, an answer left unmarked, a hint that fades
+     * away. A dimmed button on its own says nothing about which of them it is.
+     */
+    private CharSequence disabledReason() {
+        final int maxQuestionLength = todo ? getMessagesController().todoTitleLengthMax : MAX_QUESTION_LENGTH;
+        final int maxAnswerLength = todo ? getMessagesController().todoItemLengthMax : MAX_ANSWER_LENGTH;
+        if (TextUtils.isEmpty(getFixedString(questionString))) {
+            return getString(todo ? R.string.AccDescrTodoNoTitle : R.string.AccDescrPollNoQuestion);
+        }
+        if (questionString.length() > maxQuestionLength) {
+            return getString(todo ? R.string.AccDescrTodoTitleTooLong : R.string.AccDescrPollQuestionTooLong);
+        }
+        if (!TextUtils.isEmpty(getFixedString(descriptionString)) && descriptionString.length() > MAX_CAPTION_LENGTH) {
+            return getString(R.string.AccDescrPollDescriptionTooLong);
+        }
+        if (!TextUtils.isEmpty(getFixedString(solutionString)) && solutionString.length() > MAX_SOLUTION_LENGTH) {
+            return getString(R.string.AccDescrPollExplanationTooLong);
+        }
+        int count = 0;
+        for (int a = 0; a < answers.length; a++) {
+            if (!TextUtils.isEmpty(getFixedString(answers[a]))) {
+                if (answers[a].length() > maxAnswerLength) {
+                    return getString(todo ? R.string.AccDescrTodoTaskTooLong : R.string.AccDescrPollOptionTooLong);
+                }
+                count++;
+            }
+        }
+        if (count < 1) {
+            return getString(todo ? R.string.AccDescrTodoNoTasks : R.string.AccDescrPollNoOptions);
+        }
+        if (quizPoll) {
+            int checksCount = 0;
+            for (int a = 0; a < answersChecks.length; a++) {
+                if (!TextUtils.isEmpty(getFixedString(answers[a])) && answersChecks[a]) {
+                    checksCount++;
+                }
+            }
+            if (checksCount < 1) {
+                return getString(R.string.PollTapToSelect);
+            }
+        }
+        return null;
     }
 
     @Override
