@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="VideoPlayerAudioTrack">Audio track</string>
+    <string name="VideoPlayerAudioTrackNumber">Audio track %1$d</string>
+    <string name="VideoPlayerAudioTrackName">%1$d · %2$s</string>
     <string name="AppName">Telegram</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">English</string>
