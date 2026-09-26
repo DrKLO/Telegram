@@ -101,6 +101,9 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         }
 
         public void setText(CharSequence text) {
+            // the words of this button live in a view beside the one that takes the press,
+            // and that one is kept out of a reader's way, so the press had nothing to say
+            background.setContentDescription(text);
             textView.setText(text);
         }
 

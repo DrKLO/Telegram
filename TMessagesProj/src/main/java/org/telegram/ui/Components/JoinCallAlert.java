@@ -161,6 +161,9 @@ public class JoinCallAlert extends BottomSheet {
         public void setText(CharSequence text, boolean animated) {
             this.text = text;
             if (!animated) {
+                // the words of this button live in a view beside the one that takes the press,
+                // and that one is kept out of a reader's way, so the press had nothing to say
+                background.setContentDescription(text);
                 textView[0].setText(text);
             } else {
                 textView[1].setText(text);
