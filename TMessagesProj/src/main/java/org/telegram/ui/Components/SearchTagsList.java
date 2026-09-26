@@ -26,6 +26,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
@@ -43,6 +44,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -802,7 +804,9 @@ public class SearchTagsList extends FrameLayout implements NotificationCenter.No
         }
 
         private ReactionsLayoutInBubble.VisibleReaction lastReaction;
+        private Item currentItem;
         public void set(Item item) {
+            currentItem = item;
             boolean newReactionButton = lastReaction == null || !lastReaction.equals(item.reaction);
             if (newReactionButton) {
                 TLRPC.TL_reactionCount reactionCount = new TLRPC.TL_reactionCount();
@@ -901,6 +905,43 @@ public class SearchTagsList extends FrameLayout implements NotificationCenter.No
                 invalidate();
             }
             return true;
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            // a tag is drawn by hand and holds no text of its own, so it was reached and could be
+            // pressed but never said what it was: a row of nameless buttons, and no telling which
+            // one was picked
+            info.setClassName("android.widget.Button");
+            if (currentItem == null) {
+                return;
+            }
+            final StringBuilder sb = new StringBuilder();
+            sb.append(describeTagReaction(currentItem.reaction));
+            if (!TextUtils.isEmpty(currentItem.name)) {
+                sb.append(", ").append(currentItem.name);
+            }
+            if (currentItem.count > 0) {
+                sb.append(", ").append(LocaleController.formatPluralString("messages", currentItem.count));
+            }
+            info.setText(sb);
+            // picking one leaves the rest unpicked, so it is said the way a chosen thing is
+            info.setSelected(chosen);
+        }
+
+        // a tag is an emoji, and a custom one is a drawing of a plain emoji: what it stands for is
+        // carried beside it and is what there is to read. It is only ever looked up in the cache,
+        // since a node is being filled in here and one that is on the screen has been fetched
+        private CharSequence describeTagReaction(ReactionsLayoutInBubble.VisibleReaction reaction) {
+            if (reaction == null) {
+                return "";
+            }
+            if (!TextUtils.isEmpty(reaction.emojicon)) {
+                return reaction.emojicon;
+            }
+            final String emoticon = MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(currentAccount, reaction.documentId), null);
+            return TextUtils.isEmpty(emoticon) ? "" : emoticon;
         }
 
         @Override
