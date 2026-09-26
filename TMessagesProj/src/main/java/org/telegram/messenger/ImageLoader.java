@@ -803,7 +803,7 @@ public class ImageLoader {
                     }
                 }
                 FileOutputStream stream = new FileOutputStream(thumbFile);
-                originalBitmap.compress(Bitmap.CompressFormat.JPEG, info.big ? 83 : 60, stream);
+                originalBitmap.compress(Bitmap.CompressFormat.JPEG, PhotoCompressPolicy.cacheJpegQuality(info.big), stream);
                 try {
                     stream.close();
                 } catch (Exception e) {

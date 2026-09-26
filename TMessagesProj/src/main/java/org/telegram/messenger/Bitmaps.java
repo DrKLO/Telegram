@@ -129,6 +129,18 @@ public class Bitmaps {
     }
 
     public static Bitmap createScaledBitmap(Bitmap src, int dstWidth, int dstHeight, boolean filter) {
+        if (filter && src != null && dstWidth > 0 && dstHeight > 0
+                && (dstWidth > src.getWidth() || dstHeight > src.getHeight())) {
+            int sw = src.getWidth();
+            int sh = src.getHeight();
+            int[] px = new int[sw * sh];
+            src.getPixels(px, 0, sw, 0, 0, sw, sh);
+            int[] out = PhotoUpsampler.upsampleRgba8888(px, sw, sh, dstWidth, dstHeight);
+            Bitmap.Config cfg = src.getConfig() != null ? src.getConfig() : Bitmap.Config.ARGB_8888;
+            Bitmap dst = Bitmap.createBitmap(dstWidth, dstHeight, cfg);
+            dst.setPixels(out, 0, dstWidth, 0, 0, dstWidth, dstHeight);
+            return dst;
+        }
         return Bitmap.createScaledBitmap(src, dstWidth, dstHeight, filter);
     }
 }
