@@ -487,6 +487,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
         try {
             String useragent = settings.getUserAgentString();
+            // setupWebView() may run again on the same WebView (e.g. when a minimized Mini App tab is restored).
+            // Drop the suffix appended by a previous run first, otherwise the greedy regex below swallows the
+            // "AppleWebKit ... Safari" part and the suffix gets appended twice, changing the UA mid-session.
+            useragent = useragent.replaceAll(" Telegram-Android/.*$", "");
             useragent = useragent.replace("; wv)", ")");
             useragent = useragent.replaceAll("\\(Linux; Android.+;[^)]+\\)", "(Linux; Android " + Build.VERSION.RELEASE + "; K)");
             useragent = useragent.replaceAll("Version/[\\d\\.]+ ", "");
