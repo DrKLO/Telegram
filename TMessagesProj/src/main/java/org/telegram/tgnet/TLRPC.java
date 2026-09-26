@@ -28441,6 +28441,111 @@ public class TLRPC {
             }
             return result;
         }
+
+        public boolean isUncompressedAutoDownloadPhoto() {
+            return getUncompressedAutoDownloadKind() == 1;
+        }
+
+        public boolean isUncompressedAutoDownloadVideo() {
+            return getUncompressedAutoDownloadKind() == 2;
+        }
+
+        // 0 = none, 1 = photo, 2 = video. Send-as-file only; never stickers/emoji/voice/round/music.
+        public int getUncompressedAutoDownloadKind() {
+            if (attributes != null) {
+                for (int a = 0, N = attributes.size(); a < N; a++) {
+                    DocumentAttribute attribute = attributes.get(a);
+                    if (attribute instanceof TL_documentAttributeSticker
+                            || attribute instanceof TL_documentAttributeCustomEmoji
+                            || attribute instanceof TL_documentAttributeAudio) {
+                        return 0;
+                    }
+                    if (attribute instanceof TL_documentAttributeVideo && attribute.round_message) {
+                        return 0;
+                    }
+                }
+            }
+            String name = file_name_fixed;
+            if (name == null || name.length() == 0) {
+                name = file_name;
+            }
+            if ((name == null || name.length() == 0) && attributes != null) {
+                for (int a = 0, N = attributes.size(); a < N; a++) {
+                    DocumentAttribute attribute = attributes.get(a);
+                    if (attribute instanceof TL_documentAttributeFilename && attribute.file_name != null) {
+                        name = attribute.file_name;
+                        break;
+                    }
+                }
+            }
+            if (name != null) {
+                int dot = name.lastIndexOf('.');
+                if (dot >= 0 && dot < name.length() - 1) {
+                    String ext = name.substring(dot + 1).toLowerCase();
+                    if (isUncompressedImageExtension(ext)) {
+                        return 1;
+                    }
+                    if (isUncompressedVideoExtension(ext)) {
+                        return 2;
+                    }
+                }
+            }
+            if (mime_type != null) {
+                String mime = mime_type.toLowerCase();
+                if (mime.startsWith("image/")) {
+                    return 1;
+                }
+                if (mime.startsWith("video/")) {
+                    return 2;
+                }
+            }
+            return 0;
+        }
+
+        private static boolean isUncompressedImageExtension(String ext) {
+            switch (ext) {
+                case "jpg":
+                case "jpeg":
+                case "jpe":
+                case "png":
+                case "webp":
+                case "heic":
+                case "heif":
+                case "bmp":
+                case "tif":
+                case "tiff":
+                case "gif":
+                case "dng":
+                case "raw":
+                case "jxl":
+                case "avif":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static boolean isUncompressedVideoExtension(String ext) {
+            switch (ext) {
+                case "mp4":
+                case "m4v":
+                case "mov":
+                case "mkv":
+                case "webm":
+                case "avi":
+                case "3gp":
+                case "3gpp":
+                case "mpeg":
+                case "mpg":
+                case "wmv":
+                case "flv":
+                case "ts":
+                case "mts":
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 
     public static class TL_document_layer92 extends TL_document {
