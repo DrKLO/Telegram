@@ -166,6 +166,52 @@ public class GiveawayResultsMessageCell {
         textDividerPaint.setTextAlign(Paint.Align.CENTER);
     }
 
+
+    /** Everything the card holds, in the order it is drawn. */
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        appendLayout(sb, titleLayout);
+        appendLayout(sb, topLayout);
+        for (int a = 0; a < userTitles.length; a++) {
+            if (!TextUtils.isEmpty(userTitles[a])) {
+                append(sb, userTitles[a]);
+            }
+        }
+        appendLayout(sb, countriesLayout);
+        appendLayout(sb, bottomLayout);
+        return sb;
+    }
+
+    private static void appendLayout(StringBuilder sb, StaticLayout layout) {
+        if (layout != null) {
+            append(sb, layout.getText());
+        }
+    }
+
+    private static void append(StringBuilder sb, CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append(", ");
+        }
+        // the card is laid out in lines, and a line break is nothing to say
+        sb.append(AndroidUtilities.replaceNewLines(text));
+    }
+
+    /** How many of the winners it names can be opened, and what each of them is called. */
+    public int getUserCount() {
+        return users == null ? 0 : users.length;
+    }
+
+    public CharSequence getUserTitle(int index) {
+        return userTitles != null && index >= 0 && index < userTitles.length ? userTitles[index] : null;
+    }
+
+    public Rect getUserBounds(int index) {
+        return clickRect != null && index >= 0 && index < clickRect.length ? clickRect[index] : null;
+    }
+
     public boolean checkMotionEvent(MotionEvent event) {
         if (messageObject == null || !messageObject.isGiveawayResults()) {
             return false;
