@@ -1091,6 +1091,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
                     contentCell.addView(infoLayout);
                     contentCell.addView(title[i * 2 + j]);
+                    StatisticActivity.groupOverviewEntry(contentCell, title[i * 2 + j], primary[i * 2 + j]);
                     linearLayout.addView(contentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f));
                 }
                 addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, i == 0 ? 16 : 0));

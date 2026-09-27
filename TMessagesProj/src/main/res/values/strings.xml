@@ -4142,6 +4142,7 @@
     <string name="RecentPosts">Recent posts</string>
     <string name="RecentPostsCapitalize">Recent Posts</string>
     <string name="ZoomOut">Zoom out</string>
+    <string name="AccActionChartOpenDay">Show this day</string>
     <string name="IVInteractionsChartTitle">IV Interactions</string>
     <string name="LoadingStats">Loading stats...</string>
     <string name="LoadingStatsDescription">Please wait a few moments while we are generating graphs.</string>
