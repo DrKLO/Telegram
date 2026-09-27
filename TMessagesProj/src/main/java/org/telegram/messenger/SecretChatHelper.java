@@ -8,12 +8,15 @@
 
 package org.telegram.messenger;
 
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+import android.view.accessibility.AccessibilityManager;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.LongSparseIntArray;
@@ -32,10 +35,60 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SecretChatHelper extends BaseController {
+
+    /**
+     * A secret chat is kept from accessibility services, since any service that is turned on can
+     * read whatever is on the screen, and the point of the chat is that nobody else can. That
+     * leaves someone who needs a screen reader with a chat they cannot read at all. They can let
+     * one chat be read, having been told which services will be able to read it, and the other
+     * side is told so in the chat; the choice is kept for that chat.
+     */
+    public static boolean isReadableByAccessibility(int account, int encryptedChatId) {
+        return MessagesController.getMainSettings(account).getBoolean("secret_chat_accessibility_" + encryptedChatId, false);
+    }
+
+    public static void setReadableByAccessibility(int account, int encryptedChatId) {
+        MessagesController.getMainSettings(account).edit().putBoolean("secret_chat_accessibility_" + encryptedChatId, true).apply();
+    }
+
+    // the accessibility services turned on at the moment, by the names they go by in the
+    // settings of the phone, which is where anyone would look for them
+    public static String getEnabledAccessibilityServiceNames() {
+        final StringBuilder sb = new StringBuilder();
+        try {
+            final Context context = ApplicationLoader.applicationContext;
+            final AccessibilityManager am = (AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
+            final List<AccessibilityServiceInfo> services = am == null ? null : am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+            if (services != null) {
+                final PackageManager pm = context.getPackageManager();
+                for (AccessibilityServiceInfo service : services) {
+                    CharSequence name = null;
+                    try {
+                        name = service.getResolveInfo().loadLabel(pm);
+                    } catch (Exception ignore) {
+                    }
+                    if (TextUtils.isEmpty(name)) {
+                        name = service.getResolveInfo() != null && service.getResolveInfo().serviceInfo != null ? service.getResolveInfo().serviceInfo.packageName : service.getId();
+                    }
+                    if (TextUtils.isEmpty(name) || sb.indexOf(name.toString()) >= 0) {
+                        continue;
+                    }
+                    if (sb.length() > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(name);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return sb.toString();
+    }
 
     public static class TL_decryptedMessageHolder extends TLObject {
         public static int constructor = 0x555555F9;
