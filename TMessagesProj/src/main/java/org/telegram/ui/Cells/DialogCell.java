@@ -81,6 +81,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -5632,7 +5633,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 sb.append(". ");
             }
         }
-        if (encryptedChat == null) {
+        // a secret chat keeps its last message to itself, unless it has been let to be read
+        if (encryptedChat == null || SecretChatHelper.isReadableByAccessibility(currentAccount, encryptedChat.id)) {
             StringBuilder messageString = new StringBuilder();
             messageString.append(message.messageText);
             if (!message.isMediaEmpty()) {
