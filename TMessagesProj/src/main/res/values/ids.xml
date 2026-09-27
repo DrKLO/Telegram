@@ -65,4 +65,20 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="acc_action_link_options_0" type="id" />
+    <item name="acc_action_link_options_1" type="id" />
+    <item name="acc_action_link_options_2" type="id" />
+    <item name="acc_action_link_options_3" type="id" />
+    <item name="acc_action_link_options_4" type="id" />
+    <item name="acc_action_link_options_5" type="id" />
+    <item name="acc_action_link_options_6" type="id" />
+    <item name="acc_action_link_options_7" type="id" />
+    <item name="acc_action_link_options_8" type="id" />
+    <item name="acc_action_link_options_9" type="id" />
+    <item name="acc_action_link_options_10" type="id" />
+    <item name="acc_action_link_options_11" type="id" />
+    <item name="acc_action_link_options_12" type="id" />
+    <item name="acc_action_link_options_13" type="id" />
+    <item name="acc_action_link_options_14" type="id" />
+    <item name="acc_action_link_options_15" type="id" />
 </resources>
