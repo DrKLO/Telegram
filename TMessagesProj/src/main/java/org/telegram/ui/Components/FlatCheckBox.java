@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -178,5 +179,17 @@ public class FlatCheckBox extends View {
 
     public void denied() {
         AndroidUtilities.shakeView(this);
+    }
+
+    // the box is drawn with its name inside it, so what it is called and whether it is ticked
+    // are said here, as a check box says them
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.CheckBox");
+        info.setCheckable(true);
+        info.setChecked(checked);
+        info.setText(text);
+        info.setEnabled(enabled);
     }
 }

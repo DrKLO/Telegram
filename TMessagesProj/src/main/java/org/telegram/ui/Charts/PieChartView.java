@@ -412,6 +412,55 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
         super.onDraw(canvas);
     }
 
+    // a pie is read by the slice a finger is on, and a screen reader goes from one slice to the
+    // next, hearing the name, the value and the share of each
+    @Override
+    protected boolean moveAccessibilitySelection(int by) {
+        if (chartData == null || isEmpty || darawingValuesPercentage == null) {
+            return false;
+        }
+        int i = currentSelection;
+        for (int step = 0; step < lines.size(); step++) {
+            i = i < 0 ? (by > 0 ? 0 : lines.size() - 1) : i + by;
+            if (i < 0 || i >= lines.size()) {
+                return false;
+            }
+            if (lines.get(i).enabled && darawingValuesPercentage[i] > 0) {
+                break;
+            }
+        }
+        if (i < 0 || i >= lines.size() || i == currentSelection || !lines.get(i).enabled || darawingValuesPercentage[i] <= 0) {
+            return false;
+        }
+        // the slice is picked where a finger in the middle of it would pick it
+        float p = 0;
+        for (int j = 0; j < i; j++) {
+            if (lines.get(j).enabled || lines.get(j).alpha != 0) {
+                p += darawingValuesPercentage[j];
+            }
+        }
+        final double theta = Math.toRadians((p + darawingValuesPercentage[i] / 2f) * 360f + 90f);
+        final float r = Math.min(rectF.width(), rectF.height()) / 4f;
+        final int x = (int) (chartArea.centerX() - r * Math.cos(theta));
+        final int y = (int) (chartArea.centerY() + AndroidUtilities.dp(16) - r * Math.sin(theta));
+        selectXOnChart(x, y);
+        return currentSelection == i;
+    }
+
+    @Override
+    protected CharSequence getAccessibilitySelectionText() {
+        if (currentSelection < 0 || currentSelection >= lines.size() || values == null) {
+            return null;
+        }
+        final int percent = sum > 0 ? Math.round(values[currentSelection] / sum * 100f) : 0;
+        return lines.get(currentSelection).line.name + ", " + AndroidUtilities.formatWholeNumber((int) values[currentSelection], 0) + ", " + percent + "%";
+    }
+
+    @Override
+    protected boolean canOpenAccessibilitySelection() {
+        return false;
+    }
+
     protected void onActionUp() {
         currentSelection = -1;
         pieLegendView.setVisibility(GONE);
