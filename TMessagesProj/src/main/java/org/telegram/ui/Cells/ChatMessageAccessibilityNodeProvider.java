@@ -522,6 +522,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.drawSelectionBackground || cell.getBackground() != null) {
                 info.setSelected(true);
             }
+            // every link that has a menu when held gets an action that opens it, after
+            // everything else the message offers
+            cell.collectLinksWithOptions();
+            for (int l = 0; l < cell.linksWithOptions.size(); l++) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(cell.linkOptionsActionId(l), cell.linkOptionsLabel(cell.linksWithOptions.get(l))));
+            }
             return info;
         } else {
             AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain();
