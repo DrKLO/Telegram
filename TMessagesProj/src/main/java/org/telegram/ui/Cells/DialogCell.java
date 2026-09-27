@@ -114,6 +114,7 @@ import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.PullForegroundDrawable;
 import org.telegram.ui.Components.QuoteSpan;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.StatusDrawable;
@@ -5459,6 +5460,23 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        // a row is pressed by the list it is in, which answers a finger and nothing else. A
+        // press from a screen reader that nothing answers is sent on by the system as a touch in
+        // the middle of the part of the row that is in sight, and a row half under the folder tabs
+        // had that touch land on a tab: the folder opened instead of the chat. The press goes to
+        // the list here, as a finger's would, at the middle of the row, where a finger pressing
+        // the row as a whole is taken to be, and not on the picture, which opens something else
+        if ((action == AccessibilityNodeInfo.ACTION_CLICK || action == AccessibilityNodeInfo.ACTION_LONG_CLICK) && isEnabled() && getParent() instanceof RecyclerListView) {
+            final RecyclerListView list = (RecyclerListView) getParent();
+            final int position = list.getChildAdapterPosition(this);
+            if (position >= 0) {
+                if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+                    list.clickItem(this, position, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
+                    return true;
+                }
+                return list.longClickItem(this, position, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
+            }
+        }
         if (action == R.id.acc_action_chat_preview && parentFragment != null) {
             parentFragment.showChatPreview(this);
             return true;
