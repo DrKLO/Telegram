@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -24,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -667,14 +669,87 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             super(context);
             sharedDocumentCell = new SharedDocumentCell(context, SharedDocumentCell.VIEW_TYPE_GLOBAL_SEARCH);
             sharedDocumentCell.rightDateTextView.setVisibility(View.GONE);
+            // the row is what is pressed, so it is the row a screen reader stops at and the row
+            // that says what it holds. The cell inside it was handed the row's own node to fill in
+            // as if it were its own, which made the row its own parent and took away that it can
+            // be pressed: a screen reader walking up from it never got out, and swiping passed it
+            // by. The cell is left out, and what it shows is said by the row
+            sharedDocumentCell.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
             addView(sharedDocumentCell);
         }
 
         @Override
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
-            sharedDocumentCell.onInitializeAccessibilityNodeInfo(info);
+            final MessageObject message = sharedDocumentCell.getMessage();
+            if (message == null) {
+                return;
+            }
+            final int position = recyclerListView.getChildAdapterPosition(this);
+            final boolean downloading = position >= downloadingFilesStartRow && position < downloadingFilesEndRow;
+            final StringBuilder sb = new StringBuilder(sharedDocumentCell.getAccessibilityText());
+            // how far along a file is, or that it is stopped, is drawn as a bar and an icon
+            final CharSequence state = getDownloadState(message, downloading);
+            if (!TextUtils.isEmpty(state)) {
+                sb.append(", ").append(state);
+            }
+            info.setText(sb);
+            if (uiCallback != null && uiCallback.actionModeShowing()) {
+                // while files are being picked a press ticks the row
+                info.setCheckable(true);
+                info.setChecked(sharedDocumentCell.isChecked());
+            } else {
+                // what a press does depends on where the file is: it opens one that is here,
+                // stops one that is coming, and fetches one that is not
+                final int label;
+                if (sharedDocumentCell.isLoaded()) {
+                    label = R.string.AccActionOpenFile;
+                } else if (sharedDocumentCell.isLoading()) {
+                    label = R.string.AccActionPause;
+                } else {
+                    label = downloading ? R.string.AccActionResume : R.string.AccActionDownload;
+                }
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString(label)));
+            }
+            if (downloading) {
+                if (position > downloadingFilesStartRow) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_up, LocaleController.getString(R.string.AccActionMoveUp)));
+                }
+                if (position < downloadingFilesEndRow - 1) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_down, LocaleController.getString(R.string.AccActionMoveDown)));
+                }
+            }
         }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            if (action == R.id.acc_action_move_up || action == R.id.acc_action_move_down) {
+                final int position = recyclerListView.getChildAdapterPosition(this);
+                final int to = position + (action == R.id.acc_action_move_up ? -1 : 1);
+                if (position < downloadingFilesStartRow || position >= downloadingFilesEndRow || to < downloadingFilesStartRow || to >= downloadingFilesEndRow) {
+                    return false;
+                }
+                moveDownloadingFile(position, to);
+                recyclerListView.announceForAccessibility(LocaleController.formatString(R.string.AccDescrDownloadMoved, to - downloadingFilesStartRow + 1, downloadingFilesEndRow - downloadingFilesStartRow));
+                return true;
+            }
+            return super.performAccessibilityAction(action, arguments);
+        }
+    }
+
+    // a file that is coming says how much of it has come; one listed as being downloaded that is
+    // not coming at the moment is stopped. One that is here needs nothing said about it
+    private CharSequence getDownloadState(MessageObject message, boolean downloading) {
+        final String fileName = message.getFileName();
+        if (FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+            final Float progress = ImageLoader.getInstance().getFileProgress(fileName);
+            final int percent = progress == null ? 0 : Math.round(progress * 100);
+            return LocaleController.getString(R.string.Downloading) + " " + percent + "%";
+        }
+        if (downloading) {
+            return LocaleController.getString(R.string.AccDescrDownloadPaused);
+        }
+        return null;
     }
 
     public void setUiCallback(FilteredSearchView.UiCallback callback) {
@@ -709,25 +784,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             if (!canMove) {
                 return false;
             }
-            int fromIndex = source.getAdapterPosition();
-            int toIndex = target.getAdapterPosition();
-
-            int idx1 = fromIndex - downloadingFilesStartRow;
-            int idx2 = toIndex - downloadingFilesStartRow;
-            currentLoadingFiles.indexOf(fromIndex - downloadingFilesStartRow);
-            currentLoadingFiles.get(fromIndex - downloadingFilesStartRow);
-
-            MessageObject o1 = currentLoadingFiles.get(idx1);
-            MessageObject o2 = currentLoadingFiles.get(idx2);
-//            int temp = filter1.order;
-//            filter1.order = filter2.order;
-//            filter2.order = temp;
-            currentLoadingFiles.set(idx1, o2);
-            currentLoadingFiles.set(idx2, o1);
-
-            DownloadController.getInstance(currentAccount).swapLoadingPriority(o1, o2);
-
-            adapter.notifyItemMoved(fromIndex, toIndex);
+            moveDownloadingFile(source.getAdapterPosition(), target.getAdapterPosition());
             return false;
         }
 
@@ -755,6 +812,22 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
             super.clearView(recyclerView, viewHolder);
             viewHolder.itemView.setPressed(false);
         }
+    }
+
+    // the files being downloaded are fetched in the order they are listed in, and dragging a row
+    // is what changes it. A screen reader asks for the same move from the row itself
+    private void moveDownloadingFile(int fromIndex, int toIndex) {
+        int idx1 = fromIndex - downloadingFilesStartRow;
+        int idx2 = toIndex - downloadingFilesStartRow;
+
+        MessageObject o1 = currentLoadingFiles.get(idx1);
+        MessageObject o2 = currentLoadingFiles.get(idx2);
+        currentLoadingFiles.set(idx1, o2);
+        currentLoadingFiles.set(idx2, o1);
+
+        DownloadController.getInstance(currentAccount).swapLoadingPriority(o1, o2);
+
+        adapter.notifyItemMoved(fromIndex, toIndex);
     }
 
     public void checkItemsFloodWait() {
