@@ -4571,6 +4571,9 @@
     <string name="VoipVideoOnPause">Video on Pause</string>
     <string name="VoipVideoScreenSharingTwoLines">You are sharing\nyour screen</string>
     <string name="VoipVideoScreenSharing">You are sharing your screen</string>
+    <string name="VoipShareScreenTitle">Share screen</string>
+    <string name="VoipShareScreenAudio">Share the sound of the phone too</string>
+    <string name="VoipShareScreenAudioInfo">Videos, music and anything else apps play will be heard in the call along with your screen. Some apps do not let their sound be shared.</string>
     <string name="VoipVideoPrivateScreenSharing">Everything on your screen, including notifications, will be shared.</string>
     <string name="VoipVideoScreenStopSharing">STOP SHARING</string>
     <string name="VoipPhoneScreen">PHONE SCREEN</string>

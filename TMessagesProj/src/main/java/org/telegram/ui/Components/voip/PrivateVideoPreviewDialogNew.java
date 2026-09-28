@@ -249,8 +249,10 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
                 return;
             }
             if (realCurrentPage == 0) {
-                MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-                ((Activity) getContext()).startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), LaunchActivity.SCREEN_CAPTURE_REQUEST_CODE);
+                ScreenShareAudioPrompt.show(getContext(), null, () -> {
+                    MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+                    ((Activity) getContext()).startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), LaunchActivity.SCREEN_CAPTURE_REQUEST_CODE);
+                });
             } else {
                 dismiss(false, true);
             }

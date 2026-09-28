@@ -170,7 +170,7 @@ public class VideoCapturerDevice {
                         FileLog.d("VideoCapturerDevice init(" + ptr + "): videoCapturer.startCapture SCREEN");
                         videoCapturer.startCapture(size.x, size.y, CAPTURE_FPS);
                         WebRtcAudioRecord audioRecord = WebRtcAudioRecord.Instance;
-                        if (audioRecord != null) {
+                        if (audioRecord != null && shareDeviceAudio) {
                             audioRecord.initDeviceAudioRecord(((ScreenCapturerAndroid) videoCapturer).getMediaProjection());
                         }
                     });
@@ -257,6 +257,9 @@ public class VideoCapturerDevice {
             }
         });
     }
+
+    // whether the sound the phone plays is shared along with the screen, as asked before sharing
+    public static boolean shareDeviceAudio;
 
     public static MediaProjection getMediaProjection() {
         if (instance[1] == null) {
