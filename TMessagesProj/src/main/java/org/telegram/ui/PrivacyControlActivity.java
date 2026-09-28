@@ -1639,13 +1639,13 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             messageCell.messageObject.messageOwner.fwd_from.from_id = new TLRPC.TL_peerUser();
             if (currentType == TYPE_EVERYBODY) {
                 messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsEverybody));
-                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
             } else if (currentType == TYPE_NOBODY) {
                 messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsNobody));
-                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             } else {
                 messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsContacts));
-                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
             }
             messageCell.cell.forceResetMessageObject();
         }
