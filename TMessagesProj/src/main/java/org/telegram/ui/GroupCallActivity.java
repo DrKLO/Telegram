@@ -201,6 +201,7 @@ import org.telegram.ui.Components.conference.message.GroupCallMessagesListView;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Components.conference.GroupCallActivityButtonsLayout;
 import org.telegram.ui.Components.voip.GroupCallGridCell;
+import org.telegram.ui.Components.voip.ScreenShareAudioPrompt;
 import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
 import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
 import org.telegram.ui.Components.voip.GroupCallStatusIcon;
@@ -8352,8 +8353,10 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (parentActivity == null) {
             return;
         }
-        MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) parentActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-        parentActivity.startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), LaunchActivity.SCREEN_CAPTURE_REQUEST_CODE);
+        ScreenShareAudioPrompt.show(parentActivity, null, () -> {
+            MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) parentActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+            parentActivity.startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), LaunchActivity.SCREEN_CAPTURE_REQUEST_CODE);
+        });
     }
 
     private void runAvatarPreviewTransition(boolean enter, GroupCallUserCell view) {
