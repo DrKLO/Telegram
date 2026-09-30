@@ -92,6 +92,8 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_dialogBackgroundGray, 0xff000000);
         sparseIntArray.put(Theme.key_dialog_inlineProgressBackground, -15393241);
         sparseIntArray.put(Theme.key_windowBackgroundWhite, -15198183);
+        sparseIntArray.put(Theme.key_glass_targetMainTabs, -15198183);
+        sparseIntArray.put(Theme.key_glass_tabUnselected, Color.WHITE);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteBlackText, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_emojiPanelEmptyText, -8553090);
         sparseIntArray.put(Theme.key_progressCircle, -10177027);

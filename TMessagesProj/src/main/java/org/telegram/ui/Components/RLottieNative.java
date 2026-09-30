@@ -200,18 +200,6 @@ public final class RLottieNative {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Static native wrappers — for legacy code that still operates on raw pointers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Creates a native animation from a file and returns the raw pointer.
-     * Prefer {@link #createFromFile} for new code.
-     */
-    public static long create(String src, String json, int[] params, int[] colorReplacement, int fitzModifier) {
-        return create(src, json, params, colorReplacement, fitzModifier, null);
-    }
-
     private static long create(String src, String json, int[] params, int[] colorReplacement, int fitzModifier, @Nullable Map<String, Integer> layerColors) {
         Trace.beginSection("RLottieNative#create");
         try {
@@ -240,7 +228,7 @@ public final class RLottieNative {
      * Renders a frame directly using a raw pointer.
      * Prefer the instance method {@link #getFrame(int, Bitmap, boolean)} for new code.
      */
-    public static int getFrame(long ptr, int frame, Bitmap bitmap, boolean clear) {
+    private static int getFrame(long ptr, int frame, Bitmap bitmap, boolean clear) {
         Trace.beginSection("RLottieNative#getFrame");
         try {
             return nGetFrame(ptr, frame, bitmap, clear);
@@ -261,7 +249,7 @@ public final class RLottieNative {
      * Destroys a native animation directly using a raw pointer.
      * Prefer {@link #recycle()} for new code.
      */
-    public static void destroy(long ptr) {
+    private static void destroy(long ptr) {
         Trace.beginSection("RLottieNative#destroy");
         try {
             nDestroy(ptr);

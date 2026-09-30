@@ -7020,6 +7020,10 @@ public class MediaDataController extends BaseController {
     }
 
     public static final int MAX_STYLE_RUNS_COUNT = 1000;
+    private static final int MAX_STYLE_ENTITIES_COUNT = 1000;
+    private static final int MAX_LEGACY_STYLE_ENTITIES_COUNT = 100;
+    private static final int MAX_LEGACY_STYLE_RUNS_COUNT = 100;
+    private static final int MAX_LEGACY_STYLE_PROCESSING_STEPS = 10_000;
     public static final int MAX_LINKS_COUNT = 250;
 
     public static void addAnimatedEmojiSpans(ArrayList<TLRPC.MessageEntity> entities, CharSequence messageText, Paint.FontMetricsInt fontMetricsInt) {
@@ -7055,8 +7059,26 @@ public class MediaDataController extends BaseController {
     }
 
     public static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, int allowedFlags) {
+        if (entities != null && entities.size() > MAX_LEGACY_STYLE_ENTITIES_COUNT) {
+            return getTextStyleRunsSafe(entities, text, allowedFlags);
+        }
+        ArrayList<TextStyleSpan.TextStyleRun> runs = getTextStyleRunsLegacy(entities, text, allowedFlags);
+        return runs != null ? runs : getTextStyleRunsSafe(entities, text, allowedFlags);
+    }
+
+    private static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRunsSafe(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, int allowedFlags) {
         ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
-        ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities);
+        if (entities == null || entities.isEmpty() || text == null || text.length() == 0 || entities.size() > MAX_STYLE_ENTITIES_COUNT) {
+            return runs;
+        }
+
+        ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities.size());
+        for (int i = 0, size = entities.size(); i < size; i++) {
+            TLRPC.MessageEntity entity = entities.get(i);
+            if (entity != null) {
+                entitiesCopy.add(entity);
+            }
+        }
 
         Collections.sort(entitiesCopy, (o1, o2) -> {
             if (o1.offset > o2.offset) {
@@ -7066,21 +7088,143 @@ public class MediaDataController extends BaseController {
             }
             return 0;
         });
+        ArrayList<TextStyleSpan.TextStyleRun> entityRuns = new ArrayList<>(entitiesCopy.size());
+        int[] boundaries = new int[entitiesCopy.size() * 2];
+        int boundariesCount = 0;
         for (int a = 0, N = entitiesCopy.size(); a < N; a++) {
             TLRPC.MessageEntity entity = entitiesCopy.get(a);
-            if (entity == null || entity.length <= 0 || entity.offset < 0 || entity.offset >= text.length()) {
+            if (entity.length <= 0 || entity.offset < 0 || entity.offset >= text.length()) {
                 continue;
-            } else if (entity.offset + entity.length > text.length()) {
-                entity.length = text.length() - entity.offset;
             }
+
+            // Clamp without adding offset + length, which could overflow, and without
+            // modifying the entity received from the network or owned by the caller.
+            final int entityStart = entity.offset;
+            final int entityEnd = entityStart + Math.min(entity.length, text.length() - entityStart);
 
             if (entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
                 continue;
             }
 
             TextStyleSpan.TextStyleRun newRun = new TextStyleSpan.TextStyleRun();
+            newRun.start = entityStart;
+            newRun.end = entityEnd;
+            if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_SPOILER;
+            } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_STRIKE;
+            } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_UNDERLINE;
+            } else if (entity instanceof TLRPC.TL_messageEntityBold) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_BOLD;
+            } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_ITALIC;
+            } else if (entity instanceof TLRPC.TL_messageEntityCode || entity instanceof TLRPC.TL_messageEntityPre) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_MONO;
+            } else if (entity instanceof TLRPC.TL_messageEntityMentionName) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_MENTION;
+                newRun.urlEntity = entity;
+            } else if (entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_MENTION;
+                newRun.urlEntity = entity;
+            } else {
+                newRun.flags = TextStyleSpan.FLAG_STYLE_URL;
+                newRun.urlEntity = entity;
+            }
+            if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
+                newRun.flags |= TextStyleSpan.FLAG_STYLE_TEXT_URL;
+            }
+
+            newRun.flags &= allowedFlags;
+            entityRuns.add(newRun);
+            boundaries[boundariesCount++] = entityStart;
+            boundaries[boundariesCount++] = entityEnd;
+        }
+
+        if (boundariesCount == 0) {
+            return runs;
+        }
+
+        Arrays.sort(boundaries, 0, boundariesCount);
+        for (int boundaryIndex = 0; boundaryIndex < boundariesCount;) {
+            final int segmentStart = boundaries[boundaryIndex];
+            while (boundaryIndex < boundariesCount && boundaries[boundaryIndex] == segmentStart) {
+                boundaryIndex++;
+            }
+            if (boundaryIndex >= boundariesCount) {
+                break;
+            }
+            final int segmentEnd = boundaries[boundaryIndex];
+
+            TextStyleSpan.TextStyleRun segment = null;
+            int selectedUrlStart = Integer.MIN_VALUE;
+            for (int i = 0, size = entityRuns.size(); i < size; i++) {
+                TextStyleSpan.TextStyleRun entityRun = entityRuns.get(i);
+                if (entityRun.start > segmentStart || entityRun.end < segmentEnd) {
+                    continue;
+                }
+                if (segment == null) {
+                    segment = new TextStyleSpan.TextStyleRun();
+                    segment.start = segmentStart;
+                    segment.end = segmentEnd;
+                }
+                segment.flags |= entityRun.flags;
+
+                // The old splitting algorithm gives URL ownership to the
+                // innermost entity.  For equal starts, stable entity order wins.
+                if (entityRun.urlEntity != null &&
+                        (segment.urlEntity == null || entityRun.start > selectedUrlStart)) {
+                    segment.urlEntity = entityRun.urlEntity;
+                    selectedUrlStart = entityRun.start;
+                }
+            }
+
+            if (segment == null) {
+                continue;
+            }
+            if (!runs.isEmpty()) {
+                TextStyleSpan.TextStyleRun previous = runs.get(runs.size() - 1);
+                if (previous.end == segment.start && previous.flags == segment.flags &&
+                        previous.urlEntity == segment.urlEntity) {
+                    previous.end = segment.end;
+                    continue;
+                }
+            }
+            if (runs.size() >= MAX_STYLE_RUNS_COUNT) {
+                runs.clear();
+                return runs;
+            }
+            runs.add(segment);
+        }
+        return runs;
+    }
+
+    private static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRunsLegacy(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, int allowedFlags) {
+        if (entities == null || entities.isEmpty() || text == null || text.length() == 0 || entities.size() > MAX_STYLE_ENTITIES_COUNT) {
+            return new ArrayList<>();
+        }
+
+        ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities.size());
+        for (int i = 0, size = entities.size(); i < size; i++) {
+            TLRPC.MessageEntity entity = entities.get(i);
+            if (entity != null) {
+                entitiesCopy.add(entity);
+            }
+        }
+        Collections.sort(entitiesCopy, (o1, o2) -> Integer.compare(o1.offset, o2.offset));
+
+        ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
+        int processingSteps = 0;
+        for (int a = 0, count = entitiesCopy.size(); a < count; a++) {
+            TLRPC.MessageEntity entity = entitiesCopy.get(a);
+            if (entity.length <= 0 || entity.offset < 0 || entity.offset >= text.length() ||
+                    entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
+                continue;
+            }
+
+            TextStyleSpan.TextStyleRun newRun = new TextStyleSpan.TextStyleRun();
             newRun.start = entity.offset;
-            newRun.end = newRun.start + entity.length;
+            newRun.end = newRun.start + Math.min(entity.length, text.length() - newRun.start);
             TLRPC.MessageEntity urlEntity = null;
             if (entity instanceof TLRPC.TL_messageEntitySpoiler) {
                 newRun.flags = TextStyleSpan.FLAG_STYLE_SPOILER;
@@ -7110,7 +7254,10 @@ public class MediaDataController extends BaseController {
 
             newRun.flags &= allowedFlags;
 
-            for (int b = 0, N2 = runs.size(); b < N2; b++) {
+            for (int b = 0, runsCount = runs.size(); b < runsCount; b++) {
+                if (++processingSteps > MAX_LEGACY_STYLE_PROCESSING_STEPS) {
+                    return null;
+                }
                 TextStyleSpan.TextStyleRun run = runs.get(b);
 
                 if (newRun.start > run.start) {
@@ -7119,24 +7266,27 @@ public class MediaDataController extends BaseController {
                     }
 
                     if (newRun.end < run.end) {
+                        if (runs.size() > MAX_LEGACY_STYLE_RUNS_COUNT - 2) {
+                            return null;
+                        }
                         TextStyleSpan.TextStyleRun r = new TextStyleSpan.TextStyleRun(newRun);
                         r.merge(run);
-                        b++;
-                        N2++;
-                        runs.add(b, r);
+                        runs.add(++b, r);
+                        runsCount++;
 
                         r = new TextStyleSpan.TextStyleRun(run);
                         r.start = newRun.end;
-                        b++;
-                        N2++;
-                        runs.add(b, r);
+                        runs.add(++b, r);
+                        runsCount++;
                     } else {
+                        if (runs.size() >= MAX_LEGACY_STYLE_RUNS_COUNT) {
+                            return null;
+                        }
                         TextStyleSpan.TextStyleRun r = new TextStyleSpan.TextStyleRun(newRun);
                         r.merge(run);
                         r.end = run.end;
-                        b++;
-                        N2++;
-                        runs.add(b, r);
+                        runs.add(++b, r);
+                        runsCount++;
                     }
 
                     int temp = newRun.start;
@@ -7150,28 +7300,40 @@ public class MediaDataController extends BaseController {
                     if (newRun.end == run.end) {
                         run.merge(newRun);
                     } else if (newRun.end < run.end) {
+                        if (runs.size() >= MAX_LEGACY_STYLE_RUNS_COUNT) {
+                            return null;
+                        }
                         TextStyleSpan.TextStyleRun r = new TextStyleSpan.TextStyleRun(run);
                         r.merge(newRun);
                         r.end = newRun.end;
-                        b++;
-                        N2++;
-                        runs.add(b, r);
-
+                        runs.add(++b, r);
+                        runsCount++;
                         run.start = newRun.end;
                     } else {
+                        if (runs.size() >= MAX_LEGACY_STYLE_RUNS_COUNT) {
+                            return null;
+                        }
                         TextStyleSpan.TextStyleRun r = new TextStyleSpan.TextStyleRun(newRun);
                         r.start = run.end;
-                        b++;
-                        N2++;
-                        runs.add(b, r);
-
+                        runs.add(++b, r);
+                        runsCount++;
                         run.merge(newRun);
                     }
                     newRun.end = temp;
                 }
             }
             if (newRun.start < newRun.end) {
+                if (runs.size() >= MAX_LEGACY_STYLE_RUNS_COUNT) {
+                    return null;
+                }
                 runs.add(newRun);
+            }
+        }
+
+        for (int i = 0, size = runs.size(); i < size; i++) {
+            TextStyleSpan.TextStyleRun run = runs.get(i);
+            if (run.start < 0 || run.start >= run.end || run.end > text.length()) {
+                return null;
             }
         }
         return runs;

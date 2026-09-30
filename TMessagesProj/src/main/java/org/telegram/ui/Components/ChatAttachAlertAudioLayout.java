@@ -71,8 +71,6 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private final View fadeView;
 
     private DialogsActivityTopPanelLayout topPanelLayout;
-    private FrameLayout fragmentContextViewWrapper;
-    private FragmentContextView fragmentContextView;
 
     private String query;
 
@@ -159,17 +157,19 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             parentAlert.updateLayout(ChatAttachAlertAudioLayout.this, true, 0);
         });
 
-        fragmentContextViewWrapper = new FrameLayout(context);
-        topPanelLayout.addView(fragmentContextViewWrapper);
-        topPanelLayout.setViewVisible(fragmentContextViewWrapper, true, false);
-        fragmentContextView = new FragmentContextView(context, alert.baseFragment, frameLayout, false, resourcesProvider) {
-            @Override
-            public void setVisibility(int visibility) {
-                topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
-            }
-        };
-        fragmentContextViewWrapper.addView(fragmentContextView);
-        topPanelLayout.setCallFragmentContextView(fragmentContextView);
+        if (alert != null && alert.baseFragment != null) {
+            FrameLayout fragmentContextViewWrapper = new FrameLayout(context);
+            topPanelLayout.addView(fragmentContextViewWrapper);
+            topPanelLayout.setViewVisible(fragmentContextViewWrapper, true, false);
+            FragmentContextView fragmentContextView = new FragmentContextView(context, alert.baseFragment, frameLayout, false, resourcesProvider) {
+                @Override
+                public void setVisibility(int visibility) {
+                    topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
+                }
+            };
+            fragmentContextViewWrapper.addView(fragmentContextView);
+            topPanelLayout.setCallFragmentContextView(fragmentContextView);
+        }
         lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 8, 0, 4);
         lp.topMargin += AndroidUtilities.statusBarHeight + dp(48 - 21);
         frameLayout.addView(topPanelLayout, lp);

@@ -4740,6 +4740,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         rightImage.setCurrentAccount(currentAccount);
         if (captionEdit != null) {
             captionEdit.setAccount(currentAccount);
+            captionEdit.editText.hidePopup(false);
+        }
+        if (topCaptionEdit != null) {
+            topCaptionEdit.setAccount(currentAccount);
+            topCaptionEdit.editText.hidePopup(false);
         }
         if (stickerMakerView != null) {
             stickerMakerView.setCurrentAccount(currentAccount);
@@ -16790,7 +16795,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (size[0] == 0) {
                     imageReceiver.setImageBitmap((Bitmap) null);
                 } else {
-                    imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.photoview_placeholder));
+                    imageReceiver.setImageBitmap(parentActivity.getResources().getDrawable(R.drawable.transparent));
                 }
             }
         } else {
@@ -23623,12 +23628,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             animatingImageView.measure(MeasureSpec.makeMeasureSpec(layoutParams.width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.AT_MOST));
             containerView.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY));
             navigationBar.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(navigationBarHeight, MeasureSpec.EXACTLY));
-        }
-
-        @Override
-        public void requestLayout() {
-            super.requestLayout();
-            AndroidUtilities.printStackTrace("requestLayout");
         }
 
         @Override

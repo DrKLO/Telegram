@@ -211,6 +211,7 @@ public final class RoundVideoSession {
     public static final class Builder {
         private final Context context;
         private final TextureView previewView;
+        private File outputDirectory;
         private CameraFacing initialFacing;
         private OutputResolution outputResolution;
         private CameraResolution cameraResolution;
@@ -267,6 +268,12 @@ public final class RoundVideoSession {
         /** Enables the circular blur, dimming and Telegram overlays. */
         public @NonNull Builder setCompositionEnabled(boolean enabled) {
             compositionEnabled = enabled;
+            return this;
+        }
+
+        /** Sets the directory used for output generations and preview snapshots. */
+        public @NonNull Builder setOutputDirectory(@NonNull File directory) {
+            outputDirectory = directory;
             return this;
         }
 
@@ -490,6 +497,7 @@ public final class RoundVideoSession {
 
     private final Context context;
     private final TextureView previewView;
+    private final File outputDirectory;
     private final Listener listener;
     private final OutputListener outputListener;
     private final ScreenFlashController screenFlashController;
@@ -569,6 +577,9 @@ public final class RoundVideoSession {
         Context applicationContext = context.getApplicationContext();
         this.context = applicationContext == null ? context : applicationContext;
         previewView = builder.previewView;
+        outputDirectory = builder.outputDirectory == null
+                ? this.context.getCacheDir()
+                : builder.outputDirectory;
         requestedFacing = builder.initialFacing;
         outputResolution = builder.outputResolution;
         videoBitrate = builder.videoBitrate;
@@ -966,7 +977,7 @@ public final class RoundVideoSession {
     private void createPreviewSnapshot() {
         File snapshot;
         try {
-            snapshot = File.createTempFile("round_video_preview_", ".mp4", context.getCacheDir());
+            snapshot = createTemporaryFile("round_video_preview_");
         } catch (IOException e) {
             fail(e);
             return;
@@ -1265,7 +1276,7 @@ public final class RoundVideoSession {
     private void createOutputGenerationOnFileThread(boolean includeAudio) throws IOException {
         synchronized (outputLock) {
             ensureNotCancelled();
-            File file = File.createTempFile("round_video_", ".mp4", context.getCacheDir());
+            File file = createTemporaryFile("round_video_");
             OutputGeneration generation = new OutputGeneration(nextOutputId++, file);
             outputGeneration = generation;
             writer = new RoundVideoMp4Writer(
@@ -1454,6 +1465,19 @@ public final class RoundVideoSession {
 
     private void ensureNotCancelled() throws IOException {
         if (cancelRequested) throw new IOException("Round-video operation was cancelled");
+    }
+
+    private @NonNull File createTemporaryFile(@NonNull String prefix) throws IOException {
+        if (outputDirectory.exists()) {
+            if (!outputDirectory.isDirectory()) {
+                throw new IOException("Round-video output path is not a directory: "
+                        + outputDirectory);
+            }
+        } else if (!outputDirectory.mkdirs() && !outputDirectory.isDirectory()) {
+            throw new IOException("Cannot create round-video output directory: "
+                    + outputDirectory);
+        }
+        return File.createTempFile(prefix, ".mp4", outputDirectory);
     }
 
     private boolean cancelOutput(@NonNull OutputInvalidationReason reason) {

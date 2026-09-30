@@ -7534,6 +7534,7 @@ public class ChatActivity extends BaseFragment implements
                     topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
                 }
             };
+            fragmentContextView.setSpeedHintViewParent(contentView);
             topPanelLayout.setCallFragmentContextView(fragmentContextView);
             fragmentContextViewWrapper.addView(fragmentContextView);
             fragmentLocationContextViewWrapper.addView(fragmentLocationContextView);
@@ -12225,8 +12226,8 @@ public class ChatActivity extends BaseFragment implements
                     try {
                         intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getParentActivity(), ApplicationLoader.getApplicationId() + ".provider", file));
                         intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    } catch (Exception ignore) {
-                        intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
                 } else {
                     intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
@@ -20165,6 +20166,8 @@ public class ChatActivity extends BaseFragment implements
                     size[0] = thumb.size;
                     if (size[0] == 0) size[0] = -1;
                     return thumb;
+                } else {
+                    size[0] = -1;
                 }
             }
             return null;
@@ -25834,7 +25837,11 @@ public class ChatActivity extends BaseFragment implements
                         if (notPushedSponsoredMessages == null) {
                             notPushedSponsoredMessages = new ArrayList<>();
                         }
-                        notPushedSponsoredMessages.add(obj);
+                        // When retrying, arr is notPushedSponsoredMessages itself: obj is already queued,
+                        // and appending to the list being iterated would loop forever.
+                        if (arr != notPushedSponsoredMessages) {
+                            notPushedSponsoredMessages.add(obj);
+                        }
                         continue;
                     }
                 }

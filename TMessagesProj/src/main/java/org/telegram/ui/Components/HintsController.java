@@ -19,6 +19,7 @@ public class HintsController {
         GroupEmojiPackHintShown("groupEmojiPackShownHint", 1, 1),
         AccountSwitchHint("accountswitchhint", 3, 1f),
         GiftMessageHint("giftMessaheHint", 3, 1f),
+        PlaybackSpeedHint("playbackspeedhint", 3, 0.2f),
 
         GuestBotPrivacy(3, 1f);
 
