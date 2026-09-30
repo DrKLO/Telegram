@@ -8,10 +8,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.content.Intent;
+import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.car.app.CarContext;
+import androidx.car.app.HostInfo;
 import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.CarIcon;
@@ -46,6 +49,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TelegramMediaSession;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -54,6 +58,7 @@ import org.telegram.tgnet.TLRPC;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +76,16 @@ public class HomeScreen extends Screen
     private final long sessionStartMillis;
     private int currentAccount;
 
+    /**
+     * Voice notes whose download this screen requested, keyed by FileLoader attach name.
+     * Only touched from the main thread: onGetTemplate is called by the host there, and
+     * fileLoaded is delivered there too.
+     */
+    private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+
+    /** Voice-note URIs the host was granted read access to, so they can be revoked later. */
+    private final HashSet<Uri> grantedUris = new HashSet<>();
+
     private String activeTabId = TAB_NOTIFICATIONS;
     private boolean musicLoadKicked;
 
@@ -86,6 +101,9 @@ public class HomeScreen extends Screen
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.notificationsCountUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.activeAccountChanged);
+        // fileLoaded is posted per account, not globally, so it has to be observed on the
+        // current account's center and moved whenever that account changes.
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
     }
 
     @Override
@@ -93,14 +111,35 @@ public class HomeScreen extends Screen
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.notificationsCountUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.activeAccountChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+    }
+
+    @Override
+    public void onDestroy(@NonNull LifecycleOwner owner) {
+        revokeHostGrants();
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.activeAccountChanged) {
+            // Unsubscribe from the outgoing account before currentAccount moves, or the
+            // observer would be left registered on it forever.
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+            // Drop grants before switching: they point at the outgoing account's files, and
+            // the incoming account must not inherit read access to them.
+            revokeHostGrants();
             currentAccount = UserConfig.selectedAccount;
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
+            pendingVoiceLoads.clear();
             musicLoadKicked = false;
             invalidate();
+        } else if (id == NotificationCenter.fileLoaded) {
+            if (args.length > 0 && args[0] instanceof String
+                    && pendingVoiceLoads.remove(args[0])
+                    && TAB_NOTIFICATIONS.equals(activeTabId)) {
+                // The note is on disk now; rebuilding attaches it as playable audio.
+                invalidate();
+            }
         } else if ((id == NotificationCenter.pushMessagesUpdated || id == NotificationCenter.notificationsCountUpdated)
                 && TAB_NOTIFICATIONS.equals(activeTabId)) {
             invalidate();
@@ -271,12 +310,113 @@ public class HomeScreen extends Screen
             senderBuilder.setName("");
         }
 
-        return new CarMessage.Builder()
+        CarMessage.Builder builder = new CarMessage.Builder()
                 .setBody(CarText.create(body))
                 .setReceivedTimeEpochMillis(((long) mo.messageOwner.date) * 1000L)
                 .setSender(senderBuilder.build())
-                .setRead(false)
-                .build();
+                .setRead(false);
+
+        attachVoiceNote(builder, mo, preview[0]);
+
+        return builder.build();
+    }
+
+    /**
+     * Offers a received voice note to the car as playable audio. Without this the host only
+     * gets the text body, which for a voice note is just a placeholder label.
+     */
+    private void attachVoiceNote(CarMessage.Builder builder, MessageObject mo, boolean previewAllowed) {
+        if (!mo.isVoice()) {
+            return;
+        }
+        boolean locked = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
+        if (!CarVoiceAttachment.isDisclosureAllowed(previewAllowed, locked)) {
+            return;
+        }
+        File file = FileLoader.getInstance(currentAccount).getPathToMessage(mo.messageOwner);
+        Uri uri = CarVoiceAttachment.resolveUri(
+                ApplicationLoader.applicationContext,
+                ApplicationLoader.getApplicationId() + ".provider",
+                file,
+                previewAllowed,
+                locked);
+        if (uri == null) {
+            // Not on disk yet. Auto-download is off by default for voice notes, and in the
+            // car this is the common case: the message usually arrives mid-drive.
+            requestVoiceDownload(mo);
+            return;
+        }
+        if (!grantReadToHost(uri)) {
+            return;
+        }
+        builder.setMultimediaMimeType(CarVoiceAttachment.MIME_TYPE).setMultimediaUri(uri);
+    }
+
+    /**
+     * Fetches a voice note that is not cached yet. The template is rebuilt once the download
+     * lands, via the fileLoaded observer, so the message gains its player without the user
+     * touching anything.
+     */
+    private void requestVoiceDownload(MessageObject mo) {
+        TLRPC.Document document = mo.getDocument();
+        if (document == null) {
+            return;
+        }
+        String fileName = FileLoader.getAttachFileName(document);
+        // add() also deduplicates: onGetTemplate runs on every invalidate, so without this
+        // the same note would be queued again on each rebuild.
+        if (TextUtils.isEmpty(fileName) || !pendingVoiceLoads.add(fileName)) {
+            return;
+        }
+        FileLoader.getInstance(currentAccount).loadFile(document, mo, FileLoader.PRIORITY_HIGH, 0);
+    }
+
+    /**
+     * The car host reads the URI from its own process, so a FileProvider grant is required.
+     * CarMessage crosses Binder rather than travelling in an Intent, so the usual
+     * FLAG_GRANT_READ_URI_PERMISSION on an Intent does not apply and the grant has to be
+     * issued explicitly against the host package.
+     *
+     * @return whether the attachment may be offered; false means fall back to text only,
+     *         since an unreadable URI would surface as a broken control in the car.
+     */
+    private boolean grantReadToHost(Uri uri) {
+        try {
+            HostInfo host = getCarContext().getHostInfo();
+            if (host == null || TextUtils.isEmpty(host.getPackageName())) {
+                return false;
+            }
+            getCarContext().grantUriPermission(
+                    host.getPackageName(), uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            grantedUris.add(uri);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Drops the grants handed to the host, so read access does not outlive the drive.
+     *
+     * <p>Deliberately not tied to onPause or to a timer. The host reads the file when the
+     * user presses play, which can be long after the message appeared, so revoking on a
+     * delay -- as the notification code does for images that SystemUI reads immediately --
+     * would risk cutting playback. Bounding the grants to the screen's lifetime and to the
+     * active account keeps them from accumulating without that risk.
+     */
+    private void revokeHostGrants() {
+        if (grantedUris.isEmpty()) {
+            return;
+        }
+        for (Uri uri : grantedUris) {
+            try {
+                ApplicationLoader.applicationContext.revokeUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Throwable ignore) {
+                // Already gone, or never granted; nothing to undo.
+            }
+        }
+        grantedUris.clear();
     }
 
     // ===== Music tab =====
