@@ -168,11 +168,10 @@ public class Utilities {
                 if (allowedChar && start < 0) {
                     start = end;
                 } else if (!allowedChar && start >= 0) {
-                    end++;
                     break;
                 }
             }
-            if (start >= 0) {
+            if (start >= 0 && (end - start > 1 || value.charAt(start) != '-')) {
                 String str = value.subSequence(start, end).toString();
 //                val = parseInt(str);
                 val = Integer.parseInt(str);
