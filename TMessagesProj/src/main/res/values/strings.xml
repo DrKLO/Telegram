@@ -2532,10 +2532,14 @@
     <string name="AutoDownloadPhotos">Photos</string>
     <string name="AutoDownloadVideos">Videos</string>
     <string name="AutoDownloadFiles">Files</string>
+    <string name="AutoDownloadUncompressedPhotos">Uncompressed images</string>
+    <string name="AutoDownloadUncompressedVideos">Uncompressed videos</string>
     <string name="AutoDownloadPhotosOn">Photos</string>
     <string name="AutoDownloadVideosOn">Videos</string>
     <string name="AutoDownloadFilesOn">Files</string>
     <string name="AutoDownloadFilesTitle">Auto-download files and music</string>
+    <string name="AutoDownloadUncompressedPhotosTitle">Auto-download uncompressed images sent as files</string>
+    <string name="AutoDownloadUncompressedVideosTitle">Auto-download uncompressed videos sent as files</string>
     <string name="AutoDownloadPhotosTitle">Auto-download photos</string>
     <string name="AutoDownloadVideosTitle">Auto-download videos and GIFs</string>
     <string name="AutoDownloadMaxVideoSize">Maximum video size</string>
