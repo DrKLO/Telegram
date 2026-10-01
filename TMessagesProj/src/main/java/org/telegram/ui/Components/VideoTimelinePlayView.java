@@ -24,11 +24,20 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
@@ -93,8 +102,133 @@ public class VideoTimelinePlayView extends View {
     private final Paint cutPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    // the handles at the ends of the strip are drawn and dragged by a finger alone: a screen reader
+    // moves them a second at a time, held to the limits a drag is held to, through the same calls
+    private static final int TRIM_START = 1, TRIM_END = 2;
+    private final TrimAccessibilityHelper trimAccessibility = new TrimAccessibilityHelper(this);
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return trimAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean canTrimForAccessibility() {
+        return videoLength > 0 && getMeasuredWidth() > dp(32) && currentMode == MODE_VIDEO;
+    }
+
+    private void moveTrimForAccessibility(int handle, int direction) {
+        final float step = 1000f / videoLength * direction;
+        if (handle == TRIM_START) {
+            progressLeft = Utilities.clamp(progressLeft + step, progressRight, 0);
+            if (progressRight - progressLeft > maxProgressDiff) {
+                progressRight = progressLeft + maxProgressDiff;
+            } else if (minProgressDiff != 0 && progressRight - progressLeft < minProgressDiff) {
+                progressLeft = Math.max(0, progressRight - minProgressDiff);
+            }
+        } else {
+            progressRight = Utilities.clamp(progressRight + step, 1, progressLeft);
+            if (progressRight - progressLeft > maxProgressDiff) {
+                progressLeft = progressRight - maxProgressDiff;
+            } else if (minProgressDiff != 0 && progressRight - progressLeft < minProgressDiff) {
+                progressRight = Math.min(1, progressLeft + minProgressDiff);
+            }
+        }
+        if (progressLeft > playProgress) {
+            playProgress = progressLeft;
+        } else if (progressRight < playProgress) {
+            playProgress = progressRight;
+        }
+        final int type = handle == TRIM_START ? TYPE_LEFT : TYPE_RIGHT;
+        if (delegate != null) {
+            delegate.didStartDragging(type);
+            if (handle == TRIM_START) {
+                delegate.onLeftProgressChanged(progressLeft);
+            } else {
+                delegate.onRightProgressChanged(progressRight);
+            }
+            delegate.didStopDragging(type);
+        }
+        invalidate();
+    }
+
+    private CharSequence trimText(int handle) {
+        final long seconds = (long) ((handle == TRIM_START ? progressLeft : progressRight) * videoLength / 1000);
+        final String time = String.format(java.util.Locale.US, "%d:%02d", seconds / 60, seconds % 60);
+        return LocaleController.formatString(handle == TRIM_START ? R.string.AccDescrVideoTrimStart : R.string.AccDescrVideoTrimEnd, time);
+    }
+
+    private class TrimAccessibilityHelper extends ExploreByTouchHelper {
+        TrimAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        private void bounds(int id, Rect out) {
+            final int width = getMeasuredWidth() - dp(32);
+            final int startX = (int) (width * progressLeft) + dp(16);
+            final int endX = (int) (width * progressRight) + dp(16);
+            if (id == TRIM_START) {
+                out.set(Math.max(0, startX - dp(16)), 0, (startX + endX) / 2, getMeasuredHeight());
+            } else {
+                out.set((startX + endX) / 2, 0, Math.min(getMeasuredWidth(), endX + dp(16)), getMeasuredHeight());
+            }
+            if (out.right <= out.left) {
+                out.right = out.left + 1;
+            }
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (!canTrimForAccessibility()) {
+                return INVALID_ID;
+            }
+            final int width = getMeasuredWidth() - dp(32);
+            final float middle = (width * (progressLeft + progressRight) / 2f) + dp(16);
+            return x < middle ? TRIM_START : TRIM_END;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            if (canTrimForAccessibility()) {
+                ids.add(TRIM_START);
+                ids.add(TRIM_END);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final Rect rect = new Rect();
+            if (!canTrimForAccessibility()) {
+                info.setContentDescription("");
+                rect.set(0, 0, 1, 1);
+                info.setBoundsInParent(rect);
+                return;
+            }
+            info.setClassName("android.widget.SeekBar");
+            info.setContentDescription(trimText(id));
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_FORWARD);
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_BACKWARD);
+            bounds(id, rect);
+            info.setBoundsInParent(rect);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle arguments) {
+            if (!canTrimForAccessibility()) {
+                return false;
+            }
+            if (action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) {
+                moveTrimForAccessibility(id, action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD ? 1 : -1);
+                invalidateVirtualView(id);
+                AndroidUtilities.makeAccessibilityAnnouncement(trimText(id));
+                return true;
+            }
+            return false;
+        }
+    }
+
     public VideoTimelinePlayView(Context context) {
         super(context);
+        ViewCompat.setAccessibilityDelegate(this, trimAccessibility);
         whitePaint.setColor(0xffffffff);
         yellowPaint.setColor(0xffffff00);
         shadowPaint.setColor(0x26000000);
