@@ -79,6 +79,9 @@ import java.util.ArrayList;
 
 public class PrivacySettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
+    // ===== فلگ‌های نمایش ردیف‌ها =====
+public static boolean SHOW_PHONE_NUMBER = false;  // false = مخفی شدن Phone Number
+public static boolean SHOW_MESSAGES = false;      // false = مخفی شدن Messages
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     private AlertDialog progressDialog;
@@ -733,19 +736,27 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         sessionsDetailRow = rowCount++;
 
         privacySectionRow = rowCount++;
-        phoneNumberRow = rowCount++;
-        lastSeenRow = rowCount++;
-        profilePhotoRow = rowCount++;
-        forwardsRow = rowCount++;
-        callsRow = rowCount++;
-        groupsDetailRow = -1;
-        if (!getMessagesController().premiumFeaturesBlocked() || getUserConfig().isPremium()) {
-            voicesRow = rowCount++;
-            noncontactsRow = rowCount++;
-        } else {
-            voicesRow = -1;
-            noncontactsRow = -1;
-        }
+if (SHOW_PHONE_NUMBER) {
+    phoneNumberRow = rowCount++;
+} else {
+    phoneNumberRow = -1;
+}
+lastSeenRow = rowCount++;
+profilePhotoRow = rowCount++;
+forwardsRow = rowCount++;
+callsRow = rowCount++;
+groupsDetailRow = -1;
+boolean premiumOk = !getMessagesController().premiumFeaturesBlocked() || getUserConfig().isPremium();
+if (premiumOk) {
+    voicesRow = rowCount++;
+} else {
+    voicesRow = -1;
+}
+if (premiumOk && SHOW_MESSAGES) {
+    noncontactsRow = rowCount++;
+} else {
+    noncontactsRow = -1;
+}
         birthdayRow = rowCount++;
         giftsRow = rowCount++;
         bioRow = rowCount++;
