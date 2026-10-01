@@ -5463,6 +5463,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             parentFragment.showChatPreview(this);
             return true;
         }
+        if ((action == R.id.acc_action_reorder_up || action == R.id.acc_action_reorder_down) && parentFragment != null) {
+            parentFragment.accessibilityMovePinned(this, action == R.id.acc_action_reorder_up ? -1 : 1);
+            return true;
+        }
         return super.performAccessibilityAction(action, arguments);
     }
 
@@ -5476,6 +5480,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
             if (!isFolderCell() && parentFragment != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_chat_preview, getString(R.string.AccActionChatPreview)));
+                // a pinned chat is put in order by a drag alone, once one is held
+                if (parentFragment.canAccessibilityMovePinned(this, -1)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_up, getString(R.string.AccActionReorderUp)));
+                }
+                if (parentFragment.canAccessibilityMovePinned(this, 1)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_down, getString(R.string.AccActionReorderDown)));
+                }
             }
         }
         if (checkBox != null && checkBox.isChecked()) {
