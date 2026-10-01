@@ -5463,6 +5463,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             parentFragment.showChatPreview(this);
             return true;
         }
+        if (action == R.id.acc_action_chat_swipe && parentFragment != null) {
+            parentFragment.performAccessibilitySwipeAction(this);
+            return true;
+        }
         return super.performAccessibilityAction(action, arguments);
     }
 
@@ -5476,6 +5480,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
             if (!isFolderCell() && parentFragment != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_chat_preview, getString(R.string.AccActionChatPreview)));
+                // a swipe on the row archives it, or does what the settings chose; a screen reader
+                // cannot swipe a row
+                final CharSequence swipeLabel = parentFragment.getAccessibilitySwipeActionLabel(this);
+                if (swipeLabel != null) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_chat_swipe, swipeLabel));
+                }
             }
         }
         if (checkBox != null && checkBox.isChecked()) {

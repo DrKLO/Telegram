@@ -9123,6 +9123,96 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return pinnedCount;
     }
 
+    // what a swipe on a chat does, worked out as the swipe works it out, for a screen reader that
+    // cannot swipe a row. -1 where a swipe does nothing
+    private static final int ACCESSIBILITY_SWIPE_COMMUNITY = -2;
+
+    private int accessibilitySwipeAction(DialogCell cell) {
+        if (cell == null || rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment()) {
+            return -1;
+        }
+        final long dialogId = cell.getDialogId();
+        if (DialogObject.isFolderDialogId(dialogId)) {
+            return -1;
+        }
+        final TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+        if (dialog == null) {
+            return -1;
+        }
+        final int setting = SharedConfig.getChatSwipeAction(currentAccount);
+        final int dialogsType = viewPages != null && viewPages[0] != null ? viewPages[0].dialogsType : initialDialogsType;
+        if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && setting == SwipeGestureSettingsView.SWIPE_GESTURE_FOLDERS
+            || (dialogId == getUserConfig().clientUserId || dialogId == 777000 || dialogsType == 7 || dialogsType == 8) && setting == SwipeGestureSettingsView.SWIPE_GESTURE_ARCHIVE
+            || getMessagesController().isPromoDialog(dialogId, false)) {
+            return -1;
+        }
+        if (ChatObject.isCommunity(getMessagesController().getChat(-dialogId))) {
+            return ACCESSIBILITY_SWIPE_COMMUNITY;
+        }
+        if (folderId == 0 && (setting == SwipeGestureSettingsView.SWIPE_GESTURE_MUTE || setting == SwipeGestureSettingsView.SWIPE_GESTURE_READ || setting == SwipeGestureSettingsView.SWIPE_GESTURE_PIN || setting == SwipeGestureSettingsView.SWIPE_GESTURE_DELETE)) {
+            return setting;
+        }
+        return SwipeGestureSettingsView.SWIPE_GESTURE_ARCHIVE;
+    }
+
+    public CharSequence getAccessibilitySwipeActionLabel(DialogCell cell) {
+        final int action = accessibilitySwipeAction(cell);
+        if (action == -1) {
+            return null;
+        }
+        final long dialogId = cell.getDialogId();
+        final TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+        if (action == ACCESSIBILITY_SWIPE_COMMUNITY) {
+            return getString(R.string.SwipeUngroupCommunity);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_READ) {
+            return getString(dialog.unread_count > 0 || dialog.unread_mark ? R.string.MarkAsRead : R.string.MarkAsUnread);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_MUTE) {
+            return getString(getMessagesController().isDialogMuted(dialogId, 0) ? R.string.ChatsUnmute : R.string.ChatsMute);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_PIN) {
+            return getString(isDialogPinned(dialog) ? R.string.UnpinFromTop : R.string.PinToTop);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_DELETE) {
+            return getString(R.string.Delete);
+        }
+        return getString(folderId == 0 ? R.string.Archive : R.string.Unarchive);
+    }
+
+    // the very same calls the swipe and the bar of a held chat make
+    public void performAccessibilitySwipeAction(DialogCell cell) {
+        final int action = accessibilitySwipeAction(cell);
+        if (action == -1) {
+            return;
+        }
+        final long dialogId = cell.getDialogId();
+        final TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+        final ArrayList<Long> selectedDialogs = new ArrayList<>();
+        selectedDialogs.add(dialogId);
+        if (action == ACCESSIBILITY_SWIPE_COMMUNITY) {
+            performSelectedDialogsAction(selectedDialogs, community_ungroup, true, false);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_READ) {
+            canReadCount = dialog.unread_count > 0 || dialog.unread_mark ? 1 : 0;
+            performSelectedDialogsAction(selectedDialogs, read, true, false);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_MUTE) {
+            if (!getMessagesController().isDialogMuted(dialogId, 0)) {
+                NotificationsController.getInstance(UserConfig.selectedAccount).setDialogNotificationsSettings(dialogId, 0, NotificationsController.SETTING_MUTE_FOREVER);
+                if (BulletinFactory.canShowBulletin(DialogsActivity.this)) {
+                    BulletinFactory.createMuteBulletin(DialogsActivity.this, NotificationsController.SETTING_MUTE_FOREVER).show();
+                }
+            } else {
+                canMuteCount = 0;
+                canUnmuteCount = 1;
+                performSelectedDialogsAction(selectedDialogs, mute, true, false);
+            }
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_PIN) {
+            canPinCount = isDialogPinned(dialog) ? 0 : 1;
+            performSelectedDialogsAction(selectedDialogs, pin, true, false);
+        } else if (action == SwipeGestureSettingsView.SWIPE_GESTURE_DELETE) {
+            performSelectedDialogsAction(selectedDialogs, delete, true, false);
+        } else {
+            canUnarchiveCount = folderId == 0 ? 0 : 1;
+            performSelectedDialogsAction(selectedDialogs, archive, true, false);
+        }
+    }
+
     private boolean isDialogPinned(TLRPC.Dialog dialog) {
         if (dialog == null) {
             return false;
