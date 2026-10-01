@@ -38,6 +38,8 @@ import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -390,13 +392,31 @@ public class Bulletin {
         return this;
     }
 
+    // a bar that can be acted on is read out as it comes up, and a reader still has to swipe to its
+    // button after that: the few seconds it stays are over by then. With a screen reader running it
+    // stays as long as the accessibility setting for the time to take action asks, and ten seconds
+    // at the least
+    static long accessibleTimeout(Context context, long timeout) {
+        if (!AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return timeout;
+        }
+        long result = timeout;
+        if (Build.VERSION.SDK_INT >= 29) {
+            final AccessibilityManager am = (AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
+            if (am != null) {
+                result = am.getRecommendedTimeoutMillis((int) timeout, AccessibilityManager.FLAG_CONTENT_TEXT | AccessibilityManager.FLAG_CONTENT_CONTROLS);
+            }
+        }
+        return Math.max(result, 10000);
+    }
+
     public void setCanHide(boolean canHide) {
         canHide = canHide && loaded;
         if (this.canHide != canHide && layout != null) {
             this.canHide = canHide;
             if (canHide) {
                 if (duration >= 0) {
-                    layout.postDelayed(hideRunnable, duration);
+                    layout.postDelayed(hideRunnable, layout.hasButtonToAct() ? accessibleTimeout(layout.getContext(), duration) : duration);
                 }
             } else {
                 layout.removeCallbacks(hideRunnable);
@@ -791,6 +811,35 @@ public class Bulletin {
         @GravityDef
         private int wideScreenGravity = Gravity.CENTER_HORIZONTAL;
         private final Theme.ResourcesProvider resourcesProvider;
+
+        // a bulletin with a button to act on is kept up for a screen reader, see accessibleTimeout
+        boolean hasButtonToAct() {
+            return false;
+        }
+
+        @Override
+        public boolean onRequestSendAccessibilityEvent(View child, AccessibilityEvent event) {
+            trackAccessibilityFocus(event);
+            return super.onRequestSendAccessibilityEvent(child, event);
+        }
+
+        @Override
+        public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+            super.onInitializeAccessibilityEvent(event);
+            trackAccessibilityFocus(event);
+        }
+
+        // while a reader is on the bulletin or its button it does not go, as while a finger holds it
+        private void trackAccessibilityFocus(AccessibilityEvent event) {
+            if (bulletin == null || !hasButtonToAct()) {
+                return;
+            }
+            if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+                bulletin.setCanHide(false);
+            } else if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED) {
+                bulletin.setCanHide(true);
+            }
+        }
 
         public Layout(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -1318,6 +1367,11 @@ public class Bulletin {
 
         public Button getButton() {
             return button;
+        }
+
+        @Override
+        boolean hasButtonToAct() {
+            return button != null;
         }
 
         public void setButton(Button button) {
