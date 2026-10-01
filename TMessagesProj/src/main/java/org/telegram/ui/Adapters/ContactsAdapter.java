@@ -82,6 +82,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         isAdmin = flags != 0;
         isChannel = flags == 2;
         this.fragment = fragment;
+        setHasStableIds(true);
     }
 
     public void setDisableSections(boolean value) {
@@ -219,6 +220,32 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         return null;
     }
 
+
+    // phone book contacts and the rows that only frame the list are kept apart from users, whose
+    // ids are the positive ones
+    private static final long PHONEBOOK_ITEM_ID_START = Long.MIN_VALUE / 2;
+
+    /**
+     * The list is built again whenever a contact comes online, since by default it is kept in the
+     * order they were last seen. With nothing to tell one row from another, every row is taken off
+     * the screen and put back, and a screen reader on one of them loses its place with the row:
+     * one finds its way back to something, another is left nowhere at all. Each row is known by
+     * what it holds, so a row that is put back is the same row and the focus stays where it was.
+     */
+    @Override
+    public long getItemId(int position) {
+        final int section = getSectionForPosition(position);
+        final int row = getPositionInSectionForPosition(position);
+        final Object item = getItem(section, row);
+        if (item instanceof TLRPC.User) {
+            return ((TLRPC.User) item).id;
+        }
+        if (item instanceof ContactsController.Contact) {
+            return PHONEBOOK_ITEM_ID_START + ((ContactsController.Contact) item).contact_id;
+        }
+        // a header, a divider or a button of the list stays where it is, and is known by its place
+        return -1 - (((long) getItemViewType(section, row) << 40) | ((long) section << 20) | row);
+    }
 
     public int getHash(int section, int position) {
         int sectionIndex = section;
