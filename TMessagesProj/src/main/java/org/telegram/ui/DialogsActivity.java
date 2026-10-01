@@ -3525,15 +3525,12 @@ private static final String OFFICIAL_CHANNEL_URL = "https://app.chat-t.me/news";
                 communityAvatarImage.setForUserOrChat(community, communityAvatarDrawable);
                 actionBar.addView(communityAvatarImage, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.LEFT, 58, 0, 0, 12f));
             } else {
-                statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
-                statusDrawable.center = true;
-                logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
-                logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
-                logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.AppName));
-                ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                actionBar.setTitle(ssb, statusDrawable);
-                updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
+    statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, dp(26));
+    statusDrawable.center = true;
+    SpannableStringBuilder ssb = new SpannableStringBuilder("XGram");
+    ssb.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_telegram_color_dialogsLogo)), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    actionBar.setTitle(ssb, statusDrawable);
+    updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
                 actionBar.setSupportsHolidayImage(true);
