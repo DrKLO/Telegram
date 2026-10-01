@@ -84,6 +84,10 @@ public class Tooltip extends TextView {
         updateTooltipPosition();
         showing = true;
 
+        // it comes up beside what it is about and takes itself away after two seconds. Nothing
+        // is focused and nothing is said, so the reason a control did nothing was never given
+        AndroidUtilities.makeAccessibilityAnnouncement(getText());
+
         AndroidUtilities.cancelRunOnUIThread(dismissRunnable);
         AndroidUtilities.runOnUIThread(dismissRunnable, 2000);
         if (animator != null) {
