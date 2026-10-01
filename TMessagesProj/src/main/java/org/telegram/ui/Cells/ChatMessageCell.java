@@ -27093,6 +27093,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 final long fileSize = currentMessageObject != null ? currentMessageObject.loadedFileSize : 0;
                 if (accessibilityText == null || accessibilityTextUnread != unread || accessibilityTextContentUnread != contentUnread || accessibilityTextFileSize != fileSize) {
                     SpannableStringBuilder sb = new SpannableStringBuilder();
+                    // the pin by the time of a pinned message is drawn, and was not said: it comes
+                    // first, so it is heard before the rest of the message
+                    if (isPinned) {
+                        sb.append(getString(R.string.PinnedMessage));
+                        sb.append(", ");
+                    }
                     if (isChat && currentUser != null && !currentMessageObject.isOut()) {
                         sb.append(UserObject.getUserName(currentUser));
                         sb.setSpan(new ProfileSpan(currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
