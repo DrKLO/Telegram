@@ -5110,6 +5110,8 @@
     <string name="AccDescrMsgSending">Sending</string>
     <string name="AccDescrMsgSendingError">Sending error</string>
     <string name="AccDescrMsgPlayed">Played</string>
+    <string name="AccDescrMediaDownloaded">Downloaded</string>
+    <string name="AccDescrMediaNotDownloaded">Not downloaded</string>
     <string name="AccDescrMsgNotPlayed">Not played</string>
     <string name="AccDescrSearchNext">Next search result</string>
     <string name="AccDescrSearchPrev">Previous search result</string>
