@@ -5004,6 +5004,7 @@
     <string name="AccActionOpenTranscription">Open Voice Transcription</string>
     <string name="AccActionCloseTranscription">Close Transcription</string>
     <string name="AccDescrEmojiButton">Emoji, stickers, and GIFs</string>
+    <string name="AccDescrShowKeyboard">Keyboard</string>
     <string name="AccDescrAttachButton">Attach media</string>
     <string name="AccDescrChanSilentOn">Send silently</string>
     <string name="AccDescrChanSilentOff">Send notifications</string>

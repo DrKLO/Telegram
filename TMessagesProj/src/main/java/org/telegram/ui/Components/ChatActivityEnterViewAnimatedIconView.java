@@ -84,6 +84,16 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
             case VIDEO:
                 setContentDescription(LocaleController.getString(R.string.AccDescrVideoMessage));
                 break;
+            // the emoji button turns into a keyboard while the panel is open, and a press then brings
+            // the keyboard back; only the icon said so
+            case KEYBOARD:
+                setContentDescription(LocaleController.getString(R.string.AccDescrShowKeyboard));
+                break;
+            case SMILE:
+            case STICKER:
+            case GIF:
+                setContentDescription(LocaleController.getString(R.string.AccDescrEmojiButton));
+                break;
         }
     }
 
