@@ -237,6 +237,8 @@ public class BotCommandsMenuView extends View implements Theme.Colorable {
         }
         boolean changed = this.menuText == null || !this.menuText.equals(menuText);
         this.menuText = menuText;
+        // the word is drawn on the button, which was called Bot menu whatever it said
+        setContentDescription(menuText.equals(getString(R.string.BotsMenuTitle)) ? getString("AccDescrBotMenu", R.string.AccDescrBotMenu) : menuText);
         menuTextLayout = null;
         requestLayout();
         return changed;
