@@ -3383,6 +3383,7 @@
     <string name="AddCaption">Add a caption...</string>
     <string name="Caption">Caption</string>
     <string name="PaintDelete">Delete</string>
+    <string name="AccDescrEditorItem">Item on the picture</string>
     <string name="PaintEdit">Edit</string>
     <string name="PaintArrow">Arrow</string>
     <string name="PaintDuplicate">Duplicate</string>
