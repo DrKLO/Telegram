@@ -5104,6 +5104,8 @@
     <string name="AccDescrMyLocation">My location</string>
     <string name="AccDescrLocationNotify">Notify when in range</string>
     <string name="AccDescrVideoQuality">Video quality</string>
+    <string name="AccDescrRoundTrimStart">Start of the round video, %1$s</string>
+    <string name="AccDescrRoundTrimEnd">End of the round video, %1$s</string>
     <string name="AccDescrAspectRatio">Aspect ratio</string>
     <string name="AccDescrMsgRead">Seen</string>
     <string name="AccDescrMsgUnread">Not seen</string>

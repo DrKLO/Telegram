@@ -21,16 +21,23 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -84,8 +91,121 @@ public class VideoTimelineView extends View {
         void didStopDragging();
     }
 
+    // the handles at the ends of the strip are drawn and dragged by a finger alone: a screen reader
+    // moves them a second at a time, held to the limits a drag is held to, through the same calls
+    private static final int TRIM_START = 1, TRIM_END = 2;
+    private final TrimAccessibilityHelper trimAccessibility = new TrimAccessibilityHelper(this);
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return trimAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean canTrimForAccessibility() {
+        return videoLength > 0 && mediaMetadataRetriever != null && getMeasuredWidth() > AndroidUtilities.dp(24);
+    }
+
+    private void moveTrimForAccessibility(int handle, int direction) {
+        final float step = 1000f / videoLength * direction;
+        if (handle == TRIM_START) {
+            progressLeft = Math.max(0, Math.min(progressRight, progressLeft + step));
+            if (progressRight - progressLeft > maxProgressDiff) {
+                progressRight = progressLeft + maxProgressDiff;
+            } else if (minProgressDiff != 0 && progressRight - progressLeft < minProgressDiff) {
+                progressLeft = Math.max(0, progressRight - minProgressDiff);
+            }
+        } else {
+            progressRight = Math.min(1, Math.max(progressLeft, progressRight + step));
+            if (progressRight - progressLeft > maxProgressDiff) {
+                progressLeft = progressRight - maxProgressDiff;
+            } else if (minProgressDiff != 0 && progressRight - progressLeft < minProgressDiff) {
+                progressRight = Math.min(1, progressLeft + minProgressDiff);
+            }
+        }
+        if (delegate != null) {
+            delegate.didStartDragging();
+            if (handle == TRIM_START) {
+                delegate.onLeftProgressChanged(progressLeft);
+            } else {
+                delegate.onRightProgressChanged(progressRight);
+            }
+            delegate.didStopDragging();
+        }
+        invalidate();
+    }
+
+    private CharSequence trimText(int handle) {
+        final long seconds = (long) ((handle == TRIM_START ? progressLeft : progressRight) * videoLength / 1000);
+        final String time = String.format(java.util.Locale.US, "%d:%02d", seconds / 60, seconds % 60);
+        return LocaleController.formatString(handle == TRIM_START ? R.string.AccDescrRoundTrimStart : R.string.AccDescrRoundTrimEnd, time);
+    }
+
+    private class TrimAccessibilityHelper extends ExploreByTouchHelper {
+        TrimAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        private float middle() {
+            final int width = getMeasuredWidth() - AndroidUtilities.dp(24);
+            return width * (progressLeft + progressRight) / 2f + AndroidUtilities.dp(12);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (!canTrimForAccessibility()) {
+                return INVALID_ID;
+            }
+            return x < middle() ? TRIM_START : TRIM_END;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            if (canTrimForAccessibility()) {
+                ids.add(TRIM_START);
+                ids.add(TRIM_END);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final Rect rect = new Rect();
+            if (!canTrimForAccessibility()) {
+                info.setContentDescription("");
+                rect.set(0, 0, 1, 1);
+                info.setBoundsInParent(rect);
+                return;
+            }
+            info.setClassName("android.widget.SeekBar");
+            info.setContentDescription(trimText(id));
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_FORWARD);
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_BACKWARD);
+            final int middle = (int) middle();
+            if (id == TRIM_START) {
+                rect.set(0, 0, Math.max(1, middle), getMeasuredHeight());
+            } else {
+                rect.set(middle, 0, Math.max(middle + 1, getMeasuredWidth()), getMeasuredHeight());
+            }
+            info.setBoundsInParent(rect);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle arguments) {
+            if (!canTrimForAccessibility()) {
+                return false;
+            }
+            if (action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) {
+                moveTrimForAccessibility(id, action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD ? 1 : -1);
+                invalidateVirtualView(id);
+                AndroidUtilities.makeAccessibilityAnnouncement(trimText(id));
+                return true;
+            }
+            return false;
+        }
+    }
+
     public VideoTimelineView(Context context) {
         super(context);
+        ViewCompat.setAccessibilityDelegate(this, trimAccessibility);
 
         paint2.setColor(0x7f000000);
 
