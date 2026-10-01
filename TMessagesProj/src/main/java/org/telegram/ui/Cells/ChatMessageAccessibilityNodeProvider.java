@@ -130,6 +130,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             final long fileSize = cell.currentMessageObject != null ? cell.currentMessageObject.loadedFileSize : 0;
             if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize) {
                 SpannableStringBuilder sb = new SpannableStringBuilder();
+                // the pin by the time of a pinned message is drawn, and was not said: it comes
+                // first, so it is heard before the rest of the message
+                if (cell.isPinned) {
+                    sb.append(getString(R.string.PinnedMessage));
+                    sb.append(", ");
+                }
                 if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
                     sb.append(UserObject.getUserName(cell.currentUser));
                     sb.setSpan(new ProfileSpan(cell.currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
