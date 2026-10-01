@@ -14,6 +14,7 @@ import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -26,6 +27,25 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 public class GroupCallMessagesListView extends RecyclerView {
+
+    // a new comment is said only while a screen reader is in the list, so that nobody listening to the
+    // call or doing anything else in it is talked over
+    private boolean accessibilityFocusInside;
+
+    public boolean isAccessibilityFocusInside() {
+        return accessibilityFocusInside;
+    }
+
+    @Override
+    public boolean onRequestSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+            accessibilityFocusInside = true;
+        } else if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED) {
+            accessibilityFocusInside = false;
+        }
+        return super.onRequestSendAccessibilityEvent(child, event);
+    }
+
     private static final int FADE_HEIGHT = 16;
 
     private final GroupCallMessagesAdapter adapter;
@@ -240,6 +260,7 @@ public class GroupCallMessagesListView extends RecyclerView {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        accessibilityFocusInside = false;
         adapter.detach();
     }
 }
