@@ -89,8 +89,94 @@ public class RichAudioCell extends RichBlockCell
     private boolean attached;
     private final RichCaptionController caption;
 
+    // the player is drawn by hand and pressed by a finger alone: it is a node of its own, played,
+    // paused and moved through as the button and the bar are, and it carries the actions of the block
+    private static final int PLAYER_ID = 1;
+    private final PlayerAccessibilityHelper playerAccessibility = new PlayerAccessibilityHelper(this);
+
+    void installAccessibility() {
+        androidx.core.view.ViewCompat.setAccessibilityDelegate(this, playerAccessibility);
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return playerAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean isPlayingForAccessibility() {
+        return messageObject != null && MediaController.getInstance().isPlayingMessage(messageObject);
+    }
+
+    private class PlayerAccessibilityHelper extends androidx.customview.widget.ExploreByTouchHelper {
+        PlayerAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            return currentRow != null && y < dp(66) ? PLAYER_ID : INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            if (currentRow != null) {
+                ids.add(PLAYER_ID);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @androidx.annotation.NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat info) {
+            final StringBuilder sb = new StringBuilder(org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.ArticleCommandAudio));
+            final String title = audioTitle(), author = audioAuthor();
+            if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(author)) {
+                sb.append(", ").append(org.telegram.messenger.LocaleController.formatString(org.telegram.messenger.R.string.AccDescrMusicInfo, author, title));
+            } else if (!TextUtils.isEmpty(title) || !TextUtils.isEmpty(author)) {
+                sb.append(", ").append(TextUtils.isEmpty(title) ? author : title);
+            }
+            if (lastTimeString != null) {
+                sb.append(", ").append(lastTimeString);
+            }
+            info.setContentDescription(sb);
+            info.setClassName("android.widget.Button");
+            final int label = isUploading() || buttonState == 3 ? org.telegram.messenger.R.string.Cancel
+                : buttonState == 1 ? org.telegram.messenger.R.string.AccActionPause
+                : buttonState == 2 ? org.telegram.messenger.R.string.AccActionDownload
+                : org.telegram.messenger.R.string.AccActionPlay;
+            info.addAction(new androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK, org.telegram.messenger.LocaleController.getString(label)));
+            if (isPlayingForAccessibility()) {
+                info.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_FORWARD);
+                info.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_BACKWARD);
+            }
+            final RichEditorListView list = RichEditorListView.listOf(RichAudioCell.this);
+            if (list != null) {
+                list.addBlockActions(RichAudioCell.this, (android.view.accessibility.AccessibilityNodeInfo) info.getInfo());
+            }
+            info.setBoundsInParent(new android.graphics.Rect(0, 0, Math.max(1, getWidth()), Math.max(1, Math.min(getHeight(), dp(66)))));
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @androidx.annotation.Nullable android.os.Bundle arguments) {
+            if (action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                didPressedButton(true);
+                invalidateVirtualView(id);
+                return true;
+            }
+            if ((action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD || action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) && isPlayingForAccessibility()) {
+                final float progress = Math.max(0, Math.min(1, messageObject.audioProgress + (action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD ? .1f : -.1f)));
+                messageObject.audioProgress = progress;
+                seekBar.setProgress(progress);
+                MediaController.getInstance().seekToProgress(messageObject, progress);
+                invalidate();
+                return true;
+            }
+            final RichEditorListView list = RichEditorListView.listOf(RichAudioCell.this);
+            return list != null && list.performBlockAction(RichAudioCell.this, action);
+        }
+    }
+
     public RichAudioCell(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        installAccessibility();
         this.currentAccount = currentAccount;
         this.resourcesProvider = resourcesProvider;
         setWillNotDraw(false);

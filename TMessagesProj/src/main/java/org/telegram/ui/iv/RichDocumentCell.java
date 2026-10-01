@@ -262,6 +262,43 @@ public class RichDocumentCell extends RichBlockCell implements Theme.Colorable,
         }
     }
 
+    // the file is drawn by hand and pressed by a finger alone: it is read with its name, size and
+    // what a press does, and pressed as a tap is
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final TLRPC.Document document = document();
+        if (document == null) {
+            return;
+        }
+        final StringBuilder sb = new StringBuilder(org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachDocument));
+        if (titleLayout != null) {
+            sb.append(", ").append(titleLayout.getText());
+        }
+        if (sizeLayout != null) {
+            sb.append(", ").append(sizeLayout.getText());
+        }
+        info.setContentDescription(sb);
+        info.setClassName("android.widget.Button");
+        final int label = isUploading() ? org.telegram.messenger.R.string.Cancel
+            : buttonState == 0 ? org.telegram.messenger.R.string.AccActionOpenFile
+            : buttonState == 1 ? org.telegram.messenger.R.string.AccActionDownload
+            : org.telegram.messenger.R.string.AccActionCancelDownload;
+        info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, org.telegram.messenger.LocaleController.getString(label)));
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            info.setScreenReaderFocusable(true);
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+        if (action == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK && document() != null) {
+            pressButton();
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
     private void pressButton() {
         if (isUploading()) {
             if (delegate != null) delegate.onCancelUpload(currentRow);

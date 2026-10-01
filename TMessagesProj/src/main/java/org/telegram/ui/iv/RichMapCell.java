@@ -90,6 +90,8 @@ public class RichMapCell extends RichBlockCell
             }
         });
         addView(clickView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        // the map was a button with no name
+        clickView.setContentDescription(org.telegram.messenger.LocaleController.getString(R.string.ArticleCommandMap));
 
         caption = new RichCaptionController(context, resourcesProvider, new RichCaptionController.Host() {
             @Override public BlockRow currentRow() { return currentRow; }
