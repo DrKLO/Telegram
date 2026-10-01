@@ -59,6 +59,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
@@ -676,6 +677,47 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
     public static class Text extends FrameLayout implements Theme.Colorable {
 
+        // the changes the AI editor makes to a text are marked in it by colour and lines alone: a word
+        // taken out is struck through in red, a word put in is coloured, and a word put in place of
+        // another has a wavy line under it. A screen reader read the words that went and the words
+        // that came one after the other, as if all of them were there. They are said for what they are
+        public static CharSequence diffAccessibilityText(CharSequence text) {
+            if (!(text instanceof Spanned)) {
+                return null;
+            }
+            final Spanned spanned = (Spanned) text;
+            final ArrayList<int[]> marks = new ArrayList<>();
+            for (TextStyleSpan span : spanned.getSpans(0, spanned.length(), TextStyleSpan.class)) {
+                final int flags = span.getStyleFlags();
+                if ((flags & TextStyleSpan.FLAG_STYLE_STRIKE_RED) != 0) {
+                    marks.add(new int[] { spanned.getSpanStart(span), spanned.getSpanEnd(span), 0 });
+                } else if ((flags & TextStyleSpan.FLAG_STYLE_ACCENT) != 0) {
+                    marks.add(new int[] { spanned.getSpanStart(span), spanned.getSpanEnd(span), 1 });
+                }
+            }
+            for (SquigglyLinesSpan span : spanned.getSpans(0, spanned.length(), SquigglyLinesSpan.class)) {
+                marks.add(new int[] { spanned.getSpanStart(span), spanned.getSpanEnd(span), 2 });
+            }
+            if (marks.isEmpty()) {
+                return null;
+            }
+            Collections.sort(marks, (a, b) -> a[0] - b[0]);
+            final StringBuilder sb = new StringBuilder();
+            int position = 0;
+            for (int[] mark : marks) {
+                if (mark[0] < position || mark[1] <= mark[0]) {
+                    continue;
+                }
+                sb.append(spanned, position, mark[0]);
+                final String part = spanned.subSequence(mark[0], mark[1]).toString();
+                final int res = mark[2] == 0 ? R.string.AccDescrAIRemoved : mark[2] == 1 ? R.string.AccDescrAIAdded : R.string.AccDescrAIChanged;
+                sb.append(LocaleController.formatString(res, part));
+                position = mark[1];
+            }
+            sb.append(spanned, position, spanned.length());
+            return sb.toString();
+        }
+
         private final Theme.ResourcesProvider resourcesProvider;
         public boolean needDivider;
         public SpoilersTextView shortTextView;
@@ -821,6 +863,9 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
             shortTextView.setText(text);
             textView.setText(text);
+            final CharSequence accessibilityText = diffAccessibilityText(text);
+            shortTextView.setContentDescription(accessibilityText);
+            textView.setContentDescription(accessibilityText);
             textView.setTextIsSelectable(!noforwards && (spans == null || spans.length == 0));
             textView.setOnLinkPressListener(onLinkPress);
 
