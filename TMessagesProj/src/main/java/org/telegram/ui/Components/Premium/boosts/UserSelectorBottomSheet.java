@@ -62,6 +62,7 @@ import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CheckableRowAccessibility;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
@@ -371,6 +372,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             videoTextView.setText(LocaleController.getString(R.string.ConferenceCallWithVideo));
             videoLayout.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
             ScaleStateListAnimator.apply(videoLayout, 0.025f, 1.5f);
+            CheckableRowAccessibility.apply(videoLayout, videoCheckbox);
             videoLayout.setOnClickListener(v -> {
                 videoCheckbox.setChecked(!videoCheckbox.isChecked(), true);
             });

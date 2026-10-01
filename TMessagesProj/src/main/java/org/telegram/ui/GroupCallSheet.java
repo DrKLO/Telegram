@@ -37,6 +37,7 @@ import org.telegram.ui.Components.AvatarsImageView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CheckableRowAccessibility;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RecyclerListView;
@@ -224,6 +225,7 @@ public class GroupCallSheet {
         checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
         linearLayout.addView(checkboxLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
         ScaleStateListAnimator.apply(checkboxLayout, 0.025f, 1.5f);
+        CheckableRowAccessibility.apply(checkboxLayout, checkbox);
         checkboxLayout.setOnClickListener(v -> {
             checkbox.setChecked(!checkbox.isChecked(), true);
             MessagesController.getGlobalMainSettings().edit().putBoolean("callmiconstart", checkbox.isChecked()).apply();
