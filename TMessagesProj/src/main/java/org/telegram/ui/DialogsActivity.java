@@ -358,10 +358,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 // =============================
 
 private static final boolean ENABLE_OFFICIAL_CHANNEL = true;
+private static final boolean ENABLE_OFFICIAL_STICKERS = true;
+private static final boolean ENABLE_OFFICIAL_SUPPORT = true;
 private static final boolean ENABLE_NEW_CHANNEL = true;
-private static final boolean ENABLE_CONTACTS = true;
-
+private static final boolean ENABLE_CONTACTS = false;
+private static final String OFFICIAL_STICKERS_URL = "https://app.chat-t.me/stickers";
 private static final String OFFICIAL_CHANNEL_URL = "https://app.chat-t.me/news";
+private static final String OFFICIAL_SUPPORT_URL = "https://app.chat-t.me/support";
 
     public MessagesStorage.TopicKey getOpenedDialogId() {
         return openedDialogId;
@@ -13736,11 +13739,23 @@ private static final String OFFICIAL_CHANNEL_URL = "https://app.chat-t.me/news";
             presentFragment(new GroupCreateActivity(args));
         });
         if (ENABLE_OFFICIAL_CHANNEL) {
-    io.add(R.drawable.msg_channel, "کانال رسمی", () -> {
+    io.add(R.drawable.verified_profile, "اطلاع رسانی", () -> {
         Browser.openUrl(getContext(), OFFICIAL_CHANNEL_URL);
     });
 }
 
+        if (ENABLE_OFFICIAL_STICKERS) {
+    io.add(R.drawable.stickers_favorites, "استیکرها", () -> {
+        Browser.openUrl(getContext(), OFFICIAL_STICKERS_URL);
+    });
+}
+
+        if (ENABLE_OFFICIAL_SUPPORT) {
+    io.add(R.drawable.calls_headphones, "پشتیبانی", () -> {
+        Browser.openUrl(getContext(), OFFICIAL_SUPPORT_URL);
+    });
+}
+        
 if (ENABLE_NEW_CHANNEL) {
     io.add(R.drawable.msg_channel, "کانال جدید", () -> {
         Bundle args = new Bundle();
