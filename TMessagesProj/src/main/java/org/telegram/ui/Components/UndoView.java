@@ -30,6 +30,9 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityManager;
+import android.view.accessibility.AccessibilityEvent;
+import android.os.Build;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
@@ -91,6 +94,8 @@ public class UndoView extends FrameLayout {
     private RectF rect;
 
     private long timeLeft;
+    // the focus of a screen reader is on the bar or its button, and the time it has left is not running
+    private boolean accessibilityFocusInside;
     private int prevSeconds;
     private String timeLeftString;
     private int textWidth;
@@ -381,7 +386,30 @@ public class UndoView extends FrameLayout {
         return currentInfoObject;
     }
 
+    @Override
+    public boolean onRequestSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        trackAccessibilityFocus(event);
+        return super.onRequestSendAccessibilityEvent(child, event);
+    }
+
+    @Override
+    public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+        super.onInitializeAccessibilityEvent(event);
+        trackAccessibilityFocus(event);
+    }
+
+    // while a reader is on the bar or its button it does not go
+    private void trackAccessibilityFocus(AccessibilityEvent event) {
+        if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+            accessibilityFocusInside = true;
+        } else if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED) {
+            accessibilityFocusInside = false;
+            lastUpdateTime = SystemClock.elapsedRealtime();
+        }
+    }
+
     public void hide(boolean apply, int animated) {
+        accessibilityFocusInside = false;
         if (getVisibility() != VISIBLE || !isShown) {
             return;
         }
@@ -1547,6 +1575,10 @@ public class UndoView extends FrameLayout {
         }
 
         AndroidUtilities.makeAccessibilityAnnouncement(infoTextView.getText() + (subinfoTextView.getVisibility() == VISIBLE ? ". " + subinfoTextView.getText() : ""));
+        // what was done is carried out for good once the bar goes, and a reader has to hear it out and
+        // then reach the button before that
+        timeLeft = Bulletin.accessibleTimeout(getContext(), timeLeft);
+        accessibilityFocusInside = false;
 
         if (isMultilineSubInfo()) {
             ViewGroup parent = (ViewGroup) getParent();
@@ -1696,7 +1728,9 @@ public class UndoView extends FrameLayout {
 
         long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
-        timeLeft -= dt;
+        if (!accessibilityFocusInside) {
+            timeLeft -= dt;
+        }
         lastUpdateTime = newTime;
         if (timeLeft <= 0) {
             hide(true, hideAnimationType);
