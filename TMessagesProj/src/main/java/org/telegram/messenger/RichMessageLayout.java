@@ -3229,6 +3229,50 @@ public class RichMessageLayout {
             appendText(sb, text, texts);
         }
 
+        // a button in the middle of a line could not be pressed by a screen reader at all: each is a
+        // place of its own after the text, named by what is written on it
+        private ArrayList<RichButtonSpan> accessibilityButtons() {
+            final ArrayList<RichButtonSpan> result = new ArrayList<>();
+            if (texts != null) {
+                for (Text t : texts) {
+                    final RichButtonSpan[] spans = t == null ? null : t.getButtonSpans();
+                    if (spans != null) {
+                        final Spanned spanned = (Spanned) t.layout.getText();
+                        Arrays.sort(spans, (a, b) -> spanned.getSpanStart(a) - spanned.getSpanStart(b));
+                        result.addAll(Arrays.asList(spans));
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return accessibilityButtons().size();
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            final ArrayList<RichButtonSpan> buttons = accessibilityButtons();
+            return element >= 0 && element < buttons.size() ? buttonName(buttons.get(element).getButton()) : null;
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        // the very same call a tap on the button makes
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            final ArrayList<RichButtonSpan> buttons = accessibilityButtons();
+            if (element < 0 || element >= buttons.size() || buttons.get(element).isDisabled()) {
+                return false;
+            }
+            buttons.get(element).didPress(root.getCell(), root.getDelegate(), false);
+            return true;
+        }
+
         private final boolean centered;
         protected int contentPaddingTop;
         protected int contentPaddingBottom;
@@ -3396,6 +3440,28 @@ public class RichMessageLayout {
             this.text = new Text(root, text, this.maxWidth, alignment);
             this.author = !TextUtils.isEmpty(author) ? new Text(root, author, this.maxWidth, alignment) : null;
             this.texts = this.author == null ? new Text[] { this.text } : new Text[] { this.text, this.author };
+        }
+
+        // a button in the middle of a line here could not be pressed by a screen reader: each is a
+        // place of its own, named by what is written on it
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return accessibilityButtonsOf(texts).size();
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return accessibilityButtonName(accessibilityButtonsOf(texts), element);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            return pressAccessibilityButton(accessibilityButtonsOf(texts), element);
         }
 
         private int gap() {
@@ -3700,8 +3766,30 @@ public class RichMessageLayout {
                 if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
                     sb.append('\n');
                 }
-                sb.append(credit.layout.getText());
+                sb.append(withReplacements(credit.layout.getText()));
             }
+        }
+
+        // a button in the middle of a line here could not be pressed by a screen reader: each is a
+        // place of its own, named by what is written on it
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return accessibilityButtonsOf(caption, credit).size();
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return accessibilityButtonName(accessibilityButtonsOf(caption, credit), element);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            return pressAccessibilityButton(accessibilityButtonsOf(caption, credit), element);
         }
 
         public final boolean rtl;
@@ -4116,9 +4204,40 @@ public class RichMessageLayout {
                     if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
                         sb.append(", ");
                     }
-                    sb.append(t.layout.getText());
+                    sb.append(withReplacements(t.layout.getText()));
                 }
             }
+        }
+
+        // a button in the middle of a line here could not be pressed by a screen reader: each is a
+        // place of its own, named by what is written on it
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return accessibilityButtonsOf(tableAccessibilityTexts()).size();
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return accessibilityButtonName(accessibilityButtonsOf(tableAccessibilityTexts()), element);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            return pressAccessibilityButton(accessibilityButtonsOf(tableAccessibilityTexts()), element);
+        }
+
+        private Text[] tableAccessibilityTexts() {
+            final Text[] result = new Text[cellTexts.size() + 1];
+            result[0] = title;
+            for (int i = 0; i < cellTexts.size(); i++) {
+                result[i + 1] = cellTexts.get(i);
+            }
+            return result;
         }
 
         private final TextSelectionHelper.TextLayoutBlock[] textsArr;
@@ -4754,6 +4873,38 @@ public class RichMessageLayout {
         public TornEdge.Params tornParams;
         public Bitmap tornBitmap;
 
+        // what the block says and its button are drawn: both are places of their own, the button
+        // pressed as a tap on it is
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return 2;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            if (element == 1) {
+                return LocaleController.getString(R.string.UnsupportedUpdate);
+            }
+            return LocaleController.getString(R.string.UnsupportedBlockTitle) + ", " + LocaleController.getString(R.string.UnsupportedBlockMessage);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return element == 1;
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementText(int element) {
+            return element == 0;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            if (element != 1 || root.delegate == null) return false;
+            root.delegate.didPressAppUpdateButton();
+            return true;
+        }
+
         public RichUnsupportedBlock(RichMessageLayout root, Rect padding, int maxWidth, int index, int level) {
             super(root, padding, maxWidth);
             this.index = index;
@@ -5051,6 +5202,45 @@ public class RichMessageLayout {
             if (root.delegate != null) {
                 root.delegate.didPressBotButton(root.cell, button.pageButton);
             }
+        }
+
+        // a row of buttons was "buttons" and nothing more to a screen reader, and none of them could be
+        // pressed: each is a place of its own, named by what is written on it, where it is drawn
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return buttons.length;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return element >= 0 && element < buttons.length ? buttonName(buttons[element]) : null;
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected void getBlockAccessibilityElementBounds(int element, Rect out) {
+            if (element < 0 || element >= buttons.length) {
+                super.getBlockAccessibilityElementBounds(element, out);
+                return;
+            }
+            updateLayout();
+            final RichButton button = buttons[element];
+            final int top = (int) (currY + (getHeight() - button.getHeight()) / 2f);
+            out.set(padding.left + button.x, top, padding.left + button.x + button.width, top + button.getHeight());
+        }
+
+        // the very same call a tap on the button makes
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            if (element < 0 || element >= buttons.length || buttons[element].isDisabled) {
+                return false;
+            }
+            onButtonClick(buttons[element]);
+            return true;
         }
 
         private void onButtonLongClick(RichButton button) {
@@ -6404,6 +6594,28 @@ public class RichMessageLayout {
             appendText(sb, text, texts);
         }
 
+        // a button in the middle of a line here could not be pressed by a screen reader: each is a
+        // place of its own, named by what is written on it
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return accessibilityButtonsOf(texts).size();
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return accessibilityButtonName(accessibilityButtonsOf(texts), element);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            return pressAccessibilityButton(accessibilityButtonsOf(texts), element);
+        }
+
         public int gradientColor;
         public LinearGradient gradient;
         public final Matrix matrix = new Matrix();
@@ -7269,6 +7481,35 @@ public class RichMessageLayout {
         private Drawable redPinIcon;
         private static Paint mapBgPaint;
 
+        // the map is drawn and opened by a tap alone: it is a place of its own, opened as a tap does
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return block != null && block.geo != null ? 1 : 0;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            return LocaleController.getString(R.string.AttachLocation);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            if (block == null || block.geo == null || host == null) return false;
+            try {
+                final double lat = block.geo.lat;
+                final double lon = block.geo._long;
+                host.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:" + lat + "," + lon + "?q=" + lat + "," + lon)));
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return true;
+        }
+
         public RichMapBlock(
             RichMessageLayout root,
             Rect padding, int maxWidth,
@@ -7445,6 +7686,46 @@ public class RichMessageLayout {
         private int buttonState;
         private boolean buttonPressed;
         private final int observerTag;
+
+        // the music is drawn and played by a finger on its button alone: it is a place of its own,
+        // read with who made it, its name and its length, and pressed as the button is
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            return currentMessageObject != null && currentDocument != null ? 1 : 0;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            final StringBuilder sb = new StringBuilder(LocaleController.getString(R.string.AttachMusic));
+            final String author = currentMessageObject.getMusicAuthor(false);
+            final String title = currentMessageObject.getMusicTitle(false);
+            if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(author)) {
+                sb.append(", ").append(LocaleController.formatString(R.string.AccDescrMusicInfo, author, title));
+            } else if (!TextUtils.isEmpty(title) || !TextUtils.isEmpty(author)) {
+                sb.append(", ").append(TextUtils.isEmpty(title) ? author : title);
+            }
+            sb.append(", ").append(LocaleController.formatDuration((int) currentMessageObject.getDuration()));
+            return sb;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementStateDescription(int element) {
+            if (buttonState == 1) return LocaleController.getString(R.string.AccActionPause);
+            if (buttonState == 2) return LocaleController.getString(R.string.AccActionDownload);
+            if (buttonState == 3) return LocaleController.getString(R.string.AccActionCancelDownload);
+            return LocaleController.getString(R.string.AccActionPlay);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            didPressedButton(true);
+            return true;
+        }
 
         public RichAudioBlock(RichMessageLayout root, Rect padding, int maxWidth, TL_iv.pageBlockAudio block) {
             super(root, padding, maxWidth);
@@ -7786,6 +8067,54 @@ public class RichMessageLayout {
         private final int observerTag;
 
         private static final int MIN_WIDTH_DP = 220;
+
+        // the file is drawn and pressed by a finger alone, and its menu is a corner of it: both are
+        // places of their own, pressed as a tap is
+        @Override
+        protected int getBlockAccessibilityElementCount() {
+            if (document == null) return 0;
+            return canShowOptions() ? 2 : 1;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementText(int element) {
+            if (element == 1) {
+                return LocaleController.getString(R.string.AccDescrMoreOptions);
+            }
+            final StringBuilder sb = new StringBuilder(LocaleController.getString(R.string.AttachDocument));
+            final CharSequence name = titleLayout != null ? titleLayout.getText() : FileLoader.getDocumentFileName(document);
+            if (!TextUtils.isEmpty(name)) {
+                sb.append(", ").append(name);
+            }
+            sb.append(", ").append(AndroidUtilities.formatFileSize(document.size));
+            return sb;
+        }
+
+        @Override
+        protected CharSequence getBlockAccessibilityElementStateDescription(int element) {
+            if (element == 1) return null;
+            if (buttonState == 1) return LocaleController.getString(R.string.AccActionDownload);
+            if (buttonState == 2) return LocaleController.getString(R.string.AccActionCancelDownload);
+            return LocaleController.getString(R.string.AccActionOpenFile);
+        }
+
+        @Override
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return true;
+        }
+
+        @Override
+        protected boolean onBlockAccessibilityElementClick(int element, View host) {
+            if (element == 1) {
+                if (!canShowOptions()) return false;
+                final float anchorX = root.cell.getTextX() + padding.left - root.padLeft + getMenuX();
+                final float anchorY = root.cell.getTextY() + currY + padding.top + dp(7);
+                root.delegate.didPressRichDocumentOptions(root.cell, document, anchorX, anchorY);
+                return true;
+            }
+            press();
+            return true;
+        }
 
         public RichDocumentBlock(RichMessageLayout root, Rect padding, int maxWidth, TL_iv.pageBlockDocument block) {
             super(root, padding, maxWidth);
@@ -9284,6 +9613,71 @@ public class RichMessageLayout {
 
         public void appendAccessibilityText(SpannableStringBuilder sb) {}
 
+        // a button in the middle of a line stands on a placeholder character the pill is drawn over,
+        // and a screen reader read that character out, as "star". It reads the name of the button
+        protected static Spanned withButtonNames(Spanned spanned) {
+            final RichButtonSpan[] buttons = spanned.getSpans(0, spanned.length(), RichButtonSpan.class);
+            if (buttons == null || buttons.length == 0) {
+                return spanned;
+            }
+            final SpannableStringBuilder ssb = new SpannableStringBuilder(spanned);
+            Arrays.sort(buttons, (a, b) -> spanned.getSpanStart(b) - spanned.getSpanStart(a));
+            for (RichButtonSpan span : buttons) {
+                final int start = spanned.getSpanStart(span);
+                final int end = spanned.getSpanEnd(span);
+                if (start < 0 || end < start || end > ssb.length()) {
+                    continue;
+                }
+                ssb.replace(start, end, " " + buttonName(span.getButton()) + " ");
+            }
+            return ssb;
+        }
+
+        // the buttons in the middle of the lines of a block, in reading order
+        protected static ArrayList<RichButtonSpan> accessibilityButtonsOf(Text... texts) {
+            final ArrayList<RichButtonSpan> result = new ArrayList<>();
+            if (texts == null) {
+                return result;
+            }
+            for (Text t : texts) {
+                final RichButtonSpan[] spans = t == null || t.layout == null ? null : t.getButtonSpans();
+                if (spans != null && t.layout.getText() instanceof Spanned) {
+                    final Spanned spanned = (Spanned) t.layout.getText();
+                    Arrays.sort(spans, (a, b) -> spanned.getSpanStart(a) - spanned.getSpanStart(b));
+                    result.addAll(Arrays.asList(spans));
+                }
+            }
+            return result;
+        }
+
+        protected static CharSequence accessibilityButtonName(ArrayList<RichButtonSpan> buttons, int element) {
+            return element >= 0 && element < buttons.size() ? buttonName(buttons.get(element).getButton()) : null;
+        }
+
+        // the very same call a tap on the button makes
+        protected final boolean pressAccessibilityButton(ArrayList<RichButtonSpan> buttons, int element) {
+            if (element < 0 || element >= buttons.size() || buttons.get(element).isDisabled()) {
+                return false;
+            }
+            buttons.get(element).didPress(root.getCell(), root.getDelegate(), false);
+            return true;
+        }
+
+        protected static CharSequence buttonName(RichButton button) {
+            if (button == null || button.text == null || button.text.layout == null) {
+                return "";
+            }
+            return button.text.layout.getText().toString().trim();
+        }
+
+        public final boolean isAccessibilityElementButton(int element) {
+            return !isAccessibilityElementCheckbox(element) && isBlockAccessibilityElementButton(element - getCheckboxAccessibilityElementCount());
+        }
+
+        protected boolean isBlockAccessibilityElementButton(int element) {
+            return false;
+        }
+
         protected static void appendText(SpannableStringBuilder sb, Text single, Text[] arr) {
             if (single != null && single.layout != null && !TextUtils.isEmpty(single.layout.getText())) {
                 sb.append(withReplacements(single.layout.getText()));
@@ -9303,6 +9697,7 @@ public class RichMessageLayout {
             if (!(cs instanceof Spanned)) {
                 return cs;
             }
+            cs = withButtonNames((Spanned) cs);
             final Spanned spanned = (Spanned) cs;
             final TextSelectionHelper.ReplaceCopyTextSpannable[] spans = spanned.getSpans(0, spanned.length(), TextSelectionHelper.ReplaceCopyTextSpannable.class);
             if (spans == null || spans.length == 0) {
