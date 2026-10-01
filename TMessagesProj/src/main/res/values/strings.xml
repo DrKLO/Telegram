@@ -6669,6 +6669,8 @@
     <string name="TimerPeriodHint">Choose how long the media will be kept after opening.</string>
     <string name="TimerPeriodDoNotDelete">Do Not Delete</string>
     <string name="TimerPeriodOnce">View Once</string>
+    <string name="AccDescrMsgTimeLeft">%1$s left</string>
+    <string name="AccDescrMsgSecretTimer">Disappears %1$s after opening</string>
     <string name="StoriesMovedToContacts">Stories of **%s** were moved to **Archive**.</string>
     <string name="StoriesMovedToDialogs">Stories of **%s** were moved to **Chats**.</string>
     <string name="StoryShared">Story shared</string>
