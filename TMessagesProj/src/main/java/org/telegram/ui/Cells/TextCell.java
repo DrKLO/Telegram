@@ -841,7 +841,7 @@ public class TextCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         CharSequence text = textView.getText();
         if (!TextUtils.isEmpty(text)) {
-            final CharSequence valueText = valueTextView.getText();
+            final CharSequence valueText = accessibilityValueText();
             if (!TextUtils.isEmpty(valueText)) {
                 text = TextUtils.concat(text, ": ", valueText);
             }
@@ -852,9 +852,9 @@ public class TextCell extends FrameLayout {
             info.setChecked(checkBox.isChecked());
             StringBuilder sb = new StringBuilder();
             sb.append(textView.getText());
-            if (!TextUtils.isEmpty(valueTextView.getText())) {
+            if (!TextUtils.isEmpty(accessibilityValueText())) {
                 sb.append('\n');
-                sb.append(valueTextView.getText());
+                sb.append(accessibilityValueText());
             }
             info.setContentDescription(sb);
         } else {
@@ -863,6 +863,20 @@ public class TextCell extends FrameLayout {
             }
         }
         info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+    }
+
+    // a value can be shown in a text of its own, with a spoiler drawn over the part the server keeps
+    // hidden, as the email used to log in is: it was left out, and only the name of the row was read.
+    // The hidden part, a run of stars, is said as an ellipsis rather than star after star
+    private CharSequence accessibilityValueText() {
+        final CharSequence valueText = valueTextView.getText();
+        if (!TextUtils.isEmpty(valueText)) {
+            return valueText;
+        }
+        if (valueSpoilersTextView.getVisibility() == VISIBLE && !TextUtils.isEmpty(valueSpoilersTextView.getText())) {
+            return valueSpoilersTextView.getText().toString().replaceAll("\\*+", "…");
+        }
+        return null;
     }
 
     public void setNeedDivider(boolean needDivider) {
