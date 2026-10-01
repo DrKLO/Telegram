@@ -110,6 +110,8 @@ import java.util.List;
 
 public class LiveCommentsView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
+    private boolean accessibilityFocusInside;
+
     public static final int MAX_MESSAGES_COUNT = 2_000;
 
     public static class Message {
@@ -269,6 +271,18 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             public void invalidate() {
                 super.invalidate();
                 LiveCommentsView.this.invalidate();
+            }
+
+            // a new comment is said only while a screen reader is in the list, so that nobody
+            // watching the stream or doing anything else on it is talked over
+            @Override
+            public boolean onRequestSendAccessibilityEvent(View child, android.view.accessibility.AccessibilityEvent event) {
+                if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+                    accessibilityFocusInside = true;
+                } else if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED) {
+                    accessibilityFocusInside = false;
+                }
+                return super.onRequestSendAccessibilityEvent(child, event);
             }
 
             @Override
@@ -1358,6 +1372,10 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 messages.subList(MAX_MESSAGES_COUNT, messages.size()).clear();
             }
             adapter.update(true);
+            // nothing told a screen reader a comment had come: it is said while the reader is in the list
+            if (accessibilityFocusInside && !message.isReaction && message.text != null && !TextUtils.isEmpty(message.text.text)) {
+                AndroidUtilities.makeAccessibilityAnnouncement(DialogObject.getName(currentAccount, message.dialogId) + ": " + message.text.text);
+            }
         }
 
         if (position <= 0 && !isHistory && (!listView.canScrollVertically(1) || message.id < 0)) {
