@@ -13398,6 +13398,45 @@ public class MessagesController extends BaseController implements NotificationCe
                 arrayList.add(messageObject);
                 new_dialogMessage.put(did, arrayList);
             }
+            // messages.getDialogs returns dialogs ordered by (top message date desc, id desc) and
+            // continues strictly after (offset_date, offset_id, offset_peer), so the cursor for the
+            // next page has to come from the LAST dialog of the returned array.
+            //
+            // lastMessage above is the oldest message anywhere in the page, which is not the same
+            // thing, and the difference is not academic: a monoforum peer (a channel's "direct
+            // messages" peer) is ordered in the list by its channel's activity while its own
+            // top_message can be months older. One of those anywhere in a page drags the cursor
+            // back to that date, the server resumes from there, and every dialog in between is
+            // skipped - and never requested again, because paging only ever moves backwards. On
+            // one account this silently ended a "successful" sweep at 657 of the 1221 dialogs the
+            // server itself reported, and the skipped window was exactly the gap.
+            //
+            // Taking the array's last element instead can only ever move the cursor to a position
+            // no older than before, so it can only fetch more dialogs, never fewer; a page that
+            // yields nothing usable falls through to the old behaviour unchanged.
+            if (!fromCache && !migrate && loadType == 0) {
+                TLRPC.Message lastDialogMessage = null;
+                for (int a = dialogsRes.dialogs.size() - 1; a >= 0 && lastDialogMessage == null; a--) {
+                    TLRPC.Dialog d = dialogsRes.dialogs.get(a);
+                    if (d == null || d.top_message == 0 || d.folder_id != folderId) {
+                        continue;
+                    }
+                    long dialogId = DialogObject.getPeerDialogId(d.peer);
+                    if (dialogId == 0) {
+                        continue;
+                    }
+                    for (int b = 0; b < dialogsRes.messages.size(); b++) {
+                        TLRPC.Message m = dialogsRes.messages.get(b);
+                        if (m != null && m.date != 0 && m.id == d.top_message && MessageObject.getDialogId(m) == dialogId) {
+                            lastDialogMessage = m;
+                            break;
+                        }
+                    }
+                }
+                if (lastDialogMessage != null) {
+                    lastMessage = lastDialogMessage;
+                }
+            }
             if (!fromCache && !migrate && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != -1 && loadType == 0) {
                 int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(folderId);
                 int dialogsLoadOffsetId;
