@@ -14,6 +14,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -220,7 +221,13 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     private Drawable premiumStarDrawable;
 
+    // what the badge drawn on the corner says, for a screen reader: it is drawn and nothing else
+    private String counterValue;
+    private boolean counterIsError;
+
     public void setCounter(String text, boolean isError, boolean animated) {
+        counterValue = text;
+        counterIsError = isError;
         counter.setText(text, animated);
         isHasCounterAnimator.setValue(!TextUtils.isEmpty(text), animated);
         isHasCounterErrorAnimator.setValue(isError, animated);
@@ -239,6 +246,21 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public boolean isTabSelected() {
         return isSelectedAnimator.getValue();
+    }
+
+    // which tab is chosen is shown by the pill behind it and its colour, and what waits in it by the
+    // badge on its corner, all of it drawn: a screen reader was given the label alone
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setSelected(isTabSelected());
+        CharSequence label = textView.getText();
+        if (!TextUtils.isEmpty(counterValue)) {
+            label = counterIsError
+                ? LocaleController.formatString(R.string.AccDescrTabNeedsAttention, label)
+                : LocaleController.formatString(R.string.AccDescrTabUnread, label, counterValue);
+        }
+        info.setContentDescription(label);
     }
 
     @Override
