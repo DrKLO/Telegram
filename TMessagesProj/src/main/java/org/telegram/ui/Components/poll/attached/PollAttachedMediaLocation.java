@@ -20,6 +20,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ClipRoundedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -32,6 +33,11 @@ public class PollAttachedMediaLocation extends PollAttachedMedia {
         this.media = location;
         imageReceiver.setRoundRadius(dp(7));
         setupImageReceiver(imageReceiver);
+    }
+
+    @Override
+    public CharSequence getAccessibilityName() {
+        return LocaleController.getString(R.string.AttachLocation);
     }
 
     private void setupImageReceiver(ImageReceiver imageReceiver) {

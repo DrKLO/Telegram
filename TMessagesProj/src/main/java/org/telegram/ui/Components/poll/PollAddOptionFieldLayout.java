@@ -181,6 +181,7 @@ public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObs
         });
 
         emojiButton = new EmojiButton(context);
+        emojiButton.setContentDescription(getString(R.string.Emoji));
         emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
         ScaleStateListAnimator.apply(emojiButton);
 

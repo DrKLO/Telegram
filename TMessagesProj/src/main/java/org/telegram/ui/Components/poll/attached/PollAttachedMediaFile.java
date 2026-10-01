@@ -23,6 +23,8 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.MediaActionDrawable;
@@ -41,8 +43,8 @@ public class PollAttachedMediaFile extends PollAttachedMedia {
     private final Drawable thumb;
     private final TextPaint tp;
     private final StaticLayout staticLayout;
-
     public PollAttachedMediaFile(@NonNull String path) {
+
         this.path = path;
         this.uri = null;
 
@@ -128,6 +130,12 @@ public class PollAttachedMediaFile extends PollAttachedMedia {
             staticLayout.draw(canvas);
             canvas.restore();
         }
+    }
+
+    @Override
+    public CharSequence getAccessibilityName() {
+        // the name of the file says far more than the word "file" does
+        return TextUtils.isEmpty(name) ? LocaleController.getString(R.string.AttachDocument) : name;
     }
 
     public static Drawable createMessagePreviewDrawable(View view, String title, String subtitle, TLRPC.Document document, MessageObject messageObject) {
