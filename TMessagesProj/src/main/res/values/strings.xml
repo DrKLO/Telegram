@@ -10881,6 +10881,9 @@
     <string name="AIEditorTabStyle">Style</string>
     <string name="AIEditorTabFix">Fix</string>
     <string name="AIEditorApply">Apply</string>
+    <string name="AccDescrAIRemoved">(removed: %1$s)</string>
+    <string name="AccDescrAIAdded">(added: %1$s)</string>
+    <string name="AccDescrAIChanged">(changed to: %1$s)</string>
     <string name="AIEditorLimitButton">Increase Limit</string>
     <string name="AIEditorLimitTitle">Daily Limit Reached</string>
     <string name="AIEditorLimitText">Get **Telegram Premium** for **50x** more AI text transformation per day.</string>
