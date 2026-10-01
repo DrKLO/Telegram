@@ -9123,6 +9123,56 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return pinnedCount;
     }
 
+    // pinned chats are put in order by a drag alone, once one is held: a screen reader moves them with
+    // actions, through the very same calls
+    private ViewPage pageOf(DialogCell cell) {
+        if (viewPages == null || cell == null) {
+            return null;
+        }
+        for (ViewPage page : viewPages) {
+            if (page != null && page.listView == cell.getParent()) {
+                return page;
+            }
+        }
+        return null;
+    }
+
+    public boolean canAccessibilityMovePinned(DialogCell cell, int delta) {
+        final ViewPage page = pageOf(cell);
+        if (!allowMoving || page == null) {
+            return false;
+        }
+        final int position = page.listView.getChildAdapterPosition(cell);
+        if (position < 0) {
+            return false;
+        }
+        final RecyclerView.ViewHolder target = page.listView.findViewHolderForAdapterPosition(position + delta);
+        if (target == null || !(target.itemView instanceof DialogCell)) {
+            return false;
+        }
+        final TLRPC.Dialog from = getMessagesController().dialogs_dict.get(cell.getDialogId());
+        final TLRPC.Dialog to = getMessagesController().dialogs_dict.get(((DialogCell) target.itemView).getDialogId());
+        return from != null && to != null && isDialogPinned(from) && isDialogPinned(to) && !DialogObject.isFolderDialogId(from.id) && !DialogObject.isFolderDialogId(to.id);
+    }
+
+    public void accessibilityMovePinned(DialogCell cell, int delta) {
+        if (!canAccessibilityMovePinned(cell, delta)) {
+            return;
+        }
+        final ViewPage page = pageOf(cell);
+        final int position = page.listView.getChildAdapterPosition(cell);
+        page.dialogsAdapter.moveDialogs(page.listView, position, position + delta);
+        if (viewPages[0].dialogsType == 7 || viewPages[0].dialogsType == 8) {
+            final MessagesController.DialogFilter filter = getMessagesController().selectedDialogFilter[viewPages[0].dialogsType == 8 ? 1 : 0];
+            if (!movingDialogFilters.contains(filter)) {
+                movingDialogFilters.add(filter);
+            }
+        } else {
+            movingWas = true;
+        }
+        AndroidUtilities.makeAccessibilityAnnouncement(getString(delta < 0 ? R.string.AccActionReorderUp : R.string.AccActionReorderDown));
+    }
+
     private boolean isDialogPinned(TLRPC.Dialog dialog) {
         if (dialog == null) {
             return false;

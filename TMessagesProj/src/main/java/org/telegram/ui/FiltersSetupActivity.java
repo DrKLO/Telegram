@@ -384,6 +384,29 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
 
         private ValueAnimator moveImageViewAnimator;
 
+        // the handle was named Reorder and did nothing when pressed: a folder is moved by a drag alone
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            final int position = listView == null ? -1 : listView.getChildAdapterPosition(this);
+            if (canMoveFilter(position, -1)) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_up, LocaleController.getString(R.string.AccActionReorderUp)));
+            }
+            if (canMoveFilter(position, 1)) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_down, LocaleController.getString(R.string.AccActionReorderDown)));
+            }
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+            if (action == R.id.acc_action_reorder_up || action == R.id.acc_action_reorder_down) {
+                final int position = listView == null ? -1 : listView.getChildAdapterPosition(this);
+                moveFilter(position, action == R.id.acc_action_reorder_up ? -1 : 1);
+                return true;
+            }
+            return super.performAccessibilityAction(action, arguments);
+        }
+
         public void setFilter(MessagesController.DialogFilter filter, boolean divider, int position) {
             int oldId = currentFilter == null ? -1 : currentFilter.id;
             currentFilter = filter;
@@ -1215,6 +1238,32 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             viewHolder.itemView.setPressed(false);
             viewHolder.itemView.setTag(R.id.dragging, null);
         }
+    }
+
+    private boolean canMoveFilter(int position, int delta) {
+        final int target = position + delta;
+        return position >= filtersStartPosition && target >= filtersStartPosition && position < items.size() && target < items.size()
+            && items.get(position) != null && items.get(target) != null && items.get(position).filter != null && items.get(target).filter != null;
+    }
+
+    // the very same swap a drag makes, and the same keeping of All Chats first a drag ends with
+    private void moveFilter(int position, int delta) {
+        if (!canMoveFilter(position, delta)) {
+            return;
+        }
+        adapter.swapElements(position, position + delta);
+        if (!UserConfig.getInstance(UserConfig.selectedAccount).isPremium()) {
+            final ArrayList<MessagesController.DialogFilter> filters = getMessagesController().getDialogFilters();
+            for (int i = 0; i < filters.size(); ++i) {
+                if (filters.get(i).isDefault() && i != 0) {
+                    adapter.moveElementToStart(i);
+                    onDefaultTabMoved();
+                    return;
+                }
+            }
+        }
+        final int count = getMessagesController().getDialogFilters().size();
+        AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.formatString(R.string.Of, position + delta - filtersStartPosition + 1, count));
     }
 
     protected void onDefaultTabMoved() {
