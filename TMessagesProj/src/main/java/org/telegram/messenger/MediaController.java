@@ -808,7 +808,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
             if (fullPaintPath == null) {
-                TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(b, compressFormat, AndroidUtilities.getPhotoSize(highQuality), AndroidUtilities.getPhotoSize(highQuality), highQuality ? 99 : 87, false, 101, 101);
+                TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(b, compressFormat, AndroidUtilities.getPhotoSize(highQuality), AndroidUtilities.getPhotoSize(highQuality), PhotoCompressPolicy.chatJpegQuality(highQuality), false, 101, 101);
                 imagePath = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(size, true).toString();
             } else {
                 Bitmap paintBitmap;
@@ -829,7 +829,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     canvas.drawBitmap(paintBitmap, 0, 0, bitmapPaint);
 
                     imagePath = getTempFileAbsolutePath();
-                    resultBitmap.compress(Bitmap.CompressFormat.JPEG, highQuality ? 99 : 87, new FileOutputStream(imagePath));
+                    resultBitmap.compress(Bitmap.CompressFormat.JPEG, PhotoCompressPolicy.chatJpegQuality(highQuality), new FileOutputStream(imagePath));
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
