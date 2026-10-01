@@ -229,9 +229,9 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 } else if (position == storiesRow) {
                     type = -1;
                 } else {
-                    type = DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT;
+                    type = DownloadController.AUTODOWNLOAD_TYPE_FILES;
                 }
-                int index = DownloadController.typeToIndex(type);
+                int index = position == filesRow ? DownloadController.PRESET_SIZE_NUM_DOCUMENT : DownloadController.typeToIndex(type);
 
                 DownloadController.Preset currentPreset;
                 String key;
@@ -381,6 +381,43 @@ public class DataAutoDownloadActivity extends BaseFragment {
                         linearLayout.addView(cells[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50));
                     }
 
+                    final TextCheckBoxCell[] fileTypeCells;
+                    final int[] fileTypes = new int[]{
+                            DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT,
+                            DownloadController.AUTODOWNLOAD_TYPE_FILE_IMAGE,
+                            DownloadController.AUTODOWNLOAD_TYPE_FILE_VIDEO
+                    };
+                    if (position == filesRow) {
+                        HeaderCell fileTypesHeader = new HeaderCell(getParentActivity(), Theme.key_dialogTextBlue2, 21, 15, false);
+                        fileTypesHeader.setText(LocaleController.getString(R.string.AutoDownloadFileTypes));
+                        linearLayout.addView(fileTypesHeader, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                        fileTypeCells = new TextCheckBoxCell[fileTypes.length];
+                        for (int a = 0; a < fileTypes.length; a++) {
+                            boolean enabled = false;
+                            for (int b = 0; b < cells.length; b++) {
+                                if (cells[b].isChecked() && (currentPreset.mask[b] & fileTypes[a]) != 0) {
+                                    enabled = true;
+                                    break;
+                                }
+                            }
+                            TextCheckBoxCell fileTypeCell = fileTypeCells[a] = new TextCheckBoxCell(getParentActivity(), true, false);
+                            int text;
+                            if (a == 0) {
+                                text = R.string.AutoDownloadOtherFiles;
+                            } else if (a == 1) {
+                                text = R.string.AutoDownloadImagesAsFiles;
+                            } else {
+                                text = R.string.AutoDownloadVideosAsFiles;
+                            }
+                            fileTypeCell.setTextAndCheck(LocaleController.getString(text), enabled, a != fileTypes.length - 1);
+                            fileTypeCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                            fileTypeCell.setOnClickListener(v -> fileTypeCell.setChecked(!fileTypeCell.isChecked()));
+                            linearLayout.addView(fileTypeCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50));
+                        }
+                    } else {
+                        fileTypeCells = null;
+                    }
+
                     if (position != photosRow) {
                         TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(getParentActivity());
 
@@ -491,11 +528,26 @@ public class DataAutoDownloadActivity extends BaseFragment {
                             }
                         }
 
-                        for (int a = 0; a < 4; a++) {
-                            if (cells[a].isChecked()) {
-                                typePreset.mask[a] |= type;
-                            } else {
-                                typePreset.mask[a] &= ~type;
+                        if (position == filesRow) {
+                            int selectedFileTypes = 0;
+                            for (int a = 0; a < fileTypeCells.length; a++) {
+                                if (fileTypeCells[a].isChecked()) {
+                                    selectedFileTypes |= fileTypes[a];
+                                }
+                            }
+                            for (int a = 0; a < 4; a++) {
+                                typePreset.mask[a] &= ~DownloadController.AUTODOWNLOAD_TYPE_FILES;
+                                if (cells[a].isChecked()) {
+                                    typePreset.mask[a] |= selectedFileTypes;
+                                }
+                            }
+                        } else {
+                            for (int a = 0; a < 4; a++) {
+                                if (cells[a].isChecked()) {
+                                    typePreset.mask[a] |= type;
+                                } else {
+                                    typePreset.mask[a] &= ~type;
+                                }
                             }
                         }
                         if (sizeCell[0] != null) {
@@ -573,7 +625,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 if ((o1.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_VIDEO) != 0) {
                     video1 = true;
                 }
-                if ((o1.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                if ((o1.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_FILES) != 0) {
                     doc1 = true;
                 }
                 if (video1 && doc1) {
@@ -586,7 +638,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                 if ((o2.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_VIDEO) != 0) {
                     video2 = true;
                 }
-                if ((o2.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                if ((o2.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_FILES) != 0) {
                     doc2 = true;
                 }
                 if (video2 && doc2) {
@@ -707,7 +759,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                         view.setDrawLine(false);
                     } else {
                         text = LocaleController.getString(R.string.AutoDownloadFiles);
-                        type = DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT;
+                        type = DownloadController.AUTODOWNLOAD_TYPE_FILES;
                     }
                     if (currentType == 0) {
                         preset = DownloadController.getInstance(currentAccount).getCurrentMobilePreset();
@@ -716,7 +768,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     } else {
                         preset = DownloadController.getInstance(currentAccount).getCurrentRoamingPreset();
                     }
-                    long maxSize = preset.sizes[DownloadController.typeToIndex(type)];
+                    long maxSize = preset.sizes[position == filesRow ? DownloadController.PRESET_SIZE_NUM_DOCUMENT : DownloadController.typeToIndex(type)];
 
                     int count = 0;
                     StringBuilder builder = new StringBuilder();
