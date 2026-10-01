@@ -8565,6 +8565,7 @@
     <string name="StarsGiveawaySentPopupInfo_one">Winners will receive a total of **%1$d Star**.</string>
     <string name="StarsGiveawaySentPopupInfo_other">Winners will receive a total of **%1$d Stars**.</string>
     <string name="WebEmpty">Webpage</string>
+    <string name="AccDescrWebUnsafe">unsafe site</string>
     <string name="WebErrorTitle">Oops...</string>
     <string name="WebErrorInfo">Failed to load page.</string>
     <string name="WebErrorInfoDomain">Failed to load **%s**.</string>
