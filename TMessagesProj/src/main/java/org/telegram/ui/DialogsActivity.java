@@ -26,6 +26,7 @@ import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
+import android.text.style.ForegroundColorSpan;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
