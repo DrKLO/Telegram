@@ -128,13 +128,13 @@ public class ChatReplyContainer extends FrameLayout {
             obj = new SimpleTextView(context);
             obj.setTextSize(14);
             NotificationCenter.listenEmojiLoading(obj);
-            addView(obj, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
+            addView(obj, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
 
             objHint = new SimpleTextView(context);
             objHint.setTextSize(14);
             objHint.setText(LocaleController.getString(R.string.TapForForwardingOptions));
             objHint.setAlpha(0f);
-            addView(objHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
+            addView(objHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
 
             SpoilerEffect replySpoilerEffect = new SpoilerEffect();
             image = new BackupImageView(context) {

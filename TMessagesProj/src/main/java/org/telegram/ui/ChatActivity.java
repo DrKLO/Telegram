@@ -15468,7 +15468,7 @@ public class ChatActivity extends BaseFragment implements
             }
             replyNameTextView.setLayoutParams(layoutParams1);
             replyObjectTextView.setLayoutParams(layoutParams2);
-            replyObjectTextView.setLayoutParams(layoutParams3);
+            replyObjectHintTextView.setLayoutParams(layoutParams3);
             chatActivityEnterView.showTopView(true, openKeyboard);
         } else {
             fieldPanelShown = 0;
