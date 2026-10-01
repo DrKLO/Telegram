@@ -3211,6 +3211,7 @@
     <string name="SendLiveLocation">Share My Live Location for...</string>
     <string name="SendLiveLocationMenu">Share my Live Location</string>
     <string name="StopLiveLocation">Stop Sharing Location</string>
+    <string name="AccDescrLiveLocationLeft">%1$s left</string>
     <string name="SharingLiveLocation">Sharing Location...</string>
     <string name="SharingLiveLocationAdd">tap to add more time</string>
     <string name="StopLiveLocationAlertToTitle">Stop location sharing</string>
