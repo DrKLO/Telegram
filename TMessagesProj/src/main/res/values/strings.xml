@@ -9841,6 +9841,10 @@
     <string name="StoriesCollage">Combine into Collage</string>
     <string name="HintViewStoriesMultiple_one">Tap here to view your %d story</string>
     <string name="HintViewStoriesMultiple_other">Tap here to view your %d stories</string>
+    <string name="AccDescrStoriesToPost_one">%1$d story</string>
+    <string name="AccDescrStoriesToPost_other">%1$d stories</string>
+    <string name="AccActionStoryKeep">Post this story</string>
+    <string name="AccActionStoryLeaveOut">Leave this story out</string>
     <string name="CreateMultipleStories">Create Multiple Stories</string>
     <string name="WebsiteSays">%s says</string>
     <string name="SuggestedMessageDecline">Decline</string>
