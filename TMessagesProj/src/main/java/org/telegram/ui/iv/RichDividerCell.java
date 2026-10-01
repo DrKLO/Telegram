@@ -41,6 +41,16 @@ public class RichDividerCell extends RichBlockCell
     @Override
     protected void onBlockInsetChanged(int px) { invalidate(); }
 
+    // drawn by hand: it was nothing to a screen reader, and could not be found to be moved
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setContentDescription(org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.ArticleCommandDivider));
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            info.setScreenReaderFocusable(true);
+        }
+    }
+
     public void bind(BlockRow row, Delegate delegate) {
         this.currentRow = row;
         this.delegate = delegate;

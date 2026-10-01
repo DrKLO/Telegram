@@ -124,8 +124,160 @@ public class RichMediaCell extends RichBlockCell
 
     private static Paint slideDotPaint;
 
+    // the photos and videos of the block are drawn by hand and answer a finger alone: each is a node of
+    // its own, read with its state, pressed as a tap is, the pages of a slideshow turned by the scroll
+    // gestures, and each carries the actions of the block
+    private final ItemsAccessibilityHelper itemsAccessibility = new ItemsAccessibilityHelper(this);
+
+    void installAccessibility() {
+        androidx.core.view.ViewCompat.setAccessibilityDelegate(this, itemsAccessibility);
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return itemsAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean isOverButtonForAccessibility(float x, float y) {
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child instanceof ImageView && child.getVisibility() == VISIBLE
+                    && x >= child.getX() && x < child.getX() + child.getWidth() && y >= child.getY() && y < child.getY() + child.getHeight()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isItemShownForAccessibility(int index) {
+        if (index < 0 || index >= itemRects.size() || index >= medias().size()) {
+            return false;
+        }
+        final RectF r = itemRects.get(index);
+        return r.right > 0 && r.left < getWidth() && r.bottom > 0 && r.top < getHeight() && r.width() > 1 && r.height() > 1;
+    }
+
+    private boolean slideshowForAccessibility() {
+        return isSlideshow() && !modeProgress.isInProgress() && items.size() >= 2;
+    }
+
+    private void turnSlideForAccessibility(int delta) {
+        final int target = currentPage + delta;
+        if (target < 0 || target >= items.size()) {
+            return;
+        }
+        if (settleAnimator != null) {
+            settleAnimator.cancel();
+            settleAnimator = null;
+        }
+        currentPage = target;
+        pageOffset = 0;
+        requestLayout();
+        invalidate();
+    }
+
+    private class ItemsAccessibilityHelper extends androidx.customview.widget.ExploreByTouchHelper {
+        ItemsAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (isOverButtonForAccessibility(x, y)) {
+                return INVALID_ID;
+            }
+            for (int i = 0; i < itemRects.size(); i++) {
+                if (isItemShownForAccessibility(i) && itemRects.get(i).contains(x, y)) {
+                    return i + 1;
+                }
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> ids) {
+            for (int i = 0; i < itemRects.size(); i++) {
+                if (isItemShownForAccessibility(i)) {
+                    ids.add(i + 1);
+                }
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat info) {
+            final int index = id - 1;
+            if (!isItemShownForAccessibility(index)) {
+                info.setContentDescription("");
+                info.setBoundsInParent(new android.graphics.Rect(0, 0, 1, 1));
+                return;
+            }
+            final List<MediaUploadState> ms = medias();
+            final MediaUploadState media = ms.get(index);
+            final boolean empty = ms.size() == 1 && media.state == MediaUploadState.STATE_EMPTY;
+            final StringBuilder sb = new StringBuilder(LocaleController.getString(media.isVideo ? R.string.AttachVideo : R.string.AttachPhoto));
+            if (ms.size() > 1) {
+                sb.append(", ").append(LocaleController.formatString(R.string.Of, index + 1, ms.size()));
+            }
+            if (media.isPending()) {
+                sb.append(", ").append(LocaleController.getString(R.string.UploadingStory) + " " + (int) (media.progress * 100) + "%");
+            } else if (media.state == MediaUploadState.STATE_ERROR) {
+                sb.append(", ").append(LocaleController.getString(R.string.ErrorOccurred));
+            }
+            info.setContentDescription(sb);
+            if (empty || media.isPending()) {
+                info.setClassName("android.widget.Button");
+                info.addAction(new androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK,
+                    LocaleController.getString(empty ? R.string.ChoosePhotoOrVideo : R.string.Cancel)));
+            }
+            if (slideshowForAccessibility()) {
+                if (currentPage < items.size() - 1) {
+                    info.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_FORWARD);
+                }
+                if (currentPage > 0) {
+                    info.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_BACKWARD);
+                }
+            }
+            final RichEditorListView list = RichEditorListView.listOf(RichMediaCell.this);
+            if (list != null) {
+                list.addBlockActions(RichMediaCell.this, (android.view.accessibility.AccessibilityNodeInfo) info.getInfo());
+            }
+            final RectF r = itemRects.get(index);
+            final android.graphics.Rect bounds = new android.graphics.Rect((int) r.left, (int) r.top, (int) r.right, (int) r.bottom);
+            bounds.intersect(0, 0, getWidth(), getHeight());
+            if (bounds.isEmpty()) {
+                bounds.set(0, 0, 1, 1);
+            }
+            info.setBoundsInParent(bounds);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @androidx.annotation.Nullable android.os.Bundle arguments) {
+            final int index = id - 1;
+            if (!isItemShownForAccessibility(index)) {
+                return false;
+            }
+            if (action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                handleTap(index);
+                invalidateRoot();
+                return true;
+            }
+            if (action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD || action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) {
+                if (!slideshowForAccessibility()) {
+                    return false;
+                }
+                turnSlideForAccessibility(action == androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD ? 1 : -1);
+                AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.formatString(R.string.Of, currentPage + 1, items.size()));
+                post(this::invalidateRoot);
+                return true;
+            }
+            final RichEditorListView list = RichEditorListView.listOf(RichMediaCell.this);
+            return list != null && list.performBlockAction(RichMediaCell.this, action);
+        }
+    }
+
     public RichMediaCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        installAccessibility();
         this.resourcesProvider = resourcesProvider;
         setWillNotDraw(false);
 
@@ -171,6 +323,15 @@ public class RichMediaCell extends RichBlockCell
         addView(switchModeButton, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 12, 12, 12 + 42 + 12, 12));
         switchModeButton.setOnClickListener(v -> {
             if (delegate != null && currentRow != null) delegate.onSwitchMode(currentRow);
+        });
+        // the button turns a group of photos into a slideshow and back, and says which it will do
+        switchModeButton.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName("android.widget.Button");
+                info.setContentDescription(LocaleController.getString(isSlideshow() ? R.string.AccActionShowCollage : R.string.AccActionShowSlideshow));
+            }
         });
 
         updateColors();
