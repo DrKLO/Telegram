@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
@@ -222,6 +223,29 @@ public class LegendSignatureView extends FrameLayout {
             canGoZoom = false;
             chevron.setVisibility(View.GONE);
         }
+    }
+
+    // what the legend shows, as words: the day, then each line that is shown with its value
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        if (time != null && !TextUtils.isEmpty(time.getText())) {
+            sb.append(time.getText());
+        }
+        if (hourTime != null && hourTime.getVisibility() == VISIBLE && !TextUtils.isEmpty(hourTime.getText())) {
+            sb.append(" ").append(hourTime.getText());
+        }
+        if (holders != null) {
+            for (Holder h : holders) {
+                if (h.root.getVisibility() != VISIBLE) {
+                    continue;
+                }
+                sb.append(", ").append(h.signature.getText()).append(" ").append(h.value.getText());
+                if (h.percentage != null && h.percentage.getVisibility() == VISIBLE) {
+                    sb.append(" ").append(h.percentage.getText());
+                }
+            }
+        }
+        return sb;
     }
 
     private String formatData(Date date) {

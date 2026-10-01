@@ -241,6 +241,10 @@ public class StatisticPostInfoCell extends FrameLayout {
 
         shares.setText(AndroidUtilities.formatWholeNumber(postInfo.getForwards(), 0));
         likes.setText(AndroidUtilities.formatWholeNumber(postInfo.getReactions(), 0));
+        // the two numbers beside the date are told apart by the pictures in front of them, and a
+        // screen reader heard two numbers with nothing to say what they count
+        shares.setContentDescription(String.format(LocaleController.getPluralString("Shares", postInfo.getForwards()), AndroidUtilities.formatWholeNumber(postInfo.getForwards(), 0)));
+        likes.setContentDescription(LocaleController.formatPluralString("ReactionsCount", postInfo.getReactions()));
         shares.setVisibility(postInfo.getForwards() != 0 ? VISIBLE : GONE);
         likes.setVisibility(postInfo.getReactions() != 0 ? VISIBLE : GONE);
         invalidate();
