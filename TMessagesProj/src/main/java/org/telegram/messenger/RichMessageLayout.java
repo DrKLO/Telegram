@@ -811,6 +811,20 @@ public class RichMessageLayout {
         return (textFlags &~ TEXT_FLAG_BLOCKS) | blockFlags;
     }
 
+    // the caption under a picture is a block of its own after it, and a screen reader landing on the
+    // picture heard only that it was one: the caption is read on the picture as well
+    private void linkAccessibilityCaption(RichBlock media) {
+        if (blocks.isEmpty() || !(blocks.get(blocks.size() - 1) instanceof RichCaptionBlock)) {
+            return;
+        }
+        final RichCaptionBlock captionBlock = (RichCaptionBlock) blocks.get(blocks.size() - 1);
+        final SpannableStringBuilder sb = new SpannableStringBuilder();
+        captionBlock.appendAccessibilityText(sb);
+        if (sb.length() > 0) {
+            media.accessibilityCaption = sb;
+        }
+    }
+
     private void emitCaption(TL_iv.PageCaption caption, Rect padding, int textFlags) {
         if (caption == null) return;
         final boolean hasText = caption.text != null && !(caption.text instanceof TL_iv.textEmpty);
@@ -1072,24 +1086,28 @@ public class RichMessageLayout {
             final RichBlock block = new RichPhotoBlock(this, padding, maxWidth, photo, blocks.isEmpty());
             blocks.add(block);
             emitCaption(photo.caption, padding, textFlags);
+            linkAccessibilityCaption(block);
             return block;
         } else if (pageBlock instanceof TL_iv.pageBlockVideo) {
             final TL_iv.pageBlockVideo video = (TL_iv.pageBlockVideo) pageBlock;
             final RichBlock block = new RichVideoBlock(this, padding, maxWidth, video, blocks.isEmpty());
             blocks.add(block);
             emitCaption(video.caption, padding, textFlags);
+            linkAccessibilityCaption(block);
             return block;
         } else if (pageBlock instanceof TL_iv.pageBlockCollage) {
             final TL_iv.pageBlockCollage collage = (TL_iv.pageBlockCollage) pageBlock;
             final RichBlock block = new RichCollageBlock(this, padding, maxWidth, collage, blocks.isEmpty());
             blocks.add(block);
             emitCaption(collage.caption, padding, textFlags);
+            linkAccessibilityCaption(block);
             return block;
         } else if (pageBlock instanceof TL_iv.pageBlockSlideshow) {
             final TL_iv.pageBlockSlideshow slideshow = (TL_iv.pageBlockSlideshow) pageBlock;
             final RichBlock block = new RichSlideshowBlock(this, padding, maxWidth, slideshow, blocks.isEmpty());
             blocks.add(block);
             emitCaption(slideshow.caption, padding, textFlags);
+            linkAccessibilityCaption(block);
             return block;
         } else if (pageBlock instanceof TL_iv.pageBlockMap) {
             final TL_iv.pageBlockMap map = (TL_iv.pageBlockMap) pageBlock;
@@ -8840,6 +8858,25 @@ public class RichMessageLayout {
         }
 
         @Override
+        public int getAccessibilitySlideCount(int element) {
+            return cells.size();
+        }
+
+        @Override
+        public int getAccessibilitySlide(int element) {
+            return Math.max(0, Math.min(currentPage, cells.size() - 1));
+        }
+
+        @Override
+        public boolean showAccessibilitySlide(int element, int slide) {
+            if (slide < 0 || slide >= cells.size()) {
+                return false;
+            }
+            setCurrentPage(slide);
+            return true;
+        }
+
+        @Override
         protected boolean onBlockAccessibilityElementClick(int element, View host) {
             if (cells.isEmpty()) return false;
             final int page = Math.max(0, Math.min(currentPage, cells.size() - 1));
@@ -9339,7 +9376,27 @@ public class RichMessageLayout {
                 appendAccessibilityText(text);
                 return text.length() > 0 ? text : LocaleController.getString(R.string.AccDescrCheckbox);
             }
-            return getBlockAccessibilityElementText(element - getCheckboxAccessibilityElementCount());
+            final CharSequence text = getBlockAccessibilityElementText(element - getCheckboxAccessibilityElementCount());
+            if (accessibilityCaption != null && element - getCheckboxAccessibilityElementCount() == 0 && !TextUtils.isEmpty(text)) {
+                return TextUtils.concat(text, ", ", accessibilityCaption);
+            }
+            return text;
+        }
+
+        // the caption drawn under a picture, read on the picture
+        public CharSequence accessibilityCaption;
+
+        // slides of a slideshow, turned by dragging alone: a screen reader turns them with actions
+        public int getAccessibilitySlideCount(int element) {
+            return 0;
+        }
+
+        public int getAccessibilitySlide(int element) {
+            return 0;
+        }
+
+        public boolean showAccessibilitySlide(int element, int slide) {
+            return false;
         }
 
         public final boolean isAccessibilityElementCheckbox(int element) {
