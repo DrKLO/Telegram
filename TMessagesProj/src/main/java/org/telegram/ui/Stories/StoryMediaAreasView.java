@@ -109,6 +109,29 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
 
     }
 
+    private static String getAreaContentDescription(TL_stories.MediaArea mediaArea) {
+        if (mediaArea instanceof TL_stories.TL_mediaAreaChannelPost) {
+            long channelId = ((TL_stories.TL_mediaAreaChannelPost) mediaArea).channel_id;
+            TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(channelId);
+            return chat != null ? chat.title : LocaleController.getString(R.string.StoryViewMessage);
+        } else if (mediaArea instanceof TL_stories.TL_mediaAreaUrl) {
+            return ((TL_stories.TL_mediaAreaUrl) mediaArea).url;
+        } else if (mediaArea instanceof TL_stories.TL_mediaAreaVenue) {
+            return ((TL_stories.TL_mediaAreaVenue) mediaArea).title;
+        } else if (mediaArea instanceof TL_stories.TL_mediaAreaGeoPoint) {
+            return LocaleController.getString(R.string.ShareLocation);
+        } else if (mediaArea instanceof TL_stories.TL_mediaAreaStarGift) {
+            return LocaleController.getString(R.string.ActionStarGift);
+        } else if (mediaArea instanceof TL_stories.TL_mediaAreaWeather) {
+            TL_stories.TL_mediaAreaWeather weather = (TL_stories.TL_mediaAreaWeather) mediaArea;
+            Weather.State state = new Weather.State();
+            state.emoji = weather.emoji;
+            state.temperature = (float) weather.temperature_c;
+            return state.getEmoji() + " " + state.getTemperature();
+        }
+        return null;
+    }
+
     private ArrayList<TL_stories.MediaArea> lastMediaAreas;
 
     public void set(TL_stories.StoryItem storyItem, EmojiAnimationsOverlay animationsOverlay) {
@@ -179,6 +202,15 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
                     areaView = new AreaView(getContext(), parentView, mediaArea);
                 }
                 areaView.setOnClickListener(this);
+                if (!(areaView instanceof StoryReactionWidgetView)) {
+                    TL_stories.MediaArea area = areaView instanceof AreaView ? ((AreaView) areaView).mediaArea : ((FitViewWidget) areaView).mediaArea;
+                    if (area != null) {
+                        String desc = getAreaContentDescription(area);
+                        if (desc != null) {
+                            areaView.setContentDescription(desc);
+                        }
+                    }
+                }
                 addView(areaView);
 
                 totalArea += (mediaArea.coordinates.w / 100f * W) * (mediaArea.coordinates.h / 100f * H);
@@ -235,6 +267,9 @@ public class StoryMediaAreasView extends FrameLayout implements View.OnClickList
         if (v instanceof StoryReactionWidgetView) {
             showEffect((StoryReactionWidgetView) v);
             return;
+        }
+        if (AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            selectedArea = (AreaView) v;
         }
         if (selectedArea == v) {
             AndroidUtilities.runOnUIThread(() -> {
