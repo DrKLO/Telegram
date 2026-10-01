@@ -6,16 +6,26 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Scroller;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.tl.TL_iv;
 
 import java.util.ArrayList;
@@ -82,8 +92,127 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         this(context, AndroidUtilities.dp(3));
     }
 
+    // the row is drawn and pressed by a finger alone: each photo shown in it is a place of its own,
+    // opened as a tap opens it
+    private final PhotosAccessibilityHelper photosAccessibility = new PhotosAccessibilityHelper(this);
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return photosAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean canReachForAccessibility() {
+        return hasPhotos && !currentPhotos.isEmpty() && getAlpha() == 1.0f && getVisibility() == VISIBLE;
+    }
+
+    private ImageReceiver receiverForAccessibility(int num) {
+        for (int a = 0; a < imagesToDraw.size(); a++) {
+            if (imagesToDraw.get(a).getParam() == num) {
+                return imagesToDraw.get(a);
+            }
+        }
+        return null;
+    }
+
+    private boolean openForAccessibility(int num) {
+        if (num < 0 || num >= currentObjects.size()) {
+            return false;
+        }
+        final int currentIndex = delegate.getCurrentIndex();
+        final ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
+        final ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
+        final List<TL_iv.PageBlock> pageBlockArr = delegate.getPageBlockArr();
+        int idx;
+        if (imagesArr != null && !imagesArr.isEmpty()) {
+            idx = imagesArr.indexOf((MessageObject) currentObjects.get(num));
+        } else if (pageBlockArr != null && !pageBlockArr.isEmpty()) {
+            idx = pageBlockArr.indexOf((TL_iv.PageBlock) currentObjects.get(num));
+        } else if (imagesArrLocations != null && !imagesArrLocations.isEmpty()) {
+            idx = imagesArrLocations.indexOf((ImageLocation) currentObjects.get(num));
+        } else {
+            return false;
+        }
+        if (idx < 0) {
+            return false;
+        }
+        if (idx != currentIndex) {
+            stopScrolling();
+            moveLineProgress = 1.0f;
+            animateAllLine = true;
+            delegate.setCurrentIndex(idx);
+        }
+        return true;
+    }
+
+    private class PhotosAccessibilityHelper extends ExploreByTouchHelper {
+        PhotosAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (!canReachForAccessibility()) {
+                return INVALID_ID;
+            }
+            for (int a = 0; a < imagesToDraw.size(); a++) {
+                final ImageReceiver receiver = imagesToDraw.get(a);
+                if (receiver.isInsideImage(x, y)) {
+                    return receiver.getParam();
+                }
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> ids) {
+            if (!canReachForAccessibility()) {
+                return;
+            }
+            final ArrayList<Integer> nums = new ArrayList<>();
+            for (int a = 0; a < imagesToDraw.size(); a++) {
+                final int num = imagesToDraw.get(a).getParam();
+                if (num >= 0 && num < currentObjects.size() && !nums.contains(num)) {
+                    nums.add(num);
+                }
+            }
+            java.util.Collections.sort(nums);
+            ids.addAll(nums);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final ImageReceiver receiver = canReachForAccessibility() ? receiverForAccessibility(id) : null;
+            final Rect rect = new Rect();
+            if (receiver == null) {
+                info.setContentDescription("");
+                rect.set(0, 0, 1, 1);
+                info.setBoundsInParent(rect);
+                return;
+            }
+            info.setClassName("android.widget.Button");
+            info.setContentDescription(LocaleController.formatString(R.string.Of, id + 1, currentObjects.size()));
+            info.setSelected(id == currentImage);
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK);
+            rect.set((int) receiver.getImageX(), (int) receiver.getImageY(), (int) receiver.getImageX2(), (int) receiver.getImageY2());
+            rect.intersect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            if (rect.isEmpty()) {
+                rect.set(0, 0, 1, 1);
+            }
+            info.setBoundsInParent(rect);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle arguments) {
+            if (action == AccessibilityNodeInfoCompat.ACTION_CLICK && canReachForAccessibility()) {
+                return openForAccessibility(id);
+            }
+            return false;
+        }
+    }
+
     public GroupedPhotosListView(Context context, int paddingTop) {
         super(context);
+        ViewCompat.setAccessibilityDelegate(this, photosAccessibility);
         gestureDetector = new GestureDetector(context, this);
         scroll = new Scroller(context);
         itemWidth = AndroidUtilities.dp(42);
@@ -100,6 +229,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     }
 
     public void fillList() {
+        post(photosAccessibility::invalidateRoot);
         if (ignoreChanges) {
             ignoreChanges = false;
             return;
