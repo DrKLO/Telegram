@@ -276,6 +276,11 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }
     }
 
+    // how the contacts are sorted was shown by the icon of the button alone
+    private CharSequence sortingDescription() {
+        return getString(R.string.AccDescrContactSorting) + ", " + getString(sortByName ? R.string.SortedByName : R.string.SortedByLastSeen);
+    }
+
     @Override
     public View createView(Context context) {
         searching = false;
@@ -337,6 +342,8 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     sortByName = SharedConfig.sortContactsByName;
                     listViewAdapter.setSortType(sortByName ? 1 : 2, false);
                     sortItem.setIcon(sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
+                    sortItem.setContentDescription(sortingDescription());
+                    AndroidUtilities.makeAccessibilityAnnouncement(getString(sortByName ? R.string.SortedByName : R.string.SortedByLastSeen));
                 } else if (id == search_button) {
                     listView.smoothScrollToPosition(0);
 //                    animatorSearchFieldVisible.setValue(true, true);
@@ -405,7 +412,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }));
         if (!createSecretChat && !returnAsResult) {
             sortItem = menu.addItem(sort_button, sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
-            sortItem.setContentDescription(getString(R.string.AccDescrContactSorting));
+            sortItem.setContentDescription(sortingDescription());
         }
 
         listView = new RecyclerListView(context);
