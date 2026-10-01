@@ -754,9 +754,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             set(left, right, true);
         }
 
+        // told the place shown, for a screen reader to say it again when the photo changes
+        Utilities.Callback2<Integer, Integer> onSet;
+
         public void set(int left, int right, boolean animated) {
             left = Math.max(0, left);
             right = Math.max(left, right);
+            if (onSet != null) {
+                onSet.run(left, right);
+            }
             if (
                 LocaleController.getInstance().getCurrentLocaleInfo() != null &&
                 !TextUtils.equals(lng, LocaleController.getInstance().getCurrentLocaleInfo().shortName)
@@ -4903,6 +4909,53 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         countView = new PhotoCountView(activity);
         containerView.addView(countView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+        if (AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            // the photo is moved from by a drag alone, which a screen reader passes on badly: it is a
+            // place of its own, moved from with actions through the very moves a drag makes
+            photoAccessibilityView = new View(activity) {
+                @Override
+                public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(info);
+                    final boolean next = canSwitchPhotoForAccessibility(true), prev = canSwitchPhotoForAccessibility(false);
+                    info.setScrollable(next || prev);
+                    if (next) {
+                        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_photo_next, getString(R.string.Next)));
+                    }
+                    if (prev) {
+                        info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD);
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_photo_previous, getString(R.string.AccDescrPrevious)));
+                    }
+                }
+
+                @Override
+                public boolean performAccessibilityAction(int action, Bundle arguments) {
+                    if (action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD || action == R.id.acc_action_photo_next) {
+                        if (!canSwitchPhotoForAccessibility(true)) {
+                            return false;
+                        }
+                        goToNext();
+                        return true;
+                    }
+                    if (action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD || action == R.id.acc_action_photo_previous) {
+                        if (!canSwitchPhotoForAccessibility(false)) {
+                            return false;
+                        }
+                        goToPrev();
+                        return true;
+                    }
+                    return super.performAccessibilityAction(action, arguments);
+                }
+            };
+            photoAccessibilityView.setFocusable(true);
+            photoAccessibilityView.setContentDescription(getString(R.string.AccDescrPhotoViewer));
+            photoAccessibilityView.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            containerView.addView(photoAccessibilityView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            // the photo is the space between the bar on top and whatever is shown along the bottom:
+            // covering those too would take the finger off the caption, the video bar and the rest
+            photoAccessibilityView.getViewTreeObserver().addOnGlobalLayoutListener(this::fitPhotoAccessibilityView);
+            countView.onSet = (position, count) -> photoAccessibilityView.setContentDescription(count > 1 ? LocaleController.formatString(R.string.Of, position, count) : getString(R.string.AccDescrPhotoViewer));
+        }
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -19296,6 +19349,49 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             moveToY = maxY;
         }
         animateTo(scale, moveToX, moveToY, zoom);
+    }
+
+    private View photoAccessibilityView;
+    private final int[] photoAccessibilityLocation = new int[2];
+
+    private int topInContainer(View view) {
+        if (view == null || view.getVisibility() != View.VISIBLE || !view.isAttachedToWindow() || view.getHeight() <= 0) {
+            return Integer.MAX_VALUE;
+        }
+        view.getLocationInWindow(photoAccessibilityLocation);
+        final int viewTop = photoAccessibilityLocation[1];
+        containerView.getLocationInWindow(photoAccessibilityLocation);
+        return viewTop - photoAccessibilityLocation[1];
+    }
+
+    private void fitPhotoAccessibilityView() {
+        if (photoAccessibilityView == null || containerView == null || containerView.getHeight() <= 0) {
+            return;
+        }
+        final int top = (isStatusBarVisible() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + dp(43);
+        int bottom = containerView.getHeight();
+        bottom = Math.min(bottom, topInContainer(bottomLayout));
+        bottom = Math.min(bottom, topInContainer(videoPlayerControlFrameLayout));
+        if (groupedPhotosListView != null && groupedPhotosListView.hasPhotos()) {
+            bottom = Math.min(bottom, topInContainer(groupedPhotosListView));
+        }
+        if (captionTextViewSwitcher != null && captionTextViewSwitcher.getCurrentView() instanceof TextView && !TextUtils.isEmpty(((TextView) captionTextViewSwitcher.getCurrentView()).getText())) {
+            bottom = Math.min(bottom, topInContainer(captionTextViewSwitcher));
+        }
+        final int height = Math.max(dp(48), bottom - top);
+        final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) photoAccessibilityView.getLayoutParams();
+        if (lp.topMargin != top || lp.height != height || lp.gravity != (Gravity.TOP | Gravity.LEFT)) {
+            lp.topMargin = top;
+            lp.height = height;
+            lp.gravity = Gravity.TOP | Gravity.LEFT;
+            photoAccessibilityView.setLayoutParams(lp);
+        }
+    }
+
+    // the very conditions a drag to either side is held to
+    private boolean canSwitchPhotoForAccessibility(boolean next) {
+        return currentEditMode == EDIT_MODE_NONE && sendPhotoType != SELECT_TYPE_AVATAR && sendPhotoType != SELECT_TYPE_STICKER
+            && (next ? rightImage : leftImage).hasImageSet();
     }
 
     private void goToNext() {
