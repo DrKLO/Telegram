@@ -291,6 +291,9 @@ public class EditTextEffects extends EditText {
                 Build.MANUFACTURER == null ||
                 !Build.MANUFACTURER.toLowerCase().contains("honor") &&
                 !Build.MANUFACTURER.toLowerCase().contains("huawei") &&
+                // Vivo TextLine uses hidden Canvas.drawTextRunUseTextLayoutHelper
+                // overloads that NoClipCanvas cannot delegate to its wrapped canvas.
+                !Build.MANUFACTURER.toLowerCase().contains("vivo") &&
                 !Build.MANUFACTURER.toLowerCase().contains("alps")
             ) && (
                 Build.MODEL == null ||
