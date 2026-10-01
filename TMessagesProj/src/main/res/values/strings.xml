@@ -5078,6 +5078,10 @@
     <string name="AccDescrPageDown">Go to bottom</string>
     <string name="AccDescrMentionDown">Go to next mention</string>
     <string name="AccDescrReactionMentionDown">Go to next unread reactions</string>
+    <string name="AccDescrNewReactions_one">%1$d new reaction</string>
+    <string name="AccDescrNewReactions_other">%1$d new reactions</string>
+    <string name="AccDescrNewVotes_one">%1$d new vote</string>
+    <string name="AccDescrNewVotes_other">%1$d new votes</string>
     <string name="AccDescrPollVotesMentionDown">Go to next unread poll vote</string>
     <string name="AccDescrIVTitle">Title</string>
     <string name="AccDescrIVHeading">Heading</string>

@@ -124,7 +124,35 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
         if (holder != null) {
             holder.button.setCount(count, animated);
             holder.counterVisibilityAnimator.setValue(count > 0, animated);
+            holder.button.setContentDescription(describe(buttonId, count));
         }
+    }
+
+    // how many are waiting is a badge drawn on the button, and the button was named for where it goes
+    // alone: it says how many after its name
+    private CharSequence describe(int buttonId, int count) {
+        if (count <= 0) {
+            return buttonDescriptions[buttonId];
+        }
+        final String waiting;
+        switch (buttonId) {
+            case BUTTON_PAGE_DOWN:
+                waiting = LocaleController.formatPluralString("NewMessages", count);
+                break;
+            case BUTTON_MENTION:
+                waiting = LocaleController.formatPluralString("AccDescrMentionCount", count);
+                break;
+            case BUTTON_REACTIONS:
+                waiting = LocaleController.formatPluralString("AccDescrNewReactions", count);
+                break;
+            case BUTTON_POLL_VOTES:
+                waiting = LocaleController.formatPluralString("AccDescrNewVotes", count);
+                break;
+            default:
+                waiting = LocaleController.formatNumber(count, ',');
+                break;
+        }
+        return buttonDescriptions[buttonId] + ", " + waiting;
     }
 
     public void setButtonLoading(final int buttonId, boolean loading, boolean animated) {
@@ -267,6 +295,7 @@ public class ChatActivitySideControlsButtonsLayout extends FrameLayout implement
             final ButtonPendingState pending = pendingStates[buttonId];
             if (pending != null) {
                 button.setCount(pending.count, false);
+                button.setContentDescription(describe(buttonId, pending.count));
                 visibilityAnimator.setValue(false, false);
                 counterVisibilityAnimator.setValue(pending.count > 0, false);
                 button.showLoading(pending.loading, false);
