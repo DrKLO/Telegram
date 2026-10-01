@@ -34,6 +34,8 @@ import androidx.customview.widget.ExploreByTouchHelper;
 
 import com.google.zxing.common.detector.MathUtils;
 
+import android.text.TextUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -866,6 +868,30 @@ public class RecordControl extends View implements FlashViews.Invertable {
         return super.dispatchHoverEvent(event);
     }
 
+    private boolean frontface;
+    private Boolean a11yPrevFrontface;
+
+    /**
+     * Which camera is looking. Turning it around gives a sighted eye the whole picture flipping,
+     * and gives a screen reader nothing at all: the button is named the same before and after, so
+     * there is no telling which camera you ended up on but by guessing.
+     */
+    public void setFrontface(boolean value) {
+        if (frontface == value && a11yPrevFrontface != null) {
+            return;
+        }
+        frontface = value;
+        final boolean first = a11yPrevFrontface == null;
+        notifyAccessibilityIfChanged();
+        if (!first && AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            announceForAccessibility(cameraAccessibilityName());
+        }
+    }
+
+    private CharSequence cameraAccessibilityName() {
+        return LocaleController.getString(frontface ? R.string.AccDescrCameraFront : R.string.AccDescrCameraBack);
+    }
+
     private void notifyAccessibilityIfChanged() {
         if (accessibilityHelper == null) return;
         final boolean check = hasCheck();
@@ -874,7 +900,9 @@ public class RecordControl extends View implements FlashViews.Invertable {
             || a11yPrevDual != dual
             || a11yPrevStartIsVideo != startModeIsVideo
             || a11yPrevLoading != recordingLoading
-            || a11yPrevShowLock != showLock) {
+            || a11yPrevShowLock != showLock
+            || a11yPrevFrontface == null || a11yPrevFrontface != frontface) {
+            a11yPrevFrontface = frontface;
             a11yPrevRecording = recording;
             a11yPrevCheck = check;
             a11yPrevDual = dual;
@@ -969,7 +997,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
                     final int r = dp(22);
                     tmpRect.set((int) (rightCx - r), (int) (cy - r), (int) (rightCx + r), (int) (cy + r));
                     info.setBoundsInParent(tmpRect);
-                    info.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
+                    info.setContentDescription(TextUtils.concat(LocaleController.getString(R.string.AccDescrSwitchCamera), ", ", cameraAccessibilityName()));
                     final boolean enabled = !recordingLoading && !hasCheck();
                     info.setEnabled(enabled);
                     if (enabled) {
