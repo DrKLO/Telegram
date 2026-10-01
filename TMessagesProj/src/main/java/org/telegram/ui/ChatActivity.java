@@ -6388,7 +6388,9 @@ public class ChatActivity extends BaseFragment implements
 
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
-                if (currentEncryptedChat != null) {
+                // left empty, the list is no list to a screen reader: it cannot be scrolled, and
+                // swiping from a message leaves it for whatever is above or below
+                if (isMessageListHiddenFromAccessibility()) {
                     return;
                 }
                 super.onInitializeAccessibilityNodeInfo(info);
@@ -6400,14 +6402,14 @@ public class ChatActivity extends BaseFragment implements
 
             @Override
             public AccessibilityNodeInfo createAccessibilityNodeInfo() {
-                if (currentEncryptedChat != null) {
+                if (isMessageListHiddenFromAccessibility()) {
                     return null;
                 }
                 return super.createAccessibilityNodeInfo();
             }
         };
         chatListView.addEdgeEffectListener(() -> invalidateMergedVisibleBlurredPositionsAndSources(BLUR_INVALIDATE_FLAG_SCROLL | BLUR_INVALIDATE_FLAG_CLIP));
-        if (currentEncryptedChat != null) {
+        if (isMessageListHiddenFromAccessibility()) {
             chatListView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         }
         chatListView.setHideIfEmpty(false);
@@ -22729,6 +22731,9 @@ public class ChatActivity extends BaseFragment implements
                 currentEncryptedChat = chat;
                 updateTopPanel(true);
                 updateSecretStatus();
+                // a chat that was waiting for the other side to come online can only now be
+                // written in, and so only now be let to be read
+                checkSecretChatAccessibility();
                 if (suggestEmojiPanel != null) {
                     suggestEmojiPanel.fireUpdate();
                 }
@@ -29770,6 +29775,7 @@ public class ChatActivity extends BaseFragment implements
     public void onResume() {
         super.onResume();
         checkShowBlur(false);
+        checkSecretChatAccessibility();
         activityResumeTime = System.currentTimeMillis();
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
             ImportingAlert alert = new ImportingAlert(getParentActivity(), null, this, themeDelegate);
@@ -36745,8 +36751,54 @@ public class ChatActivity extends BaseFragment implements
         MediaController.getInstance().resetGoingToShowMessageObject();
     }
 
+    // the messages of a secret chat are kept from accessibility services until the person using a
+    // screen reader has let this chat be read
+    private boolean isMessageListHiddenFromAccessibility() {
+        return currentEncryptedChat != null && !SecretChatHelper.isReadableByAccessibility(currentAccount, currentEncryptedChat.id);
+    }
+
+    private boolean secretChatAccessibilityAsked;
+
+    /**
+     * Someone reading with a screen reader opens a secret chat and finds nothing in it: the
+     * messages are kept from every accessibility service, since any of them can read the screen.
+     * They are asked instead whether to let this chat be read, and told which services are turned
+     * on and that the other side will be told. Until they say yes it stays as it is; once they do,
+     * the messages can be read, and a message in the chat says so to the other side, naming the
+     * services, so that nobody's messages are read by a service without their knowing.
+     */
+    private void checkSecretChatAccessibility() {
+        if (currentEncryptedChat == null || secretChatAccessibilityAsked || getParentActivity() == null
+                || !(currentEncryptedChat instanceof TLRPC.TL_encryptedChat)
+                || !AndroidUtilities.isAccessibilityScreenReaderEnabled()
+                || SecretChatHelper.isReadableByAccessibility(currentAccount, currentEncryptedChat.id)) {
+            return;
+        }
+        secretChatAccessibilityAsked = true;
+        final String services = SecretChatHelper.getEnabledAccessibilityServiceNames();
+        final String name = currentUser == null ? "" : UserObject.getFirstName(currentUser);
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+        builder.setTitle(getString(R.string.SecretChatAccessibilityTitle));
+        builder.setMessage(formatString(R.string.SecretChatAccessibilityText, services, name));
+        builder.setPositiveButton(getString(R.string.SecretChatAccessibilityAllow), (dialog, which) -> makeSecretChatReadable(services));
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    private void makeSecretChatReadable(String services) {
+        if (currentEncryptedChat == null) {
+            return;
+        }
+        SecretChatHelper.setReadableByAccessibility(currentAccount, currentEncryptedChat.id);
+        getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(formatString(R.string.SecretChatAccessibilityWarning, services), dialog_id));
+        if (chatListView != null) {
+            chatListView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+            updateMessageListAccessibilityVisibility();
+        }
+    }
+
     private void updateMessageListAccessibilityVisibility() {
-        if (currentEncryptedChat != null) {
+        if (isMessageListHiddenFromAccessibility()) {
             return;
         }
         chatListView.setImportantForAccessibility(mentionContainer != null && mentionContainer.isOpen() || (scrimPopupWindow != null && scrimPopupWindow.isShowing()) ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);

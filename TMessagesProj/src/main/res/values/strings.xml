@@ -4970,6 +4970,10 @@
     <string name="AccDescrChannel">Channel</string>
     <string name="AccDescrTopic">Topic</string>
     <string name="AccDescrSecretChat">Secret chat</string>
+    <string name="SecretChatAccessibilityTitle">Read this secret chat?</string>
+    <string name="SecretChatAccessibilityText">Secret chats are kept from accessibility services, because any service turned on on this phone can read what is on the screen. The services turned on now are: %1$s.\n\nIf you go on, the messages of this chat can be read by them, and %2$s will be told so in the chat.</string>
+    <string name="SecretChatAccessibilityAllow">Read and tell them</string>
+    <string name="SecretChatAccessibilityWarning">I read with a screen reader, so I have let the accessibility services on my phone read this secret chat: %1$s. Anything they can see on the screen, they can read.</string>
     <string name="AccDescrSentDate">Sent %s</string>
     <string name="AccDescrReceivedDate">Received %s</string>
     <string name="AccDescrScheduledDate">Scheduled for %s</string>
