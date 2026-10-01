@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
@@ -354,6 +355,7 @@ public class OAuthSheet {
                 }
             }
         }
+        accountSelectorLayout.setContentDescription(getString(R.string.Account));
         accountSelectorLayout.setOnClickListener(v -> {
             ItemOptions i = ItemOptions.makeOptions(sheet.container, sheet.getResourcesProvider(), accountSelectorInnerLayout);
             for (int account : accountNumbers) {
