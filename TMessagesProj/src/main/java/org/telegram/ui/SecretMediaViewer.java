@@ -60,6 +60,7 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -926,6 +927,34 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         seekbar.setColors(0x33ffffff, 0x33ffffff, Color.WHITE, Color.WHITE, Color.WHITE, 0x59ffffff);
         seekbar.setDelegate(seekBarDelegate);
         seekbarContainer.addView(seekbarView);
+        // the bar is drawn alone: it says where the video stands and moves like a slider, through the
+        // same calls a drag makes
+        seekbarView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        seekbarView.setAccessibilityDelegate(new org.telegram.ui.Components.FloatSeekBarAccessibilityDelegate() {
+            @Override
+            public float getProgress() {
+                return seekbar.getProgress();
+            }
+
+            @Override
+            public void setProgress(float progress) {
+                seekBarDelegate.onSeekBarDrag(progress);
+                seekbar.setProgress(progress);
+                seekbarView.invalidate();
+            }
+
+            @Override
+            public String getContentDescription(View host) {
+                if (videoPlayer == null) {
+                    return null;
+                }
+                final long position = Math.max(0, videoPlayer.getCurrentPosition()) / 1000;
+                final long duration = Math.max(0, videoPlayer.getDuration()) / 1000;
+                final String time = LocaleController.formatPluralString("Minutes", (int) (position / 60)) + ' ' + LocaleController.formatPluralString("Seconds", (int) (position % 60));
+                final String totalTime = LocaleController.formatPluralString("Minutes", (int) (duration / 60)) + ' ' + LocaleController.formatPluralString("Seconds", (int) (duration % 60));
+                return LocaleController.formatString(R.string.AccDescrPlayerDuration, time, totalTime);
+            }
+        });
         containerView.addView(seekbarContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
 
         textSelectionHelper = new TextSelectionHelper.SimpleTextSelectionHelper(null, new DarkThemeResourceProvider()) {
@@ -954,6 +983,34 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         playButton.setPivotX(dp(32));
         playButton.setPivotY(dp(32));
         containerView.addView(playButton, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
+        // the button is found by where a tap falls, and had no name and no press of its own
+        playButton.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                if (!isVideo || videoPlayer == null) {
+                    return;
+                }
+                info.setClassName("android.widget.Button");
+                info.setContentDescription(LocaleController.getString(videoPlayer.getPlayWhenReady() ? R.string.AccActionPause : R.string.AccActionPlay));
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+
+            @Override
+            public boolean performAccessibilityAction(View host, int action, android.os.Bundle args) {
+                if (action == AccessibilityNodeInfo.ACTION_CLICK && isVideo && videoPlayer != null) {
+                    // as a tap on the button does
+                    videoPlayer.setPlayWhenReady(!videoPlayer.getPlayWhenReady());
+                    if (videoPlayer.getPlayWhenReady()) {
+                        toggleActionBar(true, true);
+                    } else {
+                        showPlayButton(true, true);
+                    }
+                    return true;
+                }
+                return super.performAccessibilityAction(host, action, args);
+            }
+        });
 
         windowLayoutParams = new WindowManager.LayoutParams();
         windowLayoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;
@@ -1647,7 +1704,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     private void toggleActionBar(boolean show, final boolean animated) {
         AndroidUtilities.cancelRunOnUIThread(hideActionBarRunnable);
-        if (show && isVideo) {
+        // a screen reader takes longer to reach the controls than they stay: they stay until hidden by hand
+        if (show && isVideo && !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
             AndroidUtilities.runOnUIThread(hideActionBarRunnable, 3000);
         }
         if (show) {
