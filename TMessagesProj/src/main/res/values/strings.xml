@@ -1566,6 +1566,8 @@
     <string name="ChatTagOwner">Owner</string>
     <string name="ApkRestricted">APK installation is restricted for this app. You can enable this in system settings.</string>
     <string name="UnreadMessages">Unread Messages</string>
+    <string name="AccDescrTabUnread">%1$s, %2$s unread</string>
+    <string name="AccDescrTabNeedsAttention">%1$s, needs your attention</string>
     <string name="SearchStickersHint">Search sticker sets</string>
     <string name="SearchTrendingStickersHint">Search trending stickers</string>
     <string name="SearchEmojiHint">Search emoji</string>
