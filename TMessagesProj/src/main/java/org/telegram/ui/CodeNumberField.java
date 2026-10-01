@@ -78,6 +78,17 @@ public class CodeNumberField extends EditTextBoldCursor {
 
     ActionMode actionMode;
 
+    // which digit of the code the box is for, said as a hint the screen does not show
+    public CharSequence accessibilityHint;
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (accessibilityHint != null && Build.VERSION.SDK_INT >= 26) {
+            info.setHintText(accessibilityHint);
+        }
+    }
+
     public CodeNumberField(Context context) {
         super(context);
         setBackground(null);
