@@ -2532,6 +2532,10 @@
     <string name="AutoDownloadPhotos">Photos</string>
     <string name="AutoDownloadVideos">Videos</string>
     <string name="AutoDownloadFiles">Files</string>
+    <string name="AutoDownloadFileTypes">File types</string>
+    <string name="AutoDownloadOtherFiles">Other files</string>
+    <string name="AutoDownloadImagesAsFiles">Images sent as files</string>
+    <string name="AutoDownloadVideosAsFiles">Videos sent as files</string>
     <string name="AutoDownloadPhotosOn">Photos</string>
     <string name="AutoDownloadVideosOn">Videos</string>
     <string name="AutoDownloadFilesOn">Files</string>
