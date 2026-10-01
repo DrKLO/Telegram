@@ -28,6 +28,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -35,6 +36,16 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+
+import androidx.annotation.NonNull;
+
+import androidx.annotation.Nullable;
+
+import androidx.core.view.ViewCompat;
+
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -292,8 +303,192 @@ public class TimelineView extends View {
 
     private final Runnable onLongPress;
 
+    // the handles at the ends of the strip are drawn and dragged by a finger alone: a screen reader
+    // moves them a second at a time, held to the limits a drag is held to
+    private static final int TRIM_START = 1, TRIM_END = 2, AUDIO_START = 3, AUDIO_END = 4;
+    private final TrimAccessibilityHelper trimAccessibility = new TrimAccessibilityHelper(this);
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return trimAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private boolean canTrimForAccessibility() {
+        return videoTrack != null && videoTrack.duration > 0 && collageTracks.isEmpty() && !videoBounds.isEmpty();
+    }
+
+    private static String formatTrimTime(long ms) {
+        final long seconds = Math.max(0, ms / 1000);
+        return String.format(java.util.Locale.US, "%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    private void moveTrimForAccessibility(int handle, int direction) {
+        final float step = 1000f / videoTrack.duration * direction;
+        if (handle == TRIM_START) {
+            videoTrack.left = Utilities.clamp(videoTrack.left + step, videoTrack.right - MIN_SELECT_DURATION / (float) videoTrack.duration, 0);
+            if (delegate != null) {
+                delegate.onVideoLeftChange(false, videoTrack.left);
+            }
+            if (videoTrack.right - videoTrack.left > maxSelectDuration() / (float) videoTrack.duration) {
+                videoTrack.right = Math.min(1, videoTrack.left + maxSelectDuration() / (float) videoTrack.duration);
+                if (delegate != null) {
+                    delegate.onVideoRightChange(false, videoTrack.right);
+                }
+            }
+        } else {
+            videoTrack.right = Utilities.clamp(videoTrack.right + step, 1, videoTrack.left + MIN_SELECT_DURATION / (float) videoTrack.duration);
+            if (delegate != null) {
+                delegate.onVideoRightChange(false, videoTrack.right);
+            }
+            if (videoTrack.right - videoTrack.left > maxSelectDuration() / (float) videoTrack.duration) {
+                videoTrack.left = Math.max(0, videoTrack.right - maxSelectDuration() / (float) videoTrack.duration);
+                if (delegate != null) {
+                    delegate.onVideoLeftChange(false, videoTrack.left);
+                }
+            }
+        }
+        if (progress / (float) videoTrack.duration < videoTrack.left || progress / (float) videoTrack.duration > videoTrack.right) {
+            progress = (long) (videoTrack.left * videoTrack.duration);
+            if (delegate != null) {
+                delegate.onProgressChange(progress, false);
+            }
+        }
+        invalidate();
+    }
+
+    private boolean canTrimAudioForAccessibility() {
+        return hasAudio && audioDuration > 0 && !audioBounds.isEmpty();
+    }
+
+    // the very limits a drag of the handles of the music is held to
+    private void moveAudioForAccessibility(int handle, int direction) {
+        final long videoScrollDuration = Math.min(getBaseDuration(), getMaxScrollDuration());
+        final float d = 1000f / audioDuration * direction;
+        if (handle == AUDIO_START) {
+            final float maxValue = audioRight - minAudioSelect() / (float) audioDuration;
+            float minValue = Math.max(0, scroll - audioOffset) / (float) audioDuration;
+            if (videoTrack != null) {
+                minValue = Math.max(minValue, (videoTrack.left * videoTrack.duration + scroll - audioOffset) / (float) audioDuration);
+            } else if (collageMain != null) {
+                minValue = Math.max(minValue, (collageMain.left * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+            } else if (hasRound) {
+                minValue = Math.max(minValue, (roundLeft * roundDuration + scroll - audioOffset) / (float) audioDuration);
+            } else {
+                minValue = Math.max(minValue, audioRight - maxSelectDuration() / (float) audioDuration);
+            }
+            audioLeft = Utilities.clamp(audioLeft + d, maxValue, minValue);
+            if (delegate != null) {
+                delegate.onAudioOffsetChange(audioOffset + (long) (audioLeft * audioDuration));
+                delegate.onAudioLeftChange(audioLeft);
+            }
+        } else {
+            float maxValue = Math.min(1, Math.max(0, scroll - audioOffset + videoScrollDuration) / (float) audioDuration);
+            final float minValue = audioLeft + minAudioSelect() / (float) audioDuration;
+            if (videoTrack != null) {
+                maxValue = Math.min(maxValue, (videoTrack.right * videoTrack.duration + scroll - audioOffset) / (float) audioDuration);
+            } else if (collageMain != null) {
+                maxValue = Math.min(maxValue, (collageMain.right * collageMain.duration + scroll - audioOffset) / (float) audioDuration);
+            } else if (hasRound) {
+                maxValue = Math.min(maxValue, (roundRight * roundDuration + scroll - audioOffset) / (float) audioDuration);
+            } else {
+                maxValue = Math.min(maxValue, audioLeft + maxSelectDuration() / (float) audioDuration);
+            }
+            audioRight = Utilities.clamp(audioRight + d, maxValue, minValue);
+            if (delegate != null) {
+                delegate.onAudioRightChange(audioRight);
+            }
+        }
+        invalidate();
+    }
+
+    private boolean canTrimForAccessibility(int id) {
+        return id == AUDIO_START || id == AUDIO_END ? canTrimAudioForAccessibility() : canTrimForAccessibility();
+    }
+
+    private CharSequence trimText(int handle) {
+        if (handle == AUDIO_START || handle == AUDIO_END) {
+            final long audioTime = (long) ((handle == AUDIO_START ? audioLeft : audioRight) * audioDuration);
+            return LocaleController.formatString(handle == AUDIO_START ? R.string.AccDescrTrimMusicStart : R.string.AccDescrTrimMusicEnd, formatTrimTime(audioTime));
+        }
+        final long time = (long) ((handle == TRIM_START ? videoTrack.left : videoTrack.right) * videoTrack.duration);
+        return LocaleController.formatString(handle == TRIM_START ? R.string.AccDescrTrimStart : R.string.AccDescrTrimEnd, formatTrimTime(time));
+    }
+
+    private class TrimAccessibilityHelper extends ExploreByTouchHelper {
+        TrimAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (canTrimAudioForAccessibility() && audioBounds.contains(x, y)) {
+                return x < audioBounds.centerX() ? AUDIO_START : AUDIO_END;
+            }
+            if (!canTrimForAccessibility() || !videoBounds.contains(x, y)) {
+                return INVALID_ID;
+            }
+            return x < videoBounds.centerX() ? TRIM_START : TRIM_END;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            if (canTrimForAccessibility()) {
+                ids.add(TRIM_START);
+                ids.add(TRIM_END);
+            }
+            if (canTrimAudioForAccessibility()) {
+                ids.add(AUDIO_START);
+                ids.add(AUDIO_END);
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            if (!canTrimForAccessibility(id)) {
+                info.setContentDescription("");
+                info.setBoundsInParent(new android.graphics.Rect(0, 0, 1, 1));
+                return;
+            }
+            info.setClassName("android.widget.SeekBar");
+            info.setContentDescription(trimText(id));
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_FORWARD);
+            info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_SCROLL_BACKWARD);
+            final android.graphics.Rect bounds = new android.graphics.Rect();
+            if (id == AUDIO_START) {
+                bounds.set((int) audioBounds.left, (int) audioBounds.top, (int) audioBounds.centerX(), (int) audioBounds.bottom);
+            } else if (id == AUDIO_END) {
+                bounds.set((int) audioBounds.centerX(), (int) audioBounds.top, (int) audioBounds.right, (int) audioBounds.bottom);
+            } else if (id == TRIM_START) {
+                bounds.set((int) videoBounds.left, (int) videoBounds.top, (int) videoBounds.centerX(), (int) videoBounds.bottom);
+            } else {
+                bounds.set((int) videoBounds.centerX(), (int) videoBounds.top, (int) videoBounds.right, (int) videoBounds.bottom);
+            }
+            info.setBoundsInParent(bounds);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle arguments) {
+            if (!canTrimForAccessibility(id)) {
+                return false;
+            }
+            if (action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD) {
+                final int direction = action == AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD ? 1 : -1;
+                if (id == AUDIO_START || id == AUDIO_END) {
+                    moveAudioForAccessibility(id, direction);
+                } else {
+                    moveTrimForAccessibility(id, direction);
+                }
+                invalidateVirtualView(id);
+                AndroidUtilities.makeAccessibilityAnnouncement(trimText(id));
+                return true;
+            }
+            return false;
+        }
+    }
+
     public TimelineView(Context context, ViewGroup container, View previewContainer, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
         super(context);
+        ViewCompat.setAccessibilityDelegate(this, trimAccessibility);
 
         this.previewContainer = previewContainer;
         this.resourcesProvider = resourcesProvider;
