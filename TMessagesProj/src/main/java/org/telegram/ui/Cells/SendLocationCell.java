@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -159,6 +160,30 @@ public class SendLocationCell extends FrameLayout {
         if (live) {
             checkText();
         }
+    }
+
+    // the time left is a ring with a short time written in it, both drawn
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (!live) {
+            return;
+        }
+        final StringBuilder sb = new StringBuilder();
+        if (titleTextView.getText() != null) {
+            sb.append(titleTextView.getText());
+        }
+        if (accurateTextView.getText() != null && accurateTextView.getText().length() > 0) {
+            sb.append(", ").append(accurateTextView.getText());
+        }
+        final LocationController.SharingLocationInfo currentInfo = LocationController.getInstance(currentAccount).getSharingLocationInfo(dialogId);
+        final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        // only when the ring is drawn: not while sharing is turned off here, and not for a location
+        // shared until stopped, which has no ring on this row
+        if (!liveDisable && currentInfo != null && currentInfo.stopTime >= currentTime && currentInfo.period != 0x7FFFFFFF) {
+            sb.append(", ").append(SharingLiveLocationCell.accessibilityTimeLeft(currentInfo.stopTime, currentInfo.period, currentTime));
+        }
+        info.setContentDescription(sb);
     }
 
     private void checkText() {
