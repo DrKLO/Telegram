@@ -10,11 +10,13 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -179,6 +181,19 @@ public class ProfileHoursCell extends LinearLayout {
         }
     }
 
+    private static void setReadable(View view, boolean readable) {
+        view.setImportantForAccessibility(readable ? View.IMPORTANT_FOR_ACCESSIBILITY_AUTO : View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    }
+
+    // the week opens under the hours of today, which an arrow alone showed
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (arrowView.getVisibility() == View.VISIBLE && Build.VERSION.SDK_INT >= 30) {
+            info.setStateDescription(getString(expanded ? R.string.AccDescrExpanded : R.string.AccDescrCollapsed));
+        }
+    }
+
     private boolean firstAfterAttach = true;
     private boolean needDivider;
     private boolean expanded;
@@ -218,9 +233,15 @@ public class ProfileHoursCell extends LinearLayout {
             timeText[0][1].animate().alpha(expanded ? 1f : 0f).setDuration(320).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
             arrowView.animate().rotation(expanded ? 180 : 0).setDuration(320).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).start();
         }
+        // the hours in one time and in the other, and today's hours and how long until it opens, are
+        // texts laid over one another, and the ones not shown are only see-through: a screen reader
+        // read every one of them. It reads only the ones that are shown
+        setReadable(labelTimeText[0], !expanded && !showInMyTimezone);
+        setReadable(labelTimeText[1], !expanded && showInMyTimezone);
         for (int i = 0; i < timeText.length; ++i) {
             for (int a = 0; a < timeText[i].length; ++a) {
                 float alpha = ((i == 0 ? expanded : true) && (a == 1) == showInMyTimezone) ? 1f : 0f;
+                setReadable(timeText[i][a], alpha > 0);
                 if (firstAfterAttach) {
                     timeText[i][a].setAlpha(alpha);
                 } else {
