@@ -3261,9 +3261,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                         doc = AnimatedEmojiDrawable.findDocument(currentAccount, span.getDocumentId());
                     }
                 }
-                if (doc != null) {
-                    desc = MessageObject.findAnimatedEmojiEmoticon(doc, null);
-                }
+                // a cell whose document has not been fetched yet is still a custom emoji, and
+                // saying so is better than leaving it as an unnamed button
+                desc = MessageObject.describeCustomEmoji(doc);
             }
             if (desc != null) {
                 info.setContentDescription(desc);
