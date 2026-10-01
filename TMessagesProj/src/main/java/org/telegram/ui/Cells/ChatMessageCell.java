@@ -27528,6 +27528,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     final boolean checkbox = block.isAccessibilityElementCheckbox(localElement[0]);
                     if (checkbox) {
                         info.setClassName("android.widget.CheckBox");
+                    } else if (block.isAccessibilityElementButton(localElement[0])) {
+                        info.setClassName("android.widget.Button");
                     } else if (block.isAccessibilityElementText(localElement[0])) {
                         info.setClassName("android.widget.TextView");
                     } else {
