@@ -84,6 +84,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedPhoneNumberEditText;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CheckableRowAccessibility;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.ContextProgressView;
@@ -602,6 +603,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             checkBox.setChecked(!checkBox.isChecked(), true);
             updateQrButtonVisible(true);
         });
+        CheckableRowAccessibility.apply(checkLayout, checkBox);
         checkLayout.setTranslationY(dp(-21.33f));
         checkLayout.setPivotX(0);
         ScaleStateListAnimator.apply(checkLayout, .0125f, 1.2f);
