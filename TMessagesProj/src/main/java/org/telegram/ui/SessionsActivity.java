@@ -738,94 +738,89 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     }
 
     private void updateRows() {
-        rowCount = 0;
-        currentSessionSectionRow = -1;
-        currentSessionRow = -1;
-        terminateAllSessionsRow = -1;
-        terminateAllSessionsDetailRow = -1;
-        passwordSessionsSectionRow = -1;
-        passwordSessionsStartRow = -1;
-        passwordSessionsEndRow = -1;
-        passwordSessionsDetailRow = -1;
-        otherSessionsSectionRow = -1;
-        otherSessionsStartRow = -1;
-        otherSessionsEndRow = -1;
-        botSessionsStartRow = -1;
-        botSessionsEndRow = -1;
-        otherSessionsTerminateDetail = -1;
-        noOtherSessionsRow = -1;
-        if (SHOW_ADD_DEVICE) {
-    qrCodeRow = rowCount++;
-} else {
+    rowCount = 0;
+    currentSessionSectionRow = -1;
+    currentSessionRow = -1;
+    terminateAllSessionsRow = -1;
+    terminateAllSessionsDetailRow = -1;
+    passwordSessionsSectionRow = -1;
+    passwordSessionsStartRow = -1;
+    passwordSessionsEndRow = -1;
+    passwordSessionsDetailRow = -1;
+    otherSessionsSectionRow = -1;
+    otherSessionsStartRow = -1;
+    otherSessionsEndRow = -1;
+    botSessionsStartRow = -1;
+    botSessionsEndRow = -1;
+    otherSessionsTerminateDetail = -1;
+    noOtherSessionsRow = -1;
     qrCodeRow = -1;
-}
-        qrCodeDividerRow = -1;
-        ttlHeaderRow = -1;
-        ttlRow = -1;
-        ttlDivideRow = -1;
+    qrCodeDividerRow = -1;
+    ttlHeaderRow = -1;
+    ttlRow = -1;
+    ttlDivideRow = -1;
 
-        if (currentType == 0 && getMessagesController().qrLoginCamera) {
-            qrCodeRow = rowCount++;
-            qrCodeDividerRow = rowCount++;
-        }
-        if (loading) {
-            if (currentType == 0) {
-                currentSessionSectionRow = rowCount++;
-                currentSessionRow = rowCount++;
-            }
-            return;
-        }
-        if (currentSession != null) {
+    if (SHOW_ADD_DEVICE && currentType == 0 && getMessagesController().qrLoginCamera) {
+        qrCodeRow = rowCount++;
+        qrCodeDividerRow = rowCount++;
+    }
+    if (loading) {
+        if (currentType == 0) {
             currentSessionSectionRow = rowCount++;
             currentSessionRow = rowCount++;
         }
+        return;
+    }
+    if (currentSession != null) {
+        currentSessionSectionRow = rowCount++;
+        currentSessionRow = rowCount++;
+    }
 
-
-        if (!passwordSessions.isEmpty() || !sessions.isEmpty()) {
-            terminateAllSessionsRow = rowCount++;
-            terminateAllSessionsDetailRow = rowCount++;
-            noOtherSessionsRow = -1;
+    if (!passwordSessions.isEmpty() || !sessions.isEmpty()) {
+        terminateAllSessionsRow = rowCount++;
+        terminateAllSessionsDetailRow = rowCount++;
+        noOtherSessionsRow = -1;
+    } else {
+        terminateAllSessionsRow = -1;
+        terminateAllSessionsDetailRow = -1;
+        if (currentType == 1 || currentSession != null) {
+            noOtherSessionsRow = rowCount++;
         } else {
-            terminateAllSessionsRow = -1;
-            terminateAllSessionsDetailRow = -1;
-            if (currentType == 1 || currentSession != null) {
-                noOtherSessionsRow = rowCount++;
-            } else {
-                noOtherSessionsRow = -1;
-            }
+            noOtherSessionsRow = -1;
         }
-        if (!passwordSessions.isEmpty()) {
-            passwordSessionsSectionRow = rowCount++;
-            passwordSessionsStartRow = rowCount;
-            rowCount += passwordSessions.size();
-            passwordSessionsEndRow = rowCount;
-            passwordSessionsDetailRow = rowCount++;
-        }
-        if (!sessions.isEmpty()) {
-            otherSessionsSectionRow = rowCount++;
-            if (bots != null && !bots.isEmpty()) {
-                botSessionsStartRow = rowCount;
-                rowCount += bots.size();
-                botSessionsEndRow = rowCount;
-            }
-            otherSessionsStartRow = rowCount;
-            otherSessionsEndRow = rowCount + sessions.size();
-            rowCount += sessions.size();
-            otherSessionsTerminateDetail = rowCount++;
-        } else if (bots != null && !bots.isEmpty()) {
-            otherSessionsSectionRow = rowCount++;
+    }
+    if (!passwordSessions.isEmpty()) {
+        passwordSessionsSectionRow = rowCount++;
+        passwordSessionsStartRow = rowCount;
+        rowCount += passwordSessions.size();
+        passwordSessionsEndRow = rowCount;
+        passwordSessionsDetailRow = rowCount++;
+    }
+    if (!sessions.isEmpty()) {
+        otherSessionsSectionRow = rowCount++;
+        if (bots != null && !bots.isEmpty()) {
             botSessionsStartRow = rowCount;
             rowCount += bots.size();
             botSessionsEndRow = rowCount;
-            otherSessionsTerminateDetail = rowCount++;
         }
-
-        if (ttlDays > 0) {
-            ttlHeaderRow = rowCount++;
-            ttlRow = rowCount++;
-            ttlDivideRow = rowCount++;
-        }
+        otherSessionsStartRow = rowCount;
+        otherSessionsEndRow = rowCount + sessions.size();
+        rowCount += sessions.size();
+        otherSessionsTerminateDetail = rowCount++;
+    } else if (bots != null && !bots.isEmpty()) {
+        otherSessionsSectionRow = rowCount++;
+        botSessionsStartRow = rowCount;
+        rowCount += bots.size();
+        botSessionsEndRow = rowCount;
+        otherSessionsTerminateDetail = rowCount++;
     }
+
+    if (ttlDays > 0) {
+        ttlHeaderRow = rowCount++;
+        ttlRow = rowCount++;
+        ttlDivideRow = rowCount++;
+    }
+}
 
     private final int VIEW_TYPE_TEXT = 0;
     private final int VIEW_TYPE_INFO = 1;
