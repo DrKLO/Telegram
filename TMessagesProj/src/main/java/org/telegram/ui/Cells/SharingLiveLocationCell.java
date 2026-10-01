@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
@@ -383,6 +384,41 @@ public class SharingLiveLocationCell extends FrameLayout {
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
             }
         }
+    }
+
+    // how long is left is a ring and a short time written in it, both drawn: said in full here
+    public static CharSequence accessibilityTimeLeft(int stopTime, int period, int currentTime) {
+        if (period == 0x7FFFFFFF) {
+            return LocaleController.getString(R.string.SendLiveLocationForever);
+        }
+        final int left = Math.max(0, stopTime - currentTime);
+        final String time = left >= 3600
+            ? LocaleController.formatPluralString("Hours", (int) Math.ceil(left / 3600f))
+            : LocaleController.formatPluralString("Minutes", Math.max(1, (int) Math.ceil(left / 60f)));
+        return LocaleController.formatString(R.string.AccDescrLiveLocationLeft, time);
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (currentInfo == null && liveLocation == null) {
+            return;
+        }
+        final int stopTime = currentInfo != null ? currentInfo.stopTime : liveLocation.object.date + liveLocation.object.media.period;
+        final int period = currentInfo != null ? currentInfo.period : liveLocation.object.media.period;
+        final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        if (stopTime < currentTime && period != 0x7FFFFFFF) {
+            return;
+        }
+        final StringBuilder sb = new StringBuilder();
+        if (nameTextView.getText() != null) {
+            sb.append(nameTextView.getText());
+        }
+        if (distanceTextView != null && !TextUtils.isEmpty(distanceTextView.getText())) {
+            sb.append(", ").append(distanceTextView.getText());
+        }
+        sb.append(", ").append(accessibilityTimeLeft(stopTime, period, currentTime));
+        info.setContentDescription(sb);
     }
 
     private Drawable foreverDrawable;
