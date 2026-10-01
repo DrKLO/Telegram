@@ -2012,6 +2012,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             checkboxTextView.setText(getString(R.string.AIEditorStyleAddLink));
             checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
+            CheckableRowAccessibility.apply(checkboxLayout, checkbox);
             checkboxLayout.setOnClickListener(v -> {
                 checkbox.setChecked(!checkbox.isChecked(), true);
             });

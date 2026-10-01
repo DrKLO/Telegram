@@ -294,7 +294,23 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             checkBox.setChecked(selected, animated);
         }
 
+        // the proxy chosen is marked by a tick drawn beside its state, and a proxy picked to delete by a
+        // check box drawn on it: neither was read
+        private boolean chosen;
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            if (checkBox.getVisibility() == VISIBLE) {
+                info.setCheckable(true);
+                info.setChecked(isSelected);
+            } else if (chosen) {
+                info.setSelected(true);
+            }
+        }
+
         public void setChecked(boolean checked) {
+            chosen = checked;
             if (checked) {
                 if (checkDrawable == null) {
                     checkDrawable = getResources().getDrawable(R.drawable.proxy_check).mutate();
