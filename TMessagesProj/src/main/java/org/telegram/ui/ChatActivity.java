@@ -4766,6 +4766,66 @@ public class ChatActivity extends BaseFragment implements
                 return super.requestChildRectangleOnScreen(child, rect, immediate);
             }
 
+            private final Rect accessibilityVisibleRect = new Rect();
+
+            /**
+             * A screen reader asks the list to scroll when the next thing to be read is out of
+             * sight, and the list goes a page at a time. A message is often taller than that: its
+             * text runs on for pages, and a link in it, the button for its comments, or the next
+             * message, is more than a page away. One swipe then brought nothing new into sight,
+             * and the reader crept down the message a page per swipe. Going back did not, since a
+             * message is always brought into sight by its top, which is where the one before it is.
+             * Where a page does not reach the next stop, the list goes exactly as far as it, and
+             * no further, so nothing on the way is passed over. Everything else is left to the
+             * page, as before; nothing here runs unless a screen reader asks for it.
+             */
+            @Override
+            public boolean performAccessibilityAction(int action, Bundle arguments) {
+                if ((action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) && scrollToAccessibilityStop(action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                    return true;
+                }
+                return super.performAccessibilityAction(action, arguments);
+            }
+
+            private boolean scrollToAccessibilityStop(boolean forward) {
+                if (!canScrollVertically(forward ? 1 : -1) || !getLocalVisibleRect(accessibilityVisibleRect)) {
+                    return false;
+                }
+                final int top = Math.max(accessibilityVisibleRect.top, (int) chatListViewPaddingTop);
+                final int bottom = Math.min(accessibilityVisibleRect.bottom, getHeight() - getPaddingBottom());
+                final int page = bottom - top;
+                if (page <= 0) {
+                    return false;
+                }
+                for (int i = 0; i < getChildCount(); i++) {
+                    final View child = getChildAt(i);
+                    if (!(child instanceof ChatMessageCell) || !((ChatMessageCell) child).hasAccessibilityFocusedStop()) {
+                        continue;
+                    }
+                    final ChatMessageCell cell = (ChatMessageCell) child;
+                    final int stop = cell.getAccessibilityStopEdge(forward);
+                    if (forward) {
+                        // the next stop in this message, or else the message after it
+                        final int target = ChatMessageCell.isAccessibilityStopEdge(stop) ? cell.getTop() + stop : cell.getBottom();
+                        if (target - bottom < page) {
+                            return false;
+                        }
+                        scrollBy(0, target - top);
+                    } else {
+                        if (!ChatMessageCell.isAccessibilityStopEdge(stop)) {
+                            return false;
+                        }
+                        final int target = cell.getTop() + stop;
+                        if (top - target < page) {
+                            return false;
+                        }
+                        scrollBy(0, target - bottom);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
             @Override
             public boolean onInterceptTouchEvent(MotionEvent e) {
                 textSelectionHelper.checkSelectionCancel(e);
