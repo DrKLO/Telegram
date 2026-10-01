@@ -12,10 +12,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Size;
@@ -25,12 +27,17 @@ import android.view.View;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -58,8 +65,58 @@ public class MultipleStoriesSelector extends FrameLayout {
 
     private final UniversalRecyclerView listView;
 
+    // the button is drawn on this view and answers a finger alone: a screen reader reaches it as a
+    // node of its own, beside the row it opens
+    private static final int BUTTON_ID = 1;
+    private final ButtonAccessibilityHelper buttonAccessibility = new ButtonAccessibilityHelper(this);
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return buttonAccessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    private class ButtonAccessibilityHelper extends ExploreByTouchHelper {
+        ButtonAccessibilityHelper(View host) {
+            super(host);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            return buttonTouchBounds.contains(x, y) ? BUTTON_ID : INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            ids.add(BUTTON_ID);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            info.setClassName("android.widget.Button");
+            info.setContentDescription(listShown ? LocaleController.getString(R.string.Close) : LocaleController.formatPluralString("AccDescrStoriesToPost", stories.size()));
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK);
+            final Rect rect = new Rect();
+            buttonTouchBounds.round(rect);
+            if (rect.isEmpty()) {
+                rect.set(0, 0, 1, 1);
+            }
+            info.setBoundsInParent(rect);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle arguments) {
+            if (action == AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                showList(!listShown, true);
+                invalidateVirtualView(id);
+                return true;
+            }
+            return false;
+        }
+    }
+
     public MultipleStoriesSelector(Context context, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
         super(context);
+        ViewCompat.setAccessibilityDelegate(this, buttonAccessibility);
 
         this.resourcesProvider = resourcesProvider;
         this.blurManager = blurManager;
@@ -379,6 +436,7 @@ public class MultipleStoriesSelector extends FrameLayout {
     public void showList(boolean show, boolean animated) {
         if (listShown == show) return;
         listShown = show;
+        buttonAccessibility.invalidateVirtualView(BUTTON_ID);
         listView.animate().cancel();
         if (animated) {
             listView.setVisibility(VISIBLE);
@@ -539,9 +597,42 @@ public class MultipleStoriesSelector extends FrameLayout {
             return checkboxBounce.isPressed() || super.onTouchEvent(event);
         }
 
+        // the story was read as nothing, and its mark answers a finger on that corner alone
+        private StoryEntry accessibilityEntry;
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            final StringBuilder sb = new StringBuilder(LocaleController.getString(accessibilityEntry != null && accessibilityEntry.isVideo ? R.string.AttachVideo : R.string.AttachPhoto));
+            if (getParent() instanceof RecyclerListView) {
+                final RecyclerListView list = (RecyclerListView) getParent();
+                final int position = list.getChildAdapterPosition(this);
+                if (position >= 0 && list.getAdapter() != null) {
+                    sb.append(", ").append(LocaleController.formatString(R.string.Of, position + 1, list.getAdapter().getItemCount()));
+                }
+            }
+            info.setContentDescription(sb);
+            info.setCheckable(true);
+            info.setChecked(checked);
+            info.setSelected(selected);
+            if (onCheckboxClick != null) {
+                info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_story_post, LocaleController.getString(checked ? R.string.AccActionStoryLeaveOut : R.string.AccActionStoryKeep)));
+            }
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            if (action == R.id.acc_action_story_post && onCheckboxClick != null) {
+                onCheckboxClick.onClick(this);
+                return true;
+            }
+            return super.performAccessibilityAction(action, arguments);
+        }
+
         private int lastId = -1;
         private String lastEntryPath;
         public void set(int id, int position, StoryEntry entry) {
+            accessibilityEntry = entry;
             if (lastId != id) {
                 lastEntryPath = null;
                 imageReceiver.clearImage();
