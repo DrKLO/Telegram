@@ -167,6 +167,7 @@ public class ChatThemeBottomSheet extends BottomSheet implements NotificationCen
         backButtonView.setPadding(padding, padding, padding, padding);
         backButtonDrawable = new BackDrawable(false);
         backButtonView.setImageDrawable(backButtonDrawable);
+        backButtonView.setContentDescription(LocaleController.getString(R.string.Back));
         backButtonView.setOnClickListener(v -> {
             if (hasChanges()) {
                 resetToPrimaryState(true);

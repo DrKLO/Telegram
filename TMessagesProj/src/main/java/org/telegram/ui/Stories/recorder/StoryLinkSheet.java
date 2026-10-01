@@ -1,5 +1,6 @@
 package org.telegram.ui.Stories.recorder;
 
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -529,6 +530,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
                 titleView.setText(titleLoading, animated);
                 messageView.setText(messageLoading, animated);
             }
+            closeView.setContentDescription(getString(R.string.Close));
             closeView.setOnClickListener(onCloseClick);
         }
 

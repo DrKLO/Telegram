@@ -126,6 +126,7 @@ public class BusinessBotButton extends FrameLayout {
         menuView.setImageResource(R.drawable.msg_mini_customize);
         menuView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0));
         menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        menuView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
         menuView.setOnClickListener(e -> {
             ItemOptions itemOptions = ItemOptions.makeOptions(chatActivity.getLayoutContainer(), resourcesProvider, menuView);
             itemOptions.add(R.drawable.msg_cancel, LocaleController.getString(R.string.BizBotRemove), true, () -> {

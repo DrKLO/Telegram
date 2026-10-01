@@ -1995,7 +1995,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         actionBar.setTitle(LocaleController.getString(R.string.TelegramPassport));
 
-        actionBar.createMenu().addItem(info_item, R.drawable.msg_info);
+        actionBar.createMenu().addItem(info_item, R.drawable.msg_info).setContentDescription(LocaleController.getString(R.string.Info));
 
         if (botUser != null) {
             FrameLayout avatarContainer = new FrameLayout(context);
@@ -2425,7 +2425,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         actionBar.setTitle(LocaleController.getString(R.string.TelegramPassport));
 
-        actionBar.createMenu().addItem(info_item, R.drawable.msg_info);
+        actionBar.createMenu().addItem(info_item, R.drawable.msg_info).setContentDescription(LocaleController.getString(R.string.Info));
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString(R.string.PassportProvidedInformation));
