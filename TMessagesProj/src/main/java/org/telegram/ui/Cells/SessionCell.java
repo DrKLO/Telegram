@@ -248,10 +248,14 @@ public class SessionCell extends FrameLayout {
             detailExTextView.setText(spannableStringBuilder);
 
             stringBuilder = new StringBuilder();
-            stringBuilder.append(session.app_name);
-            stringBuilder.append(" ").append(session.app_version);
+if (session.app_name != null && session.app_name.startsWith("OwpenGram Android")) {
+    stringBuilder.append("XGram Android");
+} else {
+    stringBuilder.append(session.app_name);
+}
+stringBuilder.append(" ").append(session.app_version);
 
-            detailTextView.setText(stringBuilder);
+detailTextView.setText(stringBuilder);
         } else if (object instanceof TLRPC.TL_webAuthorization) {
             TLRPC.TL_webAuthorization session = (TLRPC.TL_webAuthorization) object;
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(session.bot_id);
