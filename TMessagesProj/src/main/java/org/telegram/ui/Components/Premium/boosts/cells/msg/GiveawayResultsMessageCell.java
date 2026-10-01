@@ -56,7 +56,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class GiveawayResultsMessageCell {
+public class GiveawayResultsMessageCell implements GiveawayAccessibilityCard {
 
     private ImageReceiver[] avatarImageReceivers;
     private AvatarDrawable[] avatarDrawables;
@@ -164,6 +164,35 @@ public class GiveawayResultsMessageCell {
         textPaint.setTextSize(dp(14));
         textDividerPaint.setTextSize(dp(14));
         textDividerPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+
+    @Override
+    public CharSequence getAccessibilityText() {
+        final StringBuilder sb = new StringBuilder();
+        GiveawayAccessibilityCard.appendLayout(sb, titleLayout);
+        GiveawayAccessibilityCard.appendLayout(sb, topLayout);
+        for (int a = 0; a < userTitles.length; a++) {
+            GiveawayAccessibilityCard.append(sb, userTitles[a]);
+        }
+        GiveawayAccessibilityCard.appendLayout(sb, countriesLayout);
+        GiveawayAccessibilityCard.appendLayout(sb, bottomLayout);
+        return sb;
+    }
+
+    @Override
+    public int getAccessibilityButtonCount() {
+        return users == null ? 0 : users.length;
+    }
+
+    @Override
+    public CharSequence getAccessibilityButtonTitle(int index) {
+        return index >= 0 && index < userTitles.length ? userTitles[index] : null;
+    }
+
+    @Override
+    public Rect getAccessibilityButtonBounds(int index) {
+        return clickRect != null && index >= 0 && index < clickRect.length ? clickRect[index] : null;
     }
 
     public boolean checkMotionEvent(MotionEvent event) {
