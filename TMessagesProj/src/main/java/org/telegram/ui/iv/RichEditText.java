@@ -32,6 +32,25 @@ import org.telegram.ui.Components.URLSpanReplacement;
 
 public class RichEditText extends EditTextCaption {
 
+    // the block this text stands in is said, and carries the actions that move it as a drag does
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final RichEditorListView list = RichEditorListView.listOf(this);
+        if (list != null) {
+            list.addTextAccessibility(this, info);
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+        final RichEditorListView list = RichEditorListView.listOf(this);
+        if (list != null && list.performTextAccessibilityAction(this, action)) {
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
     public interface Listener {
         default void onEnterPressed(RichEditText editText) {}
         default void onBackspaceOnEmpty(RichEditText editText) {}

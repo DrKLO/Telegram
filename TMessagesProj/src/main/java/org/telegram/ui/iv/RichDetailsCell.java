@@ -71,6 +71,15 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
         };
         arrow.setCallback(arrowCallback);
         arrowView = new View(context) {
+            // a button with no name: it says what it does and whether the toggle is open
+            @Override
+            public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                final boolean open = currentRow != null && currentRow.block instanceof TL_iv.pageBlockDetails && ((TL_iv.pageBlockDetails) currentRow.block).open;
+                info.setClassName("android.widget.Button");
+                info.setContentDescription(getString(open ? R.string.QuoteCollapse : R.string.QuoteExpand));
+            }
+
             @Override
             protected void onDraw(Canvas canvas) {
                 canvas.save();

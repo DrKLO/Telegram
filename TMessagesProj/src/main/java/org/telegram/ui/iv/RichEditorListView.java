@@ -25,16 +25,20 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.os.Bundle;
 import android.widget.LinearLayout;
 import android.widget.Space;
 import android.widget.TextView;
 
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -2586,6 +2590,253 @@ public class RichEditorListView extends UniversalRecyclerView {
         }
     }
 
+    // blocks are put in order and thrown away by a drag alone, and the ones drawn by hand were nothing
+    // to a screen reader: each block carries actions that make the very moves a drag makes, and the
+    // kind of block a text stands in is said
+    @Override
+    public void onChildAttachedToWindow(View child) {
+        super.onChildAttachedToWindow(child);
+        if (child instanceof RichAudioCell) {
+            ((RichAudioCell) child).installAccessibility();
+        } else if (child instanceof RichMediaCell) {
+            ((RichMediaCell) child).installAccessibility();
+        } else {
+            child.setAccessibilityDelegate(blockAccessibilityDelegate);
+        }
+    }
+
+    private final View.AccessibilityDelegate blockAccessibilityDelegate = new View.AccessibilityDelegate() {
+        @Override
+        public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(host, info);
+            if (host.isEnabled()) {
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+            addBlockActions(host, info);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(View host, int action, Bundle args) {
+            if (performBlockAction(host, action)) {
+                return true;
+            }
+            if (action == AccessibilityNodeInfo.ACTION_CLICK && host instanceof RichMathCell
+                    && !textSelectionHelper.isInSelectionMode() && activeCellSelectionTable == null) {
+                final BlockRow row = ((RichMathCell) host).getRow();
+                if (row != null) {
+                    openMathEditor(row);
+                    return true;
+                }
+            }
+            return super.performAccessibilityAction(host, action, args);
+        }
+    };
+
+    static RichEditorListView listOf(View view) {
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            if (parent instanceof RichEditorListView) {
+                return (RichEditorListView) parent;
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
+    private View rowViewOf(View view) {
+        View v = view;
+        while (v != null && v.getParent() != this) {
+            v = v.getParent() instanceof View ? (View) v.getParent() : null;
+        }
+        return v;
+    }
+
+    private BlockRow rowOfView(View rowView) {
+        return rowView == null ? null : rowFromHolder(getChildViewHolder(rowView));
+    }
+
+    // the very limits a drag is held to: the same section of blocks, and no move while text or cells
+    // are being selected
+    private int accessibilityMoveTarget(View rowView, int delta) {
+        if (itemTouchHelper == null || !isReorderAllowed() || textSelectionHelper.isInSelectionMode() || activeCellSelectionTable != null) {
+            return -1;
+        }
+        final int position = getChildAdapterPosition(rowView);
+        final int target = position + delta;
+        if (position < 0 || target < 0 || target >= adapter.getItemCount()) {
+            return -1;
+        }
+        if (!adapter.isReorderItem(position) || adapter.getReorderSectionId(position) != adapter.getReorderSectionId(target)) {
+            return -1;
+        }
+        return target;
+    }
+
+    private boolean canRemoveForAccessibility(View rowView, BlockRow row) {
+        if (row == null || !isNonText(row.block) || textSelectionHelper.isInSelectionMode() || activeCellSelectionTable != null) {
+            return false;
+        }
+        final int position = getChildAdapterPosition(rowView);
+        return itemTouchHelper != null && isReorderAllowed() && position >= 0 && adapter.isReorderItem(position);
+    }
+
+    void addBlockActions(View view, AccessibilityNodeInfo info) {
+        final View rowView = rowViewOf(view);
+        final BlockRow row = rowOfView(rowView);
+        if (row == null) {
+            return;
+        }
+        if (accessibilityMoveTarget(rowView, -1) >= 0) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_block_up, getString(R.string.AccActionBlockUp)));
+        }
+        if (accessibilityMoveTarget(rowView, 1) >= 0) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_block_down, getString(R.string.AccActionBlockDown)));
+        }
+        if (canRemoveForAccessibility(rowView, row)) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_block_delete, getString(R.string.Delete)));
+        }
+    }
+
+    boolean performBlockAction(View view, int action) {
+        if (action != R.id.acc_action_block_up && action != R.id.acc_action_block_down && action != R.id.acc_action_block_delete) {
+            return false;
+        }
+        final View rowView = rowViewOf(view);
+        final BlockRow row = rowOfView(rowView);
+        if (row == null) {
+            return false;
+        }
+        if (action == R.id.acc_action_block_delete) {
+            if (!canRemoveForAccessibility(rowView, row)) {
+                return false;
+            }
+            // as a drop on the bin does
+            if (history != null) history.flush();
+            removeRow(row);
+            if (history != null) history.record();
+            if (delegate != null) delegate.onContentChanged();
+            AndroidUtilities.makeAccessibilityAnnouncement(getString(R.string.AccDescrBlockDeleted));
+            return true;
+        }
+        final int position = getChildAdapterPosition(rowView);
+        final int target = accessibilityMoveTarget(rowView, action == R.id.acc_action_block_up ? -1 : 1);
+        if (target < 0) {
+            return false;
+        }
+        // as a drag does: the row dragged is known while the order is taken, then the insets follow
+        draggingRow = row;
+        adapter.swapElements(position, target);
+        swappedElements();
+        adapter.reorderDone();
+        draggingRow = null;
+        resyncInsetCells(true);
+        final int section = adapter.getReorderSectionId(target);
+        int place = 0, count = 0;
+        for (int i = 0; i < adapter.getItemCount(); ++i) {
+            if (adapter.getReorderSectionId(i) == section) {
+                count++;
+                if (i <= target) {
+                    place++;
+                }
+            }
+        }
+        AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.formatString(R.string.Of, place, count));
+        return true;
+    }
+
+    private CharSequence describeTextBlock(BlockRow row) {
+        if (row == null) {
+            return null;
+        }
+        final TL_iv.PageBlock block = row.block;
+        String kind = null;
+        if (block instanceof TL_iv.pageBlockHeading1) kind = getString(R.string.ArticleHeading1);
+        else if (block instanceof TL_iv.pageBlockHeading2) kind = getString(R.string.ArticleHeading2);
+        else if (block instanceof TL_iv.pageBlockHeading3) kind = getString(R.string.ArticleHeading3);
+        else if (block instanceof TL_iv.pageBlockHeading4) kind = getString(R.string.ArticleHeading4);
+        else if (block instanceof TL_iv.pageBlockHeading5) kind = getString(R.string.ArticleHeading5);
+        else if (block instanceof TL_iv.pageBlockHeading6) kind = getString(R.string.ArticleHeading6);
+        else if (block instanceof TL_iv.pageBlockPreformatted) kind = getString(R.string.ArticleCode);
+        else if (block instanceof TL_iv.pageBlockBlockquote) kind = getString(R.string.ArticleQuote);
+        else if (block instanceof TL_iv.pageBlockPullquote) kind = getString(R.string.ArticlePullquote);
+        else if (block instanceof TL_iv.pageBlockFooter) kind = getString(R.string.ArticleFooter);
+        else if (row.level > 0) kind = getString(row.checkbox ? R.string.ArticleListChecklist : row.num > 0 ? R.string.ArticleCommandOrderedList : R.string.ArticleCommandList);
+        if (!row.quoteIds.isEmpty() && !(block instanceof TL_iv.pageBlockBlockquote) && !(block instanceof TL_iv.pageBlockPullquote)) {
+            kind = kind == null ? getString(R.string.ArticleQuote) : getString(R.string.ArticleQuote) + ", " + kind;
+        }
+        return kind;
+    }
+
+    void addTextAccessibility(RichEditText editText, AccessibilityNodeInfo info) {
+        final View rowView = rowViewOf(editText);
+        final BlockRow row = rowOfView(rowView);
+        if (row == null) {
+            return;
+        }
+        CharSequence state = null;
+        if (rowView instanceof RichTextCell && ((RichTextCell) rowView).getEditText() == editText) {
+            state = describeTextBlock(row);
+        } else if (rowView instanceof RichDetailsCell && ((RichDetailsCell) rowView).getEditText() == editText && row.block instanceof TL_iv.pageBlockDetails) {
+            state = getString(R.string.ArticleCommandToggle) + ", " + getString(((TL_iv.pageBlockDetails) row.block).open ? R.string.AccDescrExpanded : R.string.AccDescrCollapsed);
+        } else if (rowView instanceof RichTableCell) {
+            final TableModel model = ((RichTableCell) rowView).getModel();
+            final TL_iv.pageTableCell cell = editText.getParent() instanceof RichTableCellHost ? ((RichTableCellHost) editText.getParent()).cell : null;
+            if (model != null && cell != null) {
+                final int r = model.anchorRowOf(cell), c = model.anchorColOf(cell);
+                if (r >= 0 && c >= 0) {
+                    state = LocaleController.formatString(R.string.AccDescrTableCellPlace, r + 1, c + 1);
+                    if (cell.header) {
+                        state = state + ", " + getString(R.string.AccDescrTableHeader);
+                    }
+                    if (activeCellSelectionTable == null && !textSelectionHelper.isInSelectionMode()) {
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_table_row, getString(R.string.AccActionTableRow)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_table_column, getString(R.string.AccActionTableColumn)));
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_table_cell, getString(R.string.AccActionTableCell)));
+                    }
+                }
+            } else {
+                state = getString(R.string.ArticleCommandTable);
+            }
+        }
+        if (!TextUtils.isEmpty(state)) {
+            AccessibilityNodeInfoCompat.wrap(info).setStateDescription(state);
+        }
+        addBlockActions(rowView, info);
+    }
+
+    boolean performTextAccessibilityAction(RichEditText editText, int action) {
+        if (action == R.id.acc_action_table_row || action == R.id.acc_action_table_column || action == R.id.acc_action_table_cell) {
+            final View rowView = rowViewOf(editText);
+            if (!(rowView instanceof RichTableCell) || !(editText.getParent() instanceof RichTableCellHost)
+                    || activeCellSelectionTable != null || textSelectionHelper.isInSelectionMode()) {
+                return false;
+            }
+            final RichTableCell table = (RichTableCell) rowView;
+            final TableModel model = table.getModel();
+            final TL_iv.pageTableCell cell = ((RichTableCellHost) editText.getParent()).cell;
+            if (model == null || cell == null) {
+                return false;
+            }
+            final int r = model.anchorRowOf(cell), c = model.anchorColOf(cell);
+            if (r < 0 || c < 0) {
+                return false;
+            }
+            // as a press on the handle of the row or the column does; the menu follows the selection
+            beginCellSelection(table);
+            if (action == R.id.acc_action_table_row) {
+                table.selectWholeRows(r, table.rowHandleEnd(r));
+                dotSelectedRow = r;
+            } else if (action == R.id.acc_action_table_column) {
+                table.selectWholeColumns(c, table.colHandleEnd(c));
+                dotSelectedCol = c;
+            } else {
+                table.toggleCellSelection(cell);
+            }
+            return true;
+        }
+        return performBlockAction(editText, action);
+    }
+
     private BlockRow rowFromHolder(RecyclerView.ViewHolder holder) {
         if (holder == null) return null;
         final int pos = holder.getAdapterPosition();
@@ -3260,6 +3511,13 @@ public class RichEditorListView extends UniversalRecyclerView {
             vert[2] = new RichEditor.Button(getContext(), R.drawable.iv_align_vert_bottom, resourcesProvider).setRoundRadius(4).setAccent(false).setBackgroundColorKey(Theme.key_actionBarDefaultSubmenuBackground),
             LayoutHelper.createLinear(32, 32)
         );
+        // the six alignment buttons are icons alone: each says the way it aligns
+        final int[] horizNames = { R.string.AccDescrAlignLeft, R.string.AccDescrAlignCenter, R.string.AccDescrAlignRight };
+        final int[] vertNames = { R.string.AccDescrAlignTop, R.string.AccDescrAlignMiddle, R.string.AccDescrAlignBottom };
+        for (int i = 0; i < 3; i++) {
+            horiz[i].setContentDescription(getString(horizNames[i]));
+            vert[i].setContentDescription(getString(vertNames[i]));
+        }
         o.addView(alignContainer);
 
         final int curAlign = table.commonHorizontalAlign();

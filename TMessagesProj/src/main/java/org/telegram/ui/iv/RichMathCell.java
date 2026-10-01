@@ -67,8 +67,23 @@ public class RichMathCell extends RichBlockCell
         scrollView.setFillViewport(true);
         scrollView.addView(mathContainer, new FrameLayout.LayoutParams(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        // the formula is a picture: the block is read as the formula it holds, and opens its editor
+        // when pressed, as a tap does
+        scrollView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
         updateColors();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final String source = getSource();
+        final String name = org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.ArticleCommandMath);
+        info.setContentDescription(TextUtils.isEmpty(source) ? name : name + ", " + source);
+        info.setClassName("android.widget.Button");
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            info.setScreenReaderFocusable(true);
+        }
     }
 
     public void bind(BlockRow row, Delegate delegate) {

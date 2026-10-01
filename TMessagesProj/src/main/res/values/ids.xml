@@ -65,4 +65,10 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="acc_action_block_up" type="id" />
+    <item name="acc_action_block_down" type="id" />
+    <item name="acc_action_block_delete" type="id" />
+    <item name="acc_action_table_row" type="id" />
+    <item name="acc_action_table_column" type="id" />
+    <item name="acc_action_table_cell" type="id" />
 </resources>
