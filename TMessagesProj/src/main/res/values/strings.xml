@@ -47,6 +47,7 @@
     <string name="Calling">Calling you...</string>
     <string name="SendingSms">Sending SMS...</string>
     <string name="Code">Code</string>
+    <string name="AccDescrCodeDigit">Digit %1$d of %2$d</string>
     <string name="WrongNumber">Wrong number?</string>
     <string name="WrongCode">You entered the wrong code. Please try again.</string>
     <string name="DidNotGetTheCode">Didn\'t get the code?</string>
