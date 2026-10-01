@@ -30,6 +30,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -160,7 +161,15 @@ public class WebActionBar extends FrameLayout {
         backButton = new ImageView(context);
         backButton.setContentDescription(getString(R.string.AccDescrGoBack));
         backButton.setScaleType(ImageView.ScaleType.CENTER);
-        backButtonDrawable = new BackDrawable(false);
+        // the button goes back while there is a page to go back to, and shows a cross and closes the
+        // browser when there is none: it was called Go Back either way
+        backButtonDrawable = new BackDrawable(false) {
+            @Override
+            public void setRotation(float rotation, boolean animated) {
+                super.setRotation(rotation, animated);
+                backButton.setContentDescription(getString(rotation >= 1f ? R.string.Close : R.string.AccDescrGoBack));
+            }
+        };
         backButtonDrawable.setAnimationTime(200.0f);
         backButtonDrawable.setRotation(1.0f, false);
         backButton.setImageDrawable(backButtonDrawable);
@@ -184,7 +193,9 @@ public class WebActionBar extends FrameLayout {
             @Override
             public void setState(boolean state) {
                 super.setState(state);
-                forwardButton.setContentDescription(state ? getString(R.string.PollCollapse) : getString(R.string.Forward));
+                // it was called Forward, the word for forwarding a message, and what a press on it does
+                // is minimize the browser to a tab
+                forwardButton.setContentDescription(getString(R.string.PipMinimize));
             }
         });
         forwardButtonDrawable.setState(false);
@@ -408,6 +419,36 @@ public class WebActionBar extends FrameLayout {
                 titles[i].animatedDangerous.set(isDangerous ? 1f : 0f, true);
             }
             invalidate();
+        }
+    }
+
+    // the title of the page and its address are drawn on the bar, which a press opens the address
+    // field from: a screen reader found a button with no name on it
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (searching || addressing) {
+            return;
+        }
+        final StringBuilder sb = new StringBuilder();
+        final CharSequence title = titles[0].title.getText();
+        final CharSequence subtitle = titles[0].subtitle.getText();
+        if (!TextUtils.isEmpty(title)) {
+            sb.append(title);
+        }
+        if (!TextUtils.isEmpty(subtitle)) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(subtitle);
+        }
+        if (titles[0].isDangerous) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(getString(R.string.AccDescrWebUnsafe));
+        }
+        if (sb.length() > 0) {
+            info.setContentDescription(sb);
+        }
+        if (isClickable()) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, getString(R.string.Edit)));
         }
     }
 
