@@ -119,6 +119,44 @@ public class EntityView extends FrameLayout {
     private int stickyXRunnableValue, stickyYRunnableValue;
     private ValueAnimator stickyXAnimator, stickyYAnimator;
 
+    // laid over the picture and picked, moved and taken off by touch alone: named by what it is, and
+    // pressing it brings up the menu holding it does
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName("android.widget.Button");
+        info.setContentDescription(getAccessibilityLabel());
+        if (delegate != null) {
+            info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AccDescrMoreOptions)));
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+        if (action == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK && delegate != null) {
+            return delegate.onEntityLongClicked(this);
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
+    private CharSequence getAccessibilityLabel() {
+        if (this instanceof TextPaintView) {
+            final CharSequence text = ((TextPaintView) this).getEditText().getText();
+            return org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.PhotoEditorText) + ": " + (text == null ? "" : text);
+        } else if (this instanceof StickerView) {
+            final org.telegram.tgnet.TLRPC.Document sticker = ((StickerView) this).getSticker();
+            final String emoji = sticker == null ? null : org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(sticker, null);
+            return emoji == null ? org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachSticker) : org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachSticker) + " " + emoji;
+        } else if (this instanceof LocationView) {
+            return org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachLocation);
+        } else if (this instanceof PhotoView) {
+            return org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachPhoto);
+        } else if (this instanceof RoundView) {
+            return org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AttachRound);
+        }
+        return org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AccDescrEditorItem);
+    }
+
     public EntityView(Context context, PointF pos) {
         super(context);
 
