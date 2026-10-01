@@ -3049,6 +3049,10 @@
     <string name="FilterAllChats">All Chats</string>
     <string name="FilterAllChatsShort">All</string>
     <string name="FilterReorder">Reorder</string>
+    <string name="AccDescrTrimStart">Start of the video, %1$s</string>
+    <string name="AccDescrTrimEnd">End of the video, %1$s</string>
+    <string name="AccDescrTrimMusicStart">Start of the music, %1$s</string>
+    <string name="AccDescrTrimMusicEnd">End of the music, %1$s</string>
     <string name="FilterEdit">Edit folder</string>
     <string name="FilterEditAll">Edit folders</string>
     <string name="FilterMuteAll">Mute All</string>
