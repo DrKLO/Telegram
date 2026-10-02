@@ -8016,6 +8016,11 @@ public class Theme {
                 chat_msgTextCode3Paint.setTypeface(Typeface.MONOSPACE);
                 chat_msgCodeBgPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
                 chat_ephemeralPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+                Typeface vazir = AndroidUtilities.getTypeface("fonts/Vazirmatn-Regular.ttf");
+chat_msgTextPaint.setTypeface(vazir);
+chat_msgTextPaintOneEmoji.setTypeface(vazir);
+chat_msgTextPaintTwoEmoji.setTypeface(vazir);
+chat_msgTextPaintThreeEmoji.setTypeface(vazir);
             }
 
             final float[] emojiSizePercents = new float[] {.68f, .46f, .34f, .28f, .22f, .19f};
