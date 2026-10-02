@@ -255,6 +255,7 @@ public class AndroidUtilities {
     public final static String TYPEFACE_ROBOTO_MEDIUM_ITALIC = "fonts/rmediumitalic.ttf";
     public final static String TYPEFACE_ROBOTO_MONO = "fonts/rmono.ttf";
     public final static String TYPEFACE_MERRIWEATHER_BOLD = "fonts/mw_bold.ttf";
+	public static final String TYPEFACE_VAZIRMATN = "fonts/Vazirmatn-Regular.ttf";
 
     public static Typeface mediumTypeface;
     public static ThreadLocal<byte[]> readBufferLocal = new ThreadLocal<>();
@@ -2421,7 +2422,9 @@ public class AndroidUtilities {
             return typefaceCache.get(assetPath);
         }
     }
-
+public static Typeface getVazirmatnTypeface() {
+    return getTypeface(TYPEFACE_VAZIRMATN);
+}
     public static boolean isWaitingForSms() {
         boolean value;
         synchronized (smsLock) {
