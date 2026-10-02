@@ -2582,7 +2582,7 @@ XGram را باز نگه دارید.</string>
     <string name="LanguageUnknownCustomAlert">متأسفانه این بسته‌ زبان سفارشی (**⁨%1$s⁩**) حاوی اطلاعاتی برای XGram اندروید نیست.</string>
     <string name="AskAQuestionInfo">لطفاً توجه داشته باشید که پشتیبانی XGram توسط داوطلبان انجام می‌شود. ما سعی می‌کنیم هر چه سریع‌تر پاسخگو باشیم، اما ممکن است مدتی طول بکشد.
 
-لطفاً به صفحه &lt;![CDATA[&lt;a href="https://chat-t.me/faq/fa#a"&gt;پرسش‌های متداول XGram&lt;/a&gt;]]&gt; سری بزنید: این بخش حاوی پاسخ به اکثر پرسش‌ها و توصیه‌های مهمی برای &lt;![CDATA[&lt;a href="https://chat-t.me/faq/fa#j"&gt;عیب‌یابی&lt;/a&gt;]]&gt; است.</string>
+لطفاً به صفحه &lt;a href="https://chat-t.me/faq/fa#a"&gt;پرسش‌های متداول XGram&lt;/a&gt; سری بزنید: این بخش حاوی پاسخ به اکثر پرسش‌ها و توصیه‌های مهمی برای &lt;a href="https://chat-t.me/faq/fa#j"&gt;عیب‌یابی&lt;/a&gt; است.</string>
     <string name="AskButton">پرسش از یک داوطلب</string>
     <string name="TelegramFAQ">پرسش‌های متداول XGram</string>
     <string name="TelegramFaq">پرسش‌های متداول XGram</string>
@@ -6005,7 +6005,7 @@ URL سرور و کلید استریم را
     <string name="LimitReachedPinSavedDialogsPremium">متأسفانه نمی‌توانید بیش از ⁨%1$d⁩ گفتگو را به بالای صفحه سنجاق کنید. سنجاق تعدادی از گفتگوهای فعلی را بردارید.</string>
     <string name="LimitReachedPinSavedDialogsLocked">متأسفانه نمی‌توانید بیش از ⁨%1$d⁩ گفتگو را به بالای صفحه سنجاق کنید. سنجاق تعدادی از گفتگوهای فعلی را بردارید. ما در تلاشیم تا به شما اجازه دهیم این محدودیت را در آینده تغییر دهید.</string>
     <string name="LastActiveCommunities">گروه‌ها و کانال‌ها با کمترین فعالیت</string>
-    <string name="ChatsLeaveAlert">&lt;![CDATA[آیا از ترک کردن گفتگوهای انتخاب شده اطمینان دارید؟]]&gt;</string>
+    <string name="ChatsLeaveAlert">آیا از ترک کردن گفتگوهای انتخاب شده اطمینان دارید؟</string>
     <string name="PremiumPreviewAdvancedChatManagementDescription">ابزارهایی برای تنظیم پوشه پیش‌فرض، بایگانی خودکار و پنهان کردن گفتگوهای جدید از طرف افراد غیرمخاطب.</string>
     <string name="PremiumPreviewAdvancedChatManagementDescription2">مشترکین XGram پرمیوم می‌توانند پوشه پیش‌فرض را تنظیم کنند، به صورت خودکار بایگانی انجام دهند و گفتگوهای جدید از طرف غیرمخاطبین را پنهان کنند.</string>
     <string name="TelegramPremiumUserDialogTitle">**⁨%s⁩** مشترک XGram پرمیوم است.</string>
@@ -6377,7 +6377,7 @@ XGram پرمیوم را هدیه دادید.</string>
     <string name="RestrictUserDeleteAllMessages">حذف تمامی پیام‌ها</string>
     <string name="RestrictUserDeleteAllReactions">حذف تمامی واکنش‌ها</string>
     <string name="SendMediaPermissionVideos">ویدیوها</string>
-    <string name="SendMediaPermissionStickersGifs">&lt;![CDATA[استیکرها و گیف‌ها]]&gt;</string>
+    <string name="SendMediaPermissionStickersGifs">استیکرها و گیف‌ها</string>
     <string name="SendMediaPermissionMusic">موزیک‌ها</string>
     <string name="SendMediaPermissionFiles">فایل‌ها</string>
     <string name="SendMediaPermissionVoice">پیام‌های صوتی</string>
