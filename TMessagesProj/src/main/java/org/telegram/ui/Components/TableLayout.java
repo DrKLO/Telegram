@@ -21,6 +21,7 @@ import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.utils.TableSpanUtils;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -412,33 +413,36 @@ public class TableLayout extends View {
 
     private ArrayList<Child> childrens = new ArrayList<>();
 
-    public void addChild(int x, int y, int colspan, int rowspan) {
-        Child child = new Child(childrens.size());
-        LayoutParams layoutParams = new LayoutParams();
-        layoutParams.rowSpec = new Spec(false, new Interval(y, y + rowspan), FILL, 0.0f);
-        layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, 0.0f);
-        child.layoutParams = layoutParams;
-        child.rowspan = y;
-        childrens.add(child);
-        invalidateStructure();
+    public void setRows(List<TL_iv.pageTableRow> rows) {
+        removeAllChildrens();
+        final boolean useSpans = TableSpanUtils.CanUseSpans(rows);
+        int columnCount = 0;
+        for (int r = 0; r < rows.size(); r++) {
+            TL_iv.pageTableRow row = rows.get(r);
+            int column = 0;
+            for (int c = 0; c < row.cells.size(); c++) {
+                TL_iv.pageTableCell cell = row.cells.get(c);
+                int colspan = useSpans ? Math.max(1, cell.colspan) : 1;
+                int rowspan = useSpans ? Math.max(1, cell.rowspan) : 1;
+                addChild(cell.text == null ? null : cell, column, r, colspan, rowspan);
+                column += colspan;
+            }
+            columnCount = Math.max(columnCount, column);
+        }
+        setColumnCount(columnCount);
     }
 
-    public void addChild(TL_iv.pageTableCell cell, int x, int y, int colspan) {
-        if (colspan == 0) {
-            colspan = 1;
-        }
+    private void addChild(TL_iv.pageTableCell cell, int x, int y, int colspan, int rowspan) {
         Child child = new Child(childrens.size());
         child.cell = cell;
         LayoutParams layoutParams = new LayoutParams();
-        layoutParams.rowSpec = new Spec(false, new Interval(y, y + (cell.rowspan != 0 ? cell.rowspan : 1)), FILL, 0.0f);
-        layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, 1.0f);
+        layoutParams.rowSpec = new Spec(false, new Interval(y, y + rowspan), FILL, 0.0f);
+        layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, cell == null ? 0.0f : 1.0f);
         child.layoutParams = layoutParams;
         child.rowspan = y;
         childrens.add(child);
-        if (cell.rowspan > 1) {
-            float x1 = y;
-            float y1 = y + cell.rowspan;
-            rowSpans.add(new PointF(x1, y1));
+        if (cell != null && rowspan > 1) {
+            rowSpans.add(new PointF(y, y + rowspan));
         }
         invalidateStructure();
     }
