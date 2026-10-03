@@ -1,5 +1,6 @@
 package org.telegram.ui.iv;
 
+import org.telegram.messenger.utils.TableSpanUtils;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.tl.TL_iv;
 
@@ -29,16 +30,29 @@ public class TableModel {
     }
 
     public void rebuildFromBlock() {
+        if (block.rows != null && !TableSpanUtils.CanUseSpans(block.rows)) {
+            resetSpans();
+        }
         rowCount = block.rows == null ? 0 : block.rows.size();
 
         int estCols = 0;
+        int unmergedCols = 0;
         for (int r = 0; r < rowCount; r++) {
             TL_iv.pageTableRow row = block.rows.get(r);
+            unmergedCols = Math.max(unmergedCols, row.cells.size());
             int sum = 0;
             for (int i = 0; i < row.cells.size(); i++) {
                 sum += spanCol(row.cells.get(i));
             }
             if (sum > estCols) estCols = sum;
+        }
+
+        final long maxGridCells = (long) Math.max(rowCount, 1) * Math.max(unmergedCols, 1)
+            + TableSpanUtils.MAX_ADDITIONAL_CELLS;
+        if ((long) rowCount * estCols > maxGridCells) {
+            resetSpans();
+            rebuildFromBlock();
+            return;
         }
 
         TL_iv.pageTableCell[][] tmpGrid = new TL_iv.pageTableCell[Math.max(rowCount, 1)][Math.max(estCols, 1)];
@@ -61,8 +75,14 @@ public class TableModel {
                 int rs = spanRow(cell);
 
                 while (c < estCols && tmpGrid[r][c] != null) c++;
-                if (c + cs > estCols) {
-                    int newCols = Math.max(c + cs, estCols * 2);
+                long requiredCols = (long) c + cs;
+                if (requiredCols > estCols) {
+                    if (requiredCols * rowCount > maxGridCells) {
+                        resetSpans();
+                        rebuildFromBlock();
+                        return;
+                    }
+                    int newCols = (int) Math.min(Math.max(requiredCols, (long) estCols * 2), maxGridCells / rowCount);
                     tmpGrid = growCols(tmpGrid, newCols);
                     tmpAR = growIntCols(tmpAR, newCols, -1);
                     tmpAC = growIntCols(tmpAC, newCols, -1);
@@ -104,6 +124,16 @@ public class TableModel {
         rebuildAnchorList();
     }
 
+    private void resetSpans() {
+        for (TL_iv.pageTableRow row : block.rows) {
+            for (TL_iv.pageTableCell cell : row.cells) {
+                cell.colspan = 0;
+                cell.rowspan = 0;
+                cell.flags &= ~(TLObject.FLAG_1 | TLObject.FLAG_2);
+            }
+        }
+    }
+
     public boolean isAnchor(int r, int c) {
         return r >= 0 && c >= 0 && r < rowCount && c < colCount
             && anchorR[r][c] == r && anchorC[r][c] == c;
@@ -141,11 +171,11 @@ public class TableModel {
     }
 
     public static int spanCol(TL_iv.pageTableCell cell) {
-        return cell.colspan != 0 ? cell.colspan : 1;
+        return Math.max(1, cell.colspan);
     }
 
     public static int spanRow(TL_iv.pageTableCell cell) {
-        return cell.rowspan != 0 ? cell.rowspan : 1;
+        return Math.max(1, cell.rowspan);
     }
 
     public static TL_iv.pageTableCell newEmptyCell() {

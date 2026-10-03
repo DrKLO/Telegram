@@ -9674,37 +9674,11 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public void setBlock(TL_iv.pageBlockTable block) {
             currentBlock = block;
             AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, parent.getThemedColor(Theme.key_windowBackgroundWhite));
-            tableLayout.removeAllChildrens();
             tableLayout.setDrawLines(currentBlock.bordered);
             tableLayout.setStriped(currentBlock.striped);
             tableLayout.setRtl(adapter != null && adapter.isRtl);
 
-            int maxCols = 0;
-
-            if (!currentBlock.rows.isEmpty()) {
-                TL_iv.pageTableRow row = currentBlock.rows.get(0);
-                for (int c = 0, size2 = row.cells.size(); c < size2; c++) {
-                    TL_iv.pageTableCell cell = row.cells.get(c);
-                    maxCols += (cell.colspan != 0 ? cell.colspan : 1);
-                }
-            }
-
-            for (int r = 0, size = currentBlock.rows.size(); r < size; r++) {
-                TL_iv.pageTableRow row = currentBlock.rows.get(r);
-                int cols = 0;
-                for (int c = 0, size2 = row.cells.size(); c < size2; c++) {
-                    TL_iv.pageTableCell cell = row.cells.get(c);
-                    int colspan = (cell.colspan != 0 ? cell.colspan : 1);
-                    int rowspan = (cell.rowspan != 0 ? cell.rowspan : 1);
-                    if (cell.text != null) {
-                        tableLayout.addChild(cell, cols, r, colspan);
-                    } else {
-                        tableLayout.addChild(cols, r, colspan, rowspan);
-                    }
-                    cols += colspan;
-                }
-            }
-            tableLayout.setColumnCount(maxCols);
+            tableLayout.setRows(currentBlock.rows);
             firstLayout = true;
             requestLayout();
         }
