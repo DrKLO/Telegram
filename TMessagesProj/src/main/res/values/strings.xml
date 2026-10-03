@@ -5000,6 +5000,12 @@
     <string name="AccActionMessageOptions">Message options</string>
     <string name="AccActionOpenForwardedOrigin">Forwarded origin</string>
     <string name="AccActionEnterSelectionMode">Enter selection mode</string>
+    <string name="AccActionReactWith">React with %1$s</string>
+    <string name="AccActionUnreactWith">Remove your reaction %1$s</string>
+    <string name="AccActionReactWithCount_one">React with %2$s, %1$d person</string>
+    <string name="AccActionReactWithCount_other">React with %2$s, %1$d people</string>
+    <string name="AccActionUnreactWithCount_one">Remove your reaction %2$s, %1$d person</string>
+    <string name="AccActionUnreactWithCount_other">Remove your reaction %2$s, %1$d people</string>
     <string name="AccActionChatPreview">Chat Preview</string>
     <string name="AccActionOpenTranscription">Open Voice Transcription</string>
     <string name="AccActionCloseTranscription">Close Transcription</string>
