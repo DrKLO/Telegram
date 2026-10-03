@@ -5988,6 +5988,132 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
 
+    /**
+     * A run of monospace text, or a block of code with a copy button under it. A press held on the
+     * one and a press on the other put it on the clipboard, and a screen reader could reach
+     * neither: what it had was a single action named after nothing in particular, which copied
+     * whichever block of code came first and left every other one out of reach.
+     */
+    private static class CopyableText {
+        final CharSequence text;
+        final URLSpanMono span;
+        final MessageObject.TextLayoutBlock block;
+
+        CopyableText(CharSequence text, URLSpanMono span, MessageObject.TextLayoutBlock block) {
+            this.text = text;
+            this.span = span;
+            this.block = block;
+        }
+    }
+
+    // a message with more separately copyable runs than this is not one anybody would want to
+    // walk an action menu of
+    private static final int MAX_COPY_TEXT_ACTIONS = 16;
+
+    // an action carries an id of its own. TalkBack lists a custom action in its menu only when the id is above the ones the system keeps for itself, which a resource id always is and an id handed out for a view never is, so the ids come from a fixed list
+    private static final int[] COPY_TEXT_ACTION_IDS = { R.id.acc_action_copy_text_0, R.id.acc_action_copy_text_1, R.id.acc_action_copy_text_2, R.id.acc_action_copy_text_3, R.id.acc_action_copy_text_4, R.id.acc_action_copy_text_5, R.id.acc_action_copy_text_6, R.id.acc_action_copy_text_7, R.id.acc_action_copy_text_8, R.id.acc_action_copy_text_9, R.id.acc_action_copy_text_10, R.id.acc_action_copy_text_11, R.id.acc_action_copy_text_12, R.id.acc_action_copy_text_13, R.id.acc_action_copy_text_14, R.id.acc_action_copy_text_15 };
+
+    private final ArrayList<CopyableText> copyableTexts = new ArrayList<>();
+
+    private static int copyTextActionId(int index) {
+        return COPY_TEXT_ACTION_IDS[index];
+    }
+
+    private static int copyTextActionIndex(int action) {
+        for (int i = 0; i < COPY_TEXT_ACTION_IDS.length; i++) {
+            if (COPY_TEXT_ACTION_IDS[i] == action) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean canCopyFromMessage() {
+        if (currentMessageObject == null) {
+            return false;
+        }
+        if (currentMessageObject.getDialogId() == UserObject.VERIFY) {
+            return true;
+        }
+        // where copying is not allowed the copy button under a block of code is not drawn either,
+        // and a press held on a run of monospace text quietly does nothing
+        return !(MessagesController.getInstance(currentAccount).isPeerNoForwards(currentMessageObject.getDialogId())
+            || currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.noforwards);
+    }
+
+    private void collectCopyableTexts() {
+        copyableTexts.clear();
+        if (!canCopyFromMessage()) {
+            return;
+        }
+        // a message laid out in blocks keeps its code and its monospace runs in those blocks, and a
+        // tap on either of them copies it, the way a press held on a run of monospace text does
+        if (currentMessageObject.richLayout != null && !currentMessageObject.richLayout.blocks.isEmpty()) {
+            final byte type = (byte) (currentMessageObject.isOutOwner() ? 1 : 0);
+            for (CharSequence text : currentMessageObject.richLayout.getAccessibilityCopyableTexts()) {
+                if (copyableTexts.size() >= MAX_COPY_TEXT_ACTIONS) {
+                    break;
+                }
+                copyableTexts.add(new CopyableText(text, new URLSpanMono(text, 0, text.length(), type), null));
+            }
+        }
+        addCopyableMonoRuns(currentMessageObject.messageText);
+        addCopyableCodeBlocks(currentMessageObject.textLayoutBlocks);
+        addCopyableMonoRuns(currentMessageObject.caption);
+        addCopyableCodeBlocks(captionLayout == null ? null : captionLayout.textLayoutBlocks);
+    }
+
+    private void addCopyableMonoRuns(CharSequence text) {
+        if (!(text instanceof Spanned)) {
+            return;
+        }
+        final Spanned spanned = (Spanned) text;
+        final URLSpanMono[] spans = spanned.getSpans(0, spanned.length(), URLSpanMono.class);
+        if (spans == null || spans.length == 0) {
+            return;
+        }
+        // what order they come back in is not promised, and the order they are read in should be
+        // the order they are written in
+        Arrays.sort(spans, (a, b) -> spanned.getSpanStart(a) - spanned.getSpanStart(b));
+        for (URLSpanMono span : spans) {
+            if (copyableTexts.size() >= MAX_COPY_TEXT_ACTIONS) {
+                return;
+            }
+            final int start = spanned.getSpanStart(span);
+            final int end = spanned.getSpanEnd(span);
+            if (start < 0 || end <= start) {
+                continue;
+            }
+            copyableTexts.add(new CopyableText(spanned.subSequence(start, end), span, null));
+        }
+    }
+
+    private void addCopyableCodeBlocks(ArrayList<MessageObject.TextLayoutBlock> blocks) {
+        if (blocks == null) {
+            return;
+        }
+        for (MessageObject.TextLayoutBlock block : blocks) {
+            if (copyableTexts.size() >= MAX_COPY_TEXT_ACTIONS) {
+                return;
+            }
+            // a short block of code has no copy button drawn under it, but it is code all the same,
+            // and copying it goes the way the button would
+            if (!(block.hasCodeCopyButton || block.code) || block.textLayout == null || block.textLayout.getText() == null) {
+                continue;
+            }
+            copyableTexts.add(new CopyableText(block.textLayout.getText(), null, block));
+        }
+    }
+
+    private CharSequence copyActionLabel(CharSequence text) {
+        // a block of code is many lines, and the name of an action is one
+        CharSequence label = AndroidUtilities.replaceNewLines(text);
+        if (label.length() > 64) {
+            label = label.subSequence(0, 64) + "…";
+        }
+        return label;
+    }
+
     private void didClickedPollImage(ChatMessageCell cell, ImageReceiver imageReceiver, TLRPC.PollAnswer answer, TLRPC.MessageMedia media, float x, float y, int unshuffledIndex) {
         /*if (unshuffledIndex == PollAttachedMediaPack.INDEX_DESCRIPTION) {
             if (pollContentDrawable != null && pollContentDrawable.getMedia() != null && pollContentDrawable.getMedia().document != null && (pollContentDrawable.isFile() || pollContentDrawable.isMusic())) {
@@ -26624,13 +26750,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (delegate != null) {
                 delegate.didPressSummarize(this, drawSummaryReply);
             }
-        } else if (action == R.id.acc_action_copy_code) {
-            if (delegate != null && currentMessageObject.textLayoutBlocks != null) {
-                for (MessageObject.TextLayoutBlock block : currentMessageObject.textLayoutBlocks) {
-                    if (block.hasCodeCopyButton) {
-                        delegate.didPressCodeCopy(this, block);
-                        break;
-                    }
+        } else if (copyTextActionIndex(action) >= 0) {
+            collectCopyableTexts();
+            final int index = copyTextActionIndex(action);
+            if (delegate != null && index >= 0 && index < copyableTexts.size()) {
+                final CopyableText copyable = copyableTexts.get(index);
+                if (copyable.span != null) {
+                    // the very path a press held on the run takes, so the same thing is put on the
+                    // clipboard and the same word said back about it
+                    delegate.didPressUrl(this, copyable.span, true);
+                } else if (copyable.block != null) {
+                    delegate.didPressCodeCopy(this, copyable.block);
                 }
             }
         }
@@ -27382,14 +27512,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (drawSummarizeButton || drawSummaryReply) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
                 }
-                if (currentMessageObject.textLayoutBlocks != null) {
-                    for (MessageObject.TextLayoutBlock block : currentMessageObject.textLayoutBlocks) {
-                        if (block.hasCodeCopyButton) {
-                            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_copy_code, getString("CopyCode", R.string.CopyCode)));
-                            break;
-                        }
-                    }
-                }
 
                 if ((currentMessageObject.isVoice() || currentMessageObject.isRoundVideo() || currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(currentMessageObject)) {
                     seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
@@ -27481,6 +27603,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
                 if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
+                }
+                // every run of monospace text and every block of code that can be copied gets an
+                // action of its own, and the action carries what it would copy, so which of them
+                // is which is known without having to try one and look at the clipboard after
+                collectCopyableTexts();
+                for (int c = 0; c < copyableTexts.size(); c++) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                        copyTextActionId(c),
+                        formatString(R.string.AccActionCopyText, copyActionLabel(copyableTexts.get(c).text))
+                    ));
                 }
                 if (drawSelectionBackground || getBackground() != null) {
                     info.setSelected(true);
