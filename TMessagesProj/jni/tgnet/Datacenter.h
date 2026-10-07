@@ -72,6 +72,7 @@ public:
     static void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
 
 private:
+    bool shouldUseTemporaryAddresses(uint32_t flags) const;
     void onHandshakeConnectionClosed(Connection *connection);
     void onHandshakeConnectionConnected(Connection *connection);
     void onHandshakeComplete(Handshake *handshake, int64_t keyId, ByteArray *authKey, int32_t timeDifference);
@@ -123,6 +124,7 @@ private:
     Config *config = nullptr;
     bool isCdnDatacenter = false;
     bool repeatCheckingAddresses = false;
+    bool temporaryAddressFallbackExhausted = false;
 
     std::vector<std::unique_ptr<Handshake>> handshakes;
 
