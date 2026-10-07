@@ -82,6 +82,7 @@ import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
 import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.telegram.tgnet.TLObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -5194,10 +5195,10 @@ public class NotificationsController extends BaseController implements Notificat
                     sender = getUserConfig().getCurrentUser();
                 }
                 try {
-                    if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                    if (sender != null) {
                         Person.Builder personBuilder = new Person.Builder().setName(LocaleController.getString(R.string.FromYou));
-                        File avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
-                        loadRoundAvatar(getUserConfig().getClientUserId(), avatar, personBuilder);
+                        File avatar = sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0 ? getFileLoader().getPathToAttach(sender.photo.photo_small, true) : null;
+                        loadRoundAvatar(getUserConfig().getClientUserId(), avatar, sender, personBuilder);
                         selfPerson = personBuilder.build();
                         personCache.put(selfUserId, selfPerson);
                     }
@@ -5334,8 +5335,10 @@ public class NotificationsController extends BaseController implements Notificat
                         Person.Builder personBuilder = new Person.Builder().setName(personName);
                         if (preview[0] && !DialogObject.isEncryptedDialog(dialogId) && Build.VERSION.SDK_INT >= 28) {
                             File avatar = null;
+                            TLObject peerForFallback = null;
                             if (DialogObject.isUserDialog(dialogId) || isChannel) {
                                 avatar = avatarFile;
+                                peerForFallback = isChannel ? (TLObject) chat : user;
                             } else {
                                 long fromId = messageObject.getSenderId();
                                 TLRPC.User sender = getMessagesController().getUser(fromId);
@@ -5345,24 +5348,33 @@ public class NotificationsController extends BaseController implements Notificat
                                         getMessagesController().putUser(sender, true);
                                     }
                                 }
-                                if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
-                                    avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                if (sender != null) {
+                                    peerForFallback = sender;
+                                    if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                                        avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                    }
                                 }
                             }
                             if (avatar == null && dialogId == UserObject.VERIFY && messageObject.getForwardedFromId() != null) {
                                 if (uid >= 0) {
                                     TLRPC.User sender = getMessagesController().getUser(uid);
-                                    if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
-                                        avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                    if (sender != null) {
+                                        peerForFallback = sender;
+                                        if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                                            avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                        }
                                     }
                                 } else {
                                     TLRPC.Chat sender = getMessagesController().getChat(-uid);
-                                    if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
-                                        avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                    if (sender != null) {
+                                        peerForFallback = sender;
+                                        if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                                            avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                                        }
                                     }
                                 }
                             }
-                            loadRoundAvatar(dialogId, avatar, personBuilder);
+                            loadRoundAvatar(dialogId, avatar, peerForFallback, personBuilder);
                         }
                         person = personBuilder.build();
                         personCache.put(uid, person);
@@ -5814,31 +5826,78 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
+        return loadRoundAvatar(dialogId, avatar, null, personBuilder);
+    }
+
+    public static Person.Builder loadRoundAvatar(long dialogId, File avatar, TLObject peer, Person.Builder personBuilder) {
         if (dialogId == UserObject.OAUTH) {
             personBuilder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.ic_launcher_dr));
             return personBuilder;
         }
-        if (avatar != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            try {
-                Bitmap bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(avatar), (decoder, info, src) -> {
-                    decoder.setPostProcessor((canvas) -> {
-                        Path path = new Path();
-                        path.setFillType(Path.FillType.INVERSE_EVEN_ODD);
-                        int width = canvas.getWidth();
-                        int height = canvas.getHeight();
-                        path.addRoundRect(0, 0, width, height, width / 2, width / 2, Path.Direction.CW);
-                        Paint paint = new Paint();
-                        paint.setAntiAlias(true);
-                        paint.setColor(Color.TRANSPARENT);
-                        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
-                        canvas.drawPath(path, paint);
-                        return PixelFormat.TRANSLUCENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (avatar != null && avatar.exists()) {
+                try {
+                    Bitmap bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(avatar), (decoder, info, src) -> {
+                        decoder.setPostProcessor((canvas) -> {
+                            Path path = new Path();
+                            path.setFillType(Path.FillType.INVERSE_EVEN_ODD);
+                            int width = canvas.getWidth();
+                            int height = canvas.getHeight();
+                            path.addRoundRect(0, 0, width, height, width / 2, width / 2, Path.Direction.CW);
+                            Paint paint = new Paint();
+                            paint.setAntiAlias(true);
+                            paint.setColor(Color.TRANSPARENT);
+                            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+                            canvas.drawPath(path, paint);
+                            return PixelFormat.TRANSLUCENT;
+                        });
                     });
-                });
-                IconCompat icon = IconCompat.createWithBitmap(bitmap);
-                personBuilder.setIcon(icon);
-            } catch (Throwable ignore) {
-
+                    personBuilder.setIcon(IconCompat.createWithBitmap(bitmap));
+                    return personBuilder;
+                } catch (Throwable ignore) {
+                }
+            }
+            if (peer != null) {
+                try {
+                    final int sz = AndroidUtilities.dp(64);
+                    Bitmap fallback = Bitmap.createBitmap(sz, sz, Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(fallback);
+                    long peerId;
+                    String firstName = null, lastName = null;
+                    if (peer instanceof TLRPC.User) {
+                        TLRPC.User u = (TLRPC.User) peer;
+                        peerId = u.id;
+                        firstName = u.first_name;
+                        lastName = u.last_name;
+                    } else if (peer instanceof TLRPC.Chat) {
+                        TLRPC.Chat c = (TLRPC.Chat) peer;
+                        peerId = c.id;
+                        firstName = c.title;
+                    } else {
+                        peerId = 0;
+                    }
+                    int[] colors = new int[]{
+                        Theme.getColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(peerId)]),
+                        Theme.getColor(Theme.keys_avatar_background2[AvatarDrawable.getColorIndex(peerId)])
+                    };
+                    Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    circlePaint.setShader(new LinearGradient(0, 0, 0, sz, colors, new float[]{0, 1}, Shader.TileMode.CLAMP));
+                    canvas.drawCircle(sz / 2f, sz / 2f, sz / 2f, circlePaint);
+                    StringBuilder symbol = new StringBuilder();
+                    AvatarDrawable.getAvatarSymbols(firstName, lastName, null, symbol);
+                    String text = symbol.toString();
+                    if (!text.isEmpty()) {
+                        TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                        textPaint.setTypeface(AndroidUtilities.bold());
+                        textPaint.setTextSize(sz * .35f);
+                        textPaint.setColor(0xFFFFFFFF);
+                        Rect bounds = new Rect();
+                        textPaint.getTextBounds(text, 0, text.length(), bounds);
+                        canvas.drawText(text, sz / 2f - bounds.width() / 2f - bounds.left, sz / 2f - bounds.height() / 2f - bounds.top, textPaint);
+                    }
+                    personBuilder.setIcon(IconCompat.createWithAdaptiveBitmap(fallback));
+                } catch (Throwable ignore) {
+                }
             }
         }
         return personBuilder;
