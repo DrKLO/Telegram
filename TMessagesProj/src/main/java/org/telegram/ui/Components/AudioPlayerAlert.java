@@ -1337,6 +1337,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             actionBar.setAlpha(1.0f);
             actionBarBackground.setAlpha(0.0f);
             actionBarSlideProperty.set(actionBar, 0.0f);
+        } else {
+            // actionBar.menuOccupyBack makes the search field start at the very left edge, and only
+            // actionBarSlideProperty (profile playlists only) offsets it past the back button, so
+            // without this the search hint is drawn underneath the back button
+            offsetSearchContainerFromBackButton(1.0f);
         }
 
         listAdapter.setup();
@@ -2023,6 +2028,19 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
+    private void offsetSearchContainerFromBackButton(float value) {
+        if (searchItem == null || searchItem.getSearchContainer() == null) {
+            return;
+        }
+        searchItem.getSearchContainer().setClipChildren(false);
+        searchItem.getSearchContainer().setClipToPadding(false);
+        searchItem.getSearchContainer().setPadding(0, 0, dp(AndroidUtilities.isTablet() ? 74 : 66), 0);
+        searchItem.getSearchContainer().setTranslationX(dp(AndroidUtilities.isTablet() ? 74 : 66) + dp(-52) * (1.0f - value));
+        if (searchItem.getSearchClearButton() != null) {
+            searchItem.getSearchClearButton().setTranslationX(dp(52) * (1.0f - value));
+        }
+    }
+
     private float actionBarSlide;
     private final Property<ActionBar, Float> actionBarSlideProperty = new AnimationProperties.FloatProperty<ActionBar>("actionBarSlide") {
         @Override
@@ -2033,15 +2051,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             titleTextView.setTranslationX(dp(-52) * (1.0f - value));
             backButton.setTranslationX(dp(-52) * (1.0f - value));
-            if (searchItem != null && searchItem.getSearchContainer() != null) {
-                searchItem.getSearchContainer().setClipChildren(false);
-                searchItem.getSearchContainer().setClipToPadding(false);
-                searchItem.getSearchContainer().setPadding(0, 0, dp(AndroidUtilities.isTablet() ? 74 : 66), 0);
-                searchItem.getSearchContainer().setTranslationX(dp(AndroidUtilities.isTablet() ? 74 : 66) + dp(-52) * (1.0f - value));
-                if (searchItem.getSearchClearButton() != null) {
-                    searchItem.getSearchClearButton().setTranslationX(dp(52) * (1.0f - value));
-                }
-            }
+            offsetSearchContainerFromBackButton(value);
 
             backButton.setScaleX(lerp(0.6f, 1.0f, value));
             backButton.setScaleY(lerp(0.6f, 1.0f, value));
