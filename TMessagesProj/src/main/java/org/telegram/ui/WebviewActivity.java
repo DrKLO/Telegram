@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewParent;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -263,7 +264,7 @@ public class WebviewActivity extends BaseFragment {
                     }
                     return true;
                 }
-                return false;
+                return Browser.isTonsite(url);
             }
 
             @Override
@@ -277,6 +278,14 @@ public class WebviewActivity extends BaseFragment {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return isInternalUrl(url) || super.shouldOverrideUrlLoading(view, url);
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                if (Browser.isTonsite(url)) {
+                    return org.telegram.ui.web.BotWebViewContainer.proxyTON("GET", url, null);
+                }
+                return super.shouldInterceptRequest(view, url);
             }
 
             @Override
