@@ -464,8 +464,16 @@ public class BotForumHelper extends BaseController {
                 request.top_msg_id = topicId;
                 request.flags |= 512;
             } else {
+                // Bind the seeding message to the new topic the same way a message
+                // sent inside an existing topic is bound: reply_to_msg_id is the
+                // thread root and top_msg_id marks the thread. Without top_msg_id
+                // the server keeps the message in the "New Chat" context instead,
+                // so the topic stays empty on every client and later messages in
+                // it start a separate bot conversation.
                 final TLRPC.TL_inputReplyToMessage fixedReplyTo = new TLRPC.TL_inputReplyToMessage();
                 fixedReplyTo.reply_to_msg_id = topicId;
+                fixedReplyTo.flags |= 1;
+                fixedReplyTo.top_msg_id = topicId;
                 TlUtils.setInputReplyToFromSendMessageRequest(req, fixedReplyTo);
             }
 
