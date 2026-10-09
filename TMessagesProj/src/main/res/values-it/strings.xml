@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">MVGram</string>
+    <string name="AppNameBeta">MVGram Beta</string>
     <string name="LanguageName">Italiano</string>
     <string name="English">Inglese</string>
     <string name="LanguageNameInEnglish">Italian</string>
@@ -436,7 +436,7 @@
     <string name="LanguageUnknownTitle">Dati insufficienti</string>
     <string name="LanguageUnsupportedError">Lingua non trovata.</string>
     <string name="LanguageSame">Stai già usando questa lingua (**%1$s**). Puoi cambiare la tua lingua in qualsiasi momento nelle Impostazioni.</string>
-    <string name="LanguageUnknownCustomAlert">Sfortunatamente, questa lingua personalizzata (**%1$s**) non contiene dati per Telegram Android.</string>
+    <string name="LanguageUnknownCustomAlert">Sfortunatamente, questa lingua personalizzata (**%1$s**) non contiene dati per MVGram Android.</string>
     <string name="AskAQuestionInfo">Per favore ricorda che il supporto di Telegram è gestito da volontari. Proviamo a rispondere quanto prima, ma potrebbe volerci del tempo.\n\nDai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">FAQ di Telegram</a>]]>: contengono risposte a quasi tutte le domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">risolvere i problemi</a>]]>.</string>
     <string name="AskButton">Chiedi ai volontari</string>
     <string name="TelegramFAQ">FAQ Telegram</string>
@@ -588,7 +588,7 @@
     <string name="DirectShareInfo">Mostra le chat recenti nel menu di condivisione</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Emoji grandi</string>
-    <string name="TelegramVersion">Telegram per Android %1$s</string>
+    <string name="TelegramVersion">MVGram per Android %1$s</string>
     <string name="DebugMenu">Menu debug</string>
     <string name="DebugMenuLongPress">Tieni premuto di nuovo per il menu di debug</string>
     <string name="DebugSendLogs">Invia i log</string>

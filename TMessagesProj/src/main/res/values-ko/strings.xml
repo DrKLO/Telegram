@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">텔레그램</string>
-    <string name="AppNameBeta">텔레그램</string>
+    <string name="AppName">MVGram</string>
+    <string name="AppNameBeta">MVGram Beta</string>
     <string name="LanguageName">한국어</string>
     <string name="English">영어</string>
     <string name="LanguageNameInEnglish">한국어</string>
@@ -437,7 +437,7 @@
     <string name="LanguageUnknownTitle">데이터가 부족합니다</string>
     <string name="LanguageUnsupportedError">해당 언어가 없습니다.</string>
     <string name="LanguageSame">이 언어 묶음(**%1$s**)을 이미 사용하고 계십니다. 설정에서 언제든지 언어를 되돌리실 수 있습니다.</string>
-    <string name="LanguageUnknownCustomAlert">안타깝게도 이 맞춤 언어 묶음(**%1$s**)에는 Android 텔레그램용 데이터가 들어 있지 않습니다.</string>
+    <string name="LanguageUnknownCustomAlert">안타깝게도 이 맞춤 언어 묶음(**%1$s**)에는 Android MVGram용 데이터가 들어 있지 않습니다.</string>
     <string name="AskAQuestionInfo">텔레그램 지원은 자원봉사자들이 처리합니다. 신속하게 응답해 드리고자 노력하지만, 다소 시간이 걸릴 수 있습니다.\n\n<![CDATA[<a href=\"https://telegram.org/faq/ko#325188137\"> 자주 묻는 질문</a>]]>을 확인해 보세요. 잦은 질문에 대한 답과 <![CDATA[<a href=\"https://telegram.org/faq/ko#1478791328\">문제 해결</a>]]>을 위한 중요한 조언이 있습니다.</string>
     <string name="AskButton">봉사자에게 질문하기</string>
     <string name="TelegramFAQ">자주 묻는 질문</string>
@@ -589,7 +589,7 @@
     <string name="DirectShareInfo">안드로이드 공유 메뉴에 최근 대화방을 표시합니다</string>
     <string name="Emoji">이모지</string>
     <string name="LargeEmoji">큰 이모지</string>
-    <string name="TelegramVersion">Android용 텔레그램 %1$s</string>
+    <string name="TelegramVersion">Android용 MVGram %1$s</string>
     <string name="DebugMenu">디버그 메뉴</string>
     <string name="DebugMenuLongPress">디버그 메뉴로 이동하려면 길게 눌러주세요</string>
     <string name="DebugSendLogs">로그 보내기</string>

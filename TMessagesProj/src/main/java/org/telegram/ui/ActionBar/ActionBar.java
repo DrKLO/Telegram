@@ -30,6 +30,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.VectorDrawable;
 import android.text.SpannableString;
 import android.text.TextPaint;
@@ -47,6 +48,7 @@ import android.view.ViewPropertyAnimator;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -96,6 +98,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private BlurredBackgroundDrawable glassDrawableMenu;
     private INavigationLayout.BackButtonState backButtonState = INavigationLayout.BackButtonState.BACK;
     public ImageView backButtonImageView;
+    private TextView conversationUnreadCounter;
     private BackupImageView avatarSearchImageView;
     private Drawable backButtonDrawable;
     private final SimpleTextView[] titleTextView = new SimpleTextView[2];
@@ -279,6 +282,31 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             }
         });
         backButtonImageView.setContentDescription(LocaleController.getString(R.string.AccDescrGoBack));
+    }
+
+    public void setConversationUnreadCount(int count, boolean enabled) {
+        if (conversationUnreadCounter == null) {
+            conversationUnreadCounter = new TextView(getContext());
+            conversationUnreadCounter.setGravity(Gravity.CENTER);
+            conversationUnreadCounter.setTextSize(12.5f);
+            conversationUnreadCounter.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            conversationUnreadCounter.setPadding(dp(5), 0, dp(5), 0);
+            conversationUnreadCounter.setMinWidth(dp(20));
+            conversationUnreadCounter.setIncludeFontPadding(false);
+            conversationUnreadCounter.setClickable(false);
+            conversationUnreadCounter.setFocusable(false);
+            addView(conversationUnreadCounter);
+        }
+        int titleColor = Theme.getColor(Theme.key_actionBarDefaultTitle);
+        conversationUnreadCounter.setTextColor(titleColor);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ColorUtils.setAlphaComponent(titleColor, 0x22));
+        background.setCornerRadius(dp(12));
+        conversationUnreadCounter.setBackground(background);
+        conversationUnreadCounter.setText(count > 999 ? "999+" : String.valueOf(Math.max(0, count)));
+        conversationUnreadCounter.setVisibility(enabled && count > 0 ? VISIBLE : GONE);
+        conversationUnreadCounter.bringToFront();
+        requestLayout();
     }
 
     public Drawable getBackButtonDrawable() {
@@ -1496,10 +1524,13 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == additionalSubTitleOverlayContainer || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == avatarSearchImageView) {
+            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == additionalSubTitleOverlayContainer || child == subtitleTextView || child == menu || child == backButtonImageView || child == conversationUnreadCounter || child == additionalSubtitleTextView || child == avatarSearchImageView) {
                 continue;
             }
             measureChildWithMargins(child, widthMeasureSpec, 0, MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY), 0);
+        }
+        if (conversationUnreadCounter != null && conversationUnreadCounter.getVisibility() == VISIBLE) {
+            conversationUnreadCounter.measure(MeasureSpec.makeMeasureSpec(dp(44), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY));
         }
     }
 
@@ -1523,6 +1554,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             textLeft = glassMode ? dp(76) : dp(AndroidUtilities.isTablet() ? 80 : 72);
         } else {
             textLeft = glassMode ? dp(24) : dp(AndroidUtilities.isTablet() ? 26 : 18);
+        }
+        if (conversationUnreadCounter != null && conversationUnreadCounter.getVisibility() == VISIBLE) {
+            int counterLeft = dp(36);
+            int counterTop = additionalTop + (getCurrentActionBarHeight() - conversationUnreadCounter.getMeasuredHeight()) / 2;
+            conversationUnreadCounter.layout(counterLeft, counterTop, counterLeft + conversationUnreadCounter.getMeasuredWidth(), counterTop + conversationUnreadCounter.getMeasuredHeight());
         }
         textLeft += additionalTextLeft;
 
@@ -1572,7 +1608,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
-            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == additionalSubTitleOverlayContainer || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == avatarSearchImageView) {
+            if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == additionalSubTitleOverlayContainer || child == subtitleTextView || child == menu || child == backButtonImageView || child == conversationUnreadCounter || child == additionalSubtitleTextView || child == avatarSearchImageView) {
                 continue;
             }
 

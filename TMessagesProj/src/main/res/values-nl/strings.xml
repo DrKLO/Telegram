@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram-bèta</string>
+    <string name="AppName">MVGram</string>
+    <string name="AppNameBeta">MVGram Beta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="English">Engels</string>
     <string name="LanguageNameInEnglish">Dutch</string>
@@ -437,7 +437,7 @@
     <string name="LanguageUnknownTitle">Te weinig gegevens</string>
     <string name="LanguageUnsupportedError">Taal niet gevonden.</string>
     <string name="LanguageSame">Je maakt al gebruik van dit taalbestand (**%1$s**). Je kunt je taal op elk moment aanpassen via de instellingen.</string>
-    <string name="LanguageUnknownCustomAlert">Helaas bevat dit aangepaste taalbestand (**%1$s**) geen informatie voor Telegram Android.</string>
+    <string name="LanguageUnknownCustomAlert">Helaas bevat dit aangepaste taalbestand (**%1$s**) geen informatie voor MVGram Android.</string>
     <string name="AskAQuestionInfo">Houd er rekening mee dat de ondersteuning van Telegram door vrijwilligers wordt gedaan. We proberen zo snel mogelijk te reageren, maar soms kan het even duren.\n\nBekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general-questions\">veelgestelde vragen</a>]]> van Telegram: daar vind je antwoorden op de meestgestelde vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">probleemoplossing</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFAQ">Veelgestelde vragen</string>
@@ -589,7 +589,7 @@
     <string name="DirectShareInfo">Recente chats in snel delen weergeven</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Grote emoji</string>
-    <string name="TelegramVersion">Telegram voor Android %1$s</string>
+    <string name="TelegramVersion">MVGram voor Android %1$s</string>
     <string name="ChangeLanguageLater">Via instellingen kun je je taal altijd aanpassen.</string>
     <string name="ChooseYourLanguage">Kies je taal</string>
     <string name="ChooseYourLanguageOther">Overige</string>

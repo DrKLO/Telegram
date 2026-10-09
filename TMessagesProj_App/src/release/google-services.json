@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "814484254783",
+    "project_id": "mvgram-bbfd8",
+    "storage_bucket": "mvgram-bbfd8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814484254783:android:1d3c7da6f2340cd0b5488a",
+        "android_client_info": {
+          "package_name": "com.mvgram.messenger"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdjuI64AjWAXxHhi8A0S4nF3LPkCPD-nM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

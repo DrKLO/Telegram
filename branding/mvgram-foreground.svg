@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>MVGram paper-plane adaptive foreground</title>
+  <desc>Transparent adaptive-icon foreground with the original black MVGram paper-plane mark and a white fold cut.</desc>
+  <path fill="#000000" d="M116 469 L875 166 C889 160 903 172 897 188 L665 846 C660 861 641 865 632 851 L504 597 L363 734 C351 746 331 738 334 721 L365 548 L120 493 C103 489 100 477 116 469 Z"/>
+  <path fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" d="M372 548 L738 282"/>
+</svg>

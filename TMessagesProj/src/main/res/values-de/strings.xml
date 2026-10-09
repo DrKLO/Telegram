@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">MVGram</string>
+    <string name="AppNameBeta">MVGram Beta</string>
     <string name="LanguageName">Deutsch</string>
     <string name="English">Englisch</string>
     <string name="LanguageNameInEnglish">German</string>
@@ -382,7 +382,7 @@
     <string name="LanguageUnknownTitle">Unzureichende Daten</string>
     <string name="LanguageUnsupportedError">Sprache nicht gefunden.</string>
     <string name="LanguageSame">Du benutzt bereits das Sprachpaket (**%1$s**). In den Einstellungen kannst du die Sprache jederzeit wieder ändern.</string>
-    <string name="LanguageUnknownCustomAlert">Leider enthält das benutzerdefinierte Sprachpaket (**%1$s**) keine Daten für Telegram Android.</string>
+    <string name="LanguageUnknownCustomAlert">Leider enthält das benutzerdefinierte Sprachpaket (**%1$s**) keine Daten für MVGram Android.</string>
     <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von Freiwilligen betreut wird. Alle versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.\n\nBitte schau auch in den <![CDATA[<a href=\"https://telegram.org/faq/de#allgemeine-fragen\">Telegram FAQ</a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Eine Frage stellen</string>
     <string name="TelegramFAQ">Telegram FAQ</string>
@@ -534,7 +534,7 @@
     <string name="DirectShareInfo">Letzte Chats im Teilen-Menü anzeigen</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Große Emoji</string>
-    <string name="TelegramVersion">Telegram für Android %1$s</string>
+    <string name="TelegramVersion">MVGram für Android %1$s</string>
     <string name="ChangeLanguageLater">Du kannst deine Sprache später in den Einstellungen ändern.</string>
     <string name="ChooseYourLanguage">Wähle deine Sprache</string>
     <string name="ChooseYourLanguageOther">Weitere</string>

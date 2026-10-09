@@ -2918,6 +2918,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.loadingMessagesFailed)
             .add(NotificationCenter.didUpdateConnectionState)
             .add(NotificationCenter.updateInterfaces)
+            .add(NotificationCenter.dialogsUnreadCounterChanged)
             .add(NotificationCenter.updateDefaultSendAsPeer)
             .add(NotificationCenter.userIsPremiumBlockedUpadted)
             .add(NotificationCenter.didLoadSendAsPeers)
@@ -4158,6 +4159,11 @@ public class ChatActivity extends BaseFragment implements
             protected void openSearch() {
                 openSearchWithText(isSupportedTags() ? "" : null);
             }
+
+            @Override
+            public boolean isCentered() {
+                return isTitleCentered();
+            }
         };
         avatarContainer.setGlassMode();
         avatarContainer.allowShorterStatus = true;
@@ -4221,7 +4227,7 @@ public class ChatActivity extends BaseFragment implements
             });
             getConnectionsManager().bindRequestToGuid(req, classGuid);
         } else {
-            actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 52 : 0, 0, 52, 0));
+            actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(isTitleCentered() ? LayoutHelper.MATCH_PARENT : LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 52 : 0, 0, 52, 0));
             actionBar.createMenu().bringToFront();
         }
         actionBar.setOnActionModeFactorChangeListener(() -> {
@@ -4229,6 +4235,7 @@ public class ChatActivity extends BaseFragment implements
         });
 
         ActionBarMenu menu = actionBar.createMenu();
+        updateConversationUnreadCounter();
 
         if (chatMode == MODE_QUICK_REPLIES && !QuickRepliesController.isSpecial(quickReplyShortcut)) {
             menu.addItem(edit_quick_reply, R.drawable.group_edit).setContentDescription(LocaleController.getString(R.string.Edit));
@@ -19551,6 +19558,25 @@ public class ChatActivity extends BaseFragment implements
         updateTitleIcons();
     }
 
+    // Centered chat header and unread-back-badge behavior are inspired by Cherrygram (arsLan4k1390, GPL-2.0-or-later).
+    private boolean isTitleCentered() {
+        return !isReport()
+                && !isInPreviewMode()
+                && !inBubbleMode
+                && !isInsideContainer
+                && chatMode != MODE_SEARCH
+                && chatMode != MODE_SAVED
+                && chatMode != MODE_WELCOME_MESSAGES
+                && getDialogId() != 0
+                && getDialogId() != UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+    }
+
+    private void updateConversationUnreadCounter() {
+        if (actionBar != null) {
+            actionBar.setConversationUnreadCount(getMessagesStorage().getMainUnreadCount(), isTitleCentered());
+        }
+    }
+
     public void updateTopicTitleIcon() {
         if (UserObject.isBotForum(currentUser) && avatarContainer != null) {
             avatarContainer.getAvatarImageView().setVisibility(View.VISIBLE);
@@ -20499,6 +20525,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
+        if (id == NotificationCenter.dialogsUnreadCounterChanged && account == currentAccount) {
+            updateConversationUnreadCounter();
+        }
         if (id == NotificationCenter.messagesDidLoad) {
             didReceivedNotification_messagesDidLoad(id, account, args);
         } else {
