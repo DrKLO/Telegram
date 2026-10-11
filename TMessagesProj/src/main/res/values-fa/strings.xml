@@ -2563,7 +2563,7 @@ XGram را باز نگه دارید.</string>
     <string name="LanguageUnknownCustomAlert">متأسفانه این بسته‌ زبان سفارشی (**⁨%1$s⁩**) حاوی اطلاعاتی برای XGram اندروید نیست.</string>
     <string name="AskAQuestionInfo">لطفاً توجه داشته باشید که پشتیبانی XGram توسط داوطلبان انجام می‌شود. ما سعی می‌کنیم هر چه سریع‌تر پاسخگو باشیم، اما ممکن است مدتی طول بکشد.
 
-لطفاً به صفحه &lt;a href="https://app.chat-t.me/faq/fa#a"&gt;پرسش‌های متداول XGram&lt;/a&gt; سری بزنید: این بخش حاوی پاسخ به اکثر پرسش‌ها و توصیه‌های مهمی برای &lt;a href="https://app.chat-t.me/faq/fa#j"&gt;عیب‌یابی&lt;/a&gt; است.</string>
+لطفاً به صفحه &lt;a href=\"https://app.chat-t.me/faq/fa#a\"&gt;پرسش‌های متداول XGram&lt;/a&gt; سری بزنید: این بخش حاوی پاسخ به اکثر پرسش‌ها و توصیه‌های مهمی برای &lt;a href=\"https://app.chat-t.me/faq/fa#j\"&gt;عیب‌یابی&lt;/a&gt; است.</string>
     <string name="AskButton">پرسش از یک داوطلب</string>
     <string name="TelegramFAQ">پرسش‌های متداول XGram</string>
     <string name="TelegramFaq">پرسش‌های متداول XGram</string>
@@ -5250,24 +5250,24 @@ URL سرور و کلید استریم را
     <string name="formatDateAtTime">⁨%1$s⁩ در ⁨%2$s⁩</string>
     <string name="formatDateSchedule">d MMM</string>
     <string name="formatDateScheduleYear">d MMM yyyy</string>
-    <string name="SendTodayAt"> 'ارسال امروز در' HH:mm</string>
-    <string name="SendDayAt"> 'ارسال' d MMM 'در' HH:mm</string>
-    <string name="SendDayYearAt"> 'ارسال' d MMM yyyy 'در' HH:mm</string>
-    <string name="StartTodayAt">'شروع امروز در' HH:mm</string>
-    <string name="StartDayAt">'شروع در تاریخ' d MMM 'در' HH:mm</string>
-    <string name="StartDayYearAt">'شروع' d MMM yyyy 'در' HH:mm</string>
-    <string name="StartsTodayAt">'شروع امروز در' HH:mm</string>
-    <string name="StartsDayAt">'شروع در تاریخ' d MMM 'در' HH:mm</string>
-    <string name="StartsDayYearAt">'شروع' d MMM yyyy 'در' HH:mm</string>
-    <string name="PublishTodayAt">'انتشار امروز ساعت' HH:mm</string>
-    <string name="PublishDayAt">'انتشار در' MMM d 'ساعت' HH:mm</string>
-    <string name="PublishDayYearAt">'انتشار در' MMM d yyyy 'ساعت' HH:mm</string>
-    <string name="StartShortTodayAt">'امروز،' HH:mm</string>
-    <string name="StartShortDayAt">d MMM'،' HH:mm</string>
-    <string name="StartShortDayYearAt">d MMM yyyy'،' HH:mm</string>
-    <string name="RemindTodayAt">'یادآوری امروز در' HH:mm</string>
-    <string name="RemindDayAt"> 'یادآوری' d MMM 'در' HH:mm</string>
-    <string name="RemindDayYearAt"> 'یادآوری' d MMM yyy 'در' HH:mm</string>
+    <string name="SendTodayAt"> \'ارسال امروز در\' HH:mm</string>
+    <string name="SendDayAt"> \'ارسال\' d MMM \'در\' HH:mm</string>
+    <string name="SendDayYearAt"> \'ارسال\' d MMM yyyy \'در\' HH:mm</string>
+    <string name="StartTodayAt">\'شروع امروز در\' HH:mm</string>
+    <string name="StartDayAt">\'شروع در تاریخ\' d MMM \'در\' HH:mm</string>
+    <string name="StartDayYearAt">\'شروع\' d MMM yyyy \'در\' HH:mm</string>
+    <string name="StartsTodayAt">\'شروع امروز در\' HH:mm</string>
+    <string name="StartsDayAt">\'شروع در تاریخ\' d MMM \'در\' HH:mm</string>
+    <string name="StartsDayYearAt">\'شروع\' d MMM yyyy \'در\' HH:mm</string>
+    <string name="PublishTodayAt">\'انتشار امروز ساعت\' HH:mm</string>
+    <string name="PublishDayAt">\'انتشار در\' MMM d \'ساعت\' HH:mm</string>
+    <string name="PublishDayYearAt">\'انتشار در\' MMM d yyyy \'ساعت\' HH:mm</string>
+    <string name="StartShortTodayAt">\'امروز،\' HH:mm</string>
+    <string name="StartShortDayAt">d MMM\'،\' HH:mm</string>
+    <string name="StartShortDayYearAt">d MMM yyyy\'،\' HH:mm</string>
+    <string name="RemindTodayAt">\'یادآوری امروز در\' HH:mm</string>
+    <string name="RemindDayAt"> \'یادآوری\' d MMM \'در\' HH:mm</string>
+    <string name="RemindDayYearAt"> \'یادآوری\' d MMM yyy \'در\' HH:mm</string>
     <string name="BotsMenuTitle">منو</string>
     <string name="SwipeToGoNextChannel">برای رفتن به کانال خوانده نشده بعدی، به سمت بالا بکشید</string>
     <string name="ReleaseToGoNextChannel">برای رفتن به کانال خوانده نشده بعدی، رها کنید</string>
@@ -11011,7 +11011,7 @@ XGram پرمیوم را هدیه دادید.</string>
     <string name="AIEditorToneCreatedTitle">سبک ⁨%s⁩ ایجاد شد</string>
     <string name="AIEditorToneCreatedText">برای ویرایش یا اشتراک گذاری سبک، بر روی آن بزنید و نگه دارید.</string>
     <string name="AIEditorToneAddedTitle">لحن اضافه شد</string>
-    <string name="AIEditorToneAddedText">هنگام نوشتن پیام طولانی بعدی خود، بر روی 'AI' &gt; '⁨%s⁩' بزنید.</string>
+    <string name="AIEditorToneAddedText">هنگام نوشتن پیام طولانی بعدی خود، بر روی \'AI\' &gt; \'⁨%s⁩\' بزنید.</string>
     <string name="AIEditorStyleNewCreate">ایجاد</string>
     <string name="AIEditorEditStyle">ویرایش لحن</string>
     <string name="AIEditorShareStyle">اشتراک گذاری لحن</string>
