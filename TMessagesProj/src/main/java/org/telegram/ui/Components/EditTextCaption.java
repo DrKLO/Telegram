@@ -343,7 +343,16 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
                             int spanEnd = editable.getSpanEnd(oldSpan);
                             editable.removeSpan(oldSpan);
                             if (spanStart < start) {
-                                editable.setSpan(oldSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                CharacterStyle leftSpan = oldSpan;
+                                if (spanEnd > end) {
+                                    // A span object can only occupy one range in an Editable.
+                                    if (oldSpan instanceof TextStyleSpan) {
+                                        leftSpan = new TextStyleSpan((TextStyleSpan) oldSpan);
+                                    } else if (oldSpan instanceof URLSpanReplacement) {
+                                        leftSpan = new URLSpanReplacement((URLSpanReplacement) oldSpan);
+                                    }
+                                }
+                                editable.setSpan(leftSpan, spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             }
                             if (spanEnd > end) {
                                 editable.setSpan(oldSpan, end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
