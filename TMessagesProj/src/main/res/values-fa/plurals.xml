@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<plurals name="exo_controls_fastforward_by_amount_description"><item quantity="other">%d ثانیه سریع به‌جلو بردن</item><item quantity="one">%d ثانیه سریع به‌جلو بردن</item></plurals>
+<plurals name="exo_controls_rewind_by_amount_description"><item quantity="other">%d ثانیه به‌عقب بردن</item><item quantity="one">%d ثانیه به‌عقب بردن</item></plurals>
+<plurals name="mtrl_badge_content_description"><item quantity="other">%d اعلان جدید</item><item quantity="one">%d اعلان جدید</item></plurals>
+</resources>
