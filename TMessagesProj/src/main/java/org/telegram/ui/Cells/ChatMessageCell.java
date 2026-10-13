@@ -27021,6 +27021,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private class MessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
 
         public static final int RICH_MEDIA_START = 6000;
+        public static final int RECOMMENDATIONS_START = 7000;
         public static final int PROFILE = 5000;
         public static final int LINK_IDS_START = 2000;
         public static final int LINK_CAPTION_IDS_START = 3000;
@@ -27479,6 +27480,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         acc += count;
                     }
                 }
+                // the channels like the one just joined, on the card under the notice of having joined it
+                if (channelRecommendationsCell != null && currentMessageObject != null && currentMessageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
+                    for (int r = 0, n = channelRecommendationsCell.getAccessibilityElementCount(); r < n; r++) {
+                        info.addChild(ChatMessageCell.this, RECOMMENDATIONS_START + r);
+                    }
+                }
                 if (forwardedNameLayout[0] != null && forwardedNameLayout[1] != null) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
                 }
@@ -27510,6 +27517,26 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     info.setLongClickable(true);
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
                     info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+                } else if (virtualViewId >= RECOMMENDATIONS_START) {
+                    final int index = virtualViewId - RECOMMENDATIONS_START;
+                    if (channelRecommendationsCell == null || index >= channelRecommendationsCell.getAccessibilityElementCount()) {
+                        return null;
+                    }
+                    info.setText(channelRecommendationsCell.getAccessibilityElementText(index));
+                    channelRecommendationsCell.getAccessibilityElementBounds(index, rect);
+                    info.setBoundsInParent(rect);
+                    rect.offset(pos[0], pos[1]);
+                    info.setBoundsInScreen(rect);
+                    info.setClassName("android.widget.Button");
+                    // a channel scrolled out of the card is still one to come to, and is scrolled in then
+                    info.setVisibleToUser(true);
+                    info.setEnabled(true);
+                    info.setClickable(true);
+                    info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    if (!channelRecommendationsCell.isAccessibilityElementClose(index)) {
+                        info.setLongClickable(true);
+                        info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+                    }
                 } else if (virtualViewId >= RICH_MEDIA_START) {
                     final int[] localElement = {0};
                     final RichMessageLayout.RichBlock block = resolveRichElement(virtualViewId, localElement);
@@ -27866,11 +27893,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 performAccessibilityAction(action, arguments);
             } else {
                 if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                    if (virtualViewId >= RECOMMENDATIONS_START && channelRecommendationsCell != null) {
+                        channelRecommendationsCell.scrollToAccessibilityElement(virtualViewId - RECOMMENDATIONS_START);
+                    }
                     sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
                 } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                     if (virtualViewId == PROFILE) {
                         if (delegate != null) {
                             delegate.didPressUserAvatar(ChatMessageCell.this, currentUser, 0, 0, false);
+                        }
+                    } else if (virtualViewId >= RECOMMENDATIONS_START) {
+                        if (channelRecommendationsCell != null && channelRecommendationsCell.onAccessibilityElementClick(virtualViewId - RECOMMENDATIONS_START, false)) {
+                            sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                         }
                     } else if (virtualViewId >= RICH_MEDIA_START) {
                         final int[] localElement = {0};
@@ -27967,6 +28001,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     } else if (virtualViewId == TRANSCRIBE && transcribeButton != null) {
                         transcribeButton.onTap();
+                    }
+                } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK && virtualViewId >= RECOMMENDATIONS_START) {
+                    if (channelRecommendationsCell != null && channelRecommendationsCell.onAccessibilityElementClick(virtualViewId - RECOMMENDATIONS_START, true)) {
+                        sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                     }
                 } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
                     ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);

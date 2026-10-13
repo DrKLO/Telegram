@@ -12,6 +12,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
@@ -172,6 +173,89 @@ public class ChannelRecommendationsCell {
 
         channelsScrollWidth = blockWidth * channels.size() + dp(9) * (channels.size() - 1);
         scrollX = Utilities.clamp(scrollX, channelsScrollWidth, 0);
+    }
+
+    // the card is drawn by hand inside the notice of having joined, scrolled sideways and pressed where
+    // a finger lands on it, so a screen reader had nothing of it at all. Each channel on it, and the
+    // button that closes it, is offered to one by the message
+    public int getAccessibilityElementCount() {
+        if (msg == null || loading || !isExpanded() || backgroundBounds.isEmpty()) {
+            return 0;
+        }
+        return channels.size() + 1;
+    }
+
+    public boolean isAccessibilityElementClose(int index) {
+        return index == channels.size();
+    }
+
+    public CharSequence getAccessibilityElementText(int index) {
+        if (isAccessibilityElementClose(index)) {
+            return getString(R.string.Close);
+        }
+        if (index < 0 || index >= channels.size()) {
+            return null;
+        }
+        final ChannelBlock block = channels.get(index);
+        if (block.isLock) {
+            return block.moreCount > 0 ? block.name + ", +" + block.moreCount : block.name;
+        }
+        final TLObject obj = block.chat;
+        if (obj instanceof TLRPC.Chat && ((TLRPC.Chat) obj).participants_count > 1) {
+            return block.name + ", " + LocaleController.formatPluralString("Subscribers", ((TLRPC.Chat) obj).participants_count);
+        } else if (obj instanceof TLRPC.User && ((TLRPC.User) obj).bot_active_users > 1) {
+            return block.name + ", " + LocaleController.formatPluralString("BotUsers", ((TLRPC.User) obj).bot_active_users);
+        }
+        return block.name;
+    }
+
+    public void getAccessibilityElementBounds(int index, Rect out) {
+        if (isAccessibilityElementClose(index)) {
+            closeBounds.round(out);
+            return;
+        }
+        final float x = backgroundBounds.left + dp(7) - scrollX + index * (blockWidth + dp(9));
+        out.set((int) x, (int) (backgroundBounds.bottom - ChannelBlock.height()), (int) (x + blockWidth), (int) backgroundBounds.bottom);
+    }
+
+    // a channel scrolled out of the card is brought into it when a reader comes to it
+    public void scrollToAccessibilityElement(int index) {
+        if (index < 0 || index >= channels.size()) {
+            return;
+        }
+        final float visible = backgroundBounds.width() - dp(14);
+        final float left = index * (blockWidth + dp(9));
+        float target = scrollX;
+        if (left < scrollX) {
+            target = left;
+        } else if (left + blockWidth > scrollX + visible) {
+            target = left + blockWidth - visible;
+        }
+        if (target != scrollX) {
+            scroller.abortAnimation();
+            scrollX = Utilities.clamp(target, channelsScrollWidth - visible, 0);
+            cell.invalidateOutbounds();
+        }
+    }
+
+    // the very same calls a tap and a hold on the card make
+    public boolean onAccessibilityElementClick(int index, boolean longPress) {
+        if (isAccessibilityElementClose(index)) {
+            didClickClose();
+            return true;
+        }
+        if (index < 0 || index >= channels.size()) {
+            return false;
+        }
+        final ChannelBlock block = channels.get(index);
+        if (block.isLock) {
+            if (cell.getDelegate() != null) {
+                cell.getDelegate().didPressMoreChannelRecommendations(cell);
+            }
+        } else {
+            didClickChannel(block.chat, longPress);
+        }
+        return true;
     }
 
     public boolean isExpanded() {
@@ -431,10 +515,12 @@ public class ChannelRecommendationsCell {
 
         public final ButtonBounce bounce;
         public final TLObject chat;
+        public int moreCount;
 
         public ChannelBlock(int currentAccount, ChatMessageCell cell, TLObject[] chats, int moreCount) {
             this.cell = cell;
             this.chat = chats[0];
+            this.moreCount = moreCount;
             this.bounce = new ButtonBounce(cell) {
                 @Override
                 public void invalidate() {
