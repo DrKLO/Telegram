@@ -89,6 +89,7 @@ public class WalletSecretPhraseFragment extends BaseFragment {
         closeButton.setImageResource(R.drawable.ic_ab_close);
         ThemeBind.selectorBackground(closeButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3), null, ThemeBind.of(Theme.key_listSelector), resourceProvider);
         closeButton.setOnClickListener(v -> finishFragment());
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         container.addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 12, 0, 0));
 
         BackupImageView stickerView = new BackupImageView(context);
