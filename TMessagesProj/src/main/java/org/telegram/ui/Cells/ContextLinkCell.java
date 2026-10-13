@@ -48,6 +48,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CheckBox2;
@@ -1113,11 +1114,28 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                     break;
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, actionLabel));
+            if (canSendForAccessibility()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_send_inline_result, LocaleController.getString(R.string.Send)));
+            }
         }
+    }
+
+    // a press on a piece of music or a voice plays it, and sending it is what a tap on the row does:
+    // the list sends a result from its item click, which is offered as an action of its own
+    private boolean canSendForAccessibility() {
+        return inlineResult != null
+            && (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC)
+            && getParent() instanceof RecyclerListView
+            && ((RecyclerListView) getParent()).getChildAdapterPosition(this) >= 0;
     }
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == R.id.acc_action_send_inline_result && canSendForAccessibility()) {
+            final RecyclerListView list = (RecyclerListView) getParent();
+            list.clickItem(this, list.getChildAdapterPosition(this));
+            return true;
+        }
         if (action == AccessibilityNodeInfo.ACTION_CLICK
                 && (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC)) {
             didPressedButton();
