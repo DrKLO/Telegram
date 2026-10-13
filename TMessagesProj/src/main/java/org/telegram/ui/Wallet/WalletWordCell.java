@@ -159,6 +159,10 @@ public class WalletWordCell extends FrameLayout {
         overflowButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 3));
         overflowButton.setVisibility(View.GONE);
         overflowButton.setFocusable(false);
+        overflowButton.setContentDescription(LocaleController.getString(R.string.ClearButton));
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            overflowButton.setScreenReaderFocusable(true);
+        }
         overflowButton.setOnClickListener(v -> {
             editText.setText("");
             editText.setSelection(0);

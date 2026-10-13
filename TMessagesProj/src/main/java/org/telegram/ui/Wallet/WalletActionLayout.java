@@ -225,6 +225,8 @@ public class WalletActionLayout {
         }
         this.out = out;
         this.action = action;
+        this.sendState = sendState;
+        this.peerLink = peerLink;
         this.waitingForReceive = !out && waitingForReceive;
         if (this.waitingForReceive) {
             forceRibbonReveal(0);
@@ -937,6 +939,41 @@ public class WalletActionLayout {
             return handled;
         }
         return touchCaptured;
+    }
+
+    private int sendState;
+    private String peerLink;
+
+    // what is drawn on the message besides its text, for a screen reader: whether it is still
+    // being sent or failed, the link to the account, the address, and the comment, as a spoiler
+    // while it is hidden
+    public CharSequence getAccessibilityDetails() {
+        if (action == null) {
+            return null;
+        }
+        final StringBuilder sb = new StringBuilder();
+        if (out && sendState == MessageObject.MESSAGE_SEND_STATE_SENDING) {
+            sb.append(LocaleController.getString(R.string.WalletSending));
+        } else if (out && sendState == MessageObject.MESSAGE_SEND_STATE_SEND_ERROR) {
+            sb.append(LocaleController.getString(R.string.WalletFailedTransfer));
+        }
+        if (!TextUtils.isEmpty(peerLink)) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(peerLink);
+        }
+        if (!TextUtils.isEmpty(action.peer_address)) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(action.peer_address);
+        }
+        if (!TextUtils.isEmpty(action.comment)) {
+            if (sb.length() > 0) sb.append('\n');
+            if ((action.comment_encrypted || action.comment_encrypted_preparing) && !preparingCommentRevealed) {
+                sb.append(LocaleController.getString(R.string.Spoiler));
+            } else {
+                sb.append(action.comment);
+            }
+        }
+        return sb;
     }
 
     public void setOnClickListener(Runnable onClick) {

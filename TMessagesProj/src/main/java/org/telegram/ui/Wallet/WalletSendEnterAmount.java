@@ -1140,6 +1140,7 @@ public class WalletSendEnterAmount extends UniversalFragment implements Notifica
         ));
         ScaleStateListAnimator.apply(usdView);
         usdView.setOnClickListener(v -> switchInputMode());
+        WalletAccessibility.readWithoutIcons(usdView, LocaleController.getString(R.string.AccDescrWalletSwitchCurrency));
 
         centerBottomContainer = new FrameLayout(context);
         center.addView(centerBottomContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));

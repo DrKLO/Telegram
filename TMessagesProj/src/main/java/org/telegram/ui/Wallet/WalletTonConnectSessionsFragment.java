@@ -139,6 +139,7 @@ public class WalletTonConnectSessionsFragment extends UniversalFragment implemen
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
         closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         ScaleStateListAnimator.apply(closeView);
         topLayout.addView(closeView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 0, 0, 0));
 
