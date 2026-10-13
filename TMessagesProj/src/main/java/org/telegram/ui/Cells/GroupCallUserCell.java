@@ -393,6 +393,7 @@ public class GroupCallUserCell extends FrameLayout {
         }
         muteButton.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(muteButton, LayoutHelper.createFrame(48, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
+        muteButton.setContentDescription(LocaleController.getString(R.string.VoipMute));
         muteButton.setOnClickListener(v -> onMuteClick(GroupCallUserCell.this));
 
         avatarWavesDrawable = new AvatarWavesDrawable(AndroidUtilities.dp(26), AndroidUtilities.dp(29));
