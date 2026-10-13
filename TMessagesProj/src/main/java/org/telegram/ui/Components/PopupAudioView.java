@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -318,11 +319,15 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     @Override
     public void onSuccessDownload(String fileName) {
+        transferAnnouncer.onSuccess();
         updateButtonState();
     }
 
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
+
     @Override
     public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        transferAnnouncer.onProgress(downloadedSize, totalSize, false);
         progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize));
         if (buttonState != 3) {
             updateButtonState();

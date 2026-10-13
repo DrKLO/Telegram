@@ -1,5 +1,6 @@
 package org.telegram.ui.Components.poll;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.graphics.Canvas;
@@ -600,8 +601,16 @@ public class PollContentDrawable extends Drawable implements DownloadController.
         parent.invalidate();
     }
 
+    private AccessibilityTransferAnnouncer transferAnnouncer;
+
     @Override
     public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+        if (transferAnnouncer == null) {
+            transferAnnouncer = new AccessibilityTransferAnnouncer(parent, () -> parent instanceof org.telegram.ui.Cells.ChatMessageCell
+                ? ((org.telegram.ui.Cells.ChatMessageCell) parent).isAccessibilityFocusedAnywhere()
+                : parent.isAccessibilityFocused());
+        }
+        transferAnnouncer.onProgress(downloadSize, totalSize, isVideo || isFile);
         float progress = totalSize == 0 ? 0 : Math.min(1f, downloadSize / (float) totalSize);
         radialProgress.setProgress(progress, true);
         if (fileState != null) {

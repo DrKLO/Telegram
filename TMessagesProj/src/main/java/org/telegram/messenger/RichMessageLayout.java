@@ -1,5 +1,6 @@
 package org.telegram.messenger;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.tgnet.TLObject.hasFlag;
@@ -1719,6 +1720,22 @@ public class RichMessageLayout {
     }
 
     public ChatMessageCell getCell() { return cell; }
+
+    // a download inside a block is said while the message, or any part of it, is being read
+    private AccessibilityTransferAnnouncer transferAnnouncer;
+    private ChatMessageCell transferAnnouncerCell;
+
+    void announceTransferProgress(long loadedSize, long totalSize, boolean withSize) {
+        final ChatMessageCell c = cell;
+        if (c == null) {
+            return;
+        }
+        if (transferAnnouncerCell != c) {
+            transferAnnouncerCell = c;
+            transferAnnouncer = new AccessibilityTransferAnnouncer(c, c::isAccessibilityFocusedAnywhere);
+        }
+        transferAnnouncer.onProgress(loadedSize, totalSize, withSize);
+    }
     public ChatMessageCell.ChatMessageCellDelegate getDelegate() { return delegate; }
 
     private boolean handleAnchorClick(String url) {
@@ -7046,6 +7063,7 @@ public class RichMessageLayout {
         }
         @Override public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {}
         @Override public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            root.announceTransferProgress(downloadSize, totalSize, isRealVideo());
             if (radialProgress != null) {
                 radialProgress.setProgress(Math.min(1f, totalSize <= 0 ? 0 : downloadSize / (float) totalSize), true);
             }
@@ -7765,6 +7783,7 @@ public class RichMessageLayout {
         }
         @Override public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {}
         @Override public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            root.announceTransferProgress(downloadSize, totalSize, false);
             radialProgress.setProgress(Math.min(1f, totalSize <= 0 ? 0 : downloadSize / (float) totalSize), true);
             if (buttonState != 3) updateButtonState(true);
         }
@@ -8016,6 +8035,7 @@ public class RichMessageLayout {
         @Override public void onSuccessDownload(String fileName) { radialProgress.setProgress(1, true); updateButtonState(true); }
         @Override public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {}
         @Override public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            root.announceTransferProgress(downloadSize, totalSize, true);
             radialProgress.setProgress(totalSize <= 0 ? 0 : Math.min(1f, downloadSize / (float) totalSize), true);
             if (buttonState != 2) updateButtonState(true);
         }
@@ -8454,6 +8474,7 @@ public class RichMessageLayout {
         }
         @Override public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {}
         @Override public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            root.announceTransferProgress(downloadSize, totalSize, isVideo);
             if (radialProgress != null) {
                 radialProgress.setProgress(Math.min(1f, totalSize <= 0 ? 0 : downloadSize / (float) totalSize), true);
             }

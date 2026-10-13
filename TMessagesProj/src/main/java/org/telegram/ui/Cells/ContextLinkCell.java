@@ -48,6 +48,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CheckBox2;
@@ -63,6 +64,10 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class ContextLinkCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
+
+    // where a download stands is drawn as a button and a ring or a bar, and is given to a screen
+    // reader as the state of the row
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
 
     private final static int DOCUMENT_ATTACH_TYPE_NONE = 0;
     private final static int DOCUMENT_ATTACH_TYPE_DOCUMENT = 1;
@@ -753,8 +758,35 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         }
     }
 
+    // where a piece of music or a voice stands, as the button beside it draws it
+    private void updateAccessibilityState() {
+        if (!AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        if (documentAttachType != DOCUMENT_ATTACH_TYPE_AUDIO && documentAttachType != DOCUMENT_ATTACH_TYPE_MUSIC || TextUtils.isEmpty(fileName) || buttonState < 0) {
+            transferAnnouncer.setState(fileName, AccessibilityTransferAnnouncer.STATE_NONE, 0, 0, false);
+            return;
+        }
+        final boolean downloading = buttonState == 4;
+        final Float progress = downloading ? ImageLoader.getInstance().getFileProgress(fileName) : null;
+        transferAnnouncer.setState(fileName,
+            downloading ? AccessibilityTransferAnnouncer.STATE_DOWNLOADING : buttonState == 0 || buttonState == 1 ? AccessibilityTransferAnnouncer.STATE_DOWNLOADED : AccessibilityTransferAnnouncer.STATE_NOT_DOWNLOADED,
+            progress == null ? 0 : progress, 0, false);
+    }
+
+    @Override
+    public boolean dispatchPopulateAccessibilityEvent(android.view.accessibility.AccessibilityEvent event) {
+        // a press would otherwise be reported with the whole row, read out again over what the
+        // press changed, which is said by itself
+        if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            return true;
+        }
+        return super.dispatchPopulateAccessibilityEvent(event);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
+        updateAccessibilityState();
         if (checkBox != null) {
             if (checkBox.isChecked() || !linkImageView.hasBitmapImage() || linkImageView.getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage((MessageObject) parentObject)) {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
@@ -1020,6 +1052,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     @Override
     public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        if (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
+            transferAnnouncer.onProgress(downloadedSize, totalSize, true);
+        }
         radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
             if (buttonState != 4) {
@@ -1092,6 +1127,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             }
         }
         info.setText(sbuf);
+        transferAnnouncer.appendState(info);
         if (checkBox != null && checkBox.isChecked()) {
             info.setCheckable(true);
             info.setChecked(true);

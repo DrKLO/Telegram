@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -2094,11 +2095,21 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     @Override
     public void onSuccessDownload(String fileName) {
-
+        if (transferAnnouncer != null) {
+            transferAnnouncer.onSuccess();
+        }
     }
+
+    private AccessibilityTransferAnnouncer transferAnnouncer;
 
     @Override
     public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        if (transferAnnouncer == null && playButton != null) {
+            transferAnnouncer = new AccessibilityTransferAnnouncer(playButton);
+        }
+        if (transferAnnouncer != null) {
+            transferAnnouncer.onProgress(downloadedSize, totalSize, false);
+        }
         progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
     }
 
