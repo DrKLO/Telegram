@@ -1385,12 +1385,7 @@ public class LocaleController {
             if (currentPluralRules == null) {
                 currentPluralRules = new PluralRules_None();
             }
-            changingConfiguration = true;
-            Locale.setDefault(currentLocale);
-            android.content.res.Configuration config = new android.content.res.Configuration();
-            config.locale = currentLocale;
-            ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
-            changingConfiguration = false;
+            applyLocaleToResources(currentLocale);
             FileLog.d("applyLanguage: reloadLastFile=" + reloadLastFile + " force=" + force + " isLoadingRemote=" + isLoadingRemote);
             if (reloadLastFile || !isLoadingRemote && !force && shouldReinstallLangpack(localeInfo.shortName)) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -2072,6 +2067,36 @@ public class LocaleController {
             ConnectionsManager.setSystemLangCode(currentSystemLocale);
         }
         checkLocalizationInternal();
+    }
+
+    /**
+     * Configuration changed, but the system locale did not (screen size, density, ui mode...).
+     * The system has just reset the application resources to the system locale, so an overridden
+     * language only needs to be re-applied to them: the language pack is unchanged and does not
+     * need to be re-read, nor the interface rebuilt.
+     */
+    public void onDeviceConfigurationChangeKeepLocale() {
+        if (changingConfiguration) {
+            return;
+        }
+        is24HourFormat = DateFormat.is24HourFormat(ApplicationLoader.applicationContext);
+        if (languageOverride != null && currentLocale != null) {
+            try {
+                applyLocaleToResources(currentLocale);
+            } catch (Exception e) {
+                FileLog.e(e);
+                changingConfiguration = false;
+            }
+        }
+    }
+
+    private void applyLocaleToResources(Locale locale) {
+        changingConfiguration = true;
+        Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration();
+        config.locale = locale;
+        ApplicationLoader.applicationContext.getResources().updateConfiguration(config, ApplicationLoader.applicationContext.getResources().getDisplayMetrics());
+        changingConfiguration = false;
     }
 
     public static String formatDateChat(long date) {

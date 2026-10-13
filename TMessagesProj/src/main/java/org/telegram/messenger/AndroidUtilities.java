@@ -312,7 +312,7 @@ public class AndroidUtilities {
     private static AccessibilityManager accessibilityManager;
     private static Vibrator vibrator;
 
-    private static Boolean isTablet = null, wasTablet = null, isSmallScreen = null;
+    private static Boolean isTablet = null, isSmallScreen = null;
     private static int adjustOwnerClassGuid = 0;
     private static int altFocusableClassGuid = 0;
 
@@ -2823,6 +2823,10 @@ public class AndroidUtilities {
         final WindowManager wm = window.getWindowManager();
         if (wm == null) return;
         WindowManager.LayoutParams params = window.getAttributes();
+        if (Math.abs(params.preferredRefreshRate - rate) < 0.01f) {
+            // called on every configuration change: avoid a needless window relayout round trip
+            return;
+        }
         params.preferredRefreshRate = rate;
         try {
             wm.updateViewLayout(window.getDecorView(), params);
@@ -2966,30 +2970,37 @@ public class AndroidUtilities {
     }
 
     public static void resetTabletFlag() {
-        if (wasTablet == null) {
-            wasTablet = isTabletInternal();
-        }
         isTablet = null;
         SharedConfig.updateTabletConfig();
     }
 
-    public static void resetWasTabletFlag() {
-        wasTablet = null;
-    }
-
-    public static Boolean getWasTablet() {
-        return wasTablet;
+    /**
+     * Re-reads the tablet flag from the resources of the given (activity) context, so it matches
+     * the configuration the activity window is actually laid out with. While LaunchActivity is alive
+     * only it should call this, right before switching its layout, so isTablet() never changes under the UI.
+     */
+    public static void resetTabletFlag(Context context) {
+        if (context == null) {
+            resetTabletFlag();
+            return;
+        }
+        isTablet = context.getResources().getBoolean(R.bool.isTablet);
+        SharedConfig.updateTabletConfig();
     }
 
     public static boolean isTablet() {
         return isTabletInternal() && !SharedConfig.forceDisableTabletMode;
     }
 
+    private static Boolean isFold;
     public static boolean isFold() {
-        return (
-            ApplicationLoader.applicationContext != null &&
-            ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
-        );
+        if (isFold == null) {
+            if (ApplicationLoader.applicationContext == null) {
+                return false;
+            }
+            isFold = ApplicationLoader.applicationContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE);
+        }
+        return isFold;
     }
 
     public static boolean isSmallScreen() {

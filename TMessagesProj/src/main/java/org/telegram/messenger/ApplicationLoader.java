@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
@@ -44,6 +45,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.IUpdateLayout;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
@@ -289,6 +291,12 @@ public class ApplicationLoader extends Application {
         }
 
         super.onCreate();
+        try {
+            // baseline to detect real system locale changes in onConfigurationChanged
+            lastConfiguration = new Configuration(getResources().getConfiguration());
+        } catch (Throwable ignore) {
+
+        }
 
         // AndroidUtilities must be initialized before FileLog
         final String helloWorld = AndroidUtilities.getHelloWorld();
@@ -387,14 +395,28 @@ public class ApplicationLoader extends Application {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         try {
-            LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
+            final int diff = lastConfiguration == null ? 0xFFFFFFFF : lastConfiguration.diff(newConfig);
+            lastConfiguration = new Configuration(newConfig);
+            if ((diff & ActivityInfo.CONFIG_LOCALE) != 0) {
+                LocaleController.getInstance().onDeviceConfigurationChange(newConfig);
+            } else {
+                // screen size / density / ui mode changes (e.g. folding the device) don't need the
+                // language pack to be re-read and the whole interface to be rebuilt
+                LocaleController.getInstance().onDeviceConfigurationChangeKeepLocale();
+            }
             AndroidUtilities.checkDisplaySize(applicationContext, newConfig);
             VideoCapturerDevice.checkScreenCapturerSize();
-            AndroidUtilities.resetTabletFlag();
+            if (!LaunchActivity.hasActiveInstance()) {
+                // while LaunchActivity is alive it owns the tablet flag, so that isTablet()
+                // always matches the layout it has built (it may be stopped right now)
+                AndroidUtilities.resetTabletFlag();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private Configuration lastConfiguration;
 
     private void initPushServices() {
         AndroidUtilities.runOnUIThread(() -> {
