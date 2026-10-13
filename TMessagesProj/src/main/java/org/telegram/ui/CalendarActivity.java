@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -26,9 +27,13 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.GestureDetectorCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -68,6 +73,8 @@ import org.telegram.ui.Stories.StoryViewer;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 public class CalendarActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -809,62 +816,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     if (parentLayout == null) {
                         return false;
                     }
-                    if (calendarType == TYPE_MEDIA_CALENDAR && messagesByDays != null || storiesList != null) {
-                        PeriodDay day = getDayAtCoord(e.getX(), e.getY());
-                        if (day != null && day.messageObject != null && callback != null) {
-                            if (storiesList != null) {
-                                getOrCreateStoryViewer().open(getContext(), day.messageObject.storyItem, day.messageObject.getId(), storiesList, true, storiesPlaceProvider);
-                            } else {
-                                callback.onDateSelected(day.messageObject.getId(), day.startOffset);
-                                finishFragment();
-                            }
-                        }
-                    }
-                    if (messagesByDays != null) {
-                        if (inSelectionMode) {
-                            PeriodDay day = getDayAtCoord(e.getX(), e.getY());
-                            if (day != null) {
-                                if (selectionAnimator != null) {
-                                    selectionAnimator.cancel();
-                                    selectionAnimator = null;
-                                }
-                                if (dateSelectedStart != 0 || dateSelectedEnd != 0) {
-                                    if (dateSelectedStart == day.date && dateSelectedEnd == day.date) {
-                                        dateSelectedStart = dateSelectedEnd = 0;
-                                    } else if (dateSelectedStart == day.date) {
-                                        dateSelectedStart = dateSelectedEnd;
-                                    } else if (dateSelectedEnd == day.date) {
-                                        dateSelectedEnd = dateSelectedStart;
-                                    } else if (dateSelectedStart == dateSelectedEnd) {
-                                        if (day.date > dateSelectedEnd) {
-                                            dateSelectedEnd = day.date;
-                                        } else {
-                                            dateSelectedStart = day.date;
-                                        }
-                                    } else {
-                                        dateSelectedStart = dateSelectedEnd = day.date;
-                                    }
-                                } else {
-                                    dateSelectedStart = dateSelectedEnd = day.date;
-
-                                }
-                                updateTitle();
-                                animateSelection();
-                            }
-                        } else {
-                            PeriodDay day = getDayAtCoord(e.getX(), e.getY());
-                            if (day != null && parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
-                                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
-                                if (fragment instanceof ChatActivity) {
-                                    finishFragment();
-                                    ((ChatActivity) fragment).jumpToDate(day.date);
-                                }
-                            } else if (day != null && chatActivity != null) {
-                                finishFragment();
-                                chatActivity.jumpToDate(day.date);
-                            }
-                        }
-                    }
+                    onDayPressed(getDayAtCoord(e.getX(), e.getY()));
                     return false;
                 }
 
@@ -901,107 +853,294 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void onLongPress(MotionEvent e) {
                     super.onLongPress(e);
-                    if (calendarType != TYPE_CHAT_ACTIVITY || AndroidUtilities.isTablet()) {
-                        return;
-                    }
-                    PeriodDay periodDay = getDayAtCoord(e.getX(), e.getY());
-
-                    if (periodDay != null) {
-                        try {
-                            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                        } catch (Exception ignored) {}
-
-                        Bundle bundle = new Bundle();
-                        if (dialogId > 0) {
-                            bundle.putLong("user_id", dialogId);
-                        } else {
-                            bundle.putLong("chat_id", -dialogId);
-                        }
-                        bundle.putInt("start_from_date", periodDay.date);
-                        bundle.putBoolean("need_remove_previous_same_chat_activity", false);
-                        ChatActivity chatActivity = new ChatActivity(bundle);
-
-                        ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert, getResourceProvider());
-                        previewMenu.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
-
-                        ActionBarMenuSubItem cellJump = new ActionBarMenuSubItem(getParentActivity(), true, false);
-                        cellJump.setTextAndIcon(LocaleController.getString(R.string.JumpToDate), R.drawable.msg_message);
-                        cellJump.setMinimumWidth(160);
-                        cellJump.setOnClickListener(view -> {
-                            if (parentLayout != null && parentLayout.getFragmentStack().size() >= 3) {
-                                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
-                                if (fragment instanceof ChatActivity) {
-                                    AndroidUtilities.runOnUIThread(() -> {
-                                        finishFragment();
-                                        ((ChatActivity) fragment).jumpToDate(periodDay.date);
-                                    }, 300);
-                                }
-                            }
-                            finishPreviewFragment();
-                        });
-                        previewMenu.addView(cellJump);
-
-                        if (canClearHistory) {
-                            ActionBarMenuSubItem cellSelect = new ActionBarMenuSubItem(getParentActivity(), false, false);
-                            cellSelect.setTextAndIcon(LocaleController.getString(R.string.SelectThisDay), R.drawable.msg_select);
-                            cellSelect.setMinimumWidth(160);
-                            cellSelect.setOnClickListener(view -> {
-                                dateSelectedStart = dateSelectedEnd = periodDay.date;
-                                inSelectionMode = true;
-                                updateTitle();
-                                animateSelection();
-                                finishPreviewFragment();
-                            });
-                            previewMenu.addView(cellSelect);
-
-                            ActionBarMenuSubItem cellDelete = new ActionBarMenuSubItem(getParentActivity(), false, true);
-                            cellDelete.setTextAndIcon(LocaleController.getString(R.string.ClearHistory), R.drawable.msg_delete);
-                            cellDelete.setMinimumWidth(160);
-                            cellDelete.setOnClickListener(view -> {
-                                if (parentLayout.getFragmentStack().size() >= 3) {
-                                    BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
-                                    if (fragment instanceof ChatActivity) {
-                                        AlertsCreator.createClearDaysDialogAlert(CalendarActivity.this, 1, getMessagesController().getUser(dialogId), null, false, new MessagesStorage.BooleanCallback() {
-                                            @Override
-                                            public void run(boolean forAll) {
-                                                finishFragment();
-                                                ((ChatActivity) fragment).deleteHistory(dateSelectedStart, dateSelectedEnd + 86400, forAll);
-                                            }
-                                        }, null);
-                                    }
-                                }
-                                finishPreviewFragment();
-                            });
-                            previewMenu.addView(cellDelete);
-                        }
-                        previewMenu.setFitItems(true);
-
-
-                        blurredView = new View(context) {
-                            @Override
-                            public void setAlpha(float alpha) {
-                                super.setAlpha(alpha);
-                                if (fragmentView != null) {
-                                    fragmentView.invalidate();
-                                }
-                            }
-                        };
-                        blurredView.setOnClickListener(view -> {
-                            finishPreviewFragment();
-                        });
-                        blurredView.setVisibility(View.GONE);
-                        blurredView.setFitsSystemWindows(true);
-                        parentLayout.getOverlayContainerView().addView(blurredView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-                        prepareBlurBitmap();
-
-                        presentFragmentAsPreviewWithMenu(chatActivity, previewMenu);
-                    }
+                    onDayLongPressed(getDayAtCoord(e.getX(), e.getY()));
                 }
             });
             gestureDetector.setIsLongpressEnabled(calendarType == TYPE_CHAT_ACTIVITY);
+            ViewCompat.setAccessibilityDelegate(this, accessibilityHelper = new DaysAccessibilityHelper(this));
+        }
+
+        private DaysAccessibilityHelper accessibilityHelper;
+
+        // the list the months are in turns every month off and takes away whatever it has to say
+        // to a screen reader, since the months are not rows it knows how to press. That left the
+        // days with nothing at all: the one that hands them over stays
+        @Override
+        public void setAccessibilityDelegate(@Nullable AccessibilityDelegate delegate) {
+            if (delegate == null && accessibilityHelper != null) {
+                return;
+            }
+            super.setAccessibilityDelegate(delegate);
+        }
+
+        @Override
+        protected boolean dispatchHoverEvent(MotionEvent event) {
+            if (accessibilityHelper != null && accessibilityHelper.dispatchHoverEvent(event)) {
+                return true;
+            }
+            return super.dispatchHoverEvent(event);
+        }
+
+        // where the circle of a day of this month is drawn, as the drawing and the touches have it
+        private void getDayBounds(int dayOfMonth, Rect out) {
+            final int cell = startDayOfWeek + dayOfMonth;
+            final float xStep = getMeasuredWidth() / 7f;
+            final float yStep = AndroidUtilities.dp(44 + 8);
+            final int hrad = AndroidUtilities.dp(44) / 2;
+            final float cx = xStep * (cell % 7) + xStep / 2f;
+            final float cy = yStep * (cell / 7) + yStep / 2f + AndroidUtilities.dp(44);
+            out.set((int) (cx - hrad), (int) (cy - hrad), (int) (cx + hrad), (int) (cy + hrad));
+        }
+
+        /**
+         * The days of a month are drawn, and pressed by where a finger lands on them, so a screen
+         * reader found the name of the month and nothing under it. Each day that has messages is
+         * a stop now, named by its date, and pressing it does what a tap does: it goes to that day
+         * in the chat, or opens what was sent on it, or, while days are being picked, picks it.
+         * Picking a day, which a finger does from the menu of a press held on it, is an action of
+         * its own.
+         */
+        private class DaysAccessibilityHelper extends ExploreByTouchHelper {
+
+            private final Rect rect = new Rect();
+
+            DaysAccessibilityHelper(View host) {
+                super(host);
+            }
+
+            @Override
+            protected int getVirtualViewAt(float x, float y) {
+                if (messagesByDays == null) {
+                    return INVALID_ID;
+                }
+                for (int i = 0; i < daysInMonth; i++) {
+                    if (messagesByDays.get(i, null) == null) {
+                        continue;
+                    }
+                    getDayBounds(i, rect);
+                    if (rect.contains((int) x, (int) y)) {
+                        return i;
+                    }
+                }
+                return INVALID_ID;
+            }
+
+            @Override
+            protected void getVisibleVirtualViews(List<Integer> virtualViewIds) {
+                if (messagesByDays == null) {
+                    return;
+                }
+                for (int i = 0; i < daysInMonth; i++) {
+                    if (messagesByDays.get(i, null) != null) {
+                        virtualViewIds.add(i);
+                    }
+                }
+            }
+
+            @Override
+            protected void onPopulateNodeForVirtualView(int virtualViewId, @NonNull AccessibilityNodeInfoCompat info) {
+                final PeriodDay day = messagesByDays == null ? null : messagesByDays.get(virtualViewId, null);
+                getDayBounds(virtualViewId, rect);
+                info.setBoundsInParent(rect);
+                if (day == null) {
+                    info.setContentDescription("");
+                    return;
+                }
+                info.setText(LocaleController.getInstance().getFormatterDayMonth().format(new Date(day.date * 1000L)));
+                info.setClassName("android.widget.Button");
+                // the month itself is turned off by the list it is in, and a day on it is not
+                info.setEnabled(true);
+                if (inSelectionMode) {
+                    info.setCheckable(true);
+                    info.setChecked(dateSelectedStart != 0 && day.date >= dateSelectedStart && day.date <= dateSelectedEnd);
+                    info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK);
+                } else {
+                    final boolean opens = storiesList != null || calendarType == TYPE_MEDIA_CALENDAR;
+                    info.addAction(new AccessibilityNodeInfoCompat.AccessibilityActionCompat(AccessibilityNodeInfoCompat.ACTION_CLICK, LocaleController.getString(opens ? R.string.Open : R.string.JumpToDate)));
+                    if (calendarType == TYPE_CHAT_ACTIVITY && !AndroidUtilities.isTablet()) {
+                        info.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_LONG_CLICK);
+                    }
+                }
+            }
+
+            @Override
+            protected boolean onPerformActionForVirtualView(int virtualViewId, int action, @Nullable Bundle arguments) {
+                final PeriodDay day = messagesByDays == null ? null : messagesByDays.get(virtualViewId, null);
+                if (day == null) {
+                    return false;
+                }
+                if (action == AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                    onDayPressed(day);
+                    invalidateVirtualView(virtualViewId);
+                    return true;
+                }
+                if (action == AccessibilityNodeInfoCompat.ACTION_LONG_CLICK && !inSelectionMode) {
+                    onDayLongPressed(day);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        // what holding a day down does, whether a finger or a screen reader held it: a look at
+        // the chat on that day, with a menu under it
+        private void onDayLongPressed(PeriodDay periodDay) {
+            if (calendarType != TYPE_CHAT_ACTIVITY || AndroidUtilities.isTablet()) {
+                return;
+            }
+            if (periodDay != null) {
+                try {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                } catch (Exception ignored) {}
+
+                Bundle bundle = new Bundle();
+                if (dialogId > 0) {
+                    bundle.putLong("user_id", dialogId);
+                } else {
+                    bundle.putLong("chat_id", -dialogId);
+                }
+                bundle.putInt("start_from_date", periodDay.date);
+                bundle.putBoolean("need_remove_previous_same_chat_activity", false);
+                ChatActivity chatActivity = new ChatActivity(bundle);
+
+                ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert, getResourceProvider());
+                previewMenu.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+
+                ActionBarMenuSubItem cellJump = new ActionBarMenuSubItem(getParentActivity(), true, false);
+                cellJump.setTextAndIcon(LocaleController.getString(R.string.JumpToDate), R.drawable.msg_message);
+                cellJump.setMinimumWidth(160);
+                cellJump.setOnClickListener(view -> {
+                    if (parentLayout != null && parentLayout.getFragmentStack().size() >= 3) {
+                        BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
+                        if (fragment instanceof ChatActivity) {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                finishFragment();
+                                ((ChatActivity) fragment).jumpToDate(periodDay.date);
+                            }, 300);
+                        }
+                    }
+                    finishPreviewFragment();
+                });
+                previewMenu.addView(cellJump);
+
+                if (canClearHistory) {
+                    ActionBarMenuSubItem cellSelect = new ActionBarMenuSubItem(getParentActivity(), false, false);
+                    cellSelect.setTextAndIcon(LocaleController.getString(R.string.SelectThisDay), R.drawable.msg_select);
+                    cellSelect.setMinimumWidth(160);
+                    cellSelect.setOnClickListener(view -> {
+                        dateSelectedStart = dateSelectedEnd = periodDay.date;
+                        inSelectionMode = true;
+                        updateTitle();
+                        animateSelection();
+                        finishPreviewFragment();
+                    });
+                    previewMenu.addView(cellSelect);
+
+                    ActionBarMenuSubItem cellDelete = new ActionBarMenuSubItem(getParentActivity(), false, true);
+                    cellDelete.setTextAndIcon(LocaleController.getString(R.string.ClearHistory), R.drawable.msg_delete);
+                    cellDelete.setMinimumWidth(160);
+                    cellDelete.setOnClickListener(view -> {
+                        if (parentLayout.getFragmentStack().size() >= 3) {
+                            BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 3);
+                            if (fragment instanceof ChatActivity) {
+                                AlertsCreator.createClearDaysDialogAlert(CalendarActivity.this, 1, getMessagesController().getUser(dialogId), null, false, new MessagesStorage.BooleanCallback() {
+                                    @Override
+                                    public void run(boolean forAll) {
+                                        finishFragment();
+                                        ((ChatActivity) fragment).deleteHistory(dateSelectedStart, dateSelectedEnd + 86400, forAll);
+                                    }
+                                }, null);
+                            }
+                        }
+                        finishPreviewFragment();
+                    });
+                    previewMenu.addView(cellDelete);
+                }
+                previewMenu.setFitItems(true);
+
+
+                blurredView = new View(getContext()) {
+                    @Override
+                    public void setAlpha(float alpha) {
+                        super.setAlpha(alpha);
+                        if (fragmentView != null) {
+                            fragmentView.invalidate();
+                        }
+                    }
+                };
+                blurredView.setOnClickListener(view -> {
+                    finishPreviewFragment();
+                });
+                blurredView.setVisibility(View.GONE);
+                blurredView.setFitsSystemWindows(true);
+                parentLayout.getOverlayContainerView().addView(blurredView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                prepareBlurBitmap();
+
+                presentFragmentAsPreviewWithMenu(chatActivity, previewMenu);
+            }
+        }
+
+        // what a press on a day does, whether a finger or a screen reader pressed it
+        private void onDayPressed(PeriodDay day) {
+            if (calendarType == TYPE_MEDIA_CALENDAR && messagesByDays != null || storiesList != null) {
+                if (day != null && day.messageObject != null && callback != null) {
+                    if (storiesList != null) {
+                        getOrCreateStoryViewer().open(getContext(), day.messageObject.storyItem, day.messageObject.getId(), storiesList, true, storiesPlaceProvider);
+                    } else {
+                        callback.onDateSelected(day.messageObject.getId(), day.startOffset);
+                        finishFragment();
+                    }
+                }
+            }
+            if (messagesByDays != null) {
+                if (inSelectionMode) {
+                    if (day != null) {
+                        if (selectionAnimator != null) {
+                            selectionAnimator.cancel();
+                            selectionAnimator = null;
+                        }
+                        if (dateSelectedStart != 0 || dateSelectedEnd != 0) {
+                            if (dateSelectedStart == day.date && dateSelectedEnd == day.date) {
+                                dateSelectedStart = dateSelectedEnd = 0;
+                            } else if (dateSelectedStart == day.date) {
+                                dateSelectedStart = dateSelectedEnd;
+                            } else if (dateSelectedEnd == day.date) {
+                                dateSelectedEnd = dateSelectedStart;
+                            } else if (dateSelectedStart == dateSelectedEnd) {
+                                if (day.date > dateSelectedEnd) {
+                                    dateSelectedEnd = day.date;
+                                } else {
+                                    dateSelectedStart = day.date;
+                                }
+                            } else {
+                                dateSelectedStart = dateSelectedEnd = day.date;
+                            }
+                        } else {
+                            dateSelectedStart = dateSelectedEnd = day.date;
+
+                        }
+                        updateTitle();
+                        animateSelection();
+                    }
+                } else {
+                    if (day != null && parentLayout != null && parentLayout.getFragmentStack().size() >= 2) {
+                        BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
+                        if (fragment instanceof ChatActivity) {
+                            finishFragment();
+                            ((ChatActivity) fragment).jumpToDate(day.date);
+                        }
+                    } else if (day != null && chatActivity != null) {
+                        finishFragment();
+                        chatActivity.jumpToDate(day.date);
+                    }
+                }
+            }
         }
 
         private void startSelectionAnimation(int fromDate, int toDate) {
+            if (accessibilityHelper != null) {
+                accessibilityHelper.invalidateRoot();
+            }
             if (messagesByDays != null) {
                 for (int i = 0; i < daysInMonth; i++) {
                     PeriodDay day = messagesByDays.get(i, null);
@@ -1107,6 +1246,9 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
         }
 
         public void setDate(int year, int monthInYear, SparseArray<PeriodDay> messagesByDays, boolean animated) {
+            if (accessibilityHelper != null) {
+                accessibilityHelper.invalidateRoot();
+            }
             boolean dateChanged = year != currentYear || monthInYear != currentMonthInYear;
             currentYear = year;
             currentMonthInYear = monthInYear;
