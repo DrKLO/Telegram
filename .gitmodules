@@ -43,3 +43,9 @@
 [submodule "TMessagesProj/jni/third_party/wamr"]
 	path = TMessagesProj/jni/third_party/wamr
 	url = https://github.com/wasm-micro-runtime/wasm-micro-runtime.git
+[submodule "TMessagesProj/jni/tgcalls"]
+	path = TMessagesProj/jni/tgcalls
+	url = https://github.com/TelegramMessenger/tgcalls.git
+[submodule "TMessagesProj/jni/wallet-engine"]
+	path = TMessagesProj/jni/wallet-engine
+	url = https://github.com/dkaraush/wallet-engine.git
