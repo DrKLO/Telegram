@@ -13141,6 +13141,13 @@ public class ChatActivityEnterView extends FrameLayout implements
         return emojiViewVisible || botKeyboardViewVisible;
     }
 
+    public boolean canHidePopupByBackButton() {
+        if (!isPopupShowing()) {
+            return false;
+        }
+        return !(currentPopupContentType == POPUP_CONTENT_BOT_KEYBOARD && botReplyMarkup != null && botReplyMarkup.is_persistent && botButtonsMessageObject != null);
+    }
+
     public boolean closeCreationLinkDialog(boolean invoked) {
         return messageEditText != null && messageEditText.closeCreationLinkDialog(invoked);
     }
