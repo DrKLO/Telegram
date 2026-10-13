@@ -9,7 +9,10 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
@@ -34,6 +37,13 @@ public class StoryReactionWidgetView extends StoryMediaAreasView.AreaView {
     public StoryReactionWidgetView(Context context, View parent, TL_stories.TL_mediaAreaSuggestedReaction mediaArea, EmojiAnimationsOverlay overlay) {
         super(context, parent, mediaArea);
         visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(mediaArea.reaction);
+        // a custom emoji carries no text of its own, and stands for the plain emoji its document
+        // gives beside it
+        String emoticon = visibleReaction.emojicon;
+        if (emoticon == null && visibleReaction.documentId != 0) {
+            emoticon = MessageObject.findAnimatedEmojiEmoticon(AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, visibleReaction.documentId), null);
+        }
+        setContentDescription(emoticon == null ? LocaleController.getString(R.string.Reactions) : emoticon + ", " + LocaleController.getString(R.string.Reactions));
         if (mediaArea.flipped) {
             storyReactionWidgetBackground.setMirror(true, false);
         }

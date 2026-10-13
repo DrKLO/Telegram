@@ -246,6 +246,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     private static final LongSparseArray<CharSequence> replyDrafts = new LongSparseArray<>();
     public boolean fromBottomSheet;
     private boolean paused;
+    private boolean accessibilityPaused;
     private long playerSavedPosition;
     private StoriesIntro storiesIntro;
 
@@ -412,6 +413,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         progressToDismiss = 0;
         isShowing = true;
         isLongpressed = false;
+        accessibilityPaused = false;
         isTranslating = false;
         savedPositions.clear();
         AndroidUtilities.cancelRunOnUIThread(longPressRunnable);
@@ -1266,6 +1268,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 @Override
                 public void onPeerSelected(long dialogId, int position) {
                     if (lastPosition != position || lastDialogId != dialogId) {
+                        setAccessibilityPaused(false);
                         lastDialogId = dialogId;
                         lastPosition = position;
                     }
@@ -1989,6 +1992,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void switchByTap(boolean forward) {
+        setAccessibilityPaused(false);
         PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
         if (peerView == null) {
             return;
@@ -2237,6 +2241,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 
     public boolean isPaused() {
         return (
+            accessibilityPaused ||
             isPopupVisible ||
             isTranslating ||
             isBulletinVisible ||
@@ -2260,6 +2265,25 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             storiesIntro != null ||
             ATTACH_TO_FRAGMENT && fragment != null && fragment.getLastStoryViewer() != this
         );
+    }
+
+    public boolean isAccessibilityPaused() {
+        return accessibilityPaused;
+    }
+
+    public void setAccessibilityPaused(boolean paused) {
+        if (accessibilityPaused != paused) {
+            accessibilityPaused = paused;
+            updatePlayingMode();
+        }
+    }
+
+    public boolean canSwitchByTap(boolean forward) {
+        PeerStoriesView peerView = storiesViewPager.getCurrentPeerView();
+        if (peerView != null && peerView.canSwitchToNext(forward)) {
+            return true;
+        }
+        return forward ? storiesViewPager.getCurrentItem() < storiesViewPager.getAdapter().getCount() - 1 : storiesViewPager.getCurrentItem() > 0;
     }
 
     public void updatePlayingMode() {
