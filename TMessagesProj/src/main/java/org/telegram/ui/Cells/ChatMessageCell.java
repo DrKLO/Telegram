@@ -13289,6 +13289,48 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // the time a live location has left and the timer of a timed photo are drawn on the message: they
+    // are said with it, worked out as it is read since they count down
+    private CharSequence getAccessibilityTimerText() {
+        if (currentMessageObject == null || currentMessageObject.messageOwner == null) {
+            return null;
+        }
+        final TLRPC.MessageMedia media = MessageObject.getMedia(currentMessageObject.messageOwner);
+        if (media instanceof TLRPC.TL_messageMediaGeoLive) {
+            if (isCurrentLocationTimeExpired(currentMessageObject)) {
+                return null;
+            }
+            if (media.period == 0x7fffffff) {
+                return getString(R.string.SendLiveLocationForever);
+            }
+            final int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            return formatString(R.string.AccDescrMsgTimeLeft, accessibilityTimerDuration(currentMessageObject.messageOwner.date + media.period - now));
+        }
+        if (currentMessageObject.isSecretMedia() && currentMessageObject.needDrawBluredPreview()) {
+            if (currentMessageObject.messageOwner.ttl == 0x7FFFFFFF) {
+                return getString(R.string.TimerPeriodOnce);
+            }
+            if (currentMessageObject.messageOwner.destroyTime != 0) {
+                return formatString(R.string.AccDescrMsgTimeLeft, accessibilityTimerDuration(currentMessageObject.getSecretTimeLeft()));
+            }
+            if (currentMessageObject.messageOwner.ttl > 0) {
+                return formatString(R.string.AccDescrMsgSecretTimer, accessibilityTimerDuration(currentMessageObject.messageOwner.ttl));
+            }
+        }
+        return null;
+    }
+
+    private static String accessibilityTimerDuration(int seconds) {
+        seconds = Math.max(0, seconds);
+        if (seconds < 60) {
+            return LocaleController.formatPluralString("Seconds", Math.max(1, seconds));
+        }
+        if (seconds < 3600) {
+            return LocaleController.formatPluralString("Minutes", (int) Math.ceil(seconds / 60f));
+        }
+        return LocaleController.formatPluralString("Hours", (int) Math.ceil(seconds / 3600f));
+    }
+
     private boolean isCurrentLocationTimeExpired(MessageObject messageObject) {
         final int period = MessageObject.getMedia(currentMessageObject.messageOwner).period;
         final int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
@@ -27338,10 +27380,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     accessibilityTextFileSize = fileSize;
                 }
 
+                CharSequence spokenText = accessibilityText;
+                final CharSequence timer = getAccessibilityTimerText();
+                if (timer != null) {
+                    spokenText = TextUtils.concat(accessibilityText, timer);
+                }
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                    info.setContentDescription(accessibilityText.toString());
+                    info.setContentDescription(spokenText.toString());
                 } else {
-                    info.setText(accessibilityText);
+                    info.setText(spokenText);
                 }
 
                 info.setEnabled(true);
