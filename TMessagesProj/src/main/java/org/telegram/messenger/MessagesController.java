@@ -11386,7 +11386,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (action < 0 || action >= sendingTypings.length || dialogId == 0) {
             return false;
         }
-        final long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        final long selfId = getUserConfig().getClientUserId();
         if (dialogId == selfId) {
             return false;
         }
@@ -15529,7 +15529,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 });
             } else {
-                AlertsCreator.processError(UserConfig.selectedAccount, error, fragment, req);
+                AlertsCreator.processError(currentAccount, error, fragment, req);
                 if (onError != null) {
                     onError.run();
                 }

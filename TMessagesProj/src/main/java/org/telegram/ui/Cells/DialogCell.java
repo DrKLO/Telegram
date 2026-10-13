@@ -701,6 +701,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         useForceThreeLines = forceThreeLines;
         currentAccount = account;
+        avatarImage.setCurrentAccount(account);
+        for (int i = 0; i < thumbImage.length; ++i) {
+            thumbImage[i].setCurrentAccount(account);
+        }
+        storyParams.account = account;
 
         emojiStatusView = new View(context) {
             @Override
@@ -713,6 +718,34 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(emojiStatusView, dp(22));
         botVerification = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, dp(17));
         avatarImage.setAllowLoadingOnAttachedOnly(true);
+    }
+
+    public int getCurrentAccount() {
+        return currentAccount;
+    }
+
+    /**
+     * Rebinds the cell to another account (unified multi-account list). Must be called before
+     * {@code setDialog}: the same dialog id in another account is a different conversation.
+     */
+    public void setCurrentAccount(int account) {
+        if (currentAccount == account) {
+            return;
+        }
+        currentAccount = account;
+        avatarImage.setCurrentAccount(account);
+        for (int i = 0; i < thumbImage.length; ++i) {
+            if (thumbImage[i] != null) {
+                thumbImage[i].setCurrentAccount(account);
+            }
+        }
+        storyParams.account = account;
+        currentDialogId = 0;
+        lastStatusDrawableParams = -1;
+        user = null;
+        chat = null;
+        encryptedChat = null;
+        message = null;
     }
 
     @Override

@@ -210,6 +210,13 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     public void setAllowEmojiStatus(boolean allowEmojiStatus) {
         this.allowEmojiStatus = allowEmojiStatus;
     }
+    /** Binds the cell to the account that owns the shown peer (unified multi-account search). */
+    public void setCurrentAccount(int account) {
+        currentAccount = account;
+        avatarImage.setCurrentAccount(account);
+        avatarStoryParams.account = account;
+    }
+
     public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence n, CharSequence s, boolean needCount, boolean saved) {
         currentName = n;
         if (object instanceof TLRPC.User) {

@@ -636,7 +636,7 @@ public class LiveStoryPipOverlay implements NotificationCenter.NotificationCente
             if (player == null) return;
             if (player.currentAccount != UserConfig.selectedAccount) {
                 if (LaunchActivity.instance == null) return;
-                LaunchActivity.instance.switchToAccount(player.currentAccount, true);
+                LaunchActivity.instance.openAccountContext(player.currentAccount);
             }
             final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
             if (fragment == null) return;

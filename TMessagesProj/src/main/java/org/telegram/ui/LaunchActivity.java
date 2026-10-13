@@ -134,6 +134,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SharedPrefsHelper;
 import org.telegram.messenger.TopicsController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.multiaccount.MultiAccountController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
@@ -562,6 +563,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             globalObserversGroup.removeAllObservers();
             globalObserversGroup = null;
         }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.appDidLogout);
+        }
         globalObserversGroup = NotificationCenter.getGlobalInstance()
             .createObserversGroup(this)
             .add(NotificationCenter.needShowAlert)
@@ -578,7 +582,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             .add(NotificationCenter.requestPermissions)
             .add(NotificationCenter.billingConfirmPurchaseError)
             .add(NotificationCenter.tlSchemeParseException)
-            .add(NotificationCenter.memoryLeakFoundException);
+            .add(NotificationCenter.memoryLeakFoundException)
+            .add(NotificationCenter.multiAccountRouteChanged);
+        // every account can be logged out (or have its session revoked) independently
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.appDidLogout);
+        }
 
         LiteMode.addOnPowerSaverAppliedListener(onPowerSaverCallback = this::onPowerSaver);
         if (actionBarLayout.getFragmentStack().isEmpty() && (layersActionBarLayout == null || layersActionBarLayout.getFragmentStack().isEmpty())) {
@@ -593,6 +602,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 if (savedInstanceState != null) {
                     String fragmentName = savedInstanceState.getString("fragment");
                     if (fragmentName != null) {
+                        // the restored screen may belong to another account than the primary one
+                        MultiAccountController.getInstance().route(savedInstanceState.getInt("fragment_account", UserConfig.selectedAccount));
                         Bundle args = savedInstanceState.getBundle("args");
                         switch (fragmentName) {
                             case "chat":
@@ -1192,13 +1203,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     public void switchToAccount(int account, boolean removeAll, GenericProvider<Void, MainTabsActivity> dialogsActivityProvider) {
-        if (account == UserConfig.selectedAccount || !UserConfig.isValidAccount(account)) {
+        if (!UserConfig.isValidAccount(account)) {
             return;
         }
+        final MultiAccountController multiAccount = MultiAccountController.getInstance();
+        final int shownAccount = MultiAccountController.isActive() ? multiAccount.getPrimaryAccount() : UserConfig.selectedAccount;
+        if (account == shownAccount && account == UserConfig.selectedAccount && !forceAccountRebuild) {
+            return;
+        }
+        forceAccountRebuild = false;
         switchingAccount = true;
 
-        ConnectionsManager.getInstance(currentAccount).setAppPaused(true, false);
         UserConfig.selectedAccount = account;
+        multiAccount.setPrimaryAccount(account);
+        multiAccount.refreshKeepAlive();
         UserConfig.getInstance(0).saveConfig(false);
 
         checkCurrentAccount();
@@ -1226,15 +1244,91 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
             rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
         }
-        if (!ApplicationLoader.mainInterfacePaused) {
-            ConnectionsManager.getInstance(currentAccount).setAppPaused(false, false);
-        }
         if (UserConfig.getInstance(account).unacceptedTermsOfService != null) {
             showTosActivity(account, UserConfig.getInstance(account).unacceptedTermsOfService);
         }
         updateCurrentConnectionState(currentAccount);
 
         switchingAccount = false;
+    }
+
+    private boolean forceAccountRebuild;
+
+    /**
+     * Opens content that belongs to {@code account} (notification, link, player, call). In unified
+     * multi-account mode the interface stays as it is and only account routing changes; otherwise
+     * this is a regular account switch.
+     */
+    public void openAccountContext(int account) {
+        if (!UserConfig.isValidAccount(account)) {
+            return;
+        }
+        if (MultiAccountController.isActive()) {
+            MultiAccountController.getInstance().route(account);
+            checkCurrentAccount();
+        } else {
+            switchToAccount(account, true);
+        }
+    }
+
+    /** Rebuilds the main screen for the primary account, e.g. when unified mode turns on or off. */
+    public void rebuildMainInterface() {
+        int account = MultiAccountController.getInstance().getPrimaryAccount();
+        if (!UserConfig.isValidAccount(account)) {
+            switchToAvailableAccountOrLogout();
+            return;
+        }
+        forceAccountRebuild = true;
+        switchToAccount(account, true);
+    }
+
+    private void syncAccountRouteWithTopFragment() {
+        if (!MultiAccountController.isActive()) {
+            return;
+        }
+        BaseFragment top = getSafeLastFragment();
+        if (top != null) {
+            MultiAccountController.getInstance().onFragmentShown(top);
+        }
+    }
+
+    private void onAccountLoggedOut(int account) {
+        MultiAccountController multiAccount = MultiAccountController.getInstance();
+        int primaryBefore = multiAccount.peekPrimaryAccount();
+        boolean unifiedLayoutBefore = mainFragmentsStack.size() > 0 && mainFragmentsStack.get(0) instanceof MainTabsActivity && ((MainTabsActivity) mainFragmentsStack.get(0)).isUnifiedChats();
+        multiAccount.onAccountsChanged();
+        if (UserConfig.getActivatedAccountsCount() == 0) {
+            switchToAvailableAccountOrLogout();
+            return;
+        }
+        if (account == primaryBefore || unifiedLayoutBefore != MultiAccountController.isActive()) {
+            rebuildMainInterface();
+            return;
+        }
+        // another account is gone: close only its screens, everything else keeps working
+        removeFragmentsOfAccount(actionBarLayout, account);
+        if (AndroidUtilities.isTablet()) {
+            removeFragmentsOfAccount(rightActionBarLayout, account);
+            removeFragmentsOfAccount(layersActionBarLayout, account);
+        }
+        if (!UserConfig.isValidAccount(UserConfig.selectedAccount)) {
+            UserConfig.selectedAccount = multiAccount.getPrimaryAccount();
+        }
+        syncAccountRouteWithTopFragment();
+        checkCurrentAccount();
+    }
+
+    private static void removeFragmentsOfAccount(INavigationLayout layout, int account) {
+        if (layout == null) {
+            return;
+        }
+        List<BaseFragment> stack = layout.getFragmentStack();
+        for (int i = stack.size() - 1; i >= 1; i--) {
+            BaseFragment fragment = stack.get(i);
+            if (fragment.getCurrentAccount() == account) {
+                layout.removeFragmentFromStack(fragment, true);
+            }
+        }
     }
 
     private void switchToAvailableAccountOrLogout() {
@@ -1249,6 +1343,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             termsOfServiceView.setVisibility(View.GONE);
         }
         if (account != -1) {
+            forceAccountRebuild = true;
             switchToAccount(account, true);
         } else {
             RestrictedLanguagesSelectActivity.checkRestrictedLanguages(true);
@@ -1300,7 +1395,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         observersGroup = NotificationCenter.getInstance(currentAccount)
             .createObserversGroup(this)
             .add(NotificationCenter.openBoostForUsersDialog)
-            .add(NotificationCenter.appDidLogout)
             .add(NotificationCenter.mainUserInfoChanged)
             .add(NotificationCenter.attachMenuBotsDidLoad)
             .add(NotificationCenter.didUpdateConnectionState)
@@ -1529,7 +1623,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         int flags = intent.getFlags();
         String action = intent.getAction();
         final int[] intentAccount = new int[]{intent.getIntExtra("currentAccount", UserConfig.selectedAccount)};
-        switchToAccount(intentAccount[0], true);
+        openAccountContext(intentAccount[0]);
         final boolean isVoipIntent = action != null && action.equals("voip");
         final boolean isVoipAnswerIntent = action != null && action.equals("voip_answer");
         if ((isVoipIntent || isVoipAnswerIntent) && !isNew && ApplicationLoader.mainInterfacePaused) {
@@ -2570,7 +2664,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                     UserConfig cfg = UserConfig.getInstance(a);
                                                     if (cfg.isClientActivated() && cfg.getClientUserId() == wantUserId) {
                                                         intentAccount[0] = a;
-                                                        switchToAccount(a, true);
+                                                        openAccountContext(a);
                                                         break;
                                                     }
                                                 }
@@ -2850,7 +2944,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                                 int i = a == -1 ? intentAccount[0] : a;
                                                 if ((a == -1 && MessagesStorage.getInstance(i).containsLocalDialog(userId)) || UserConfig.getInstance(i).getClientUserId() == accountId) {
                                                     intentAccount[0] = i;
-                                                    switchToAccount(intentAccount[0], true);
+                                                    openAccountContext(intentAccount[0]);
                                                     break;
                                                 }
                                             }
@@ -3003,6 +3097,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount[0]).checkCanOpenChat(args, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
                         ChatActivity fragment = new ChatActivity(args);
+                        fragment.setCurrentAccount(intentAccount[0]);
                         if (getActionBarLayout().presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true))) {
                             pushOpened = true;
                             LaunchActivity.dismissAllWeb();
@@ -3017,6 +3112,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
                 if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount[0]).checkCanOpenChat(args, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
                     ChatActivity fragment = new ChatActivity(args);
+                    fragment.setCurrentAccount(intentAccount[0]);
 
                     if (push_topic_id > 0) {
                         TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(push_chat_id, push_topic_id);
@@ -3047,6 +3143,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 Bundle args = new Bundle();
                 args.putInt("enc_id", push_enc_id);
                 ChatActivity fragment = new ChatActivity(args);
+                fragment.setCurrentAccount(intentAccount[0]);
                 if (getActionBarLayout().presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true))) {
                     pushOpened = true;
                     LaunchActivity.dismissAllWeb();
@@ -3076,7 +3173,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
                     fragment.showDialog(new SharingLocationsAlert(this, info -> {
                         intentAccount[0] = info.messageObject.currentAccount;
-                        switchToAccount(intentAccount[0], true);
+                        openAccountContext(intentAccount[0]);
 
                         LocationActivity locationActivity = new LocationActivity(2);
                         locationActivity.setMessageObject(info.messageObject);
@@ -3301,10 +3398,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else {
                     if (actionBarLayout.getFragmentStack().isEmpty()) {
                         MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                        DialogsActivity dialogsActivity = mainTabsActivity.prepareDialogsActivity(null);
-                        if (searchQuery != null) {
-                            dialogsActivity.setInitialSearchString(searchQuery);
-                        }
+                        mainTabsActivity.prepareChatsTab(searchQuery);
                         actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     }
                 }
@@ -3314,10 +3408,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         actionBarLayout.addFragmentToStack(getClientNotActivatedFragment(), INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     } else {
                         MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                        DialogsActivity dialogsActivity = mainTabsActivity.prepareDialogsActivity(null);
-                        if (searchQuery != null) {
-                            dialogsActivity.setInitialSearchString(searchQuery);
-                        }
+                        mainTabsActivity.prepareChatsTab(searchQuery);
                         actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     }
                 }
@@ -3986,7 +4077,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (state == 0 && UserConfig.getActivatedAccountsCount() >= 2 && auth != null) {
             AlertsCreator.createAccountSelectDialog(this, account -> {
                 if (account != intentAccount) {
-                    switchToAccount(account, true);
+                    openAccountContext(account);
                 }
                 runLinkRequest(account, username, group, sticker, emoji, botUser, botChat, botChannel, botChatAdminParams, message, contactToken, folderSlug, text, hasUrl, messageId, channelId, threadId, commentId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, inputInvoiceSlug, uniqueGiftSlug, theme, voicechat, videochat, livestream, 1, videoTimestamp, setAsAttachBot, attachMenuBotToOpen, attachMenuBotChoose, botAppMaybe, botAppStartParam, progress, forceNotInternalForApps, storyId, liveStory, storyAlbumId, giftCollectionId, auctionSlug, stargiftPreviewSlug, isBoost, chatLinkSlug, botCompact, botFullscreen, openedTelegram, openProfile, forceRequest, referrer, taskId, openDirect, pollOptionId);
             }).show();
@@ -6560,6 +6651,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             globalObserversGroup.removeAllObservers();
             globalObserversGroup = null;
         }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.appDidLogout);
+        }
 
         if (onPowerSaverCallback != null) {
             LiteMode.removeOnPowerSaverAppliedListener(onPowerSaverCallback);
@@ -6759,7 +6853,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (ApplicationLoader.applicationLoaderInstance != null) {
             doNotPause = ApplicationLoader.applicationLoaderInstance.onPause();
         }
-        ConnectionsManager.getInstance(currentAccount).setAppPaused(!doNotPause, false);
+        MultiAccountController.getInstance().setForeground(doNotPause);
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().onPause();
         }
@@ -7012,7 +7106,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 overlay.onResume();
             }
         }
-        ConnectionsManager.getInstance(currentAccount).setAppPaused(false, false);
+        MultiAccountController.getInstance().setForeground(true);
+        syncAccountRouteWithTopFragment();
+        checkCurrentAccount();
         updateCurrentConnectionState(currentAccount);
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().onResume();
@@ -7158,7 +7254,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, final int account, Object... args) {
         if (id == NotificationCenter.appDidLogout) {
-            switchToAvailableAccountOrLogout();
+            onAccountLoggedOut(account);
+        } else if (id == NotificationCenter.multiAccountRouteChanged) {
+            if (!switchingAccount) {
+                checkCurrentAccount();
+                updateCurrentConnectionState(currentAccount);
+            }
         } else if (id == NotificationCenter.openBoostForUsersDialog) {
             long dialogId = (long) args[0];
             ChatMessageCell chatMessageCell = null;
@@ -8266,6 +8367,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
 
             if (lastFragment != null) {
+                outState.putInt("fragment_account", lastFragment.getCurrentAccount());
                 Bundle args = lastFragment.getArguments();
                 if (lastFragment instanceof ChatActivity && args != null) {
                     outState.putBundle("args", args);

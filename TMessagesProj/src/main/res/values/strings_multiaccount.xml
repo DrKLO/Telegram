@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="MultiAccountAllAccounts">All accounts</string>
+    <string name="MultiAccountUnread">Unread</string>
+    <string name="MultiAccountAccountsCount">%1$d accounts</string>
+    <string name="MultiAccountAccountLabel">Account: %1$s</string>
+    <string name="MultiAccountMessageAs">Message as %1$s</string>
+    <string name="MultiAccountSendFrom">Send from</string>
+    <string name="MultiAccountConnecting">Connecting: %1$s</string>
+    <string name="MultiAccountUpdating">Updating: %1$s</string>
+    <string name="MultiAccountNoChats">No chats yet</string>
+    <string name="MultiAccountNoUnread">No unread chats</string>
+    <string name="MultiAccountNoChatsInAccount">No chats in this account yet</string>
+    <string name="MultiAccountSearchHint">Search all accounts</string>
+    <string name="MultiAccountGlobalSearch">Global search</string>
+    <string name="MultiAccountDeleteChat">Delete chat</string>
+    <string name="MultiAccountDeleteChatText">Delete the chat with %1$s in account %2$s?</string>
+    <string name="MultiAccountLeaveChatText">Leave %1$s in account %2$s and delete the chat?</string>
+    <string name="MultiAccountDeleteForBoth">Also delete for %1$s</string>
+    <string name="MultiAccountUnified">Unified chat list</string>
+    <string name="MultiAccountUnifiedOn">Chats from all accounts are shown together</string>
+    <string name="MultiAccountUnifiedOff">Only the selected account is shown</string>
+    <string name="MultiAccountSeparate">Show accounts separately</string>
+    <string name="MultiAccountPrimary">Default account</string>
+    <string name="MultiAccountPrimaryInfo">Used for contacts, settings and new chats by default</string>
+    <string name="MultiAccountPinLimit">Account %1$s has reached its pinned chats limit</string>
+    <string name="MultiAccountFilter">Show chats</string>
+</resources>

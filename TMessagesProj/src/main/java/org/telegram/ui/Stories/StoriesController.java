@@ -137,6 +137,10 @@ public class StoriesController {
     private boolean firstLoad = true;
     private TL_stories.TL_storiesStealthMode stealthMode;
 
+    public int getCurrentAccount() {
+        return currentAccount;
+    }
+
     public StoriesController(int currentAccount) {
         this.currentAccount = currentAccount;
         storiesStorage = new StoriesStorage(currentAccount);

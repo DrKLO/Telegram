@@ -751,7 +751,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (player == null) return;
                 if (player.currentAccount != UserConfig.selectedAccount) {
                     if (LaunchActivity.instance == null) return;
-                    LaunchActivity.instance.switchToAccount(player.currentAccount, true);
+                    LaunchActivity.instance.openAccountContext(player.currentAccount);
                 }
                 final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                 if (lastFragment == null) return;
@@ -1055,7 +1055,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             return;
         }
         LaunchActivity launchActivity = ((LaunchActivity) fragment.getParentActivity());
-        launchActivity.switchToAccount(info.messageObject.currentAccount, true);
+        launchActivity.openAccountContext(info.messageObject.currentAccount);
 
         LocationActivity locationActivity = new LocationActivity(2);
         locationActivity.setMessageObject(info.messageObject);

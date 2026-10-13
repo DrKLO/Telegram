@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.telegram.messenger.multiaccount.MultiAccountController;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
@@ -260,6 +262,7 @@ public class ApplicationLoader extends Application {
                 SendMessagesHelper.getInstance(a).checkUnsentMessages();
             }
         }
+        MultiAccountController.getInstance().init();
 
         ApplicationLoader app = (ApplicationLoader) ApplicationLoader.applicationContext;
         app.initPushServices();

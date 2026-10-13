@@ -62,6 +62,8 @@ import androidx.core.math.MathUtils;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.multiaccount.MultiAccountController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.BuildVars;
@@ -1949,7 +1951,16 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         boolean preview = params.preview;
         ActionBarPopupWindow.ActionBarPopupWindowLayout menu = params.menuView;
 
-        if (fragment == null || checkTransitionAnimation() || delegate != null && check && !delegate.needPresentFragment(this, params) || !fragment.onFragmentCreate()) {
+        if (fragment == null || checkTransitionAnimation()) {
+            return false;
+        }
+        // Route account-agnostic code to the account of the screen being opened before it creates its UI.
+        final int routedAccountBefore = UserConfig.selectedAccount;
+        MultiAccountController.getInstance().onFragmentShown(fragment);
+        if (delegate != null && check && !delegate.needPresentFragment(this, params) || !fragment.onFragmentCreate()) {
+            if (fragment.getParentLayout() == null) {
+                MultiAccountController.getInstance().route(routedAccountBefore);
+            }
             return false;
         }
         final EdgeToEdgeSupportMode edgeToEdgeSupportMode = fragment.getEdgeToEdgeSupportMode();

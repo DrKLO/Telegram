@@ -52,6 +52,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.multiaccount.MultiAccountController;
+import org.telegram.ui.multiaccount.UnifiedDialogsActivity;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
@@ -401,7 +403,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             return;
         }
 
-        final int unreadCount = MessagesStorage.getInstance(currentAccount).getMainUnreadCount();
+        final int unreadCount = unifiedChats ? MultiAccountController.getTotalUnreadCount() : MessagesStorage.getInstance(currentAccount).getMainUnreadCount();
         if (unreadCount > 0) {
             final String unreadCountFmt = LocaleController.formatNumber(unreadCount, ',');
             tabs[INDEX_CHATS].setCounter(unreadCountFmt, false, animated);
@@ -461,6 +463,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private boolean openFoldersSelector(View anchor) {
         if (getContext() == null || getParentActivity() == null) return false;
+        if (unifiedChats) {
+            if (viewPager.getCurrentPosition() != POSITION_CHATS) {
+                selectTab(POSITION_CHATS, true);
+                viewPager.scrollToPosition(POSITION_CHATS);
+            }
+            if (unifiedDialogsActivity != null) {
+                unifiedDialogsActivity.showAccountFilterMenu(anchor);
+            }
+            return true;
+        }
         final ArrayList<MessagesController.DialogFilter> filters = getMessagesController().getDialogFilters();
         if (filters == null || filters.size() <= 1) return false;
 
@@ -664,6 +676,22 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
+        if (accountNumbers.size() >= 2) {
+            // chats of all accounts in one list vs. the classic per-account interface
+            final boolean unifiedEnabled = MultiAccountController.isUnifiedEnabled();
+            o.addGap();
+            if (unifiedEnabled) {
+                o.addText(getString(R.string.MultiAccountPrimaryInfo), 13);
+            }
+            o.add(unifiedEnabled ? R.drawable.msg_contacts : R.drawable.msg_discussion,
+                    getString(unifiedEnabled ? R.string.MultiAccountSeparate : R.string.MultiAccountUnified), () -> {
+                MultiAccountController.setUnifiedEnabled(!unifiedEnabled);
+                if (LaunchActivity.instance != null) {
+                    LaunchActivity.instance.rebuildMainInterface();
+                }
+            });
+        }
+
         o.setBlur(true);
         o.translate(0, -dp(4));
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
@@ -776,6 +804,36 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private DialogsActivity dialogsActivity;
+    private UnifiedDialogsActivity unifiedDialogsActivity;
+    /** Chats of all logged-in accounts are shown in one list (decided once, the screen is rebuilt on change). */
+    private final boolean unifiedChats = MultiAccountController.isActive();
+
+    public boolean isUnifiedChats() {
+        return unifiedChats;
+    }
+
+    public UnifiedDialogsActivity getUnifiedDialogsActivity() {
+        return unifiedDialogsActivity;
+    }
+
+    /** Prepares the chats tab before the screen is shown; {@code searchQuery} opens it with a search. */
+    public void prepareChatsTab(String searchQuery) {
+        if (unifiedChats) {
+            Bundle args = new Bundle();
+            args.putBoolean("hasMainTabs", true);
+            if (searchQuery != null) {
+                args.putString("initialSearch", searchQuery);
+            }
+            unifiedDialogsActivity = new UnifiedDialogsActivity(args);
+            unifiedDialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+            putFragmentAtPosition(POSITION_CHATS, unifiedDialogsActivity);
+        } else {
+            DialogsActivity dialogs = prepareDialogsActivity(null);
+            if (searchQuery != null) {
+                dialogs.setInitialSearchString(searchQuery);
+            }
+        }
+    }
 
     @Override
     public boolean onBackPressed(boolean invoked) {
@@ -825,6 +883,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else if (position == POSITION_CHATS) {
             Bundle args = new Bundle();
             args.putBoolean("hasMainTabs", true);
+            if (unifiedChats) {
+                unifiedDialogsActivity = new UnifiedDialogsActivity(args);
+                unifiedDialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+                return unifiedDialogsActivity;
+            }
             dialogsActivity = new DialogsActivity(args);
             dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
             return dialogsActivity;
@@ -1026,6 +1089,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .addGlobal(NotificationCenter.appUpdateAvailable)
             .addGlobal(NotificationCenter.appUpdateLoading)
             .addGlobal(NotificationCenter.needSetDayNightTheme);
+        if (unifiedChats) {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (a == currentAccount) {
+                    continue;
+                }
+                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.notificationsCountUpdated);
+                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
+            }
+        }
 
         return super.onFragmentCreate();
     }
@@ -1038,6 +1110,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
+        }
+        if (unifiedChats) {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (a == currentAccount) {
+                    continue;
+                }
+                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.notificationsCountUpdated);
+                NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.updateInterfaces);
+            }
         }
 
         super.onFragmentDestroy();

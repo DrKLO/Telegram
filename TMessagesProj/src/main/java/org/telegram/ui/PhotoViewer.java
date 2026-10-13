@@ -5215,7 +5215,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             isChannel = ChatObject.isChannelAndNotMegaGroup(chat);
                         }
                     }
-                    ((LaunchActivity) parentActivity).switchToAccount(currentMessageObject.currentAccount, true);
+                    ((LaunchActivity) parentActivity).openAccountContext(currentMessageObject.currentAccount);
                     ArrayList<MessageObject> msgs = new ArrayList<>(1);
                     MessageObject.GroupedMessages group = parentChatActivity != null ? parentChatActivity.getGroup(currentMessageObject.getGroupId()) : null;
                     if (group != null) {

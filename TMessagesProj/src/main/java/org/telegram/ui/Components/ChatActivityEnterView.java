@@ -173,6 +173,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.multiaccount.MultiAccountUi;
 import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Business.BusinessLinksController;
 import org.telegram.ui.Business.QuickRepliesController;
@@ -6894,7 +6895,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                         messageEditText.setHintText(getString("ChannelBroadcast", R.string.ChannelBroadcast), animated);
                     }
                 } else {
-                    messageEditText.setHintText(getString(R.string.TypeMessage));
+                    // with several accounts the composer names the identity that will send the message
+                    messageEditText.setHintText(MultiAccountUi.decorateComposerHint(currentAccount, getString(R.string.TypeMessage)));
                 }
             }
         }

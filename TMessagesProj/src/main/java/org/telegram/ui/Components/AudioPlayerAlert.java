@@ -1690,7 +1690,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             share(messageObject);
         } else if (id == 4) {
             if (UserConfig.selectedAccount != currentAccount) {
-                parentActivity.switchToAccount(currentAccount, true);
+                parentActivity.openAccountContext(currentAccount);
             }
             
             Bundle args = new Bundle();
@@ -2989,7 +2989,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             });
             o.addIf(messageObject.getId() > 0, R.drawable.msg_view_file, getString(R.string.ShowInChat), () -> {
                 if (UserConfig.selectedAccount != currentAccount) {
-                    parentActivity.switchToAccount(currentAccount, true);
+                    parentActivity.openAccountContext(currentAccount);
                 }
 
                 Bundle args = new Bundle();
@@ -3119,7 +3119,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void forward(MessageObject messageObject, long dialogId) {
         if (UserConfig.selectedAccount != currentAccount) {
-            parentActivity.switchToAccount(currentAccount, true);
+            parentActivity.openAccountContext(currentAccount);
         }
         final ArrayList<MessageObject> fmessages;
         final TLRPC.TL_document document;
@@ -3156,7 +3156,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void forward(MessageObject messageObject) {
         if (UserConfig.selectedAccount != currentAccount) {
-            parentActivity.switchToAccount(currentAccount, true);
+            parentActivity.openAccountContext(currentAccount);
         }
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);

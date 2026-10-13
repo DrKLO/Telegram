@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.telegram.messenger.multiaccount.MultiAccountController;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
@@ -143,7 +145,7 @@ public class UserConfig extends BaseController {
                 try {
                     SharedPreferences.Editor editor = getPreferences().edit();
                     if (currentAccount == 0) {
-                        editor.putInt("selectedAccount", selectedAccount);
+                        editor.putInt("selectedAccount", MultiAccountController.getPersistentSelectedAccount());
                     }
                     editor.putBoolean("registeredForPush", registeredForPush);
                     editor.putInt("lastSendMessageId", lastSendMessageId);

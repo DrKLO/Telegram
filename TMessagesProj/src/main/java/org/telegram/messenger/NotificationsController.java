@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.telegram.messenger.multiaccount.MultiAccountController;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -1727,7 +1729,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (!UserConfig.getInstance(a).isClientActivated()) {
                 continue;
             }
-            if (!SharedConfig.showNotificationsForAllAccounts && UserConfig.selectedAccount != a) {
+            if (!showNotificationsForAllAccounts() && UserConfig.selectedAccount != a) {
                 continue;
             }
 
@@ -4097,7 +4099,7 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private void showOrUpdateNotification(boolean notifyAboutLast) {
-        if (!getUserConfig().isClientActivated() || pushMessages.isEmpty() && storyPushMessages.isEmpty() || !SharedConfig.showNotificationsForAllAccounts && currentAccount != UserConfig.selectedAccount) {
+        if (!getUserConfig().isClientActivated() || pushMessages.isEmpty() && storyPushMessages.isEmpty() || !showNotificationsForAllAccounts() && currentAccount != UserConfig.selectedAccount) {
             dismissNotification();
             return;
         }
@@ -5983,10 +5985,15 @@ public class NotificationsController extends BaseController implements Notificat
         getNotificationsController().updateServerNotificationsSettings(did, topicId,true);
     }
 
+    /** In unified multi-account mode every logged-in account must deliver notifications. */
+    private static boolean showNotificationsForAllAccounts() {
+        return SharedConfig.showNotificationsForAllAccounts || MultiAccountController.isActive();
+    }
+
     public void setDialogNotificationsSettings(long dialog_id, long topicId, int setting) {
         SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
         SharedPreferences.Editor editor = preferences.edit();
-        TLRPC.Dialog dialog = MessagesController.getInstance(UserConfig.selectedAccount).dialogs_dict.get(dialog_id);
+        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialog_id);
         if (setting == SETTING_MUTE_UNMUTE) {
             boolean defaultEnabled = isGlobalNotificationsEnabled(dialog_id, false, false);
             if (defaultEnabled) {
@@ -6000,7 +6007,7 @@ public class NotificationsController extends BaseController implements Notificat
                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
             }
         } else {
-            int untilTime = ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
+            int untilTime = getConnectionsManager().getCurrentTime();
             if (setting == SETTING_MUTE_HOUR) {
                 untilTime += 60 * 60;
             } else if (setting == SETTING_MUTE_8_HOURS) {
@@ -6019,8 +6026,8 @@ public class NotificationsController extends BaseController implements Notificat
                 editor.putInt("notifyuntil_" + NotificationsController.getSharedPrefKey(dialog_id, topicId), untilTime);
                 flags = ((long) untilTime << 32) | 1;
             }
-            NotificationsController.getInstance(UserConfig.selectedAccount).removeNotificationsForDialog(dialog_id);
-            MessagesStorage.getInstance(UserConfig.selectedAccount).setDialogFlags(dialog_id, flags);
+            this.removeNotificationsForDialog(dialog_id);
+            getMessagesStorage().setDialogFlags(dialog_id, flags);
             if (dialog != null) {
                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                 dialog.notify_settings.mute_until = untilTime;

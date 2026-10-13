@@ -95,9 +95,9 @@ public class StoriesUtilities {
     private final static RectF rectTmp = new RectF();
 
     public static void drawAvatarWithStory(long dialogId, Canvas canvas, ImageReceiver avatarImage, AvatarStoryParams params) {
-        StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController();
+        StoriesController storiesController = MessagesController.getInstance(params.getAccount()).getStoriesController();
         boolean hasStories = storiesController.hasStories(dialogId);
-        drawAvatarWithStory(dialogId, canvas, avatarImage, UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId() != dialogId && hasStories, params);
+        drawAvatarWithStory(dialogId, canvas, avatarImage, UserConfig.getInstance(params.getAccount()).getClientUserId() != dialogId && hasStories, params);
     }
 
     static boolean scheduled = false;
@@ -118,7 +118,7 @@ public class StoriesUtilities {
     };
 
     public static void drawAvatarWithStory(long dialogId, Canvas canvas, ImageReceiver avatarImage, boolean hasStories, AvatarStoryParams params) {
-        StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController();
+        StoriesController storiesController = MessagesController.getInstance(params.getAccount()).getStoriesController();
         boolean animated = params.animate;
         if (params.dialogId != dialogId) {
             params.dialogId = dialogId;
@@ -129,7 +129,7 @@ public class StoriesUtilities {
         int state;
         int unreadState = 0;
         boolean showProgress = storiesController.isLoading(dialogId);
-        boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId) && !params.isDialogStoriesCell;
+        boolean isForum = ChatObject.isForum(params.getAccount(), dialogId) && !params.isDialogStoriesCell;
         if (params.drawHiddenStoriesAsSegments) {
             hasStories = storiesController.hasHiddenStories();
         }
@@ -559,8 +559,8 @@ public class StoriesUtilities {
             return STATE_EMPTY;
         }
         if (dialogId > 0) {
-            TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
-            if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && user != null && user.stories_max_id != null && user.stories_max_id.max_id > 0 && !user.stories_unavailable) {
+            TLRPC.User user = MessagesController.getInstance(storiesController.getCurrentAccount()).getUser(dialogId);
+            if (dialogId != UserConfig.getInstance(storiesController.getCurrentAccount()).clientUserId && user != null && user.stories_max_id != null && user.stories_max_id.max_id > 0 && !user.stories_unavailable) {
                 int maxReadId = storiesController.dialogIdToMaxReadId.get(dialogId, 0);
                 if (user.stories_max_id.live) {
                     return STATE_LIVE;
@@ -574,7 +574,7 @@ public class StoriesUtilities {
                 return STATE_EMPTY;
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialogId);
+            TLRPC.Chat chat = MessagesController.getInstance(storiesController.getCurrentAccount()).getChat(-dialogId);
             if (chat != null && chat.stories_max_id != null && chat.stories_max_id.max_id > 0 && !chat.stories_unavailable) {
                 int maxReadId = storiesController.dialogIdToMaxReadId.get(dialogId, 0);
                 if (chat.stories_max_id.live) {
@@ -1201,6 +1201,13 @@ public class StoriesUtilities {
     }
 
     public static class AvatarStoryParams {
+        /** Account whose stories are drawn; -1 follows the routed {@link UserConfig#selectedAccount}. */
+        public int account = -1;
+
+        public int getAccount() {
+            return account >= 0 ? account : UserConfig.selectedAccount;
+        }
+
         public boolean drawSegments = true;
         public boolean animate = true;
         public int storyId;
@@ -1291,14 +1298,14 @@ public class StoriesUtilities {
 
         public boolean checkOnTouchEvent(MotionEvent event, View view) {
             child = view;
-            StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController();
+            StoriesController storiesController = MessagesController.getInstance(getAccount()).getStoriesController();
             if (event.getAction() == MotionEvent.ACTION_DOWN && originalAvatarRect.contains(event.getX(), event.getY())) {
                 TLRPC.User user = null;
                 TLRPC.Chat chat = null;
                 if (dialogId > 0) {
-                    user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
+                    user = MessagesController.getInstance(getAccount()).getUser(dialogId);
                 } else {
-                    chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialogId);
+                    chat = MessagesController.getInstance(getAccount()).getChat(-dialogId);
                 }
                 boolean hasStories;
 
@@ -1308,12 +1315,12 @@ public class StoriesUtilities {
                     hasStories = storiesController.hasHiddenStories();
                 } else {
                     if (dialogId > 0) {
-                        hasStories = (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id != null && user.stories_max_id.max_id > 0);
+                        hasStories = (MessagesController.getInstance(getAccount()).getStoriesController().hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id != null && user.stories_max_id.max_id > 0);
                     } else {
-                        hasStories = (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || chat != null && !chat.stories_unavailable && chat.stories_max_id != null && chat.stories_max_id.max_id > 0);
+                        hasStories = (MessagesController.getInstance(getAccount()).getStoriesController().hasStories(dialogId) || chat != null && !chat.stories_unavailable && chat.stories_max_id != null && chat.stories_max_id.max_id > 0);
                     }
                 }
-                if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && hasStories) {
+                if (dialogId != UserConfig.getInstance(getAccount()).clientUserId && hasStories) {
                     if (buttonBounce == null) {
                         buttonBounce = new ButtonBounce(view, 1.5f, 5f);
                     } else {
@@ -1385,14 +1392,14 @@ public class StoriesUtilities {
                 return;
             }
 
-            int currentAccount = UserConfig.selectedAccount;
-            MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
+            int currentAccount = getAccount();
+            MessagesController messagesController = MessagesController.getInstance(getAccount());
             StoriesController storiesController = messagesController.getStoriesController();
             if (drawHiddenStoriesAsSegments) {
                 openStory(0, null);
                 return;
             }
-            if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()) {
+            if (dialogId != UserConfig.getInstance(getAccount()).getClientUserId()) {
                 if (storiesController.hasStories(dialogId)) {
                     openStory(dialogId, null);
                     return;
@@ -1458,11 +1465,11 @@ public class StoriesUtilities {
         int reqId;
 
         void load(long dialogId, View view, AvatarStoryParams params) {
-            currentAccount = UserConfig.selectedAccount;
+            currentAccount = params.getAccount();
             this.dialogId = dialogId;
             this.params = params;
             this.view = view;
-            MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
+            MessagesController messagesController = MessagesController.getInstance(currentAccount);
             StoriesController storiesController = messagesController.getStoriesController();
 
             storiesController.setLoading(dialogId, true);

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="MultiAccountAllAccounts">全部账号</string>
+    <string name="MultiAccountUnread">未读</string>
+    <string name="MultiAccountAccountsCount">%1$d 个账号</string>
+    <string name="MultiAccountAccountLabel">账号：%1$s</string>
+    <string name="MultiAccountMessageAs">以 %1$s 发送消息</string>
+    <string name="MultiAccountSendFrom">选择发送账号</string>
+    <string name="MultiAccountConnecting">正在连接：%1$s</string>
+    <string name="MultiAccountUpdating">正在更新：%1$s</string>
+    <string name="MultiAccountNoChats">暂无聊天</string>
+    <string name="MultiAccountNoUnread">没有未读聊天</string>
+    <string name="MultiAccountNoChatsInAccount">该账号暂无聊天</string>
+    <string name="MultiAccountSearchHint">搜索所有账号</string>
+    <string name="MultiAccountGlobalSearch">全局搜索</string>
+    <string name="MultiAccountDeleteChat">删除聊天</string>
+    <string name="MultiAccountDeleteChatText">确定在账号 %2$s 中删除与 %1$s 的聊天？</string>
+    <string name="MultiAccountLeaveChatText">确定在账号 %2$s 中退出 %1$s 并删除聊天？</string>
+    <string name="MultiAccountDeleteForBoth">同时为 %1$s 删除</string>
+    <string name="MultiAccountUnified">融合聊天列表</string>
+    <string name="MultiAccountUnifiedOn">所有账号的聊天显示在一起</string>
+    <string name="MultiAccountUnifiedOff">仅显示所选账号</string>
+    <string name="MultiAccountSeparate">分开显示各账号</string>
+    <string name="MultiAccountPrimary">默认账号</string>
+    <string name="MultiAccountPrimaryInfo">联系人、设置和新聊天默认使用该账号</string>
+    <string name="MultiAccountPinLimit">账号 %1$s 的置顶聊天已达上限</string>
+    <string name="MultiAccountFilter">显示聊天</string>
+</resources>

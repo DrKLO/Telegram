@@ -288,6 +288,8 @@ public class NotificationCenter {
 
     //global
     public static final int activeAccountChanged = totalEvents++;
+    public static final int multiAccountRouteChanged = totalEvents++;
+    public static final int multiAccountStateChanged = totalEvents++;
     public static final int pushMessagesUpdated = totalEvents++;
     public static final int wallpapersDidLoad = totalEvents++;
     public static final int wallpapersNeedReload = totalEvents++;
