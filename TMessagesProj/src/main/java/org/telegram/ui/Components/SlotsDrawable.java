@@ -163,16 +163,21 @@ public final class SlotsDrawable extends RLottieDiceDrawable {
         }
     }
 
-    private void init(int rawValue) {
+    /**
+     * The three reels are packed into the one value of the throw, two bits to a reel, left to
+     * right: 0 is the bar, 1 the berries, 2 the lemon and 3 the seven.
+     */
+    public static int[] decodeReels(int rawValue) {
         rawValue--;
+        return new int[] { rawValue & 3, rawValue >> 2 & 3, rawValue >> 4 };
+    }
 
-        int leftRawValue = rawValue & 3;
-        int centerRawValue = rawValue >> 2 & 3;
-        int rightRawValue = rawValue >> 4;
+    private void init(int rawValue) {
+        final int[] reels = decodeReels(rawValue);
 
-        ReelValue leftReelValue = reelValue(leftRawValue);
-        ReelValue centerReelValue = reelValue(centerRawValue);
-        ReelValue rightReelValue = reelValue(rightRawValue);
+        ReelValue leftReelValue = reelValue(reels[0]);
+        ReelValue centerReelValue = reelValue(reels[1]);
+        ReelValue rightReelValue = reelValue(reels[2]);
 
         if (leftReelValue == ReelValue.seven && centerReelValue == ReelValue.seven && rightReelValue == ReelValue.seven) {
             leftReelValue = ReelValue.sevenWin;
