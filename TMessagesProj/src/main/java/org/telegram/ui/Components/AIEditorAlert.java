@@ -1862,6 +1862,14 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             }
 
             private float selected;
+
+            // which tab is chosen is shown by its colour alone
+            @Override
+            public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setSelected(selected > .5f);
+            }
+
             public void updateSelected(float selected, boolean force) {
                 if (!force && Math.abs(selected - this.selected) < 0.01f) return;
                 this.selected = selected;
