@@ -1213,6 +1213,7 @@ public class VoIPFragment implements
             if (lockOnScreen) return;
             onBackPressed();
         });
+        addIcon.setContentDescription(LocaleController.getString(R.string.AddContactTitle));
         addIcon.setOnClickListener(v -> {
             if (lockOnScreen) return;
             if (addPeopleSheet != null) {

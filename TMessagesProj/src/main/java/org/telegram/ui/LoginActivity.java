@@ -767,6 +767,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         proxyButtonView = new ImageView(context);
         proxyButtonView.setImageDrawable(proxyDrawable = new ProxyDrawable(context));
+        proxyButtonView.setContentDescription(getString(R.string.Proxy));
         proxyButtonView.setOnClickListener(v -> presentFragment(new ProxyListActivity()));
         proxyButtonView.setAlpha(0f);
         proxyButtonView.setVisibility(View.GONE);
@@ -7452,6 +7453,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     passwordButton = new ImageView(context);
                     passwordButton.setImageResource(R.drawable.msg_message);
                     AndroidUtilities.updateViewVisibilityAnimated(passwordButton, true, 0.1f, false);
+                    passwordButton.setContentDescription(getString(R.string.SettingsHelp));
                     passwordButton.setOnClickListener(v -> {
                         isPasswordVisible = !isPasswordVisible;
 
@@ -9891,6 +9893,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             cells[2].setSubtitle(premium_days == 7 ? getString(R.string.SMSFee3Text) : formatPluralStringComma("SMSFee3TextDays", premium_days));
 
+            optionsButton.setContentDescription(getString(R.string.AccDescrMoreOptions));
             optionsButton.setOnClickListener(v -> {
                 ItemOptions.makeOptions(LoginActivity.this, optionsButton)
                     .add(R.drawable.msg_help, getString(R.string.SettingsHelp), () -> {

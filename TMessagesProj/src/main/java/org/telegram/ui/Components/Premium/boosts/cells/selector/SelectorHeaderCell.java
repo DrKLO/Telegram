@@ -1,5 +1,7 @@
 package org.telegram.ui.Components.Premium.boosts.cells.selector;
 
+import org.telegram.messenger.R;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.annotation.SuppressLint;
@@ -48,6 +50,7 @@ public class SelectorHeaderCell extends FrameLayout {
         backDrawable.setRotatedColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         backDrawable.setAnimationTime(220);
         addView(closeView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 16, 0, 16, 0));
+        closeView.setContentDescription(LocaleController.getString(R.string.Back));
         closeView.setOnClickListener(e -> {
             if (onCloseClickListener != null) {
                 onCloseClickListener.run();

@@ -278,11 +278,13 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
             deleteItem.setIcon(R.drawable.msg_delete);
             deleteItem.setVisibility(View.GONE);
             deleteItem.setAlpha(0f);
+            deleteItem.setContentDescription(LocaleController.getString(R.string.Delete));
             deleteItem.setOnClickListener(v -> menu2.onItemClick(2));
             menu.addView(deleteItem);
 
             optionsItem = new ActionBarMenuItem(context, menu2, getThemedColor(Theme.key_actionBarActionModeDefaultSelector), getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             optionsItem.setIcon(R.drawable.ic_ab_other);
+            optionsItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             optionsItem.setOnClickListener(v -> optionsItem.toggleSubMenu());
             optionsItem.setVisibility(View.GONE);
             optionsItem.setAlpha(0f);
