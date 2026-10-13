@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -8220,6 +8221,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         @Override
         public void onSuccessDownload(String fileName) {
+            if (transferAnnouncer != null) {
+                transferAnnouncer.onSuccess();
+            }
             radialProgress.setProgress(1, true);
             if (isGif) {
                 buttonState = 2;
@@ -8234,8 +8238,14 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         }
 
+        private AccessibilityTransferAnnouncer transferAnnouncer;
+
         @Override
         public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            if (transferAnnouncer == null) {
+                transferAnnouncer = new AccessibilityTransferAnnouncer(this);
+            }
+            transferAnnouncer.onProgress(downloadSize, totalSize, true);
             radialProgress.setProgress(Math.min(1f, downloadSize / (float) totalSize), true);
             if (buttonState != 1) {
                 updateButtonState(true);
@@ -8627,6 +8637,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         @Override
         public void onSuccessDownload(String fileName) {
+            if (transferAnnouncer != null) {
+                transferAnnouncer.onSuccess();
+            }
             radialProgress.setProgress(1, true);
             updateButtonState(true);
         }
@@ -8636,8 +8649,14 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         }
 
+        private AccessibilityTransferAnnouncer transferAnnouncer;
+
         @Override
         public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            if (transferAnnouncer == null) {
+                transferAnnouncer = new AccessibilityTransferAnnouncer(this);
+            }
+            transferAnnouncer.onProgress(downloadSize, totalSize, false);
             radialProgress.setProgress(Math.min(1f, downloadSize / (float) totalSize), true);
             if (buttonState != 3) {
                 updateButtonState(true);
@@ -12912,6 +12931,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         @Override
         public void onSuccessDownload(String fileName) {
+            if (transferAnnouncer != null) {
+                transferAnnouncer.onSuccess();
+            }
             radialProgress.setProgress(1, true);
             updateButtonState(true);
         }
@@ -12921,8 +12943,14 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         }
 
+        private AccessibilityTransferAnnouncer transferAnnouncer;
+
         @Override
         public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            if (transferAnnouncer == null) {
+                transferAnnouncer = new AccessibilityTransferAnnouncer(this);
+            }
+            transferAnnouncer.onProgress(downloadSize, totalSize, false);
             radialProgress.setProgress(Math.min(1f, downloadSize / (float) totalSize), true);
             if (buttonState != 1) {
                 updateButtonState(true);

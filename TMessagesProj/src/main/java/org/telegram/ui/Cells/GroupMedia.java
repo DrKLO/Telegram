@@ -1,5 +1,6 @@
 package org.telegram.ui.Cells;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.MessageObject.POSITION_FLAG_BOTTOM;
 import static org.telegram.messenger.MessageObject.POSITION_FLAG_LEFT;
@@ -825,8 +826,14 @@ public class GroupMedia {
 
         }
 
+        private AccessibilityTransferAnnouncer transferAnnouncer;
+
         @Override
         public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+            if (transferAnnouncer == null) {
+                transferAnnouncer = new AccessibilityTransferAnnouncer(cell, cell::isAccessibilityFocusedAnywhere);
+            }
+            transferAnnouncer.onProgress(downloadSize, totalSize, video);
             float progress = totalSize == 0 ? 0 : Math.min(1f, downloadSize / (float) totalSize);
             radialProgress.setProgress(media.downloadProgress = progress, true);
             setIcon(progress < 1f ? MediaActionDrawable.ICON_CANCEL : getDefaultIcon());

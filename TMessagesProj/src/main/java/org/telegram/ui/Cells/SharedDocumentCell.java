@@ -43,6 +43,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -60,6 +61,10 @@ import java.util.Date;
 import java.util.Locale;
 
 public class SharedDocumentCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
+
+    // where a download stands is drawn as a button and a ring or a bar, and is given to a screen
+    // reader as the state of the row
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
 
     private ImageView placeholderImageView;
     private BackupImageView thumbImageView;
@@ -693,6 +698,10 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
+        if (message != null && viewType != VIEW_TYPE_PICKER) {
+            info.setContentDescription(getAccessibilityStableText());
+            transferAnnouncer.appendState(info);
+        }
         if (checkBox.isChecked()) {
             info.setCheckable(true);
             info.setChecked(checkBox.isChecked());
@@ -709,8 +718,96 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         this.globalGradientView = globalGradientView;
     }
 
+    // a row of the downloads is read as the row that holds this cell, and a file there that is not
+    // coming is stopped rather than not downloaded
+    private Utilities.Callback0Return<Boolean> accessibilityPausedCheck;
+
+    public void setAccessibilityStateHost(View host, Utilities.Callback0Return<Boolean> pausedCheck) {
+        transferAnnouncer.setView(host);
+        accessibilityPausedCheck = pausedCheck;
+    }
+
+    public void appendAccessibilityState(AccessibilityNodeInfo info) {
+        transferAnnouncer.appendState(info);
+    }
+
+    // where the file stands, as the icon beside it and the bar under it draw it
+    private void updateAccessibilityState() {
+        if (!AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        int state = AccessibilityTransferAnnouncer.STATE_NONE;
+        float progress = 0;
+        long total = 0;
+        final TLRPC.Document document = message == null ? null : message.getDocument();
+        if (document != null && message.messageOwner.media != null && drawDownloadIcon && viewType != VIEW_TYPE_PICKER) {
+            total = document.size;
+            if (message.attachPathExists || message.mediaExists) {
+                state = AccessibilityTransferAnnouncer.STATE_DOWNLOADED;
+            } else if (loading) {
+                state = AccessibilityTransferAnnouncer.STATE_DOWNLOADING;
+                final Float p = ImageLoader.getInstance().getFileProgress(FileLoader.getAttachFileName(document));
+                progress = p != null ? p : total > 0 ? Math.min(1f, downloadedSize / (float) total) : 0;
+            } else if (accessibilityPausedCheck != null && Boolean.TRUE.equals(accessibilityPausedCheck.run())) {
+                state = AccessibilityTransferAnnouncer.STATE_PAUSED;
+            } else {
+                state = AccessibilityTransferAnnouncer.STATE_NOT_DOWNLOADED;
+            }
+        }
+        transferAnnouncer.setState(message == null ? null : message.getDialogId() + ":" + message.getId(), state, progress, total, true);
+    }
+
+    // what the row shows, as words, but for how much of the file has come, which grows as it comes
+    // and is said as the state of the row: the size under the name is that of the whole file. The
+    // dot drawn between the size and where the file came from is a picture and is left out
+    public CharSequence getAccessibilityStableText() {
+        final StringBuilder sb = new StringBuilder();
+        if (!TextUtils.isEmpty(nameTextView.getText())) {
+            sb.append(nameTextView.getText());
+        }
+        if (captionTextView != null && captionTextView.getVisibility() == VISIBLE && !TextUtils.isEmpty(captionTextView.getText())) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(captionTextView.getText());
+        }
+        String date = dateTextView.getText() == null ? "" : dateTextView.getText().toString();
+        final TLRPC.Document document = message == null ? null : message.getDocument();
+        if (document != null && downloadedSize != 0) {
+            final String growing = String.format(Locale.ENGLISH, "%s / %s", AndroidUtilities.formatFileSize(downloadedSize), AndroidUtilities.formatFileSize(document.size));
+            if (date.startsWith(growing)) {
+                date = AndroidUtilities.formatFileSize(document.size) + date.substring(growing.length());
+            }
+        }
+        date = date.replace(" . ", ", ");
+        if (!TextUtils.isEmpty(date)) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(date);
+        }
+        if (rightDateTextView != null && rightDateTextView.getVisibility() == VISIBLE && !TextUtils.isEmpty(rightDateTextView.getText())) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(rightDateTextView.getText());
+        }
+        return sb;
+    }
+
+    @Override
+    public boolean dispatchPopulateAccessibilityEvent(android.view.accessibility.AccessibilityEvent event) {
+        // a press would otherwise be reported with the whole row, read out again over what the
+        // press changed, which is said by itself
+        if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            return true;
+        }
+        return super.dispatchPopulateAccessibilityEvent(event);
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        updateAccessibilityState();
         if (enterAlpha != 1f && globalGradientView != null) {
             canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), (int) ((1f - enterAlpha) * 255), Canvas.ALL_SAVE_FLAG);
             globalGradientView.setViewType(FlickerLoadingView.FILES_TYPE);
