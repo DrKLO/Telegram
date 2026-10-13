@@ -4,15 +4,20 @@ import android.content.Context;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
+import org.json.JSONObject;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.telegram.tgnet.SerializedData;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class Localization {
@@ -78,6 +83,38 @@ public class Localization {
             try {
                 localizations = load(context, localizationAssetPath, localizations);
             } catch (Exception ignored) {}
+            return this;
+        }
+
+        /**
+         * Loads a built-in JSON language pack from APK assets. Only string-valued
+         * properties are imported; non-string metadata is ignored.
+         */
+        public Builder addJsonLocalization(Context context, String localizationAssetPath) {
+            try (InputStream stream = new BufferedInputStream(context.getAssets().open(localizationAssetPath));
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"))) {
+                StringBuilder jsonText = new StringBuilder();
+                char[] buffer = new char[8192];
+                int read;
+                while ((read = reader.read(buffer)) != -1) {
+                    jsonText.append(buffer, 0, read);
+                }
+
+                JSONObject json = new JSONObject(jsonText.toString());
+                HashMap<String, String> strings = new HashMap<>(json.length());
+                Iterator<String> keys = json.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    Object value = json.opt(key);
+                    if (value instanceof String) {
+                        strings.put(key, (String) value);
+                    }
+                }
+                addLocalization(strings);
+            } catch (Exception ignored) {
+                // Keep the default internal strings as a safe fallback if the
+                // bundled JSON is missing or malformed.
+            }
             return this;
         }
 

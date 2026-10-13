@@ -4550,7 +4550,14 @@ public class LocaleController {
                     }
 
                     final String assetPath = LocalizationUtils.getLocalizationAsset(currentLocale);
-                    if (assetPath == null || TextUtils.equals(assetPath, LocalizationUtils.DEFAULT_LOCALIZATION)) {
+                    if ("fa".equalsIgnoreCase(currentLocale.getLanguage())) {
+                        // Persian is bundled as JSON in the APK. Merge it over
+                        // the default pack so missing keys still have a fallback.
+                        localizationInternal = new Localization.Builder()
+                            .addLocalization(localizationInternalDefault)
+                            .addJsonLocalization(ApplicationLoader.applicationContext, "fa.json")
+                            .build();
+                    } else if (assetPath == null || TextUtils.equals(assetPath, LocalizationUtils.DEFAULT_LOCALIZATION)) {
                         localizationInternal = localizationInternalDefault;
                     } else {
                         localizationInternal = new Localization.Builder()
