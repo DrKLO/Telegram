@@ -183,7 +183,8 @@ public class WebRtcAudioRecord {
             deviceByteBuffer.position(0);
             byteBuffer.position(0);
             for (int a = 0; a < bytesRead / 2; a++) {
-              int mixed = byteBuffer.getShort(a * 2) + deviceByteBuffer.getShort(a * 2) / 10;
+              // at its own volume: a tenth of it could not be heard over the microphone
+              int mixed = byteBuffer.getShort(a * 2) + deviceByteBuffer.getShort(a * 2);
               if (mixed > 32767) {
                 mixed = 32767;
               }
@@ -243,7 +244,11 @@ public class WebRtcAudioRecord {
     this.nativeAudioRecord = nativeAudioRecord;
     effects = WebRtcAudioEffects.create();
     captureType = type;
-    if (captureType == 2 && Instance == null) {
+    // every call records its microphone through the plain recorder, and the one made for mixing
+    // in the sound of the screen being shared is chosen by none of them: with the instance only
+    // ever set for that one, a screen shared in a call never carried its sound. The microphone
+    // of the call is where it is mixed in
+    if (captureType == 2 || captureType == 0) {
       Instance = this;
     }
   }
