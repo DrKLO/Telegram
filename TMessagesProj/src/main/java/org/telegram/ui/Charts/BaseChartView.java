@@ -23,10 +23,13 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Charts.view_data.ChartBottomSignatureData;
@@ -258,6 +261,10 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
 
         legendSignatureView.setVisibility(GONE);
+        // the legend floats over the chart where a finger put it; a screen reader hears what it
+        // says from the chart itself, below
+        legendSignatureView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
 
         whiteLinePaint.setColor(Color.WHITE);
         whiteLinePaint.setStrokeWidth(AndroidUtilities.dpf2(3));
@@ -1490,6 +1497,103 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
 
     public void setHeader(ChartHeaderView chartHeaderView) {
         this.chartHeaderView = chartHeaderView;
+    }
+
+    /**
+     * A chart is read by touch: a finger on it picks a day and the values of that day come up
+     * beside it, and pressing those opens the day, when there is more of it to see. None of it
+     * was offered to a screen reader, which found nothing there at all. The chart is a control
+     * that is moved through a step at a time now, as a slider is, saying the values of each day it
+     * comes to, and it is pressed to open the day. Going past either end of the part of the chart
+     * that is shown moves the part shown along with it, as dragging the frame under the chart does.
+     */
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (chartData == null) {
+            return;
+        }
+        info.setClassName("android.widget.SeekBar");
+        final CharSequence title = chartHeaderView == null ? null : chartHeaderView.getTitle();
+        if (title != null && title.length() > 0) {
+            info.setText(title);
+        }
+        CharSequence state = getAccessibilitySelectionText();
+        if (state == null || state.length() == 0) {
+            state = chartHeaderView == null ? null : chartHeaderView.getDatesText();
+        }
+        if (state != null && state.length() > 0) {
+            if (Build.VERSION.SDK_INT >= 30) {
+                info.setStateDescription(state);
+            } else {
+                info.setContentDescription(title == null || title.length() == 0 ? state : title + ", " + state);
+            }
+        }
+        info.setScrollable(true);
+        info.addAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        info.addAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+        if (canOpenAccessibilitySelection()) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString(R.string.AccActionChartOpenDay)));
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) {
+            if (chartData != null && moveAccessibilitySelection(action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD ? 1 : -1)) {
+                final CharSequence text = getAccessibilitySelectionText();
+                if (text != null && text.length() > 0) {
+                    announceForAccessibility(text);
+                }
+                return true;
+            }
+            return false;
+        }
+        if (action == AccessibilityNodeInfo.ACTION_CLICK && canOpenAccessibilitySelection()) {
+            legendSignatureView.callOnClick();
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
+    // what the legend of the day that is picked says, or nothing while none is
+    protected CharSequence getAccessibilitySelectionText() {
+        if (!legendShowing || selectedIndex < 0 || chartData == null || selectedIndex >= chartData.x.length) {
+            return null;
+        }
+        return legendSignatureView.getAccessibilityText();
+    }
+
+    protected boolean canOpenAccessibilitySelection() {
+        return legendShowing && selectedIndex >= 0 && legendSignatureView.canGoZoom && legendSignatureView.hasOnClickListeners();
+    }
+
+    // picks the day before or after the one that is picked, the last one shown when there is
+    // none, and moves the part of the chart shown when the day is outside it
+    protected boolean moveAccessibilitySelection(int by) {
+        final int n = chartData.x.length;
+        if (n == 0) {
+            return false;
+        }
+        final int index = selectedIndex < 0 || !legendShowing ? endXIndex : selectedIndex + by;
+        if (index < 0 || index >= n) {
+            return false;
+        }
+        if (index < startXIndex || index > endXIndex) {
+            final float width = pickerDelegate.pickerEnd - pickerDelegate.pickerStart;
+            float start = index < startXIndex ? chartData.xPercentage[index] : chartData.xPercentage[index] - width;
+            start = Math.max(0f, Math.min(1f - width, start));
+            pickerDelegate.set(start, start + width);
+        }
+        selectedIndex = Math.max(startXIndex, Math.min(endXIndex, index));
+        legendShowing = true;
+        animateLegend(true);
+        moveLegend(chartFullWidth * (pickerDelegate.pickerStart) - HORIZONTAL_PADDING);
+        if (dateSelectionListener != null) {
+            dateSelectionListener.onDateSelected(getSelectedDate());
+        }
+        invalidate();
+        return true;
     }
 
     public long getSelectedDate() {

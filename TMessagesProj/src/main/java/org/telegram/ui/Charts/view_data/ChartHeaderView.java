@@ -120,6 +120,14 @@ public class ChartHeaderView extends FrameLayout {
         dates.setVisibility(View.VISIBLE);
     }
 
+    public CharSequence getTitle() {
+        return title.getText();
+    }
+
+    public CharSequence getDatesText() {
+        return dates.getVisibility() == VISIBLE ? dates.getText() : null;
+    }
+
     public void setTitle(String s) {
         title.setText(s);
     }
