@@ -1114,6 +1114,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, actionLabel));
         }
+        if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
+            SharedAudioCell.appendAccessibilityDownloadState(info, buttonState == 0 || buttonState == 1, buttonState == 4, fileName);
+        }
     }
 
     @Override

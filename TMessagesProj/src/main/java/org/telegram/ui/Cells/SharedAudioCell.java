@@ -634,10 +634,25 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 break;
         }
         info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, actionLabel));
+        // whether the file is on the phone, or how much of it has come, is drawn as the button and
+        // the ring around it, and was said nowhere
+        if (hasMiniProgress != 0) {
+            appendAccessibilityDownloadState(info, hasMiniProgress == 1, miniButtonState == 1, currentMessageObject.getFileName());
+        } else {
+            appendAccessibilityDownloadState(info, buttonState == 0 || buttonState == 1, buttonState == 4, currentMessageObject.getFileName());
+        }
+        // a track that plays while it is fetched has a small button of its own for fetching it
+        if (miniButtonState >= 0) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, LocaleController.getString(miniButtonState == 0 ? R.string.AccActionDownload : R.string.AccActionCancelDownload)));
+        }
     }
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == R.id.acc_action_small_button && miniButtonState >= 0) {
+            didPressedMiniButton(true);
+            return true;
+        }
         if (action == AccessibilityNodeInfo.ACTION_CLICK) {
             didPressedButton();
             return true;
@@ -648,6 +663,23 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         updateButtonState(false, true);
+    }
+
+    /**
+     * Says of a file that plays, after what the row already says, whether it is on the phone, and
+     * while it is being fetched, how much of it has come. A piece of music is shown in many places
+     * besides the chat, and in all of them this is only drawn.
+     */
+    public static void appendAccessibilityDownloadState(AccessibilityNodeInfo info, boolean downloaded, boolean downloading, String fileName) {
+        final CharSequence state;
+        if (downloading) {
+            final Float progress = TextUtils.isEmpty(fileName) ? null : ImageLoader.getInstance().getFileProgress(fileName);
+            state = LocaleController.getString(R.string.Downloading) + " " + Math.round((progress == null ? 0 : progress) * 100) + "%";
+        } else {
+            state = LocaleController.getString(downloaded ? R.string.AccDescrMediaDownloaded : R.string.AccDescrMediaNotDownloaded);
+        }
+        final CharSequence text = info.getText();
+        info.setText(TextUtils.isEmpty(text) ? state : TextUtils.concat(text, ", ", state));
     }
 
     private int getThemedColor(int key) {

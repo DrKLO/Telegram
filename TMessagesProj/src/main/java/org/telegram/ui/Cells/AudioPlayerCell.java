@@ -13,6 +13,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.os.Bundle;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -507,6 +508,23 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
         } else { // voice message
             info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
         }
+        if (hasMiniProgress != 0) {
+            SharedAudioCell.appendAccessibilityDownloadState(info, hasMiniProgress == 1, miniButtonState == 1, currentMessageObject.getFileName());
+        } else {
+            SharedAudioCell.appendAccessibilityDownloadState(info, buttonState == 0 || buttonState == 1, buttonState == 4, currentMessageObject.getFileName());
+        }
+        if (miniButtonState >= 0) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, LocaleController.getString(miniButtonState == 0 ? R.string.AccActionDownload : R.string.AccActionCancelDownload)));
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == R.id.acc_action_small_button && miniButtonState >= 0) {
+            didPressedMiniButton(true);
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     private int getThemedColor(int key) {
