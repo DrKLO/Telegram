@@ -1376,6 +1376,26 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
     }
 
+    // dragging a row into place is the only way the screen has of putting the options in order,
+    // so the same move is offered as two actions on the field of every option
+    private final PollEditTextCell.ReorderDelegate reorderDelegate = new PollEditTextCell.ReorderDelegate() {
+        @Override
+        protected int getFirstRow() {
+            return answerStartRow;
+        }
+
+        @Override
+        protected int getCount() {
+            return answersCount;
+        }
+
+        @Override
+        protected void swap(int fromPosition, int toPosition) {
+            listView.setItemAnimator(itemAnimator);
+            listAdapter.swapElements(fromPosition, toPosition);
+        }
+    };
+
     private void addNewField() {
         resetSuggestEmojiPanel();
         listView.setItemAnimator(itemAnimator);
@@ -2538,6 +2558,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         });
                     }
                     cell.setIconsColor(Theme.key_pollCreateIcons);
+                    cell.setReorderDelegate(reorderDelegate);
                     cell.supportMultiselect();
                     cell.getCheckBox().setColor(-1, Theme.key_pollCreateIcons, Theme.key_checkboxCheck);
                     // cell.getCheckBox().setCirclePaintProvider(obj -> checkboxPaint);
