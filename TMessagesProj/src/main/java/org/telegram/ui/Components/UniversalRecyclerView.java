@@ -15,6 +15,8 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 
+import android.os.Bundle;
+import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -23,6 +25,8 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.R;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -228,6 +232,65 @@ public class UniversalRecyclerView extends RecyclerListView {
         }
         return UItem.MAX_SPAN_COUNT;
     }
+
+    // a list put in order by dragging is put in order by a screen reader with actions, through the
+    // very same calls a drag makes
+    @Override
+    public void onChildAttachedToWindow(View child) {
+        super.onChildAttachedToWindow(child);
+        if (itemTouchHelper != null) {
+            child.setAccessibilityDelegate(reorderAccessibilityDelegate);
+        }
+    }
+
+    private boolean canAccessibilityReorder(int from, int to) {
+        return reorderingAllowed && from >= 0 && to >= 0 && from < adapter.getItemCount() && to < adapter.getItemCount()
+            && adapter.isReorderItem(from) && adapter.getReorderSectionId(from) == adapter.getReorderSectionId(to);
+    }
+
+    private final AccessibilityDelegate reorderAccessibilityDelegate = new AccessibilityDelegate() {
+        @Override
+        public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(host, info);
+            if (host.isEnabled()) {
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+            final int position = getChildAdapterPosition(host);
+            if (canAccessibilityReorder(position, position - 1)) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_up, LocaleController.getString(R.string.AccActionReorderUp)));
+            }
+            if (canAccessibilityReorder(position, position + 1)) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_reorder_down, LocaleController.getString(R.string.AccActionReorderDown)));
+            }
+        }
+
+        @Override
+        public boolean performAccessibilityAction(View host, int action, Bundle args) {
+            if (action == R.id.acc_action_reorder_up || action == R.id.acc_action_reorder_down) {
+                final int position = getChildAdapterPosition(host);
+                final int target = position + (action == R.id.acc_action_reorder_up ? -1 : 1);
+                if (!canAccessibilityReorder(position, target)) {
+                    return false;
+                }
+                adapter.swapElements(position, target);
+                swappedElements();
+                adapter.reorderDone();
+                final int section = adapter.getReorderSectionId(target);
+                int place = 0, count = 0;
+                for (int i = 0; i < adapter.getItemCount(); ++i) {
+                    if (adapter.isReorderItem(i) && adapter.getReorderSectionId(i) == section) {
+                        count++;
+                        if (i <= target) {
+                            place++;
+                        }
+                    }
+                }
+                AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.formatString(R.string.Of, place, count));
+                return true;
+            }
+            return super.performAccessibilityAction(host, action, args);
+        }
+    };
 
     public void listenReorder(Utilities.Callback2<Integer, ArrayList<UItem>> onReordered) {
         listenReorder(onReordered, false);
