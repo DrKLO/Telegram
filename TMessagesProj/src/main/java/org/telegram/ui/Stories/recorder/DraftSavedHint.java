@@ -73,6 +73,9 @@ public class DraftSavedHint extends View {
     public void show() {
         showT.set(0, true);
         show(true, true);
+        // the hint is drawn by hand and holds no view, so there was nothing for a screen reader
+        // to find: leaving the camera looked as though it had thrown the story away
+        AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.getString(R.string.StoryDraftSaved));
         if (hideRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(hideRunnable);
         }
