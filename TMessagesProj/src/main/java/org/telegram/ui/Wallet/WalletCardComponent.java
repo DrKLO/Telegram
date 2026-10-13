@@ -175,6 +175,7 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
         balanceView.setTextColor(Color.WHITE);
         balanceView.setIgnoreRTL(true);
         balanceLayout.addView(balanceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 28));
+        WalletAccessibility.readWithoutIcons(balanceView, null);
 
         usdBalanceView = new AnimatedTextView(context, false, true, true, true, true);
         usdBalanceView.setAnimationProperties(.35f, 0, 320, 3.5f, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -342,6 +343,14 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
     public void setCardOnClickListener(OnClickListener listener) {
         cardClickListener = listener;
         cardView.setOnClickListener(listener);
+    }
+
+    // what a press on the card does, said by a screen reader
+    private CharSequence cardClickAccessibilityLabel;
+
+    public void setCardClickAccessibilityLabel(CharSequence label) {
+        cardClickAccessibilityLabel = label;
+        WalletAccessibility.setClickLabel(cardView, label);
     }
 
     public void setCardIcon(int drawableResId) {
@@ -558,6 +567,9 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
             ((WalletCardView) cardView).setDiamondAlpha(1f - balanceTransitionProgress);
         }
         cardView.setOnClickListener(cardClickListener);
+        if (cardClickAccessibilityLabel != null) {
+            WalletAccessibility.setClickLabel(cardView, cardClickAccessibilityLabel);
+        }
         addView(cardView, 0, LayoutHelper.createFrame(
                 LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT

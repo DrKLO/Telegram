@@ -382,6 +382,7 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
         ));
         ScaleStateListAnimator.apply(currencyView);
         currencyView.setOnClickListener(v -> switchInputMode());
+        org.telegram.ui.Wallet.WalletAccessibility.readWithoutIcons(currencyView, LocaleController.getString(R.string.AccDescrWalletSwitchCurrency));
 
         centerBottomContainer = new FrameLayout(context);
         center.addView(centerBottomContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));

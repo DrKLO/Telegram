@@ -114,6 +114,7 @@ public class WalletImportFragment extends BaseFragment {
         closeButton.setImageResource(R.drawable.ic_ab_close);
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3));
         closeButton.setOnClickListener(v -> finishFragment());
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         ((FrameLayout) fragmentView).addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 12, 0, 0));
 
         BackupImageView stickerView = new BackupImageView(context);
