@@ -17,6 +17,8 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -169,6 +171,8 @@ public class CodeFieldContainer extends LinearLayout {
                 };
 
                 codeField[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                // the boxes have no name: each says which digit it is for
+                codeField[a].accessibilityHint = LocaleController.formatString(R.string.AccDescrCodeDigit, a + 1, length);
                 codeField[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 codeField[a].setMaxLines(1);
                 codeField[a].setTypeface(AndroidUtilities.bold());
