@@ -23128,6 +23128,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return layoutHeight;
     }
 
+    // the parts of a message a screen reader is given as nodes of their own: which of them it is on,
+    // so what is drawn inside them can tell whether the message is being read
+    int accessibilityFocusedVirtualViewId = -1;
+
+    public boolean isAccessibilityFocusedAnywhere() {
+        return isAccessibilityFocused() || accessibilityFocusedVirtualViewId != -1;
+    }
+
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {

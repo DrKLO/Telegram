@@ -903,7 +903,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             cell.performAccessibilityAction(action, arguments);
         } else {
             if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                cell.accessibilityFocusedVirtualViewId = virtualViewId;
                 cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+            } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+                if (cell.accessibilityFocusedVirtualViewId == virtualViewId) {
+                    cell.accessibilityFocusedVirtualViewId = -1;
+                }
             } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                 if (virtualViewId == PROFILE) {
                     if (cell.delegate != null) {
