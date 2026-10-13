@@ -433,6 +433,22 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             @Override
             protected TextView createTextView() {
                 TextView textView = new TextView(context);
+                // the switcher only holds the text views, so the position has to be told
+                // by the view a screen reader actually lands on
+                textView.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(host, info);
+                        if (currentStyle != STYLE_AUDIO_PLAYER) {
+                            return;
+                        }
+                        final CharSequence text = ((TextView) host).getText();
+                        final CharSequence playbackPosition = MediaController.getPlaybackPositionDescription(MediaController.getInstance().getPlayingMessageObject());
+                        if (playbackPosition != null && !TextUtils.isEmpty(text)) {
+                            info.setText(playbackPosition + ", " + text);
+                        }
+                    }
+                });
                 textView.setMaxLines(1);
                 textView.setLines(1);
                 textView.setSingleLine(true);
