@@ -1528,6 +1528,17 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         public AnimatedEmojiSpan span;
 
+        // the view draws its emoji and nothing else: it is named by the emoji it stands for
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            final TLRPC.Document document = getDocument();
+            final String emoticon = document != null ? MessageObject.findAnimatedEmojiEmoticon(document, null) : null;
+            if (emoticon != null) {
+                info.setContentDescription(emoticon);
+            }
+        }
+
         public TLRPC.Document getDocument() {
             TLRPC.Document document = null;
             if (span != null) {
