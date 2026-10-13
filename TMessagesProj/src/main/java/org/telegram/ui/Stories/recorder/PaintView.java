@@ -654,6 +654,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         });
         undoButton.setAlpha(0.6f);
         undoButton.setClickable(false);
+        undoButton.setContentDescription(getString(R.string.Undo));
         topLayout.addView(undoButton, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.LEFT, 12, 0, 0, 0));
 
         zoomOutButton = new LinearLayout(context);
@@ -950,6 +951,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
         cancelButton = new PaintCancelView(context);
         cancelButton.setPadding(dp(8), dp(8), dp(8), dp(8));
         cancelButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        cancelButton.setContentDescription(getString(R.string.Cancel));
         bottomLayout.addView(cancelButton, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.LEFT, 12, 0, 0, 4));
         cancelButton.setOnClickListener(e -> {
             if (isColorListShown) {
@@ -1044,6 +1046,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 onDoneButtonClickedListener.run();
             }
         });
+        doneButton.setContentDescription(getString(R.string.Done));
         bottomLayout.addView(doneButton, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 12, 4));
 
         weightChooserView = new PaintWeightChooserView(context);
