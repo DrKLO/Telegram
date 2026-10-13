@@ -2783,7 +2783,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                         .setPositiveButton(LocaleController.getString(R.string.WalletOK), null)
                         .show();
                 });
-            } else if (fee > 0 || t.nft != null || t.preview && !t.incoming) {
+            } else if (fee > 0 || t.nft != null || t.preview) {
                 feeView[0] = new TextView(context);
                 feeView[0].setGravity(Gravity.CENTER_VERTICAL);
                 feeView[0].setIncludeFontPadding(false);
