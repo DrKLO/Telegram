@@ -40,7 +40,13 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
     }
 
     boolean shouldIgnore() {
-        return mRecyclerView.hasPendingAdapterUpdates();
+        // item positions are only settled once a layout pass is over: asking the layout manager
+        // about them from inside one, as a content changed event dispatched from layout does,
+        // would read positions that no longer exist and throw. the pre layout check is needed on
+        // its own because that event is dispatched right after the layout counter is cleared
+        return mRecyclerView.hasPendingAdapterUpdates()
+                || mRecyclerView.isComputingLayout()
+                || mRecyclerView.mState.isPreLayout();
     }
 
     @Override
