@@ -37,6 +37,7 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewConfiguration;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
@@ -85,6 +86,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BatchParticlesDrawHelper;
 import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
@@ -266,6 +268,34 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 }
             }
         };
+        // how many stars are being sent is chosen by dragging, and dragging is the one thing touch
+        // exploration cannot do: the slider was a picture with nothing to say and no way to move
+        // it. Made a slider in the reader's own words, moved a twentieth of the way at a time and
+        // saying how many stars each move lands on
+        slider.setFocusable(true);
+        slider.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        slider.setAccessibilityDelegate(new IntSeekBarAccessibilityDelegate() {
+            @Override
+            protected int getProgress() {
+                return Math.round(slider.getProgress() * 100);
+            }
+            @Override
+            protected void setProgress(int progress) {
+                slider.setValueAnimated(slider.getValue(progress / 100f));
+            }
+            @Override
+            protected int getMaxValue() {
+                return 100;
+            }
+            @Override
+            protected int getDelta() {
+                return 5;
+            }
+            @Override
+            protected CharSequence getContentDescription(View host) {
+                return LocaleController.formatPluralStringComma("StarsCount", slider.getValue());
+            }
+        });
         int[] steps_arr = new int[] { 1, 50, 100, /*250,*/ 500, 1_000, 2_000, 5_000, 7_500, 10_000 };
         final long max = MessagesController.getInstance(currentAccount).starsPaidReactionAmountMax;
         ArrayList<Integer> steps = new ArrayList<>();
@@ -405,6 +435,8 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             }
 
             topSendersView = new TopSendersView(context, liveStories);
+            topSendersView.setFocusable(true);
+            topSendersView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
             topSendersView.setOnSenderClickListener(senderDialogId -> {
                 BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                 if (lastFragment == null) return;
@@ -499,6 +531,19 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             updatePeerDialog();
             if (topSendersView != null) {
                 topSendersView.setMyPrivacy(peer);
+            }
+        });
+        // the tick says whether the name goes on the list of who sent stars. The row answers a
+        // press and reads its words out, but the tick beside them was drawn and never said, so
+        // there was no telling which way it stood or what a press had just done
+        checkLayout.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        checkLayout.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName("android.widget.CheckBox");
+                info.setCheckable(true);
+                info.setChecked(checkBox.isChecked());
             }
         });
         ScaleStateListAnimator.apply(checkLayout, .05f, 1.2f);
@@ -1877,6 +1922,39 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 Sender sender = this.senders.get(i);
                 sender.imageReceiver.onDetachedFromWindow();
             }
+        }
+
+        // who has sent the most stars is drawn as a row of pictures with a name and a number
+        // under each, all by hand and in no view of its own, so a reader passed over the whole
+        // thing without a word. Read it as the list it is
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            final CharSequence text = getAccessibilityText();
+            if (!TextUtils.isEmpty(text)) {
+                info.setText(text);
+                info.setEnabled(true);
+            } else {
+                info.setVisibleToUser(false);
+            }
+        }
+
+        private CharSequence getAccessibilityText() {
+            if (senders.isEmpty()) {
+                return null;
+            }
+            final StringBuilder sb = new StringBuilder();
+            sb.append(getString(R.string.StarsReactionTopSenders));
+            for (int i = 0; i < senders.size(); ++i) {
+                final Sender sender = senders.get(i);
+                sb.append(". ");
+                sb.append(sender.anonymous || sender.text == null ? getString(R.string.StarsReactionAnonymous) : sender.text.getText());
+                if (sender.starsText != null && !TextUtils.isEmpty(sender.starsText.getText())) {
+                    sb.append(", ");
+                    sb.append(sender.starsText.getText());
+                }
+            }
+            return sb;
         }
 
         @Override
