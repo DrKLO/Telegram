@@ -230,7 +230,14 @@ public class SpoilerEffect2 {
 
     private void destroy() {
         destroyed = true;
-        instance = null;
+        // only forget this instance: dropping the whole map would orphan the other types,
+        // whose render threads would then keep running (and never be paused) forever
+        if (instance != null && instance.get(type) == this) {
+            instance.remove(type);
+            if (instance.isEmpty()) {
+                instance = null;
+            }
+        }
         if (thread != null) {
             thread.halt();
             thread = null;
@@ -335,6 +342,7 @@ public class SpoilerEffect2 {
 
         public void halt() {
             running = false;
+            interrupt();
         }
 
         public void pause(boolean paused) {
@@ -362,10 +370,15 @@ public class SpoilerEffect2 {
                     dt = MAX_DELTA;
                 }
 
-                while (paused) {
+                // halt() while paused (e.g. views removed with the app in background) must still
+                // end the thread, otherwise it keeps its EGL context and surface forever
+                while (paused && running) {
                     try {
                         sleep(1000);
                     } catch (Exception ignore) {}
+                }
+                if (!running) {
+                    break;
                 }
 
                 checkResize();

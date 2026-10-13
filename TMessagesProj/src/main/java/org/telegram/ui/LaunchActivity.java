@@ -268,6 +268,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public static boolean isActive;
     private static int activeInstanceCount;
     public static boolean isResumed;
+
+    public static boolean hasActiveInstance() {
+        return activeInstanceCount > 0;
+    }
     public static Runnable onResumeStaticCallback;
 
     private static final String EXTRA_ACTION_TOKEN = "actions.fulfillment.extra.ACTION_TOKEN";
@@ -346,6 +350,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     private boolean passcodeSaveIntentIsRestore;
 
     private boolean tabletFullSize;
+    // layout mode (phone/tablet) the view hierarchy is currently built for
+    private Boolean builtTabletMode;
+    // a configuration change arrived while the activity was not visible (e.g. the device was folded
+    // with the app in background): the layout is re-checked once in onStart instead
+    private boolean layoutModeCheckPending;
+    private final Runnable checkLayoutRunnable = this::requestLayoutModeCheck;
 
     private String loadingThemeFileName;
     private String loadingThemeWallpaperName;
@@ -411,6 +421,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         instance = this;
         ApplicationLoader.postInitApplication();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
+        AndroidUtilities.resetTabletFlag(this);
         currentAccount = UserConfig.selectedAccount;
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
@@ -542,6 +553,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 setVisibility(GONE);
             }
         });
+        builtTabletMode = AndroidUtilities.isTablet();
         setupActionBarLayout();
         drawerLayoutContainer.setParentActionBarLayout(actionBarLayout);
         actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
@@ -946,13 +958,18 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     final int height = MeasureSpec.getSize(heightMeasureSpec);
                     setMeasuredDimension(width, height);
 
-                    if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
-                        tabletFullSize = false;
+                    if (isTabletFullSizeLayout() != tabletFullSize) {
+                        // displaySize/orientation changed since checkLayout() distributed the fragments:
+                        // measure the current arrangement and let checkLayout() move the fragments,
+                        // instead of flipping the flag here and leaving the chat pane unmeasured
+                        AndroidUtilities.cancelRunOnUIThread(checkLayoutRunnable);
+                        AndroidUtilities.runOnUIThread(checkLayoutRunnable);
+                    }
+                    if (!tabletFullSize) {
                         final int leftWidth = AndroidUtilities.getTabletLeftFragmentSize(width, insets.left, insets.right);
                         actionBarLayout.getView().measure(MeasureSpec.makeMeasureSpec(leftWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
                         rightActionBarLayout.getView().measure(MeasureSpec.makeMeasureSpec(width - leftWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
                     } else {
-                        tabletFullSize = true;
                         actionBarLayout.getView().measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
                     }
                     backgroundTablet.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -969,7 +986,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     final int width = getMeasuredWidth();
                     final int height = getMeasuredHeight();
-                    if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+                    if (!tabletFullSize) {
                         final int leftWidth = AndroidUtilities.getTabletLeftFragmentSize(width, insets.left, insets.right);
                         actionBarLayout.getView().layout(0, 0, actionBarLayout.getView().getMeasuredWidth(), actionBarLayout.getView().getMeasuredHeight());
                         rightActionBarLayout.getView().layout(leftWidth, 0, leftWidth + rightActionBarLayout.getView().getMeasuredWidth(), rightActionBarLayout.getView().getMeasuredHeight());
@@ -1076,6 +1093,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             } else {
                 drawerLayoutContainer.addView(actionBarLayout.getView(), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             }
+
+            // drop the tablet layouts (already detached together with launchLayout): many code paths
+            // use "!= null" checks and would otherwise keep presenting/rebuilding into invisible layouts
+            rightActionBarLayout = null;
+            layersActionBarLayout = null;
+            launchLayout = null;
+            backgroundTablet = null;
+            shadowTablet = null;
         }
         FloatingDebugController.setActive(this, SharedConfig.isFloatingDebugActive, false);
     }
@@ -1323,15 +1348,30 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             .add(NotificationCenter.guardBotDecisionResult);
     }
 
-    private void checkLayout() {
-        if (!AndroidUtilities.isTablet() || rightActionBarLayout == null || AndroidUtilities.getWasTablet() != null && AndroidUtilities.getWasTablet() != AndroidUtilities.isTabletForce()) {
-            return;
+    /**
+     * Single source of truth for the tablet arrangement, shared by checkLayout() and the measure pass
+     * of launchLayout: a single full-size pane, or the dialogs list plus a chat pane on the right.
+     */
+    private boolean isTabletFullSizeLayout() {
+        return AndroidUtilities.isInMultiwindow || AndroidUtilities.isSmallTablet() && getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+    /**
+     * Distributes the fragments between the left and right panes for the current tablet arrangement.
+     * @return true if fragments were moved (and therefore re-created and resumed)
+     */
+    private boolean checkLayout() {
+        if (!AndroidUtilities.isTablet() || rightActionBarLayout == null || builtTabletMode == null || !builtTabletMode) {
+            return false;
         }
 
-        if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+        boolean moved = false;
+        if (!isTabletFullSizeLayout()) {
             tabletFullSize = false;
             List<BaseFragment> fragmentStack = actionBarLayout.getFragmentStack();
             if (fragmentStack.size() >= 2) {
+                moved = true;
+                finishLayoutTransitions();
                 for (int a = 1; a < fragmentStack.size(); a++) {
                     BaseFragment chatFragment = fragmentStack.get(a);
                     if (chatFragment instanceof ChatActivity) {
@@ -1355,6 +1395,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             tabletFullSize = true;
             List<BaseFragment> fragmentStack = rightActionBarLayout.getFragmentStack();
             if (!fragmentStack.isEmpty()) {
+                moved = true;
+                finishLayoutTransitions();
                 for (int a = 0; a < fragmentStack.size(); a++) {
                     BaseFragment chatFragment = fragmentStack.get(a);
                     if (chatFragment instanceof ChatActivity) {
@@ -1373,6 +1415,86 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
             rightActionBarLayout.getView().setVisibility(View.GONE);
             backgroundTablet.setVisibility(!actionBarLayout.getFragmentStack().isEmpty() ? View.GONE : View.VISIBLE);
+        }
+        if (moved) {
+            armBlackScreenChecks();
+        }
+        return moved;
+    }
+
+    private void finishLayoutTransitions() {
+        actionBarLayout.finishTransitionsImmediately();
+        if (rightActionBarLayout != null) {
+            rightActionBarLayout.finishTransitionsImmediately();
+        }
+        if (layersActionBarLayout != null) {
+            layersActionBarLayout.finishTransitionsImmediately();
+        }
+    }
+
+    private void armBlackScreenChecks() {
+        actionBarLayout.checkBlackScreen("layoutMode");
+        if (rightActionBarLayout != null) {
+            rightActionBarLayout.checkBlackScreen("layoutMode");
+        }
+        if (layersActionBarLayout != null) {
+            layersActionBarLayout.checkBlackScreen("layoutMode");
+        }
+    }
+
+    private boolean shouldKeepFragmentsPaused() {
+        return !isResumed || passcodeDialog != null && passcodeDialog.passcodeView.getVisibility() == View.VISIBLE;
+    }
+
+    /**
+     * Rebuilding a layout resumes its last fragment; when that happens while the activity itself
+     * is not resumed (stopped, or behind the passcode) pause it again so onResume stays balanced.
+     */
+    private void pauseLayouts() {
+        actionBarLayout.onPause();
+        if (AndroidUtilities.isTablet()) {
+            if (rightActionBarLayout != null) {
+                rightActionBarLayout.onPause();
+            }
+            if (layersActionBarLayout != null) {
+                layersActionBarLayout.onPause();
+            }
+        }
+    }
+
+    private void requestLayoutModeCheck() {
+        AndroidUtilities.cancelRunOnUIThread(checkLayoutRunnable);
+        if (!isStarted) {
+            layoutModeCheckPending = true;
+            return;
+        }
+        applyLayoutMode();
+    }
+
+    /**
+     * Makes the layout (phone or tablet, and the tablet arrangement) match the activity configuration.
+     * isTablet() is re-read from this activity's resources only here, so it never changes while the
+     * views are still built for the other mode.
+     */
+    private void applyLayoutMode() {
+        layoutModeCheckPending = false;
+        AndroidUtilities.cancelRunOnUIThread(checkLayoutRunnable);
+        if (actionBarLayout == null || drawerLayoutContainer == null) {
+            return;
+        }
+        AndroidUtilities.resetTabletFlag(this);
+        final boolean tablet = AndroidUtilities.isTablet();
+        boolean changed = false;
+        if (builtTabletMode != null && builtTabletMode != tablet) {
+            switchLayoutMode(tablet);
+            changed = true;
+        }
+        builtTabletMode = tablet;
+        if (checkLayout()) {
+            changed = true;
+        }
+        if (changed && shouldKeepFragmentsPaused()) {
+            pauseLayouts();
         }
     }
 
@@ -3878,7 +4000,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 } else {
                     chatActivity.setHighlightQuote(messageId, quote, quoteOffset);
                 }
-                if (!(AndroidUtilities.isTablet() ? rightActionBarLayout : getActionBarLayout()).presentFragment(chatActivity) && dialogId < 0) {
+                if (!(AndroidUtilities.isTablet() && rightActionBarLayout != null ? rightActionBarLayout : getActionBarLayout()).presentFragment(chatActivity) && dialogId < 0) {
                     TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
                     TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
                     inputChannel.channel_id = -dialogId;
@@ -6125,12 +6247,21 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        applyPendingLayoutModeBeforeIntent();
         handleIntent(intent, true, false, false, null, true, true);
     }
 
     public void onNewIntent(Intent intent, Browser.Progress progress) {
         super.onNewIntent(intent);
+        applyPendingLayoutModeBeforeIntent();
         handleIntent(intent, true, false, false, progress, true, false);
+    }
+
+    private void applyPendingLayoutModeBeforeIntent() {
+        // e.g. a notification tapped right after unfolding: open the chat in the final layout
+        if (layoutModeCheckPending && isStarted) {
+            applyLayoutMode();
+        }
     }
 
     @Override
@@ -6784,6 +6915,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     protected void onStart() {
         super.onStart();
         isStarted = true;
+        if (layoutModeCheckPending) {
+            applyLayoutMode();
+        }
         pipActivityHandler.onStart();
         Browser.bindCustomTabsService(this);
         ApplicationLoader.mainInterfaceStopped = false;
@@ -6969,6 +7103,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     protected void onResume() {
         super.onResume();
+        if (layoutModeCheckPending) {
+            applyLayoutMode();
+        }
         isResumed = true;
         pipActivityHandler.onResume();
         if (onResumeStaticCallback != null) {
@@ -7044,7 +7181,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (VoIPFragment.getInstance() != null) {
             VoIPFragment.onResume();
         }
-        invalidateTabletMode();
         SpoilerEffect2.pause(false);
 
         if (ApplicationLoader.applicationLoaderInstance != null) {
@@ -7066,57 +7202,62 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     public static Runnable whenResumed;
 
-    private void invalidateTabletMode() {
-        Boolean wasTablet = AndroidUtilities.getWasTablet();
-        if (wasTablet == null) {
-            return;
-        }
-        AndroidUtilities.resetWasTabletFlag();
-        if (wasTablet != AndroidUtilities.isTablet()) {
-            long dialogId = 0;
-            long topicId = 0;
-            if (wasTablet) {
-                mainFragmentsStack.addAll(rightFragmentsStack);
-                mainFragmentsStack.addAll(layerFragmentsStack);
-                rightFragmentsStack.clear();
-                layerFragmentsStack.clear();
-            } else {
-                List<BaseFragment> fragments = new ArrayList<>(mainFragmentsStack);
-                mainFragmentsStack.clear();
-                rightFragmentsStack.clear();
-                layerFragmentsStack.clear();
-                for (BaseFragment fragment : fragments) {
-                    if (fragment instanceof MainTabsActivity || fragment instanceof DialogsActivity && ((DialogsActivity) fragment).isMainDialogList() && !((DialogsActivity) fragment).isArchive() && !((DialogsActivity) fragment).isCommunity()) {
-                        mainFragmentsStack.add(fragment);
-                    } else if (fragment instanceof ChatActivity && !((ChatActivity) fragment).isInScheduleMode()) {
-                        rightFragmentsStack.add(fragment);
-                        if (dialogId == 0) {
-                            dialogId = ((ChatActivity) fragment).getDialogId();
-                            topicId = ((ChatActivity) fragment).getTopicId();
-                        }
-                    } else {
-                        layerFragmentsStack.add(fragment);
+    /**
+     * Rebuilds the view hierarchy for the other layout mode (phone: single ActionBarLayout,
+     * tablet: left/right/layers ActionBarLayouts), moving the fragments between the stacks.
+     */
+    private void switchLayoutMode(boolean tablet) {
+        // a pending transition or swipe would postpone rebuildFragments() and leave an empty container
+        finishLayoutTransitions();
+        builtTabletMode = tablet;
+        long dialogId = 0;
+        long topicId = 0;
+        if (!tablet) {
+            mainFragmentsStack.addAll(rightFragmentsStack);
+            mainFragmentsStack.addAll(layerFragmentsStack);
+            rightFragmentsStack.clear();
+            layerFragmentsStack.clear();
+        } else {
+            // the right/layers stacks are expected to be empty in phone mode, but never drop
+            // fragments silently: they would be lost without onFragmentDestroy()
+            List<BaseFragment> fragments = new ArrayList<>(mainFragmentsStack);
+            fragments.addAll(rightFragmentsStack);
+            fragments.addAll(layerFragmentsStack);
+            mainFragmentsStack.clear();
+            rightFragmentsStack.clear();
+            layerFragmentsStack.clear();
+            for (BaseFragment fragment : fragments) {
+                if (fragment instanceof MainTabsActivity || fragment instanceof DialogsActivity && ((DialogsActivity) fragment).isMainDialogList() && !((DialogsActivity) fragment).isArchive() && !((DialogsActivity) fragment).isCommunity()) {
+                    mainFragmentsStack.add(fragment);
+                } else if (fragment instanceof ChatActivity && !((ChatActivity) fragment).isInScheduleMode()) {
+                    rightFragmentsStack.add(fragment);
+                    if (dialogId == 0) {
+                        dialogId = ((ChatActivity) fragment).getDialogId();
+                        topicId = ((ChatActivity) fragment).getTopicId();
                     }
-                }
-            }
-
-            setupActionBarLayout();
-            actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-            if (AndroidUtilities.isTablet()) {
-                rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-                layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
-
-                for (BaseFragment fragment : mainFragmentsStack) {
-                    if (fragment instanceof MainTabsActivity) {
-                        MainTabsActivity mainTabsActivity = (MainTabsActivity) fragment;
-                        fragment = mainTabsActivity.getDialogsActivity();
-                    }
-                    if (fragment instanceof DialogsActivity && ((DialogsActivity) fragment).isMainDialogList()) {
-                        ((DialogsActivity) fragment).setOpenedDialogId(dialogId, topicId);
-                    }
+                } else {
+                    layerFragmentsStack.add(fragment);
                 }
             }
         }
+
+        setupActionBarLayout();
+        actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+        if (AndroidUtilities.isTablet()) {
+            rightActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+            layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
+
+            for (BaseFragment fragment : mainFragmentsStack) {
+                if (fragment instanceof MainTabsActivity) {
+                    MainTabsActivity mainTabsActivity = (MainTabsActivity) fragment;
+                    fragment = mainTabsActivity.getDialogsActivity();
+                }
+                if (fragment instanceof DialogsActivity && ((DialogsActivity) fragment).isMainDialogList()) {
+                    ((DialogsActivity) fragment).setOpenedDialogId(dialogId, topicId);
+                }
+            }
+        }
+        armBlackScreenChecks();
     }
 
     @Override
@@ -7125,9 +7266,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         AndroidUtilities.setPreferredMaxRefreshRate(getWindow());
         super.onConfigurationChanged(newConfig);
         pipActivityHandler.onConfigurationChanged(newConfig);
-        AndroidUtilities.resetTabletFlag();
-        invalidateTabletMode();
-        checkLayout();
+        // when the device is folded/unfolded with the app in background this is usually delivered
+        // right before onStart: the layout switch is then postponed until the activity is visible
+        requestLayoutModeCheck();
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.onConfigurationChanged();
@@ -7156,7 +7297,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     @Override
     public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
         AndroidUtilities.isInMultiwindow = isInMultiWindowMode;
-        checkLayout();
+        requestLayoutModeCheck();
         super.onMultiWindowModeChanged(isInMultiWindowMode);
     }
 
@@ -8503,6 +8644,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         return super.onKeyUp(keyCode, event);
     }
 
+    /**
+     * Routing fragments to the tablet panes requires them to exist: never trust isTablet() alone here.
+     */
+    private boolean isTabletLayoutBuilt() {
+        return AndroidUtilities.isTablet() && rightActionBarLayout != null && layersActionBarLayout != null && backgroundTablet != null && shadowTablet != null;
+    }
+
     @Override
     public boolean needPresentFragment(INavigationLayout layout, INavigationLayout.NavigationParams params) {
         BaseFragment fragment = params.fragment;
@@ -8512,7 +8660,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
         }
-        if (AndroidUtilities.isTablet()) {
+        if (isTabletLayoutBuilt()) {
             if (fragment instanceof MainTabsActivity) {
                 if (layout != actionBarLayout) {
                     actionBarLayout.removeAllFragments();
@@ -8629,7 +8777,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, INavigationLayout layout) {
-        if (AndroidUtilities.isTablet()) {
+        if (isTabletLayoutBuilt()) {
             if (fragment instanceof DialogsActivity || fragment instanceof MainTabsActivity) {
                 boolean needReplace = layout != actionBarLayout;
                 if (needReplace && fragment instanceof DialogsActivity) {
@@ -8727,7 +8875,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     public void rebuildAllFragments(boolean last) {
-        if (layersActionBarLayout != null) {
+        if (AndroidUtilities.isTablet() && layersActionBarLayout != null) {
             layersActionBarLayout.rebuildAllFragmentViews(last, last);
         } else {
             actionBarLayout.rebuildAllFragmentViews(last, last);
