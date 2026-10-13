@@ -30,6 +30,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Icon3D {
+    private DiamondRenderer diamondRenderer;
+    float diamondYaw, diamondPitch, diamondRoll;
+    float diamondResolutionScale = 1f;
+    int diamondAppearance;
     private int mProgramObject;
     private int mMVPMatrixHandle;
     private int mWorldMatrixHandle;
@@ -53,6 +57,7 @@ public class Icon3D {
 
     int[] trianglesCount;
     float enterAlpha = 0f;
+    public float diamondAlpha = 1f;
 
     public float spec1 = 2f;
     public float spec2 = 0.13f;
@@ -74,8 +79,7 @@ public class Icon3D {
     int specColorHandle;
     int resolutionHandle;
     int gradientPositionHandle;
-    int modelIndexHandle, modelIndex2Handle;
-    int behindHandle;
+    int modelIndexHandle;
     int typeHandle;
     int nightHandle;
     int timeHandle;
@@ -95,11 +99,6 @@ public class Icon3D {
     private static final String[] starModel = new String[] {
         "models/star.binobj"
     };
-    private static final String[] diamondModel = new String[] {
-        "models/diamond_outer_2.binobj",
-        "models/diamond_outer.binobj",
-        "models/diamond.binobj"
-    };
     private static final String[] coinModel = new String[] {
         "models/coin_outer.binobj",
         "models/coin_inner.binobj",
@@ -115,17 +114,22 @@ public class Icon3D {
 
     public Icon3D(Context context, int type) {
         this.type = type;
+        if (type == TYPE_DIAMOND) {
+            String version = GLES20.glGetString(GLES20.GL_VERSION);
+            if (version == null || !version.startsWith("OpenGL ES 3")) {
+                throw new IllegalStateException("Diamond requires OpenGL ES 3");
+            }
+            diamondRenderer = new DiamondRenderer(context);
+            N = 1;
+            return;
+        }
         String[] modelPaths;
-        float modelScale = 1.0f;
         if (type == TYPE_COIN) {
             modelPaths = coinModel;
         } else if (type == TYPE_DEAL) {
             modelPaths = dealModel;
         } else if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             modelPaths = starModel;
-        } else if (type == TYPE_DIAMOND) {
-            modelPaths = diamondModel;
-            modelScale = 8.0f;
         } else {
             modelPaths = new String[0];
         }
@@ -136,7 +140,7 @@ public class Icon3D {
         mNormals = new FloatBuffer[N];
         trianglesCount = new int[N];
         for (int i = 0; i < N; ++i) {
-            ObjLoader obj = new ObjLoader(context, modelPaths[i], modelScale);
+            ObjLoader obj = new ObjLoader(context, modelPaths[i], 1.0f);
 
             mVertices[i] = ByteBuffer.allocateDirect(obj.positions.length * 4)
                     .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -163,8 +167,6 @@ public class Icon3D {
         String fragmentShaderSource;
         if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             fragmentShaderSource = "shaders/fragment4.glsl";
-        } else if (type == TYPE_DIAMOND) {
-            fragmentShaderSource = "shaders/fragment5.glsl";
         } else {
             fragmentShaderSource = "shaders/fragment3.glsl";
         }
@@ -213,8 +215,6 @@ public class Icon3D {
         resolutionHandle = GLES20.glGetUniformLocation(mProgramObject, "resolution");
         gradientPositionHandle = GLES20.glGetUniformLocation(mProgramObject, "gradientPosition");
         modelIndexHandle = GLES20.glGetUniformLocation(mProgramObject, "modelIndex");
-        modelIndex2Handle = GLES20.glGetUniformLocation(mProgramObject, "modelIndex2");
-        behindHandle = GLES20.glGetUniformLocation(mProgramObject, "behind");
         typeHandle = GLES20.glGetUniformLocation(mProgramObject, "type");
         nightHandle = GLES20.glGetUniformLocation(mProgramObject, "night");
         timeHandle = GLES20.glGetUniformLocation(mProgramObject, "time");
@@ -302,12 +302,6 @@ public class Icon3D {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, backgroundBitmapHandel[0]);
         GLES20.glUniform1i(mBackgroundTextureUniformHandle, 2);
-
-        if (type == TYPE_DIAMOND) {
-            GLES20.glEnable(GLES20.GL_CULL_FACE);
-            GLES20.glEnable(GLES20.GL_BLEND);
-            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-        }
     }
 
     private void generateTexture() {
@@ -331,6 +325,13 @@ public class Icon3D {
     private float time = 0f;
 
     public void draw(float[] mvpMatrix, float[] worldMatrix, int width, int height, float gradientStartX, float gradientScaleX, float gradientStartY, float gradientScaleY, float white, float golden, float dt) {
+        if (diamondRenderer != null) {
+            enterAlpha = Math.min(1f, enterAlpha + Math.max(0f, Math.min(dt, .1f)) / .22f);
+            diamondRenderer.resolutionScale = diamondResolutionScale;
+            diamondRenderer.appearance = diamondAppearance;
+            diamondRenderer.draw(width, height, diamondYaw, diamondPitch, diamondRoll, dt, enterAlpha * diamondAlpha, white);
+            return;
+        }
         if (backgroundBitmap != null) {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, backgroundBitmap, 0);
@@ -360,19 +361,8 @@ public class Icon3D {
         time += dt;
         GLES20.glUniform1f(timeHandle, time);
 
-        if (type == TYPE_DIAMOND) {
-            drawModel(0, true);
-            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
-            drawModel(1, true);
-            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
-
-            drawModel(2, false);
-            drawModel(1, false);
-            drawModel(0, false);
-        } else {
-            for (int i = 0; i < N; ++i) {
-                drawModel(i, false);
-            }
+        for (int i = 0; i < N; ++i) {
+            drawModel(i);
         }
 
         if (enterAlpha < 1f) {
@@ -387,7 +377,7 @@ public class Icon3D {
         }
     }
 
-    private void drawModel(int modelIndex, boolean behind) {
+    private void drawModel(int modelIndex) {
         final int i = modelIndex;
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 0]);
         GLES20.glVertexAttribPointer(mTextureCoordinateHandle, 2, GLES20.GL_FLOAT, false, 0, 0);
@@ -396,8 +386,6 @@ public class Icon3D {
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[3 * i + 2]);
         GLES20.glVertexAttribPointer(mVerticesHandle, 3, GLES20.GL_FLOAT, false, 0, 0);
         GLES20.glUniform1i(modelIndexHandle, i);
-        GLES20.glUniform1i(modelIndex2Handle, i);
-        GLES20.glUniform1i(behindHandle, behind ? 1 : 0);
         GLES20.glUniform1i(typeHandle, type);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, trianglesCount[i] / 3);
     }
@@ -455,11 +443,16 @@ public class Icon3D {
     }
 
     public void setBackground(Bitmap gradientTextureBitmap) {
-        backgroundBitmap = gradientTextureBitmap;
+        if (diamondRenderer == null) backgroundBitmap = gradientTextureBitmap;
     }
 
     public void destroy() {
-        GLES20.glDeleteProgram(mProgramObject);
+        if (diamondRenderer != null) {
+            diamondRenderer.destroy();
+            diamondRenderer = null;
+        } else {
+            GLES20.glDeleteProgram(mProgramObject);
+        }
     }
 
 }

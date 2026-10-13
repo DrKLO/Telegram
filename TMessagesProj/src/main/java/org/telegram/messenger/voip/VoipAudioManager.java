@@ -7,6 +7,8 @@ import android.media.AudioManager;
 import android.os.Build;
 
 
+import androidx.annotation.RequiresApi;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Utilities;
@@ -55,6 +57,7 @@ public class VoipAudioManager {
      * On Android 12+ Bluetooth call routing goes through {@link AudioManager#setCommunicationDevice}.
      * LE Audio headsets exist only there: they never connect the HFP profile, so the SCO API cannot reach them.
      */
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public static boolean isBluetoothDevice(AudioDeviceInfo device) {
         if (device == null) {
             return false;

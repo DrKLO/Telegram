@@ -20,7 +20,7 @@ import me.vkryl.core.reference.ReferenceList;
  * A thin wrapper around Android {@link Choreographer} that delivers animation
  * callbacks at a stable ~60 fps regardless of the display refresh rate.
  *
- * <p>Callbacks with the same fps share a single accumulator — they always fire
+ * <p>Callbacks with the same fps share a single schedule — they always fire
  * on the same tick, minimising the number of screen invalidations.
  *
  * <p>Must be used on the main thread only.
@@ -34,6 +34,9 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
 
     /** Duration of one target frame in nanoseconds (~16.67 ms). */
     private static final long FRAME_INTERVAL_NS = 1_000_000_000L / TARGET_FPS;
+
+    /** Fixed schedules indexed by fps - 1. */
+    private static final long[] FRAME_MASKS = buildFrameMasks();
 
     // ── Singleton ─────────────────────────────────────────────────────────────
 
@@ -55,8 +58,8 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
     private final Set<FrameCallback> mOneShot = new LinkedHashSet<>();
 
     /**
-     * Persistent callback groups keyed by interval in nanoseconds.
-     * All callbacks in the same group share one accumulator and always fire together,
+     * Persistent callback groups keyed by fps.
+     * All callbacks in the same group share one fixed schedule and always fire together,
      * so N animations at the same fps produce exactly one invalidate wave per period.
      */
     private final SparseArray<CallbackGroup> mGroups = new SparseArray<>();
@@ -71,7 +74,7 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
     /** Timestamp of the previous VSYNC event; 0 means "not started yet". */
     private long mLastVsyncNs;
 
-    /** Counts dispatched 60fps frames; used for legacy 30fps drawable support. */
+    /** Current tick in the repeating 60-tick cycle; also used for legacy 30fps drawables. */
     private int mCounter;
 
     // ── Public interface ──────────────────────────────────────────────────────
@@ -158,7 +161,7 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
     /**
      * Subscribes a persistent callback at the given fps.
      *
-     * <p>Callbacks sharing the same fps value share a single accumulator and
+     * <p>Callbacks sharing the same fps value share a single schedule and
      * are guaranteed to fire on the same tick — this minimises screen invalidations
      * when multiple animations run at the same rate.
      *
@@ -243,23 +246,11 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
     }
 
     private void dispatchFrame(long frameTimeNanos) {
-        // Dispatch grouped persistent callbacks.
-        // Stride groups use mCounter % stride — zero per-group state, perfect sync.
-        // Accumulator groups add FRAME_INTERVAL_NS each tick — supports any fps.
+        // All groups use a fixed schedule on the same repeating 60-tick cycle.
+        final long tickMask = 1L << mCounter;
         for (int i = 0; i < mGroups.size(); i++) {
             CallbackGroup group = mGroups.valueAt(i);
-            final boolean fire;
-            if (group.stride > 0) {
-                fire = mCounter % group.stride == 0;
-            } else {
-                group.accumulatedNs += FRAME_INTERVAL_NS;
-                if (group.accumulatedNs >= group.intervalNs) {
-                    group.accumulatedNs %= group.intervalNs;
-                    fire = true;
-                } else {
-                    fire = false;
-                }
-            }
+            final boolean fire = (group.frameMask & tickMask) != 0;
             if (fire) {
                 if (group.runnableCallbacksOnce != null) {
                     ReferenceList<Runnable> referenceList = group.runnableCallbacksOnce;
@@ -303,50 +294,95 @@ public final class Choreographer60FpsContent implements Choreographer.FrameCallb
         }
 
         mCounter++;
+        if (mCounter == TARGET_FPS) {
+            mCounter = 0;
+        }
     }
 
     private CallbackGroup getOrCreateGroup(int fps) {
+        fps = Math.max(1, Math.min(fps, TARGET_FPS));
         CallbackGroup group = mGroups.get(fps);
         if (group == null) {
-            long intervalNs = 1_000_000_000L / fps;
-            // Use stride when fps divides TARGET_FPS evenly — perfect sync, no accumulator.
-            int stride = (TARGET_FPS % fps == 0) ? TARGET_FPS / fps : 0;
-            group = new CallbackGroup(intervalNs, stride);
+            group = new CallbackGroup(FRAME_MASKS[fps - 1]);
             mGroups.put(fps, group);
         }
         return group;
     }
 
-    // ── Inner types ───────────────────────────────────────────────────────────
+    private static long[] buildFrameMasks() {
+        long[] masks = new long[TARGET_FPS];
+        for (int index = 0; index < masks.length; index++) {
+            masks[index] = buildFrameMask(index + 1);
+        }
+        return masks;
+    }
 
     /**
-     * A group of callbacks sharing the same tick interval.
-     *
-     * <p>If {@code stride > 0} the group fires every {@code stride} ticks using
-     * the global {@code mCounter} — perfectly synchronised with zero per-group state.
-     * This works whenever {@code TARGET_FPS % fps == 0} (e.g. 60, 30, 20, 15, 12, 10).
-     *
-     * <p>Otherwise {@code accumulatedNs} is used — supports any fps (24, 25, …)
-     * at the cost of minor phase drift between groups with different intervals.
-     * All members of the same group still fire in unison.
-     * <p>
-     * CopyOnWriteArrayList allows safe removal during iteration (e.g. from doFrame).
+     * Keeps the nearest regular divisor-of-60 schedule and adds/removes leap frames.
+     * Ties select the lower base fps. Schedules depend only on fps, never on subscribers.
      */
+    private static long buildFrameMask(int fps) {
+        int baseFps = 1;
+        for (int candidate = 2; candidate <= TARGET_FPS; candidate++) {
+            if (TARGET_FPS % candidate == 0
+                    && Math.abs(candidate - fps) < Math.abs(baseFps - fps)) {
+                baseFps = candidate;
+            }
+        }
+
+        int stride = TARGET_FPS / baseFps;
+        long mask = 0;
+        for (int tick = 0; tick < TARGET_FPS; tick += stride) {
+            mask |= 1L << tick;
+        }
+
+        int correction = fps - baseFps;
+        int leapFrames = Math.abs(correction);
+        for (int i = 0; i < leapFrames; i++) {
+            // Centre each correction in its part of the cycle.
+            int targetTick = (2 * i + 1) * TARGET_FPS / (2 * leapFrames);
+            for (int distance = 0; distance < TARGET_FPS; distance++) {
+                boolean selected = false;
+                for (int direction = 0; direction < 2; direction++) {
+                    int tick = (targetTick + (direction == 0 ? distance : -distance)
+                            + TARGET_FPS) % TARGET_FPS;
+                    long bit = 1L << tick;
+                    if (correction > 0) {
+                        // Even-stride grids share odd leap slots, including 30 and 15 fps.
+                        if ((mask & bit) != 0 || (stride % 2 == 0 && tick % 2 == 0)) {
+                            continue;
+                        }
+                        mask |= bit;
+                    } else {
+                        if ((mask & bit) == 0) {
+                            continue;
+                        }
+                        mask &= ~bit;
+                    }
+                    selected = true;
+                    break;
+                }
+                if (selected) {
+                    break;
+                }
+            }
+        }
+        return mask;
+    }
+
+    // ── Inner types ───────────────────────────────────────────────────────────
+
+    /** Fixed frame schedule shared by all callbacks at the same fps. */
     private static final class CallbackGroup {
-        final long intervalNs;
-        /** > 0 when TARGET_FPS % fps == 0; uses mCounter % stride for dispatch. */
-        final int  stride;
-        /** Used only when stride == 0. */
-        long accumulatedNs;
+        final long frameMask;
 
         final ReferenceList<FrameCallback> callbacks = new ReferenceList<>();
         final ReferenceList<Runnable> runnableCallbacks = new ReferenceList<>();
         @Nullable
         ReferenceList<Runnable> runnableCallbacksOnce;
 
-        CallbackGroup(long intervalNs, int stride) {
-            this.intervalNs = intervalNs;
-            this.stride     = stride;
+        CallbackGroup(long frameMask) {
+            this.frameMask = frameMask;
         }
     }
 

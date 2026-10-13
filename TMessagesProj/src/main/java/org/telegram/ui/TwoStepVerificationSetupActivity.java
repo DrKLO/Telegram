@@ -425,7 +425,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         buttonTextView.setTypeface(AndroidUtilities.bold());
-        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 6));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 24));
         buttonTextView.setOnClickListener(v -> processNext());
 
         switch (currentType) {

@@ -7,6 +7,8 @@ import static org.telegram.messenger.LocaleController.formatPluralString;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -65,6 +67,9 @@ public class ButtonSpan extends ReplacementSpan {
 
     @Override
     public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+        if (fm != null) {
+            paint.getFontMetricsInt(fm);
+        }
         return getSize();
     }
 
@@ -91,6 +96,9 @@ public class ButtonSpan extends ReplacementSpan {
 
     public static class TextViewButtons extends LinkSpanDrawable.LinksTextView {
 
+        private final Path buttonPath = new Path();
+        private final RectF buttonBounds = new RectF();
+
         public TextViewButtons(Context context) {
             super(context);
         }
@@ -103,19 +111,15 @@ public class ButtonSpan extends ReplacementSpan {
             if (!(getText() instanceof Spanned)) return null;
             final Layout layout = getLayout();
             if (layout == null) return null;
+            if (y < 0 || y >= layout.getHeight()) return null;
             final int line = layout.getLineForVertical(y);
             final Spanned spanned = (Spanned) getText();
             final ButtonSpan[] spans = spanned.getSpans(layout.getLineStart(line), layout.getLineEnd(line), ButtonSpan.class);
             for (int i = 0; i < spans.length; ++i) {
                 final ButtonSpan span = spans[i];
-                float begin = layout.getPrimaryHorizontal(spanned.getSpanStart(span));
-                float end   = layout.getPrimaryHorizontal(spanned.getSpanEnd(span));
-                if (end < begin) {
-                    final float tmp = begin;
-                    begin = end;
-                    end = tmp;
-                }
-                if (x >= begin && x <= end) {
+                layout.getSelectionPath(spanned.getSpanStart(span), spanned.getSpanEnd(span), buttonPath);
+                buttonPath.computeBounds(buttonBounds, true);
+                if (buttonBounds.contains(x, y)) {
                     return span;
                 }
             }

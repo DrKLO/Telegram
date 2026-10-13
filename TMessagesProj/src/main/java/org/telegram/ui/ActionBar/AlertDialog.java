@@ -1758,6 +1758,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         return buttonsLayout;
     }
 
+    public void makeRed(int btn) {
+        TextView button = (TextView) getButton(btn);
+        if (button != null) {
+            button.setTextColor(getThemedColor(Theme.key_text_RedBold));
+        }
+    }
+
     public static class Builder {
 
         private AlertDialog alertDialog;

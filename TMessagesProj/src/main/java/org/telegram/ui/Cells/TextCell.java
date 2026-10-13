@@ -76,11 +76,11 @@ public class TextCell extends FrameLayout {
     private int lastWidth;
 
     public TextCell(Context context) {
-        this(context, 23, false, false, null);
+        this(context, 20, false, false, null);
     }
 
     public TextCell(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, 23, false, false, resourcesProvider);
+        this(context, 20, false, false, resourcesProvider);
     }
 
     public TextCell(Context context, int left, boolean dialog) {
@@ -477,7 +477,7 @@ public class TextCell extends FrameLayout {
     }
 
     public void setTextAndValueAndColorfulIcon(String text, CharSequence value, boolean animated, int resId, int colorTop, int colorBottom, boolean divider) {
-        imageLeft = 16;
+        imageLeft = 21;
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         textView.setRightDrawable(null);
@@ -497,7 +497,7 @@ public class TextCell extends FrameLayout {
     }
 
     public void setTextAndCheckAndColorfulIcon(CharSequence text, boolean checked, int resId, int color, boolean divider) {
-        imageLeft = 16;
+        imageLeft = 21;
         offsetFromImage = getOffsetFromImage(false);
         textView.setText(text);
         textView.setRightDrawable(null);

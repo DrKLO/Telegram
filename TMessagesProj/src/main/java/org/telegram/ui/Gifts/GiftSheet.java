@@ -26,6 +26,7 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -2120,7 +2121,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     public static class RibbonDrawable extends CompatDrawable {
 
         private Text text;
+        private Text oldText;
+        private final AnimatedFloat textAnimation = new AnimatedFloat(this::invalidateSelf, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
         private Path path = new Path();
+        private final Path particleMaskPath = new Path();
+        private final Paint particleMaskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private float scale;
         private StarsReactionsSheet.Particles particles;
@@ -2143,6 +2148,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         public RibbonDrawable(View view, float scale) {
             super(view);
             fillRibbonPath(path, this.scale = scale, false);
+            particleMaskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
 
             paint.setColor(0xFFF55951);
             paint.setPathEffect(new CornerPathEffect(dp(2.33f)));
@@ -2188,7 +2194,24 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         }
 
         public void setText(int textSizeDp, CharSequence text, boolean bold) {
+            oldText = null;
+            textAnimation.force(1);
             this.text = new Text(text, textSizeDp, bold ? AndroidUtilities.bold() : null);
+            invalidateSelf();
+        }
+
+        public void setTextAnimated(int textSizeDp, CharSequence text, boolean bold) {
+            if (this.text == null) {
+                setText(textSizeDp, text, bold);
+                return;
+            }
+            if (TextUtils.equals(this.text.getText(), text)) {
+                return;
+            }
+            oldText = this.text;
+            this.text = new Text(text, textSizeDp, bold ? AndroidUtilities.bold() : null);
+            textAnimation.force(0);
+            invalidateSelf();
         }
 
         private boolean left;
@@ -2211,20 +2234,44 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             }
             canvas.drawPath(path, paint);
             if (particles != null) {
-                canvas.clipPath(path);
+                canvas.saveLayer(0, 0, dp(48 * scale), dp(48 * scale), null);
                 particles.setBounds(0, 0, dp(48), dp(48));
                 particles.process();
                 particles.draw(canvas, 0xFFFFFFFF);
+                particleMaskPath.set(path);
+                particleMaskPath.toggleInverseFillType();
+                canvas.drawPath(particleMaskPath, particleMaskPaint);
+                canvas.restore();
                 invalidateSelf();
             }
             if (text != null) {
+                final float progress = textAnimation.set(1);
+                if (!textAnimation.isInProgress()) {
+                    oldText = null;
+                }
                 canvas.save();
-                canvas.rotate(left ? -45 : 45, getBounds().width() / 2f + dp(left ? -7 : 6), getBounds().height() / 2f - dp(left ? 5 : 6));
-                final float scale = Math.min(1, dp(40) / text.getCurrentWidth());
-                canvas.scale(scale, scale, getBounds().width() / 2f + dp(left ? -7 : 6), getBounds().height() / 2f - dp(left ? 5 : 6));
-                text.draw(canvas, getBounds().width() / 2f + dp(left ? -7 : 6) - text.getWidth() / 2f, getBounds().height() / 2f - dp(left ? 4 : 5), textColor, 1f);
+                if (oldText != null && textAnimation.isInProgress()) {
+                    canvas.clipPath(path);
+                    final float distance = dp(64 * scale);
+                    drawText(canvas, oldText, distance * progress);
+                    drawText(canvas, text, -distance * (1 - progress));
+                } else {
+                    drawText(canvas, text, 0);
+                }
                 canvas.restore();
             }
+            canvas.restore();
+        }
+
+        private void drawText(Canvas canvas, Text text, float offset) {
+            canvas.save();
+            canvas.translate(offset, offset);
+            final float cx = getBounds().width() / 2f + dp(left ? -7 : 6);
+            final float cy = getBounds().height() / 2f - dp(left ? 5 : 6);
+            canvas.rotate(left ? -45 : 45, cx, cy);
+            final float textScale = Math.min(1, dp(40) / text.getCurrentWidth());
+            canvas.scale(textScale, textScale, cx, cy);
+            text.draw(canvas, cx - text.getWidth() / 2f, cy + dp(1), textColor, 1f);
             canvas.restore();
         }
     }
@@ -2251,6 +2298,15 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         public void setText(int textSizeDp, CharSequence text, boolean bold) {
             currentText = text;
             drawable.setText(textSizeDp, text, bold);
+        }
+
+        public void setTextAnimated(CharSequence text, boolean bold) {
+            setTextAnimated(bold ? 10 : 11, text, bold);
+        }
+
+        public void setTextAnimated(int textSizeDp, CharSequence text, boolean bold) {
+            currentText = text;
+            drawable.setTextAnimated(textSizeDp, text, bold);
         }
 
         public void setColor(int color) {

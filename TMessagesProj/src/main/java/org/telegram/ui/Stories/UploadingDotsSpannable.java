@@ -1,8 +1,9 @@
 package org.telegram.ui.Stories;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ReplacementSpan;
 import android.view.View;
@@ -32,9 +33,8 @@ public class UploadingDotsSpannable extends ReplacementSpan {
 
     @Override
     public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
-
-        TextPaint textPaint = (TextPaint) paint;
-        float characterWidth = paint.measureText(this.text) / 3;
+        final TextPaint textPaint = (TextPaint) paint;
+        final float characterWidth = paint.measureText(this.text) / 3;
         float baseline = fixTop ? -textPaint.getFontMetrics().ascent : -textPaint.getFontMetrics().top;
 
         float textThickness = (float) ((textPaint.getFontMetrics().bottom - textPaint.getFontMetrics().top) * (isMediumTypeface ? 0.05f : 0.0365f));
@@ -83,4 +83,34 @@ public class UploadingDotsSpannable extends ReplacementSpan {
         this.parent = parent;
         this.isMediumTypeface = isMediumTypeface;
     }
+
+    public static CharSequence replace(CharSequence text, View parent) {
+        return replace(text, parent, false);
+    }
+    public static CharSequence replace(CharSequence text, View parent, boolean isMediumTypeface) {
+        if (text == null) {
+            return null;
+        }
+        SpannableStringBuilder result = null;
+        for (int i = 0; i < text.length(); i++) {
+            int length;
+            if (text.charAt(i) == '…') {
+                length = 1;
+            } else if (text.charAt(i) == '.' && i + 2 < text.length()
+                    && text.charAt(i + 1) == '.' && text.charAt(i + 2) == '.') {
+                length = 3;
+            } else {
+                continue;
+            }
+            if (result == null) {
+                result = new SpannableStringBuilder(text);
+            }
+            UploadingDotsSpannable span = new UploadingDotsSpannable();
+            span.setParent(parent, isMediumTypeface);
+            result.setSpan(span, i, i + length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            i += length - 1;
+        }
+        return result == null ? text : result;
+    }
+
 }

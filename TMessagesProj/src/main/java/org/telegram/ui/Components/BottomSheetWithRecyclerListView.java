@@ -42,7 +42,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private final Drawable headerShadowDrawable;
     protected LinearLayoutManager layoutManager;
     protected RecyclerListView recyclerListView;
-    protected ActionBar actionBar;
+    public ActionBar actionBar;
     boolean wasDrawn;
     protected int contentHeight;
     private BaseFragment baseFragment;

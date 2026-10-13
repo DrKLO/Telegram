@@ -20,7 +20,6 @@ import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -303,12 +302,12 @@ public class PhotoCropActivity extends BaseFragment {
                 sizeY = imageToCrop.getHeight() - y;
             }
             try {
-                return Bitmaps.createBitmap(imageToCrop, x, y, sizeX, sizeY);
+                return Bitmap.createBitmap(imageToCrop, x, y, sizeX, sizeY, null, false);
             } catch (Throwable e) {
                 FileLog.e(e);
                 System.gc();
                 try {
-                    return Bitmaps.createBitmap(imageToCrop, x, y, sizeX, sizeY);
+                    return Bitmap.createBitmap(imageToCrop, x, y, sizeX, sizeY, null, false);
                 } catch (Throwable e2) {
                     FileLog.e(e2);
                 }

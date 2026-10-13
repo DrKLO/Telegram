@@ -3109,6 +3109,10 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
 
     private final @NonNull EdgeEffectTrackerFactory edgeEffectTrackerFactory;
 
+    public float getEdgeEffectDistance(@EdgeEffectFactory.EdgeDirection int direction) {
+        return edgeEffectTrackerFactory.getDistance(direction);
+    }
+
     public boolean hasActiveEdgeEffects() {
         return edgeEffectTrackerFactory.hasVisibleEdges();
     }
@@ -3614,8 +3618,13 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
 
     private final Path clipPath = new Path();
+    /** Raised children may draw their own rounded surface outside the section outline. */
+    protected boolean shouldClipChildToSection(View child) {
+        return true;
+    }
+
     private void clipChild(Canvas canvas, View child) {
-        if (child == null || !sectionsItemDecoration.isSectionItem.run(child))
+        if (child == null || !shouldClipChildToSection(child) || !sectionsItemDecoration.isSectionItem.run(child))
             return;
 
         boolean prev, next;

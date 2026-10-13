@@ -1493,7 +1493,7 @@ public class AndroidUtilities {
             return 0;
         }
         try {
-            Bitmap b = Bitmaps.createScaledBitmap(bitmap, 1, 1, true);
+            Bitmap b = Bitmap.createScaledBitmap(bitmap, 1, 1, true);
             if (b != null) {
                 int bitmapColor = b.getPixel(0, 0);
                 if (bitmap != b) {
@@ -2887,6 +2887,16 @@ public class AndroidUtilities {
                 }
             }
         }
+    }
+
+    public static int getAccountInProduction() {
+        if (UserConfig.getInstance(UserConfig.selectedAccount).isClientActivated() && !ConnectionsManager.getInstance(UserConfig.selectedAccount).isTestBackend())
+            return UserConfig.selectedAccount;
+        for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; ++i) {
+            if (UserConfig.getInstance(i).isClientActivated() && !ConnectionsManager.getInstance(i).isTestBackend())
+                return i;
+        }
+        return UserConfig.selectedAccount;
     }
 
     public static float getPixelsInCM(float cm, boolean isX) {

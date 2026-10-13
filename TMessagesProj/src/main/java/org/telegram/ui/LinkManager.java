@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BirthdayController;
@@ -34,6 +35,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_aicompose;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_update;
+import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
@@ -50,9 +52,17 @@ import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.TON.TONIntroActivity;
+import org.telegram.ui.Wallet.GramWallet;
+import org.telegram.ui.Wallet.GramWalletTonConnect;
+import org.telegram.ui.Wallet.WalletActivity;
+import org.telegram.ui.Wallet.WalletEngine2;
+import org.telegram.ui.Wallet.WalletSendEnterAmount;
+import org.telegram.ui.Wallet.WalletSendSelectSender;
 import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
 import org.telegram.ui.web.WebBrowserSettings;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -80,6 +90,8 @@ public class LinkManager {
     public boolean handle(Uri uri) {
         if (uri == null) return false;
 
+        FileLog.d("link manager handle " + uri);
+
         final String scheme = uri.getScheme();
 
         if ("tonsite".equalsIgnoreCase(scheme))
@@ -90,6 +102,11 @@ public class LinkManager {
 
         if ("tg".equalsIgnoreCase(scheme))
             return handleTg(uri);
+
+        if ("ton".equalsIgnoreCase(scheme))
+            return handleTon(uri);
+        if ("tc".equalsIgnoreCase(scheme))
+            return handleTc(uri);
 
         return false;
     }
@@ -120,6 +137,9 @@ public class LinkManager {
 
         final String first = segments.get(0);
         final String second = segments.size() > 1 ? segments.get(1) : null;
+
+        if ("sendgrams".equalsIgnoreCase(first))
+            return handleSendGrams(uri);
 
         if ("$".equalsIgnoreCase(first))
             return handleInvoiceSlug(path.substring(1));
@@ -154,6 +174,7 @@ public class LinkManager {
     }
 
     private boolean handleTg(Uri uri) {
+        uri = Uri.parse(uri.toString().replaceFirst("(?i)^tg:(//)?sendgrams&", "tg://sendgrams?"));
         uri = normalizeTgUri(uri);
 
         final List<String> _segments = uri.getPathSegments();
@@ -166,6 +187,9 @@ public class LinkManager {
 
         final String first = segments.get(0);
         final String second = segments.size() > 1 ? segments.get(1) : null;
+
+        if ("sendgrams".equalsIgnoreCase(first))
+            return handleSendGrams(uri);
 
         if ("newbot".equalsIgnoreCase(first))
             return handleNewBot(uri.getQueryParameter("manager"), uri.getQueryParameter("username"), uri.getQueryParameter("name"));
@@ -276,6 +300,9 @@ public class LinkManager {
 
         final String domain = uri.getQueryParameter("domain");
         final String startapp = uri.getQueryParameter("startapp");
+
+        if ("sendgrams".equalsIgnoreCase(domain))
+            return handleSendGrams(uri);
 
         if ("oauth".equalsIgnoreCase(domain) && !isEmpty(startapp))
             return handleOAuth(uri, startapp);
@@ -1414,6 +1441,277 @@ public class LinkManager {
         return true;
     }
 
+    private boolean handleSendGrams(Uri uri) {
+        if (!getMessagesController().config.walletAvailable.get()) return false;
+        final Uri tonConnectUri = parseTonConnectStartApp(uri.getQueryParameter("startapp"));
+        if (tonConnectUri != null) {
+            handleTc(tonConnectUri);
+            return true;
+        }
+        final String recipient = uri.getQueryParameter("to");
+        final String amount = uri.getQueryParameter("amount");
+        String _text = uri.getQueryParameter("text");
+        if (TextUtils.isEmpty(_text)) _text = uri.getQueryParameter("comment");
+        final String text = limitWalletComment(_text);
+        final boolean textEncrypted = uri.getBooleanQueryParameter("encrypted", false);
+        final long nanos;
+        if (amount != null) {
+            if (TextUtils.isEmpty(recipient) || !amount.matches("[0-9]+(?:\\.[0-9]+)?")) return true;
+            try {
+                nanos = new BigDecimal(amount).movePointRight(9).longValueExact();
+            } catch (ArithmeticException | NumberFormatException e) {
+                return true;
+            }
+        } else {
+            nanos = 0;
+        }
+
+        if (TextUtils.isEmpty(recipient)) {
+            presentFragment(new WalletActivity());
+        } else if (recipient.startsWith("@")) {
+            final String username = recipient.substring(1);
+            if (TextUtils.isEmpty(username)) return true;
+            final TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+            req.username = username;
+            init();
+            setRequestId(getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                done();
+                if (response instanceof TLRPC.TL_contacts_resolvedPeer) {
+                    final TLRPC.TL_contacts_resolvedPeer resolved = (TLRPC.TL_contacts_resolvedPeer) response;
+                    getMessagesController().putUsers(resolved.users, false);
+                    getMessagesController().putChats(resolved.chats, false);
+                    final TLRPC.User user = getMessagesController().getUser(resolved.peer.user_id);
+                    if (user != null) {
+                        presentFragment(new WalletSendEnterAmount(user).setAmount(nanos).setComment(text, textEncrypted).setAllowOpenChat());
+                    }
+                } else if (error != null) {
+                    getBulletinFactory().showForError(error);
+                }
+            })));
+        } else {
+            if (!WalletEngine2.isValidRecipientAddress(recipient)) return true;
+            presentFragment(new WalletSendEnterAmount(recipient).setAmount(nanos).setComment(text, textEncrypted).setAllowOpenChat());
+        }
+        return true;
+    }
+
+    private static String limitWalletComment(String text) {
+        if (text == null) return null;
+        final byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        // Match the UTF-8 byte limit in WalletSendEnterAmount's comment dialog.
+        int length = 960;
+        if (bytes.length <= length) return text;
+        while ((bytes[length] & 0xC0) == 0x80) {
+            length--;
+        }
+        return new String(bytes, 0, length, StandardCharsets.UTF_8);
+    }
+
+    private static Uri parseTonConnectStartApp(String startapp) {
+        if (startapp == null || !startapp.startsWith("tonconnect-")) return null;
+        final String query = startapp.substring("tonconnect-".length())
+            .replace("--", "%")
+            .replace("__", "=")
+            .replace("-", "&")
+            .replace("%5F", "_")
+            .replace("%2D", "-")
+            .replace("%2E", ".");
+        return Uri.parse("tc://connect?" + query);
+    }
+
+    private boolean handleTon(Uri uri) {
+        if (!getMessagesController().config.walletAvailable.get()) return false;
+        uri = normalizeTgUri(uri);
+
+        final List<String> _segments = uri.getPathSegments();
+        if (_segments == null) return false;
+        final ArrayList<String> segments = new ArrayList<>(_segments);
+        final String authority = uri.getAuthority();
+        if (!TextUtils.isEmpty(authority))
+            segments.add(0, authority);
+        if (segments.isEmpty()) return false;
+
+        final String first = segments.get(0);
+        final String second = segments.size() > 1 ? segments.get(1) : null;
+
+        if ("transfer".equalsIgnoreCase(first)) {
+            final String address = second;
+            if (segments.size() != 2 || !WalletEngine2.isValidRecipientAddress(address)) return true;
+            Long amount = null;
+            try {
+                amount = Long.parseLong(uri.getQueryParameter("amount"));
+            } catch (Throwable e) {}
+            String text = uri.getQueryParameter("text");
+            if (TextUtils.isEmpty(text))
+                text = uri.getQueryParameter("comment");
+            text = limitWalletComment(text);
+            final boolean text_encrypted = uri.getBooleanQueryParameter("encrypted", false);
+            try {
+                final WalletSendEnterAmount fragment = new WalletSendEnterAmount(address);
+                if (amount != null && amount > 0) {
+                    fragment.setAmount(amount);
+                }
+                if (!TextUtils.isEmpty(text)) {
+                    fragment.setComment(text, text_encrypted);
+                }
+                fragment.setAllowOpenChat();
+                presentFragment(fragment);
+                return true;
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isTonConnectReturnTarget(String target) {
+        if ("back".equals(target) || "none".equals(target)) return true;
+        try {
+            java.net.URI uri = new java.net.URI(target);
+            String scheme = uri.getScheme();
+            if (scheme == null || uri.getRawSchemeSpecificPart().isEmpty()) return false;
+            switch (scheme.toLowerCase(java.util.Locale.ROOT)) {
+                case "javascript": case "data": case "file": case "content": case "intent": case "tc":
+                    return false;
+                case "http": case "https":
+                    return uri.getHost() != null && uri.getRawUserInfo() == null;
+                default:
+                    return true;
+            }
+        } catch (java.net.URISyntaxException e) {
+            return false;
+        }
+    }
+
+    private void returnFromTonConnect(String target) {
+        if (activity.isFinishing() || activity.isDestroyed() || "none".equals(target)) return;
+        if ("back".equals(target)) {
+            if (isExternalIntent) activity.moveTaskToBack(true);
+        } else {
+            Browser.openUrlInSystemBrowser(activity, target);
+        }
+    }
+
+    private Runnable tonConnectRetry;
+    private boolean tonConnectCancelled;
+
+    private boolean canOpenTonConnectTransaction() {
+        return !tonConnectCancelled && !activity.isFinishing() && !activity.isDestroyed()
+                && LaunchActivity.isResumed && !SharedConfig.appLocked
+                && !SharedConfig.isWaitingForPasscodeEnter
+                && UserConfig.selectedAccount == currentAccount;
+    }
+
+    private void requestTonConnectTransaction(String dappClientId, String traceId, String returnTo, int attempt) {
+        if (tonConnectCancelled || activity.isFinishing() || activity.isDestroyed()) {
+            done();
+            return;
+        }
+        TL_wallet.tonConnectGetPending request = new TL_wallet.tonConnectGetPending();
+        request.dapp_client_id = dappClientId;
+        setRequestId(getConnectionsManager().sendRequestTyped(request, AndroidUtilities::runOnUIThread, (pending, error) -> {
+            currentRequestId = -1;
+            if (tonConnectCancelled || activity.isFinishing() || activity.isDestroyed()) {
+                done();
+                return;
+            }
+            if (error != null) {
+                done();
+                if (canOpenTonConnectTransaction()) getBulletinFactory().showForError(error);
+                return;
+            }
+            if (pending != null && pending.session != null && !pending.session.closed
+                    && !pending.session.closing && !pending.session.pending
+                    && dappClientId.equals(pending.session.dapp_client_id)) {
+                for (TL_wallet.tonConnectRequest item : pending.requests) {
+                    if (traceId.equals(item.trace_id) && item.session_id == pending.session.id
+                            && item.expires > getConnectionsManager().getCurrentTime()) {
+                        if (!canOpenTonConnectTransaction()) break;
+                        final BaseFragment fragment = getLastFragment();
+                        if (fragment == null || fragment.getContext() == null) break;
+                        done();
+                        GramWalletTonConnect.openTransactionRequest(activity, currentAccount, item.session_id,
+                                item.msg_id, fragment.getResourceProvider(), () -> {
+                                    if (canOpenTonConnectTransaction()) returnFromTonConnect(returnTo);
+                                });
+                        return;
+                    }
+                }
+            }
+            // The browser can launch the wallet before the bridge delivers its request.
+            if (attempt < 10) {
+                tonConnectRetry = () -> requestTonConnectTransaction(dappClientId, traceId, returnTo, attempt + 1);
+                AndroidUtilities.runOnUIThread(tonConnectRetry, 500);
+            } else {
+                done();
+                if (canOpenTonConnectTransaction()) {
+                    BulletinFactory.showError(LocaleController.getString(R.string.WalletTonConnectRequestUnavailable));
+                }
+            }
+        }));
+    }
+
+    private boolean handleTc(Uri uri) {
+        uri = normalizeTgUri(uri);
+
+        final List<String> _segments = uri.getPathSegments();
+        if (_segments == null) return false;
+        final ArrayList<String> segments = new ArrayList<>(_segments);
+        final String authority = uri.getAuthority();
+        if (!TextUtils.isEmpty(authority))
+            segments.add(0, authority);
+        final boolean isConnect = segments.isEmpty() || "connect".equalsIgnoreCase(segments.get(0));
+
+        if (isConnect) {
+            final String dappClientId, manifestUrl, requestJson, traceId, embeddedRequest, returnTo;
+            try {
+                if (!"2".equals(uri.getQueryParameter("v"))) return false;
+                dappClientId = uri.getQueryParameter("id");
+                final String r = uri.getQueryParameter("r");
+                requestJson = r;
+                traceId = uri.getQueryParameter("trace_id");
+                embeddedRequest = uri.getQueryParameter("e");
+                String ret = uri.getQueryParameter("ret");
+                returnTo = ret == null || !isTonConnectReturnTarget(ret) ? "back" : ret;
+                if (r == null) {
+                    if (isEmpty(dappClientId) || isEmpty(traceId)) return false;
+                    init();
+                    requestTonConnectTransaction(dappClientId, traceId, returnTo, 0);
+                    return true;
+                }
+                final JSONObject rObject = new JSONObject(r);
+                manifestUrl = rObject.getString("manifestUrl");
+            } catch (Exception e) {
+                FileLog.e(e);
+                return false;
+            }
+
+            init();
+            final GramWallet wallet = GramWallet.getInstance(currentAccount);
+            wallet.whenReady(() -> {
+                wallet.tonConnect.createSession(dappClientId, manifestUrl, requestJson, traceId, embeddedRequest, (session, error) -> {
+                    done();
+                    if (session == null) {
+                        BulletinFactory.showError(error == null ? LocaleController.getString(R.string.WalletTonConnectSessionResponseEmpty) : error);
+                        return;
+                    }
+                    final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                    if (fragment == null || fragment.getContext() == null) return;
+                    GramWalletTonConnect.showConnectSheet(
+                        fragment.getContext(),
+                        currentAccount,
+                        session,
+                        fragment.getResourceProvider(),
+                        () -> returnFromTonConnect(returnTo)
+                    );
+                });
+            });
+        }
+
+        return false;
+    }
+
     private void setRequestId(int requestId) {
         currentRequestId = requestId;
     }
@@ -1477,6 +1775,8 @@ public class LinkManager {
     }
 
     private void cancel() {
+        tonConnectCancelled = true;
+        if (tonConnectRetry != null) AndroidUtilities.cancelRunOnUIThread(tonConnectRetry);
         if (currentRequestId >= 0) {
             getConnectionsManager().cancelRequest(currentRequestId, true);
             currentRequestId = -1;

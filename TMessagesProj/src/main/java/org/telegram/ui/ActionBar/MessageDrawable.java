@@ -33,7 +33,7 @@ public class MessageDrawable extends Drawable {
 
     private Shader gradientShader;
     private int currentBackgroundHeight;
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    public Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint selectedPaint;
     private int currentColor;
     private int currentGradientColor1;
@@ -64,6 +64,8 @@ public class MessageDrawable extends Drawable {
 
     public static MotionBackgroundDrawable[] motionBackground = new MotionBackgroundDrawable[3];
 
+    public Integer overrideColor = null;
+    public boolean shadow = true;
     private int[] currentShadowDrawableRadius = new int[]{-1, -1, -1, -1};
     private Bitmap[] shadowDrawableBitmap = new Bitmap[4];
     private Drawable[] shadowDrawable = new Drawable[4];
@@ -189,7 +191,13 @@ public class MessageDrawable extends Drawable {
         int gradientColor2;
         int gradientColor3;
         boolean animatedGradient;
-        if (isOut) {
+        if (overrideColor != null) {
+            color = overrideColor;
+            gradientColor1 = 0;
+            gradientColor2 = 0;
+            gradientColor3 = 0;
+            animatedGradient = false;
+        } else if (isOut) {
             color = getColor(isSelected ? Theme.key_chat_outBubbleSelected : Theme.key_chat_outBubble);
             gradientColor1 = getCurrentColor(Theme.key_chat_outBubbleGradient1);
             gradientColor2 = getCurrentColor(Theme.key_chat_outBubbleGradient2);
@@ -347,13 +355,15 @@ public class MessageDrawable extends Drawable {
             idx2 = 0;
         }
         int color;
-        if (isSelected) {
+        if (overrideColor != null) {
+            color = overrideColor;
+        } else if (isSelected) {
             color = getColor(isOut ? Theme.key_chat_outBubbleSelected : Theme.key_chat_inBubbleSelected);
         } else {
             color = getColor(isOut ? Theme.key_chat_outBubble : Theme.key_chat_inBubble);
         }
 
-        boolean drawWithShadow = gradientShader == null && !isSelected && !isCrossfadeBackground;
+        boolean drawWithShadow = shadow && gradientShader == null && !isSelected && !isCrossfadeBackground;
         int shadowColor = getColor(isOut ? Theme.key_chat_outBubbleShadow : Theme.key_chat_inBubbleShadow);
         if (lastDrawWithShadow != drawWithShadow || currentBackgroundDrawableRadius[idx2][idx] != newRad || (drawWithShadow && shadowDrawableColor[idx] != shadowColor) || backgroundDrawableColor[idx2][idx] != color) {
             currentBackgroundDrawableRadius[idx2][idx] = newRad;
@@ -549,7 +559,7 @@ public class MessageDrawable extends Drawable {
 
     public void draw(Canvas canvas, Paint paintToUse) {
         Rect bounds = getBounds();
-        if (paintToUse == null && gradientShader == null && overrideRoundRadius == 0 && overrideRounding <= 0) {
+        if (paintToUse == null && paint.getStyle() == Paint.Style.FILL && gradientShader == null && overrideRoundRadius == 0 && overrideRounding <= 0) {
             Drawable background = getBackgroundDrawable();
             if (background != null) {
                 background.setBounds(bounds);

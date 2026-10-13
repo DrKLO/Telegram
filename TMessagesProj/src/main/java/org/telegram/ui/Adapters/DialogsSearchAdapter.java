@@ -849,6 +849,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         recentSearchObject.date = (int) (System.currentTimeMillis() / 1000);
         filterRecent(lastSearchText != null ? lastSearchText.trim() : null);
         notifyDataSetChanged();
+        putRecentSearch(currentAccount, did);
+    }
+
+    public static void putRecentSearch(int currentAccount, long did) {
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             try {
                 SQLitePreparedStatement state = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("REPLACE INTO search_recent VALUES(?, ?)");
@@ -857,6 +861,16 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 state.bindInteger(2, (int) (System.currentTimeMillis() / 1000));
                 state.step();
                 state.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public static void clearRecentSearch(int currentAccount) {
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            try {
+                MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM search_recent WHERE 1").stepThis().dispose();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -893,6 +907,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         final StringBuilder finalQueryFilter = queryFilter;
         filterRecent(lastSearchText != null ? lastSearchText.trim() : null);
         notifyDataSetChanged();
+        if (!searchWas) {
+            clearRecentSearch(currentAccount);
+            return;
+        }
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             try {
                 finalQueryFilter.insert(0, "DELETE FROM search_recent WHERE ");

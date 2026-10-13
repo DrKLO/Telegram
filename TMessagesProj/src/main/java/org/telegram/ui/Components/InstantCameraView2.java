@@ -758,10 +758,16 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             FileLog.e(error);
             if (upload != null) upload.release(true);
             upload = null;
-            NotificationCenter.getInstance(currentAccount).postNotificationName(
+            MediaController.getInstance().requestRecordAudioFocus(false);
+            if (startedNotificationSent) {
+                postRecordStopped(6);
+            } else {
+                NotificationCenter.getInstance(currentAccount).postNotificationName(
                     NotificationCenter.recordStartError,
                     recordingGuid
-            );
+                );
+            }
+            startAnimation(false, false);
         }
     };
 

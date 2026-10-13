@@ -31,6 +31,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
@@ -603,6 +604,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     protected float xOffset;
 
     private boolean drawCount;
+    private boolean drawGramTransfer;
+    private int gramTransferLeft;
+    private LayerDrawable gramTransferDrawable;
+    private int gramTransferColor;
     private boolean drawCount2 = true;
     private int countTop;
     private int countLeft;
@@ -2625,6 +2630,38 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             drawMention = false;
         }
 
+        drawGramTransfer = !drawError && customDialog == null && !isFolderCell() && !isForumCell() && !isDialogFolder()
+            && (unreadCount > 0 || markUnread)
+            && message != null && !message.isOutOwner()
+            && message.messageOwner.action instanceof TLRPC.TL_messageActionGramTransfer;
+        if (drawGramTransfer) {
+            int badgesWidth = 0;
+            if (drawCount && drawCount2) {
+                badgesWidth += countWidth + dp(BADGE_GAP);
+            }
+            if (drawMention && drawCount2) {
+                badgesWidth += mentionWidth + dp(BADGE_GAP);
+            }
+            if (drawReactionMention) {
+                badgesWidth += dp(25);
+            }
+            if (drawPollVotesMention) {
+                badgesWidth += dp(25);
+            }
+            if (openBot) {
+                badgesWidth += (int) openButtonRect.width() + dp(4);
+            }
+            gramTransferLeft = LocaleController.isRTL ? dp(BADGE_MARGIN) + badgesWidth
+                : getMeasuredWidth() - dp(BADGE_MARGIN + 28) - badgesWidth;
+            messageWidth -= dp(32);
+            if (LocaleController.isRTL) {
+                messageLeft += dp(32);
+                typingLeft += dp(32);
+                buttonLeft += dp(32);
+                messageNameLeft += dp(32);
+            }
+        }
+
         if (checkMessage) {
             if (messageString == null) {
                 messageString = "";
@@ -4596,6 +4633,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     openButtonText.draw(canvas, openButtonRect.left + dp(13), openButtonRect.centerY(), Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider), 1.0f);
                 }
                 canvas.restore();
+            }
+
+            if (drawGramTransfer) {
+                if (gramTransferDrawable == null) {
+                    gramTransferDrawable = (LayerDrawable) ContextCompat.getDrawable(getContext(), R.drawable.dialog_gram_transfer).mutate();
+                }
+                final int color = Theme.getColor(isCounterMuted()
+                    ? Theme.key_chats_unreadCounterMuted : Theme.key_chats_unreadCounter, resourcesProvider);
+                if (gramTransferColor != color) {
+                    gramTransferDrawable.getDrawable(0).setColorFilter(new PorterDuffColorFilter(gramTransferColor = color, PorterDuff.Mode.SRC_IN));
+                }
+                final int top = countTop + (dp(BADGE_SIZE) - dp(28)) / 2;
+                gramTransferDrawable.setBounds(gramTransferLeft, top, gramTransferLeft + dp(28), top + dp(28));
+                gramTransferDrawable.setAlpha((int) ((1.0f - reorderIconProgress) * 255));
+                gramTransferDrawable.draw(canvas);
             }
 
             if (thumbsCount > 0 && updateHelper.typingProgres != 1f) {

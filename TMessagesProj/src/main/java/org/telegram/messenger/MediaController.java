@@ -71,11 +71,9 @@ import android.webkit.MimeTypeMap;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.exifinterface.media.ExifInterface;
 
 import androidx.media3.common.C;
-import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.common.Player;
 import androidx.media3.extractor.jpeg.MotionPhotoDescription;
@@ -801,7 +799,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     } else if (orientation.second == 2) {
                         matrix.postScale(1, -1);
                     }
-                    b = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                    int width1 = bitmap.getWidth();
+                    int height1 = bitmap.getHeight();
+                    b = Bitmap.createBitmap(bitmap, 0, 0, width1, height1, matrix, true);
                     bitmap.recycle();
                 } else {
                     b = bitmap;

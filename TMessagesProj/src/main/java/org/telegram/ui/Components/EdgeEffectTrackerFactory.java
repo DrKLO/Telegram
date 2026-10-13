@@ -25,6 +25,13 @@ public final class EdgeEffectTrackerFactory extends RecyclerView.EdgeEffectFacto
         listeners.remove(listener);
     }
 
+    /** Current normalized stretch distance; legacy glow effects have no stretch distance. */
+    public float getDistance(@EdgeDirection int direction) {
+        final TrackingEdgeEffect edge = edgeEffects[direction];
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && edge != null && !edge.isFinished()
+                ? edge.getDistance() : 0.0f;
+    }
+
     public boolean hasVisibleEdges() {
         for (TrackingEdgeEffect edgeEffect : edgeEffects) {
             if (edgeEffect != null && edgeEffect.isVisible()) {

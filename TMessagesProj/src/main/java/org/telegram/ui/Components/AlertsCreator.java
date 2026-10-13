@@ -2518,7 +2518,7 @@ public class AlertsCreator {
         final AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
 
         final CheckBoxCell[] cell = new CheckBoxCell[1];
-        final boolean[] value = new boolean[1];
+        final boolean[] value = new boolean[] { false };
 
         final TextView messageTextView = new TextView(context) {
             @Override

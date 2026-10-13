@@ -118,7 +118,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
 
-        text = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
+        text = new AnimatedTextView.AnimatedTextDrawable(true, true, false, false, true);
         text.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
         text.setCallback(this);
         text.setTextSize(dp(14));

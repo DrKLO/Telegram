@@ -2979,4 +2979,113 @@ public class TL_update {
             message.serializeToStream(stream);
         }
     }
+
+    public static class TL_updateWalletState extends TLRPC.Update {
+        public static final int constructor = 0x6ac3f2aa;
+
+        public TL_wallet.WalletState state;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            state = TL_wallet.WalletState.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            state.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_updateWalletTonConnectSession extends TLRPC.Update {
+        public static final int constructor = 0x50a38e0e;
+
+        public TL_wallet.tonConnectSession session;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            session = TL_wallet.tonConnectSession.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            session.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_updateWalletTonConnectPendingDisconnect extends TLRPC.Update {
+        public static final int constructor = 0xd1ee8199;
+
+        public ArrayList<Long> session_ids = new ArrayList<>();
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            session_ids = Vector.deserializeLong(stream, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            Vector.serializeLong(stream, session_ids);
+        }
+    }
+
+    public static class TL_updateSentWalletTransaction extends TLRPC.Update {
+        public static final int constructor = 0xb1434d4a;
+
+        public boolean gasless;
+        public String msg_hash;
+        public TL_wallet.walletTransaction transaction;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            int flags = stream.readInt32(exception);
+            gasless = (flags & 1) != 0;
+            msg_hash = stream.readString(exception);
+            if ((flags & 2) != 0) {
+                transaction = TL_wallet.walletTransaction.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32((gasless ? 1 : 0) | (transaction != null ? 2 : 0));
+            stream.writeString(msg_hash);
+            if (transaction != null) transaction.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_updateWalletGaslessInfo extends TLRPC.Update {
+        public static final int constructor = 0xa8ae1cac;
+
+        public boolean available;
+        public int left;
+        public int reset_at;
+        public long min_amount;
+        public String relayer_address;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            int flags = stream.readInt32(exception);
+            available = (flags & 1) != 0;
+            left = stream.readInt32(exception);
+            reset_at = stream.readInt32(exception);
+            min_amount = stream.readInt64(exception);
+            relayer_address = stream.readString(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            int flags = 0;
+            flags = available ? 1 : 0;
+            stream.writeInt32(flags);
+            stream.writeInt32(left);
+            stream.writeInt32(reset_at);
+            stream.writeInt64(min_amount);
+            stream.writeString(relayer_address);
+        }
+    }
 }

@@ -231,6 +231,14 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asButtonLoadingValue(int id, CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
+        i.id = id;
+        i.text = text;
+        i.locked = true;
+        return i;
+    }
+
     public static UItem asButton(int id, int iconResId, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
         i.id = id;

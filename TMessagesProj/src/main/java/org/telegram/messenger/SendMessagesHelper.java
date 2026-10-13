@@ -1711,6 +1711,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
             return false;
         }
+        if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGramTransfer) {
+            // A chat retry must never turn a wallet operation into messages.sendMessage
+            // or sign another transfer. Interrupted submissions need wallet-side resolution.
+            if (unsent) completeSendingGramTransfer(messageObject, null, false);
+            return false;
+        }
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageEncryptedAction) {
             int enc_id = DialogObject.getEncryptedChatId(messageObject.getDialogId());
             TLRPC.EncryptedChat encryptedChat = getMessagesController().getEncryptedChat(enc_id);
@@ -1850,6 +1856,158 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             arrayList.add(messageObject);
             sendMessage(arrayList, did, true, false, true, 0, 0, null, -1, payStars, monoForumPeerId, suggestionParams);
         }
+    }
+
+    /** Creates the chat placeholder; the wallet RPC remains owned by GramWallet. */
+    public MessageObject createSendingGramTransfer(TLRPC.User user, String address, long amount,
+                                                   String comment, boolean commentEncrypted, boolean commentEncryptedPreparing, long randomId) {
+        TLRPC.TL_messageService message = new TLRPC.TL_messageService();
+        message.local_id = message.id = getUserConfig().getNewMessageId();
+        message.random_id = randomId;
+        message.dialog_id = user.id;
+        message.out = true;
+        message.unread = true;
+        message.from_id = new TLRPC.TL_peerUser();
+        message.from_id.user_id = getUserConfig().getClientUserId();
+        message.flags |= 256;
+        message.peer_id = new TLRPC.TL_peerUser();
+        message.peer_id.user_id = user.id;
+        message.date = getConnectionsManager().getCurrentTime();
+        message.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
+        TLRPC.TL_messageActionGramTransfer action = new TLRPC.TL_messageActionGramTransfer();
+        action.amount = amount;
+        action.peer_address = address;
+        action.transaction_id = "";
+        action.comment = comment;
+        action.comment_encrypted = commentEncrypted;
+        action.comment_encrypted_preparing = commentEncryptedPreparing;
+        message.action = action;
+        getUserConfig().saveConfig(false);
+
+        MessageObject object = new MessageObject(currentAccount, message, false, true);
+        object.wasJustSent = true;
+        ArrayList<TLRPC.Message> messages = new ArrayList<>();
+        messages.add(message);
+        getMessagesStorage().putMessages(messages, false, true, false, 0, 0, 0);
+        ArrayList<MessageObject> objects = new ArrayList<>();
+        objects.add(object);
+        getMessagesController().updateInterfaceWithMessages(user.id, objects, 0);
+        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        putToSendingMessages(message, false);
+        return object;
+    }
+
+    public void updateSendingGramTransferComment(MessageObject object, String comment, boolean encrypted) {
+        if (object == null || !(object.messageOwner.action instanceof TLRPC.TL_messageActionGramTransfer)) return;
+        final TLRPC.TL_messageActionGramTransfer action = (TLRPC.TL_messageActionGramTransfer) object.messageOwner.action;
+        action.comment = comment;
+        action.comment_encrypted = encrypted;
+        action.comment_encrypted_preparing = false;
+        object.forceUpdate = true;
+        final ArrayList<TLRPC.Message> messages = new ArrayList<>();
+        messages.add(object.messageOwner);
+        getMessagesStorage().putMessages(messages, false, true, false, 0, 0, 0);
+        final ArrayList<MessageObject> objects = new ArrayList<>();
+        objects.add(object);
+        getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, object.getDialogId(), objects);
+    }
+
+    public void completeSendingGramTransfer(MessageObject object, TLRPC.Updates updates, boolean success) {
+        if (object == null) return;
+        final long dialogId = object.getDialogId();
+        final long randomId = object.messageOwner.random_id;
+        int mappedId = 0;
+        TLRPC.Message serverMessage = null;
+        if (updates != null) {
+            for (TLRPC.Update update : updates.updates) {
+                if (update instanceof TL_update.TL_updateMessageID
+                        && ((TL_update.TL_updateMessageID) update).random_id == randomId) {
+                    mappedId = ((TL_update.TL_updateMessageID) update).id;
+                    break;
+                }
+            }
+            for (int i = 0; i < updates.updates.size(); ++i) {
+                TLRPC.Update update = updates.updates.get(i);
+                if (!(update instanceof TL_update.TL_updateNewMessage)) continue;
+                TL_update.TL_updateNewMessage newMessage = (TL_update.TL_updateNewMessage) update;
+                TLRPC.Message message = newMessage.message;
+                if (!(message.action instanceof TLRPC.TL_messageActionGramTransfer) || !message.out
+                        || DialogObject.getPeerDialogId(message.peer_id) != dialogId
+                        || mappedId != 0 && message.id != mappedId) continue;
+                serverMessage = message;
+                updates.updates.remove(i);
+                Utilities.stageQueue.postRunnable(() -> getMessagesController().processNewDifferenceParams(
+                        -1, newMessage.pts, -1, newMessage.pts_count));
+                break;
+            }
+            if (serverMessage != null) {
+                for (int i = updates.updates.size() - 1; i >= 0; --i) {
+                    TLRPC.Update update = updates.updates.get(i);
+                    if (update instanceof TL_update.TL_updateMessageID
+                            && ((TL_update.TL_updateMessageID) update).random_id == randomId) {
+                        updates.updates.remove(i);
+                    }
+                }
+            }
+        }
+
+        final int oldId = object.messageOwner.local_id < 0 ? object.messageOwner.local_id : object.getId();
+        if (serverMessage == null) {
+            if (object.getId() > 0) {
+                processSentMessage(oldId);
+                removeFromSendingMessages(oldId, false);
+                return;
+            }
+            if (!success && mappedId == 0) {
+                TLRPC.TL_messageService failed = new TLRPC.TL_messageService();
+                failed.id = oldId;
+                failed.dialog_id = dialogId;
+                getMessagesStorage().markMessageAsSendError(failed, 0);
+                object.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
+                object.forceUpdate = true;
+                getNotificationCenter().postNotificationName(NotificationCenter.messageSendError, oldId);
+            } else {
+                getMessagesStorage().updateMessageStateAndId(randomId, dialogId, oldId, oldId,
+                        object.messageOwner.date, true, 0, 0);
+                object.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
+                object.forceUpdate = true;
+                getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByAck, oldId);
+            }
+            processSentMessage(oldId);
+            removeFromSendingMessages(oldId, false);
+            return;
+        }
+
+        final TLRPC.Message sentMessage = serverMessage;
+        sentMessage.dialog_id = dialogId;
+        // Storage prefers local_id over id; save under the remapped server ID.
+        sentMessage.local_id = 0;
+        sentMessage.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
+        Integer readMax = getMessagesController().dialogs_read_outbox_max.get(dialogId);
+        if (readMax == null) {
+            readMax = getMessagesStorage().getDialogReadMax(true, dialogId);
+            getMessagesController().dialogs_read_outbox_max.put(dialogId, readMax);
+        }
+        sentMessage.unread = readMax < sentMessage.id;
+        final ArrayList<TLRPC.Message> messages = new ArrayList<>();
+        messages.add(sentMessage);
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            // Always use the original negative ID, even if updateMessageID arrived first.
+            getMessagesStorage().updateMessageStateAndId(randomId, dialogId, oldId, sentMessage.id,
+                    sentMessage.date, false, 0, 0);
+            getMessagesStorage().putMessages(messages, true, false, false, 0, 0, 0);
+            AndroidUtilities.runOnUIThread(() -> {
+                final int visibleId = object.getId();
+                object.messageOwner = sentMessage;
+                object.forceUpdate = true;
+                getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer,
+                        visibleId, sentMessage.id, sentMessage, dialogId, 0L, 0, false);
+                getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer2,
+                        visibleId, sentMessage.id, sentMessage, dialogId, 0L, 0, false);
+                processSentMessage(oldId);
+                removeFromSendingMessages(oldId, false);
+            });
+        });
     }
 
     public void sendScreenshotMessage(TLRPC.User user, int messageId, TLRPC.Message resendMessage) {

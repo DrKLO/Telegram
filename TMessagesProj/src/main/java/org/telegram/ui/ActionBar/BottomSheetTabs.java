@@ -430,6 +430,8 @@ public class BottomSheetTabs extends FrameLayout {
         TLRPC.User user = MessagesController.getInstance(tab.props.currentAccount).getUser(tab.props.botId);
         if (user != null) {
             botName = ContactsController.formatName(user.first_name, user.last_name);
+        } else if (tab.props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+            botName = tab.props.buttonText;
         }
 
         final boolean[] clicked = new boolean[] { false };
@@ -1021,6 +1023,9 @@ public class BottomSheetTabs extends FrameLayout {
                 return title;
             }
             if (props == null) return "";
+            if (props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+                return props.buttonText;
+            }
             TLRPC.User user = MessagesController.getInstance(props.currentAccount).getUser(props.botId);
             return UserObject.getUserName(user);
         }

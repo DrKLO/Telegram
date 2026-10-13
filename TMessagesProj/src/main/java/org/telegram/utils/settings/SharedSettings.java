@@ -21,7 +21,7 @@ public final class SharedSettings {
         EnumSetting.of("round_video_frame_rate", RoundVideoSession.FrameRate.FPS_30);
 
     public static final IntSetting roundVideoVideoBitrate =
-        IntSetting.of("round_video_video_bitrate", 1_000_000);
+        IntSetting.of("round_video_video_bitrate", 1_200_000);
 
     public static final BooleanSetting roundVideoComposition =
         BooleanSetting.of("round_video_composition", true);

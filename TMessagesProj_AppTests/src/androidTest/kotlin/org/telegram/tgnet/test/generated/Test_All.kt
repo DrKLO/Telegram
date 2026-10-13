@@ -4,9 +4,8 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
-import org.telegram.tgnet.model.TlGen_Object
-import org.telegram.tgnet.model.TlGen_Vector
 import org.telegram.tgnet.test.BaseSchemeTest
+import org.telegram.tgnet.tl.TL_bots
 
 @RunWith(Enclosed::class)
 public class Test_All {
@@ -359,7 +358,7 @@ public class Test_All {
     @Test
     public fun test_000049_BotVerification_TL_botVerification() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_BotVerification.TL_botVerification::class,
-          org.telegram.tgnet.tl.TL_bots.botVerification::TLdeserialize, null)
+          TL_bots.BotVerification::TLdeserialize, null)
 
     }
 

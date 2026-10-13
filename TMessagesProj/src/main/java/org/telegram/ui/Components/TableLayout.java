@@ -57,6 +57,7 @@ public class TableLayout extends View {
     public static final int ALIGN_MARGINS = 1;
 
     static final int MAX_SIZE = 100000;
+    private static final int MAX_GRID_COUNT = 1024;
     static final int UNINITIALIZED_HASH = 0;
     private TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper;
 
@@ -846,6 +847,9 @@ public class TableLayout extends View {
         final boolean horizontal = (mOrientation == HORIZONTAL);
         final Axis axis = horizontal ? mHorizontalAxis : mVerticalAxis;
         final int count = (axis.definedCount != UNDEFINED) ? axis.definedCount : 0;
+        if (count < 0 || count > MAX_GRID_COUNT) {
+            handleInvalidParams("Table grid count out of bounds");
+        }
 
         int major = 0;
         int minor = 0;
@@ -858,12 +862,18 @@ public class TableLayout extends View {
             final Interval majorRange = majorSpec.span;
             final boolean majorWasDefined = majorSpec.startDefined;
             final int majorSpan = majorRange.size();
+            if (majorSpan <= 0 || majorSpan > MAX_GRID_COUNT) {
+                handleInvalidParams("Table row or column span out of bounds");
+            }
             if (majorWasDefined) {
                 major = majorRange.min;
             }
 
             final Spec minorSpec = horizontal ? lp.columnSpec : lp.rowSpec;
             final Interval minorRange = minorSpec.span;
+            if (minorRange.size() <= 0 || minorRange.size() > MAX_GRID_COUNT) {
+                handleInvalidParams("Table row or column span out of bounds");
+            }
             final boolean minorWasDefined = minorSpec.startDefined;
             final int minorSpan = clip(minorRange, minorWasDefined, count);
             if (minorWasDefined) {
@@ -1309,7 +1319,11 @@ public class TableLayout extends View {
         }
 
         public int getCount() {
-            return max(definedCount, getMaxIndex());
+            int count = max(definedCount, getMaxIndex());
+            if (count > MAX_GRID_COUNT) {
+                handleInvalidParams("Table grid count out of bounds");
+            }
+            return count;
         }
 
         public void setCount(int count) {

@@ -7,7 +7,9 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.UserConfig;
 import org.telegram.utils.settings.SharedSettings;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
@@ -48,19 +50,13 @@ public abstract class InstantCameraViewBase extends FrameLayout {
             Theme.ResourcesProvider resourcesProvider,
             boolean isNewDesign
     ) {
-        return SharedSettings.roundVideoCamera2Enabled.get()
+        final boolean useCamera2Impl = SharedSettings.roundVideoCamera2Enabled.isSet() ?
+            SharedSettings.roundVideoCamera2Enabled.get() :
+            AppGlobalConfig.getInstance(UserConfig.selectedAccount).roundVideoRecorder2Allowed.get();
+
+        return useCamera2Impl
                 ? new InstantCameraView2(context, delegate, resourcesProvider, isNewDesign)
                 : new InstantCameraView(context, delegate, resourcesProvider, isNewDesign);
-    }
-
-    /** Selects the implementation used by subsequently created views. */
-    public static void setUseCamera2Implementation(boolean enabled) {
-        SharedSettings.roundVideoCamera2Enabled.set(enabled);
-    }
-
-    /** Returns whether subsequently created views use the Camera2 implementation. */
-    public static boolean isUsingCamera2Implementation() {
-        return SharedSettings.roundVideoCamera2Enabled.get();
     }
 
     /** Sets the host animation callback. */

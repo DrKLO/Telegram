@@ -27,6 +27,7 @@ import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLParseException;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_wallet;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -53,6 +54,55 @@ public class BillingUtilities {
                 currencyExpMap.put(key, currency.optInt(CURRENCY_EXP));
             }
             in.close();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static void fillTitles(TL_wallet.currencyRates rates) {
+        if (rates == null || rates.rates == null) {
+            return;
+        }
+        try (InputStream in = ApplicationLoader.applicationContext.getAssets().open(CURRENCY_FILE)) {
+            JSONObject currencies = new JSONObject(new String(Util.toByteArray(in), Charsets.UTF_8));
+            for (TL_wallet.currencyRate rate : rates.rates) {
+                if (rate == null) {
+                    continue;
+                }
+                JSONObject currency = currencies.optJSONObject(rate.currency);
+                if (currency == null) {
+                    rate.title = rate.currency;
+                    rate.symbol = rate.currency;
+                    rate.thousandsSeparator = ",";
+                    rate.decimalSeparator = ".";
+                    rate.spaceBetween = true;
+                    rate.exp = 2;
+                    continue;
+                }
+
+                rate.title = currency.optString("title", rate.currency);
+                String nativeSymbol = currency.optString("native", rate.currency);
+                String internationalSymbol = currency.optString("symbol", rate.currency);
+                boolean useInternationalSymbol =
+                        ("$".equals(nativeSymbol) && !"USD".equals(rate.currency)) ||
+                        "kr".equals(nativeSymbol);
+                rate.symbol = (
+                    "AED".equals(rate.currency) ? "\u20C3" :
+                    "GEL".equals(rate.currency) ? "₾" :
+                    useInternationalSymbol ? internationalSymbol : nativeSymbol
+                );
+                rate.thousandsSeparator = currency.optString("thousands_sep", ",");
+                rate.decimalSeparator = currency.optString("decimal_sep", ".");
+                rate.symbolLeft = currency.optBoolean("symbol_left");
+                rate.spaceBetween = currency.optBoolean("space_between");
+                rate.dropZeros = currency.optBoolean("drop_zeros");
+                rate.exp = currency.optInt(CURRENCY_EXP, 2);
+                if ("AED".equals(rate.currency)) {
+                    rate.title = rate.title.replace("United Arab Emirates", "UAE");
+                } else if ("USD".equalsIgnoreCase(rate.currency)) {
+                    rate.title = rate.title.replace("United States", "US");
+                }
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }

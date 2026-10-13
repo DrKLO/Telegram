@@ -26,6 +26,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -47,6 +48,8 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CreateBotAlert {
 
@@ -87,6 +90,7 @@ public class CreateBotAlert {
             return;
         }
 
+        final Set<String> allowedBotSuffixes = AppGlobalConfig.getInstance(currentAccount).botAllowedSuffixes.get();
         final BottomSheet.Builder b = new BottomSheet.Builder(context, true, resourcesProvider);
 
         final LinearLayout layout = new LinearLayout(context);
@@ -137,7 +141,6 @@ public class CreateBotAlert {
         usernameLayout.setOrientation(LinearLayout.HORIZONTAL);
         usernameEdit.removeView(usernameEdit.editText);
         usernameEdit.editText.setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
-        usernameEdit.editText.setRightText("bot");
         usernameEdit.editText.setPadding(0, dp(15), dp(42 + 21), dp(15));
         final TextView at = new TextView(context);
         at.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
@@ -154,8 +157,10 @@ public class CreateBotAlert {
         if (suggested_username != null) {
             suggested_username = suggested_username.trim();
         }
-        if (suggested_username != null && suggested_username.toLowerCase().endsWith("bot")) {
-            suggested_username = suggested_username.substring(0, suggested_username.length() - 3);
+        for (String suffix : allowedBotSuffixes) {
+            if (suggested_username != null && suggested_username.toLowerCase().endsWith(suffix)) {
+                suggested_username = suggested_username.substring(0, suggested_username.length() - suffix.length());
+            }
         }
         usernameEdit.setText(suggested_username);
         layout.addView(usernameEdit, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 12, 0, 12, 0));
@@ -201,8 +206,15 @@ public class CreateBotAlert {
         final String[] checking = new String[1];
         final int[] checkingRequestId = new int[] { -1 };
         final int[] shake = new int[] { 4 };
+
+        final Runnable checkRightText = () -> {
+            final String usernameInput = usernameEdit.getText().toString();
+            usernameEdit.editText.setRightText(getSuffixToAdd(usernameInput, allowedBotSuffixes));
+        };
+
         final Runnable checkUsername = () -> {
-            final String username = usernameEdit.getText() + "bot";
+            final String usernameInput = usernameEdit.getText().toString();
+            final String username = usernameInput + getSuffixToAdd(usernameInput, allowedBotSuffixes);
             if (username.length() < 4) {
                 if (checkingRequestId[0] >= 0) {
                     ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingRequestId[0], true);
@@ -354,9 +366,11 @@ public class CreateBotAlert {
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
+                checkRightText.run();
                 checkUsername.run();
             }
         });
+        checkRightText.run();
         if (!TextUtils.isEmpty(suggested_username)) {
             checkUsername.run();
         }
@@ -390,6 +404,15 @@ public class CreateBotAlert {
         });
 
         sheet.show();
+    }
+
+    private static String getSuffixToAdd(String input, Set<String> allowedSuffixes) {
+        for (String suffix : allowedSuffixes) {
+            if (input.endsWith(suffix)) {
+                return "";
+            }
+        }
+        return "bot";
     }
 
     private static SpannableStringBuilder highlightBotFather(Context context, CharSequence c, Runnable onClick, Theme.ResourcesProvider resourcesProvider) {

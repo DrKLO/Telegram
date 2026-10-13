@@ -59,13 +59,13 @@ public class GroupCallMessagesController extends BaseController {
             TLRPC.TL_groupCallMessage result = null;
             try {
                 final byte[] decrypted = groupCallMessageDecrypt(callId, fromId, encrypted);
-                if (decrypted != null) {
+                if (decrypted != null && decrypted.length <= 8192) {
                     final String jsonString = new String(decrypted);
                     final JSONObject jsonObject = new JSONObject(jsonString);
 
                     result = TLRPC.TL_groupCallMessage.TLJsonDeserialize(new TLJsonParser(jsonObject));
                 }
-            } catch (Exception e) {
+            } catch (Exception | StackOverflowError e) {
                 FileLog.e(e);
             }
 

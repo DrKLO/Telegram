@@ -70,6 +70,56 @@ Java_org_telegram_messenger_voip_ConferenceCall_key_1from_1public_1key(JNIEnv *e
     return result.value();
 }
 
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_org_telegram_messenger_voip_ConferenceCall_key_1from_1ecdh(JNIEnv *env, jclass clazz, jlong private_key_id, jlong other_public_key_id) {
+    auto result = tde2e_api::key_from_ecdh(private_key_id, other_public_key_id);
+    if (!result.is_ok()) {
+        java_throw(env, result.error());
+        return 0L;
+    }
+    return result.value();
+}
+
+extern "C"
+JNIEXPORT jbyteArray JNICALL
+Java_org_telegram_messenger_voip_ConferenceCall_decrypt_1message_1for_1one(JNIEnv *env, jclass clazz, jlong symmetric_key_id, jbyteArray encrypted) {
+    jsize encrypted_length = env->GetArrayLength(encrypted);
+    jbyte* encrypted_bytes = env->GetByteArrayElements(encrypted, nullptr);
+    std::string_view view(reinterpret_cast<const char*>(encrypted_bytes), encrypted_length);
+    auto result = tde2e_api::decrypt_message_for_one(symmetric_key_id, view);
+    env->ReleaseByteArrayElements(encrypted, encrypted_bytes, JNI_ABORT);
+    if (!result.is_ok()) {
+        java_throw(env, result.error());
+        return nullptr;
+    }
+    return java_bytes(env, result.value());
+}
+
+extern "C"
+JNIEXPORT jbyteArray JNICALL
+Java_org_telegram_messenger_voip_ConferenceCall_encrypt_1message_1for_1one(JNIEnv *env, jclass clazz, jlong symmetric_key_id, jbyteArray message) {
+    jsize message_length = env->GetArrayLength(message);
+    jbyte* message_bytes = env->GetByteArrayElements(message, nullptr);
+    std::string_view view(reinterpret_cast<const char*>(message_bytes), message_length);
+    auto result = tde2e_api::encrypt_message_for_one(symmetric_key_id, view);
+    env->ReleaseByteArrayElements(message, message_bytes, JNI_ABORT);
+    if (!result.is_ok()) {
+        java_throw(env, result.error());
+        return nullptr;
+    }
+    return java_bytes(env, result.value());
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_telegram_messenger_voip_ConferenceCall_key_1destroy(JNIEnv *env, jclass clazz, jlong key_id) {
+    auto result = tde2e_api::key_destroy(key_id);
+    if (!result.is_ok()) {
+        java_throw(env, result.error());
+    }
+}
+
 jobject java_CallParticipant(JNIEnv* env, tde2e_api::CallParticipant o) {
     const jclass cls = env->FindClass("org/telegram/messenger/voip/ConferenceCall$CallParticipant");
     jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");

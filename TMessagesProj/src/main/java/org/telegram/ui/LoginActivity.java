@@ -4181,13 +4181,25 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 nextPressed = false;
                 if (error == null) {
                     nextCodeParams = params;
-                    nextCodeAuth = (TLRPC.TL_auth_sentCode) response;
-                    if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
-                        nextType = AUTH_TYPE_PHRASE;
-                    } else if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
-                        nextType = AUTH_TYPE_WORD;
+                    if (response instanceof TLRPC.TL_auth_sentCode) {
+                        nextCodeAuth = (TLRPC.TL_auth_sentCode) response;
+                        if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsPhrase) {
+                            nextType = AUTH_TYPE_PHRASE;
+                        } else if (nextCodeAuth.type instanceof TLRPC.TL_auth_sentCodeTypeSmsWord) {
+                            nextType = AUTH_TYPE_WORD;
+                        }
+                        fillNextCodeParams(nextCodeParams, nextCodeAuth);
+                    } else if (response instanceof TLRPC.TL_auth_sentCodePaymentRequired) {
+                        final TLRPC.TL_auth_sentCodePaymentRequired auth = (TLRPC.TL_auth_sentCodePaymentRequired) response;
+                        params.putString("product", auth.store_product);
+                        params.putString("phoneHash", auth.phone_code_hash);
+                        params.putString("support_email_address", auth.support_email_address);
+                        params.putString("support_email_subject", auth.support_email_subject);
+                        params.putString("currency", auth.currency);
+                        params.putInt("premium_days", auth.premium_days);
+                        params.putLong("amount", auth.amount);
+                        setPage(VIEW_PAY, true, params, true);
                     }
-                    fillNextCodeParams(nextCodeParams, nextCodeAuth);
                 } else {
                     if (error.text != null) {
                         if (error.text.contains("PHONE_NUMBER_INVALID")) {

@@ -41,6 +41,7 @@ final class RoundVideoMp4Writer {
     private long liveSegmentBaseUs;
     private ByteBuffer videoConversionBuffer;
     private final MediaCodec.BufferInfo convertedVideoInfo = new MediaCodec.BufferInfo();
+    private boolean firstVideoSampleLogged;
     private boolean suppressAvailableNotifications;
     private boolean finished;
 
@@ -171,18 +172,22 @@ final class RoundVideoMp4Writer {
             @NonNull ByteBuffer source,
             @NonNull MediaCodec.BufferInfo info
     ) throws IOException {
+        String sampleDescription = null;
         try {
             ByteBuffer data = source;
             MediaCodec.BufferInfo sampleInfo = info;
-            boolean writeLength = video;
+            boolean writeLength = false;
             if (video) {
-                int normalization = normalizeVideoSample(source, info);
-                if (normalization == VIDEO_CONVERTED) {
-                    data = videoConversionBuffer;
-                    sampleInfo = convertedVideoInfo;
-                    writeLength = false;
-                } else if (normalization == VIDEO_ALREADY_AVCC) {
-                    writeLength = false;
+                if (!firstVideoSampleLogged) {
+                    sampleDescription = describeVideoSample(source, info);
+                }
+                normalizeVideoSample(source, info);
+                data = videoConversionBuffer;
+                sampleInfo = convertedVideoInfo;
+                if (!firstVideoSampleLogged) {
+                    firstVideoSampleLogged = true;
+                    diagnostics.log("first video sample prepared: " + sampleDescription
+                            + ", outputSize=" + sampleInfo.size);
                 }
             }
             long size = builder.writeSampleData(
@@ -195,7 +200,13 @@ final class RoundVideoMp4Writer {
             else audioSamples++;
             if (size > 0) notifyAvailable(size);
         } catch (Exception e) {
-            throw asIOException("Unable to write MP4 sample", e);
+            String details = video
+                    ? sampleDescription != null ? sampleDescription : describeVideoSampleSafely(source, info)
+                    : describeSample(source, info);
+            diagnostics.error("MP4 sample write failed: track=" + (video ? "video" : "audio")
+                    + ", " + details, e);
+            throw new IOException("Unable to write " + (video ? "video" : "audio")
+                    + " MP4 sample: " + details, e);
         }
     }
 
@@ -253,23 +264,16 @@ final class RoundVideoMp4Writer {
         return result;
     }
 
-    private static final int VIDEO_ALREADY_AVCC = 0;
-    private static final int VIDEO_SINGLE_ANNEX_B_NAL = 1;
-    private static final int VIDEO_CONVERTED = 2;
-
-    private int normalizeVideoSample(
+    private void normalizeVideoSample(
             @NonNull ByteBuffer source,
             @NonNull MediaCodec.BufferInfo info
-    ) {
+    ) throws IOException {
+        validateSampleRange(source, info);
         int end = info.offset + info.size;
         int firstStart = findStartCode(source, info.offset, end);
         if (firstStart != info.offset) {
-            return VIDEO_ALREADY_AVCC;
-        }
-        int firstPrefix = startCodeLength(source, firstStart, end);
-        int nextStart = findStartCode(source, firstStart + firstPrefix, end);
-        if (firstPrefix == 4 && nextStart < 0) {
-            return VIDEO_SINGLE_ANNEX_B_NAL;
+            copyVideoSample(source, info);
+            return;
         }
 
         int nalCount = 0;
@@ -287,7 +291,7 @@ final class RoundVideoMp4Writer {
             start = next;
         }
         if (nalCount == 0) {
-            return VIDEO_ALREADY_AVCC;
+            throw new IOException("Annex-B video sample contains no NAL units");
         }
 
         ensureVideoConversionCapacity(outputSize);
@@ -320,7 +324,31 @@ final class RoundVideoMp4Writer {
                 info.presentationTimeUs,
                 info.flags
         );
-        return VIDEO_CONVERTED;
+    }
+
+    private void copyVideoSample(
+            @NonNull ByteBuffer source,
+            @NonNull MediaCodec.BufferInfo info
+    ) {
+        ensureVideoConversionCapacity(info.size);
+        videoConversionBuffer.clear();
+        int oldPosition = source.position();
+        int oldLimit = source.limit();
+        try {
+            source.position(info.offset);
+            source.limit(info.offset + info.size);
+            videoConversionBuffer.put(source);
+        } finally {
+            source.limit(oldLimit);
+            source.position(oldPosition);
+        }
+        videoConversionBuffer.flip();
+        convertedVideoInfo.set(
+                0,
+                info.size,
+                info.presentationTimeUs,
+                info.flags
+        );
     }
 
     private void ensureVideoConversionCapacity(int size) {
@@ -339,6 +367,84 @@ final class RoundVideoMp4Writer {
 
     private static int startCodeLength(@NonNull ByteBuffer buffer, int start, int end) {
         return start + 3 < end && buffer.get(start + 2) == 0 ? 4 : 3;
+    }
+
+    private static void validateSampleRange(
+            @NonNull ByteBuffer source,
+            @NonNull MediaCodec.BufferInfo info
+    ) throws IOException {
+        long end = (long) info.offset + info.size;
+        if (info.offset < 0 || info.size < 0 || end > source.limit()) {
+            throw new IOException("Invalid codec buffer range: offset=" + info.offset
+                    + ", size=" + info.size
+                    + ", position=" + source.position()
+                    + ", limit=" + source.limit()
+                    + ", capacity=" + source.capacity());
+        }
+    }
+
+    @NonNull
+    private static String describeVideoSample(
+            @NonNull ByteBuffer source,
+            @NonNull MediaCodec.BufferInfo info
+    ) throws IOException {
+        validateSampleRange(source, info);
+        int end = info.offset + info.size;
+        int start = findStartCode(source, info.offset, end);
+        int nalCount = 0;
+        int firstPrefix = 0;
+        if (start == info.offset) {
+            firstPrefix = startCodeLength(source, start, end);
+            while (start >= 0) {
+                nalCount++;
+                int prefix = startCodeLength(source, start, end);
+                start = findStartCode(source, start + prefix, end);
+            }
+        }
+        return describeSample(source, info)
+                + ", format=" + (nalCount > 0 ? "annex-b" : "avcc")
+                + ", nalCount=" + nalCount
+                + ", firstPrefix=" + firstPrefix
+                + ", head=" + sampleHead(source, info.offset, end);
+    }
+
+    @NonNull
+    private static String describeVideoSampleSafely(
+            @NonNull ByteBuffer source,
+            @NonNull MediaCodec.BufferInfo info
+    ) {
+        try {
+            return describeVideoSample(source, info);
+        } catch (Exception ignored) {
+            return describeSample(source, info);
+        }
+    }
+
+    @NonNull
+    private static String describeSample(
+            @NonNull ByteBuffer source,
+            @NonNull MediaCodec.BufferInfo info
+    ) {
+        return "offset=" + info.offset
+                + ", size=" + info.size
+                + ", ptsUs=" + info.presentationTimeUs
+                + ", flags=" + info.flags
+                + ", position=" + source.position()
+                + ", limit=" + source.limit()
+                + ", capacity=" + source.capacity();
+    }
+
+    @NonNull
+    private static String sampleHead(@NonNull ByteBuffer source, int start, int end) {
+        StringBuilder result = new StringBuilder();
+        int count = Math.min(16, end - start);
+        for (int i = 0; i < count; i++) {
+            if (i > 0) result.append(' ');
+            int value = source.get(start + i) & 0xff;
+            if (value < 0x10) result.append('0');
+            result.append(Integer.toHexString(value));
+        }
+        return result.toString();
     }
 
     private static boolean sameCodecSpecificData(
@@ -387,9 +493,7 @@ final class RoundVideoMp4Writer {
 
     @NonNull
     private static IOException asIOException(@NonNull String message, @NonNull Exception error) {
-        return error instanceof IOException
-                ? (IOException) error
-                : new IOException(message, error);
+        return new IOException(message, error);
     }
 
     private static final class PendingSample {

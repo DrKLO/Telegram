@@ -1029,23 +1029,31 @@ public class TL_bots {
         }
     }
 
-    public static class botVerification extends TLObject {
-        public static final int constructor = 0xf93cd45c;
+    public static class BotVerification extends TLObject {
+        public static final int constructor = 0xf72e0ed9;
 
         public long bot_id;
         public long icon;
-        public String description;
+        public TLRPC.TL_textWithEntities description;
 
-        public static botVerification TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
-            final botVerification result = botVerification.constructor != constructor ? null : new botVerification();
-            return TLdeserialize(botVerification.class, result, stream, constructor, exception);
+        public static BotVerification TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            BotVerification result = null;
+            switch (constructor) {
+                case BotVerification.constructor:
+                    result = new BotVerification();
+                    break;
+                case botVerification_layer229.constructor:
+                    result = new botVerification_layer229();
+                    break;
+            }
+            return TLdeserialize(BotVerification.class, result, stream, constructor, exception);
         }
 
         @Override
         public void readParams(InputSerializedData stream, boolean exception) {
             bot_id = stream.readInt64(exception);
             icon = stream.readInt64(exception);
-            description = stream.readString(exception);
+            description = TLRPC.TL_textWithEntities.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         @Override
@@ -1053,7 +1061,26 @@ public class TL_bots {
             stream.writeInt32(constructor);
             stream.writeInt64(bot_id);
             stream.writeInt64(icon);
-            stream.writeString(description);
+            description.serializeToStream(stream);
+        }
+    }
+    public static class botVerification_layer229 extends BotVerification {
+        public static final int constructor = 0xf93cd45c;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            bot_id = stream.readInt64(exception);
+            icon = stream.readInt64(exception);
+            description = new TLRPC.TL_textWithEntities();
+            description.text = stream.readString(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(bot_id);
+            stream.writeInt64(icon);
+            stream.writeString(description == null ? "" : description.text);
         }
     }
 

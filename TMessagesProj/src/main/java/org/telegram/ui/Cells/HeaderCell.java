@@ -46,11 +46,11 @@ public class HeaderCell extends FrameLayout {
     private final boolean animated;
 
     public HeaderCell(Context context) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 18, 7, false, null);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 20, 7, false, null);
     }
 
     public HeaderCell(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 18, 7, false, resourcesProvider);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 20, 7, false, resourcesProvider);
     }
 
     public HeaderCell(Context context, int padding) {

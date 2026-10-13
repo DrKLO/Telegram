@@ -1,0 +1,33 @@
+[package]
+name = "gram-wallet"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[dependencies]
+wallet-engine = { path = "../wallet-engine" }
+ton-connect-core = { path = "../wallet-engine/crates/ton-connect-core" }
+ton = { path = "../wallet-engine/vendor/ton", default-features = false }
+async-trait = "=0.1.89"
+base64 = "=0.22.1"
+futures = "=0.3.31"
+hex = "=0.4.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+thiserror = "=2.0.17"
+uniffi = "=0.32.0"
+url = "=2.5.7"
+zeroize = "=1.9.0"
+
+[profile.release]
+codegen-units = 1
+debug = false
+incremental = false
+lto = false
+opt-level = "z"
+panic = "abort"
