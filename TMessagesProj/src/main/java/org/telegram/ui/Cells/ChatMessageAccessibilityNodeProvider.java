@@ -143,6 +143,15 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                     sb.append('\n');
                 }
+                // the bot is drawn on the line of the sender's name, after it, or alone where
+                // no name is drawn
+                if (!TextUtils.isEmpty(cell.accessibilityViaBotText)) {
+                    if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
+                        sb.replace(sb.length() - 1, sb.length(), " ");
+                    }
+                    sb.append(cell.accessibilityViaBotText);
+                    sb.append('\n');
+                }
                 if (cell.drawForwardedName) {
                     for (int a = 0; a < 2; a++) {
                         if (cell.forwardedNameLayout[a] != null && cell.forwardedNameLayout[a].getText() != null) {
@@ -415,6 +424,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             int smallIcon = cell.getMiniIconForCurrentState();
             if (smallIcon == MediaActionDrawable.ICON_DOWNLOAD) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, getString("AccActionDownload", R.string.AccActionDownload)));
+            }
+            if (!TextUtils.isEmpty(cell.accessibilityViaBotText)) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_via_bot, cell.accessibilityViaBotText));
             }
             if (cell.drawSummarizeButton || cell.drawSummaryReply) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
