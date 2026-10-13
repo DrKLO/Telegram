@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.Build;
+import android.os.PowerManager;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -61,6 +62,7 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
     private final RectF diamondDrawBounds = new RectF();
     private boolean hasBalanceDiamondTransform;
     private boolean use2D;
+    private final boolean powerSaveMode;
     private float additionalTilt;
     private float gyroscopeTiltScale = 1.0f;
     private final Matrix faceProjectionMatrix = new Matrix();
@@ -104,7 +106,9 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
             int qrButtonRightPadding
     ) {
         super(context);
-        this.use2D = use2D;
+        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        powerSaveMode = powerManager != null && powerManager.isPowerSaveMode();
+        this.use2D = use2D || powerSaveMode;
         this.cardIconResId = cardIconResId;
         this.qrButtonRightPadding = qrButtonRightPadding;
         setClipChildren(false);
@@ -313,6 +317,7 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
     }
 
     public void setUse2D(boolean use2D) {
+        use2D |= powerSaveMode;
         if (this.use2D == use2D) {
             return;
         }

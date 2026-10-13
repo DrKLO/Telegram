@@ -13,8 +13,35 @@ public sealed class TlGen_BotVerifierSettings : TlGen_Object {
     public val can_modify_custom_description: Boolean,
     public val icon: Long,
     public val company: String,
-    public val custom_description: String?,
+    public val custom_description: TlGen_TextWithEntities?,
   ) : TlGen_BotVerifierSettings() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (custom_description != null) result = result or 1U
+        if (can_modify_custom_description) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(icon)
+      stream.writeString(company)
+      custom_description?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xA12AEFFFU
+    }
+  }
+
+  public data class TL_botVerifierSettings_layer229(
+    public val can_modify_custom_description: Boolean,
+    public val icon: Long,
+    public val company: String,
+    public val custom_description: String?,
+  ) : TlGen_Object {
     internal val flags: UInt
       get() {
         var result = 0U

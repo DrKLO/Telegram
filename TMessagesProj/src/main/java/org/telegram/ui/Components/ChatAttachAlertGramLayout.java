@@ -63,6 +63,7 @@ import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Wallet.GramWallet;
 import org.telegram.ui.Wallet.WalletChatSendTransition;
+import org.telegram.ui.Wallet.WalletSendTransition;
 import org.telegram.ui.Wallet.WalletActivity;
 import org.telegram.ui.Wallet.WalletEngine2;
 import org.telegram.ui.Wallet.WalletSendEnterAmount;
@@ -153,6 +154,8 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
     private Runnable pendingCommentAlert;
     private TL_wallet.walletTransaction queuedTransaction;
     private WalletChatSendTransition sendTransition;
+    private WalletSendTransition walletSendTransition;
+    private boolean sendToWallet;
     private AlertDialog commentDialog;
 
     public byte[] getPublicKey() {
@@ -1152,6 +1155,12 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
             return;
         }
 
+        final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        final long neededStars = messagesController.getSendPaidMessagesStars(recipientUser.id);
+        sendToWallet = messagesController.config.walletPaidMessageRecipientMessageAmountCheck.get()
+                && neededStars > 0 && amount / 1_000_000_000.0 * messagesController.config.tonUsdRate.get()
+                < neededStars / 1000.0 * messagesController.starsUsdWithdrawRate1000;
+
         sendButton.setLoading(true);
         amountKeyboardSuppressed = true;
         pendingKeyboardRequest = false;
@@ -1195,8 +1204,19 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     public AnimatorSet createSendTransition(Runnable completion) {
-        if (destroyed || queuedTransaction == null || queuedTransaction.localMessageId == 0
-                || sendTransition != null || !amountInput.getDiamondView().canAnimateFlight()
+        if (destroyed || queuedTransaction == null || sendTransition != null || walletSendTransition != null) return null;
+        if (sendToWallet) {
+            final WalletActivity wallet = new WalletActivity();
+            wallet.setCurrentAccount(currentAccount);
+            if (parentAlert.getBaseFragment() == null
+                    || !parentAlert.getBaseFragment().presentFragment(wallet, false, true)) return null;
+            walletSendTransition = new WalletSendTransition(parentAlert, amountInput.getDiamondView(),
+                    wallet, queuedTransaction, () -> {
+                        if (!destroyed) completion.run();
+                    });
+            return walletSendTransition.animator();
+        }
+        if (queuedTransaction.localMessageId == 0 || !amountInput.getDiamondView().canAnimateFlight()
                 || !(parentAlert.getBaseFragment() instanceof ChatActivity)) return null;
         ChatActivity chat = (ChatActivity) parentAlert.getBaseFragment();
         if (chat.getCurrentAccount() != currentAccount || chat.getDialogId() != recipientUser.id
@@ -1324,9 +1344,11 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
 //        inlineMoreItem.bringToFront();
         amountEdit.clearFocus();
         loadFee();
-        introProgress = introRevealProgress = 0f;
+        introProgress = introRevealProgress = amountInput.getDiamondView().canAnimateIntro() ? 0f : 1f;
         updateIntroGeometry();
-        amountInput.getDiamondView().whenReady(this::startIntroAnimation);
+        if (introProgress < 1f) {
+            amountInput.getDiamondView().whenReady(this::startIntroAnimation);
+        }
     }
 
     private void startIntroAnimation() {
@@ -1728,6 +1750,10 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
         if (sendTransition != null) {
             sendTransition.cancel();
             sendTransition = null;
+        }
+        if (walletSendTransition != null) {
+            walletSendTransition.cancel();
+            walletSendTransition = null;
         }
         if (feeVisibilityAnimator != null) {
             feeVisibilityAnimator.cancel();

@@ -207,7 +207,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         aboveTitleView.setClickable(true);
         iconTextureView = new WalletDiamondView(context, 170);
         iconTextureView.setStarParticlesView(particlesView);
-        aboveTitleView.addView(iconTextureView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
+        aboveTitleView.addView(iconTextureView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 12));
         configureHeader(getString(R.string.GramEarningsTitle), AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.GramEarningsText), () -> {
             new ExplainStarsSheet(context).show();
         }), true), aboveTitleView, null);

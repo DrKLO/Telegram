@@ -1037,6 +1037,9 @@ public class WalletSendEnterAmount extends UniversalFragment implements Notifica
         content.addView(center, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         amountInput = new AmountInputView(context, getResourceProvider(), true);
+        if (!amountInput.getDiamondView().canAnimateIntro()) {
+            introProgress = introRevealProgress = 1f;
+        }
         center.addView(amountInput, LayoutHelper.createLinear(
                 LayoutHelper.MATCH_PARENT, 64, Gravity.TOP | Gravity.CENTER_HORIZONTAL,
                 16, 0, 16, 0));

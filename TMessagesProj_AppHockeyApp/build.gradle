@@ -137,15 +137,6 @@ android {
                 abiVersionCode = 1
             }
         }
-        bundleAfat_SDK23 {
-            ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 2
-            }
-        }
         afat {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"

@@ -191,6 +191,7 @@ public class WalletActionLayout {
             new int[]{ 0x00FFFFFF, 0x80FFFFFF, 0x00FFFFFF },
             new float[]{ 0f, .5f, 1f }, Shader.TileMode.CLAMP));
         bounce = new ButtonBounce(parentView);
+        bounce.setAdditionalInvalidate(this::invalidateCardBackground);
     }
 
     public void set(boolean out, TLRPC.TL_messageActionGramTransfer action) {
@@ -379,14 +380,41 @@ public class WalletActionLayout {
         return dp(150) + (int) Math.ceil(commentText.getHeight());
     }
 
+    private float getCardScaleX() {
+        return bounce.getScale(0.025f) * sentScale * (1f + .012f * landingPress);
+    }
+
+    private float getCardScaleY() {
+        return bounce.getScale(0.025f) * sentScale * (1f - .04f * landingPress);
+    }
+
+    private float getCardOffsetY() {
+        return dp(4) * landingPress;
+    }
+
+    public void applyCardTransform(Canvas canvas, float x, float y) {
+        canvas.translate(0, getCardOffsetY());
+        canvas.scale(getCardScaleX(), getCardScaleY(), x + getWidth() / 2.0f, y + dp(70));
+    }
+
+    private void invalidateCardBackground() {
+        // ChatActionCell's gradient background is recorded in its parent's canvas.
+        if (parentView.getParent() instanceof View) {
+            ((View) parentView.getParent()).invalidate();
+        }
+    }
+
+    private void invalidateCard() {
+        parentView.invalidate();
+        invalidateCardBackground();
+    }
+
     public void draw(Canvas canvas) {
         canvas.save();
-        final float scale = bounce.getScale(0.025f) * sentScale;
-        final float scaleX = scale * (1f + .012f * landingPress);
-        final float scaleY = scale * (1f - .04f * landingPress);
-        final float landingOffset = dp(4) * landingPress;
-        canvas.translate(0, landingOffset);
-        canvas.scale(scaleX, scaleY, getWidth() / 2.0f, dp(70));
+        final float scaleX = getCardScaleX();
+        final float scaleY = getCardScaleY();
+        final float landingOffset = getCardOffsetY();
+        applyCardTransform(canvas, 0, 0);
 
         final float padding = dp(4);
         cardRect.set(padding, padding, getWidth() - padding, dp(140) - padding);
@@ -449,14 +477,7 @@ public class WalletActionLayout {
             gramDrawable.start();
         }
         if (!nativeDiamond && !diamondHeldForFlight) {
-            canvas.save();
-            if (!out && (receiveAnimator != null || spinOffset != 0f)) {
-                // Keep the momentum visible on devices using the Lottie fallback.
-                if (diamondSurface == null) getDiamondRestingYaw();
-                canvas.rotate((float) Math.toDegrees(spinOffset), diamondBounds.exactCenterX(), diamondBounds.exactCenterY());
-            }
             gramDrawable.draw(canvas);
-            canvas.restore();
         }
 
         if (amountText != null) {
@@ -520,7 +541,6 @@ public class WalletActionLayout {
         if (out && !diamondHeldForFlight && ribbonRevealProgress < 1f && clockReveal > 0f) {
             drawSendingClock(canvas, (1f - ribbonRevealProgress) * clockReveal);
         }
-        canvas.restore();
 
         if (commentText != null) {
             if ((action.comment_encrypted || action.comment_encrypted_preparing) && !preparingCommentRevealed) {
@@ -541,6 +561,7 @@ public class WalletActionLayout {
                 );
             }
         }
+        canvas.restore();
     }
 
     public boolean playReceiveAnimation(Runnable onEnd) {
@@ -599,7 +620,7 @@ public class WalletActionLayout {
         landingSpring.setStartVelocity(Math.max(20f, Math.min(36f, velocityDpPerSecond * .04f)));
         landingSpring.addUpdateListener((animation, value, velocity) -> {
             landingPress = value;
-            parentView.invalidate();
+            invalidateCard();
         });
         landingSpring.start();
     }
@@ -607,7 +628,7 @@ public class WalletActionLayout {
     private void resetLanding() {
         if (landingSpring != null) { landingSpring.cancel(); landingSpring = null; }
         landingPress = 0f;
-        parentView.invalidate();
+        invalidateCard();
     }
 
     private void animateSentBounce() {
@@ -620,7 +641,7 @@ public class WalletActionLayout {
         sentSpring.setStartVelocity(-3f);
         sentSpring.addUpdateListener((animation, value, velocity) -> {
             sentScale = value;
-            parentView.invalidate();
+            invalidateCard();
         });
         sentSpring.start();
     }
@@ -628,6 +649,7 @@ public class WalletActionLayout {
     private void resetSentBounce() {
         if (sentSpring != null) { sentSpring.cancel(); sentSpring = null; }
         sentScale = 1f;
+        invalidateCard();
     }
 
     public void animateHighlight() {

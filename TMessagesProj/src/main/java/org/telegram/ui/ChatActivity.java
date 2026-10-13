@@ -4364,62 +4364,66 @@ public class ChatActivity extends BaseFragment implements
                 savedChatsItem.setVisibility(getMessagesController().getSavedMessagesController().hasDialogs() ? View.VISIBLE : View.GONE);
                 savedChatsGap.setVisibility(getMessagesController().getSavedMessagesController().hasDialogs() ? View.VISIBLE : View.GONE);
             } else if (chatMode != MODE_SAVED && (currentUser == null || !currentUser.self)) {
-                chatNotificationsPopupWrapper = new ChatNotificationsPopupWrapper(context, currentAccount, headerItem.getPopupLayout().getSwipeBack(), false, false, new ChatNotificationsPopupWrapper.Callback() {
-                    @Override
-                    public void dismiss() {
-                        headerItem.toggleSubMenu();
-                    }
-
-                    @Override
-                    public void toggleSound() {
-                        SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                        boolean enabled = !preferences.getBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), true);
-                        preferences.edit().putBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), enabled).apply();
-                        if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
-                            BulletinFactory.createSoundEnabledBulletin(ChatActivity.this, enabled ? NotificationsController.SETTING_SOUND_ON : NotificationsController.SETTING_SOUND_OFF, getResourceProvider()).show();
+                chatNotificationsPopupWrapper = null;
+                muteItem = headerItem.lazilyAddSwipeBackItem(R.drawable.msg_mute, null, null, () -> {
+                    chatNotificationsPopupWrapper = new ChatNotificationsPopupWrapper(context, currentAccount, headerItem.getPopupLayout().getSwipeBack(), false, false, new ChatNotificationsPopupWrapper.Callback() {
+                        @Override
+                        public void dismiss() {
+                            headerItem.toggleSubMenu();
                         }
-                        updateTitleIcons();
-                    }
 
-                    @Override
-                    public void muteFor(int timeInSeconds) {
-                        if (timeInSeconds == 0) {
-                            if (getMessagesController().isDialogMuted(dialog_id, getTopicId())) {
-                                ChatActivity.this.toggleMute(true);
-                            }
+                        @Override
+                        public void toggleSound() {
+                            SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                            boolean enabled = !preferences.getBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), true);
+                            preferences.edit().putBoolean("sound_enabled_" + NotificationsController.getSharedPrefKey(dialog_id, getTopicId()), enabled).apply();
                             if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
-                                BulletinFactory.createMuteBulletin(ChatActivity.this, NotificationsController.SETTING_MUTE_UNMUTE, timeInSeconds, getResourceProvider()).show();
+                                BulletinFactory.createSoundEnabledBulletin(ChatActivity.this, enabled ? NotificationsController.SETTING_SOUND_ON : NotificationsController.SETTING_SOUND_OFF, getResourceProvider()).show();
                             }
-                        } else {
-                            getNotificationsController().muteUntil(dialog_id, getTopicId(), timeInSeconds);
-                            if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
-                                BulletinFactory.createMuteBulletin(ChatActivity.this, NotificationsController.SETTING_MUTE_CUSTOM, timeInSeconds, getResourceProvider()).show();
+                            updateTitleIcons();
+                        }
+
+                        @Override
+                        public void muteFor(int timeInSeconds) {
+                            if (timeInSeconds == 0) {
+                                if (getMessagesController().isDialogMuted(dialog_id, getTopicId())) {
+                                    ChatActivity.this.toggleMute(true);
+                                }
+                                if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
+                                    BulletinFactory.createMuteBulletin(ChatActivity.this, NotificationsController.SETTING_MUTE_UNMUTE, timeInSeconds, getResourceProvider()).show();
+                                }
+                            } else {
+                                getNotificationsController().muteUntil(dialog_id, getTopicId(), timeInSeconds);
+                                if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
+                                    BulletinFactory.createMuteBulletin(ChatActivity.this, NotificationsController.SETTING_MUTE_CUSTOM, timeInSeconds, getResourceProvider()).show();
+                                }
                             }
                         }
-                    }
 
-                    @Override
-                    public void showCustomize() {
-                        if (dialog_id != 0 && chatMode != MODE_SAVED) {
-                            if (currentUser != null) {
-                                getMessagesController().putUser(currentUser, true);
+                        @Override
+                        public void showCustomize() {
+                            if (dialog_id != 0 && chatMode != MODE_SAVED) {
+                                if (currentUser != null) {
+                                    getMessagesController().putUser(currentUser, true);
+                                }
+                                Bundle args = new Bundle();
+                                args.putLong("dialog_id", dialog_id);
+                                if (getTopicId() != 0) {
+                                    args.putLong("topic_id", getTopicId());
+                                }
+                                presentFragment(new ProfileNotificationsActivity(args, themeDelegate));
                             }
-                            Bundle args = new Bundle();
-                            args.putLong("dialog_id", dialog_id);
-                            if (getTopicId() != 0) {
-                                args.putLong("topic_id", getTopicId());
-                            }
-                            presentFragment(new ProfileNotificationsActivity(args, themeDelegate));
                         }
-                    }
 
-                    @Override
-                    public void toggleMute() {
-                        ChatActivity.this.toggleMute(true);
-                        BulletinFactory.createMuteBulletin(ChatActivity.this, getMessagesController().isDialogMuted(dialog_id, getTopicId()), themeDelegate).show();
-                    }
-                }, getResourceProvider());
-                muteItem = headerItem.lazilyAddSwipeBackItem(R.drawable.msg_mute, null, null, chatNotificationsPopupWrapper.windowLayout);
+                        @Override
+                        public void toggleMute() {
+                            ChatActivity.this.toggleMute(true);
+                            BulletinFactory.createMuteBulletin(ChatActivity.this, getMessagesController().isDialogMuted(dialog_id, getTopicId()), themeDelegate).show();
+                        }
+                    }, getResourceProvider());
+                    chatNotificationsPopupWrapper.update(dialog_id, getTopicId(), null);
+                    return chatNotificationsPopupWrapper.windowLayout;
+                });
                 muteItem.setOnClickListener(view -> {
                     boolean muted = MessagesController.getInstance(currentAccount).isDialogMuted(dialog_id, getTopicId());
                     if (muted) {
@@ -33919,7 +33923,16 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_SEND_MONEY: {
-                final TLRPC.User user = getMessagesController().getUser(selectedObject.getDialogId());
+                if (!(selectedObject.messageOwner.action instanceof TLRPC.TL_messageActionGramTransfer)) return;
+                final TLRPC.TL_messageActionGramTransfer action = (TLRPC.TL_messageActionGramTransfer) selectedObject.messageOwner.action;
+                if (MessagesController.isSupportUser(currentUser)) {
+                    if (!TextUtils.isEmpty(action.peer_address)) {
+                        presentFragment(new WalletSendEnterAmount(action.peer_address));
+                    }
+                    break;
+                }
+                final long dialogId = selectedObject.getDialogId();
+                final TLRPC.User user = getMessagesController().getUser(dialogId);
                 if (user != null) {
                     presentFragment(new WalletSendEnterAmount(user).setAllowOpenChat());
                 }

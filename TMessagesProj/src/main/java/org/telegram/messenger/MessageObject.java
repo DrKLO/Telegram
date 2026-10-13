@@ -5952,6 +5952,8 @@ public class MessageObject {
                     }
                     if (isOut()) {
                         messageTextShort = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.WalletActionSentGramsShort, GramWallet.formatGramsWithUnit(action.amount)));
+                    } else if (UserObject.isService(DialogObject.getPeerDialogId(messageOwner.peer_id))) {
+                        messageTextShort = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.WalletActionReceivedGramsSomeone, GramWallet.formatGramsWithUnit(action.amount)));
                     } else {
                         messageTextShort = AndroidUtilities.replaceTags(LocaleController.formatString(R.string.WalletActionReceivedGrams, GramWallet.formatGramsWithUnit(action.amount)).replace("un1", "").trim());
                     }

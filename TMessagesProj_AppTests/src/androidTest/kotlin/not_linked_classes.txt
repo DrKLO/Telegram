@@ -10,7 +10,6 @@ org.telegram.tgnet.TLRPC.TL_folders_deleteFolder #1c295881
 org.telegram.tgnet.TLRPC.TL_forumTopic_layer147 #5920d6dc
 org.telegram.tgnet.TLRPC.TL_help_premiumPromo_layer140 #e0360f1b
 org.telegram.tgnet.TLRPC.TL_inputMessagesFilterPhotoVideoDocuments #d95e73bb
-org.telegram.tgnet.TLRPC.TL_messageActionChatJoinedViaCommunity #4a8bfe80
 org.telegram.tgnet.TLRPC.TL_messageActionCreatedBroadcastList #55555557
 org.telegram.tgnet.TLRPC.TL_messageActionLoginUnknownLocation #555555f5
 org.telegram.tgnet.TLRPC.TL_messageActionPhoneNumberRequest #01baa035
@@ -42,6 +41,7 @@ org.telegram.tgnet.TLRPC.TL_peerNotifySettingsEmpty_layer77 #70a68512
 org.telegram.tgnet.TLRPC.TL_poll_toDelete #af746786
 org.telegram.tgnet.TLRPC.TL_premiumGiftOption #79c059f7
 org.telegram.tgnet.TLRPC.TL_replyInlineMarkup_layer228_old #58f7fcb6
+org.telegram.tgnet.TLRPC.TL_userFull #7fe738c4
 org.telegram.tgnet.TLRPC.TL_userStatusHidden #cf7d64b1
 org.telegram.tgnet.TLRPC.TL_user_layer185 #4fe9cce0
 org.telegram.tgnet.TLRPC.TL_videoEncrypted #55555553
@@ -58,4 +58,5 @@ org.telegram.tgnet.tl.TL_stories.TL_mediaAreaWeather2 #855f223e
 org.telegram.tgnet.tl.TL_stories.TL_mediaAreaWeatherOld #4386f849
 org.telegram.tgnet.tl.TL_update.TL_updateBotSubscriptionExpire #a8ae3eb1
 org.telegram.tgnet.tl.TL_update.TL_updateTranscribeAudio #88617090
+org.telegram.tgnet.tl.TL_wallet.mnemonic_decryptedKeyPart #8b90dd08
 org.telegram.tgnet.tl.legacy.TL_legacy_message.TL_message_layer118 #f52e6b7f

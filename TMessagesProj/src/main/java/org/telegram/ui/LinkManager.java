@@ -1468,8 +1468,8 @@ public class LinkManager {
 
         if (TextUtils.isEmpty(recipient)) {
             presentFragment(new WalletActivity());
-        } else if (recipient.startsWith("@")) {
-            final String username = recipient.substring(1);
+        } else if (recipient.startsWith("@") || recipient.matches("[a-zA-Z0-9_]{1,32}")) {
+            final String username = recipient.startsWith("@") ? recipient.substring(1) : recipient;
             if (TextUtils.isEmpty(username)) return true;
             final TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
             req.username = username;

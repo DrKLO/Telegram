@@ -2483,7 +2483,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                 if (cancelFetchFee[0] != null) cancelFetchFee[0].run();
                 final Utilities.Callback2<TL_wallet.walletTransaction, String> onFee = (t, error) -> {
                     cancelFetchFee[0] = null;
-                    if (t != null && t.fee > 0) {
+                    if (feeView[0] != null && t != null && t.fee > 0) {
                         feeView[0].setText(formatTransactionFee(currentAccount, t.fee, resourceProvider));
                     }
                 };
@@ -2783,7 +2783,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                         .setPositiveButton(LocaleController.getString(R.string.WalletOK), null)
                         .show();
                 });
-            } else if (fee > 0 || t.nft != null || t.preview) {
+            } else if (fee > 0 || t.nft != null || t.preview && !t.incoming) {
                 feeView[0] = new TextView(context);
                 feeView[0].setGravity(Gravity.CENTER_VERTICAL);
                 feeView[0].setIncludeFontPadding(false);

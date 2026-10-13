@@ -1365,6 +1365,83 @@ public sealed class TlGen_MessageAction : TlGen_Object {
     }
   }
 
+  public data class TL_messageActionChatJoinedViaCommunity(
+    public val community_id: Long,
+  ) : TlGen_MessageAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(community_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x4A8BFE80U
+    }
+  }
+
+  public data class TL_messageActionGramTransfer(
+    public val comment_encrypted: Boolean,
+    public val amount: Long,
+    public val peer_address: String,
+    public val transaction_id: String,
+    public val comment: String?,
+  ) : TlGen_MessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (comment != null) result = result or 1U
+        if (comment_encrypted) result = result or 2U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(amount)
+      stream.writeString(peer_address)
+      stream.writeString(transaction_id)
+      comment?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x9329EA33U
+    }
+  }
+
+  public data class TL_messageActionWalletTonConnectRequest(
+    public val accepted: Boolean,
+    public val declined: Boolean,
+    public val session_id: Long,
+    public val expires: Int,
+    public val topic: String?,
+    public val trace_id: String?,
+    public val dapp_name: String?,
+  ) : TlGen_MessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (topic != null) result = result or 1U
+        if (trace_id != null) result = result or 2U
+        if (accepted) result = result or 4U
+        if (declined) result = result or 8U
+        if (dapp_name != null) result = result or 16U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(session_id)
+      stream.writeInt32(expires)
+      topic?.let { stream.writeString(it) }
+      trace_id?.let { stream.writeString(it) }
+      dapp_name?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x69B8C4BFU
+    }
+  }
+
   public data class TL_messageActionChatCreate_layer132(
     public val title: String,
     public val users: List<Int>,

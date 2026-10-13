@@ -10069,7 +10069,7 @@
     <string name="MyTON">My TON</string>
     <string name="GramEarnings">Gram Earnings</string>
     <string name="GramEarningsTitle">Gram Earnings</string>
-    <string name="GramEarningsText">Your Gram from gifts,\nads and Fragment</string>
+    <string name="GramEarningsText">Your Gram from gifts,\nads and Fragment.</string>
     <string name="GramEarningsHint">You can withdraw your Grams using Fragment.</string>
     <string name="TodoMenuHint">You are viewing actions for one task.\nYou can switch to actions for the list.</string>
     <string name="PollMenuHint">You are viewing actions for one option.\nYou can switch to actions for the poll.</string>

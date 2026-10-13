@@ -1045,7 +1045,7 @@ public class MessageEntityView extends EntityView {
             } else if (child instanceof ChatActionCell) {
                 ChatActionCell cell = (ChatActionCell) child;
                 float cleft, ctop, cright, cbottom;
-                if (cell.starGiftLayout.has()) {
+                if (cell.hasStarGiftLayout()) {
                     cleft = container.getX() + cell.getX() + cell.getBoundsLeft();
                     cright = container.getX() + cell.getX() + cell.getBoundsRight();
                     ctop = container.getY() + cell.getY();

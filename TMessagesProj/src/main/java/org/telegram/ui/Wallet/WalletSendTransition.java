@@ -19,8 +19,10 @@ import android.widget.FrameLayout;
 
 import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ChatAttachAlert;
 
-final class WalletSendTransition {
+public final class WalletSendTransition {
+    private final ChatAttachAlert sheet;
     private final ViewGroup root;
     private final View outgoing;
     private final WalletDiamondView source;
@@ -42,6 +44,17 @@ final class WalletSendTransition {
 
     WalletSendTransition(ViewGroup root, View outgoing, WalletDiamondView source, WalletActivity wallet,
                          TL_wallet.walletTransaction transaction, Runnable completion) {
+        this(root, outgoing, source, wallet, transaction, completion, null);
+    }
+
+    public WalletSendTransition(ChatAttachAlert sheet, WalletDiamondView source, WalletActivity wallet,
+                                TL_wallet.walletTransaction transaction, Runnable completion) {
+        this(sheet.getContainer(), sheet.getSheetContainer(), source, wallet, transaction, completion, sheet);
+    }
+
+    private WalletSendTransition(ViewGroup root, View outgoing, WalletDiamondView source, WalletActivity wallet,
+                                 TL_wallet.walletTransaction transaction, Runnable completion, ChatAttachAlert sheet) {
+        this.sheet = sheet;
         this.root = root;
         this.outgoing = outgoing;
         this.source = source;
@@ -53,7 +66,10 @@ final class WalletSendTransition {
         overlay = new FrameLayout(root.getContext()) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
+                canvas.save();
+                canvas.translate(-getLeft(), -getTop());
                 particles.draw(canvas);
+                canvas.restore();
                 super.dispatchDraw(canvas);
                 if (particles.isActive()) postInvalidateOnAnimation();
             }
@@ -76,6 +92,10 @@ final class WalletSendTransition {
         animation.playTogether(flight);
         animation.addListener(new AnimatorListenerAdapter() {
             @Override
+            public void onAnimationStart(Animator animator) {
+                if (sheet != null) org.telegram.messenger.AndroidUtilities.hideKeyboard(source);
+            }
+            @Override
             public void onAnimationEnd(Animator animator) { finish(); }
             @Override
             public void onAnimationCancel(Animator animator) { finish(); }
@@ -84,11 +104,11 @@ final class WalletSendTransition {
         overlay.post(awaitLanding);
     }
 
-    AnimatorSet animator() { return animation; }
+    public AnimatorSet animator() { return animation; }
 
     private void awaitLanding() {
         if (finished || started) return;
-        updateSourceBounds(source, outgoing, root, from);
+        updateSourceBounds();
         position(from.centerX(), from.centerY(), from.width());
         TransactionCell cell = wallet.findSendLanding(transaction);
         if (cell != null && cell.getWidth() > 0) {
@@ -99,7 +119,7 @@ final class WalletSendTransition {
             }
             WalletDiamondView target = landing.getPendingDiamond();
             if (ready && target != null && target.getWidth() > 0 && !landing.isLayoutRequested()) {
-                to.set(bounds(target, root));
+                to.set(targetBounds(target));
                 if (to.centerY() > 0 && to.centerY() < root.getHeight()) {
                     started = true;
                     diamond.copyRotationFrom(source);
@@ -124,12 +144,14 @@ final class WalletSendTransition {
 
     private void drawFrame(float progress) {
         if (finished) return;
-        updateSourceBounds(source, outgoing, root, from);
-        outgoing.setTranslationY(outgoing.getHeight() * exitCurve.getInterpolation(Math.min(1f, progress * 2)));
+        updateSourceBounds();
+        float exitProgress = exitCurve.getInterpolation(Math.min(1f, progress * 2));
+        if (sheet != null) sheet.setGramSendTransitionProgress(exitProgress);
+        else outgoing.setTranslationY(outgoing.getHeight() * exitProgress);
         if (landing == null || to.isEmpty()) return;
         WalletDiamondView target = landing.getPendingDiamond();
         if (target != null && landing.matches(transaction) && target.isAttachedToWindow()) {
-            to.set(bounds(target, root));
+            to.set(targetBounds(target));
         }
         float q = 1f - progress;
         float controlX = from.centerX() + (to.centerX() - from.centerX()) * .35f;
@@ -139,6 +161,27 @@ final class WalletSendTransition {
         position(x, y, from.width() + (to.width() - from.width()) * progress);
         if (progress < .92f) particles.trail(x, y);
         overlay.invalidate();
+    }
+
+    private void updateSourceBounds() {
+        if (sheet == null) {
+            updateSourceBounds(source, outgoing, root, from);
+        } else if (source.isAttachedToWindow() && source.getRootView() == root.getRootView()) {
+            from.set(bounds(source, root));
+            from.offset(0, sheet.currentPanTranslationY - sheet.getGramSendExitTranslationY());
+        }
+    }
+
+    private RectF targetBounds(View target) {
+        if (sheet == null) return bounds(target, root);
+        ViewGroup targetRoot = (ViewGroup) target.getRootView();
+        RectF rect = bounds(target, targetRoot);
+        int[] location = new int[2];
+        targetRoot.getLocationOnScreen(location);
+        rect.offset(location[0], location[1]);
+        root.getLocationOnScreen(location);
+        rect.offset(-location[0], -location[1]);
+        return rect;
     }
 
     private void position(float x, float y, float width) {
@@ -180,7 +223,7 @@ final class WalletSendTransition {
         return rect;
     }
 
-    void cancel() {
+    public void cancel() {
         if (finished) return;
         if (animation.isStarted()) animation.cancel();
         else finish();
@@ -205,9 +248,26 @@ final class WalletSendTransition {
         overlay.removeView(diamond);
         overlay.setClickable(false);
         source.setAlpha(sourceAlpha);
-        outgoing.setTranslationY(0f);
+        if (sheet == null) outgoing.setTranslationY(0f);
+        else sheet.setGramSendTransitionProgress(1f);
+        // Keep the last trail particles alive after the sheet window disappears.
+        ViewGroup particleRoot = root;
+        if (sheet != null && particles.isActive() && wallet.getParentLayout() != null) {
+            ViewGroup walletRoot = wallet.getParentLayout().getView();
+            if (walletRoot.isAttachedToWindow()) {
+                int[] sheetLocation = new int[2];
+                int[] walletLocation = new int[2];
+                root.getLocationOnScreen(sheetLocation);
+                walletRoot.getLocationOnScreen(walletLocation);
+                root.removeView(overlay);
+                overlay.setTranslationX(sheetLocation[0] - walletLocation[0]);
+                overlay.setTranslationY(sheetLocation[1] - walletLocation[1]);
+                walletRoot.addView(overlay, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                particleRoot = walletRoot;
+            }
+        }
         completion.run();
-        // The last trail particles outlive the 600 ms navigation flight.
-        overlay.postDelayed(() -> root.removeView(overlay), 650);
+        final ViewGroup cleanupRoot = particleRoot;
+        org.telegram.messenger.AndroidUtilities.runOnUIThread(() -> cleanupRoot.removeView(overlay), 650);
     }
 }

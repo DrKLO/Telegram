@@ -129,22 +129,6 @@ android {
             }
             buildConfigField "boolean", "BUNDLE", "true"
         }
-        bundleAfat_SDK23 {
-            ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            }
-            sourceSets.debug {
-                manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
-            }
-            sourceSets.release {
-                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
-            }
-            minSdkVersion 23
-            ext {
-                abiVersionCode = 2
-            }
-            buildConfigField "boolean", "BUNDLE", "true"
-        }
         afat {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"

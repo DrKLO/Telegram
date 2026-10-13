@@ -7,6 +7,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
 import android.graphics.SurfaceTexture;
+import android.os.PowerManager;
 import android.view.Choreographer;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -90,7 +91,10 @@ public class WalletDiamondView extends FrameLayout {
         super(context);
         preferredSize = AndroidUtilities.dp(sizeDp);
         animationSizeDp = sizeDp;
-        if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW || !supportsGles3(context)) {
+        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        if ((powerManager != null && powerManager.isPowerSaveMode())
+                || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW
+                || !supportsGles3(context)) {
             createLottieView();
         } else if (useTextureView) {
             textureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_DIAMOND) {
@@ -238,6 +242,10 @@ public class WalletDiamondView extends FrameLayout {
             restingAngleY = source.renderer.angleY;
             applyAmountRotation();
         }
+    }
+
+    public boolean canAnimateIntro() {
+        return renderer != null;
     }
 
     public boolean canAnimateFlight() {

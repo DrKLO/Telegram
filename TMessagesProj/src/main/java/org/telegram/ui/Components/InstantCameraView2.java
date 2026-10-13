@@ -63,6 +63,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private static final float ZOOM_GESTURE_EFFORT = 1.5f;
     private static final int SWITCH_PREVIEW_BITMAP_SIZE = 180;
     private static final long UI_FRAME_FALLBACK_DELAY_NS = 70_000_000L;
+    private static final long CAMERA_FLIP_MINIMUM_DURATION_MS = 580L;
+    private static final long CAMERA_FLIP_OUT_DURATION_MS = 120L;
+    private static final long CAMERA_FLIP_MINIMUM_REVEAL_DURATION_MS = 300L;
 
     private final InstantCameraView.Delegate delegate;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -109,6 +112,12 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private boolean setVisibilityFromPause;
     private boolean drawInitialPlaceholder;
     private boolean switchPlaceholderVisible;
+    private boolean cameraFlipInProgress;
+    private boolean cameraFlipSessionReady;
+    private boolean cameraFlipFirstFrameReady;
+    private boolean cameraFlipRevealStarted;
+    private long cameraFlipStartedRealtimeMs;
+    private int cameraFlipGeneration;
     private Bitmap lastBitmap;
     private long lastVisibleDurationMs;
     private float panTranslationY;
@@ -117,6 +126,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private float zoomProgress;
     private int zoomPointerId1 = -1;
     private int zoomPointerId2 = -1;
+
+    private final Runnable cameraFlipRevealRunnable = this::maybeStartCameraFlipReveal;
     private boolean pinchZoomActive;
     private boolean heavyOperationsStopped;
     private float previousWindowBrightness = Float.NaN;
@@ -318,6 +329,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     @Override
     public void destroy(boolean async) {
         setRecordingUiFrameClockActive(false);
+        cancelCameraFlipAnimation();
         if (zoomResetAnimator != null) zoomResetAnimator.cancel();
         if (session != null) {
             session.release();
@@ -681,6 +693,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             if (info.getState() == RoundVideoSession.State.COMPLETED
                     || info.getState() == RoundVideoSession.State.ERROR
                     || info.getState() == RoundVideoSession.State.RELEASED) {
+                cancelCameraFlipAnimation();
                 startHeavyOperations();
             }
             if (previous == RoundVideoSession.State.RECORDING
@@ -703,22 +716,23 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
         @Override
         public void onCameraSwitchStarted(@NonNull RoundVideoSession.CameraFacing facing) {
-            showCameraSwitchPlaceholder();
-            previewContainer.animate().cancel();
-            previewContainer.setCameraDistance(previewContainer.getMeasuredHeight() * 8f);
-            previewContainer.animate().rotationY(90f).setDuration(120L).start();
+            startCameraFlipAnimation(facing);
         }
 
         @Override
         public void onCameraSwitchCompleted(@NonNull RoundVideoSession.CameraFacing facing) {
-            previewContainer.animate().cancel();
-            previewContainer.setRotationY(-90f);
-            previewContainer.animate().rotationY(0f).setDuration(140L).start();
+            cameraFlipSessionReady = true;
+            FileLog.d("RoundVideo camera flip session ready: facing=" + facing
+                    + ", elapsedMs=" + getCameraFlipElapsedMs());
+            maybeStartCameraFlipReveal();
         }
 
         @Override
         public void onCameraSwitchFirstFrame() {
-            hideCameraSwitchPlaceholder();
+            cameraFlipFirstFrameReady = true;
+            FileLog.d("RoundVideo camera flip first frame: elapsedMs="
+                    + getCameraFlipElapsedMs());
+            maybeStartCameraFlipReveal();
         }
 
         @Override
@@ -898,7 +912,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
     private void switchCamera() {
         if (session == null || stateInfo == null || capabilities == null
-                || !stateInfo.canControlCamera()) {
+                || !stateInfo.canControlCamera() || cameraFlipInProgress) {
             return;
         }
         RoundVideoSession.CameraFacing facing =
@@ -944,7 +958,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     }
 
     private void updateButtons() {
-        boolean cameraControls = stateInfo != null && stateInfo.canControlCamera();
+        boolean cameraControls = stateInfo != null
+                && stateInfo.canControlCamera()
+                && !cameraFlipInProgress;
         switchCameraButton.setEnabled(cameraControls);
         flashButton.setEnabled(cameraControls
                 && capabilities != null
@@ -1118,15 +1134,100 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         textureOverlayView.setAlpha(1f);
     }
 
+    private void startCameraFlipAnimation(
+            @NonNull RoundVideoSession.CameraFacing facing
+    ) {
+        cameraFlipGeneration++;
+        removeCallbacks(cameraFlipRevealRunnable);
+        cameraFlipInProgress = true;
+        cameraFlipSessionReady = false;
+        cameraFlipFirstFrameReady = false;
+        cameraFlipRevealStarted = false;
+        cameraFlipStartedRealtimeMs = SystemClock.elapsedRealtime();
+        showCameraSwitchPlaceholder();
+        previewContainer.animate().cancel();
+        previewContainer.setRotationY(0f);
+        previewContainer.setCameraDistance(previewContainer.getMeasuredHeight() * 8f);
+        previewContainer.animate()
+                .rotationY(90f)
+                .setDuration(CAMERA_FLIP_OUT_DURATION_MS)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .setListener(null)
+                .start();
+        FileLog.d("RoundVideo camera flip started: facing=" + facing
+                + ", minimumDurationMs=" + CAMERA_FLIP_MINIMUM_DURATION_MS);
+        updateButtons();
+    }
+
+    private void maybeStartCameraFlipReveal() {
+        if (!cameraFlipInProgress || cameraFlipRevealStarted
+                || !cameraFlipSessionReady || !cameraFlipFirstFrameReady) {
+            return;
+        }
+        long elapsedMs = getCameraFlipElapsedMs();
+        long waitMs = CAMERA_FLIP_OUT_DURATION_MS - elapsedMs;
+        if (waitMs > 0L) {
+            removeCallbacks(cameraFlipRevealRunnable);
+            postDelayed(cameraFlipRevealRunnable, waitMs);
+            return;
+        }
+
+        cameraFlipRevealStarted = true;
+        removeCallbacks(cameraFlipRevealRunnable);
+        hideCameraSwitchPlaceholder();
+        previewContainer.animate().cancel();
+        previewContainer.setRotationY(-90f);
+        long revealDurationMs = Math.max(
+                CAMERA_FLIP_MINIMUM_REVEAL_DURATION_MS,
+                CAMERA_FLIP_MINIMUM_DURATION_MS - elapsedMs
+        );
+        int generation = cameraFlipGeneration;
+        FileLog.d("RoundVideo camera flip reveal started: elapsedMs=" + elapsedMs
+                + ", durationMs=" + revealDurationMs);
+        previewContainer.animate()
+                .rotationY(0f)
+                .setDuration(revealDurationMs)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (generation != cameraFlipGeneration) return;
+                        previewContainer.animate().setListener(null);
+                        previewContainer.setRotationY(0f);
+                        cameraFlipInProgress = false;
+                        FileLog.d("RoundVideo camera flip completed: elapsedMs="
+                                + getCameraFlipElapsedMs());
+                        updateButtons();
+                    }
+                })
+                .start();
+    }
+
+    private void cancelCameraFlipAnimation() {
+        if (!cameraFlipInProgress && !cameraFlipRevealStarted) return;
+        cameraFlipGeneration++;
+        removeCallbacks(cameraFlipRevealRunnable);
+        previewContainer.animate().cancel();
+        previewContainer.animate().setListener(null);
+        previewContainer.setRotationY(0f);
+        cameraFlipInProgress = false;
+        cameraFlipSessionReady = false;
+        cameraFlipFirstFrameReady = false;
+        cameraFlipRevealStarted = false;
+        hideCameraSwitchPlaceholder();
+    }
+
+    private long getCameraFlipElapsedMs() {
+        return cameraFlipStartedRealtimeMs == 0L
+                ? 0L
+                : Math.max(0L, SystemClock.elapsedRealtime() - cameraFlipStartedRealtimeMs);
+    }
+
     private void hideCameraSwitchPlaceholder() {
         if (!switchPlaceholderVisible) return;
         switchPlaceholderVisible = false;
         textureOverlayView.animate().cancel();
-        textureOverlayView.animate()
-                .alpha(0f)
-                .setDuration(100L)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
+        textureOverlayView.setAlpha(0f);
     }
 
     private void saveLastCameraBitmap(boolean persist) {
