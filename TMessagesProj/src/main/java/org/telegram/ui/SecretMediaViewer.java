@@ -60,6 +60,7 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -200,6 +201,20 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             useVideoProgress = videoProgress;
             drawable.start();
             invalidate();
+        }
+
+        // the timer is drawn alone: a "1" in a ring for a photo viewed once, and for the others a ring
+        // that runs out as the seconds go. It says which, and how many seconds are left
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            if (once) {
+                info.setContentDescription(LocaleController.getString(R.string.TimerPeriodOnce));
+            } else if (destroyTime != 0) {
+                final long msTime = System.currentTimeMillis() + ConnectionsManager.getInstance(currentAccount).getTimeDifference() * 1000L;
+                final int seconds = (int) Math.ceil(Math.max(0, destroyTime - msTime) / 1000f);
+                info.setContentDescription(LocaleController.formatPluralString("Seconds", Math.max(1, seconds)));
+            }
         }
 
         private void setOnce() {
