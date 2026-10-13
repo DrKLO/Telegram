@@ -11525,4 +11525,14 @@
     <string name="NotificationGramTransferUnknownComment">You received %2$s: %3$s</string>
     <string name="NotificationWalletTonConnectRequest">You have a TON Connect request</string>
     <string name="NotificationWalletTonConnectRequestDapp">You have a TON Connect request from %1$s</string>
+
+    <string name="CreateManagedBotUsernameSuffixesInfo">Must end in \'bot\' – or %1$s with **Telegram Premium**.</string>
+    <string name="CreateManagedBotUsernameSuffixesOr">%1$s or %2$s</string>
+    <string name="CreateManagedBotUsernameSuffixesComma">%1$s, %2$s</string>
+    <string name="CreateManagedBotUsernamePremiumRequired">Usernames ending in \'%1$s\' require Telegram Premium. **Subscribe ›**</string>
+    <string name="CreateManagedBotUsernamePremiumRequiredGeneric">This username requires Telegram Premium. **Subscribe ›**</string>
+    <string name="CreateManagedBotUsernameOwnerLimit">You can only have %1$d usernames ending in %2$s across all your bots.</string>
+    <string name="CreateManagedBotUsernameBotLimit">This bot already has a Premium username. Remove it before adding another.</string>
+    <string name="CreateManagedBotUsernameSuffixMissing">The username must end in %1$s.</string>
+    <string name="CreateManagedBotUsernameCheckFailed">Couldn\'t check this username. Please try again.</string>
 </resources>

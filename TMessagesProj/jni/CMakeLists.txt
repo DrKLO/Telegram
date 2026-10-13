@@ -98,6 +98,9 @@ set_target_properties(tde2e PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}
 add_library(tdutils STATIC IMPORTED)
 set_target_properties(tdutils PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/lib/${ANDROID_ABI}/libtdutils.a)
 
+add_library(prisma STATIC IMPORTED)
+set_target_properties(prisma PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/lib/${ANDROID_ABI}/libprisma.a)
+
 #tgnet
 add_library(tgnet STATIC
         openssl/aes_ige.c
@@ -228,6 +231,20 @@ add_library(${NATIVE_LIB} SHARED
         tests.cpp
 )
 
+# Compile JNI directly into the shared library so archive extraction cannot drop its exports.
+set(PRISMA_BRIDGE_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge/PrismaEngine.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge/PrismaJni.cpp")
+target_sources(${NATIVE_LIB} PRIVATE ${PRISMA_BRIDGE_SOURCES})
+target_include_directories(${NATIVE_LIB} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge"
+        "${CMAKE_CURRENT_SOURCE_DIR}/third_party/boost-regex/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libprisma/libprisma")
+set_property(SOURCE ${PRISMA_BRIDGE_SOURCES} APPEND PROPERTY
+        COMPILE_OPTIONS -fexceptions -frtti)
+set_property(SOURCE ${PRISMA_BRIDGE_SOURCES} APPEND PROPERTY
+        COMPILE_DEFINITIONS BOOST_REGEX_STANDALONE)
+
 target_compile_options(${NATIVE_LIB} PUBLIC
         -ffast-math -Oz -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
 
@@ -279,6 +296,7 @@ target_link_libraries(${NATIVE_LIB}
         wasm
         tgcalls_tp
         tgnet
+        prisma
         tlottie
         wallet_engine_jni
         wallet_engine_cpp

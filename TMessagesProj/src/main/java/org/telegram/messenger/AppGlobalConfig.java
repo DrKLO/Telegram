@@ -76,6 +76,7 @@ public class AppGlobalConfig {
 
     public final ConfigInt botsCreateLimitDefault = ofInt("bots_create_limit_default", 20);
     public final ConfigInt botsCreateLimitPremium = ofInt("bots_create_limit_premium", 40);
+    public final ConfigInt botAdditionalUsernamesLimit = ofInt("bot_additional_usernames_limit", 2);
 
     public final ConfigString phoneCountryIso2 = ofString("phone_country_iso2", "en");
 

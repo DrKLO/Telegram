@@ -63019,6 +63019,8 @@ public class TLRPC {
         public int flags;
         public boolean editable;
         public boolean active;
+        public boolean deletable;
+        public boolean expired;
         public String username;
 
         public static TL_username TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
@@ -63030,6 +63032,8 @@ public class TLRPC {
             flags = stream.readInt32(exception);
             editable = hasFlag(flags, FLAG_0);
             active = hasFlag(flags, FLAG_1);
+            deletable = hasFlag(flags, FLAG_2);
+            expired = hasFlag(flags, FLAG_3);
             username = stream.readString(exception);
         }
 
@@ -63037,6 +63041,8 @@ public class TLRPC {
             stream.writeInt32(constructor);
             flags = setFlag(flags, FLAG_0, editable);
             flags = setFlag(flags, FLAG_1, active);
+            flags = setFlag(flags, FLAG_2, deletable);
+            flags = setFlag(flags, FLAG_3, expired);
             stream.writeInt32(flags);
             stream.writeString(username);
         }

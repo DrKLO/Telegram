@@ -44,12 +44,20 @@ final class RoundVideoGlProcessor {
     private static final int SWITCH_UNBLUR_NEW = 4;
 
     private Size inputSize;
+    private Size primaryInputSize;
+    private Size secondaryInputSize;
     private final Surface outputSurface;
+    private final Surface previewOutputSurface;
+    private final boolean dualInputEnabled;
     private final int outputSize;
     private final boolean compositionEnabled;
     private final RoundVideoDiagnostics diagnostics;
     private int sourceCropSize;
+    private int primarySourceCropSize;
+    private int secondarySourceCropSize;
     private boolean cameraTimestampRealtime;
+    private boolean primaryTimestampRealtime;
+    private boolean secondaryTimestampRealtime;
     private volatile long presentationTimeOriginNs;
     private volatile long presentationTimeLimitNs = Long.MAX_VALUE;
     private final FrameTimingListener frameTimingListener;
@@ -59,16 +67,24 @@ final class RoundVideoGlProcessor {
     private Handler handler;
     private SurfaceTexture inputSurfaceTexture;
     private Surface cameraSurface;
+    private SurfaceTexture secondaryInputSurfaceTexture;
+    private Surface secondaryCameraSurface;
 
     private android.opengl.EGLDisplay eglDisplay = EGL14.EGL_NO_DISPLAY;
     private android.opengl.EGLContext eglContext = EGL14.EGL_NO_CONTEXT;
     private android.opengl.EGLSurface eglSurface = EGL14.EGL_NO_SURFACE;
+    private android.opengl.EGLSurface previewEglSurface = EGL14.EGL_NO_SURFACE;
 
     private int textureId;
+    private int secondaryTextureId;
+    private volatile boolean secondaryInputActive;
     private int outputWidth;
     private int outputHeight;
+    private int previewOutputWidth;
+    private int previewOutputHeight;
     private final int[] eglSurfaceValue = new int[1];
     private final float[] textureMatrix = new float[16];
+    private final float[] secondaryTextureMatrix = new float[16];
     private RoundVideoOverlayRenderer overlayRenderer;
     private int gpuTimingFrame;
     private int outputSizeCheckFrame;
@@ -92,6 +108,8 @@ final class RoundVideoGlProcessor {
     private long swapTimingTotalNs;
     private long swapTimingMaxNs;
     private long inputFrames;
+    private long primaryInputFrames;
+    private long secondaryInputFrames;
     private long preOriginFrames;
     private long submittedFrames;
     private int syntheticFrames;
@@ -105,6 +123,7 @@ final class RoundVideoGlProcessor {
     private volatile boolean started;
     private volatile boolean recordingStarted;
     private volatile Runnable firstFrameListener;
+    private Runnable dualSwitchFrameListener;
     private boolean firstFrameReported;
     private volatile RuntimeException initializationError;
 
@@ -122,11 +141,49 @@ final class RoundVideoGlProcessor {
             @Nullable FrameTimingListener frameTimingListener,
             @Nullable ErrorListener errorListener
     ) {
+        this(
+                inputSize,
+                outputSurface,
+                null,
+                false,
+                outputSize,
+                sourceCropSize,
+                cameraTimestampRealtime,
+                compositionEnabled,
+                diagnostics,
+                presentationTimeOriginNs,
+                frameTimingListener,
+                errorListener
+        );
+    }
+
+    RoundVideoGlProcessor(
+            @NonNull Size inputSize,
+            @NonNull Surface outputSurface,
+            @Nullable Surface previewOutputSurface,
+            boolean dualInputEnabled,
+            int outputSize,
+            int sourceCropSize,
+            boolean cameraTimestampRealtime,
+            boolean compositionEnabled,
+            @NonNull RoundVideoDiagnostics diagnostics,
+            long presentationTimeOriginNs,
+            @Nullable FrameTimingListener frameTimingListener,
+            @Nullable ErrorListener errorListener
+    ) {
         this.inputSize = inputSize;
+        this.primaryInputSize = inputSize;
+        this.secondaryInputSize = inputSize;
         this.outputSurface = outputSurface;
+        this.previewOutputSurface = previewOutputSurface;
+        this.dualInputEnabled = dualInputEnabled;
         this.outputSize = outputSize;
         this.sourceCropSize = sourceCropSize;
+        this.primarySourceCropSize = sourceCropSize;
+        this.secondarySourceCropSize = sourceCropSize;
         this.cameraTimestampRealtime = cameraTimestampRealtime;
+        this.primaryTimestampRealtime = cameraTimestampRealtime;
+        this.secondaryTimestampRealtime = cameraTimestampRealtime;
         this.compositionEnabled = compositionEnabled;
         this.diagnostics = diagnostics;
         outputWidth = outputSize;
@@ -151,7 +208,9 @@ final class RoundVideoGlProcessor {
                 + ", crop=" + sourceCropSize
                 + ", output=" + outputSize + "x" + outputSize
                 + ", filter=" + inputFilterName()
-                + ", composition=" + compositionEnabled);
+                + ", composition=" + compositionEnabled
+                + ", dualInput=" + dualInputEnabled
+                + ", glPreview=" + (previewOutputSurface != null));
         handler = new Handler(thread.getLooper());
         handler.post(() -> {
             try {
@@ -217,6 +276,43 @@ final class RoundVideoGlProcessor {
             throw new IllegalStateException("GL processor is not started");
         }
         return cameraSurface;
+    }
+
+    @NonNull
+    public Surface getSecondaryCameraSurface() {
+        if (!dualInputEnabled || secondaryCameraSurface == null) {
+            throw new IllegalStateException("Secondary GL camera surface is unavailable");
+        }
+        return secondaryCameraSurface;
+    }
+
+    public void setSecondaryInputActive(boolean secondary) {
+        setSecondaryInputActive(secondary, null);
+    }
+
+    public void setSecondaryInputActive(
+            boolean secondary,
+            @Nullable Runnable firstSelectedFrameListener
+    ) {
+        Handler currentHandler = handler;
+        if (!started || currentHandler == null) return;
+        currentHandler.post(() -> {
+            if (!dualInputEnabled) return;
+            secondaryInputActive = secondary;
+            inputSize = secondary ? secondaryInputSize : primaryInputSize;
+            sourceCropSize = secondary
+                    ? secondarySourceCropSize
+                    : primarySourceCropSize;
+            cameraTimestampRealtime = secondary
+                    ? secondaryTimestampRealtime
+                    : primaryTimestampRealtime;
+            if (overlayRenderer != null) {
+                overlayRenderer.updateInputConfiguration(inputSize, sourceCropSize);
+            }
+            firstCameraTimestamp = -1;
+            dualSwitchFrameListener = firstSelectedFrameListener;
+            diagnostics.log("GL dual input selected: input=" + (secondary ? 1 : 0));
+        });
     }
 
     public void beginCameraSwitch(
@@ -301,10 +397,22 @@ final class RoundVideoGlProcessor {
         currentHandler.post(() -> {
             try {
                 inputSize = size;
+                primaryInputSize = size;
+                secondaryInputSize = size;
                 sourceCropSize = cropSize;
+                primarySourceCropSize = cropSize;
+                secondarySourceCropSize = cropSize;
                 cameraTimestampRealtime = timestampRealtime;
+                primaryTimestampRealtime = timestampRealtime;
+                secondaryTimestampRealtime = timestampRealtime;
                 if (inputSurfaceTexture != null) {
                     inputSurfaceTexture.setDefaultBufferSize(size.getWidth(), size.getHeight());
+                }
+                if (secondaryInputSurfaceTexture != null) {
+                    secondaryInputSurfaceTexture.setDefaultBufferSize(
+                            size.getWidth(),
+                            size.getHeight()
+                    );
                 }
                 setInputTextureFilter();
                 if (overlayRenderer != null) {
@@ -328,6 +436,48 @@ final class RoundVideoGlProcessor {
         if (error[0] != null) {
             throw error[0];
         }
+    }
+
+    public void configureSecondaryInput(
+            @NonNull Size size,
+            int cropSize,
+            boolean timestampRealtime
+    ) {
+        Handler currentHandler = handler;
+        if (!started || !dualInputEnabled || currentHandler == null) return;
+        CountDownLatch latch = new CountDownLatch(1);
+        RuntimeException[] error = new RuntimeException[1];
+        currentHandler.post(() -> {
+            try {
+                secondaryInputSize = size;
+                secondarySourceCropSize = cropSize;
+                secondaryTimestampRealtime = timestampRealtime;
+                if (secondaryInputSurfaceTexture != null) {
+                    secondaryInputSurfaceTexture.setDefaultBufferSize(
+                            size.getWidth(),
+                            size.getHeight()
+                    );
+                }
+                if (secondaryTextureId != 0) {
+                    setInputTextureFilter(secondaryTextureId, cropSize);
+                }
+                diagnostics.log("GL secondary input configured: input=" + size
+                        + ", crop=" + cropSize
+                        + ", filter=" + inputFilterName(cropSize)
+                        + ", timestampRealtime=" + timestampRealtime);
+            } catch (RuntimeException e) {
+                error[0] = e;
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Secondary input update was interrupted", e);
+        }
+        if (error[0] != null) throw error[0];
     }
 
     private void initializeGl() {
@@ -387,6 +537,21 @@ final class RoundVideoGlProcessor {
                 0
         );
         checkEglObject(eglSurface != EGL14.EGL_NO_SURFACE, "Unable to create EGL surface");
+        if (previewOutputSurface != null) {
+            previewEglSurface = EGL14.eglCreateWindowSurface(
+                    eglDisplay,
+                    configs[0],
+                    previewOutputSurface,
+                    surfaceAttributes,
+                    0
+            );
+            checkEglObject(
+                    previewEglSurface != EGL14.EGL_NO_SURFACE,
+                    "Unable to create preview EGL surface"
+            );
+            previewOutputWidth = querySurfaceValue(previewEglSurface, EGL14.EGL_WIDTH);
+            previewOutputHeight = querySurfaceValue(previewEglSurface, EGL14.EGL_HEIGHT);
+        }
 
         makeCurrent();
         diagnostics.log("GL initialized: egl=" + versions[0] + "." + versions[1]
@@ -405,11 +570,37 @@ final class RoundVideoGlProcessor {
     }
 
     private void createInputSurface() {
-        int[] textures = new int[1];
-        GLES20.glGenTextures(1, textures, 0);
+        int[] textures = new int[dualInputEnabled ? 2 : 1];
+        GLES20.glGenTextures(textures.length, textures, 0);
         textureId = textures[0];
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-        setInputTextureFilter();
+        configureExternalTexture(textureId);
+
+        inputSurfaceTexture = new SurfaceTexture(textureId);
+        inputSurfaceTexture.setDefaultBufferSize(inputSize.getWidth(), inputSize.getHeight());
+        inputSurfaceTexture.setOnFrameAvailableListener(
+                surfaceTexture -> drawFrame(false),
+                handler
+        );
+        cameraSurface = new Surface(inputSurfaceTexture);
+        if (dualInputEnabled) {
+            secondaryTextureId = textures[1];
+            configureExternalTexture(secondaryTextureId);
+            secondaryInputSurfaceTexture = new SurfaceTexture(secondaryTextureId);
+            secondaryInputSurfaceTexture.setDefaultBufferSize(
+                    inputSize.getWidth(),
+                    inputSize.getHeight()
+            );
+            secondaryInputSurfaceTexture.setOnFrameAvailableListener(
+                    surfaceTexture -> drawFrame(true),
+                    handler
+            );
+            secondaryCameraSurface = new Surface(secondaryInputSurfaceTexture);
+        }
+    }
+
+    private void configureExternalTexture(int id) {
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, id);
+        setInputTextureFilter(id, sourceCropSize);
         GLES20.glTexParameteri(
                 GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
                 GLES20.GL_TEXTURE_WRAP_S,
@@ -420,16 +611,18 @@ final class RoundVideoGlProcessor {
                 GLES20.GL_TEXTURE_WRAP_T,
                 GLES20.GL_CLAMP_TO_EDGE
         );
-
-        inputSurfaceTexture = new SurfaceTexture(textureId);
-        inputSurfaceTexture.setDefaultBufferSize(inputSize.getWidth(), inputSize.getHeight());
-        inputSurfaceTexture.setOnFrameAvailableListener(surfaceTexture -> drawFrame(), handler);
-        cameraSurface = new Surface(inputSurfaceTexture);
     }
 
     private void setInputTextureFilter() {
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-        int filter = sourceCropSize == outputSize ? GLES20.GL_NEAREST : GLES20.GL_LINEAR;
+        setInputTextureFilter(textureId, primarySourceCropSize);
+        if (secondaryTextureId != 0) {
+            setInputTextureFilter(secondaryTextureId, secondarySourceCropSize);
+        }
+    }
+
+    private void setInputTextureFilter(int id, int cropSize) {
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, id);
+        int filter = cropSize == outputSize ? GLES20.GL_NEAREST : GLES20.GL_LINEAR;
         GLES20.glTexParameteri(
                 GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
                 GLES20.GL_TEXTURE_MIN_FILTER,
@@ -442,20 +635,34 @@ final class RoundVideoGlProcessor {
         );
     }
 
-    private void drawFrame() {
-        if (!started || inputSurfaceTexture == null) {
+    private void drawFrame(boolean secondary) {
+        SurfaceTexture surfaceTexture = secondary
+                ? secondaryInputSurfaceTexture
+                : inputSurfaceTexture;
+        if (!started || surfaceTexture == null) {
             return;
         }
         try {
-            inputSurfaceTexture.updateTexImage();
-            inputSurfaceTexture.getTransformMatrix(textureMatrix);
-            long timestamp = inputSurfaceTexture.getTimestamp();
+            float[] matrix = secondary ? secondaryTextureMatrix : textureMatrix;
+            int cameraTexture = secondary ? secondaryTextureId : textureId;
+            surfaceTexture.updateTexImage();
+            surfaceTexture.getTransformMatrix(matrix);
+            long timestamp = surfaceTexture.getTimestamp();
             inputFrames++;
-            if (inputFrames == 1) {
-                diagnostics.log("first GL input frame: cameraTimestampNs=" + timestamp
+            long inputCount;
+            if (secondary) {
+                inputCount = ++secondaryInputFrames;
+            } else {
+                inputCount = ++primaryInputFrames;
+            }
+            if (inputCount == 1) {
+                diagnostics.log("first GL input frame: input=" + (secondary ? 1 : 0)
+                        + ", cameraTimestampNs=" + timestamp
                         + ", elapsedMs=" + elapsedMs(glStartedNs));
             }
+            if (secondary != secondaryInputActive) return;
             if (!recordingStarted) {
+                renderPreviewAndNotify(cameraTexture, matrix);
                 Runnable listener = firstFrameListener;
                 if (!firstFrameReported && listener != null) {
                     firstFrameReported = true;
@@ -464,6 +671,7 @@ final class RoundVideoGlProcessor {
                 return;
             }
             if (cameraTimestampRealtime && timestamp < presentationTimeOriginNs) {
+                renderPreviewAndNotify(cameraTexture, matrix);
                 preOriginFrames++;
                 if (preOriginFrames == 1) {
                     diagnostics.log("dropping pre-origin camera frame: deltaUs="
@@ -484,11 +692,12 @@ final class RoundVideoGlProcessor {
             }
             lastFrameTime = frameTime;
             if (switchState != SWITCH_NONE) {
+                renderPreviewAndNotify(cameraTexture, matrix);
                 if (!newCameraSessionReady) {
                     return;
                 }
                 boolean firstNewFrame = !hasNewCameraFrame;
-                overlayRenderer.captureSwitchFrame(textureId, textureMatrix, true);
+                overlayRenderer.captureSwitchFrame(cameraTexture, matrix, true);
                 hasNewCameraFrame = true;
                 if (firstNewFrame) {
                     long now = SystemClock.elapsedRealtimeNanos();
@@ -525,8 +734,8 @@ final class RoundVideoGlProcessor {
             }
 
             overlayRenderer.render(
-                    textureId,
-                    textureMatrix,
+                    cameraTexture,
+                    matrix,
                     frameTime,
                     outputWidth,
                     outputHeight
@@ -548,9 +757,56 @@ final class RoundVideoGlProcessor {
             if (presentationTime < presentationTimeLimitNs) {
                 submitFrame(presentationTime);
             }
+            renderPreviewAndNotify(cameraTexture, matrix);
         } catch (RuntimeException e) {
             reportError(e);
         }
+    }
+
+    private void renderPreviewAndNotify(int cameraTexture, @NonNull float[] matrix) {
+        renderPreview(cameraTexture, matrix);
+        Runnable selectedFrameListener = dualSwitchFrameListener;
+        if (selectedFrameListener != null) {
+            dualSwitchFrameListener = null;
+            selectedFrameListener.run();
+        }
+    }
+
+    private void renderPreview(int cameraTexture, @NonNull float[] matrix) {
+        if (previewEglSurface == EGL14.EGL_NO_SURFACE || overlayRenderer == null) return;
+        if (!EGL14.eglMakeCurrent(
+                eglDisplay,
+                previewEglSurface,
+                previewEglSurface,
+                eglContext
+        )) {
+            throw new IllegalStateException("Unable to make preview EGL surface current: 0x"
+                    + Integer.toHexString(EGL14.eglGetError()));
+        }
+        overlayRenderer.renderPreview(
+                cameraTexture,
+                matrix,
+                previewOutputWidth,
+                previewOutputHeight
+        );
+        if (!EGL14.eglSwapBuffers(eglDisplay, previewEglSurface)) {
+            throw new IllegalStateException("Unable to swap preview EGL buffers: 0x"
+                    + Integer.toHexString(EGL14.eglGetError()));
+        }
+        makeCurrent();
+    }
+
+    private int querySurfaceValue(android.opengl.EGLSurface surface, int attribute) {
+        if (!EGL14.eglQuerySurface(
+                eglDisplay,
+                surface,
+                attribute,
+                eglSurfaceValue,
+                0
+        )) {
+            return outputSize;
+        }
+        return Math.max(1, eglSurfaceValue[0]);
     }
 
     private void drawSwitchFrame() {
@@ -727,7 +983,12 @@ final class RoundVideoGlProcessor {
 
     @NonNull
     private String inputFilterName() {
-        return sourceCropSize == outputSize ? "NEAREST" : "LINEAR";
+        return inputFilterName(sourceCropSize);
+    }
+
+    @NonNull
+    private String inputFilterName(int cropSize) {
+        return cropSize == outputSize ? "NEAREST" : "LINEAR";
     }
 
     private static long elapsedMs(long startedNs) {
@@ -778,12 +1039,18 @@ final class RoundVideoGlProcessor {
             outputHeight = height;
             diagnostics.log("EGL output size changed: " + width + "x" + height);
         }
+        if (previewEglSurface != EGL14.EGL_NO_SURFACE) {
+            previewOutputWidth = querySurfaceValue(previewEglSurface, EGL14.EGL_WIDTH);
+            previewOutputHeight = querySurfaceValue(previewEglSurface, EGL14.EGL_HEIGHT);
+        }
     }
 
     private void releaseGl() {
         long elapsedNs = glStartedNs == 0 ? 0 : System.nanoTime() - glStartedNs;
         diagnostics.log("GL summary: inputFrames=" + inputFrames
                 + ", inputFps=" + frameRate(inputFrames, elapsedNs)
+                + ", primaryInputFrames=" + primaryInputFrames
+                + ", secondaryInputFrames=" + secondaryInputFrames
                 + ", preOriginFrames=" + preOriginFrames
                 + ", submittedFrames=" + submittedFrames
                 + ", submittedFps=" + frameRate(submittedFrames, elapsedNs)
@@ -809,6 +1076,9 @@ final class RoundVideoGlProcessor {
         if (inputSurfaceTexture != null) {
             inputSurfaceTexture.setOnFrameAvailableListener(null);
         }
+        if (secondaryInputSurfaceTexture != null) {
+            secondaryInputSurfaceTexture.setOnFrameAvailableListener(null);
+        }
         if (cameraSurface != null) {
             cameraSurface.release();
             cameraSurface = null;
@@ -817,6 +1087,14 @@ final class RoundVideoGlProcessor {
             inputSurfaceTexture.release();
             inputSurfaceTexture = null;
         }
+        if (secondaryCameraSurface != null) {
+            secondaryCameraSurface.release();
+            secondaryCameraSurface = null;
+        }
+        if (secondaryInputSurfaceTexture != null) {
+            secondaryInputSurfaceTexture.release();
+            secondaryInputSurfaceTexture = null;
+        }
         if (overlayRenderer != null) {
             overlayRenderer.release();
             overlayRenderer = null;
@@ -824,6 +1102,10 @@ final class RoundVideoGlProcessor {
         if (textureId != 0) {
             GLES20.glDeleteTextures(1, new int[]{textureId}, 0);
             textureId = 0;
+        }
+        if (secondaryTextureId != 0) {
+            GLES20.glDeleteTextures(1, new int[]{secondaryTextureId}, 0);
+            secondaryTextureId = 0;
         }
 
         if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
@@ -836,6 +1118,9 @@ final class RoundVideoGlProcessor {
             if (eglSurface != EGL14.EGL_NO_SURFACE) {
                 EGL14.eglDestroySurface(eglDisplay, eglSurface);
             }
+            if (previewEglSurface != EGL14.EGL_NO_SURFACE) {
+                EGL14.eglDestroySurface(eglDisplay, previewEglSurface);
+            }
             if (eglContext != EGL14.EGL_NO_CONTEXT) {
                 EGL14.eglDestroyContext(eglDisplay, eglContext);
             }
@@ -846,6 +1131,7 @@ final class RoundVideoGlProcessor {
         eglDisplay = EGL14.EGL_NO_DISPLAY;
         eglContext = EGL14.EGL_NO_CONTEXT;
         eglSurface = EGL14.EGL_NO_SURFACE;
+        previewEglSurface = EGL14.EGL_NO_SURFACE;
     }
 
     private static void checkEglObject(boolean valid, @NonNull String message) {

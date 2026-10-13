@@ -3,7 +3,7 @@ package org.telegram.messenger.utils;
 import android.text.Spanned;
 import android.text.TextUtils;
 
-import org.telegram.messenger.CodeHighlighting;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.QuoteSpan;
 import org.telegram.ui.Components.TextStyleSpan;

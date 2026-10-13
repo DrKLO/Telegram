@@ -64,8 +64,6 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private static final int SWITCH_PREVIEW_BITMAP_SIZE = 180;
     private static final long UI_FRAME_FALLBACK_DELAY_NS = 70_000_000L;
     private static final long CAMERA_FLIP_MINIMUM_DURATION_MS = 580L;
-    private static final long CAMERA_FLIP_OUT_DURATION_MS = 120L;
-    private static final long CAMERA_FLIP_MINIMUM_REVEAL_DURATION_MS = 300L;
 
     private final InstantCameraView.Delegate delegate;
     private final Theme.ResourcesProvider resourcesProvider;
@@ -100,6 +98,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private SendOptions pendingSend;
     private AnimatorSet visibilityAnimator;
     private ValueAnimator zoomResetAnimator;
+    private ValueAnimator cameraFlipAnimator;
     private RLottieDrawable switchCameraDrawable;
     private RLottieDrawable flashOnDrawable;
     private RLottieDrawable flashOffDrawable;
@@ -115,7 +114,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private boolean cameraFlipInProgress;
     private boolean cameraFlipSessionReady;
     private boolean cameraFlipFirstFrameReady;
-    private boolean cameraFlipRevealStarted;
+    private boolean cameraFlipAnimationCompleted;
     private long cameraFlipStartedRealtimeMs;
     private int cameraFlipGeneration;
     private Bitmap lastBitmap;
@@ -127,7 +126,6 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private int zoomPointerId1 = -1;
     private int zoomPointerId2 = -1;
 
-    private final Runnable cameraFlipRevealRunnable = this::maybeStartCameraFlipReveal;
     private boolean pinchZoomActive;
     private boolean heavyOperationsStopped;
     private float previousWindowBrightness = Float.NaN;
@@ -724,7 +722,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             cameraFlipSessionReady = true;
             FileLog.d("RoundVideo camera flip session ready: facing=" + facing
                     + ", elapsedMs=" + getCameraFlipElapsedMs());
-            maybeStartCameraFlipReveal();
+            maybeFinishCameraFlip();
         }
 
         @Override
@@ -732,7 +730,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             cameraFlipFirstFrameReady = true;
             FileLog.d("RoundVideo camera flip first frame: elapsedMs="
                     + getCameraFlipElapsedMs());
-            maybeStartCameraFlipReveal();
+            hideCameraSwitchPlaceholder(true);
+            maybeFinishCameraFlip();
         }
 
         @Override
@@ -1138,83 +1137,77 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             @NonNull RoundVideoSession.CameraFacing facing
     ) {
         cameraFlipGeneration++;
-        removeCallbacks(cameraFlipRevealRunnable);
+        if (cameraFlipAnimator != null) {
+            cameraFlipAnimator.removeAllListeners();
+            cameraFlipAnimator.cancel();
+            cameraFlipAnimator = null;
+        }
         cameraFlipInProgress = true;
         cameraFlipSessionReady = false;
         cameraFlipFirstFrameReady = false;
-        cameraFlipRevealStarted = false;
+        cameraFlipAnimationCompleted = false;
         cameraFlipStartedRealtimeMs = SystemClock.elapsedRealtime();
         showCameraSwitchPlaceholder();
         previewContainer.animate().cancel();
         previewContainer.setRotationY(0f);
         previewContainer.setCameraDistance(previewContainer.getMeasuredHeight() * 8f);
-        previewContainer.animate()
-                .rotationY(90f)
-                .setDuration(CAMERA_FLIP_OUT_DURATION_MS)
-                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setListener(null)
-                .start();
+        int generation = cameraFlipGeneration;
+        cameraFlipAnimator = ValueAnimator.ofFloat(0f, 1f);
+        cameraFlipAnimator.setDuration(CAMERA_FLIP_MINIMUM_DURATION_MS);
+        cameraFlipAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        cameraFlipAnimator.addUpdateListener(animation -> {
+            if (generation != cameraFlipGeneration) return;
+            float progress = (float) animation.getAnimatedValue();
+            float rotation = progress < 0.5f ? progress : progress - 1f;
+            previewContainer.setRotationY(rotation * 180f);
+        });
+        cameraFlipAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (generation != cameraFlipGeneration) return;
+                previewContainer.setRotationY(0f);
+                cameraFlipAnimationCompleted = true;
+                cameraFlipAnimator = null;
+                FileLog.d("RoundVideo camera flip visual animation completed: elapsedMs="
+                        + getCameraFlipElapsedMs());
+                maybeFinishCameraFlip();
+            }
+        });
+        cameraFlipAnimator.start();
         FileLog.d("RoundVideo camera flip started: facing=" + facing
                 + ", minimumDurationMs=" + CAMERA_FLIP_MINIMUM_DURATION_MS);
         updateButtons();
     }
 
-    private void maybeStartCameraFlipReveal() {
-        if (!cameraFlipInProgress || cameraFlipRevealStarted
-                || !cameraFlipSessionReady || !cameraFlipFirstFrameReady) {
+    private void maybeFinishCameraFlip() {
+        if (!cameraFlipInProgress
+                || !cameraFlipAnimationCompleted
+                || !cameraFlipSessionReady
+                || !cameraFlipFirstFrameReady) {
             return;
         }
-        long elapsedMs = getCameraFlipElapsedMs();
-        long waitMs = CAMERA_FLIP_OUT_DURATION_MS - elapsedMs;
-        if (waitMs > 0L) {
-            removeCallbacks(cameraFlipRevealRunnable);
-            postDelayed(cameraFlipRevealRunnable, waitMs);
-            return;
-        }
-
-        cameraFlipRevealStarted = true;
-        removeCallbacks(cameraFlipRevealRunnable);
-        hideCameraSwitchPlaceholder();
-        previewContainer.animate().cancel();
-        previewContainer.setRotationY(-90f);
-        long revealDurationMs = Math.max(
-                CAMERA_FLIP_MINIMUM_REVEAL_DURATION_MS,
-                CAMERA_FLIP_MINIMUM_DURATION_MS - elapsedMs
-        );
-        int generation = cameraFlipGeneration;
-        FileLog.d("RoundVideo camera flip reveal started: elapsedMs=" + elapsedMs
-                + ", durationMs=" + revealDurationMs);
-        previewContainer.animate()
-                .rotationY(0f)
-                .setDuration(revealDurationMs)
-                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (generation != cameraFlipGeneration) return;
-                        previewContainer.animate().setListener(null);
-                        previewContainer.setRotationY(0f);
-                        cameraFlipInProgress = false;
-                        FileLog.d("RoundVideo camera flip completed: elapsedMs="
-                                + getCameraFlipElapsedMs());
-                        updateButtons();
-                    }
-                })
-                .start();
+        cameraFlipInProgress = false;
+        FileLog.d("RoundVideo camera flip completed: elapsedMs="
+                + getCameraFlipElapsedMs());
+        updateButtons();
     }
 
     private void cancelCameraFlipAnimation() {
-        if (!cameraFlipInProgress && !cameraFlipRevealStarted) return;
+        if (!cameraFlipInProgress && cameraFlipAnimator == null) return;
         cameraFlipGeneration++;
-        removeCallbacks(cameraFlipRevealRunnable);
+        if (cameraFlipAnimator != null) {
+            cameraFlipAnimator.removeAllListeners();
+            cameraFlipAnimator.cancel();
+            cameraFlipAnimator = null;
+        }
         previewContainer.animate().cancel();
         previewContainer.animate().setListener(null);
         previewContainer.setRotationY(0f);
         cameraFlipInProgress = false;
         cameraFlipSessionReady = false;
         cameraFlipFirstFrameReady = false;
-        cameraFlipRevealStarted = false;
-        hideCameraSwitchPlaceholder();
+        cameraFlipAnimationCompleted = false;
+        hideCameraSwitchPlaceholder(false);
     }
 
     private long getCameraFlipElapsedMs() {
@@ -1223,11 +1216,19 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 : Math.max(0L, SystemClock.elapsedRealtime() - cameraFlipStartedRealtimeMs);
     }
 
-    private void hideCameraSwitchPlaceholder() {
+    private void hideCameraSwitchPlaceholder(boolean animated) {
         if (!switchPlaceholderVisible) return;
         switchPlaceholderVisible = false;
         textureOverlayView.animate().cancel();
-        textureOverlayView.setAlpha(0f);
+        if (animated) {
+            textureOverlayView.animate()
+                    .alpha(0f)
+                    .setDuration(120L)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
+        } else {
+            textureOverlayView.setAlpha(0f);
+        }
     }
 
     private void saveLastCameraBitmap(boolean persist) {

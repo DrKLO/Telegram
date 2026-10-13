@@ -17,6 +17,8 @@ idea {
             file('jni/third_party/openh264'),
             file('jni/third_party/xiph'),
             file('jni/third_party/wamr'),
+            file('jni/third_party/libprisma'),
+            file('jni/third_party/boost-regex'),
             file('jni/tgcalls'),
             file('jni/tlottie'),
             file('jni/voip/webrtc'),

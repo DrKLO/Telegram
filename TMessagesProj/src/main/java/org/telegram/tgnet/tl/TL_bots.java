@@ -1255,4 +1255,37 @@ public class TL_bots {
         }
     }
 
+    public static class TL_bots_addUsername extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0x3501C08A;
+
+        public TLRPC.InputUser bot;
+        public String username;
+
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+            stream.writeString(username);
+        }
+    }
+
+    public static class TL_bots_removeUsername extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0xC704147D;
+
+        public TLRPC.InputUser bot;
+        public String username;
+
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            bot.serializeToStream(stream);
+            stream.writeString(username);
+        }
+    }
 }

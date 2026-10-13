@@ -393,6 +393,16 @@ final class RoundVideoOverlayRenderer {
         renderWatermarks();
     }
 
+    void renderPreview(
+            int cameraTexture,
+            @NonNull float[] textureMatrix,
+            int outputWidth,
+            int outputHeight
+    ) {
+        GLES20.glDisable(GLES20.GL_BLEND);
+        renderRawCameraToOutput(cameraTexture, textureMatrix, outputWidth, outputHeight);
+    }
+
     void updateInputConfiguration(@NonNull Size inputSize, int sourceCropSize) {
         this.inputSize = inputSize;
         this.sourceCropSize = sourceCropSize;

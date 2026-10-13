@@ -91,6 +91,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.Stories.StoriesStorage;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 
 import java.io.File;
 import java.util.ArrayList;
