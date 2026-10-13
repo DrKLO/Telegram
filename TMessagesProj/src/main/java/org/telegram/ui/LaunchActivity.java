@@ -943,7 +943,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     final int height = MeasureSpec.getSize(heightMeasureSpec);
                     setMeasuredDimension(width, height);
 
-                    if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+                    if ((!AndroidUtilities.isInMultiwindow || getResources().getConfiguration().screenWidthDp >= 840) && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
                         tabletFullSize = false;
                         final int leftWidth = AndroidUtilities.getTabletLeftFragmentSize(width, insets.left, insets.right);
                         actionBarLayout.getView().measure(MeasureSpec.makeMeasureSpec(leftWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -966,7 +966,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     final int width = getMeasuredWidth();
                     final int height = getMeasuredHeight();
-                    if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+                    if ((!AndroidUtilities.isInMultiwindow || getResources().getConfiguration().screenWidthDp >= 840) && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
                         final int leftWidth = AndroidUtilities.getTabletLeftFragmentSize(width, insets.left, insets.right);
                         actionBarLayout.getView().layout(0, 0, actionBarLayout.getView().getMeasuredWidth(), actionBarLayout.getView().getMeasuredHeight());
                         rightActionBarLayout.getView().layout(leftWidth, 0, leftWidth + rightActionBarLayout.getView().getMeasuredWidth(), rightActionBarLayout.getView().getMeasuredHeight());
@@ -1325,7 +1325,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             return;
         }
 
-        if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+        if ((!AndroidUtilities.isInMultiwindow || getResources().getConfiguration().screenWidthDp >= 840) && (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
             tabletFullSize = false;
             List<BaseFragment> fragmentStack = actionBarLayout.getFragmentStack();
             if (fragmentStack.size() >= 2) {
