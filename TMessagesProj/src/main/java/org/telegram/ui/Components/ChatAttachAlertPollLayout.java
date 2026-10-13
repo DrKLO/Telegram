@@ -1107,8 +1107,12 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     }
 
     private boolean doneItemEnabled;
+    private CharSequence doneItemDisabledReason;
     private void checkDoneButton() {
         boolean enabled = true;
+        // the first thing standing in the way of sending, said to a screen reader with the button:
+        // what is missing is only ever shown, a count turning red or an answer left unmarked
+        CharSequence disabledReason = null;
         int checksCount = 0;
         if (quizPoll) {
             for (int a = 0; a < answersChecks.length; a++) {
@@ -1122,16 +1126,26 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         final int maxAnswerLength = todo ? getMessagesController().todoItemLengthMax : MAX_ANSWER_LENGTH;
         if (!TextUtils.isEmpty(getFixedString(descriptionString)) && descriptionString.length() > MAX_CAPTION_LENGTH) {
             enabled = false;
+            disabledReason = getString(R.string.AccDescrPollDescriptionTooLong);
         } else if (!TextUtils.isEmpty(getFixedString(solutionString)) && solutionString.length() > MAX_SOLUTION_LENGTH) {
             enabled = false;
+            disabledReason = getString(R.string.AccDescrPollExplanationTooLong);
         } else if (TextUtils.isEmpty(getFixedString(questionString)) || questionString.length() > maxQuestionLength) {
             enabled = false;
+            if (TextUtils.isEmpty(getFixedString(questionString))) {
+                disabledReason = getString(todo ? R.string.AccDescrTodoNoTitle : R.string.AccDescrPollNoQuestion);
+            } else {
+                disabledReason = getString(todo ? R.string.AccDescrTodoTitleTooLong : R.string.AccDescrPollQuestionTooLong);
+            }
         }
         boolean hasAnswers = false;
         for (int a = 0; a < answers.length; a++) {
             if (!TextUtils.isEmpty(getFixedString(answers[a]))) {
                 hasAnswers = true;
                 if (answers[a].length() > maxAnswerLength) {
+                    if (disabledReason == null) {
+                        disabledReason = getString(todo ? R.string.AccDescrTodoTaskTooLong : R.string.AccDescrPollOptionTooLong);
+                    }
                     count = 0;
                     break;
                 }
@@ -1140,6 +1154,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         if (count < 1 || quizPoll && checksCount < 1) {
             enabled = false;
+            if (disabledReason == null) {
+                disabledReason = count < 1 ? getString(todo ? R.string.AccDescrTodoNoTasks : R.string.AccDescrPollNoOptions) : getString(R.string.PollTapToSelect);
+            }
         }
         if (!TextUtils.isEmpty(solutionString) || !TextUtils.isEmpty(questionString) || !TextUtils.isEmpty(descriptionString) || hasAnswers || attachedMedia.medias.size() > 0) {
             allowNesterScroll = false;
@@ -1148,12 +1165,18 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         }
         parentAlert.setAllowNestedScroll(allowNesterScroll);
         doneItemEnabled = enabled;
+        doneItemDisabledReason = enabled ? null : disabledReason;
         parentAlert.updateDoneItemEnabled();
     }
 
     @Override
     public boolean isDoneItemEnabled() {
         return doneItemEnabled;
+    }
+
+    @Override
+    public CharSequence getDoneItemAccessibilityText() {
+        return doneItemDisabledReason;
     }
 
     @Override
