@@ -71,6 +71,7 @@ import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.messenger.voip.VoIPGroupNotification;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_keyboard;
@@ -5184,8 +5185,8 @@ public class NotificationsController extends BaseController implements Notificat
 
             if (chat != null) {
                 Person.Builder personBuilder = new Person.Builder().setName(name);
-                if (avatarFile != null && avatarFile.exists() && Build.VERSION.SDK_INT >= 28) {
-                    loadRoundAvatar(dialogId, avatarFile, personBuilder);
+                if (Build.VERSION.SDK_INT >= 28 && !waitingForPasscode) {
+                    loadPersonAvatar(personBuilder, dialogId, chat, avatarFile);
                 }
                 personCache.put(-chat.id, personBuilder.build());
             }
@@ -5869,6 +5870,24 @@ public class NotificationsController extends BaseController implements Notificat
             avatars.clear();
         }
         return new Pair<>(storiesCount, hidden);
+    }
+
+    private void loadPersonAvatar(Person.Builder personBuilder, long dialogId, TLObject peer, File avatar) {
+        loadRoundAvatar(dialogId, avatar != null && avatar.exists() ? avatar : null, personBuilder);
+        if (peer == null || personBuilder.build().getIcon() != null) {
+            return;
+        }
+        try {
+            final int size = AndroidUtilities.dp(48);
+            AvatarDrawable avatarDrawable = new AvatarDrawable();
+            avatarDrawable.setInfo(currentAccount, peer);
+            avatarDrawable.setBounds(0, 0, size, size);
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            avatarDrawable.draw(new Canvas(bitmap));
+            personBuilder.setIcon(IconCompat.createWithBitmap(bitmap));
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
