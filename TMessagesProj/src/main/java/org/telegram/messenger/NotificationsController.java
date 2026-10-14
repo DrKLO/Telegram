@@ -5431,9 +5431,9 @@ public class NotificationsController extends BaseController implements Notificat
                         boolean setPhoto = false;
                         if (preview[0] && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice()) {
                             if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker())) {
-                                File attach = getFileLoader().getPathToMessage(messageObject.messageOwner);
+                                File attach = getNotificationMediaFile(messageObject);
                                 File blurredAttach;
-                                if (attach.exists() && messageObject.hasMediaSpoilers()) {
+                                if (attach != null && messageObject.hasMediaSpoilers()) {
                                     blurredAttach = new File(attach.getParentFile(), attach.getName() + ".blur.jpg");
                                     if (!blurredAttach.exists()) {
                                         try {
@@ -5468,25 +5468,13 @@ public class NotificationsController extends BaseController implements Notificat
                                 }
                                 NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);
                                 String mimeType = messageObject.isSticker() ? "image/webp" : "image/jpeg";
-                                Uri uri;
-                                if (attach.exists()) {
+                                Uri uri = null;
+                                if (attach != null) {
                                     try {
                                         uri = FileProvider.getUriForFile(ApplicationLoader.applicationContext, ApplicationLoader.getApplicationId() + ".provider", attach);
                                     } catch (Exception e) {
                                         FileLog.e(e);
-                                        uri = null;
                                     }
-                                } else if (getFileLoader().isLoadingFile(attach.getName())) {
-                                    Uri.Builder _uri = new Uri.Builder()
-                                            .scheme("content")
-                                            .authority(NotificationImageProvider.getAuthority())
-                                            .appendPath("msg_media_raw")
-                                            .appendPath(currentAccount + "")
-                                            .appendPath(attach.getName())
-                                            .appendQueryParameter("final_path", attach.getAbsolutePath());
-                                    uri = _uri.build();
-                                } else {
-                                    uri = null;
                                 }
                                 if (uri != null) {
                                     msg.setData(mimeType, uri);
@@ -5869,6 +5857,41 @@ public class NotificationsController extends BaseController implements Notificat
             avatars.clear();
         }
         return new Pair<>(storiesCount, hidden);
+    }
+
+    private File getNotificationMediaFile(MessageObject messageObject) {
+        final TLRPC.MessageMedia media = MessageObject.getMedia(messageObject.messageOwner);
+        if (messageObject.isSticker()) {
+            final TLRPC.Document document = messageObject.getDocument();
+            File file = getFileLoader().getPathToAttach(document, false);
+            if (!file.exists()) {
+                file = getFileLoader().getPathToAttach(document, true);
+            }
+            return file.exists() ? file : null;
+        }
+        File file = getFileLoader().getPathToMessage(messageObject.messageOwner);
+        if (file.exists()) {
+            return file;
+        }
+        if (!(media instanceof TLRPC.TL_messageMediaPhoto) || media.photo == null) {
+            return null;
+        }
+        // any downloaded size is good enough for a notification, not only the largest one
+        File bestFile = null;
+        int bestSide = 0;
+        for (int a = 0, size = media.photo.sizes.size(); a < size; a++) {
+            final TLRPC.PhotoSize photoSize = media.photo.sizes.get(a);
+            final int side = Math.max(photoSize.w, photoSize.h);
+            if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize || side <= bestSide) {
+                continue;
+            }
+            file = getFileLoader().getPathToAttach(photoSize, false);
+            if (file.exists()) {
+                bestFile = file;
+                bestSide = side;
+            }
+        }
+        return bestFile;
     }
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
