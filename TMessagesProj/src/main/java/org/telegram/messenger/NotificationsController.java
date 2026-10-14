@@ -118,6 +118,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final LongSparseArray<String> dialogNotificationChannels = new LongSparseArray<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -5677,6 +5678,7 @@ public class NotificationsController extends BaseController implements Notificat
             }
 
             final boolean alert = alertByChildren && !isSilent && (dialogKey.story ? lastIsStory : !lastIsStory && dialogId == lastDialogId);
+            final long channelKey = dialogKey.story ? 0 : dialogId;
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
                 if (!alertByChildren) {
@@ -5761,7 +5763,12 @@ public class NotificationsController extends BaseController implements Notificat
             }
 
             if (alertByChildren) {
-                builder.setChannelId(mainNotification.getChannelId());
+                String channelId = alert ? null : dialogNotificationChannels.get(channelKey);
+                if (channelId == null || systemNotificationManager.getNotificationChannel(channelId) == null) {
+                    channelId = mainNotification.getChannelId();
+                }
+                builder.setChannelId(channelId);
+                dialogNotificationChannels.put(channelKey, channelId);
             } else if (Build.VERSION.SDK_INT >= 26) {
                 setNotificationChannel(mainNotification, builder, useSummaryNotification);
             }
