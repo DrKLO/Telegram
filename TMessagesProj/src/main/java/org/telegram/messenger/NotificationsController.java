@@ -2578,7 +2578,8 @@ public class NotificationsController extends BaseController implements Notificat
             return new StyleSpan(Typeface.BOLD);
         } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
             return new StyleSpan(Typeface.ITALIC);
-        } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
+        } else if (entity instanceof TLRPC.TL_messageEntityUnderline || entity instanceof TLRPC.TL_messageEntityUrl || entity instanceof TLRPC.TL_messageEntityTextUrl) {
+            // links can't be colored or tapped in a notification, underline is the only hint left
             return new UnderlineSpan();
         } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
             return new StrikethroughSpan();
