@@ -527,6 +527,7 @@ public class NotificationsController extends BaseController implements Notificat
         final long date;
         final Utilities.Callback<Boolean> whenDone;
         boolean sent;
+        boolean failed;
 
         NotificationReply(int messageId, CharSequence text, Utilities.Callback<Boolean> whenDone) {
             this.messageId = messageId;
@@ -556,6 +557,7 @@ public class NotificationsController extends BaseController implements Notificat
                     continue;
                 }
                 reply.sent = sent;
+                reply.failed = !sent;
                 showOrUpdateNotification(false);
                 AndroidUtilities.runOnUIThread(() -> reply.whenDone.run(sent));
                 return;
@@ -5709,7 +5711,8 @@ public class NotificationsController extends BaseController implements Notificat
                     if (reply.sent) {
                         messagingStyle.addMessage(reply.text, reply.date, (Person) null);
                     } else {
-                        messagingStyle.addMessage(reply.text + "\n" + LocaleController.getString(R.string.NotificationReplySending), reply.date, (Person) null);
+                        final String state = LocaleController.getString(reply.failed ? R.string.NotificationReplyNotSent : R.string.NotificationReplySending);
+                        messagingStyle.addMessage(reply.text + "\n" + state, reply.date, (Person) null);
                     }
                 }
             }
