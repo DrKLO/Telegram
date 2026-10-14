@@ -119,6 +119,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
     private final LongSparseIntArray readFromNotificationMaxIds = new LongSparseIntArray();
+    private final LongSparseArray<ArrayList<NotificationReply>> notificationReplies = new LongSparseArray<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -515,6 +516,29 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.d("set last online from other device = " + time);
             }
             lastOnlineFromOtherDevice = time;
+        });
+    }
+
+    private static class NotificationReply {
+        final int messageId;
+        final CharSequence text;
+        final long date;
+
+        NotificationReply(int messageId, CharSequence text) {
+            this.messageId = messageId;
+            this.text = text;
+            this.date = System.currentTimeMillis();
+        }
+    }
+
+    public void addNotificationReply(long dialogId, int messageId, CharSequence text) {
+        notificationsQueue.postRunnable(() -> {
+            ArrayList<NotificationReply> replies = notificationReplies.get(dialogId);
+            if (replies == null) {
+                notificationReplies.put(dialogId, replies = new ArrayList<>());
+            }
+            replies.add(new NotificationReply(messageId, text));
+            showOrUpdateNotification(false);
         });
     }
 
@@ -5653,6 +5677,14 @@ public class NotificationsController extends BaseController implements Notificat
             }
             wearableExtender.setBridgeTag("tgaccount" + selfUserId);
 
+            final ArrayList<NotificationReply> replies = dialogKey.story ? null : notificationReplies.get(dialogId);
+            if (replies != null) {
+                for (int a = 0; a < replies.size(); a++) {
+                    final NotificationReply reply = replies.get(a);
+                    messagingStyle.addMessage(reply.text + "\n" + LocaleController.getString(R.string.NotificationReplySending), reply.date, (Person) null);
+                }
+            }
+
             long date;
             if (dialogKey.story) {
                 date = Long.MAX_VALUE;
@@ -5808,6 +5840,12 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.d("cancel notification id " + id);
             }
             notificationManager.cancel(id);
+        }
+
+        for (int a = notificationReplies.size() - 1; a >= 0; a--) {
+            if (wearNotificationsIds.indexOfKey(notificationReplies.keyAt(a)) < 0) {
+                notificationReplies.removeAt(a);
+            }
         }
 
         ArrayList<String> ids = new ArrayList<>(holders.size());

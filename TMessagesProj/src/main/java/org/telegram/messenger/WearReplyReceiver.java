@@ -90,7 +90,11 @@ public class WearReplyReceiver extends BroadcastReceiver {
             replyToTopMsgId = new MessageObject(accountInstance.getCurrentAccount(), topicStartMessage, false, false);
         }
 
+        final int messageId = accountInstance.getUserConfig().lastSendMessageId;
         accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialog_id, replyToMsgId, replyToTopMsgId, null, true, null, null, null, true, 0, 0, null, false));
+        if (accountInstance.getUserConfig().lastSendMessageId == messageId - 1) {
+            accountInstance.getNotificationsController().addNotificationReply(dialog_id, messageId, text);
+        }
 
         if (voiceMsgIds != null && voiceMsgIds.length > 0) {
             ArrayList<Integer> ids = new ArrayList<>(voiceMsgIds.length);
