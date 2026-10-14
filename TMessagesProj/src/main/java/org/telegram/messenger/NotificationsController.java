@@ -517,6 +517,10 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    private static int getDialogNotificationId(long dialogId) {
+        return (int) dialogId + (int) (dialogId >> 32);
+    }
+
     public void removeNotificationsForDialog(long did) {
         processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
         LongSparseIntArray dialogsToUpdate = new LongSparseIntArray();
@@ -5009,7 +5013,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (dialogKey.story) {
                 internalId = Integer.MAX_VALUE - 1;
             } else if (internalId == null) {
-                internalId = (int) dialogKey.dialogId + (int) (dialogKey.dialogId >> 32);
+                internalId = getDialogNotificationId(dialogKey.dialogId);
             } else {
                 oldIdsWear.remove(dialogKey.dialogId);
             }
