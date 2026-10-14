@@ -5391,10 +5391,12 @@ public class NotificationsController extends BaseController implements Notificat
 
                     if (person == null || !TextUtils.equals(person.getName(), personName)) {
                         Person.Builder personBuilder = new Person.Builder().setName(personName);
-                        if (preview[0] && !DialogObject.isEncryptedDialog(dialogId) && Build.VERSION.SDK_INT >= 28) {
+                        if (preview[0] && !waitingForPasscode && !DialogObject.isEncryptedDialog(dialogId) && Build.VERSION.SDK_INT >= 28) {
                             File avatar = null;
+                            TLObject avatarPeer = null;
                             if (DialogObject.isUserDialog(dialogId) || isChannel) {
                                 avatar = avatarFile;
+                                avatarPeer = isChannel ? chat : user;
                             } else {
                                 long fromId = messageObject.getSenderId();
                                 TLRPC.User sender = getMessagesController().getUser(fromId);
@@ -5404,6 +5406,7 @@ public class NotificationsController extends BaseController implements Notificat
                                         getMessagesController().putUser(sender, true);
                                     }
                                 }
+                                avatarPeer = sender;
                                 if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                     avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                 }
@@ -5411,17 +5414,19 @@ public class NotificationsController extends BaseController implements Notificat
                             if (avatar == null && dialogId == UserObject.VERIFY && messageObject.getForwardedFromId() != null) {
                                 if (uid >= 0) {
                                     TLRPC.User sender = getMessagesController().getUser(uid);
+                                    avatarPeer = sender;
                                     if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                         avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                     }
                                 } else {
                                     TLRPC.Chat sender = getMessagesController().getChat(-uid);
+                                    avatarPeer = sender;
                                     if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                         avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                     }
                                 }
                             }
-                            loadRoundAvatar(dialogId, avatar, personBuilder);
+                            loadPersonAvatar(personBuilder, dialogId, avatarPeer, avatar);
                         }
                         person = personBuilder.build();
                         personCache.put(uid, person);
