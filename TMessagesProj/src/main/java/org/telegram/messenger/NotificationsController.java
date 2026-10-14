@@ -119,6 +119,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final HashSet<String> pendingAvatarLoads = new HashSet<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -3372,6 +3373,8 @@ public class NotificationsController extends BaseController implements Notificat
             notificationsQueue.postRunnable(() -> {
                 if (pendingVoiceLoads.remove(path)) {
                     showOrUpdateNotification(true);
+                } else if (pendingAvatarLoads.remove(path)) {
+                    showOrUpdateNotification(false);
                 }
             });
         }
@@ -5886,6 +5889,15 @@ public class NotificationsController extends BaseController implements Notificat
         loadRoundAvatar(dialogId, avatar != null && avatar.exists() ? avatar : null, personBuilder);
         if (peer == null || personBuilder.build().getIcon() != null) {
             return;
+        }
+        TLRPC.FileLocation photo = null;
+        if (peer instanceof TLRPC.User && ((TLRPC.User) peer).photo != null) {
+            photo = ((TLRPC.User) peer).photo.photo_small;
+        } else if (peer instanceof TLRPC.Chat && ((TLRPC.Chat) peer).photo != null) {
+            photo = ((TLRPC.Chat) peer).photo.photo_small;
+        }
+        if (photo != null && photo.volume_id != 0 && photo.local_id != 0 && pendingAvatarLoads.add(FileLoader.getAttachFileName(photo))) {
+            getFileLoader().loadFile(ImageLocation.getForUserOrChat(peer, ImageLocation.TYPE_SMALL), peer, null, FileLoader.PRIORITY_NORMAL, 1);
         }
         try {
             final int size = AndroidUtilities.dp(48);
