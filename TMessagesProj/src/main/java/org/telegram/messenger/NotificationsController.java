@@ -4581,7 +4581,8 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
 
-            if (notifyDisabled) {
+            // on P+ silent updates keep the importance of the chat and are silenced per notification
+            if (notifyDisabled && Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
                 vibrate = 0;
                 importance = 0;
                 ledColor = 0;
@@ -4700,7 +4701,7 @@ public class NotificationsController extends BaseController implements Notificat
             }
 
             int configImportance = 0;
-            if (!notifyAboutLast || silent == 1) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && (!notifyAboutLast || silent == 1)) {
                 mBuilder.setPriority(NotificationCompat.PRIORITY_LOW);
                 if (Build.VERSION.SDK_INT >= 26) {
                     configImportance = NotificationManager.IMPORTANCE_LOW;
