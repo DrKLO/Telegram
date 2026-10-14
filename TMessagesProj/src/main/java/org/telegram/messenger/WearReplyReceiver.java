@@ -42,6 +42,8 @@ public class WearReplyReceiver extends BroadcastReceiver {
             return;
         }
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
+        // the result of the send is shown in the notification, keep the process alive until it is known
+        final PendingResult pendingResult = goAsync();
         if (DialogObject.isUserDialog(dialogId)) {
             TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
             if (user == null) {
@@ -49,7 +51,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds, pendingResult);
                     });
                 });
                 return;
@@ -61,16 +63,16 @@ public class WearReplyReceiver extends BroadcastReceiver {
                     TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
+                        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds, pendingResult);
                     });
                 });
                 return;
             }
         }
-        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds);
+        sendMessage(accountInstance, text, dialogId, topicId, maxId, voiceMsgIds, pendingResult);
     }
 
-    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, long topicId, int max_id, int[] voiceMsgIds) {
+    private void sendMessage(AccountInstance accountInstance, CharSequence text, long dialog_id, long topicId, int max_id, int[] voiceMsgIds, PendingResult pendingResult) {
         MessageObject replyToMsgId = null;
         MessageObject replyToTopMsgId = null;
         if (max_id != 0) {
@@ -92,16 +94,34 @@ public class WearReplyReceiver extends BroadcastReceiver {
 
         final int messageId = accountInstance.getUserConfig().lastSendMessageId;
         accountInstance.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(text.toString(), dialog_id, replyToMsgId, replyToTopMsgId, null, true, null, null, null, true, 0, 0, null, false));
-        if (accountInstance.getUserConfig().lastSendMessageId == messageId - 1) {
-            accountInstance.getNotificationsController().addNotificationReply(dialog_id, messageId, text);
-        }
-
         if (voiceMsgIds != null && voiceMsgIds.length > 0) {
             ArrayList<Integer> ids = new ArrayList<>(voiceMsgIds.length);
             for (int id : voiceMsgIds) ids.add(id);
             accountInstance.getMessagesStorage().markVoiceMessageContentAsRead(dialog_id, ids);
         }
 
+        if (accountInstance.getUserConfig().lastSendMessageId != messageId - 1) {
+            markAsRead(accountInstance, dialog_id, topicId, max_id);
+            pendingResult.finish();
+            return;
+        }
+        final boolean[] finished = new boolean[1];
+        final Runnable finish = () -> {
+            if (!finished[0]) {
+                finished[0] = true;
+                pendingResult.finish();
+            }
+        };
+        accountInstance.getNotificationsController().addNotificationReply(dialog_id, messageId, text, sent -> {
+            if (sent) {
+                markAsRead(accountInstance, dialog_id, topicId, max_id);
+            }
+            finish.run();
+        });
+        AndroidUtilities.runOnUIThread(finish, 9000);
+    }
+
+    private void markAsRead(AccountInstance accountInstance, long dialog_id, long topicId, int max_id) {
         //TODO handle topics
         if (topicId == 0) {
             accountInstance.getMessagesController().markDialogAsRead(dialog_id, max_id, max_id, 0, false, topicId, 0, true, 0);

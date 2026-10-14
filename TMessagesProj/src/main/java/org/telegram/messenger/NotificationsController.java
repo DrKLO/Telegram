@@ -255,6 +255,8 @@ public class NotificationsController extends BaseController implements Notificat
 
         AndroidUtilities.runOnUIThread(() -> {
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoaded);
+            getNotificationCenter().addObserver(this, NotificationCenter.messageReceivedByServer);
+            getNotificationCenter().addObserver(this, NotificationCenter.messageSendError);
         });
     }
 
@@ -523,23 +525,42 @@ public class NotificationsController extends BaseController implements Notificat
         final int messageId;
         final CharSequence text;
         final long date;
+        final Utilities.Callback<Boolean> whenDone;
+        boolean sent;
 
-        NotificationReply(int messageId, CharSequence text) {
+        NotificationReply(int messageId, CharSequence text, Utilities.Callback<Boolean> whenDone) {
             this.messageId = messageId;
             this.text = text;
             this.date = System.currentTimeMillis();
+            this.whenDone = whenDone;
         }
     }
 
-    public void addNotificationReply(long dialogId, int messageId, CharSequence text) {
+    public void addNotificationReply(long dialogId, int messageId, CharSequence text, Utilities.Callback<Boolean> whenDone) {
         notificationsQueue.postRunnable(() -> {
             ArrayList<NotificationReply> replies = notificationReplies.get(dialogId);
             if (replies == null) {
                 notificationReplies.put(dialogId, replies = new ArrayList<>());
             }
-            replies.add(new NotificationReply(messageId, text));
+            replies.add(new NotificationReply(messageId, text, whenDone));
             showOrUpdateNotification(false);
         });
+    }
+
+    private void processNotificationReplyResult(int messageId, boolean sent) {
+        for (int a = 0; a < notificationReplies.size(); a++) {
+            final ArrayList<NotificationReply> replies = notificationReplies.valueAt(a);
+            for (int b = 0; b < replies.size(); b++) {
+                final NotificationReply reply = replies.get(b);
+                if (reply.messageId != messageId) {
+                    continue;
+                }
+                reply.sent = sent;
+                showOrUpdateNotification(false);
+                AndroidUtilities.runOnUIThread(() -> reply.whenDone.run(sent));
+                return;
+            }
+        }
     }
 
     public void dismissDialogNotificationAsRead(long dialogId, int maxId) {
@@ -3421,6 +3442,10 @@ public class NotificationsController extends BaseController implements Notificat
                     showOrUpdateNotification(true);
                 }
             });
+        } else if (id == NotificationCenter.messageReceivedByServer || id == NotificationCenter.messageSendError) {
+            final int messageId = (Integer) args[0];
+            final boolean sent = id == NotificationCenter.messageReceivedByServer;
+            notificationsQueue.postRunnable(() -> processNotificationReplyResult(messageId, sent));
         }
     }
 
@@ -5681,7 +5706,11 @@ public class NotificationsController extends BaseController implements Notificat
             if (replies != null) {
                 for (int a = 0; a < replies.size(); a++) {
                     final NotificationReply reply = replies.get(a);
-                    messagingStyle.addMessage(reply.text + "\n" + LocaleController.getString(R.string.NotificationReplySending), reply.date, (Person) null);
+                    if (reply.sent) {
+                        messagingStyle.addMessage(reply.text, reply.date, (Person) null);
+                    } else {
+                        messagingStyle.addMessage(reply.text + "\n" + LocaleController.getString(R.string.NotificationReplySending), reply.date, (Person) null);
+                    }
                 }
             }
 
