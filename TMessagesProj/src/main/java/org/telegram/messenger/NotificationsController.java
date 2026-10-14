@@ -4438,7 +4438,7 @@ public class NotificationsController extends BaseController implements Notificat
                 } else {
                     detailText = "";
                 }
-                if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
+                if (pushDialogs.size() > 1 || pushDialogs.size() == 1 && Build.VERSION.SDK_INT < 23) {
                     if (pushDialogs.size() == 1) {
                         detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
                     } else {
