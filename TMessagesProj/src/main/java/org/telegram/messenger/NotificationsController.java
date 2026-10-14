@@ -977,6 +977,8 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
                 });
+                // reads from other devices may not change the stored unread counters, so redraw right away
+                showOrUpdateNotification(false);
             }
         });
     }
