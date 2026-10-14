@@ -1449,10 +1449,16 @@ public class LocaleController {
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
         String value = BuildVars.USE_CLOUD_STRINGS ? localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
         if (value == null) {
-            if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                value = localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
-            }
+            value = getInternalStringByName(key);
+        }
+        if (value == null && fallback != null) {
+            value = BuildVars.USE_CLOUD_STRINGS ? localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes) : null;
             if (value == null) {
+                value = getInternalStringByName(fallback);
+            }
+        }
+        if (value == null) {
+            {
                 try {
                     value = getLocalizedString(res);
                 } catch (Exception e) {
@@ -1473,6 +1479,9 @@ public class LocaleController {
 
     public static String getServerString(String key) {
         String value = getInstance().localizationExternal.getByResName(key);
+        if (value == null) {
+            value = getInstance().getInternalStringByName(key);
+        }
         if (value == null) {
             int resourceId = getLocalizedStringByName(key);
             if (resourceId != 0) {
@@ -1606,6 +1615,12 @@ public class LocaleController {
                 value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(key + "_other") : null;
             }
             if (value == null) {
+                value = getInstance().getInternalStringByName(param);
+            }
+            if (value == null) {
+                value = getInstance().getInternalStringByName(key + "_other");
+            }
+            if (value == null) {
                 try {
                     int resourceId = getLocalizedStringByName(param);
                     value = getInstance().getLocalizedString(resourceId);
@@ -1667,10 +1682,16 @@ public class LocaleController {
         try {
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
             if (value == null) {
-                if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                    value = getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
-                }
+                value = getInstance().getInternalStringByName(key);
+            }
+            if (value == null && fallback != null) {
+                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes) : null;
                 if (value == null) {
+                    value = getInstance().getInternalStringByName(fallback);
+                }
+            }
+            if (value == null) {
+                {
                     if (res != 0) {
                         try {
                             value = getInstance().getLocalizedString(res);
@@ -1712,10 +1733,16 @@ public class LocaleController {
         try {
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
             if (value == null) {
-                if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                    value = getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
-                }
+                value = getInstance().getInternalStringByName(key);
+            }
+            if (value == null && fallback != null) {
+                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes) : null;
                 if (value == null) {
+                    value = getInstance().getInternalStringByName(fallback);
+                }
+            }
+            if (value == null) {
+                {
                     if (res != 0) {
                         try {
                             value = getInstance().getLocalizedString(res);
@@ -4521,6 +4548,19 @@ public class LocaleController {
     private String getLocalizedString(@StringRes int stringRes) {
         checkLocalizationInternal();
         return localizationInternal.getByResId(ApplicationLoader.applicationContext, stringRes);
+    }
+
+    /**
+     * Looks up a bundled/internal translation by its original Android string key.
+     * This is required for JSON packs whose keys exist even when a resource ID
+     * cannot be resolved by Resources.getIdentifier().
+     */
+    private String getInternalStringByName(String key) {
+        if (TextUtils.isEmpty(key)) {
+            return null;
+        }
+        checkLocalizationInternal();
+        return localizationInternal.getByResName(key);
     }
 
 
