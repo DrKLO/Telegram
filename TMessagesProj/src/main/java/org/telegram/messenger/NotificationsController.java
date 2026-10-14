@@ -52,6 +52,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -2576,6 +2577,8 @@ public class NotificationsController extends BaseController implements Notificat
             return new StyleSpan(Typeface.BOLD);
         } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
             return new StyleSpan(Typeface.ITALIC);
+        } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
+            return new UnderlineSpan();
         }
         return null;
     }
