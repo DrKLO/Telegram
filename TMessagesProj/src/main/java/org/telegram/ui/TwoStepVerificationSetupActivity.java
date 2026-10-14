@@ -1996,6 +1996,8 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                     } else {
                         if ("EMAIL_INVALID".equals(error.text)) {
                             showAlertWithText(LocaleController.getString(R.string.AppName), LocaleController.getString(R.string.PasswordEmailInvalid));
+                        } else if ("EMAIL_NOT_ALLOWED".equals(error.text)) {
+                            showAlertWithText(LocaleController.getString(R.string.AppName), LocaleController.getString(R.string.EmailNotAllowed));
                         } else if (error.text.startsWith("FLOOD_WAIT")) {
                             int time = Utilities.parseInt(error.text);
                             String timeString;
