@@ -547,6 +547,51 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public ProfileBirthdayEffect.BirthdayEffectFetcher birthdayFetcher;
 
     private CharSequence currentBio;
+    private TextView steamProfileTextView;
+    private static final String STEAM_MARKER = "\n[XGRAM_STEAM:";
+
+    private String getProfileSteamId() {
+        if (userInfo == null || userInfo.about == null) return "";
+        int start = userInfo.about.lastIndexOf(STEAM_MARKER);
+        if (start < 0) return "";
+        int end = userInfo.about.indexOf("]", start);
+        if (end < 0) return "";
+        String id = userInfo.about.substring(start + STEAM_MARKER.length(), end).trim();
+        return id.matches("[0-9]{17}") ? id : "";
+    }
+
+    private String getProfileBioWithoutSteam() {
+        if (userInfo == null || userInfo.about == null) return "";
+        int start = userInfo.about.lastIndexOf(STEAM_MARKER);
+        if (start < 0) return userInfo.about;
+        int end = userInfo.about.indexOf("]", start);
+        return end < 0 ? userInfo.about : (userInfo.about.substring(0, start) + userInfo.about.substring(end + 1)).trim();
+    }
+
+    private void updateSteamProfileLabel() {
+        if (steamProfileTextView == null || userId == 0) return;
+        String steamId = getProfileSteamId();
+        TLRPC.User viewedUser = getMessagesController().getUser(userId);
+        boolean ownProfile = viewedUser != null && viewedUser.id == getUserConfig().getClientUserId();
+        if (!steamId.isEmpty()) {
+            steamProfileTextView.setText("Steam · " + steamId);
+            steamProfileTextView.setVisibility(View.VISIBLE);
+            steamProfileTextView.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://steamcommunity.com/profiles/" + steamId));
+                    getParentActivity().startActivity(intent);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            });
+        } else if (!ownProfile && userInfo != null) {
+            steamProfileTextView.setText("Steam · محدودیت در نمایش اطلاعات");
+            steamProfileTextView.setVisibility(View.VISIBLE);
+            steamProfileTextView.setOnClickListener(null);
+        } else {
+            steamProfileTextView.setVisibility(View.GONE);
+        }
+    }
 
     private long selectedUser;
     private int onlineCount = -1;
@@ -5634,6 +5679,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setFocusable(a == 0);
             avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 109 - (a == 1 || a == 2 || a == 3 ? 4 : 0), (a == 1 || a == 2 || a == 3 ? -2 : 0), (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
         }
+        steamProfileTextView = new TextView(context);
+        steamProfileTextView.setTextColor(applyPeerColor(getThemedColor(Theme.key_avatar_subtitleInProfileBlue), true, null));
+        steamProfileTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        steamProfileTextView.setSingleLine(true);
+        steamProfileTextView.setEllipsize(TextUtils.TruncateAt.END);
+        steamProfileTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        steamProfileTextView.setVisibility(View.GONE);
+        avatarContainer2.addView(steamProfileTextView, LayoutHelper.createFrame(230, 22, Gravity.LEFT | Gravity.TOP, 109, 18, 8, 0));
+        updateSteamProfileLabel();
         checkPhotoDescriptionAlpha();
         avatarContainer2.addView(animatedStatusView);
 
@@ -9228,6 +9282,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             final long uid = (Long) args[0];
             if (uid == userId) {
                 userInfo = (TLRPC.UserFull) args[1];
+                updateSteamProfileLabel();
                 if (ratingView != null) {
                     ratingView.set(userInfo.stars_rating);
                 }
@@ -13652,7 +13707,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (position == userInfoRow) {
                         TLRPC.User user = userInfo.user != null ? userInfo.user : getMessagesController().getUser(userInfo.id);
                         boolean addlinks = isBot || (user != null && user.premium && userInfo.about != null);
-                        aboutLinkCell.setTextAndValue(userInfo.about, LocaleController.getString(R.string.UserBio), addlinks);
+                        aboutLinkCell.setTextAndValue(getProfileBioWithoutSteam(), LocaleController.getString(R.string.UserBio), addlinks);
                     } else if (position == channelInfoRow) {
                         String text = chatInfo.about;
                         while (text.contains("\n\n\n")) {
@@ -13662,7 +13717,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == bioRow) {
                         String value;
                         if (userInfo == null || !TextUtils.isEmpty(userInfo.about)) {
-                            value = userInfo == null ? LocaleController.getString(R.string.Loading) : userInfo.about;
+                            value = userInfo == null ? LocaleController.getString(R.string.Loading) : getProfileBioWithoutSteam();
                             aboutLinkCell.setTextAndValue(value, LocaleController.getString(R.string.UserBio), getUserConfig().isPremium());
                             currentBio = userInfo != null ? userInfo.about : null;
                         } else {
