@@ -5444,9 +5444,8 @@ public class NotificationsController extends BaseController implements Notificat
                                 if (attach == null) {
                                     loadNotificationMedia(messageObject);
                                 }
-                                File blurredAttach;
                                 if (attach != null && messageObject.hasMediaSpoilers()) {
-                                    blurredAttach = new File(attach.getParentFile(), attach.getName() + ".blur.jpg");
+                                    File blurredAttach = new File(attach.getParentFile(), attach.getName() + ".blur.jpg");
                                     if (!blurredAttach.exists()) {
                                         try {
                                             Bitmap bitmap = BitmapFactory.decodeFile(attach.getAbsolutePath());
@@ -5475,8 +5474,6 @@ public class NotificationsController extends BaseController implements Notificat
                                     }
                                     // never fall back to the original file of a media with a spoiler
                                     attach = blurredAttach.exists() ? blurredAttach : null;
-                                } else {
-                                    blurredAttach = null;
                                 }
                                 NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);
                                 String mimeType = messageObject.isSticker() ? "image/webp" : "image/jpeg";
@@ -5491,22 +5488,8 @@ public class NotificationsController extends BaseController implements Notificat
                                 if (uri != null) {
                                     msg.setData(mimeType, uri);
                                     messagingStyle.addMessage(msg);
-                                    Uri uriFinal = uri;
+                                    // the grant is kept, silent redraws of the same notification reuse it
                                     ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                    AndroidUtilities.runOnUIThread(() -> {
-                                        try {
-                                            ApplicationLoader.applicationContext.revokeUriPermission(uriFinal, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                        } catch (Exception e) {
-                                            FileLog.e(e);
-                                        }
-                                        try {
-                                            if (blurredAttach != null) {
-                                                blurredAttach.delete();
-                                            }
-                                        } catch (Exception e) {
-                                            FileLog.e(e);
-                                        }
-                                    }, 20_000);
 
                                     if (!TextUtils.isEmpty(messageObject.caption)) {
                                         messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
