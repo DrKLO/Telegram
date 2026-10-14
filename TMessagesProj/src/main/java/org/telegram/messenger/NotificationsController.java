@@ -51,6 +51,7 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
@@ -2579,6 +2580,8 @@ public class NotificationsController extends BaseController implements Notificat
             return new StyleSpan(Typeface.ITALIC);
         } else if (entity instanceof TLRPC.TL_messageEntityUnderline) {
             return new UnderlineSpan();
+        } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
+            return new StrikethroughSpan();
         }
         return null;
     }
