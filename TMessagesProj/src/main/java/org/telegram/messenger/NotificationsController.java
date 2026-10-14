@@ -1117,6 +1117,7 @@ public class NotificationsController extends BaseController implements Notificat
             boolean added = false;
             boolean edited = false;
             boolean storiesUpdated = false;
+            boolean mediaReplaced = false;
 
             LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
@@ -1215,6 +1216,8 @@ public class NotificationsController extends BaseController implements Notificat
                         if (idxOld >= 0) {
                             pushMessages.set(idxOld, messageObject);
                             popup = addToPopupMessages(popupArrayAdd, messageObject, dialogId, isChannel, preferences);
+                            // a push has no media, redraw once the full message with the photo or sticker arrives
+                            mediaReplaced |= !isFcm && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker());
                         }
                         if (isFcm && (edited = messageObject.localEdit)) {
                             getMessagesStorage().putPushMessage(messageObject);
@@ -1335,6 +1338,9 @@ public class NotificationsController extends BaseController implements Notificat
                         }
                     }
                 });
+            }
+            if (mediaReplaced && !added) {
+                showOrUpdateNotification(false);
             }
             if (isFcm || hasScheduled) {
                 if (edited) {
