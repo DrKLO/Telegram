@@ -5746,6 +5746,7 @@ public class NotificationsController extends BaseController implements Notificat
                         messagingStyle.addMessage(reply.text + "\n" + state, reply.date, (Person) null);
                     }
                 }
+                Collections.sort(messagingStyle.getMessages(), (m1, m2) -> Long.compare(m1.getTimestamp(), m2.getTimestamp()));
             }
 
             long date;
