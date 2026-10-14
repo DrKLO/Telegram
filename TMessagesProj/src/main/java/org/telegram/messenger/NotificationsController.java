@@ -4813,7 +4813,7 @@ public class NotificationsController extends BaseController implements Notificat
                     mBuilder.addAction(R.drawable.ic_ab_reply, LocaleController.getString(R.string.Reply), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
                 }
             }
-            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
+            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, story, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -4879,10 +4879,15 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, boolean lastIsStory, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
         FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
+        // on P+ every chat notification alerts by itself, the summary only groups them
+        final boolean alertByChildren = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
         if (Build.VERSION.SDK_INT >= 26) {
             notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
+        }
+        if (alertByChildren) {
+            notificationBuilder.setSilent(true);
         }
         Notification mainNotification = notificationBuilder.build();
         if (Build.VERSION.SDK_INT <= 19) {
@@ -5671,9 +5676,17 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.e(e);
             }
 
+            final boolean alert = alertByChildren && !isSilent && (dialogKey.story ? lastIsStory : !lastIsStory && dialogId == lastDialogId);
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
-                builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                if (!alertByChildren) {
+                    builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                } else if (alert) {
+                    builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN);
+                } else {
+                    builder.setSilent(true);
+                    builder.setOnlyAlertOnce(true);
+                }
             }
 
             TL_keyboard.KeyboardInlineButton copybutton = null;
@@ -5747,7 +5760,9 @@ public class NotificationsController extends BaseController implements Notificat
                 builder.addPerson("tel:+" + user.phone);
             }
 
-            if (Build.VERSION.SDK_INT >= 26) {
+            if (alertByChildren) {
+                builder.setChannelId(mainNotification.getChannelId());
+            } else if (Build.VERSION.SDK_INT >= 26) {
                 setNotificationChannel(mainNotification, builder, useSummaryNotification);
             }
             FileLog.d("showExtraNotifications: holders.add " + dialogId);
