@@ -4886,8 +4886,9 @@ public class NotificationsController extends BaseController implements Notificat
         FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
         // on P+ every chat notification alerts by itself, the summary only groups them
         final boolean alertByChildren = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
+        final boolean silentChannel = isSilent && !alertByChildren;
         if (Build.VERSION.SDK_INT >= 26) {
-            notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
+            notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, silentChannel, chatType));
         }
         if (alertByChildren) {
             notificationBuilder.setSilent(true);
@@ -4963,7 +4964,7 @@ public class NotificationsController extends BaseController implements Notificat
                     notificationManager.notify(id, notification.build());
                 } catch (SecurityException e) {
                     FileLog.e(e);
-                    resetNotificationSound(notification, dialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType);
+                    resetNotificationSound(notification, dialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, silentChannel, chatType);
                 }
             }
         }
@@ -5787,7 +5788,7 @@ public class NotificationsController extends BaseController implements Notificat
                 notificationManager.notify(notificationId, mainNotification);
             } catch (SecurityException e) {
                 FileLog.e(e);
-                resetNotificationSound(notificationBuilder, lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType);
+                resetNotificationSound(notificationBuilder, lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, silentChannel, chatType);
             }
         } else {
             if (openedInBubbleDialogs.isEmpty()) {
