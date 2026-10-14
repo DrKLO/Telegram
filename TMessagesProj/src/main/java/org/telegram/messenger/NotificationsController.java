@@ -2574,6 +2574,8 @@ public class NotificationsController extends BaseController implements Notificat
     private Object getEntitySpan(TLRPC.MessageEntity entity) {
         if (entity instanceof TLRPC.TL_messageEntityBold) {
             return new StyleSpan(Typeface.BOLD);
+        } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
+            return new StyleSpan(Typeface.ITALIC);
         }
         return null;
     }
