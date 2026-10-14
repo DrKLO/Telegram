@@ -26,6 +26,7 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
             return;
         }
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
+        accountInstance.getNotificationsController().dismissDialogNotificationAsRead(dialogId, maxId);
         if (DialogObject.isUserDialog(dialogId)) {
             TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
             if (user == null) {

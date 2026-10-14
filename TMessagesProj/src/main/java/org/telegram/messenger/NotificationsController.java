@@ -517,6 +517,18 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    public void dismissDialogNotificationAsRead(long dialogId, int maxId) {
+        notificationsQueue.postRunnable(() -> {
+            Integer id = wearNotificationsIds.get(dialogId);
+            int notificationId = id != null ? id : getDialogNotificationId(dialogId);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("cancel notification id " + notificationId + " of " + dialogId + " marked as read");
+            }
+            notificationManager.cancel(notificationId);
+        });
+        processReadMessages(null, dialogId, 0, maxId, false);
+    }
+
     private static int getDialogNotificationId(long dialogId) {
         return (int) dialogId + (int) (dialogId >> 32);
     }
