@@ -5189,7 +5189,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (chat != null) {
                 Person.Builder personBuilder = new Person.Builder().setName(name);
                 if (Build.VERSION.SDK_INT >= 28 && !waitingForPasscode) {
-                    loadPersonAvatar(personBuilder, dialogId, chat, avatarFile);
+                    loadPersonAvatar(personBuilder, dialogId, dialogId, chat, avatarFile);
                 }
                 personCache.put(-chat.id, personBuilder.build());
             }
@@ -5263,7 +5263,7 @@ public class NotificationsController extends BaseController implements Notificat
                             if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                 avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                             }
-                            loadPersonAvatar(personBuilder, selfUserId, sender, avatar);
+                            loadPersonAvatar(personBuilder, selfUserId, selfUserId, sender, avatar);
                         }
                         selfPerson = personBuilder.build();
                         personCache.put(selfUserId, selfPerson);
@@ -5434,7 +5434,7 @@ public class NotificationsController extends BaseController implements Notificat
                                     }
                                 }
                             }
-                            loadPersonAvatar(personBuilder, dialogId, avatarPeer, avatar);
+                            loadPersonAvatar(personBuilder, dialogId, uid, avatarPeer, avatar);
                         }
                         person = personBuilder.build();
                         personCache.put(uid, person);
@@ -5885,9 +5885,10 @@ public class NotificationsController extends BaseController implements Notificat
         return new Pair<>(storiesCount, hidden);
     }
 
-    private void loadPersonAvatar(Person.Builder personBuilder, long dialogId, TLObject peer, File avatar) {
+    private void loadPersonAvatar(Person.Builder personBuilder, long dialogId, long peerId, TLObject peer, File avatar) {
         loadRoundAvatar(dialogId, avatar != null && avatar.exists() ? avatar : null, personBuilder);
-        if (peer == null || personBuilder.build().getIcon() != null) {
+        final Person person = personBuilder.build();
+        if (person.getIcon() != null) {
             return;
         }
         TLRPC.FileLocation photo = null;
@@ -5902,7 +5903,16 @@ public class NotificationsController extends BaseController implements Notificat
         try {
             final int size = AndroidUtilities.dp(48);
             AvatarDrawable avatarDrawable = new AvatarDrawable();
-            avatarDrawable.setInfo(currentAccount, peer);
+            if (peer != null) {
+                avatarDrawable.setInfo(currentAccount, peer);
+            } else {
+                // peers known only from a push, the name comes with the push
+                final CharSequence name = person.getName();
+                if (TextUtils.isEmpty(name)) {
+                    return;
+                }
+                avatarDrawable.setInfo(peerId, name.toString(), null);
+            }
             avatarDrawable.setBounds(0, 0, size, size);
             Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
             avatarDrawable.draw(new Canvas(bitmap));
