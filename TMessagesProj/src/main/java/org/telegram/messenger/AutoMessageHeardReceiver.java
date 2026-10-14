@@ -27,6 +27,9 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
         }
         AccountInstance accountInstance = AccountInstance.getInstance(currentAccount);
         accountInstance.getNotificationsController().dismissDialogNotificationAsRead(dialogId, maxId);
+        // the read request is sent asynchronously, keep the process alive while it goes out
+        final PendingResult pendingResult = goAsync();
+        AndroidUtilities.runOnUIThread(pendingResult::finish, 8000);
         if (DialogObject.isUserDialog(dialogId)) {
             TLRPC.User user = accountInstance.getMessagesController().getUser(dialogId);
             if (user == null) {
