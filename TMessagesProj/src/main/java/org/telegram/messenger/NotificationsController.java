@@ -118,6 +118,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final HashSet<String> pendingMediaLoads = new HashSet<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -3371,6 +3372,8 @@ public class NotificationsController extends BaseController implements Notificat
             notificationsQueue.postRunnable(() -> {
                 if (pendingVoiceLoads.remove(path)) {
                     showOrUpdateNotification(true);
+                } else if (pendingMediaLoads.remove(path)) {
+                    showOrUpdateNotification(false);
                 }
             });
         }
@@ -5432,6 +5435,9 @@ public class NotificationsController extends BaseController implements Notificat
                         if (preview[0] && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice()) {
                             if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker())) {
                                 File attach = getNotificationMediaFile(messageObject);
+                                if (attach == null) {
+                                    loadNotificationMedia(messageObject);
+                                }
                                 File blurredAttach;
                                 if (attach != null && messageObject.hasMediaSpoilers()) {
                                     blurredAttach = new File(attach.getParentFile(), attach.getName() + ".blur.jpg");
@@ -5892,6 +5898,16 @@ public class NotificationsController extends BaseController implements Notificat
             }
         }
         return bestFile;
+    }
+
+    private void loadNotificationMedia(MessageObject messageObject) {
+        final TLRPC.MessageMedia media = MessageObject.getMedia(messageObject.messageOwner);
+        if (media instanceof TLRPC.TL_messageMediaPhoto && media.photo != null && getDownloadController().canDownloadMedia(messageObject)) {
+            final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(media.photo.sizes, AndroidUtilities.getPhotoSize());
+            if (photoSize != null && pendingMediaLoads.add(FileLoader.getAttachFileName(photoSize))) {
+                getFileLoader().loadFile(ImageLocation.getForPhoto(photoSize, media.photo), messageObject, "jpg", FileLoader.PRIORITY_NORMAL, 0);
+            }
+        }
     }
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
