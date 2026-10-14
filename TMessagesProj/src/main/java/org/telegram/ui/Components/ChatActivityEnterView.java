@@ -3443,7 +3443,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.send_plane_24, resourcesProvider, true) {
+        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.ic_send, resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();
@@ -6040,15 +6040,15 @@ public class ChatActivityEnterView extends FrameLayout implements
         updateFieldRight(lastAttachVisible);
     }
 
-    private boolean shownAiButton;
-    private void showAiButton(boolean show_) {
-        final boolean show = (show_ || richDraftActive) && parentFragment != null && !parentFragment.isSecretChat();
+private boolean shownAiButton;
+private void showAiButton(boolean show_) {
+    final boolean show = false;
 
-        if (shownAiButton == show) return;
-        if (show) {
-            MessagesController.getInstance(currentAccount).getTonesController().load();
-        }
-        shownAiButton = show;
+    if (shownAiButton == show) return;
+    if (show) {
+        MessagesController.getInstance(currentAccount).getTonesController().load();
+    }
+    shownAiButton = show;
         aiButton.setVisibility(View.VISIBLE);
         aiButton.animate()
             .alpha(show ? 1.0f : 0.0f)

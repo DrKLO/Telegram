@@ -12651,37 +12651,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (seekBarWaveform != null) {
             seekBarWaveform.setWaveform(waveform);
         }
-        useTranscribeButton = (
-            currentMessageObject != null &&
-            !currentMessageObject.isQuickReply() &&
-            !currentMessageObject.isRepostPreview &&
-            (!currentMessageObject.isOutOwner() || currentMessageObject.isSent()) &&
-            (
-                UserConfig.getInstance(currentAccount).isPremium()
-                ||
-                TranscribeButton.isFreeTranscribeInChat(currentMessageObject)
-                ||
-                MessagesController.getInstance(currentAccount).transcribeAudioTrialWeeklyNumber > 0 &&
-                currentMessageObject.getDuration() <= MessagesController.getInstance(currentAccount).transcribeAudioTrialDurationMax && (
-                    currentMessageObject.messageOwner != null && (
-                        !TextUtils.isEmpty(currentMessageObject.messageOwner.voiceTranscription) ||
-                        currentMessageObject.messageOwner.voiceTranscriptionFinal
-                    ) ||
-                    TranscribeButton.canTranscribeTrial(currentMessageObject) || true
-                )
-                ||
-                MessagesController.getInstance(currentAccount).transcribeAudioTrialWeeklyNumber <= 0 &&
-                !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() &&
-                !MessagesController.getInstance(currentAccount).didPressTranscribeButtonEnough() && !currentMessageObject.isOutOwner() && (
-                    currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.voiceTranscriptionForce ||
-                    currentMessageObject.getDuration() >= 60
-                )
-            ) && (
-                currentMessageObject.isVoice() && useSeekBarWaveform ||
-                currentMessageObject.isRoundVideo()
-            ) && currentMessageObject.messageOwner != null && !(MessageObject.getMedia(currentMessageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage) &&
-            (currentMessageObject.messageOwner.media == null || currentMessageObject.messageOwner.media.ttl_seconds == 0)
-        );
+        useTranscribeButton = false;
         updateSeekBarWaveformWidth(null);
     }
 

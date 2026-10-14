@@ -609,9 +609,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 count++;
                 if (getMessagesController().isTranslationsManualEnabled() || getMessagesController().isTranslationsAutoEnabled()) {
                     count++;
-                    if (getMessagesController().isTranslationsManualEnabled()) {
-                        count++;
-                    }
+                    // The manual "Show Translate Button" setting is hidden.
                     if (getMessagesController().isTranslationsAutoEnabled() && !getMessagesController().premiumFeaturesBlocked()) {
                         count++;
                     }
@@ -815,14 +813,8 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                 if (getMessagesController().isTranslationsManualEnabled() || getMessagesController().isTranslationsAutoEnabled()) {
                     settingsFromPosition = position - i;
                     if (i-- == 0) return VIEW_TYPE_HEADER;
-                    if (getMessagesController().isTranslationsManualEnabled()) {
-                        if (i-- == 0) {
-                            manualTranslationPosition = position;
-                            return VIEW_TYPE_SWITCH;
-                        }
-                    } else {
-                        manualTranslationPosition = -1;
-                    }
+                    // Keep the manual translation feature intact, but do not show its settings row.
+                    manualTranslationPosition = -1;
                     if (getMessagesController().isTranslationsAutoEnabled() && !getMessagesController().premiumFeaturesBlocked()) {
                         if (i-- == 0) {
                             autoTranslationPosition = position;
