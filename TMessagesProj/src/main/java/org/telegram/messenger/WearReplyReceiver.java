@@ -114,6 +114,7 @@ public class WearReplyReceiver extends BroadcastReceiver {
         };
         accountInstance.getNotificationsController().addNotificationReply(dialog_id, messageId, text, sent -> {
             if (sent) {
+                accountInstance.getNotificationsController().keepNotificationAfterReply(dialog_id, max_id);
                 markAsRead(accountInstance, dialog_id, topicId, max_id);
             }
             finish.run();

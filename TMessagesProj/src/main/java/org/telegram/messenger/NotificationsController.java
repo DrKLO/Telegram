@@ -120,6 +120,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
     private final LongSparseIntArray readFromNotificationMaxIds = new LongSparseIntArray();
     private final LongSparseArray<ArrayList<NotificationReply>> notificationReplies = new LongSparseArray<>();
+    private final LongSparseIntArray repliedDialogsMaxIds = new LongSparseIntArray();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -499,6 +500,10 @@ public class NotificationsController extends BaseController implements Notificat
         notificationsQueue.postRunnable(() -> {
             openedDialogId = dialog_id;
             openedTopicId = topicId;
+            if (repliedDialogsMaxIds.indexOfKey(dialog_id) >= 0) {
+                repliedDialogsMaxIds.delete(dialog_id);
+                removeNotificationsForDialog(dialog_id);
+            }
         });
     }
 
@@ -565,8 +570,30 @@ public class NotificationsController extends BaseController implements Notificat
         }
     }
 
+    // after an inline reply the chat is read, but its notification is kept with the conversation like in other messengers
+    public void keepNotificationAfterReply(long dialogId, int maxId) {
+        notificationsQueue.postRunnable(() -> {
+            if (repliedDialogsMaxIds.get(dialogId) < maxId) {
+                repliedDialogsMaxIds.put(dialogId, maxId);
+            }
+        });
+    }
+
+    private boolean isKeptAfterReply(MessageObject messageObject) {
+        final int index = repliedDialogsMaxIds.indexOfKey(messageObject.getDialogId());
+        return index >= 0 && messageObject.getId() <= repliedDialogsMaxIds.valueAt(index);
+    }
+
+    private void forgetReplyIfReadFurther(long dialogId, int maxId) {
+        final int index = repliedDialogsMaxIds.indexOfKey(dialogId);
+        if (index >= 0 && (maxId < 0 || maxId > repliedDialogsMaxIds.valueAt(index))) {
+            repliedDialogsMaxIds.removeAt(index);
+        }
+    }
+
     public void dismissDialogNotificationAsRead(long dialogId, int maxId) {
         notificationsQueue.postRunnable(() -> {
+            repliedDialogsMaxIds.delete(dialogId);
             if (readFromNotificationMaxIds.get(dialogId) < maxId) {
                 readFromNotificationMaxIds.put(dialogId, maxId);
             }
@@ -965,9 +992,10 @@ public class NotificationsController extends BaseController implements Notificat
                 for (int b = 0; b < inbox.size(); b++) {
                     long key = inbox.keyAt(b);
                     int messageId = inbox.get(key);
+                    forgetReplyIfReadFurther(key, messageId);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == key && messageObject.getId() <= messageId && !messageObject.isStoryReactionPush) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == key && messageObject.getId() <= messageId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                             if (isPersonalMessage(messageObject)) {
                                 personalCount--;
                             }
@@ -995,9 +1023,12 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
             if (dialogId != 0 && (maxId != 0 || maxDate != 0)) {
+                if (maxId != 0) {
+                    forgetReplyIfReadFurther(dialogId, maxId == Integer.MAX_VALUE ? -1 : maxId);
+                }
                 for (int a = 0; a < pushMessages.size(); a++) {
                     MessageObject messageObject = pushMessages.get(a);
-                    if (messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush) {
+                    if (messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                         boolean remove = false;
                         if (maxDate != 0) {
                             if (messageObject.messageOwner.date <= maxDate) {
@@ -1571,7 +1602,7 @@ public class NotificationsController extends BaseController implements Notificat
                     pushDialogsOverrideMention.remove(dialogId);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                             if (isPersonalMessage(messageObject)) {
                                 personalCount--;
                             }
