@@ -118,6 +118,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final LongSparseIntArray readFromNotificationMaxIds = new LongSparseIntArray();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -519,6 +520,9 @@ public class NotificationsController extends BaseController implements Notificat
 
     public void dismissDialogNotificationAsRead(long dialogId, int maxId) {
         notificationsQueue.postRunnable(() -> {
+            if (readFromNotificationMaxIds.get(dialogId) < maxId) {
+                readFromNotificationMaxIds.put(dialogId, maxId);
+            }
             Integer id = wearNotificationsIds.get(dialogId);
             int notificationId = id != null ? id : getDialogNotificationId(dialogId);
             if (BuildVars.LOGS_ENABLED) {
@@ -527,6 +531,10 @@ public class NotificationsController extends BaseController implements Notificat
             notificationManager.cancel(notificationId);
         });
         processReadMessages(null, dialogId, 0, maxId, false);
+    }
+
+    private boolean isReadFromNotification(long dialogId, int messageId) {
+        return messageId > 0 && messageId <= readFromNotificationMaxIds.get(dialogId);
     }
 
     private static int getDialogNotificationId(long dialogId) {
@@ -1612,7 +1620,7 @@ public class NotificationsController extends BaseController implements Notificat
                         did = 0;
                     }
                     SparseArray<MessageObject> sparseArray = pushMessagesDict.get(did);
-                    if (sparseArray != null && sparseArray.indexOfKey(message.id) >= 0) {
+                    if (sparseArray != null && sparseArray.indexOfKey(message.id) >= 0 || isReadFromNotification(MessageObject.getDialogId(message), message.id)) {
                         continue;
                     }
                     MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
@@ -1687,7 +1695,7 @@ public class NotificationsController extends BaseController implements Notificat
                 for (int a = 0; a < push.size(); a++) {
                     MessageObject messageObject = push.get(a);
                     int mid = messageObject.getId();
-                    if (pushMessagesDict.indexOfKey(mid) >= 0) {
+                    if (pushMessagesDict.indexOfKey(mid) >= 0 || isReadFromNotification(messageObject.getDialogId(), mid)) {
                         continue;
                     }
                     if (isPersonalMessage(messageObject)) {
