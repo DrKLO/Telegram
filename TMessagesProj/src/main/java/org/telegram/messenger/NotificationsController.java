@@ -37,6 +37,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -50,6 +51,7 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -2570,6 +2572,9 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     private Object getEntitySpan(TLRPC.MessageEntity entity) {
+        if (entity instanceof TLRPC.TL_messageEntityBold) {
+            return new StyleSpan(Typeface.BOLD);
+        }
         return null;
     }
 
