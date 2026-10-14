@@ -78,36 +78,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private EditTextCell firstNameEdit;
     private EditTextCell lastNameEdit;
     private EditTextCell bioEdit;
-    private EditTextCell steamEdit;
-    private String currentSteamId = "";
-    private static final String STEAM_MARKER = "\n[XGRAM_STEAM:";
-
-    private static String extractSteamId(String about) {
-        if (about == null) return "";
-        int start = about.lastIndexOf(STEAM_MARKER);
-        if (start < 0) return "";
-        int end = about.indexOf("]", start);
-        if (end < 0) return "";
-        String id = about.substring(start + STEAM_MARKER.length(), end).trim();
-        return id.matches("[0-9]{17}") ? id : "";
-    }
-
-    private static String stripSteamMarker(String about) {
-        if (about == null) return "";
-        int start = about.lastIndexOf(STEAM_MARKER);
-        if (start < 0) return about;
-        int end = about.indexOf("]", start);
-        return end < 0 ? about : (about.substring(0, start) + about.substring(end + 1)).trim();
-    }
-
-    private static String mergeBioAndSteam(String bio, String steamId) {
-        String cleanBio = bio == null ? "" : bio.trim();
-        String id = steamId == null ? "" : steamId.trim();
-        if (!id.isEmpty() && id.matches("[0-9]{17}")) {
-            return cleanBio + STEAM_MARKER + id + "]";
-        }
-        return cleanBio;
-    }
 
     private int bioInfoHash = Integer.MIN_VALUE;
     private CharSequence bioInfo;
@@ -283,14 +253,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             }
         };
         bioEdit.setShowLimitWhenEmpty(true);
-        steamEdit = new EditTextCell(context, "Steam ID (17 رقم)", false, false, 17, resourceProvider) {
-            @Override
-            protected void onTextChanged(CharSequence newText) {
-                super.onTextChanged(newText);
-                checkDone(true);
-            }
-        };
-        steamEdit.setDivider(false);
         updateBioInfo();
         bioInfo = AndroidUtilities.replaceSingleTag(getString(R.string.EditProfileBioInfo2), this::openBioSettings);
 
@@ -392,9 +354,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         bioRow = items.size();
         items.add(UItem.asCustom(bioEdit));
         items.add(UItem.asShadow(bioInfo));
-        items.add(UItem.asHeader("Steam"));
-        items.add(UItem.asCustom(steamEdit));
-        items.add(UItem.asShadow("شناسه Steam عمومی است و در انتهای بیوگرافی به‌صورت دادهٔ سازگار با XGram ذخیره می‌شود."));
 
         final TLRPC.User user = getUserConfig().getCurrentUser();
         items.add(UItem.asHeader(getString(R.string.EditAccountInfoHeader)));
@@ -695,9 +654,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
         firstNameEdit.setText(currentFirstName = user.first_name);
         lastNameEdit.setText(currentLastName = user.last_name);
-        currentSteamId = extractSteamId(userFull.about);
-        bioEdit.setText(currentBio = stripSteamMarker(userFull.about));
-        steamEdit.setText(currentSteamId);
+        bioEdit.setText(currentBio = userFull.about);
         birthday = currentBirthday = userFull.birthday;
         if ((userFull.flags2 & 64) != 0) {
             currentChannel = userFull.personal_channel_id;
@@ -721,7 +678,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             !TextUtils.equals(currentFirstName == null ? "" : currentFirstName, firstNameEdit.getText().toString()) ||
             !TextUtils.equals(currentLastName == null ? "" : currentLastName, lastNameEdit.getText().toString()) ||
             !TextUtils.equals(currentBio == null ? "" : currentBio, bioEdit.getText().toString()) ||
-            !TextUtils.equals(currentSteamId == null ? "" : currentSteamId, steamEdit == null ? "" : steamEdit.getText().toString().trim()) ||
             !birthdaysEqual(currentBirthday, birthday) ||
             currentChannel != (channel != null ? channel.id : 0)
         );
@@ -767,8 +723,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             (
                 !TextUtils.equals(currentFirstName, firstNameEdit.getText().toString()) ||
                 !TextUtils.equals(currentLastName, lastNameEdit.getText().toString()) ||
-                !TextUtils.equals(currentBio, bioEdit.getText().toString()) ||
-                !TextUtils.equals(currentSteamId, steamEdit.getText().toString().trim())
+                !TextUtils.equals(currentBio, bioEdit.getText().toString())
             )
         ) {
             TL_account.updateProfile req1 = new TL_account.updateProfile();
@@ -780,22 +735,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             req1.last_name = user.last_name = lastNameEdit.getText().toString();
 
             req1.flags |= 4;
-            String requestedSteamId = steamEdit.getText().toString().trim();
-            if (!requestedSteamId.isEmpty() && !requestedSteamId.matches("[0-9]{17}")) {
-                doneButtonDrawable.animateToProgress(0f);
-                AndroidUtilities.shakeViewSpring(steamEdit, shiftDp = -shiftDp);
-                return;
-            }
-            String mergedAbout = mergeBioAndSteam(bioEdit.getText().toString(), requestedSteamId);
-            if (mergedAbout.length() > getMessagesController().getAboutLimit()) {
-                doneButtonDrawable.animateToProgress(0f);
-                AndroidUtilities.shakeViewSpring(bioEdit, shiftDp = -shiftDp);
-                BulletinFactory.of(this).createErrorBulletin("برای ذخیره Steam ID، متن بیوگرافی باید کوتاه‌تر شود.").show();
-                return;
-            }
-            req1.about = userFull.about = mergedAbout;
-            currentSteamId = requestedSteamId;
-            currentBio = bioEdit.getText().toString();
+            req1.about = userFull.about = bioEdit.getText().toString();
             userFull.flags = TextUtils.isEmpty(userFull.about) ? (userFull.flags & ~2) : (userFull.flags | 2);
 
             requests.add(req1);

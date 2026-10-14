@@ -548,6 +548,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private CharSequence currentBio;
     private TextView steamProfileTextView;
+    private LinearLayout steamProfileCard;
     private LinearLayout steamProfileActions;
     private TextView steamOpenButton;
     private TextView steamCopyButton;
@@ -579,9 +580,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (!steamId.isEmpty()) {
             steamProfileTextView.setText("Steam ID  ·  " + steamId);
             steamProfileTextView.setVisibility(View.VISIBLE);
+            if (steamProfileCard != null) steamProfileCard.setVisibility(View.VISIBLE);
             if (steamProfileActions != null) steamProfileActions.setVisibility(View.VISIBLE);
             if (steamOpenButton != null) {
-                steamOpenButton.setText("مشاهده پروفایل");
                 steamOpenButton.setVisibility(View.VISIBLE);
                 steamOpenButton.setOnClickListener(v -> {
                     try {
@@ -604,23 +605,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 });
             }
-        } else if (ownProfile) {
-            // Keep a visible entry point on the user's own profile even before a Steam ID is set.
-            steamProfileTextView.setText("Steam ID تنظیم نشده");
-            steamProfileTextView.setVisibility(View.VISIBLE);
-            if (steamProfileActions != null) steamProfileActions.setVisibility(View.VISIBLE);
-            if (steamOpenButton != null) {
-                steamOpenButton.setText("تنظیم Steam ID");
-                steamOpenButton.setVisibility(View.VISIBLE);
-                steamOpenButton.setOnClickListener(v -> presentFragment(new UserInfoActivity()));
-            }
-            if (steamCopyButton != null) steamCopyButton.setVisibility(View.GONE);
-        } else if (userInfo != null) {
+        } else if (!ownProfile && userInfo != null) {
             steamProfileTextView.setText("Steam · محدودیت در نمایش اطلاعات");
             steamProfileTextView.setVisibility(View.VISIBLE);
+            if (steamProfileCard != null) steamProfileCard.setVisibility(View.VISIBLE);
             if (steamProfileActions != null) steamProfileActions.setVisibility(View.GONE);
         } else {
             steamProfileTextView.setVisibility(View.GONE);
+            if (steamProfileCard != null) steamProfileCard.setVisibility(View.GONE);
             if (steamProfileActions != null) steamProfileActions.setVisibility(View.GONE);
         }
     }
@@ -5711,14 +5703,37 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setFocusable(a == 0);
             avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 109 - (a == 1 || a == 2 || a == 3 ? 4 : 0), (a == 1 || a == 2 || a == 3 ? -2 : 0), (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
         }
+        // XGram Steam card: moved lower in the profile header and styled as a separate card.
+        steamProfileCard = new LinearLayout(context);
+        steamProfileCard.setOrientation(LinearLayout.HORIZONTAL);
+        steamProfileCard.setGravity(Gravity.CENTER_VERTICAL);
+        steamProfileCard.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+        GradientDrawable steamCardBackground = new GradientDrawable();
+        steamCardBackground.setColor(0xE61B2838);
+        steamCardBackground.setCornerRadius(AndroidUtilities.dp(16));
+        steamCardBackground.setStroke(AndroidUtilities.dp(1), 0x664A9EFF);
+        steamProfileCard.setBackground(steamCardBackground);
+        steamProfileCard.setVisibility(View.GONE);
+
+        ImageView steamIconView = new ImageView(context);
+        steamIconView.setImageResource(R.drawable.xgram_steam_logo);
+        steamIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        steamProfileCard.addView(steamIconView, LayoutHelper.createLinear(34, 34, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+        LinearLayout steamContent = new LinearLayout(context);
+        steamContent.setOrientation(LinearLayout.VERTICAL);
+        steamContent.setGravity(Gravity.CENTER_VERTICAL);
+        steamProfileCard.addView(steamContent, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+
         steamProfileTextView = new TextView(context);
-        steamProfileTextView.setTextColor(applyPeerColor(getThemedColor(Theme.key_avatar_subtitleInProfileBlue), true, null));
-        steamProfileTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        steamProfileTextView.setTextColor(0xFFFFFFFF);
+        steamProfileTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        steamProfileTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         steamProfileTextView.setSingleLine(true);
         steamProfileTextView.setEllipsize(TextUtils.TruncateAt.END);
         steamProfileTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         steamProfileTextView.setVisibility(View.GONE);
-        avatarContainer2.addView(steamProfileTextView, LayoutHelper.createFrame(260, 24, Gravity.LEFT | Gravity.TOP, 109, 17, 8, 0));
+        steamContent.addView(steamProfileTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 22));
 
         steamProfileActions = new LinearLayout(context);
         steamProfileActions.setOrientation(LinearLayout.HORIZONTAL);
@@ -5726,33 +5741,31 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         steamProfileActions.setVisibility(View.GONE);
         steamOpenButton = new TextView(context);
         steamOpenButton.setText("مشاهده پروفایل");
-        steamOpenButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        steamOpenButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+        steamOpenButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        steamOpenButton.setTextColor(0xFFFFFFFF);
         steamOpenButton.setGravity(Gravity.CENTER);
-        steamOpenButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(7), AndroidUtilities.dp(12), AndroidUtilities.dp(7));
-        steamOpenButton.setMinHeight(AndroidUtilities.dp(36));
-        steamOpenButton.setMinimumWidth(AndroidUtilities.dp(112));
+        steamOpenButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(5), AndroidUtilities.dp(10), AndroidUtilities.dp(5));
         GradientDrawable steamButtonBackground = new GradientDrawable();
-        steamButtonBackground.setColor(getThemedColor(Theme.key_dialogBackgroundGray));
-        steamButtonBackground.setCornerRadius(AndroidUtilities.dp(10));
+        steamButtonBackground.setColor(0xFF2879C7);
+        steamButtonBackground.setCornerRadius(AndroidUtilities.dp(9));
         steamOpenButton.setBackground(steamButtonBackground);
         steamCopyButton = new TextView(context);
-        steamCopyButton.setText("کپی ID");
-        steamCopyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        steamCopyButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+        steamCopyButton.setText("کپی شناسه");
+        steamCopyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        steamCopyButton.setTextColor(0xFFFFFFFF);
         steamCopyButton.setGravity(Gravity.CENTER);
-        steamCopyButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(7), AndroidUtilities.dp(12), AndroidUtilities.dp(7));
-        steamCopyButton.setMinHeight(AndroidUtilities.dp(36));
-        steamCopyButton.setMinimumWidth(AndroidUtilities.dp(72));
+        steamCopyButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(5), AndroidUtilities.dp(10), AndroidUtilities.dp(5));
         GradientDrawable steamCopyBackground = new GradientDrawable();
-        steamCopyBackground.setColor(getThemedColor(Theme.key_dialogBackgroundGray));
-        steamCopyBackground.setCornerRadius(AndroidUtilities.dp(10));
+        steamCopyBackground.setColor(0xFF34465A);
+        steamCopyBackground.setCornerRadius(AndroidUtilities.dp(9));
         steamCopyButton.setBackground(steamCopyBackground);
         LinearLayout.LayoutParams steamOpenParams = new LinearLayout.LayoutParams(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
         steamOpenParams.rightMargin = AndroidUtilities.dp(6);
         steamProfileActions.addView(steamOpenButton, steamOpenParams);
         steamProfileActions.addView(steamCopyButton, new LinearLayout.LayoutParams(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-        avatarContainer2.addView(steamProfileActions, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.LEFT | Gravity.TOP, 109, 42, 8, 0));
+        steamContent.addView(steamProfileActions, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        // Lower the card so it no longer overlaps the name/online-status area.
+        avatarContainer2.addView(steamProfileCard, LayoutHelper.createFrame(292, 66, Gravity.LEFT | Gravity.TOP, 109, 68, 8, 0));
         updateSteamProfileLabel();
         checkPhotoDescriptionAlpha();
         avatarContainer2.addView(animatedStatusView);
