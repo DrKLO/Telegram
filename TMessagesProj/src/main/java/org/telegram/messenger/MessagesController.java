@@ -12708,14 +12708,22 @@ public class MessagesController extends BaseController implements NotificationCe
             TL_account.getContactSignUpNotification req = new TL_account.getContactSignUpNotification();
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 loadingNotificationSignUpSettings = false;
-                SharedPreferences.Editor editor = notificationsPreferences.edit();
-                enableJoined = response instanceof TLRPC.TL_boolFalse;
-                editor.putBoolean("EnableContactJoined", enableJoined);
-                editor.commit();
-                getUserConfig().notificationsSignUpSettingsLoaded = true;
-                getUserConfig().saveConfig(false);
+                processSignUpNotificationsSettings(response, error);
             }));
         }
+    }
+
+    public void processSignUpNotificationsSettings(TLObject response, TLRPC.TL_error error) {
+        if (error != null || !(response instanceof TLRPC.Bool)) {
+            return;
+        }
+        SharedPreferences.Editor editor = notificationsPreferences.edit();
+        enableJoined = response instanceof TLRPC.TL_boolFalse;
+        editor.putBoolean("EnableContactJoined", enableJoined);
+        editor.commit();
+        getUserConfig().notificationsSignUpSettingsLoaded = true;
+        getUserConfig().saveConfig(false);
+        getNotificationCenter().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
     }
 
     public void forceResetDialogs() {
@@ -22355,6 +22363,27 @@ public class MessagesController extends BaseController implements NotificationCe
     }
     
     
+    public void setContactSignUpNotificationEnabled(boolean enable) {
+        notificationsPreferences.edit().putBoolean("EnableContactJoined", enable).commit();
+        enableJoined = enable;
+        TL_account.setContactSignUpNotification req = new TL_account.setContactSignUpNotification();
+        req.silent = !enable;
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> onContactSignUpNotificationSet(enable, error)));
+    }
+
+    public void onContactSignUpNotificationSet(boolean requested, TLRPC.TL_error error) {
+        if (error == null || notificationsPreferences.getBoolean("EnableContactJoined", true) != requested) {
+            return;
+        }
+        notificationsPreferences.edit().putBoolean("EnableContactJoined", !requested).commit();
+        enableJoined = !requested;
+        getNotificationCenter().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
+    }
+
+    public static boolean isContactJoinedMessage(TLRPC.Message message) {
+        return message != null && (message.action instanceof TLRPC.TL_messageActionContactSignUp || message.action instanceof TLRPC.TL_messageActionUserJoined);
+    }
+
     public void sortDialogs(LongSparseArray<TLRPC.Chat> chatsDict) {
         if (chatsDict == null && ApplicationLoader.mainInterfacePaused) {
             return;

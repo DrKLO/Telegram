@@ -1120,6 +1120,7 @@ public class NotificationsController extends BaseController implements Notificat
             LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
             boolean allowPinned = preferences.getBoolean("PinnedMessages", true);
+            boolean allowContactJoined = preferences.getBoolean("EnableContactJoined", true);
             int popup = 0;
             boolean hasScheduled = false;
 
@@ -1127,7 +1128,7 @@ public class NotificationsController extends BaseController implements Notificat
                 MessageObject messageObject = messageObjects.get(a);
                 if (messageObject.messageOwner != null && (messageObject.isImportedForward() ||
                         messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetMessagesTTL ||
-                        messageObject.messageOwner.silent && (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionContactSignUp || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined)) ||
+                        isMutedContactJoinedMessage(messageObject.messageOwner, allowContactJoined)) ||
                         MessageObject.isTopicActionMessage(messageObject)) {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("skipped message because 1");
@@ -1431,6 +1432,10 @@ public class NotificationsController extends BaseController implements Notificat
         pushMessages.add(0, messageObject);
     }
 
+    public static boolean isMutedContactJoinedMessage(TLRPC.Message message, boolean allowContactJoined) {
+        return (message.silent || !allowContactJoined) && MessagesController.isContactJoinedMessage(message);
+    }
+
     public int getTotalUnreadCount() {
         return total_unread_count;
     }
@@ -1577,6 +1582,7 @@ public class NotificationsController extends BaseController implements Notificat
             personalCount = 0;
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
             LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
+            boolean allowContactJoined = preferences.getBoolean("EnableContactJoined", true);
 
             if (messages != null) {
                 for (int a = 0; a < messages.size(); a++) {
@@ -1586,7 +1592,7 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     if (message.fwd_from != null && message.fwd_from.imported ||
                             message.action instanceof TLRPC.TL_messageActionSetMessagesTTL ||
-                            message.silent && (message.action instanceof TLRPC.TL_messageActionContactSignUp || message.action instanceof TLRPC.TL_messageActionUserJoined)) {
+                            isMutedContactJoinedMessage(message, allowContactJoined)) {
                         continue;
                     }
                     long did;
