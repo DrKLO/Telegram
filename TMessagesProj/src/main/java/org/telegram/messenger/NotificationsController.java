@@ -5253,10 +5253,15 @@ public class NotificationsController extends BaseController implements Notificat
                     sender = getUserConfig().getCurrentUser();
                 }
                 try {
-                    if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                    if (sender != null) {
                         Person.Builder personBuilder = new Person.Builder().setName(LocaleController.getString(R.string.FromYou));
-                        File avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
-                        loadRoundAvatar(getUserConfig().getClientUserId(), avatar, personBuilder);
+                        if (!waitingForPasscode) {
+                            File avatar = null;
+                            if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                                avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                            }
+                            loadPersonAvatar(personBuilder, selfUserId, sender, avatar);
+                        }
                         selfPerson = personBuilder.build();
                         personCache.put(selfUserId, selfPerson);
                     }
