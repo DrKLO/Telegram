@@ -5555,8 +5555,9 @@ public class NotificationsController extends BaseController implements Notificat
                                         }
                                     }, 20_000);
 
-                                    if (!TextUtils.isEmpty(messageObject.caption)) {
-                                        messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
+                                    final String caption = replaceSpoilers(messageObject);
+                                    if (!TextUtils.isEmpty(caption)) {
+                                        messagingStyle.addMessage(applyMessageEntities(messageObject, caption), ((long) messageObject.messageOwner.date) * 1000, person);
                                     }
                                     setPhoto = true;
                                 }
