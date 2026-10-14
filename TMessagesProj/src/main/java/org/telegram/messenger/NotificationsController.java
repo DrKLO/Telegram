@@ -1122,6 +1122,7 @@ public class NotificationsController extends BaseController implements Notificat
             boolean added = false;
             boolean edited = false;
             boolean storiesUpdated = false;
+            boolean formattingReplaced = false;
 
             LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
@@ -1220,6 +1221,8 @@ public class NotificationsController extends BaseController implements Notificat
                         if (idxOld >= 0) {
                             pushMessages.set(idxOld, messageObject);
                             popup = addToPopupMessages(popupArrayAdd, messageObject, dialogId, isChannel, preferences);
+                            // a push has no formatting, redraw once the full message arrives
+                            formattingReplaced |= !isFcm && messageObject.messageOwner.entities != null && !messageObject.messageOwner.entities.isEmpty();
                         }
                         if (isFcm && (edited = messageObject.localEdit)) {
                             getMessagesStorage().putPushMessage(messageObject);
@@ -1340,6 +1343,9 @@ public class NotificationsController extends BaseController implements Notificat
                         }
                     }
                 });
+            }
+            if (formattingReplaced && !added) {
+                showOrUpdateNotification(false);
             }
             if (isFcm || hasScheduled) {
                 if (edited) {
