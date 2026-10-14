@@ -5469,12 +5469,12 @@ public class NotificationsController extends BaseController implements Notificat
                                             fos.close();
 
                                             scaledBitmap.recycle();
-
-                                            attach = blurredAttach;
-                                        } catch (Exception e) {
+                                        } catch (Throwable e) {
                                             FileLog.e(e);
                                         }
                                     }
+                                    // never fall back to the original file of a media with a spoiler
+                                    attach = blurredAttach.exists() ? blurredAttach : null;
                                 } else {
                                     blurredAttach = null;
                                 }
