@@ -5439,7 +5439,7 @@ public class NotificationsController extends BaseController implements Notificat
                     if (!DialogObject.isEncryptedDialog(dialogId)) {
                         boolean setPhoto = false;
                         if (preview[0] && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice()) {
-                            if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker())) {
+                            if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == MessageObject.TYPE_PHOTO || messageObject.isSticker() && !messageObject.isVideoSticker())) {
                                 File attach = getNotificationMediaFile(messageObject);
                                 if (attach == null) {
                                     loadNotificationMedia(messageObject);
