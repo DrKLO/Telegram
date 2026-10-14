@@ -5902,7 +5902,12 @@ public class NotificationsController extends BaseController implements Notificat
 
     private void loadNotificationMedia(MessageObject messageObject) {
         final TLRPC.MessageMedia media = MessageObject.getMedia(messageObject.messageOwner);
-        if (media instanceof TLRPC.TL_messageMediaPhoto && media.photo != null && getDownloadController().canDownloadMedia(messageObject)) {
+        if (messageObject.isSticker()) {
+            final TLRPC.Document document = messageObject.getDocument();
+            if (document != null && pendingMediaLoads.add(FileLoader.getAttachFileName(document))) {
+                getFileLoader().loadFile(document, messageObject, FileLoader.PRIORITY_NORMAL, 1);
+            }
+        } else if (media instanceof TLRPC.TL_messageMediaPhoto && media.photo != null && getDownloadController().canDownloadMedia(messageObject)) {
             final TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(media.photo.sizes, AndroidUtilities.getPhotoSize());
             if (photoSize != null && pendingMediaLoads.add(FileLoader.getAttachFileName(photoSize))) {
                 getFileLoader().loadFile(ImageLocation.getForPhoto(photoSize, media.photo), messageObject, "jpg", FileLoader.PRIORITY_NORMAL, 0);
