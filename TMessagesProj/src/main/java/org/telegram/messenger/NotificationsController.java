@@ -4728,8 +4728,9 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
 
-            if (silent != 1 && !notifyDisabled) {
-                if (!isInApp || preferences.getBoolean("EnableInAppPreview", true) && lastMessage != null) {
+            final boolean canAlert = silent != 1 && !notifyDisabled;
+            if (canAlert || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (canAlert && (!isInApp || preferences.getBoolean("EnableInAppPreview", true) && lastMessage != null)) {
                     if (lastMessage.length() > 100) {
                         lastMessage = lastMessage.substring(0, 100).replace('\n', ' ').trim() + "...";
                     }
