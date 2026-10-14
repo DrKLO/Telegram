@@ -46,6 +46,8 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.Pair;
@@ -2538,6 +2540,37 @@ public class NotificationsController extends BaseController implements Notificat
             }
         }
         return stringBuilder.toString();
+    }
+
+    private CharSequence applyMessageEntities(MessageObject messageObject, String message) {
+        if (message == null || messageObject.isFcmMessage() || messageObject.messageOwner.entities == null || messageObject.messageOwner.entities.isEmpty()) {
+            return message;
+        }
+        // the text may come after a media emoji, entities are relative to the message text itself
+        final String text = replaceSpoilers(messageObject);
+        if (text == null || !message.endsWith(text)) {
+            return message;
+        }
+        final int offset = message.length() - text.length();
+        SpannableString spannable = null;
+        for (int a = 0, size = messageObject.messageOwner.entities.size(); a < size; a++) {
+            final TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(a);
+            final Object span = getEntitySpan(entity);
+            final int start = offset + entity.offset;
+            final int end = start + entity.length;
+            if (span == null || entity.offset < 0 || entity.length <= 0 || end > message.length()) {
+                continue;
+            }
+            if (spannable == null) {
+                spannable = new SpannableString(message);
+            }
+            spannable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return spannable != null ? spannable : message;
+    }
+
+    private Object getEntitySpan(TLRPC.MessageEntity entity) {
+        return null;
     }
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {
@@ -5466,7 +5499,7 @@ public class NotificationsController extends BaseController implements Notificat
                                 } else {
                                     blurredAttach = null;
                                 }
-                                NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);
+                                NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(applyMessageEntities(messageObject, message), ((long) messageObject.messageOwner.date) * 1000L, person);
                                 String mimeType = messageObject.isSticker() ? "image/webp" : "image/jpeg";
                                 Uri uri;
                                 if (attach.exists()) {
@@ -5516,7 +5549,7 @@ public class NotificationsController extends BaseController implements Notificat
                             }
                         }
                         if (!setPhoto) {
-                            messagingStyle.addMessage(message, ((long) messageObject.messageOwner.date) * 1000, person);
+                            messagingStyle.addMessage(preview[0] && !waitingForPasscode ? applyMessageEntities(messageObject, message) : message, ((long) messageObject.messageOwner.date) * 1000, person);
                         }
                         if (preview[0] && !waitingForPasscode && messageObject.isVoice()) {
                             List<NotificationCompat.MessagingStyle.Message> messages = messagingStyle.getMessages();
