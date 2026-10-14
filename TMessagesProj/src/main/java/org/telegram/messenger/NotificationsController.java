@@ -3450,7 +3450,9 @@ public class NotificationsController extends BaseController implements Notificat
         notificationsQueue.postRunnable(() -> {
             int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             if (hour >= 11 && hour <= 22) {
-                notificationManager.cancel(notificationId);
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                    notificationManager.cancel(notificationId);
+                }
                 showOrUpdateNotification(true);
             } else {
                 scheduleNotificationRepeat();
