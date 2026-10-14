@@ -4967,8 +4967,8 @@ public class NotificationsController extends BaseController implements Notificat
 
         ArrayList<NotificationHolder> holders = new ArrayList<>();
 
-        boolean useSummaryNotification = Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1 || sortedDialogs.size() > (storyPushMessages.isEmpty() ? 1 : 2);
-        if (useSummaryNotification && Build.VERSION.SDK_INT >= 26) {
+        boolean useSummaryNotification = alertByChildren || Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1 || sortedDialogs.size() > (storyPushMessages.isEmpty() ? 1 : 2);
+        if (useSummaryNotification && !alertByChildren && Build.VERSION.SDK_INT >= 26) {
             checkOtherNotificationsChannel();
         }
 
@@ -5770,7 +5770,7 @@ public class NotificationsController extends BaseController implements Notificat
             wearNotificationsIds.put(dialogId, internalId);
         }
 
-        if (useSummaryNotification) {
+        if (useSummaryNotification && !(alertByChildren && holders.isEmpty())) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("show summary with id " + notificationId);
             }
