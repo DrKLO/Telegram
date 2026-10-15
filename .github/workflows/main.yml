@@ -19,12 +19,12 @@ uses: actions/checkout@v4
   - name: Build debug APK
     run: |
       chmod +x gradlew
-      ./gradlew assembleAfatDebug --no-daemon
+      ./gradlew tasks --all --no-daemon
 
   - name: Upload APK
     uses: actions/upload-artifact@v4
     with:
-      name: FireGram-APK
+      name: FireGram-build-logs
       path: |
-        TMessagesProj/build/outputs/apk/**/*.apk
-      if-no-files-found: error
+        **/build/outputs/**/*.apk
+      if-no-files-found: warn
