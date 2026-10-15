@@ -9,21 +9,18 @@ runs-on: ubuntu-22.04
 steps:
 - name: Checkout source
 uses: actions/checkout@v4
-
-  - name: Set up JDK
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
-
-  - name: Build debug APK
-    run: |
-      chmod +x ./gradlew
-      ./gradlew assembleAfatDebug --no-daemon
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: FireGram-APK
-      path: TMessagesProj/build/outputs/apk/**/*.apk
-      if-no-files-found: error
+- name: Set up JDK
+uses: actions/setup-java@v4
+with:
+distribution: temurin
+java-version: '17'
+- name: Build debug APK
+run: |
+chmod +x ./gradlew
+./gradlew assembleAfatDebug --no-daemon
+- name: Upload APK
+uses: actions/upload-artifact@v4
+with:
+name: FireGram-APK
+path: TMessagesProj/build/outputs/apk/**/*.apk
+if-no-files-found: error
