@@ -1,27 +1,20 @@
 name: Build FireGram APK
 
-'on':
+on:
 workflow_dispatch:
 
 jobs:
 build:
 runs-on: ubuntu-22.04
-
 steps:
-  - name: Checkout source
-    uses: actions/checkout@v4
+- name: Checkout source
+uses: actions/checkout@v4
 
   - name: Set up JDK
     uses: actions/setup-java@v4
     with:
       distribution: temurin
       java-version: '17'
-
-  - name: Check project files
-    run: |
-      ls -la
-      test -f gradlew
-      test -d TMessagesProj
 
   - name: Build debug APK
     run: |
@@ -32,6 +25,5 @@ steps:
     uses: actions/upload-artifact@v4
     with:
       name: FireGram-APK
-      path: |
-        TMessagesProj/build/outputs/apk/**/*.apk
+      path: TMessagesProj/build/outputs/apk/**/*.apk
       if-no-files-found: error
