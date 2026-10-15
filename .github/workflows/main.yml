@@ -25,5 +25,5 @@ uses: actions/checkout@v4
     uses: actions/upload-artifact@v4
     with:
       name: FireGram-APK
-      path: TMessagesProj/build/outputs/apk/afat/debug/*.apk
+      path: TMessagesProj/build/outputs/apk/**/*.apk
       if-no-files-found: error
