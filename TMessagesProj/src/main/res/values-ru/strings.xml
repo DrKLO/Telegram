@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">AmeGram</string>
+    <string name="AppNameBeta">AmeGram Alpha</string>
     <string name="LanguageName">Русский</string>
     <string name="English">Английский</string>
     <string name="LanguageNameInEnglish">Russian</string>
@@ -263,4 +263,21 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+    <!-- AmeGram-specific strings: kept in strings.xml for the upstream localization generator. -->
+    <string name="AmeGramSettings">Настройки AmeGram</string>
+    <string name="AmeGramUnofficial">Независимый неофициальный клиент Telegram. Не связан с командой Telegram.</string>
+    <string name="AmeGramAppearance">Оформление</string>
+    <string name="AmeGramTelegramAppearance">Темы и оформление Telegram</string>
+    <string name="AmeGramOledBackground">Чёрный фон OLED</string>
+    <string name="AmeGramOledBackgroundInfo">Использовать чёрный фон в настройках AmeGram при тёмной теме Telegram. Сохраняется на устройстве; темы чатов не меняются.</string>
+    <string name="AmeGramChatOrganization">Организация чатов</string>
+    <string name="AmeGramTelegramFolders">Папки чатов Telegram</string>
+    <string name="AmeGramNotifications">Уведомления</string>
+    <string name="AmeGramTelegramNotifications">Настройки уведомлений Telegram</string>
+    <string name="AmeGramPrivacy">Конфиденциальность</string>
+    <string name="AmeGramTelegramPrivacy">Конфиденциальность и безопасность Telegram</string>
+    <string name="AmeGramLab">AmeLab</string>
+    <string name="AmeGramLabUnavailable">В этой альфа-версии экспериментов AmeGram пока нет. Будущие эксперименты будут включаться по отдельности.</string>
+    <string name="AmeGramAbout">Об AmeGram</string>
+    <string name="AmeGramSlogan">Telegram без стекла.</string>
 </resources>

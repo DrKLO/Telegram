@@ -14,3 +14,9 @@ TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
 TMessagesProj/jni/ffmpeg/build_android
+
+# Local AmeGram development scratch files
+/work/
+
+buildSrc/.kotlin/
+TMessagesProj_App/src/debug/google-services.json

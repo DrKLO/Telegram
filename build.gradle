@@ -17,6 +17,8 @@ repositories {
     google()
 }
 
+apply from: rootProject.file('gradle/amegram.gradle')
+
 // Strip JLatexMath fonts we don't ship (transitive AAR assets from
 // io.noties.markwon:ext-latex -> ru.noties:jlatexmath-android, ~764 KB total under
 // assets/org/scilab/forge/jlatexmath/fonts/). Has to live in the APK modules — a
@@ -24,12 +26,12 @@ repositories {
 // that consume it. Using subprojects keeps it in one place.
 //   keep:  base/, latin/, maths/, euler/  (\mathbb, \mathcal, \mathfrak still work)
 //   drop:  latin/optional/, maths/optional/  (~290 KB; \textbf/\textit/\mathds fall back)
-//          licences/                          (~20 KB; pure license text files)
+// License assets are retained in AmeGram builds.
 subprojects {
     plugins.withId('com.android.application') {
         android {
             androidResources {
-                ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~:!optional:!licences:!*stmary*:!*eufb*'
+                ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~:!optional:!*stmary*:!*eufb*'
             }
         }
     }

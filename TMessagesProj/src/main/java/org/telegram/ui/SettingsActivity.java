@@ -738,6 +738,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW)
             items.add(UItem.asShadow(null));
 
+        items.add(SettingCell.Factory.of(1000,
+                org.telegram.ui.amegram.AmeGramPalette.ACCENT,
+                org.telegram.ui.amegram.AmeGramPalette.ACCENT,
+                R.drawable.settings_features, getString(R.string.AmeGramSettings),
+                getString(R.string.AmeGramUnofficial)));
+        items.add(UItem.asShadow(null));
+
         items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
         items.add(SettingCell.Factory.of(17, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_ask, getString(R.string.AskAQuestion)));
         items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
@@ -817,6 +824,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
         switch (item.id) {
+            case 1000:
+                org.telegram.ui.amegram.AmeGramSettingsActivity ameGramSettings = new org.telegram.ui.amegram.AmeGramSettingsActivity();
+                ameGramSettings.setCurrentAccount(currentAccount);
+                presentSettingFragment(ameGramSettings);
+                break;
             case 1:
                 presentSettingFragment(new UserInfoActivity());
                 break;

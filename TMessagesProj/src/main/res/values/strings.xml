@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">AmeGram</string>
+    <string name="AppNameBeta">AmeGram Alpha</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -11535,4 +11535,21 @@
     <string name="CreateManagedBotUsernameBotLimit">This bot already has a Premium username. Remove it before adding another.</string>
     <string name="CreateManagedBotUsernameSuffixMissing">The username must end in %1$s.</string>
     <string name="CreateManagedBotUsernameCheckFailed">Couldn\'t check this username. Please try again.</string>
+    <!-- AmeGram-specific strings: kept in strings.xml for the upstream localization generator. -->
+    <string name="AmeGramSettings">AmeGram Settings</string>
+    <string name="AmeGramUnofficial">Independent, unofficial Telegram client. Not affiliated with Telegram.</string>
+    <string name="AmeGramAppearance">Appearance</string>
+    <string name="AmeGramTelegramAppearance">Telegram themes and appearance</string>
+    <string name="AmeGramOledBackground">OLED dark background</string>
+    <string name="AmeGramOledBackgroundInfo">Use a solid black background in AmeGram Settings when the Telegram dark theme is active. Saved on this device; chat themes are unchanged.</string>
+    <string name="AmeGramChatOrganization">Chat organization</string>
+    <string name="AmeGramTelegramFolders">Telegram chat folders</string>
+    <string name="AmeGramNotifications">Notifications</string>
+    <string name="AmeGramTelegramNotifications">Telegram notification settings</string>
+    <string name="AmeGramPrivacy">Privacy</string>
+    <string name="AmeGramTelegramPrivacy">Telegram privacy and security</string>
+    <string name="AmeGramLab">AmeLab</string>
+    <string name="AmeGramLabUnavailable">No AmeGram experiments are available in this alpha. Future experiments will be individually opt-in.</string>
+    <string name="AmeGramAbout">About AmeGram</string>
+    <string name="AmeGramSlogan">Telegram without the glass.</string>
 </resources>

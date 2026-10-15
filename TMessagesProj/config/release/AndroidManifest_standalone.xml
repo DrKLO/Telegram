@@ -34,8 +34,8 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
 
     <application
-        android:icon="@mipmap/ic_launcher_sa"
-        android:roundIcon="@mipmap/ic_launcher_sa"
+        android:icon="@drawable/amegram_launcher"
+        android:roundIcon="@drawable/amegram_launcher"
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
         android:hardwareAccelerated="true"
@@ -48,8 +48,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.VintageIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_6_launcher_sa"
-            android:roundIcon="@mipmap/icon_6_launcher_sa"
+            android:icon="@drawable/amegram_launcher"
+            android:roundIcon="@drawable/amegram_launcher"
             android:exported="true"
             tools:node="replace">
 
@@ -64,8 +64,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.AquaIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_4_launcher_sa"
-            android:roundIcon="@mipmap/icon_4_launcher_sa"
+            android:icon="@drawable/amegram_launcher"
+            android:roundIcon="@drawable/amegram_launcher"
             android:exported="true"
             tools:node="replace">
 
@@ -80,8 +80,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.PremiumIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_3_launcher_sa"
-            android:roundIcon="@mipmap/icon_3_launcher_sa"
+            android:icon="@drawable/amegram_launcher"
+            android:roundIcon="@drawable/amegram_launcher"
             android:exported="true"
             tools:node="replace">
 
@@ -96,8 +96,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.TurboIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_5_launcher_sa"
-            android:roundIcon="@mipmap/icon_5_launcher_sa"
+            android:icon="@drawable/amegram_launcher"
+            android:roundIcon="@drawable/amegram_launcher"
             android:exported="true"
             tools:node="replace">
 
@@ -112,8 +112,8 @@
             android:enabled="false"
             android:name="org.telegram.messenger.NoxIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
-            android:icon="@mipmap/icon_2_launcher_sa"
-            android:roundIcon="@mipmap/icon_2_launcher_sa"
+            android:icon="@drawable/amegram_launcher"
+            android:roundIcon="@drawable/amegram_launcher"
             android:exported="true"
             tools:node="replace">
 
