@@ -1543,7 +1543,7 @@ public class ConnectionsManager extends BaseController {
                         return;
                     }
 
-                    FileLog.d("account"+currentAccount+": integrity check successfully gave token: " + token + " in " + (System.currentTimeMillis() - start) + "ms");
+                    FileLog.d("account"+currentAccount+": integrity check completed in " + (System.currentTimeMillis() - start) + "ms");
                     try {
                         native_receivedIntegrityCheckClassic(currentAccount, requestToken, nonce, token);
                     } catch (Exception e) {
