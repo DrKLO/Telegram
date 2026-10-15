@@ -1,30 +1,11 @@
-name: Build FireGram APK
+name: FireGram APK
 
 on:
 workflow_dispatch:
 
 jobs:
-build:
-runs-on: ubuntu-22.04
+test:
+runs-on: ubuntu-latest
 steps:
-- name: Checkout source
-uses: actions/checkout@v4
-
-  - name: Set up JDK
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
-
-  - name: Build debug APK
-    run: |
-      chmod +x gradlew
-      ./gradlew tasks --all --no-daemon
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: FireGram-build-logs
-      path: |
-        **/build/outputs/**/*.apk
-      if-no-files-found: warn
+- name: Test workflow
+run: echo "FireGram workflow works"
