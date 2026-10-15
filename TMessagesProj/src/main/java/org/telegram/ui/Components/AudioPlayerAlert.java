@@ -2348,7 +2348,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private ImageLocation getArtworkThumbImageLocation(MessageObject messageObject) {
         final TLRPC.Document document = messageObject.getDocument();
-        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
+        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360, false, null, true) : null;
         if (!(thumb instanceof TLRPC.TL_photoSize) && !(thumb instanceof TLRPC.TL_photoSizeProgressive)) {
             thumb = null;
         }
