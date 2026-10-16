@@ -110,9 +110,10 @@ public final class AmeGramSettingsActivity extends BaseFragment implements Notif
         addText(context, R.string.AmeGramLabUnavailable, false);
         addText(context, R.string.AmeGramAbout, true);
         TextView version = addText(context, R.string.AmeGramUnofficial, false);
-        version.setText("AmeGram " + AmeGramConfig.VERSION + " · " + AmeGramConfig.DEVELOPER + "\n"
-                + LocaleController.getString(R.string.AmeGramSlogan) + "\n"
-                + LocaleController.getString(R.string.AmeGramUnofficial));
+        version.setText(LocaleController.formatString(R.string.AmeGramAboutDetails,
+                AmeGramConfig.VERSION, AmeGramConfig.DEVELOPER,
+                LocaleController.getString(R.string.AmeGramSlogan),
+                LocaleController.getString(R.string.AmeGramUnofficial)));
         applyPalette();
         return fragmentView;
     }

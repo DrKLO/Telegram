@@ -11552,4 +11552,5 @@
     <string name="AmeGramLabUnavailable">No AmeGram experiments are available in this alpha. Future experiments will be individually opt-in.</string>
     <string name="AmeGramAbout">About AmeGram</string>
     <string name="AmeGramSlogan">Telegram without the glass.</string>
+    <string name="AmeGramAboutDetails">AmeGram %1$s · %2$s\n%3$s\n%4$s</string>
 </resources>

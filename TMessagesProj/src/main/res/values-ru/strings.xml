@@ -280,4 +280,5 @@
     <string name="AmeGramLabUnavailable">В этой альфа-версии экспериментов AmeGram пока нет. Будущие эксперименты будут включаться по отдельности.</string>
     <string name="AmeGramAbout">Об AmeGram</string>
     <string name="AmeGramSlogan">Telegram без стекла.</string>
+    <string name="AmeGramAboutDetails">AmeGram %1$s · %2$s\n%3$s\n%4$s</string>
 </resources>
