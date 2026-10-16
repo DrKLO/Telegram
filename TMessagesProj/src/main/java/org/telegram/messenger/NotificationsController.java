@@ -71,6 +71,7 @@ import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.messenger.voip.VoIPGroupNotification;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_keyboard;
@@ -118,6 +119,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final HashSet<String> pendingAvatarLoads = new HashSet<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -3371,6 +3373,8 @@ public class NotificationsController extends BaseController implements Notificat
             notificationsQueue.postRunnable(() -> {
                 if (pendingVoiceLoads.remove(path)) {
                     showOrUpdateNotification(true);
+                } else if (pendingAvatarLoads.remove(path)) {
+                    showOrUpdateNotification(false);
                 }
             });
         }
@@ -5184,8 +5188,8 @@ public class NotificationsController extends BaseController implements Notificat
 
             if (chat != null) {
                 Person.Builder personBuilder = new Person.Builder().setName(name);
-                if (avatarFile != null && avatarFile.exists() && Build.VERSION.SDK_INT >= 28) {
-                    loadRoundAvatar(dialogId, avatarFile, personBuilder);
+                if (Build.VERSION.SDK_INT >= 28 && !waitingForPasscode) {
+                    loadPersonAvatar(personBuilder, dialogId, dialogId, chat, avatarFile);
                 }
                 personCache.put(-chat.id, personBuilder.build());
             }
@@ -5252,10 +5256,15 @@ public class NotificationsController extends BaseController implements Notificat
                     sender = getUserConfig().getCurrentUser();
                 }
                 try {
-                    if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                    if (sender != null) {
                         Person.Builder personBuilder = new Person.Builder().setName(LocaleController.getString(R.string.FromYou));
-                        File avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
-                        loadRoundAvatar(getUserConfig().getClientUserId(), avatar, personBuilder);
+                        if (!waitingForPasscode) {
+                            File avatar = null;
+                            if (sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
+                                avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
+                            }
+                            loadPersonAvatar(personBuilder, selfUserId, selfUserId, sender, avatar);
+                        }
                         selfPerson = personBuilder.build();
                         personCache.put(selfUserId, selfPerson);
                     }
@@ -5390,10 +5399,12 @@ public class NotificationsController extends BaseController implements Notificat
 
                     if (person == null || !TextUtils.equals(person.getName(), personName)) {
                         Person.Builder personBuilder = new Person.Builder().setName(personName);
-                        if (preview[0] && !DialogObject.isEncryptedDialog(dialogId) && Build.VERSION.SDK_INT >= 28) {
+                        if (preview[0] && !waitingForPasscode && !DialogObject.isEncryptedDialog(dialogId) && Build.VERSION.SDK_INT >= 28) {
                             File avatar = null;
+                            TLObject avatarPeer = null;
                             if (DialogObject.isUserDialog(dialogId) || isChannel) {
                                 avatar = avatarFile;
+                                avatarPeer = isChannel ? chat : user;
                             } else {
                                 long fromId = messageObject.getSenderId();
                                 TLRPC.User sender = getMessagesController().getUser(fromId);
@@ -5403,6 +5414,7 @@ public class NotificationsController extends BaseController implements Notificat
                                         getMessagesController().putUser(sender, true);
                                     }
                                 }
+                                avatarPeer = sender;
                                 if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                     avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                 }
@@ -5410,17 +5422,19 @@ public class NotificationsController extends BaseController implements Notificat
                             if (avatar == null && dialogId == UserObject.VERIFY && messageObject.getForwardedFromId() != null) {
                                 if (uid >= 0) {
                                     TLRPC.User sender = getMessagesController().getUser(uid);
+                                    avatarPeer = sender;
                                     if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                         avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                     }
                                 } else {
                                     TLRPC.Chat sender = getMessagesController().getChat(-uid);
+                                    avatarPeer = sender;
                                     if (sender != null && sender.photo != null && sender.photo.photo_small != null && sender.photo.photo_small.volume_id != 0 && sender.photo.photo_small.local_id != 0) {
                                         avatar = getFileLoader().getPathToAttach(sender.photo.photo_small, true);
                                     }
                                 }
                             }
-                            loadRoundAvatar(dialogId, avatar, personBuilder);
+                            loadPersonAvatar(personBuilder, dialogId, uid, avatarPeer, avatar);
                         }
                         person = personBuilder.build();
                         personCache.put(uid, person);
@@ -5869,6 +5883,43 @@ public class NotificationsController extends BaseController implements Notificat
             avatars.clear();
         }
         return new Pair<>(storiesCount, hidden);
+    }
+
+    private void loadPersonAvatar(Person.Builder personBuilder, long dialogId, long peerId, TLObject peer, File avatar) {
+        loadRoundAvatar(dialogId, avatar != null && avatar.exists() ? avatar : null, personBuilder);
+        final Person person = personBuilder.build();
+        if (person.getIcon() != null) {
+            return;
+        }
+        TLRPC.FileLocation photo = null;
+        if (peer instanceof TLRPC.User && ((TLRPC.User) peer).photo != null) {
+            photo = ((TLRPC.User) peer).photo.photo_small;
+        } else if (peer instanceof TLRPC.Chat && ((TLRPC.Chat) peer).photo != null) {
+            photo = ((TLRPC.Chat) peer).photo.photo_small;
+        }
+        if (photo != null && photo.volume_id != 0 && photo.local_id != 0 && pendingAvatarLoads.add(FileLoader.getAttachFileName(photo))) {
+            getFileLoader().loadFile(ImageLocation.getForUserOrChat(peer, ImageLocation.TYPE_SMALL), peer, null, FileLoader.PRIORITY_NORMAL, 1);
+        }
+        try {
+            final int size = AndroidUtilities.dp(48);
+            AvatarDrawable avatarDrawable = new AvatarDrawable();
+            if (peer != null) {
+                avatarDrawable.setInfo(currentAccount, peer);
+            } else {
+                // peers known only from a push, the name comes with the push
+                final CharSequence name = person.getName();
+                if (TextUtils.isEmpty(name)) {
+                    return;
+                }
+                avatarDrawable.setInfo(peerId, name.toString(), null);
+            }
+            avatarDrawable.setBounds(0, 0, size, size);
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            avatarDrawable.draw(new Canvas(bitmap));
+            personBuilder.setIcon(IconCompat.createWithBitmap(bitmap));
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     public static Person.Builder loadRoundAvatar(long dialogId, File avatar, Person.Builder personBuilder) {
