@@ -118,6 +118,9 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final LongSparseIntArray readFromNotificationMaxIds = new LongSparseIntArray();
+    private final LongSparseArray<ArrayList<NotificationReply>> notificationReplies = new LongSparseArray<>();
+    private final LongSparseIntArray repliedDialogsMaxIds = new LongSparseIntArray();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -253,6 +256,8 @@ public class NotificationsController extends BaseController implements Notificat
 
         AndroidUtilities.runOnUIThread(() -> {
             getNotificationCenter().addObserver(this, NotificationCenter.fileLoaded);
+            getNotificationCenter().addObserver(this, NotificationCenter.messageReceivedByServer);
+            getNotificationCenter().addObserver(this, NotificationCenter.messageSendError);
         });
     }
 
@@ -495,6 +500,10 @@ public class NotificationsController extends BaseController implements Notificat
         notificationsQueue.postRunnable(() -> {
             openedDialogId = dialog_id;
             openedTopicId = topicId;
+            if (repliedDialogsMaxIds.indexOfKey(dialog_id) >= 0) {
+                repliedDialogsMaxIds.delete(dialog_id);
+                removeNotificationsForDialog(dialog_id);
+            }
         });
     }
 
@@ -515,6 +524,95 @@ public class NotificationsController extends BaseController implements Notificat
             }
             lastOnlineFromOtherDevice = time;
         });
+    }
+
+    private static class NotificationReply {
+        final int messageId;
+        final CharSequence text;
+        final long date;
+        final Utilities.Callback<Boolean> whenDone;
+        boolean sent;
+        boolean failed;
+
+        NotificationReply(int messageId, CharSequence text, Utilities.Callback<Boolean> whenDone) {
+            this.messageId = messageId;
+            this.text = text;
+            this.date = System.currentTimeMillis();
+            this.whenDone = whenDone;
+        }
+    }
+
+    public void addNotificationReply(long dialogId, int messageId, CharSequence text, Utilities.Callback<Boolean> whenDone) {
+        notificationsQueue.postRunnable(() -> {
+            ArrayList<NotificationReply> replies = notificationReplies.get(dialogId);
+            if (replies == null) {
+                notificationReplies.put(dialogId, replies = new ArrayList<>());
+            }
+            replies.add(new NotificationReply(messageId, text, whenDone));
+            showOrUpdateNotification(false);
+        });
+    }
+
+    private void processNotificationReplyResult(int messageId, boolean sent) {
+        for (int a = 0; a < notificationReplies.size(); a++) {
+            final ArrayList<NotificationReply> replies = notificationReplies.valueAt(a);
+            for (int b = 0; b < replies.size(); b++) {
+                final NotificationReply reply = replies.get(b);
+                if (reply.messageId != messageId) {
+                    continue;
+                }
+                reply.sent = sent;
+                reply.failed = !sent;
+                showOrUpdateNotification(false);
+                AndroidUtilities.runOnUIThread(() -> reply.whenDone.run(sent));
+                return;
+            }
+        }
+    }
+
+    // after an inline reply the chat is read, but its notification is kept with the conversation like in other messengers
+    public void keepNotificationAfterReply(long dialogId, int maxId) {
+        notificationsQueue.postRunnable(() -> {
+            if (repliedDialogsMaxIds.get(dialogId) < maxId) {
+                repliedDialogsMaxIds.put(dialogId, maxId);
+            }
+        });
+    }
+
+    private boolean isKeptAfterReply(MessageObject messageObject) {
+        final int index = repliedDialogsMaxIds.indexOfKey(messageObject.getDialogId());
+        return index >= 0 && messageObject.getId() <= repliedDialogsMaxIds.valueAt(index);
+    }
+
+    private void forgetReplyIfReadFurther(long dialogId, int maxId) {
+        final int index = repliedDialogsMaxIds.indexOfKey(dialogId);
+        if (index >= 0 && (maxId < 0 || maxId > repliedDialogsMaxIds.valueAt(index))) {
+            repliedDialogsMaxIds.removeAt(index);
+        }
+    }
+
+    public void dismissDialogNotificationAsRead(long dialogId, int maxId) {
+        notificationsQueue.postRunnable(() -> {
+            repliedDialogsMaxIds.delete(dialogId);
+            if (readFromNotificationMaxIds.get(dialogId) < maxId) {
+                readFromNotificationMaxIds.put(dialogId, maxId);
+            }
+            Integer id = wearNotificationsIds.get(dialogId);
+            int notificationId = id != null ? id : getDialogNotificationId(dialogId);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("cancel notification id " + notificationId + " of " + dialogId + " marked as read");
+            }
+            notificationManager.cancel(notificationId);
+        });
+        processReadMessages(null, dialogId, 0, maxId, false);
+    }
+
+    private boolean isReadFromNotification(long dialogId, int messageId) {
+        return messageId > 0 && messageId <= readFromNotificationMaxIds.get(dialogId);
+    }
+
+    private static int getDialogNotificationId(long dialogId) {
+        return (int) dialogId + (int) (dialogId >> 32);
     }
 
     public void removeNotificationsForDialog(long did) {
@@ -894,9 +992,10 @@ public class NotificationsController extends BaseController implements Notificat
                 for (int b = 0; b < inbox.size(); b++) {
                     long key = inbox.keyAt(b);
                     int messageId = inbox.get(key);
+                    forgetReplyIfReadFurther(key, messageId);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == key && messageObject.getId() <= messageId && !messageObject.isStoryReactionPush) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == key && messageObject.getId() <= messageId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                             if (isPersonalMessage(messageObject)) {
                                 personalCount--;
                             }
@@ -924,9 +1023,12 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
             if (dialogId != 0 && (maxId != 0 || maxDate != 0)) {
+                if (maxId != 0) {
+                    forgetReplyIfReadFurther(dialogId, maxId == Integer.MAX_VALUE ? -1 : maxId);
+                }
                 for (int a = 0; a < pushMessages.size(); a++) {
                     MessageObject messageObject = pushMessages.get(a);
-                    if (messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush) {
+                    if (messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                         boolean remove = false;
                         if (maxDate != 0) {
                             if (messageObject.messageOwner.date <= maxDate) {
@@ -1500,7 +1602,7 @@ public class NotificationsController extends BaseController implements Notificat
                     pushDialogsOverrideMention.remove(dialogId);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialogId && !messageObject.isStoryReactionPush && !isKeptAfterReply(messageObject)) {
                             if (isPersonalMessage(messageObject)) {
                                 personalCount--;
                             }
@@ -1596,7 +1698,7 @@ public class NotificationsController extends BaseController implements Notificat
                         did = 0;
                     }
                     SparseArray<MessageObject> sparseArray = pushMessagesDict.get(did);
-                    if (sparseArray != null && sparseArray.indexOfKey(message.id) >= 0) {
+                    if (sparseArray != null && sparseArray.indexOfKey(message.id) >= 0 || isReadFromNotification(MessageObject.getDialogId(message), message.id)) {
                         continue;
                     }
                     MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
@@ -1671,7 +1773,7 @@ public class NotificationsController extends BaseController implements Notificat
                 for (int a = 0; a < push.size(); a++) {
                     MessageObject messageObject = push.get(a);
                     int mid = messageObject.getId();
-                    if (pushMessagesDict.indexOfKey(mid) >= 0) {
+                    if (pushMessagesDict.indexOfKey(mid) >= 0 || isReadFromNotification(messageObject.getDialogId(), mid)) {
                         continue;
                     }
                     if (isPersonalMessage(messageObject)) {
@@ -3373,6 +3475,10 @@ public class NotificationsController extends BaseController implements Notificat
                     showOrUpdateNotification(true);
                 }
             });
+        } else if (id == NotificationCenter.messageReceivedByServer || id == NotificationCenter.messageSendError) {
+            final int messageId = (Integer) args[0];
+            final boolean sent = id == NotificationCenter.messageReceivedByServer;
+            notificationsQueue.postRunnable(() -> processNotificationReplyResult(messageId, sent));
         }
     }
 
@@ -4332,7 +4438,7 @@ public class NotificationsController extends BaseController implements Notificat
                 } else {
                     detailText = "";
                 }
-                if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
+                if (pushDialogs.size() > 1 || pushDialogs.size() == 1 && Build.VERSION.SDK_INT < 23) {
                     if (pushDialogs.size() == 1) {
                         detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
                     } else {
@@ -5009,7 +5115,7 @@ public class NotificationsController extends BaseController implements Notificat
             if (dialogKey.story) {
                 internalId = Integer.MAX_VALUE - 1;
             } else if (internalId == null) {
-                internalId = (int) dialogKey.dialogId + (int) (dialogKey.dialogId >> 32);
+                internalId = getDialogNotificationId(dialogKey.dialogId);
             } else {
                 oldIdsWear.remove(dialogKey.dialogId);
             }
@@ -5629,6 +5735,20 @@ public class NotificationsController extends BaseController implements Notificat
             }
             wearableExtender.setBridgeTag("tgaccount" + selfUserId);
 
+            final ArrayList<NotificationReply> replies = dialogKey.story ? null : notificationReplies.get(dialogId);
+            if (replies != null) {
+                for (int a = 0; a < replies.size(); a++) {
+                    final NotificationReply reply = replies.get(a);
+                    if (reply.sent) {
+                        messagingStyle.addMessage(reply.text, reply.date, (Person) null);
+                    } else {
+                        final String state = LocaleController.getString(reply.failed ? R.string.NotificationReplyNotSent : R.string.NotificationReplySending);
+                        messagingStyle.addMessage(reply.text + "\n" + state, reply.date, (Person) null);
+                    }
+                }
+                Collections.sort(messagingStyle.getMessages(), (m1, m2) -> Long.compare(m1.getTimestamp(), m2.getTimestamp()));
+            }
+
             long date;
             if (dialogKey.story) {
                 date = Long.MAX_VALUE;
@@ -5784,6 +5904,12 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.d("cancel notification id " + id);
             }
             notificationManager.cancel(id);
+        }
+
+        for (int a = notificationReplies.size() - 1; a >= 0; a--) {
+            if (wearNotificationsIds.indexOfKey(notificationReplies.keyAt(a)) < 0) {
+                notificationReplies.removeAt(a);
+            }
         }
 
         ArrayList<String> ids = new ArrayList<>(holders.size());
