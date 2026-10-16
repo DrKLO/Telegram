@@ -37,6 +37,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -46,8 +47,13 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -1116,6 +1122,7 @@ public class NotificationsController extends BaseController implements Notificat
             boolean added = false;
             boolean edited = false;
             boolean storiesUpdated = false;
+            boolean formattingReplaced = false;
 
             LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
@@ -1214,6 +1221,8 @@ public class NotificationsController extends BaseController implements Notificat
                         if (idxOld >= 0) {
                             pushMessages.set(idxOld, messageObject);
                             popup = addToPopupMessages(popupArrayAdd, messageObject, dialogId, isChannel, preferences);
+                            // a push has no formatting, redraw once the full message arrives
+                            formattingReplaced |= !isFcm && messageObject.messageOwner.entities != null && !messageObject.messageOwner.entities.isEmpty();
                         }
                         if (isFcm && (edited = messageObject.localEdit)) {
                             getMessagesStorage().putPushMessage(messageObject);
@@ -1334,6 +1343,9 @@ public class NotificationsController extends BaseController implements Notificat
                         }
                     }
                 });
+            }
+            if (formattingReplaced && !added) {
+                showOrUpdateNotification(false);
             }
             if (isFcm || hasScheduled) {
                 if (edited) {
@@ -2538,6 +2550,47 @@ public class NotificationsController extends BaseController implements Notificat
             }
         }
         return stringBuilder.toString();
+    }
+
+    private CharSequence applyMessageEntities(MessageObject messageObject, String message) {
+        if (message == null || messageObject.isFcmMessage() || messageObject.messageOwner.entities == null || messageObject.messageOwner.entities.isEmpty()) {
+            return message;
+        }
+        // the text may come after a media emoji, entities are relative to the message text itself
+        final String text = replaceSpoilers(messageObject);
+        if (text == null || !message.endsWith(text)) {
+            return message;
+        }
+        final int offset = message.length() - text.length();
+        SpannableString spannable = null;
+        for (int a = 0, size = messageObject.messageOwner.entities.size(); a < size; a++) {
+            final TLRPC.MessageEntity entity = messageObject.messageOwner.entities.get(a);
+            final Object span = getEntitySpan(entity);
+            final int start = offset + entity.offset;
+            final int end = start + entity.length;
+            if (span == null || entity.offset < 0 || entity.length <= 0 || end > message.length()) {
+                continue;
+            }
+            if (spannable == null) {
+                spannable = new SpannableString(message);
+            }
+            spannable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return spannable != null ? spannable : message;
+    }
+
+    private Object getEntitySpan(TLRPC.MessageEntity entity) {
+        if (entity instanceof TLRPC.TL_messageEntityBold) {
+            return new StyleSpan(Typeface.BOLD);
+        } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
+            return new StyleSpan(Typeface.ITALIC);
+        } else if (entity instanceof TLRPC.TL_messageEntityUnderline || entity instanceof TLRPC.TL_messageEntityUrl || entity instanceof TLRPC.TL_messageEntityTextUrl) {
+            // links can't be colored or tapped in a notification, underline is the only hint left
+            return new UnderlineSpan();
+        } else if (entity instanceof TLRPC.TL_messageEntityStrike) {
+            return new StrikethroughSpan();
+        }
+        return null;
     }
 
     private String getStringForMessage(MessageObject messageObject, boolean shortMessage, boolean[] text, boolean[] preview) {
@@ -5466,7 +5519,7 @@ public class NotificationsController extends BaseController implements Notificat
                                 } else {
                                     blurredAttach = null;
                                 }
-                                NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);
+                                NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(applyMessageEntities(messageObject, message), ((long) messageObject.messageOwner.date) * 1000L, person);
                                 String mimeType = messageObject.isSticker() ? "image/webp" : "image/jpeg";
                                 Uri uri;
                                 if (attach.exists()) {
@@ -5508,15 +5561,16 @@ public class NotificationsController extends BaseController implements Notificat
                                         }
                                     }, 20_000);
 
-                                    if (!TextUtils.isEmpty(messageObject.caption)) {
-                                        messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
+                                    final String caption = replaceSpoilers(messageObject);
+                                    if (!TextUtils.isEmpty(caption)) {
+                                        messagingStyle.addMessage(applyMessageEntities(messageObject, caption), ((long) messageObject.messageOwner.date) * 1000, person);
                                     }
                                     setPhoto = true;
                                 }
                             }
                         }
                         if (!setPhoto) {
-                            messagingStyle.addMessage(message, ((long) messageObject.messageOwner.date) * 1000, person);
+                            messagingStyle.addMessage(preview[0] && !waitingForPasscode ? applyMessageEntities(messageObject, message) : message, ((long) messageObject.messageOwner.date) * 1000, person);
                         }
                         if (preview[0] && !waitingForPasscode && messageObject.isVoice()) {
                             List<NotificationCompat.MessagingStyle.Message> messages = messagingStyle.getMessages();
