@@ -977,8 +977,45 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
                 });
+                // reads from other devices may not change the stored unread counters, so redraw right away
+                int oldUnreadCount = total_unread_count;
+                for (int a = 0, size = popupArrayRemove.size(); a < size; a++) {
+                    long did = popupArrayRemove.get(a).getDialogId();
+                    Integer count = pushDialogs.get(did);
+                    if (count == null || hasPushMessages(did)) {
+                        continue;
+                    }
+                    if (getMessagesController().isForum(did)) {
+                        total_unread_count -= count > 0 ? 1 : 0;
+                    } else if (!getMessagesController().isCommunity(did)) {
+                        total_unread_count -= count;
+                    }
+                    pushDialogs.remove(did);
+                    pushDialogsOverrideMention.remove(did);
+                    smartNotificationsDialogs.remove(did);
+                }
+                showOrUpdateNotification(false);
+                if (oldUnreadCount != total_unread_count) {
+                    int pushDialogsCount = pushDialogs.size();
+                    AndroidUtilities.runOnUIThread(() -> {
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.notificationsCountUpdated, currentAccount);
+                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadCounterChanged, pushDialogsCount);
+                    });
+                    if (showBadgeNumber) {
+                        setBadge(getTotalAllUnreadCount());
+                    }
+                }
             }
         });
+    }
+
+    private boolean hasPushMessages(long dialogId) {
+        for (int a = 0, size = pushMessages.size(); a < size; a++) {
+            if (pushMessages.get(a).getDialogId() == dialogId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private int addToPopupMessages(ArrayList<MessageObject> popupArrayAdd, MessageObject messageObject, long dialogId, boolean isChannel, SharedPreferences preferences) {
