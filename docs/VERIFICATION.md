@@ -1,5 +1,7 @@
 # Verification record — 0.1.0-alpha foundation
 
+This is the historical 2026-10-15 record. See [BUILD_AUDIT.md](BUILD_AUDIT.md) for the 2026-10-17 CI, Firebase and emulator recheck; earlier blockers here must not be treated as current without that update.
+
 Date: 2026-10-15. Baseline: `f32ffeec763f0bdbf4bec25b52d654f77bff733d`. Code commits: `5fbd90d266` (foundation) and `c310e8e9a3` (sensitive log removal / SMS capability). This is a source-development milestone, not a released or device-verified client.
 
 ## Environment
