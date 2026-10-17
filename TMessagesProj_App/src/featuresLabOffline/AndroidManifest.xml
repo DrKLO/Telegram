@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Enforced by Android: this APK cannot contact Telegram or any other server. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove" />
     <application>
         <activity android:name="org.telegram.ui.LaunchActivity" android:enabled="false" tools:replace="android:enabled" />
         <activity-alias android:name="org.telegram.messenger.DefaultIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />

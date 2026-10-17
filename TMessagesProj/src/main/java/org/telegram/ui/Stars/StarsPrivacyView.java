@@ -68,12 +68,12 @@ public final class StarsPrivacyView extends LinearLayout implements Notification
         labels.setOrientation(VERTICAL);
         labels.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         title = new TextView(context);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
         title.setText(LocaleController.getString(R.string.StarsPrivacyMakePrivate));
         title.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         labels.addView(title, LayoutHelper.createLinear(-1, -2));
         subtitle = new TextView(context);
-        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         subtitle.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         labels.addView(subtitle, LayoutHelper.createLinear(-1, -2, 0, 5, 0, 0));
 

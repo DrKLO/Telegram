@@ -16,6 +16,7 @@ public final class StarsPrivacy {
     }
 
     public static void setEnabled(int account, boolean enabled) {
+        if (enabled && !isEnabled(account)) cancelPendingPublicReaction(account, 0);
         // Persist the boundary before publishing the new default. Unloaded history pages
         // must be protected too, not only the rows that happened to be on screen.
         // Enabling also protects every past reaction, including posts not loaded here.
@@ -23,6 +24,14 @@ public final class StarsPrivacy {
         if (enabled || isEnabled(account)) StarsPrivacyMockApi.sealPrivateActivity(account);
         MessagesController.getMainSettings(account).edit().putBoolean(KEY, enabled).apply();
         NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.starsPrivacyChanged);
+    }
+
+    /** A pending public send must not cross a privacy boundary and become public again. */
+    static void cancelPendingPublicReaction(int account, long dialogId) {
+        StarsController.PendingPaidReactions pending = StarsController.getInstance(account).currentPendingReactions;
+        if (pending != null && (dialogId == 0 || pending.message.did == dialogId) && !pending.isAnonymous()) {
+            pending.cancel();
+        }
     }
 
     public static boolean isPrivate(int account, long dialogId) {

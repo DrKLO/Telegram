@@ -584,6 +584,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     private void fillTopItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         if (StarsPrivacy.isPrivate(currentAccount, dialogId)) return;
         for (int i = 0; i < topMessages.size(); ++i) {
+            if (topMessages.get(i).dialogId == UserObject.ANONYMOUS) continue;
             items.add(LiveTopSenderView.Factory.of(topMessages.get(i)));
         }
     }
@@ -632,7 +633,12 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     private boolean hasTopMessages;
     private void updateTopMessages(boolean animated) {
-        boolean visible = !StarsPrivacy.isPrivate(currentAccount, dialogId) && !topMessages.isEmpty();
+        boolean visible = false;
+        if (!StarsPrivacy.isPrivate(currentAccount, dialogId)) {
+            for (TopSender sender : topMessages) {
+                if (sender.dialogId != UserObject.ANONYMOUS) { visible = true; break; }
+            }
+        }
         if (animated && hasTopMessages == visible) return;
 
         hasTopMessages = visible;
@@ -653,6 +659,8 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 .setDuration(420)
                 .start();
         } else {
+            listView.animate().cancel();
+            topListView.animate().cancel();
             listView.setTranslationY(hasTopMessages ? 0 : dp(26 + 9));
             topListView.setTranslationY(hasTopMessages ? 0 : dp(26 + 9));
             topListView.setAlpha(hasTopMessages ? 1.0f : 0.0f);
@@ -679,11 +687,19 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     public void clear() {
+        cancelStars();
         publicReactionGeneration = -1;
         publicStarsSincePrivacy = 0;
         newPublicReactions.clear();
         messages.clear();
+        topMessages.clear();
+        topDonors.clear();
+        topPlaces.clear();
+        totalStars = 0;
+        sentStars = false;
         adapter.update(true);
+        topAdapter.update(false);
+        updateTopMessages(false);
     }
 
     private long dialogId;
@@ -691,7 +707,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     private TLRPC.InputGroupCall inputCall;
     public boolean setup(long dialogId, final TLRPC.InputGroupCall inputCall) {
         boolean changed = false;
-        if ((this.inputCall == null ? 0 : this.inputCall.id) != (inputCall == null ? 0 : inputCall.id)) {
+        if (this.dialogId != dialogId || (this.inputCall == null ? 0 : this.inputCall.id) != (inputCall == null ? 0 : inputCall.id)) {
             this.clear();
             changed = true;
         }
@@ -786,6 +802,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private void applyReactionPrivacy() {
+        if (localStars > 0 && starsPeer != UserObject.ANONYMOUS && StarsPrivacy.isPrivate(currentAccount, dialogId)) cancelStars();
         for (Message message : messages) redactPastReaction(message);
         for (int i = topMessages.size() - 1; i >= 0; i--) {
             TopSender sender = topMessages.get(i);
@@ -997,15 +1014,9 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private String getStarsToastTitle() {
-        if (org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyLivePreview);
+        if (StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyLivePreview);
         if (mockStars) return getString(R.string.StarsReactionPreviewPending);
-//        if (isAnonymous()) {
-//            return getString(R.string.StarsSentAnonymouslyTitle);
-//        } else if (getPeerId() != 0 && getPeerId() != UserConfig.getInstance(currentAccount).getClientUserId()) {
-//            return formatString(R.string.StarsSentTitleChannel, DialogObject.getShortName(getPeerId()));
-//        } else {
-            return getString(R.string.StarsSentTitle);
-//        }
+        return getString(R.string.StarsPendingTitle);
     }
 
     private CharSequence getStarsToastSubtitle() {

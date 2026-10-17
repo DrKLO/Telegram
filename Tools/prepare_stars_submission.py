@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Package a committed revision, reviewed recording and documentation; never publish or send."""
 import hashlib
+import html
 import json
 from pathlib import Path
 import shutil
@@ -10,14 +11,34 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'd1a1265'
 REPOSITORY = 'https://github.com/yes-i-like-pina-coladas/Telegram'
-DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md']
-SCREENSHOTS = ['stars-privacy-settings-light.png', 'stars-privacy-settings-dark.png',
-               'stars-private-reaction-sheet.png', 'stars-private-transaction.png',
-               'stars-channel-dark-polished.png', 'stars-privacy-settings-russian.png',
-               'stars-history-privacy-light.png', 'stars-history-privacy-dark.png',
-               'stars-history-privacy-russian.png', 'stars-private-amounts.png',
-               'stars-purchase-privacy-light.png', 'stars-purchase-privacy-dark.png',
-               'stars-purchase-privacy-enabled.png', 'stars-retroactive-hidden.png']
+DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md', 'QA.md']
+SCREENSHOT_CAPTIONS = {
+    'stars-history-privacy-light.png': ('Make my Stars private', 'The animated native privacy control sits directly above transaction history.'),
+    'stars-history-privacy-dark.png': ('History control · dark', 'The same control and minimal receipt rows use Telegram’s dark theme.'),
+    'stars-privacy-settings-light.png': ('Personal settings', 'Private reactions, history anonymisation and the prototype’s limitations in native settings cells.'),
+    'stars-privacy-off-notice.png': ('Opt-out notice', 'A brief notice explains that only new reactions can become public.'),
+    'stars-purchase-privacy-light.png': ('Before buying Stars', 'The purchase sheet explains profile visibility and offers a one-tap privacy action.'),
+    'stars-purchase-privacy-enabled.png': ('Purchase privacy enabled', 'The notice updates immediately after enabling privacy; sample packages cannot purchase.'),
+    'stars-private-reaction-sheet.png': ('Private post reaction', 'The native slider and send action remain, with identity and leaderboard controls hidden.'),
+    'stars-twenty-second-undo.png': ('20-second Undo', 'The pending reaction keeps Telegram’s native countdown and Undo action.'),
+    'stars-private-transaction.png': ('Private receipt', 'Only the signed Stars amount, transaction ID and date/time remain.'),
+    'stars-private-amounts.png': ('Amounts retained', 'Private history still shows native amounts, including fractional Stars.'),
+    'stars-private-live-sheet.png': ('Live Stars', 'Live reactions keep the native sheet and animation flow; unsupported anonymity uses a labelled mock.'),
+    'stars-private-live-receipt.png': ('Live receipt', 'The completed simulated live reaction produces a minimal receipt with its actual Stars amount.'),
+    'stars-channel-admin.png': ('Channel controls', 'Admins can require anonymous reactions and allow a donor-only percentile.'),
+    'stars-channel-private-sheet.png': ('Private-channel reaction', 'The channel policy removes named rankings and uses an anonymous send preview.'),
+    'stars-private-donor-percentile.png': ('Donor-only percentile', 'A rounded Top N% label replaces named rankings in the private-channel mock.'),
+    'stars-channel-expired.png': ('After five minutes', 'The selected highlight and donor percentile have expired while the sheet remains open.'),
+    'stars-anonymise-receipt-confirmation.png': ('Anonymise one receipt', 'A native confirmation explains the irreversible local action and retained fields.'),
+    'stars-anonymise-history-confirmation.png': ('Anonymise history', 'The same native confirmation applies to existing history, including unloaded pages.'),
+    'stars-retroactive-hidden.png': ('Past activity stays hidden', 'After opting out, other donors can appear; the user’s old public position stays hidden.'),
+    'stars-privacy-settings-russian.png': ('Russian settings', 'Russian labels and explanatory copy fit the native settings layout.'),
+    'stars-history-privacy-russian.png': ('Russian history control', 'The direct privacy control and amount-preserving history in Russian.'),
+    'stars-channel-dark-polished.png': ('Channel controls · dark', 'Admin settings and dependent controls use Telegram’s dark theme.'),
+    'stars-privacy-settings-dark.png': ('Personal settings · dark', 'Privacy and history actions share the native dark palette.'),
+    'stars-purchase-privacy-dark.png': ('Purchase notice · dark', 'The visibility notice stays within the native dark purchase sheet.'),
+}
+SCREENSHOTS = list(SCREENSHOT_CAPTIONS)
 
 
 def git(*args):
@@ -39,12 +60,19 @@ def main():
         raise SystemExit('Record this committed revision with python3 Tools/record_stars_demo.py first.')
     if metadata['video_sha256'] != sha256(video) or not metadata['scenario_passed']:
         raise SystemExit('Video does not match its successful recording metadata.')
+    qa = json.loads((artifacts / 'stars-privacy-qa.json').read_text())
+    if qa['source_commit'] != revision or qa['working_tree_dirty'] or not qa['scenario_passed']:
+        raise SystemExit('Run ./dev privacy-test on this clean committed revision before packaging.')
+    for name in SCREENSHOTS:
+        if qa['screenshots'].get(name) != sha256(artifacts / 'stars-privacy' / name):
+            raise SystemExit(f'Screenshot does not match its QA evidence: {name}')
     destination = artifacts / ('submission-' + revision[:12])
     if destination.exists():
         raise SystemExit(f'Package already exists: {destination}. Preserving it; choose the existing package.')
     destination.mkdir()
     shutil.copy2(video, destination / video.name)
     shutil.copy2(artifacts / 'stars-privacy-demo.json', destination / 'recording.json')
+    shutil.copy2(artifacts / 'stars-privacy-qa.json', destination / 'qa.json')
     for name in DOCUMENTS:
         (destination / name).write_bytes(git('show', revision + ':docs/' + name))
     # A feature-only patch, applied on the published offline setup baseline.
@@ -54,6 +82,21 @@ def main():
     images.mkdir()
     for name in SCREENSHOTS:
         shutil.copy2(artifacts / 'stars-privacy' / name, images / name)
+    cards = ''.join(
+        f'<figure><a href="screenshots/{html.escape(name)}"><img loading="lazy" src="screenshots/{html.escape(name)}" alt="{html.escape(title)}"></a>'
+        f'<figcaption><h2>{html.escape(title)}</h2><p>{html.escape(caption)}</p></figcaption></figure>'
+        for name, (title, caption) in SCREENSHOT_CAPTIONS.items())
+    (destination / 'SCREENSHOTS.html').write_text(
+        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>Private Star Reactions — screen review</title><style>'
+        'body{font:16px/1.5 system-ui,sans-serif;margin:0;padding:32px;background:#eef2f6;color:#152536}'
+        'header{max-width:960px;margin:0 auto 28px}h1{font-size:30px;margin:0 0 8px}h2{font-size:18px;margin:0 0 8px}'
+        'main{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,340px));justify-content:center;gap:28px}'
+        'figure{margin:0;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px #15253612}'
+        'img{width:100%;height:auto;display:block}figcaption{padding:18px}p{margin:0}small{color:#526274}'
+        '</style><header><h1>Private Star Reactions</h1><p>Key screens with brief descriptions. Actual Android emulator screenshots; sample data and local API mocks.</p>'
+        f'<small>Source revision: {revision}. Select a screenshot to open its full resolution.</small></header><main>'
+        + cards + '</main></html>')
     (destination / 'MESSAGE.txt').write_text(
         'Private Star Reactions — Telegram Android concept\n\n'
         'A private-by-default way to support channels: anonymous reactions, receipts showing only Stars amounts, IDs and dates, '

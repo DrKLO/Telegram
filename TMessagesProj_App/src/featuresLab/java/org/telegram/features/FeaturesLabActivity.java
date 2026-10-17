@@ -43,6 +43,10 @@ public final class FeaturesLabActivity extends Activity {
         navigation.setFragmentStack(new ArrayList<>());
         setContentView(navigation);
         navigation.presentFragment(new Playground());
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::navigateBack);
+        }
     }
 
     @Override
@@ -57,12 +61,18 @@ public final class FeaturesLabActivity extends Activity {
         super.onPause();
     }
 
+    // Compatibility fallback for API 23–32; modern system Back is registered above.
+    @android.annotation.SuppressLint("GestureBackNavigation")
     @Override
     public void onBackPressed() {
+        navigateBack();
+    }
+
+    private void navigateBack() {
         if (navigation != null && navigation.getFragmentStack().size() > 1) {
             navigation.onBackPressed();
         } else {
-            super.onBackPressed();
+            finish();
         }
     }
 

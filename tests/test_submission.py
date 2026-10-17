@@ -28,12 +28,33 @@ class SubmissionTests(unittest.TestCase):
                          'video_sha256': submission.sha256(self.artifacts / 'stars-privacy-demo.mp4'),
                          'scenario_passed': True, 'duration_seconds': 110}
         self.write_metadata()
+        self.qa = {'source_commit': self.revision, 'working_tree_dirty': False, 'scenario_passed': True,
+                   'screenshots': {name: submission.sha256(images / name) for name in submission.SCREENSHOTS}}
+        self.write_qa()
         self.root_patch = patch.object(submission, 'ROOT', self.root)
         self.root_patch.start()
         self.addCleanup(self.root_patch.stop)
 
     def write_metadata(self):
         (self.artifacts / 'stars-privacy-demo.json').write_text(json.dumps(self.metadata))
+
+    def write_qa(self):
+        (self.artifacts / 'stars-privacy-qa.json').write_text(json.dumps(self.qa))
+
+    def test_qa_must_match_clean_revision_and_screenshots(self):
+        with patch.object(submission, 'git', side_effect=self.git):
+            for field, value in [('source_commit', 'b' * 40), ('working_tree_dirty', True), ('scenario_passed', False)]:
+                original = self.qa[field]
+                self.qa[field] = value
+                self.write_qa()
+                with self.assertRaisesRegex(SystemExit, 'Run ./dev privacy-test'):
+                    submission.main()
+                self.qa[field] = original
+            self.write_qa()
+            (self.artifacts / 'stars-privacy' / submission.SCREENSHOTS[0]).write_bytes(b'changed after QA')
+            with self.assertRaisesRegex(SystemExit, 'Screenshot does not match'):
+                submission.main()
+            self.assertFalse(list(self.artifacts.glob('submission-*')))
 
     def git(self, *args):
         if args[0] == 'status': return b''

@@ -92,15 +92,17 @@ python3 -m unittest discover -s tests
 ```
 
 Test environment: Apple Silicon M3 / 16 GB RAM; Android 16 (API 36) AOSP emulator,
-ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers thirteen scenarios,
+ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers seventeen scenarios,
 including the direct history control, retained Stars amounts, private-history persistence, separate future public contributions, actual
 20-second waits, late Undo, live sends, channel precedence, irreversible history,
 retroactive protection of unloaded posts and live reactions, open-sheet privacy updates, both purchase
-notices, rapid toggle reversals, theme updates, Russian label fit and switch accessibility.
+notices, pending-public-send cancellation, live stream switching, open-receipt redaction,
+real five-minute expiry, rapid toggle reversals, theme updates, Russian label fit,
+compact RTL/large-text layouts and accessibility actions. [QA.md](QA.md) records the audit.
 Screenshots and raw logs stay in ignored `artifacts/`.
 
 Live payments, real account login, cross-device behavior, server enforcement,
-physical-device performance and a five-minute real-time expiry recording remain
+physical-device performance, minimum-API devices and manual TalkBack navigation remain
 unverified. They are outside the account-free demonstration. Firebase notifications
 remain deferred. These are known limitations, not acceptance checks silently marked
 as passed.
@@ -111,6 +113,7 @@ Install FFmpeg (`brew install ffmpeg`) for recording. Commit the reviewed source
 documentation, then run on the existing emulator:
 
 ```sh
+./dev privacy-test
 python3 Tools/record_stars_demo.py
 python3 Tools/prepare_stars_submission.py
 ```
@@ -122,13 +125,17 @@ The walkthrough resets only the offline app's mock privacy fixtures and finishes
 dark mode; it never touches a real account. Review the MP4 before sharing.
 
 The packaging command requires a clean committed checkout and a passing recording
-from that exact revision. It creates `artifacts/submission-<revision>/` and a ZIP with:
+from that exact revision. It also requires a passing privacy suite from that clean
+revision and verifies every selected screenshot against the suite’s SHA-256 manifest.
+The privacy suite includes a real five-minute wait. It creates `artifacts/submission-<revision>/` and a ZIP with:
 
 - `MESSAGE.txt`: a concise draft message with immutable source and feature-diff links.
 - `stars-privacy-demo.mp4`: the reviewed native flow, with sample-data disclosure.
 - `recording.json`: revision, video SHA-256, duration, Android version and ABI.
-- This checklist, feature/API specification, build and offline guides, and GPL license.
+- `qa.json`: tested revision, scenario names and screenshot hashes.
+- This checklist, QA report, feature/API specification, build and offline guides, and GPL license.
 - `feature.patch`: feature changes against the published offline setup baseline.
+- `SCREENSHOTS.html`: a portable gallery of the key screens with brief descriptions.
 - Selected light/dark, Russian, reaction, receipt and channel screenshots.
 - `REVIEW.txt` and `SHA256SUMS` for inspecting the package.
 

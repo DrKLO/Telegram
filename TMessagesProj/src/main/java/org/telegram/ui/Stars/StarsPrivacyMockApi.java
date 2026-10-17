@@ -42,6 +42,7 @@ public final class StarsPrivacyMockApi {
 
     public static void setChannelPrivate(int account, long dialogId, boolean enabled) {
         if (dialogId >= 0) throw new IllegalArgumentException("A channel dialog ID must be negative");
+        if (enabled && !isChannelPrivate(account, dialogId)) StarsPrivacy.cancelPendingPublicReaction(account, dialogId);
         if (isChannelPrivate(account, dialogId) && !enabled) {
             SharedPreferences prefs = state(account);
             Set<String> publicIds = new HashSet<>(prefs.getStringSet("new_public_receipts", java.util.Collections.emptySet()));

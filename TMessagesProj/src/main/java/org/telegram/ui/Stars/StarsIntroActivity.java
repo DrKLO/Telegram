@@ -4681,6 +4681,24 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         b.setCustomView(linearLayout);
         sheet[0] = b.create();
         sheet[0].useBackgroundTopPadding = false;
+        if (!ton) {
+            NotificationCenter.NotificationCenterDelegate privacyObserver = (id, account, args) -> {
+                if (StarsPrivacyMockApi.project(currentAccount, transaction, !bot) instanceof StarsPrivacyMockApi.RedactedTransaction) {
+                    // Remove identifying content before the native dismissal transition.
+                    linearLayout.setVisibility(View.INVISIBLE);
+                    sheet[0].dismiss();
+                }
+            };
+            linearLayout.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override public void onViewAttachedToWindow(View view) {
+                    NotificationCenter.getInstance(currentAccount).addObserver(privacyObserver, NotificationCenter.starsPrivacyChanged);
+                    privacyObserver.didReceivedNotification(NotificationCenter.starsPrivacyChanged, currentAccount);
+                }
+                @Override public void onViewDetachedFromWindow(View view) {
+                    NotificationCenter.getInstance(currentAccount).removeObserver(privacyObserver, NotificationCenter.starsPrivacyChanged);
+                }
+            });
+        }
         if ((transaction.flags & 32) != 0) {
             button.setOnClickListener(v -> {
                 Browser.openUrl(context, transaction.transaction_url);

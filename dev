@@ -3,6 +3,8 @@
 import argparse
 import datetime
 import getpass
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -227,6 +229,8 @@ def install(offline=False):
 
 
 def smoke_test(privacy=False):
+    source_commit = run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip()
+    dirty_at_start = bool(run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
     serial = device(required=True)
     install(offline=True)
     run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebugAndroidTest',
@@ -237,8 +241,18 @@ def smoke_test(privacy=False):
     artifacts.mkdir(exist_ok=True)
     results = []
     suite = 'StarsPrivacyTest' if privacy else 'OfflineSmokeTest'
-    methods = ['deadlineAndMockContract', 'retroactiveReactionPrivacy', 'liveRetroactivePrivacy', 'purchasePrivacyNotice', 'productionPendingReactionCancelsSafely', 'nativePrivacyScreensAndRecycledRows', 'privateTransactionAmounts', 'anonymousChoiceAfterOptOut', 'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'historyPrivacyControl', 'channelPolicyAndIrreversibleHistory', 'privacySurvivesProcessRestart'] if privacy else ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']
+    methods = [
+        'deadlineAndMockContract', 'retroactiveReactionPrivacy', 'liveRetroactivePrivacy',
+        'purchasePrivacyNotice', 'privacyChangeCancelsPendingPublicSends', 'openReceiptRespondsToPrivacy',
+        'channelHighlightExpiresInOpenSheet', 'productionPendingReactionCancelsSafely',
+        'nativePrivacyScreensAndRecycledRows', 'privateTransactionAmounts', 'anonymousChoiceAfterOptOut',
+        'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'compactRtlAndLargeText', 'historyPrivacyControl',
+        # The last two scenarios deliberately share persisted fixtures across fresh processes.
+        'channelPolicyAndIrreversibleHistory', 'privacySurvivesProcessRestart',
+    ] if privacy else ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']
     folder = 'stars-privacy' if privacy else 'smoke'
+    if privacy:
+        (artifacts / 'stars-privacy-qa.json').unlink(missing_ok=True)
     for method in methods:
         adb('shell', 'am', 'force-stop', OFFLINE_PACKAGE, serial=serial)
         result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
@@ -251,6 +265,17 @@ def smoke_test(privacy=False):
             adb('pull', f'/sdcard/Android/data/{OFFLINE_PACKAGE}/files/{folder}', artifacts, serial=serial, check=False)
         if not re.search(r'OK \(\d+ tests?\)', result.stdout):
             raise SystemExit('Android test failed; inspect artifacts/' + ('stars-privacy-test.txt' if privacy else 'offline-smoke-test.txt'))
+    if privacy:
+        from Tools.prepare_stars_submission import SCREENSHOTS
+        metadata = {
+            'source_commit': source_commit,
+            'working_tree_dirty': dirty_at_start or bool(run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
+                or source_commit != run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
+            'scenario_passed': True,
+            'scenarios': methods,
+            'screenshots': {name: hashlib.sha256((artifacts / folder / name).read_bytes()).hexdigest() for name in SCREENSHOTS},
+        }
+        (artifacts / 'stars-privacy-qa.json').write_text(json.dumps(metadata, indent=2) + '\n')
     adb('shell', 'am', 'start', '-n', OFFLINE_PACKAGE + '/org.telegram.features.FeaturesLabActivity', serial=serial)
 
 

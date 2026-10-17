@@ -298,6 +298,21 @@ public class StarsPrivacyTest {
                 assertEquals(0, live.getPublicStarsSincePrivacy());
                 assertFalse(live.didSendStars());
                 for (org.telegram.ui.Stories.LiveCommentsView.Message message : messages) assertNotEquals(1234, message.dialogId);
+                // Anonymous live reactions must not produce an empty-name Top Sender chip after opt-out.
+                java.lang.reflect.Field topField = org.telegram.ui.Stories.LiveCommentsView.class.getDeclaredField("topMessages");
+                topField.setAccessible(true);
+                @SuppressWarnings("unchecked") ArrayList<org.telegram.ui.Stories.LiveCommentsView.TopSender> top =
+                    (ArrayList<org.telegram.ui.Stories.LiveCommentsView.TopSender>) topField.get(live);
+                org.telegram.ui.Stories.LiveCommentsView.TopSender anonymous = new org.telegram.ui.Stories.LiveCommentsView.TopSender();
+                anonymous.dialogId = UserObject.ANONYMOUS;
+                top.add(anonymous);
+                ArrayList<org.telegram.ui.Components.UItem> items = new ArrayList<>();
+                java.lang.reflect.Method fill = org.telegram.ui.Stories.LiveCommentsView.class.getDeclaredMethod("fillTopItems", ArrayList.class, org.telegram.ui.Components.UniversalAdapter.class);
+                fill.setAccessible(true);
+                fill.invoke(live, items, null);
+                for (org.telegram.ui.Components.UItem item : items) {
+                    assertNotEquals(UserObject.ANONYMOUS, ((org.telegram.ui.Stories.LiveCommentsView.TopSender) item.object).dialogId);
+                }
                 assertFalse(UserConfig.getInstance(0).isClientActivated());
             } catch (ReflectiveOperationException e) {
                 throw new AssertionError(e);
@@ -305,6 +320,138 @@ public class StarsPrivacyTest {
                 ((ViewGroup) host.getParent()).removeView(host);
             }
         });
+    }
+
+    @Test public void privacyChangeCancelsPendingPublicSends() throws Exception {
+        launch("Blue");
+        final org.telegram.ui.Stories.LiveCommentsView[] live = new org.telegram.ui.Stories.LiveCommentsView[1];
+        final android.widget.FrameLayout[] host = new android.widget.FrameLayout[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            StarsController controller = StarsController.getInstance(0);
+            org.telegram.ui.ChatActivity chat = new org.telegram.ui.ChatActivity(new android.os.Bundle());
+            chat.setParentLayout(preview().getParentLayout());
+            chat.fragmentView = preview().fragmentView;
+            org.telegram.messenger.MessageObject message = messageCell().getMessageObject();
+            int count = message.messageOwner.reactions.results.get(0).count;
+            for (boolean channel : new boolean[] {false, true}) {
+                StarsController.PendingPaidReactions pending = controller.new PendingPaidReactions(
+                    StarsController.MessageId.from(message), message, chat, 0, true);
+                controller.currentPendingReactions = pending;
+                pending.peer = 1234L;
+                pending.add(7, true);
+                assertFalse(pending.isAnonymous());
+                if (channel) StarsPrivacyMockApi.setChannelPrivate(0, -7770001, true);
+                else StarsPrivacy.setEnabled(0, true);
+                assertTrue("Enabling privacy cancels the old public intent", pending.cancelled);
+                assertEquals(count, message.messageOwner.reactions.results.get(0).count);
+                assertEquals(0, controller.minus);
+                StarsPrivacyMockApi.setChannelPrivate(0, -7770001, false);
+                StarsPrivacy.setEnabled(0, false);
+                pending.commit();
+                assertFalse(pending.committed);
+            }
+            preview().sendSampleReaction(5);
+            StarsPrivacy.setEnabled(0, true);
+            StarsPrivacy.setEnabled(0, false);
+            assertEquals(count, message.messageOwner.reactions.results.get(0).count);
+            host[0] = new android.widget.FrameLayout(activity);
+            live[0] = new org.telegram.ui.Stories.LiveCommentsView(activity, null, host[0], new View(activity), host[0]) {
+                @Override protected boolean isMe(long id) { return id == 1234; }
+                @Override protected TLRPC.Peer getDefaultSendAs() {
+                    TLRPC.TL_peerUser peer = new TLRPC.TL_peerUser(); peer.user_id = 1234; return peer;
+                }
+            };
+            host[0].addView(live[0], new android.widget.FrameLayout.LayoutParams(-1, 500));
+            activity.addContentView(host[0], new ViewGroup.LayoutParams(-1, -1));
+            live[0].setup(-7770001, null);
+            live[0].sendStars(9, false);
+            assertTrue(live[0].areSendingStars());
+            org.telegram.messenger.NotificationCenter notifications = org.telegram.messenger.NotificationCenter.getInstance(0);
+            int animation = notifications.setAnimationInProgress(0, new int[0], false);
+            try {
+                StarsPrivacy.setEnabled(0, true);
+                StarsPrivacy.setEnabled(0, false);
+                assertFalse("Privacy must not wait for navigation animations", live[0].areSendingStars());
+            } finally {
+                notifications.onAnimationFinish(animation);
+            }
+            live[0].sendStars(11, false);
+            live[0].setup(-7770002, null);
+            assertFalse("A pending send cannot move to another live stream", live[0].areSendingStars());
+            assertEquals(0, live[0].getPublicStarsSincePrivacy());
+        });
+        Thread.sleep(21000);
+        instrumentation.runOnMainSync(() -> {
+            assertTrue("No delayed public receipt after cancellation", StarsController.getInstance(0).transactions[StarsController.ALL_TRANSACTIONS].isEmpty());
+            assertEquals(0, preview().completedPayments);
+            ((ViewGroup) host[0].getParent()).removeView(host[0]);
+        });
+    }
+
+    @Test public void openReceiptRespondsToPrivacy() throws Exception {
+        launch("Blue");
+        final BottomSheet[] sheet = new BottomSheet[1];
+        final TL_stars.StarsTransaction[] receipt = new TL_stars.StarsTransaction[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            receipt[0] = StarsPrivacyMockApi.sendPublicReaction(0, -7770001, 101, 12);
+            sheet[0] = StarsIntroActivity.showTransactionSheet(activity, false, 0, 0, receipt[0], null);
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(texts(sheet[0].getContainer()).toString().contains("Design Notes"));
+            org.telegram.messenger.NotificationCenter notifications = org.telegram.messenger.NotificationCenter.getInstance(0);
+            int animation = notifications.setAnimationInProgress(0, new int[0], false);
+            try {
+                StarsPrivacy.setEnabled(0, true);
+                assertFalse("Sensitive text disappears before dismissal animates", texts(sheet[0].getContainer()).toString().contains("Design Notes"));
+                StarsPrivacy.setEnabled(0, false);
+            } finally {
+                notifications.onAnimationFinish(animation);
+            }
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(sheet[0].isShowing());
+            sheet[0] = StarsIntroActivity.showTransactionSheet(activity, false, 0, 0, receipt[0], null);
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            String visible = texts(sheet[0].getContainer()).toString();
+            assertFalse(visible.contains("Design Notes"));
+            assertTrue(visible.contains("-12"));
+            sheet[0].dismiss();
+        });
+    }
+
+    /** Real deadline and open-view invalidation; intentionally takes five minutes. */
+    @Test public void channelHighlightExpiresInOpenSheet() throws Exception {
+        launch("Blue");
+        final StarsReactionsSheet[] sheet = new StarsReactionsSheet[1];
+        final long[] sentAt = new long[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            StarsPrivacyMockApi.setChannelPrivate(0, -7770001, true);
+            sentAt[0] = android.os.SystemClock.elapsedRealtime();
+            StarsPrivacyMockApi.sendChannelReaction(0, -7770001, 101, 25);
+            sheet[0] = preview().showReactionSheet();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(reaction().choosen);
+            assertEquals(View.VISIBLE, sheet[0].getContainer().findViewWithTag("stars_donor_percentile").getVisibility());
+        });
+        Thread.sleep(Math.max(0, sentAt[0] + StarsPrivacyMockApi.HIGHLIGHT_MS - 5000 - android.os.SystemClock.elapsedRealtime()));
+        instrumentation.runOnMainSync(() -> assertTrue("Still selected just before five minutes", reaction().choosen));
+        Thread.sleep(6000);
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(reaction().choosen);
+            assertEquals(View.GONE, sheet[0].getContainer().findViewWithTag("stars_donor_percentile").getVisibility());
+            assertTrue("Expiry updates the open sheet without dismissing it", sheet[0].isShowing());
+        });
+        screenshot("stars-channel-expired.png");
+        instrumentation.runOnMainSync(() -> sheet[0].dismiss());
     }
 
     @Test public void purchasePrivacyNotice() throws Exception {
@@ -323,7 +470,11 @@ public class StarsPrivacyTest {
             Spanned text = (Spanned) notice.getText();
             ClickableSpan[] links = text.getSpans(0, text.length(), ClickableSpan.class);
             assertEquals(1, links.length);
-            links[0].onClick(notice);
+            android.view.accessibility.AccessibilityNodeInfo node = notice.createAccessibilityNodeInfo();
+            assertTrue("The purchase notice exposes an action to screen readers", node.isClickable());
+            assertTrue(node.getActionList().stream().anyMatch(action -> action.getId() == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));
+            node.recycle();
+            assertTrue(notice.performAccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, null));
             assertTrue(StarsPrivacy.isEnabled(0));
             assertTrue(notice.getText().toString().contains("is on"));
             assertTrue(StarsPrivacyMockApi.isProtectedPost(0, -9990001, 9999));
@@ -763,6 +914,52 @@ public class StarsPrivacyTest {
         }
     }
 
+    @Test public void compactRtlAndLargeText() throws Exception {
+        launch("Blue");
+        instrumentation.runOnMainSync(() -> {
+            boolean wasRtl = LocaleController.isRTL;
+            try {
+                android.content.res.Configuration config = new android.content.res.Configuration(activity.getResources().getConfiguration());
+                config.fontScale = 1.5f;
+                android.content.Context largeText = activity.createConfigurationContext(config);
+                for (boolean rtl : new boolean[] {false, true}) {
+                    LocaleController.isRTL = rtl;
+                    org.telegram.ui.Stars.StarsPrivacyView control = new org.telegram.ui.Stars.StarsPrivacyView(largeText, 0, preview());
+                    StarsPurchasePrivacyView notice = new StarsPurchasePrivacyView(largeText, 0, null);
+                    int width = org.telegram.messenger.AndroidUtilities.dp(320);
+                    for (View view : new View[] {control, notice}) {
+                        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                        view.layout(0, 0, width, view.getMeasuredHeight());
+                        assertNoClippedText(view);
+                    }
+                    assertTrue(control.getChildAt(rtl ? 0 : 2) instanceof org.telegram.ui.Components.Switch);
+                    assertTrue("Large-text setting is respected", notice.getTextView().getTextSize() > org.telegram.messenger.AndroidUtilities.dp(14));
+                    android.view.accessibility.AccessibilityNodeInfo node = control.createAccessibilityNodeInfo();
+                    assertTrue(node.isChecked());
+                    assertTrue(node.isCheckable());
+                    node.recycle();
+                }
+            } finally {
+                LocaleController.isRTL = wasRtl;
+            }
+        });
+    }
+
+    private static void assertNoClippedText(View view) {
+        assertNoEllipsis(view);
+        if (view instanceof TextView && view.getVisibility() == View.VISIBLE) {
+            TextView text = (TextView) view;
+            android.text.Layout layout = text.getLayout();
+            assertNotNull(layout);
+            assertTrue("Text height must fit: " + text.getText(), layout.getHeight() <= text.getHeight() - text.getTotalPaddingTop() - text.getTotalPaddingBottom());
+            for (int i = 0; i < layout.getLineCount(); i++) {
+                assertTrue("Line must fit the compact width", layout.getLineWidth(i) <= layout.getWidth() + 1);
+            }
+        }
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) assertNoClippedText(((ViewGroup) view).getChildAt(i));
+    }
+
     @Test public void historyPrivacyControl() throws Exception {
         launch("Blue");
         revealHistoryControl();
@@ -831,6 +1028,10 @@ public class StarsPrivacyTest {
         Thread.sleep(1500);
         clickTag("stars_history_privacy");
         Thread.sleep(2000);
+        clickTag("stars_history_privacy"); // Show the closing-lock motion in the foreground.
+        Thread.sleep(2000);
+        clickTag("stars_history_privacy");
+        Thread.sleep(1000);
         final StarsIntroActivity.StarsOptionsSheet[] purchase = new StarsIntroActivity.StarsOptionsSheet[1];
         instrumentation.runOnMainSync(() -> purchase[0] = preview().showPurchaseSheet());
         Thread.sleep(3000);
@@ -914,6 +1115,7 @@ public class StarsPrivacyTest {
         activity = instrumentation.startActivitySync(intent);
         settle();
         assertEquals(PackageManager.PERMISSION_DENIED, activity.checkSelfPermission(Manifest.permission.INTERNET));
+        assertEquals(PackageManager.PERMISSION_DENIED, activity.checkSelfPermission("com.android.vending.BILLING"));
         instrumentation.runOnMainSync(() -> {
             if (theme != null) {
                 Theme.applyTheme(Theme.getTheme(theme));
@@ -935,7 +1137,7 @@ public class StarsPrivacyTest {
         instrumentation.runOnMainSync(() -> { View view = tagged(tag); assertNotNull(tag, view); assertTrue(view.performClick()); });
         settle();
     }
-    private void back() throws Exception { instrumentation.runOnMainSync(() -> activity.onBackPressed()); settle(); }
+    private void back() throws Exception { instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); settle(); }
     private void settle() throws Exception { instrumentation.runOnMainSync(() -> {}); Thread.sleep(500); }
 
     private void screenshot(String name) throws Exception {

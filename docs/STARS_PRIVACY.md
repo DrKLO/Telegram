@@ -24,7 +24,7 @@ The corresponding entry points in the full client are:
 - My Stars → long-press a transaction, or open a private receipt.
 - Stars Privacy → Anonymise transaction history for all existing pages.
 
-The offline package cannot access the Internet and never activates an account.
+The offline package has neither Internet nor billing permission and never activates an account.
 All preview sends are simulated and spend no Stars. Use [OFFLINE.md](OFFLINE.md)
 and [DEVELOPMENT.md](DEVELOPMENT.md) for the pinned toolchain and fresh checkout.
 
@@ -98,14 +98,16 @@ refer to its ID. Future transactions are outside an all-history cutoff.
 clock. Another tap restarts the interval. The countdown ring uses the same duration.
 Opening a sheet cannot submit early. Undo, leaving the reaction screen, or hiding
 the pending bulletin cancels an unsent reaction and rolls back its count and balance
-reservation. An already submitted request cannot be undone by this UI. The same
+reservation. Enabling personal or channel privacy cancels a pending public reaction, including its
+reservation and selected count; switching privacy off cannot revive it. Switching live
+streams also cancels a pending send. An already submitted request cannot be undone by this UI. The same
 clock model is used for ordinary reactions, live reactions and the offline preview.
 
 **Buying Stars.** Both Buy Stars and the insufficient-balance purchase sheet show a
 short native notice above the packages. When privacy is off: “Star reactions may
 show your profile in Top Senders when privacy is off. Make my Stars private.” The
 last phrase is an inline link that enables the same setting immediately and protects
-past activity in the mock. The notice updates to confirm privacy is on. It does not
+past activity in the mock. The notice updates to confirm privacy is on. Its inline action is also exposed to accessibility services. It does not
 start a purchase. The offline preview uses the production Buy Stars sheet with sample
 packages and a no-purchase footer; package taps cannot enter billing.
 
@@ -116,7 +118,8 @@ with text are outside the reaction-only feature.
 
 Open reaction sheets remove sensitive content and dismiss using Telegram’s native
 transition if their privacy policy changes. Reopening rebuilds identity controls and
-rankings. Donor percentiles also refresh when their expiry/policy event arrives.
+rankings. An open public receipt also removes its identifying content immediately and
+closes when privacy or history anonymisation protects it. Donor percentiles also refresh when their expiry/policy event arrives.
 
 ## Native design and motion
 
@@ -130,7 +133,7 @@ Lottie. Enabling privacy plays the Star once and settles a lock badge into place
 320 ms using Telegram's `EASE_OUT_QUINT`; disabling removes only the badge over
 200 ms. It does not unlock or reveal old receipts. There is no idle animation loop.
 The control uses a native Switch, selector, theme tokens and wrapping English/Russian
-labels. It exposes one checkable accessibility target, follows Android's disabled
+labels. The history control and purchase notice respect Android text scaling. It exposes one checkable accessibility target, follows Android's disabled
 animator setting, cancels interrupted motion and settles when detached. Privacy
 changes synchronously before motion starts. A brief native notice explains that
 opting out affects new reactions only.
@@ -235,9 +238,10 @@ redaction, unloaded pages and process restart. No live API account is used.
 checks a fresh process with the switch disabled, then leaves its personal switch enabled.
 It does not reset a live account or uninstall the app. Screenshots and test logs are saved under ignored `artifacts/stars-privacy/`
 and `artifacts/stars-privacy-test.txt`. These tests do not validate real payments,
-server anonymity, cross-device enforcement or five minutes of wall-clock UI playback.
+server anonymity or cross-device enforcement. The suite includes a real five-minute
+wait to verify that the highlight and percentile disappear from an open sheet.
 
-Recorded flow: animated history privacy control → personal setting → anonymous reaction and Undo → minimal receipt →
+Recorded flow: animated history privacy control → purchase visibility notice → personal setting → anonymous reaction and Undo → minimal receipt →
 native live send with its full 20-second wait → admin policy → privacy opt-out notice →
 channel send with its full wait → donor-only percentile → history anonymisation → dark settings. Identify the offline fixtures and proposed
 API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before sharing.
@@ -246,15 +250,17 @@ API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before
 
 On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
 
-- All ten privacy instrumentation scenarios passed, including a real 20-second wait,
+- All seventeen privacy instrumentation scenarios passed, including a real 20-second wait,
   late Undo, a production-controller mock commit, a fresh-process history check,
   theme updates, rapid toggle reversals, Russian label fit and native switch accessibility.
   Amount checks cover signed, zero, large and fractional values, native row/receipt
   presentation, mock sends, immutable redaction and process restart. The late-Undo
   test measures from the send’s monotonic timestamp so screenshot time cannot extend its wait.
-  The history control also passed with Android system animations disabled.
+  The history control also passed with Android system animations disabled. The QA
+  additions cover pending-public-send cancellation, stream switching, open receipts,
+  purchase accessibility actions, compact RTL/large-text layouts and actual five-minute expiry.
 - Both original offline playground smoke tests passed.
-- All eleven Python helper/package tests passed.
+- All twelve Python helper/package tests passed.
 - Offline native build/reinstall and the full client compile check passed.
 - Native light/dark screens, animated toggle notices, anonymous reaction sheets, minimal
   receipt tables and channel/admin confirmations were visually inspected.
@@ -267,6 +273,8 @@ On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
 
 Real payments, cross-device behaviour and Telegram server enforcement have not been
 verified. No physical device, Telegram login, credentials or real Stars were used.
+
+See [QA.md](QA.md) for the audit findings, evidence and remaining validation boundaries.
 
 ## Review map
 

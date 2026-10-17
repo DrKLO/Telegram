@@ -19,6 +19,8 @@ loader.exec_module(lab)
 
 
 def main():
+    source_commit = lab.run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip()
+    dirty_at_start = bool(lab.run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
     ffmpeg = shutil.which('ffmpeg')
     if not ffmpeg:
         raise SystemExit('Install FFmpeg first (brew install ffmpeg).')
@@ -73,8 +75,9 @@ def main():
         raise SystemExit('Could not read the exported video duration.')
     hours, minutes, seconds = map(float, duration.groups())
     metadata = {
-        'source_commit': lab.run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
-        'working_tree_dirty': bool(lab.run(['git', 'status', '--porcelain'], capture=True).stdout.strip()),
+        'source_commit': source_commit,
+        'working_tree_dirty': dirty_at_start or bool(lab.run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
+            or source_commit != lab.run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
         'video_sha256': hashlib.sha256(video.read_bytes()).hexdigest(),
         'duration_seconds': hours * 3600 + minutes * 60 + seconds,
         'android_version': lab.adb('shell', 'getprop', 'ro.build.version.release', serial=serial, capture=True).stdout.strip(),

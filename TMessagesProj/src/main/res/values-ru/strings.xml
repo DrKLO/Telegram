@@ -283,7 +283,7 @@
     <string name="StarsChannelPrivate">Только анонимные реакции</string>
     <string name="StarsChannelPrivateInfo">Имена отправителей и рейтинги скрыты. В истории — только сумма, ID, дата и время. Выделение звезды исчезает через 5 минут или скрыто сразу при личной приватности. Анимации и общие суммы сохраняются.</string>
     <string name="StarsChannelPercentile">Процентиль отправителя</string>
-    <string name="StarsChannelPercentileInfo">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт при личной приватности или если отправителей меньше 10.</string>
+    <string name="StarsChannelPercentileInfo" formatted="false">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт при личной приватности или если отправителей меньше 10.</string>
     <string name="StarsChannelMockInfo">Предпросмотр: правила канала моделируются на этом устройстве. Звёзды не тратятся.</string>
     <string name="StarsChannelPending">Анонимная реакция в канале · Предпросмотр</string>
     <string name="StarsChannelTopPercent">Топ %1$d%% · Видно только вам</string>

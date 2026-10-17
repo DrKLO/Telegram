@@ -1,6 +1,8 @@
 package org.telegram.ui.Stars;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -17,9 +19,28 @@ public final class StarsPurchasePrivacyView extends TextInfoPrivacyCell implemen
         super(context, resourcesProvider);
         this.account = account;
         setTag("stars_purchase_privacy");
+        getTextView().setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         setTopPadding(8);
         setBottomPadding(12);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
         update();
+    }
+
+    @Override public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (!StarsPrivacy.isEnabled(account)) {
+            info.setClickable(true);
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK,
+                LocaleController.getString(R.string.StarsPrivacyMakePrivate)));
+        }
+    }
+
+    @Override public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_CLICK && !StarsPrivacy.isEnabled(account)) {
+            StarsPrivacy.setEnabled(account, true);
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     private void update() {

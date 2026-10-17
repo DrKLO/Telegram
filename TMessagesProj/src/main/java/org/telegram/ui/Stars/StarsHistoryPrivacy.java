@@ -17,7 +17,8 @@ public final class StarsHistoryPrivacy {
             .setTitle(LocaleController.getString(transaction == null ? R.string.StarsHistoryAnonymise : R.string.StarsReceiptAnonymise))
             .setMessage(LocaleController.getString(R.string.StarsHistoryAnonymiseConfirm))
             .setPositiveButton(LocaleController.getString(R.string.StarsAnonymise), (d, which) -> {
-                if (transaction == null) StarsPrivacyMockApi.anonymiseHistory(account, System.currentTimeMillis() / 1000L);
+                if (transaction == null) StarsPrivacyMockApi.anonymiseHistory(account,
+                    org.telegram.tgnet.ConnectionsManager.getInstance(account).getCurrentTime());
                 else StarsPrivacyMockApi.anonymise(account, transaction.id);
                 if (done != null) done.run();
             })

@@ -23,11 +23,12 @@ push notifications are deliberately disabled.
 native 20-second Undo, channel-admin controls, minimal receipts, irreversible
 history anonymisation and live Stars. Missing Telegram server capabilities are
 usable local mocks, marked Preview; no Stars are spent in the offline app.
-Run `./dev privacy-test` for the native feature checks.
+Run `./dev privacy-test` for the native feature checks, including a real five-minute
+expiry wait. See the [QA report](docs/QA.md) for findings and remaining validation gaps.
 For a reproducible native walkthrough and a revision-pinned review package, see the
 [submission handoff](docs/SUBMISSION.md#record-and-assemble-the-handoff).
-The offline playground uses `org.telegram.features.offline.beta` and has no internet
-permission. Gradle and Android Studio default to this offline configuration.
+The offline playground uses `org.telegram.features.offline.beta` and has no Internet
+or billing permission. Gradle and Android Studio default to this offline configuration.
 
 ### Upstream project documentation
 

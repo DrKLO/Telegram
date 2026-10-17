@@ -353,7 +353,10 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starsPrivacyChanged);
         return super.onFragmentCreate();
     }
-    @Override public void didReceivedNotification(int id, int account, Object... args) { refresh(); }
+    @Override public void didReceivedNotification(int id, int account, Object... args) {
+        if (pending != null && pendingPeer != UserObject.ANONYMOUS && StarsPrivacy.isPrivate(currentAccount, -CHANNEL)) cancelPending();
+        refresh();
+    }
     @Override public void onResume() { super.onResume(); refresh(); }
     @Override public void onPause() { cancelPending(); if (historyPrivacyView != null) historyPrivacyView.hideFeedback(); super.onPause(); }
     @Override public void onFragmentDestroy() { cancelPending(); NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged); super.onFragmentDestroy(); }
