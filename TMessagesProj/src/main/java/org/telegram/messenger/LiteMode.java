@@ -147,6 +147,9 @@ public class LiteMode {
     }
 
     public static boolean isEnabled(int flag) {
+        if (!org.telegram.messenger.amegram.AmeGramFeatureFlags.LIQUID_GLASS_ALLOWED) {
+            flag &= ~FLAG_LIQUID_GLASS;
+        }
         if (flag == FLAG_CHAT_FORUM_TWOCOLUMN && AndroidUtilities.isTablet()) {
             // always enabled for tablets
             return true;
@@ -155,6 +158,9 @@ public class LiteMode {
     }
 
     public static boolean isEnabledSetting(int flag) {
+        if (!org.telegram.messenger.amegram.AmeGramFeatureFlags.LIQUID_GLASS_ALLOWED) {
+            flag &= ~FLAG_LIQUID_GLASS;
+        }
         return (getValue(true) & flag) > 0;
     }
 

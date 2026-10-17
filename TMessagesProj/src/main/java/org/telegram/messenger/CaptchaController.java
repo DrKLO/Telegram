@@ -74,7 +74,7 @@ public class CaptchaController {
             .addOnSuccessListener(client -> {
                 client.executeTask(getAction(action))
                     .addOnSuccessListener(token -> {
-                        FileLog.d("CaptchaController: got token for {action="+action+", key_id="+key_id+"}: " + token);
+                        FileLog.d("CaptchaController: challenge completed");
                         if (token == null) {
                             finalRequest.done("RECAPTCHA_FAILED_TOKEN_NULL");
                         } else {

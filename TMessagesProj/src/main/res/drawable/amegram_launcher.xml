@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Temporary independent AmeGram monogram. No Telegram paper-plane mark. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#7C3AED" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#FFFFFF" android:fillType="evenOdd"
+        android:pathData="M30,78L49,28h10l19,50H66l-4,-12H46l-4,12zM50,55h8l-4,-13z" />
+</vector>

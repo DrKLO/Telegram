@@ -1,0 +1,57 @@
+// AmeGram-only build policy. Credentials are supplied by the build environment.
+ext.amegramSourceChecks = providers.gradleProperty('amegramSourceChecks').orElse('false').get().toBoolean()
+def apiId = amegramSourceChecks ? '0' : providers.environmentVariable('AMEGRAM_API_ID').orElse('0').get()
+def apiHash = amegramSourceChecks ? '' : providers.environmentVariable('AMEGRAM_API_HASH').orElse('').get()
+if (!(apiId ==~ /[0-9]{1,10}/) || apiId.toLong() > Integer.MAX_VALUE || !(apiHash.isEmpty() || apiHash ==~ /[a-fA-F0-9]{32}/)) {
+    throw new GradleException('Invalid AmeGram API configuration. See docs/BUILDING.md; values are intentionally omitted.')
+}
+ext.amegramApiId = Integer.parseInt(apiId)
+ext.amegramApiHash = apiHash
+
+if (APP_PACKAGE != 'dev.umi.amegram') {
+    throw new GradleException('AmeGram builds require the independent dev.umi.amegram application ID.')
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def packaging = graph.allTasks.findAll { task ->
+        task.project.plugins.hasPlugin('com.android.application') &&
+                task.name ==~ /(?i)(assemble|bundle|package).*(Debug|Release|Standalone|HA_private|HA_public|HA_hardcore)(Bundle)?/
+    }
+    if (!packaging.isEmpty()) {
+        if (rootProject.ext.amegramSourceChecks) {
+            throw new GradleException('Source-check mode cannot package APKs or bundles. Use a normal build with owner API/Firebase configuration.')
+        }
+        if (packaging.any { !(it.project.name in ['TMessagesProj_App', 'TMessagesProj_AppTests']) }) {
+            throw new GradleException('Only regular AmeGram debug and test APK targets are supported. Other upstream service/distribution modules need a separate audit.')
+        }
+        if (rootProject.ext.amegramApiId <= 0 || rootProject.ext.amegramApiHash.isEmpty()) {
+            throw new GradleException('APK packaging blocked: set your own AMEGRAM_API_ID and AMEGRAM_API_HASH in the build environment. Source/resource checks need no credentials.')
+        }
+        if (packaging.any { !it.name.contains('Debug') }) {
+            throw new GradleException('Distribution packaging is not configured for AmeGram yet. Review signing and service integrations first; see docs/BUILDING.md.')
+        }
+    }
+}
+
+// Inspect the final AGP variant model, rather than inferring IDs from source text.
+def regularVariantIds = [:]
+def regularApp = project(':TMessagesProj_App')
+regularApp.plugins.withId('com.android.application') {
+    def components = regularApp.extensions.getByType(com.android.build.api.variant.AndroidComponentsExtension)
+    components.onVariants(components.selector().all()) { variant ->
+        regularVariantIds[variant.name] = variant.applicationId.get()
+    }
+}
+tasks.register('checkAmeGramApplicationIds') {
+    group = 'verification'
+    description = 'Verify independent regular release/debug IDs in the Android variant model.'
+    doLast {
+        def expected = [afatDebug: 'dev.umi.amegram.beta', afatRelease: 'dev.umi.amegram', bundleAfatRelease: 'dev.umi.amegram']
+        expected.each { name, applicationId ->
+            if (regularVariantIds[name] != applicationId) {
+                throw new GradleException("Unexpected application ID for ${name}; AmeGram identity must remain independent.")
+            }
+            logger.lifecycle("${name}: ${applicationId}")
+        }
+    }
+}

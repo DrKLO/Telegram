@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The application build plugin overrides this with each variant application ID. -->
+    <string name="amegram_account_type" translatable="false">dev.umi.amegram</string>
+</resources>
