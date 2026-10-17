@@ -11574,4 +11574,7 @@
     <string name="StarsPrivacyHistoryHeader">Transaction History</string>
     <string name="StarsPrivacyChannelHeader">Channel Privacy</string>
     <string name="StarsHistoryAnonymiseAction">Anonymise history</string>
+    <string name="StarsPrivacyMakePrivate">Make my Stars private</string>
+    <string name="StarsPrivacyHistoryPrivate">On · Only IDs and dates in history</string>
+    <string name="StarsPrivacyHistoryFuture">Off · New reactions only</string>
 </resources>

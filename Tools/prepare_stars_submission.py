@@ -13,7 +13,9 @@ REPOSITORY = 'https://github.com/yes-i-like-pina-coladas/Telegram'
 DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md']
 SCREENSHOTS = ['stars-privacy-settings-light.png', 'stars-privacy-settings-dark.png',
                'stars-private-reaction-sheet.png', 'stars-private-transaction.png',
-               'stars-channel-dark-polished.png', 'stars-privacy-settings-russian.png']
+               'stars-channel-dark-polished.png', 'stars-privacy-settings-russian.png',
+               'stars-history-privacy-light.png', 'stars-history-privacy-dark.png',
+               'stars-history-privacy-russian.png']
 
 
 def git(*args):
@@ -54,7 +56,8 @@ def main():
         'Private Star Reactions — Telegram Android concept\n\n'
         'A private-by-default way to support channels: anonymous reactions, minimal receipts, '
         'a 20-second Undo, and past private activity that stays hidden after opting out. '
-        'Built with Telegram\'s native components and animations, with channel controls, '
+        'The Make my Stars private control sits beside transaction history, with Telegram\'s '
+        'gold Star and closing-lock animation. Built with native components, with channel controls, '
         'private donor percentiles and history anonymisation.\n\n'
         f'Source: {REPOSITORY}/tree/{revision}\n'
         f'Feature diff: {REPOSITORY}/compare/{BASE}...{revision}\n'

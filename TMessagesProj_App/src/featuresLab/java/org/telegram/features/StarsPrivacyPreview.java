@@ -31,6 +31,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Stars.PaidReactionUndo;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stars.StarsPrivacy;
+import org.telegram.ui.Stars.StarsPrivacyView;
 import org.telegram.ui.Stars.StarsChannelPrivacyActivity;
 import org.telegram.ui.Stars.StarsPrivacyActivity;
 import org.telegram.ui.Stars.StarsPrivacyMockApi;
@@ -45,6 +46,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
     private TextSettingsCell channelCell;
     private TextInfoPrivacyCell percentileCell;
     private LinearLayout history;
+    private StarsPrivacyView historyPrivacyView;
     private FrameLayout root;
     private PaidReactionUndo pending;
     private Bulletin bulletin;
@@ -110,10 +112,12 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         live.setOnClickListener(v -> showLiveReactionSheet());
         content.addView(live, LayoutHelper.createLinear(-1, -2));
 
+        historyPrivacyView = new StarsPrivacyView(context, currentAccount, this);
+        content.addView(historyPrivacyView, LayoutHelper.createLinear(-1, -2, 0, 12, 0, 0));
         HeaderCell header = new HeaderCell(context);
         header.setText(LocaleController.getString(R.string.StarsTransactionsAll));
         header.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        content.addView(header, LayoutHelper.createLinear(-1, -2, 0, 12, 0, 0));
+        content.addView(header, LayoutHelper.createLinear(-1, -2));
         history = new LinearLayout(context);
         history.setOrientation(LinearLayout.VERTICAL);
         history.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -314,6 +318,6 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
     }
     @Override public void didReceivedNotification(int id, int account, Object... args) { refresh(); }
     @Override public void onResume() { super.onResume(); refresh(); }
-    @Override public void onPause() { cancelPending(); super.onPause(); }
+    @Override public void onPause() { cancelPending(); if (historyPrivacyView != null) historyPrivacyView.hideFeedback(); super.onPause(); }
     @Override public void onFragmentDestroy() { cancelPending(); NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged); super.onFragmentDestroy(); }
 }

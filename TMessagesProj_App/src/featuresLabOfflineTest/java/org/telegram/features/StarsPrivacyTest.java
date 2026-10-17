@@ -531,9 +531,76 @@ public class StarsPrivacyTest {
         }
     }
 
+    @Test public void historyPrivacyControl() throws Exception {
+        launch("Blue");
+        revealHistoryControl();
+        screenshot("stars-history-privacy-light.png");
+        clickTag("stars_history_privacy");
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertEquals(2, texts(tagged("FL-20261017-0001")).size());
+            assertFalse(reaction().choosen);
+            assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("Only new reactions can be public."));
+            // Reverse during the settling animation; the final preference must win.
+            tagged("stars_history_privacy").performClick();
+            tagged("stars_history_privacy").performClick();
+            tagged("stars_history_privacy").performClick();
+            assertTrue(StarsPrivacy.isEnabled(0));
+            assertEquals(UserObject.ANONYMOUS, StarsPrivacy.resolvePeer(0, 1234));
+            assertEquals(2, texts(tagged("FL-20261017-0001")).size());
+        });
+        Thread.sleep(2000);
+        instrumentation.runOnMainSync(() -> {
+            android.view.accessibility.AccessibilityNodeInfo node = tagged("stars_history_privacy").createAccessibilityNodeInfo();
+            assertTrue(node.isCheckable());
+            assertTrue(node.isChecked());
+            assertTrue(node.isClickable());
+            node.recycle();
+            assertNoEllipsis(tagged("stars_history_privacy"));
+        });
+        clickTag("stars_privacy_settings");
+        clickTag("stars_privacy_toggle");
+        back();
+        instrumentation.runOnMainSync(() -> {
+            android.view.accessibility.AccessibilityNodeInfo node = tagged("stars_history_privacy").createAccessibilityNodeInfo();
+            assertFalse(node.isChecked());
+            node.recycle();
+            assertEquals(2, texts(tagged("FL-20261017-0001")).size());
+        });
+        launch("Dark Blue");
+        revealHistoryControl();
+        screenshot("stars-history-privacy-dark.png");
+        LocaleController.LocaleInfo original = LocaleController.getInstance().getCurrentLocaleInfo();
+        try {
+            instrumentation.runOnMainSync(() -> LocaleController.getInstance().applyLanguage(
+                LocaleController.getInstance().languagesDict.get("ru"), true, false, 0));
+            launch("Blue");
+            revealHistoryControl();
+            screenshot("stars-history-privacy-russian.png");
+            instrumentation.runOnMainSync(() -> assertNoEllipsis(tagged("stars_history_privacy")));
+        } finally {
+            instrumentation.runOnMainSync(() -> LocaleController.getInstance().applyLanguage(original, true, false, 0));
+        }
+    }
+
+    private void revealHistoryControl() throws Exception {
+        instrumentation.runOnMainSync(() -> {
+            View control = tagged("stars_history_privacy");
+            assertNotNull(control);
+            control.requestRectangleOnScreen(new android.graphics.Rect(0, 0,
+                control.getWidth(), control.getHeight() + org.telegram.messenger.AndroidUtilities.dp(140)), true);
+        });
+        settle();
+    }
+
     @Test public void demoWalkthrough() throws Exception {
         launch("Blue");
+        revealHistoryControl();
         Thread.sleep(1500);
+        clickTag("stars_history_privacy");
+        Thread.sleep(2000);
+        clickTag("stars_history_privacy");
+        Thread.sleep(3000);
         clickTag("stars_privacy_settings");
         Thread.sleep(2500);
         back();
@@ -590,6 +657,8 @@ public class StarsPrivacyTest {
         back();
         Thread.sleep(2000);
         launch("Dark Blue");
+        revealHistoryControl();
+        Thread.sleep(2000);
         clickTag("stars_privacy_settings");
         Thread.sleep(2500);
     }

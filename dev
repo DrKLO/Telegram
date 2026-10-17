@@ -237,7 +237,7 @@ def smoke_test(privacy=False):
     artifacts.mkdir(exist_ok=True)
     results = []
     suite = 'StarsPrivacyTest' if privacy else 'OfflineSmokeTest'
-    methods = ['deadlineAndMockContract', 'productionPendingReactionCancelsSafely', 'nativePrivacyScreensAndRecycledRows', 'anonymousChoiceAfterOptOut', 'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'channelPolicyAndIrreversibleHistory', 'privacySurvivesProcessRestart'] if privacy else ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']
+    methods = ['deadlineAndMockContract', 'productionPendingReactionCancelsSafely', 'nativePrivacyScreensAndRecycledRows', 'anonymousChoiceAfterOptOut', 'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'historyPrivacyControl', 'channelPolicyAndIrreversibleHistory', 'privacySurvivesProcessRestart'] if privacy else ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']
     folder = 'stars-privacy' if privacy else 'smoke'
     for method in methods:
         adb('shell', 'am', 'force-stop', OFFLINE_PACKAGE, serial=serial)

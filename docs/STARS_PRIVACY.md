@@ -93,6 +93,21 @@ clock model is used for ordinary reactions, live reactions and the offline previ
 
 ## Native design and motion
 
+**Settings → My Stars → immediately above transaction history** now includes the direct
+**Make my Stars private** control, even when history is empty. It shares the personal
+preference with Privacy and Security → Stars Privacy. The account-free preview uses
+this exact production view beside its native transaction rows.
+
+The illustration combines Telegram's existing gold Star Lottie with its passcode-lock
+Lottie. Enabling privacy plays the Star once and settles a lock badge into place over
+320 ms using Telegram's `EASE_OUT_QUINT`; disabling removes only the badge over
+200 ms. It does not unlock or reveal old receipts. There is no idle animation loop.
+The control uses a native Switch, selector, theme tokens and wrapping English/Russian
+labels. It exposes one checkable accessibility target, follows Android's disabled
+animator setting, cancels interrupted motion and settles when detached. Privacy
+changes synchronously before motion starts. A brief native notice explains that
+opting out affects new reactions only.
+
 Both privacy screens use Telegram's ActionBar, HeaderCell, TextCheckCell,
 TextSettingsCell, TextInfoPrivacyCell and theme tokens. The native switch animation,
 selector feedback, sheet transitions, 3D flying Star, Lottie effects, animated counters
@@ -190,7 +205,7 @@ It does not reset a live account or uninstall the app. Screenshots and test logs
 and `artifacts/stars-privacy-test.txt`. These tests do not validate real payments,
 server anonymity, cross-device enforcement or five minutes of wall-clock UI playback.
 
-Recorded flow: personal setting → anonymous reaction and Undo → minimal receipt →
+Recorded flow: animated history privacy control → personal setting → anonymous reaction and Undo → minimal receipt →
 native live send with its full 20-second wait → admin policy → privacy opt-out notice →
 channel send with its full wait → donor-only percentile → history anonymisation → dark settings. Identify the offline fixtures and proposed
 API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before sharing.
@@ -199,9 +214,10 @@ API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before
 
 On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
 
-- All eight privacy instrumentation scenarios passed, including a real 20-second wait,
+- All nine privacy instrumentation scenarios passed, including a real 20-second wait,
   late Undo, a production-controller mock commit, a fresh-process history check,
   theme updates, rapid toggle reversals, Russian label fit and native switch accessibility.
+  The history control also passed with Android system animations disabled.
 - Both original offline playground smoke tests passed.
 - All eleven Python helper/package tests passed.
 - Offline native build/reinstall and the full client compile check passed.
@@ -221,6 +237,7 @@ verified. No physical device, Telegram login, credentials or real Stars were use
 
 | Area | Source |
 | --- | --- |
+| Animated control beside history | `Stars/StarsPrivacyView.java` |
 | Personal defaults and precedence | `Stars/StarsPrivacy.java` |
 | Immutable local provenance and proposed server responses | `Stars/StarsPrivacyMockApi.java` |
 | Native settings, theme callbacks and feedback lifecycle | `Stars/StarsPrivacySettingsActivity.java`, `StarsPrivacyActivity.java`, `StarsChannelPrivacyActivity.java` |

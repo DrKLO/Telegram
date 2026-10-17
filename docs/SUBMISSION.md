@@ -12,7 +12,9 @@ This repository prepares the handoff; nothing is sent to the organizers automati
 
 ## What to review
 
-- **Personal privacy:** Settings → Privacy and Security → Stars Privacy. Anonymous
+- **Personal privacy:** Settings → My Stars → **Make my Stars private**, directly
+  above transaction history, with Telegram’s gold Star and closing-lock animation.
+  The same setting is available under Privacy and Security → Stars Privacy. Anonymous
   post reactions, no named rankings or selected Star highlights, and receipts with
   only ID and date/time. A brief native notice explains the effect of either toggle.
 - **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
@@ -81,8 +83,8 @@ python3 -m unittest discover -s tests
 ```
 
 Test environment: Apple Silicon M3 / 16 GB RAM; Android 16 (API 36) AOSP emulator,
-ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers eight scenarios,
-including private-history persistence, separate future public contributions, actual
+ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers nine scenarios,
+including the direct history control, private-history persistence, separate future public contributions, actual
 20-second waits, late Undo, live sends, channel precedence, irreversible history,
 rapid toggle reversals, theme updates, Russian label fit and switch accessibility.
 Screenshots and raw logs stay in ignored `artifacts/`.

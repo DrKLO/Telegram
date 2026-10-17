@@ -302,4 +302,7 @@
     <string name="StarsPrivacyHistoryHeader">История транзакций</string>
     <string name="StarsPrivacyChannelHeader">Приватность канала</string>
     <string name="StarsHistoryAnonymiseAction">Скрыть детали истории</string>
+    <string name="StarsPrivacyMakePrivate">Сделать мои звёзды анонимными</string>
+    <string name="StarsPrivacyHistoryPrivate">Вкл. · В истории только ID и даты</string>
+    <string name="StarsPrivacyHistoryFuture">Выкл. · Только новые реакции</string>
 </resources>

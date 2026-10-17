@@ -172,6 +172,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
     private GLIconTextureView iconTextureView;
 
     private StarsTransactionsLayout transactionsLayout;
+    private StarsPrivacyView historyPrivacyView;
     private View emptyLayout;
     private FireworksOverlay fireworksOverlay;
 
@@ -260,6 +261,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         useFillLastLayoutManager = false;
         particlesViewHeight = dp(32 + 190 + 16);
         transactionsLayout = new StarsTransactionsLayout(context, currentAccount, false, 0, getClassGuid(), getResourceProvider());
+        historyPrivacyView = new StarsPrivacyView(context, currentAccount, this);
         emptyLayout = new View(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -650,6 +652,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
     @Override
     public void onResume() {
         super.onResume();
+        if (historyPrivacyView != null) historyPrivacyView.updateColors();
         if (iconTextureView != null) {
             iconTextureView.setPaused(false);
             iconTextureView.setDialogVisible(false);
@@ -659,6 +662,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
     @Override
     public void onPause() {
         super.onPause();
+        if (historyPrivacyView != null) historyPrivacyView.hideFeedback();
         if (iconTextureView != null) {
             iconTextureView.setPaused(true);
             iconTextureView.setDialogVisible(true);
@@ -729,6 +733,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             items.add(UItem.asShadow(null));
         }
 
+        items.add(UItem.asCustom(historyPrivacyView));
+        items.add(UItem.asShadow(null));
         if (hadTransactions = c.hasTransactions()) {
             items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(24) + AndroidUtilities.navigationBarHeight));
         } else {
