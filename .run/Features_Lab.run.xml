@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Features Lab" type="AndroidRunConfigurationType" factoryName="Android App">
+    <module name="FeaturesLab.TMessagesProj_App" />
+    <option name="ANDROID_RUN_CONFIGURATION_SCHEMA_VERSION" value="1" />
+    <option name="DEPLOY" value="true" />
+    <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+    <option name="ACTIVITY_CLASS" value="" />
+    <option name="MODE" value="default_activity" />
+    <option name="CLEAR_LOGCAT" value="false" />
+    <option name="SHOW_LOGCAT_AUTOMATICALLY" value="true" />
+    <method v="2"><option name="Android.Gradle.BeforeRunTask" enabled="true" /></method>
+  </configuration>
+</component>

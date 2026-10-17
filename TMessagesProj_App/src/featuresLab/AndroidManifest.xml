@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
+
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <uses-permission android:name="${applicationId}.permission.MAPS_RECEIVE"/>
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
+
+    <application
+        android:icon="@drawable/features_lab_icon"
+        android:roundIcon="@drawable/features_lab_icon"
+        android:label="@string/features_lab_name"
+        android:theme="@style/Theme.TMessages.Start"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:supportsRtl="false"
+        android:requestLegacyExternalStorage="true"
+        tools:replace="android:supportsRtl,android:icon,android:roundIcon,android:label">
+
+        <!-- Local development uses Telegram's connection, without Firebase push. -->
+        <provider android:name="com.google.firebase.provider.FirebaseInitProvider" tools:node="remove" />
+        <service android:name="org.telegram.messenger.GcmPushListenerService" tools:node="remove" />
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+
+        <uses-library android:name="com.google.android.maps" android:required="false"/>
+
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+
+        <receiver
+            tools:replace="android:enabled"
+            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.measurement.UPLOAD" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            tools:replace="android:enabled"
+            android:name="com.google.android.gms.measurement.AppMeasurementService"
+            android:enabled="false"
+            android:exported="false" />
+
+        <activity-alias android:name="org.telegram.messenger.DefaultIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+        <activity-alias android:name="org.telegram.messenger.VintageIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+        <activity-alias android:name="org.telegram.messenger.AquaIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+        <activity-alias android:name="org.telegram.messenger.PremiumIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+        <activity-alias android:name="org.telegram.messenger.TurboIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+        <activity-alias android:name="org.telegram.messenger.NoxIcon"
+            android:icon="@drawable/features_lab_icon"
+            android:roundIcon="@drawable/features_lab_icon"
+            android:label="@string/features_lab_name"
+            tools:replace="android:icon,android:roundIcon" />
+    </application>
+
+</manifest>

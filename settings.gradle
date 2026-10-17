@@ -1,9 +1,13 @@
 include ':TMessagesProj'
 include ':TMessagesProj_App'
-include ':TMessagesProj_AppHuawei'
-include ':TMessagesProj_AppHockeyApp'
-include ':TMessagesProj_AppStandalone'
-include ':TMessagesProj_AppTests'
+if (!providers.gradleProperty('featuresLab').orElse('false').get().toBoolean()) {
+    include ':TMessagesProj_AppHuawei'
+    include ':TMessagesProj_AppHockeyApp'
+    include ':TMessagesProj_AppStandalone'
+    include ':TMessagesProj_AppTests'
+} else {
+    rootProject.name = 'FeaturesLab'
+}
 include ':jlatexmath'
 project(':jlatexmath').projectDir = file('TMessagesProj/lib/jlatexmath/jlatexmath')
 

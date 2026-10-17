@@ -25,7 +25,7 @@ android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
 
-    defaultConfig.applicationId = APP_PACKAGE
+    defaultConfig.applicationId = rootProject.ext.featuresLab ? 'org.telegram.features' : APP_PACKAGE
 
 
     lintOptions {
@@ -48,10 +48,12 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("../TMessagesProj/config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            if (!rootProject.ext.featuresLab) {
+                storeFile file("../TMessagesProj/config/release.keystore")
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
         }
 
         release {
@@ -159,6 +161,9 @@ android {
     }
 
     variantFilter { variant ->
+        if (rootProject.ext.featuresLab && (variant.buildType.name != 'debug' || !variant.flavors*.name.contains('afat'))) {
+            setIgnore(true)
+        }
         def names = variant.flavors*.name
         if (variant.buildType.name != "release" && !names.contains("afat")) {
             setIgnore(true)
@@ -192,6 +197,24 @@ android {
     lintOptions {
         checkReleaseBuilds false
     }
+
+    if (rootProject.ext.featuresLab) {
+        productFlavors.afat.ndk.abiFilters.clear()
+        productFlavors.afat.ndk.abiFilters.add(rootProject.ext.featuresLabAbi)
+        sourceSets.debug.manifest.srcFile 'src/featuresLab/AndroidManifest.xml'
+        sourceSets.debug.res.srcDir 'src/featuresLab/res'
+    }
 }
 
-apply plugin: 'com.google.gms.google-services'
+if (rootProject.ext.featuresLab) {
+    tasks.register('validateFeaturesLabCredentials') {
+        doLast {
+            if (!rootProject.ext.featuresLabCredentialsValid && !rootProject.ext.featuresLabCompileOnly) {
+                throw new GradleException('Run ./dev configure to enter your own Telegram API credentials locally. Use ./dev compile-check only for a non-login build check.')
+            }
+        }
+    }
+    preBuild.dependsOn 'validateFeaturesLabCredentials'
+} else {
+    apply plugin: 'com.google.gms.google-services'
+}

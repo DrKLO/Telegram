@@ -1,9 +1,15 @@
 .idea/
 .gradle/
+.kotlin/
 build/
 obj/
 *.iml
 local.properties
+local.properties.tmp
+__pycache__/
+artifacts/
+*.keystore
+*.jks
 TMessagesProj/.cxx/
 TMessagesProj/jniLibs/
 TMessagesProj/jniRes/

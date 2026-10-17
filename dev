@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""Small local workflow for the Features Lab Android fork (Python 3, macOS)."""
+import argparse
+import datetime
+import getpass
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent
+LOCAL = ROOT / 'local.properties'
+PACKAGE = 'org.telegram.features.beta'
+NDK = '27.2.12479018'
+
+
+def run(args, capture=False, check=True, env=None):
+    return subprocess.run([str(x) for x in args], cwd=ROOT, env=env,
+                          text=True, capture_output=capture, check=check)
+
+
+def properties():
+    values = {}
+    if LOCAL.exists():
+        for line in LOCAL.read_text().splitlines():
+            if line.strip() and not line.lstrip().startswith(('#', '!')) and '=' in line:
+                k, v = line.split('=', 1)
+                values[k.strip()] = v.strip().replace('\\ ', ' ').replace('\\:', ':').replace('\\\\', '\\')
+    return values
+
+
+def save_properties(updates):
+    lines = LOCAL.read_text().splitlines() if LOCAL.exists() else ['# Local machine settings and credentials. Never commit this file.']
+    keys = set(updates)
+    lines = [line for line in lines if line.split('=', 1)[0].strip() not in keys]
+    for key, value in updates.items():
+        escaped = str(value).replace('\\', '\\\\').replace(' ', '\\ ').replace(':', '\\:')
+        lines.append(f'{key}={escaped}')
+    temporary = LOCAL.with_suffix('.properties.tmp')
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
+        f.write('\n'.join(lines) + '\n')
+    temporary.replace(LOCAL)
+    LOCAL.chmod(0o600)
+
+
+def sdk_path():
+    return Path(properties().get('sdk.dir') or os.environ.get('ANDROID_HOME') or Path.home() / 'Library/Android/sdk')
+
+
+def java_home():
+    candidates = [Path('/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home')]
+    if os.environ.get('JAVA_HOME'):
+        candidates.append(Path(os.environ['JAVA_HOME']))
+    for path in candidates:
+        if (path / 'bin/java').exists():
+            result = run([path / 'bin/java', '-version'], capture=True)
+            if re.search(r'version "17[.\"]', result.stderr + result.stdout):
+                return path
+    raise SystemExit('Java 17 is missing. Install openjdk@17, or set JAVA_HOME to a Java 17 installation.')
+
+
+def environment():
+    env = os.environ.copy()
+    env.update(JAVA_HOME=str(java_home()), ANDROID_HOME=str(sdk_path()),
+               ANDROID_SDK_ROOT=str(sdk_path()), CMAKE_BUILD_PARALLEL_LEVEL='2', LC_ALL='en_US.UTF-8')
+    env['PATH'] = str(java_home() / 'bin') + os.pathsep + str(sdk_path() / 'platform-tools') + os.pathsep + env.get('PATH', '')
+    return env
+
+
+def bootstrap():
+    sdk = sdk_path()
+    if not (sdk / 'platform-tools/adb').exists():
+        raise SystemExit(f'Android platform-tools missing from {sdk}')
+    java = java_home()
+    save_properties({'sdk.dir': str(sdk)})
+    gradle = ROOT / '.gradle'
+    gradle.mkdir(exist_ok=True)
+    (gradle / 'config.properties').write_text(f'java.home={java}\n')
+    idea = ROOT / '.idea'
+    idea.mkdir(exist_ok=True)
+    config = idea / 'gradle.xml'
+    if not config.exists():
+        config.write_text('''<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings"><GradleProjectSettings>
+      <option name="externalProjectPath" value="$PROJECT_DIR$" />
+      <option name="gradleJvm" value="#GRADLE_LOCAL_JAVA_HOME" />
+      <option name="modules"><set><option value="$PROJECT_DIR$" /></set></option>
+    </GradleProjectSettings></option>
+  </component>
+</project>
+''')
+
+
+def credentials_valid():
+    props = properties()
+    app_id, app_hash = props.get('telegram.apiId', ''), props.get('telegram.apiHash', '')
+    return bool(re.fullmatch(r'[1-9][0-9]{0,9}', app_id)
+                and int(app_id) <= 2147483647
+                and re.fullmatch(r'[a-fA-F0-9]{32}', app_hash))
+
+
+def adb(*args, serial=None, capture=False, check=True):
+    command = [sdk_path() / 'platform-tools/adb']
+    if serial:
+        command += ['-s', serial]
+    return run(command + list(args), capture=capture, check=check)
+
+
+def device(required=False):
+    result = adb('devices', capture=True)
+    rows = [line.split() for line in result.stdout.splitlines()[1:] if line.strip()]
+    serial = os.environ.get('ANDROID_SERIAL')
+    if serial:
+        if [serial, 'device'] not in rows:
+            raise SystemExit('ANDROID_SERIAL is not connected and authorized. Check ./dev devices.')
+        return serial
+    ready = [row[0] for row in rows if len(row) >= 2 and row[1] == 'device']
+    if len(ready) > 1:
+        raise SystemExit('Multiple devices connected. Set ANDROID_SERIAL to the intended phone.')
+    if ready:
+        return ready[0]
+    if required:
+        raise SystemExit('No authorized phone. Enable USB debugging, connect a data cable, and accept the phone prompt. Run ./dev devices.')
+    return None
+
+
+def phone_abi(serial):
+    api = adb('shell', 'getprop', 'ro.build.version.sdk', serial=serial, capture=True).stdout.strip()
+    if not api.isdigit() or int(api) < 23:
+        raise SystemExit('This Telegram baseline requires Android 6.0 / API 23 or later.')
+    abis = adb('shell', 'getprop', 'ro.product.cpu.abilist', serial=serial, capture=True).stdout.strip().split(',')
+    for abi in ('arm64-v8a', 'armeabi-v7a'):
+        if abi in abis:
+            return abi
+    raise SystemExit('The connected device does not support an ARM ABI supported by this setup.')
+
+
+def build(compile_only=False):
+    bootstrap()
+    if not compile_only and not credentials_valid():
+        raise SystemExit('Run ./dev configure first. Credentials stay in ignored local.properties. For compilation without login, use ./dev compile-check.')
+    serial = device()
+    abi = phone_abi(serial) if serial else properties().get('featuresLab.abi', 'arm64-v8a')
+    save_properties({'featuresLab.abi': abi})
+    print(f'Building Features Lab for {abi}' + (' (compile check: no login credentials)' if compile_only else ''), flush=True)
+    run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebug',
+         '-PfeaturesLab=true', f'-PfeaturesLabAbi={abi}',
+         f'-PfeaturesLabCompileOnly={str(compile_only).lower()}', '--console=plain'], env=environment())
+    apk = ROOT / 'TMessagesProj_App/build/outputs/apk/afat/debug/app.apk'
+    if not apk.exists():
+        raise SystemExit('Gradle completed but the expected APK was not found.')
+    print(f'APK: {apk}')
+    if compile_only:
+        print('Compile-check APK only: do not use this artifact for account login or distribution.')
+    return apk
+
+
+def doctor():
+    bootstrap()
+    print(f'Java 17: {java_home()}\nAndroid SDK: {sdk_path()}')
+    print(f'Free disk: {shutil.disk_usage(ROOT).free / 1e9:.1f} GB')
+    errors = []
+    for rel in ['platforms/android-36/android.jar', 'build-tools/36.0.0/aapt2',
+                f'ndk/{NDK}/source.properties', 'cmake/3.22.1/bin/cmake']:
+        ok = (sdk_path() / rel).exists()
+        print(f'{"OK" if ok else "MISSING"}: {rel}')
+        if not ok:
+            errors.append(rel)
+    modules = run(['git', 'submodule', 'status', '--recursive'], capture=True)
+    bad = [line for line in modules.stdout.splitlines() if line and line[0] in '-+U']
+    print('Submodules: ' + ('need initialization / pinned checkout' if bad else 'at pinned commits'))
+    errors.extend(bad)
+    print('API credentials: ' + ('configured (values hidden)' if credentials_valid() else 'not configured; run ./dev configure'))
+    serial = device()
+    if serial:
+        abi = phone_abi(serial)
+        save_properties({'featuresLab.abi': abi})
+        version = adb('shell', 'getprop', 'ro.build.version.release', serial=serial, capture=True).stdout.strip()
+        print(f'Phone: Android {version}; saved build ABI: {abi}')
+    else:
+        print('Phone: not connected or not authorized')
+    if errors:
+        raise SystemExit(1)
+
+
+def configure():
+    bootstrap()
+    if not sys.stdin.isatty():
+        raise SystemExit('Run ./dev configure interactively in Terminal; do not send API credentials through chat.')
+    print('Create an application at https://my.telegram.org/apps. Values are saved locally and not printed.')
+    app_id = input('Telegram api_id: ').strip()
+    app_hash = getpass.getpass('Telegram api_hash (hidden): ').strip()
+    if not re.fullmatch(r'[1-9][0-9]{0,9}', app_id) or int(app_id) > 2147483647 or not re.fullmatch(r'[a-fA-F0-9]{32}', app_hash):
+        raise SystemExit('Expected a positive numeric api_id and a 32-character hexadecimal api_hash. No credentials were saved.')
+    save_properties({'telegram.apiId': app_id, 'telegram.apiHash': app_hash})
+    print('Credentials saved locally. Next: ./dev install')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio'])
+    parser.add_argument('seconds', nargs='?', type=int, default=30, help='record duration, 1–180 seconds')
+    args = parser.parse_args()
+    if args.command == 'doctor':
+        doctor()
+    elif args.command == 'configure':
+        configure()
+    elif args.command == 'devices':
+        adb('devices', '-l')
+    elif args.command in ('build', 'compile-check'):
+        build(args.command == 'compile-check')
+    elif args.command == 'install':
+        serial = device(required=True)
+        phone_abi(serial)
+        apk = build()
+        # Never uninstall or clear user data to work around a signing conflict.
+        adb('install', '-r', apk, serial=serial)
+        adb('shell', 'am', 'start', '-n', f'{PACKAGE}/org.telegram.ui.LaunchActivity', serial=serial)
+    elif args.command == 'logs':
+        serial = device(required=True)
+        pid = adb('shell', 'pidof', PACKAGE, serial=serial, capture=True, check=False).stdout.strip().split()
+        if not pid:
+            raise SystemExit('Features Lab is not running. Open it on the phone first.')
+        adb('logcat', '--pid=' + pid[0], serial=serial)
+    elif args.command == 'record':
+        if not 1 <= args.seconds <= 180:
+            raise SystemExit('Recording duration must be between 1 and 180 seconds.')
+        serial = device(required=True)
+        name = 'features-lab-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '.mp4'
+        out = ROOT / 'artifacts' / name
+        out.parent.mkdir(exist_ok=True)
+        remote = '/sdcard/' + name
+        print(f'Recording for {args.seconds}s. Demonstrate the flow on your phone.', flush=True)
+        adb('shell', 'screenrecord', '--time-limit', str(args.seconds), remote, serial=serial)
+        adb('pull', remote, out, serial=serial)
+        adb('shell', 'rm', remote, serial=serial)
+        print(f'Recording: {out}')
+    elif args.command == 'studio':
+        bootstrap()
+        studio = Path('/Applications/Android Studio Features Lab.app')
+        if not studio.exists():
+            studio = Path('/Applications/Android Studio.app')
+        run(['open', '-a', studio, ROOT])
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        raise SystemExit(130)
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit(exc.returncode)

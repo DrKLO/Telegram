@@ -397,6 +397,10 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPushServices() {
+        if (BuildVars.FEATURES_LAB) {
+            SharedConfig.pushStringStatus = "__FEATURES_LAB_PUSH_DISABLED__";
+            return;
+        }
         AndroidUtilities.runOnUIThread(() -> {
             if (getPushProvider().hasServices()) {
                 getPushProvider().onRequestPushToken();

@@ -1,0 +1,6 @@
+# Copy values into the ignored local.properties, or run ./dev configure.
+# Get your own credentials at https://my.telegram.org/apps.
+sdk.dir=/absolute/path/to/Android/sdk
+telegram.apiId=
+telegram.apiHash=
+featuresLab.abi=arm64-v8a

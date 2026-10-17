@@ -1,3 +1,21 @@
+## Features Lab — Telegram Android design experiments
+
+This is an unofficial development fork for preparing working feature concepts for
+[Telegram Designers × AI](https://t.me/designers/266). Start with the
+[development guide](docs/DEVELOPMENT.md) and [submission checklist](docs/SUBMISSION.md).
+
+```sh
+./dev doctor
+./dev configure  # Enter your own API credentials locally; do not commit them.
+./dev install    # Build, install, and launch on an authorized Android phone.
+```
+
+Baseline: Telegram 13.0.2 (7175), commit `f32ffeec763f0bdbf4bec25b52d654f77bff733d`.
+The development app is **Features Lab** (`org.telegram.features.beta`). Firebase
+push notifications are deliberately disabled. No feature has been implemented yet.
+
+### Upstream project documentation
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.

@@ -1,0 +1,19 @@
+// Local configuration is deliberately excluded from Git and never printed.
+def local = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) {
+    localFile.withInputStream { local.load(it) }
+}
+ext.featuresLab = providers.gradleProperty('featuresLab').orElse('false').get().toBoolean()
+ext.featuresLabCompileOnly = providers.gradleProperty('featuresLabCompileOnly').orElse('false').get().toBoolean()
+def apiId = local.getProperty('telegram.apiId', '').trim()
+def apiHash = local.getProperty('telegram.apiHash', '').trim()
+def idValid = apiId ==~ /[1-9][0-9]{0,9}/
+if (idValid) { idValid = apiId.toLong() <= Integer.MAX_VALUE }
+ext.featuresLabCredentialsValid = idValid && (apiHash ==~ /[0-9a-fA-F]{32}/)
+ext.featuresLabApiId = featuresLabCredentialsValid && !featuresLabCompileOnly ? apiId : '0'
+ext.featuresLabApiHash = featuresLabCredentialsValid && !featuresLabCompileOnly ? apiHash : ''
+ext.featuresLabAbi = providers.gradleProperty('featuresLabAbi').orElse(local.getProperty('featuresLab.abi', 'arm64-v8a')).get()
+if (featuresLab && !(featuresLabAbi in ['arm64-v8a', 'armeabi-v7a'])) {
+    throw new GradleException('Features Lab supports arm64-v8a or armeabi-v7a. Connect your Android phone and run ./dev doctor.')
+}

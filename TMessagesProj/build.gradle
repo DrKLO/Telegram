@@ -137,6 +137,12 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 36
+        buildConfigField 'boolean', 'FEATURES_LAB', 'false'
+        buildConfigField 'int', 'FEATURES_LAB_API_ID', rootProject.ext.featuresLabApiId
+        buildConfigField 'String', 'FEATURES_LAB_API_HASH', groovy.json.JsonOutput.toJson(rootProject.ext.featuresLabApiHash)
+        if (rootProject.ext.featuresLab) {
+            ndk { abiFilters rootProject.ext.featuresLabAbi }
+        }
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
@@ -147,12 +153,17 @@ android {
                 version '3.22.1'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets 'tmessages.49'
+                if (rootProject.ext.featuresLab) {
+                    arguments '-DCMAKE_JOB_POOLS=lab_compile=2;lab_link=1',
+                            '-DCMAKE_JOB_POOL_COMPILE=lab_compile', '-DCMAKE_JOB_POOL_LINK=lab_link'
+                }
             }
         }
     }
 
     buildTypes {
         debug {
+            buildConfigField 'boolean', 'FEATURES_LAB', rootProject.ext.featuresLab.toString()
             jniDebuggable true
             shrinkResources false
             multiDexEnabled true
@@ -245,7 +256,9 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+if (!rootProject.ext.featuresLab) {
+    apply plugin: 'com.google.gms.google-services'
+}
 
 task checkVisibility {
     doFirst {
