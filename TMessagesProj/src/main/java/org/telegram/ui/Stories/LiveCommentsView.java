@@ -72,7 +72,10 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_update;
+import org.telegram.ui.Stars.StarsPrivacy;
+import org.telegram.ui.Stars.StarsPrivacyMockApi;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
@@ -579,6 +582,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private void fillTopItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        if (StarsPrivacy.isPrivate(currentAccount, dialogId)) return;
         for (int i = 0; i < topMessages.size(); ++i) {
             items.add(LiveTopSenderView.Factory.of(topMessages.get(i)));
         }
@@ -628,9 +632,10 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     private boolean hasTopMessages;
     private void updateTopMessages(boolean animated) {
-        if (animated && hasTopMessages == (!topMessages.isEmpty())) return;
+        boolean visible = !StarsPrivacy.isPrivate(currentAccount, dialogId) && !topMessages.isEmpty();
+        if (animated && hasTopMessages == visible) return;
 
-        hasTopMessages = !topMessages.isEmpty();
+        hasTopMessages = visible;
 
         if (animated) {
             listView.animate()
@@ -674,6 +679,9 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     public void clear() {
+        publicReactionGeneration = -1;
+        publicStarsSincePrivacy = 0;
+        newPublicReactions.clear();
         messages.clear();
         adapter.update(true);
     }
@@ -725,6 +733,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         ) {
             messages.addAll(livePlayer.messages);
             topMessages.addAll(livePlayer.topMessages);
+            applyReactionPrivacy();
             adapter.update(true);
             lastNow = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             Collections.sort(topMessages, this::sortTopMessages);
@@ -737,6 +746,8 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     protected void onAttachedToWindow() {
         setAllowTouches(true);
         super.onAttachedToWindow();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starsPrivacyChanged);
+        applyReactionPrivacy();
         if (inputCall != null) {
             AndroidUtilities.cancelRunOnUIThread(pollStarsRunnable);
             AndroidUtilities.runOnUIThread(pollStarsRunnable);
@@ -746,6 +757,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     @Override
     protected void onDetachedFromWindow() {
         cancelStars();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged);
         super.onDetachedFromWindow();
         if (inputCall != null) {
             AndroidUtilities.cancelRunOnUIThread(pollStarsRunnable);
@@ -755,6 +767,40 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     private long totalStars;
     private long localStars;
     private boolean sentStars;
+    private long publicReactionGeneration = -1;
+    private long publicStarsSincePrivacy;
+    private final java.util.HashSet<Integer> newPublicReactions = new java.util.HashSet<>();
+
+    public long getPublicStarsSincePrivacy() {
+        return publicReactionGeneration == StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount) ? publicStarsSincePrivacy : 0;
+    }
+
+    private boolean redactPastReaction(Message message) {
+        if (!message.isReaction || message.stars <= 0 || !(isMe(message.dialogId) || message.dialogId == getDefaultPeerId())) return false;
+        boolean fresh = publicReactionGeneration == StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount) && newPublicReactions.contains(message.id);
+        if (!StarsPrivacy.isPrivate(currentAccount, dialogId) && (fresh || !StarsPrivacyMockApi.isProtectedLiveReaction(currentAccount, message.date))) return false;
+        message.dialogId = UserObject.ANONYMOUS;
+        message.place = 0;
+        message.fromAdmin = false;
+        return true;
+    }
+
+    private void applyReactionPrivacy() {
+        for (Message message : messages) redactPastReaction(message);
+        for (int i = topMessages.size() - 1; i >= 0; i--) {
+            TopSender sender = topMessages.get(i);
+            if (isMe(sender.dialogId) || sender.dialogId == getDefaultPeerId()) {
+                sender.messages.removeIf(message -> redactPastReaction(message) || message.dialogId == UserObject.ANONYMOUS);
+                if (sender.messages.isEmpty()) topMessages.remove(i);
+                else sender.updateLastSentDate();
+            }
+        }
+        updateMessagesPlaces();
+        adapter.update(false);
+        topAdapter.update(false);
+        updateTopMessages(false);
+        onStarsCountUpdated();
+    }
     private ArrayList<TL_phone.groupCallDonor> topDonors = new ArrayList<>();
 
     private boolean polling;
@@ -832,7 +878,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         long resolved = org.telegram.ui.Stars.StarsPrivacy.resolvePeer(currentAccount, dialogId, requestedPeer);
         if (localStars > 0 && starsPeer != resolved) cancelStars();
         starsPeer = resolved;
-        if (localStars == 0) mockStars = org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId);
+        if (localStars == 0) mockStars = StarsPrivacy.isPrivate(currentAccount, dialogId) || StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount);
         if (starsBulletin == null || !starsBulletin.isShowing()) {
             final Theme.ResourcesProvider resourcesProvider = new DarkThemeResourceProvider();
             bulletinLayout = new Bulletin.TwoLineAnimatedLottieLayout(getContext(), resourcesProvider);
@@ -952,6 +998,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     private String getStarsToastTitle() {
         if (org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyLivePreview);
+        if (mockStars) return getString(R.string.StarsReactionPreviewPending);
 //        if (isAnonymous()) {
 //            return getString(R.string.StarsSentAnonymouslyTitle);
 //        } else if (getPeerId() != 0 && getPeerId() != UserConfig.getInstance(currentAccount).getClientUserId()) {
@@ -1010,7 +1057,9 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.liveStoryMessageUpdate) {
+        if (id == NotificationCenter.starsPrivacyChanged) {
+            applyReactionPrivacy();
+        } else if (id == NotificationCenter.liveStoryMessageUpdate) {
             final long callId = (long) args[0];
             final TLObject obj = (TLObject) args[1];
             final boolean isHistory = (boolean) args[2];
@@ -1154,12 +1203,28 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     private int send(long send_as, TLRPC.TL_textWithEntities text, long stars, boolean forceMock) {
         final int id = UserConfig.getInstance(currentAccount).getNewMessageId();
-        if (stars > 0 && android.text.TextUtils.isEmpty(text.text) && (forceMock || org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId))) {
+        if (stars > 0 && android.text.TextUtils.isEmpty(text.text) && (forceMock || StarsPrivacy.isPrivate(currentAccount, dialogId) || StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount))) {
             // Proposed server behavior: keep the native interaction, with a local receipt.
-            final org.telegram.ui.Stars.StarsPrivacyMockApi.Receipt receipt = org.telegram.ui.Stars.StarsPrivacyMockApi.sendAnonymousLiveReaction(stars);
-            StarsController.getInstance(currentAccount).transactions[StarsController.ALL_TRANSACTIONS].add(0, receipt.asTransaction());
+            final boolean anonymous = StarsPrivacy.isPrivate(currentAccount, dialogId) || send_as == UserObject.ANONYMOUS;
+            final TL_stars.StarsTransaction receipt;
+            if (anonymous) {
+                receipt = StarsPrivacyMockApi.sendAnonymousLiveReaction(stars).asTransaction();
+            } else {
+                long generation = StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount);
+                if (publicReactionGeneration != generation) {
+                    publicStarsSincePrivacy = 0;
+                    newPublicReactions.clear();
+                    publicReactionGeneration = generation;
+                }
+                publicStarsSincePrivacy += stars;
+                newPublicReactions.add(id);
+                receipt = StarsPrivacyMockApi.sendPublicReaction(currentAccount, dialogId, 0, stars);
+                receipt.peer.peer = MessagesController.getInstance(currentAccount).getPeer(dialogId);
+                receipt.reaction = false; // Live receipts have no channel-post link.
+            }
+            StarsController.getInstance(currentAccount).transactions[StarsController.ALL_TRANSACTIONS].add(0, receipt);
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starTransactionsLoaded);
-            push(receipt.date, id, false, receipt.sender, text, stars, false);
+            push(receipt.date, id, false, anonymous ? UserObject.ANONYMOUS : send_as, text, stars, false);
             setCollapsed(false, true);
             onStarsCountUpdated();
             return id;
@@ -1274,7 +1339,8 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     public boolean didSendStars() {
         return !org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)
-            && (sentStars || localStars > 0 && !mockStars && starsPeer != org.telegram.messenger.UserObject.ANONYMOUS);
+            && ((StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount) ? getPublicStarsSincePrivacy() > 0 : sentStars)
+                || localStars > 0 && starsPeer != UserObject.ANONYMOUS);
     }
 
     public boolean areSendingStars() {
@@ -1330,6 +1396,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         message.stars = stars;
         message.id = id;
         message.isReaction = TextUtils.isEmpty(text.text);
+        if (redactPastReaction(message)) dialogId = message.dialogId;
 
         final int messagePeriod = getTierOption(currentAccount, (int) message.stars, TIER_PERIOD);
         if (message.stars > 0 && messagePeriod > 0 && now - message.date <= messagePeriod) {
@@ -1445,7 +1512,18 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         topPlaces.clear();
         final List<TL_phone.groupCallDonor> sorted = new ArrayList<>();
         if (topDonors != null) {
-            sorted.addAll(topDonors);
+            for (TL_phone.groupCallDonor donor : topDonors) {
+                if ((donor.my || isMe(DialogObject.getPeerDialogId(donor.peer_id))) && StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount)) {
+                    if (getPublicStarsSincePrivacy() <= 0) continue;
+                    TL_phone.groupCallDonor fresh = new TL_phone.groupCallDonor();
+                    fresh.peer_id = donor.peer_id;
+                    fresh.my = true;
+                    fresh.stars = getPublicStarsSincePrivacy();
+                    sorted.add(fresh);
+                } else {
+                    sorted.add(donor);
+                }
+            }
         }
         Collections.sort(sorted, (a, b) -> (int) (b.stars - a.stars));
 
@@ -1507,7 +1585,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private int getPlace(long dialogId) {
-        if (org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, this.dialogId)) return 0;
+        if (dialogId == UserObject.ANONYMOUS || StarsPrivacy.isPrivate(currentAccount, this.dialogId)) return 0;
         return topPlaces.getOrDefault(dialogId, 0);
     }
 

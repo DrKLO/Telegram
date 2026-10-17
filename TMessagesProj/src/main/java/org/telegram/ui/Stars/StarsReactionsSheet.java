@@ -151,6 +151,9 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private final MessageObject messageObject;
     private final long privacyDialogId;
     private final boolean protectedPost;
+    private final boolean privateStars;
+    private final long privacyGeneration;
+    private TextView percentileView;
     private final ArrayList<TLRPC.MessageReactor> reactors;
 
     private final BalanceCloud balanceCloud;
@@ -215,8 +218,10 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
         privacyDialogId = messageObject == null ? dialogId : StarsController.MessageId.from(messageObject).did;
         StarsPrivacy.observeReaction(currentAccount, messageObject);
-        protectedPost = messageObject != null && StarsPrivacyMockApi.isProtectedPost(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
-        final boolean privateStars = StarsPrivacy.isPrivate(currentAccount, privacyDialogId);
+        protectedPost = liveStories && StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount)
+            || messageObject != null && StarsPrivacyMockApi.isProtectedPost(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
+        privateStars = StarsPrivacy.isPrivate(currentAccount, privacyDialogId);
+        privacyGeneration = StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount);
         // Never feed an old private total into the sent label, slider or leaderboard.
         if (privateStars || protectedPost) me = null;
         final boolean withTopSenders = !privateStars && reactors != null && !reactors.isEmpty();
@@ -526,19 +531,17 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
         }
 
-        if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && privateStars) {
+        if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && (privateStars || protectedPost)) {
             balanceCloud.setVisibility(View.GONE);
         }
-        if (messageObject != null && !StarsPrivacy.isEnabled(currentAccount)) {
-            int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId, messageObject.getId());
-            if (bucket > 0) {
-                TextView percentile = new TextView(context);
-                percentile.setText(formatString(R.string.StarsChannelTopPercent, bucket));
-                percentile.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                percentile.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
-                percentile.setGravity(Gravity.CENTER);
-                layout.addView(percentile, LayoutHelper.createLinear(-1, -2, 20, 0, 20, 12));
-            }
+        if (messageObject != null) {
+            percentileView = new TextView(context);
+            percentileView.setTag("stars_donor_percentile");
+            percentileView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            percentileView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+            percentileView.setGravity(Gravity.CENTER);
+            layout.addView(percentileView, LayoutHelper.createLinear(-1, -2, 20, 0, 20, 12));
+            updatePercentile();
         }
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
         buttonView.setRound();
@@ -593,7 +596,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                     }
                 };
 
-                if (!(liveStories && privateStars || StarsPrivacy.usesMockSend(currentAccount, messageObject)) && starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
+                if (!(liveStories && (privateStars || protectedPost) || StarsPrivacy.usesMockSend(currentAccount, messageObject)) && starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
                     if (liveStories) {
                         new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, DialogObject.getShortName(currentAccount, dialogId), send, dialogId).show();
                     } else {
@@ -648,7 +651,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         termsView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         if (liveStories && !sendEnabled) {
             termsView.setText(getString(R.string.LiveStoryReactAdminCant));
-        } else if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && privateStars) {
+        } else if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && (privateStars || protectedPost)) {
             termsView.setText(getString(R.string.StarsPrivacyMockReactionInfo));
         } else {
             termsView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.StarsReactionTerms), () -> {
@@ -695,6 +698,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private LiveCommentsView commentsView;
     public StarsReactionsSheet setLiveCommentsView(LiveCommentsView commentsView) {
         this.commentsView = commentsView;
+        updateSenders(0);
         return this;
     }
 
@@ -727,23 +731,55 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.adminedChannelsLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starsPrivacyChanged);
+        didReceivedNotification(NotificationCenter.starsPrivacyChanged, currentAccount);
     }
 
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.adminedChannelsLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.adminedChannelsLoaded) {
             updateCanSwitchPeer(true);
+        } else if (id == NotificationCenter.starsPrivacyChanged) {
+            boolean protectedNow = liveStories && StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount)
+                || messageObject != null && StarsPrivacyMockApi.isProtectedPost(currentAccount,
+                privacyDialogId, StarsController.MessageId.from(messageObject).mid);
+            if (privateStars != StarsPrivacy.isPrivate(currentAccount, privacyDialogId) || protectedPost != protectedNow
+                || privacyGeneration != StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount)) {
+                // Remove sensitive content before the native dismiss animation. The reopened
+                // sheet rebuilds its slider, identity and rankings from the new policy.
+                checkedVisiblity = true;
+                if (topSendersView != null) topSendersView.setVisibility(View.GONE);
+                if (separatorView != null) separatorView.setVisibility(View.GONE);
+                if (checkSeparatorView != null) checkSeparatorView.setVisibility(View.GONE);
+                statusView.setVisibility(View.GONE);
+                dialogSelectorLayout.setVisibility(View.GONE);
+                checkLayout.setVisibility(View.GONE);
+                if (commentView != null) commentView.setVisibility(View.GONE);
+                if (percentileView != null) percentileView.setVisibility(View.GONE);
+                dismiss();
+            } else {
+                updatePercentile();
+            }
         }
     }
 
+    private void updatePercentile() {
+        if (percentileView == null || messageObject == null) return;
+        int bucket = StarsPrivacy.isEnabled(currentAccount) ? 0 : StarsPrivacyMockApi.donorPercentile(
+            currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
+        percentileView.setVisibility(bucket > 0 ? View.VISIBLE : View.GONE);
+        percentileView.setText(bucket > 0 ? formatString(R.string.StarsChannelTopPercent, bucket) : "");
+    }
+
     private boolean canSwitchPeer() {
-        if (liveStories) return false;
+        if (liveStories || StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return false;
         final ArrayList<TLObject> objects = BotStarsController.getInstance(currentAccount).getAdminedChannels();
         for (Object o : objects) {
             if (o instanceof TLRPC.Chat && ChatObject.isChannelAndNotMegaGroup((TLRPC.Chat) o)) {
@@ -796,7 +832,8 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                     array.add(SenderData.of(reactor.anonymous, false, dialogId, reactor.count));
                 }
             }
-            if (protectedPost) existingStars = StarsPrivacyMockApi.publicContribution(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
+            if (protectedPost) existingStars = liveStories ? (commentsView == null ? 0 : commentsView.getPublicStarsSincePrivacy())
+                : StarsPrivacyMockApi.publicContribution(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
             if (existingStars + my_stars > 0) {
                 array.add(SenderData.of(peer == UserObject.ANONYMOUS, true, selfId, existingStars + my_stars));
             }
@@ -809,7 +846,9 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private boolean checkedVisiblity = false;
     private void checkVisibility() {
         // A send-as choice is for the next contribution, never the protected past total.
-        if (protectedPost || StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
+        if (protectedPost || StarsPrivacy.isPrivate(currentAccount, privacyDialogId)
+            || messageObject != null && StarsPrivacyMockApi.isProtectedPost(currentAccount, privacyDialogId,
+                StarsController.MessageId.from(messageObject).mid)) return;
         if (checkedVisiblity) return;
         checkedVisiblity = true;
         if (messageObject == null) return;

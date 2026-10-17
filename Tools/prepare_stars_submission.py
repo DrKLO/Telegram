@@ -15,7 +15,9 @@ SCREENSHOTS = ['stars-privacy-settings-light.png', 'stars-privacy-settings-dark.
                'stars-private-reaction-sheet.png', 'stars-private-transaction.png',
                'stars-channel-dark-polished.png', 'stars-privacy-settings-russian.png',
                'stars-history-privacy-light.png', 'stars-history-privacy-dark.png',
-               'stars-history-privacy-russian.png', 'stars-private-amounts.png']
+               'stars-history-privacy-russian.png', 'stars-private-amounts.png',
+               'stars-purchase-privacy-light.png', 'stars-purchase-privacy-dark.png',
+               'stars-purchase-privacy-enabled.png', 'stars-retroactive-hidden.png']
 
 
 def git(*args):
@@ -55,7 +57,8 @@ def main():
     (destination / 'MESSAGE.txt').write_text(
         'Private Star Reactions — Telegram Android concept\n\n'
         'A private-by-default way to support channels: anonymous reactions, receipts showing only Stars amounts, IDs and dates, '
-        'a 20-second Undo, and past private activity that stays hidden after opting out. '
+        'a 20-second Undo, and retroactive hiding of existing leaderboard positions and selected Stars. '
+        'Past activity stays hidden after opting out. A native purchase notice explains public visibility. '
         'The Make my Stars private control sits beside transaction history, with Telegram\'s '
         'gold Star and closing-lock animation. Built with native components, with channel controls, '
         'private donor percentiles and history anonymisation.\n\n'
@@ -64,7 +67,7 @@ def main():
         'Demo: attach stars-privacy-demo.mp4\n\n'
         'The video runs in the offline Android emulator with sample data and no real payments. '
         'Ordinary anonymous paid reactions use the existing API in the live client. '
-        'Channel enforcement, live anonymity, history redaction and separate future public '
+        'Channel enforcement, live anonymity, history redaction, retroactive leaderboard protection and separate future public '
         'contributions on previously private posts use local API mocks. '
         'STARS_PRIVACY.md describes the required server work. This is a working client prototype, '
         'not a claim of full payment anonymity or secure deletion.\n')

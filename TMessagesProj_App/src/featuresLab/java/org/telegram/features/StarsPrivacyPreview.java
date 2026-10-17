@@ -27,6 +27,8 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Stars.PaidReactionUndo;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -36,6 +38,8 @@ import org.telegram.ui.Stars.StarsChannelPrivacyActivity;
 import org.telegram.ui.Stars.StarsPrivacyActivity;
 import org.telegram.ui.Stars.StarsPrivacyMockApi;
 import org.telegram.ui.Stars.StarsReactionsSheet;
+
+import java.util.ArrayList;
 
 /** Offline fixtures rendered through the production settings, reaction sheet and history rows. */
 public final class StarsPrivacyPreview extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -112,6 +116,13 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         live.setOnClickListener(v -> showLiveReactionSheet());
         content.addView(live, LayoutHelper.createLinear(-1, -2));
 
+        TextSettingsCell buy = new TextSettingsCell(context);
+        buy.setTag("stars_purchase_preview");
+        buy.setBackground(Theme.getSelectorDrawable(true));
+        buy.setTextAndValue(LocaleController.getString(R.string.StarsBuy), LocaleController.getString(R.string.StarsPrivacyPreviewLabel), false);
+        buy.setOnClickListener(v -> showPurchaseSheet());
+        content.addView(buy, LayoutHelper.createLinear(-1, -2));
+
         historyPrivacyView = new StarsPrivacyView(context, currentAccount, this);
         content.addView(historyPrivacyView, LayoutHelper.createLinear(-1, -2, 0, 12, 0, 0));
         HeaderCell header = new HeaderCell(context);
@@ -127,6 +138,32 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         fragmentView = root;
         refresh();
         return root;
+    }
+
+    public StarsIntroActivity.StarsOptionsSheet showPurchaseSheet() {
+        ArrayList<TL_stars.TL_starsTopupOption> options = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            TL_stars.TL_starsTopupOption option = new TL_stars.TL_starsTopupOption();
+            option.stars = new long[] {50, 100, 250}[i];
+            option.amount = new long[] {99, 199, 499}[i];
+            option.currency = "EUR";
+            options.add(option);
+        }
+        StarsIntroActivity.StarsOptionsSheet sheet = new StarsIntroActivity.StarsOptionsSheet(getContext(), getResourceProvider()) {
+            @Override protected ArrayList<TL_stars.TL_starsTopupOption> getOptions() { return options; }
+            @Override protected CharSequence getPurchaseTerms() { return LocaleController.getString(R.string.StarsPurchasePreviewInfo); }
+            @Override public void onItemClick(UItem item, UniversalAdapter adapter) {
+                if (item.object instanceof TL_stars.TL_starsTopupOption) {
+                    // Preview taps never enter billing or activate an account.
+                    BulletinFactory.of(getContainer(), getResourceProvider())
+                        .createSimpleBulletin(R.raw.stars_topup, LocaleController.getString(R.string.StarsPurchasePreviewInfo)).show();
+                } else {
+                    super.onItemClick(item, adapter);
+                }
+            }
+        };
+        sheet.show();
+        return sheet;
     }
 
     private void makeFixtures() {

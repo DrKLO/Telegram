@@ -33,10 +33,12 @@ and [DEVELOPMENT.md](DEVELOPMENT.md) for the pinned toolchain and fresh checkout
 **Personal setting.** Private Star Reactions is on by default for every locale,
 including Russian. This implements opt-in visibility without guessing a user's
 location from their language, SIM or IP. It is stored per account on this client.
-Turning it off permits visibility for new contributions only. Old hidden receipts and
+Enabling it also hides all existing leaderboard positions and selected Stars in the
+prototype, including posts not loaded on this device. Turning it off permits visibility
+for new contributions only. Old hidden receipts and
 private reaction state stay protected after toggling, re-fetching and restarting.
 A five-second native lock bulletin explains the change: **Only new reactions can be
-public. Past private activity stays private.** Enabling privacy has a matching notice.
+public. Past private activity stays private.** Enabling privacy confirms that existing and new reactions are hidden.
 
 When enabled, every new ordinary post reaction explicitly uses Telegram's
 `paidReactionPrivacyAnonymous`. Top Senders, the identity selector, selected Star
@@ -48,14 +50,17 @@ privacy view; the amount’s sign still indicates whether Stars were received or
 this Stars feature. Aggregate
 reaction counts and Telegram's existing animations remain.
 
-Before switching off, the local mock seals the existing history through the current
-server-adjusted time, including unloaded pages. Rows also retain irreversible receipt
+On enabling privacy, and again before switching it off, the local mock seals existing
+history through the current server-adjusted time, including unloaded pages. Rows also retain irreversible receipt
 ID tombstones. New mock public receipts carry explicit provenance, so a new reaction
-in the same timestamp second is not confused with a private one. Past personal and
-channel reactions retain per-post protection; expired/private highlights cannot return.
+in the same timestamp second is not confused with a private one. An account-wide mock
+protection flag covers previously public and unloaded reactions; new public contributions
+have separate provenance. Past personal and
+channel reactions retain protection; expired/private highlights cannot return.
 Once a receipt is explicitly anonymised, its public provenance cannot restore it.
 
-A new public contribution on a previously private post is simulated separately. Its
+After account-wide protection, a new public contribution is simulated separately on
+any post, including one not previously loaded. Its
 receipt and ranking contain only the new amount. Opening or dismissing its sheet never
 calls `messages.togglePaidReactionPrivacy` for the old contribution. Telegram's
 [current privacy API](https://core.telegram.org/method/messages.togglePaidReactionPrivacy)
@@ -96,6 +101,23 @@ the pending bulletin cancels an unsent reaction and rolls back its count and bal
 reservation. An already submitted request cannot be undone by this UI. The same
 clock model is used for ordinary reactions, live reactions and the offline preview.
 
+**Buying Stars.** Both Buy Stars and the insufficient-balance purchase sheet show a
+short native notice above the packages. When privacy is off: “Star reactions may
+show your profile in Top Senders when privacy is off. Make my Stars private.” The
+last phrase is an inline link that enables the same setting immediately and protects
+past activity in the mock. The notice updates to confirm privacy is on. It does not
+start a purchase. The offline preview uses the production Buy Stars sheet with sample
+packages and a no-purchase footer; package taps cannot enter billing.
+
+Past own live reactions are also projected anonymously, including late-loaded history.
+A generation boundary keeps live highlights and rankings from reusing old totals; new
+public live contributions are simulated separately without a debit. Named paid comments
+with text are outside the reaction-only feature.
+
+Open reaction sheets remove sensitive content and dismiss using Telegram’s native
+transition if their privacy policy changes. Reopening rebuilds identity controls and
+rankings. Donor percentiles also refresh when their expiry/policy event arrives.
+
 ## Native design and motion
 
 **Settings → My Stars → immediately above transaction history** now includes the direct
@@ -134,21 +156,22 @@ Sensitive receipt details are removed immediately rather than faded out on scree
 | --- | --- |
 | Anonymous sender for an ordinary paid post reaction | Existing `messages.sendPaidReaction` privacy field; explicit anonymous value |
 | Personal default, hidden rankings/highlights and minimal history presentation | Client changes in native components; durable local privacy provenance |
-| New public contribution on a previously private post | Separate mock contribution/receipt; never republishes an old private total |
+| Account-wide hiding of existing leaderboard positions and selected Stars | Persistent local mock, including unloaded posts; no server rewrite |
+| New public contribution after account-wide protection | Separate mock contribution/receipt; never republishes an old private total |
 | 20-second Undo | Client defers the send; native bulletin and shared deadline model |
-| Anonymous live Star reaction | `StarsPrivacyMockApi`, local receipt and native live interaction; no network send or debit |
+| Anonymous live Star reaction and new public live contributions after protection | `StarsPrivacyMockApi`, local receipt and native live interaction; no network send or debit |
 | Enforced channel policy and donor percentile | `StarsPrivacyMockApi`, local admin state and aggregate fixtures; channel-policy reactions are simulated |
 | Irreversible history anonymisation and private-channel receipt redaction | Persisted local mock of a server redaction contract; no Telegram ledger mutation |
 
 The mocked flows are marked **Preview** at their controls/send surface. They remain
 usable, including live Stars. A normal anonymous post reaction in a credentialed
 live build still uses the existing payment API; the prototype does not silently
-replace those supported anonymous payments with mocks. Mixed private/public contributions
-on one post use the explicitly labelled mock described above.
+replace those supported anonymous payments with mocks. Public contributions after account-wide protection
+use the explicitly labelled mock described above.
 
 This is not proof of full payment anonymity. The existing API's anonymous leaderboard
 identity does not make a transfer unlinkable to Telegram, a payment provider or the
-recipient's accounting records. The personal switch does not rewrite past public
+recipient's accounting records. The personal switch now simulates retroactive hiding, but does not rewrite past public
 reactions on Telegram's servers. Minimal local presentation is not secure deletion of cached messages, account
 files, backups or a server ledger. Transaction amounts, IDs and times can still be correlated.
 The mock's protection keys and public contribution counters are themselves local app
@@ -175,7 +198,10 @@ These are proposed capabilities, not existing TL methods:
    provenance, so changing a default or sending again never republishes past activity.
    Timestamp boundaries must be defined by the server, with exact receipt ordering;
    local second-resolution history cutoffs conservatively hide ambiguous real receipts.
-6. A precise anonymity threat model and independent review before describing the
+6. Account-wide retroactive hiding of existing paid-reaction identities, including
+   posts not loaded by the requesting client. Other viewers must receive anonymous
+   aggregates; later public contributions must not restore any prior identity or amount.
+7. A precise anonymity threat model and independent review before describing the
    feature as protecting donors from account/device seizure or server disclosure.
 
 The current boundary is `StarsPrivacyMockApi`. It deliberately has no network or

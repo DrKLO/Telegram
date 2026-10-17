@@ -130,6 +130,10 @@ public final class StarsPrivacyMockApi {
     /** The simulation has no restore operation for previously private activity. */
     public static void sealPrivateActivity(int account) {
         SharedPreferences.Editor edit = state(account).edit()
+            // A mock account-wide server operation, not an enumeration of cached posts.
+            // Future public sends carry separate provenance and never reuse old totals.
+            .putBoolean("past_reactions_private", true)
+            .putLong("reaction_privacy_generation", reactionPrivacyGeneration(account) + 1)
             .putLong("private_through", Math.max(state(account).getLong("private_through", -1), now(account)))
             .remove("new_public_receipts");
         for (String key : state(account).getAll().keySet()) {
@@ -146,7 +150,20 @@ public final class StarsPrivacyMockApi {
     }
 
     public static boolean isProtectedPost(int account, long dialogId, int messageId) {
-        return state(account).getBoolean("private_post_" + dialogId + ":" + messageId, false);
+        return hasRetroactiveProtection(account)
+            || state(account).getBoolean("private_post_" + dialogId + ":" + messageId, false);
+    }
+
+    public static boolean hasRetroactiveProtection(int account) {
+        return state(account).getBoolean("past_reactions_private", false);
+    }
+
+    public static long reactionPrivacyGeneration(int account) {
+        return state(account).getLong("reaction_privacy_generation", 0);
+    }
+
+    public static boolean isProtectedLiveReaction(int account, int date) {
+        return date <= state(account).getLong("private_through", -1);
     }
 
     public static long publicContribution(int account, long dialogId, int messageId) {

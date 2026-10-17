@@ -2,13 +2,19 @@
 
 A Telegram Android concept for supporting channels with less public and local
 exposure. Personal privacy is on by default, including for Russian-language users.
-The key rule is simple: **opting out affects future contributions only; past private
+Enabling privacy also hides existing leaderboard positions and selected Stars in the
+prototype, including unloaded posts. The key rule is simple: **opting out affects future contributions only; past private
 activity stays hidden in this app.**
 
 The [Designers × AI announcement](https://t.me/designers/266), checked on
 17 October 2026, asks for working code and a video of the implemented feature,
 submitted by messaging `@designers`. That post specifies no deadline or prize fund.
 This repository prepares the handoff; nothing is sent to the organizers automatically.
+
+The privacy work is informed by [OVD-Info’s proposal](https://ovd.info/content/otkrytoe-pismo-v-telegram-o-yuridicheskikh-riskakh-ispolzovaniya-telegram-stars-dlya)
+and [Memorial’s letter](https://t.me/s/pzk_memorial/9320). The purchase notice explains
+profile visibility; it is not a comprehensive legal-risk advisory. This prototype
+anonymises receipt details rather than deleting receipts entirely.
 
 ## What to review
 
@@ -17,6 +23,8 @@ This repository prepares the handoff; nothing is sent to the organizers automati
   The same setting is available under Privacy and Security → Stars Privacy. Anonymous
   post reactions, no named rankings or selected Star highlights, and receipts with
   only the signed Stars amount, ID and date/time. A brief native notice explains the effect of either toggle.
+- **Buying Stars:** A native inline visibility notice above purchase packages, with a
+  one-tap link to enable privacy. The offline preview uses sample prices and cannot purchase.
 - **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
   animated counts and a real **20-second pre-send Undo**.
 - **Channel controls:** Channel settings → Reactions → Star reaction privacy.
@@ -36,7 +44,8 @@ Ordinary anonymous post reactions use Telegram's existing API in the credentiale
 client. Anonymous leaderboard identity alone is not full payment anonymity.
 
 Channel enforcement, anonymous live reactions, permanent history redaction,
-percentiles and separate future public contributions on a previously private post
+percentiles, retroactive hiding of existing leaderboard positions, and separate future
+public contributions after account-wide protection
 are **local API mocks**. They spend no Stars and are marked Preview. Telegram's
 servers, recipient ledgers, payment providers, other clients and backups are unchanged.
 Local hidden presentation is not secure deletion. Clearing app data or using another
@@ -83,10 +92,11 @@ python3 -m unittest discover -s tests
 ```
 
 Test environment: Apple Silicon M3 / 16 GB RAM; Android 16 (API 36) AOSP emulator,
-ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers ten scenarios,
+ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers thirteen scenarios,
 including the direct history control, retained Stars amounts, private-history persistence, separate future public contributions, actual
 20-second waits, late Undo, live sends, channel precedence, irreversible history,
-rapid toggle reversals, theme updates, Russian label fit and switch accessibility.
+retroactive protection of unloaded posts and live reactions, open-sheet privacy updates, both purchase
+notices, rapid toggle reversals, theme updates, Russian label fit and switch accessibility.
 Screenshots and raw logs stay in ignored `artifacts/`.
 
 Live payments, real account login, cross-device behavior, server enforcement,

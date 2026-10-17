@@ -2545,6 +2545,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
     public static class StarsOptionsSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
         private final FrameLayout footerView;
+        private final StarsPurchasePrivacyView purchasePrivacyView;
         private final FireworksOverlay fireworksOverlay;
 
         @Override
@@ -2584,6 +2585,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         ) {
             super(context, null, false, false, false, resourcesProvider);
 
+            purchasePrivacyView = new StarsPurchasePrivacyView(context, currentAccount, resourcesProvider);
             recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
             recyclerListView.setOnItemClickListener((view, position) -> {
                 if (adapter == null) return;
@@ -2608,9 +2610,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             footerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             footerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider));
             footerTextView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-            footerTextView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.StarsTOS), () -> {
-                Browser.openUrl(getContext(), getString(R.string.StarsTOSLink));
-            }));
+            footerTextView.setText(getPurchaseTerms());
             footerTextView.setGravity(Gravity.CENTER);
             footerTextView.setMaxWidth(HintView2.cutInFancyHalf(footerTextView.getText(), footerTextView.getPaint()));
             footerView.addView(footerTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
@@ -2640,10 +2640,20 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private boolean expanded;
         private final int BUTTON_EXPAND = -1;
 
+        protected ArrayList<TL_stars.TL_starsTopupOption> getOptions() {
+            return StarsController.getInstance(currentAccount).getOptions();
+        }
+
+        protected CharSequence getPurchaseTerms() {
+            return AndroidUtilities.replaceSingleTag(getString(R.string.StarsTOS), () ->
+                Browser.openUrl(getContext(), getString(R.string.StarsTOSLink)));
+        }
+
         public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+            if (purchasePrivacyView != null) items.add(UItem.asCustom(purchasePrivacyView));
             items.add(UItem.asHeader(getString(R.string.TelegramStarsChoose)));
             int stars = 1;
-            ArrayList<TL_stars.TL_starsTopupOption> options = StarsController.getInstance(currentAccount).getOptions();
+            ArrayList<TL_stars.TL_starsTopupOption> options = getOptions();
             if (options != null && !options.isEmpty()) {
                 int hidden = 0;
                 for (int id = 0; id < options.size(); ++id) {
@@ -2706,6 +2716,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private final long starsNeeded;
         private final HeaderView headerView;
         private final FrameLayout footerView;
+        private StarsPurchasePrivacyView purchasePrivacyView;
         private final FireworksOverlay fireworksOverlay;
         private Runnable whenPurchased;
         private final TLRPC.InputPeer purposePeer;
@@ -2985,6 +2996,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 items.add(UItem.asFlicker(FlickerLoadingView.STAR_TIER));
                 items.add(UItem.asFlicker(FlickerLoadingView.STAR_TIER));
                 items.add(UItem.asFlicker(FlickerLoadingView.STAR_TIER));
+            }
+            if (canBuy) {
+                if (purchasePrivacyView == null) purchasePrivacyView = new StarsPurchasePrivacyView(getContext(), currentAccount, resourcesProvider);
+                items.add(1, UItem.asCustom(purchasePrivacyView));
             }
             items.add(UItem.asCustom(footerView));
         }

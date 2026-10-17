@@ -18,7 +18,9 @@ public final class StarsPrivacy {
     public static void setEnabled(int account, boolean enabled) {
         // Persist the boundary before publishing the new default. Unloaded history pages
         // must be protected too, not only the rows that happened to be on screen.
-        if (isEnabled(account) && !enabled) StarsPrivacyMockApi.sealPrivateActivity(account);
+        // Enabling also protects every past reaction, including posts not loaded here.
+        // Disabling seals contributions made while privacy was on; it never restores them.
+        if (enabled || isEnabled(account)) StarsPrivacyMockApi.sealPrivateActivity(account);
         MessagesController.getMainSettings(account).edit().putBoolean(KEY, enabled).apply();
         NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.starsPrivacyChanged);
     }

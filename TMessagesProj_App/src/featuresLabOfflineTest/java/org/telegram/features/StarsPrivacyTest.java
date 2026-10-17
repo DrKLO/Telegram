@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.ParcelFileDescriptor;
+import android.text.Spanned;
+import android.text.style.ClickableSpan;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -35,6 +37,7 @@ import org.telegram.ui.Stars.PaidReactionUndo;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stars.StarsPrivacy;
+import org.telegram.ui.Stars.StarsPurchasePrivacyView;
 import org.telegram.ui.Stars.StarsPrivacyMockApi;
 import org.telegram.ui.Stars.StarsHistoryPrivacy;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -160,7 +163,7 @@ public class StarsPrivacyTest {
         settle();
         clickTag("stars_privacy_settings");
         clickTag("stars_privacy_toggle");
-        instrumentation.runOnMainSync(() -> assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("New reactions are private. Past private activity stays private.")));
+        instrumentation.runOnMainSync(() -> assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("Existing and new reactions are hidden. Turning this off affects only new reactions.")));
         back();
         instrumentation.runOnMainSync(() -> {
             assertFalse(reaction().choosen);
@@ -171,6 +174,180 @@ public class StarsPrivacyTest {
         screenshot("stars-private-dark.png");
         clickTag("stars_privacy_settings");
         screenshot("stars-privacy-settings-dark.png");
+    }
+
+    @Test public void retroactiveReactionPrivacy() throws Exception {
+        launch("Blue");
+        final StarsReactionsSheet[] sheet = new StarsReactionsSheet[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            // Simulate an account which has not yet enabled retroactive protection.
+            instrumentation.getTargetContext().getSharedPreferences("stars_privacy_mock_0", 0).edit().clear().commit();
+            org.telegram.messenger.MessageObject post = messageCell().getMessageObject();
+            TLRPC.TL_messageReactor mine = new TLRPC.TL_messageReactor();
+            mine.my = true;
+            mine.count = 999;
+            mine.peer_id = new TLRPC.TL_peerUser();
+            mine.peer_id.user_id = 1234;
+            post.messageOwner.reactions.top_reactors.add(mine);
+            messageCell().forceResetMessageObject();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertTrue("An existing public reaction starts selected", reaction().choosen);
+            sheet[0] = preview().showReactionSheet();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(texts(sheet[0].getContainer()).toString().contains("999"));
+            StarsPrivacy.setEnabled(0, true);
+            assertEquals(View.GONE, find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class).getVisibility());
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertFalse("Close stale identity controls when privacy changes", sheet[0].isShowing());
+            assertFalse(reaction().choosen);
+            assertEquals("Public aggregate is unchanged", 125, messageCell().getMessageObject().messageOwner.reactions.results.get(0).count);
+            StarsPrivacy.setEnabled(0, false);
+            assertTrue("Unloaded posts are covered by the bulk mock", StarsPrivacyMockApi.isProtectedPost(0, -9990001, 9999));
+            assertFalse("Turning off cannot restore previous selected Stars", StarsPrivacy.showSelectedState(0,
+                messageCell().getMessageObject(), messageCell().getMessageObject().messageOwner.reactions.results.get(0)));
+            sheet[0] = preview().showReactionSheet();
+            sheet[0].updateSenders(0);
+            StarsReactionsSheet.TopSendersView top = find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class);
+            for (StarsReactionsSheet.TopSendersView.Sender sender : top.senders) assertFalse("Old leaderboard position remains hidden", sender.my);
+            assertFalse(texts(sheet[0].getContainer()).toString().contains("999"));
+        });
+        screenshot("stars-retroactive-hidden.png");
+        instrumentation.runOnMainSync(() -> {
+            sheet[0].dismiss();
+            StarsPrivacyMockApi.sendPublicReaction(0, -7770001, 101, 75);
+            assertTrue(StarsPrivacy.showSelectedState(0, messageCell().getMessageObject(),
+                messageCell().getMessageObject().messageOwner.reactions.results.get(0)));
+            sheet[0] = preview().showReactionSheet();
+            sheet[0].updateSenders(0);
+            StarsReactionsSheet.TopSendersView top = find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class);
+            boolean found = false;
+            for (StarsReactionsSheet.TopSendersView.Sender sender : top.senders) {
+                if (sender.my) { assertEquals("⭐\u00a075", sender.starsText.getText().toString()); found = true; }
+            }
+            assertTrue("Only new public contributions can rank", found);
+            StarsPrivacy.setEnabled(0, true);
+            assertEquals(0, StarsPrivacyMockApi.publicContribution(0, -7770001, 101));
+            StarsPrivacy.setEnabled(0, false);
+            assertFalse(StarsPrivacy.showSelectedState(0, messageCell().getMessageObject(),
+                messageCell().getMessageObject().messageOwner.reactions.results.get(0)));
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacyMockApi.setChannelPrivate(0, -7770001, true);
+            StarsPrivacyMockApi.sendChannelReaction(0, -7770001, 101, 25);
+            sheet[0] = preview().showReactionSheet();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            View percentile = sheet[0].getContainer().findViewWithTag("stars_donor_percentile");
+            assertEquals(View.VISIBLE, percentile.getVisibility());
+            StarsPrivacyMockApi.setShowsPercentile(0, -7770001, false);
+            assertEquals("An open sheet responds to the same event as expiry", View.GONE, percentile.getVisibility());
+            sheet[0].dismiss();
+        });
+    }
+
+    @Test public void liveRetroactivePrivacy() throws Exception {
+        launch("Blue");
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            instrumentation.getTargetContext().getSharedPreferences("stars_privacy_mock_0", 0).edit().clear().commit();
+            android.widget.FrameLayout host = new android.widget.FrameLayout(activity);
+            org.telegram.ui.Stories.LiveCommentsView live = new org.telegram.ui.Stories.LiveCommentsView(
+                activity, null, host, new View(activity), host) {
+                @Override protected boolean isMe(long id) { return id == 1234; }
+                @Override protected TLRPC.Peer getDefaultSendAs() {
+                    TLRPC.TL_peerUser peer = new TLRPC.TL_peerUser(); peer.user_id = 1234; return peer;
+                }
+            };
+            live.setup(-7770001, null);
+            host.addView(live, new android.widget.FrameLayout.LayoutParams(-1, 500));
+            activity.addContentView(host, new ViewGroup.LayoutParams(-1, -1));
+            TLRPC.TL_textWithEntities text = new TLRPC.TL_textWithEntities(); text.text = "";
+            live.push(1792227600, 201, false, 1234, text, 25, true);
+            live.push(1792227600, 202, false, 8880001, text, 10, true);
+            try {
+                java.lang.reflect.Field field = org.telegram.ui.Stories.LiveCommentsView.class.getDeclaredField("messages");
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked") ArrayList<org.telegram.ui.Stories.LiveCommentsView.Message> messages =
+                    (ArrayList<org.telegram.ui.Stories.LiveCommentsView.Message>) field.get(live);
+                StarsPrivacy.setEnabled(0, true);
+                StarsPrivacy.setEnabled(0, false);
+                assertFalse(live.didSendStars());
+                for (org.telegram.ui.Stories.LiveCommentsView.Message message : messages) {
+                    if (message.id == 201) assertEquals(UserObject.ANONYMOUS, message.dialogId);
+                    if (message.id == 202) assertEquals(8880001, message.dialogId);
+                }
+                live.push(1792227600, 203, false, 1234, text, 100, true);
+                for (org.telegram.ui.Stories.LiveCommentsView.Message message : messages) {
+                    if (message.id == 203) assertEquals("Unloaded live history stays anonymous", UserObject.ANONYMOUS, message.dialogId);
+                }
+                live.send(1234, text, 7);
+                assertEquals(7, live.getPublicStarsSincePrivacy());
+                assertTrue(live.didSendStars());
+                assertEquals(-7, StarsController.getInstance(0).transactions[StarsController.ALL_TRANSACTIONS].get(0).amount.amount);
+                StarsPrivacy.setEnabled(0, true);
+                StarsPrivacy.setEnabled(0, false);
+                assertEquals(0, live.getPublicStarsSincePrivacy());
+                assertFalse(live.didSendStars());
+                for (org.telegram.ui.Stories.LiveCommentsView.Message message : messages) assertNotEquals(1234, message.dialogId);
+                assertFalse(UserConfig.getInstance(0).isClientActivated());
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            } finally {
+                ((ViewGroup) host.getParent()).removeView(host);
+            }
+        });
+    }
+
+    @Test public void purchasePrivacyNotice() throws Exception {
+        launch("Blue");
+        final StarsIntroActivity.StarsOptionsSheet[] sheet = new StarsIntroActivity.StarsOptionsSheet[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            sheet[0] = preview().showPurchaseSheet();
+        });
+        settle();
+        screenshot("stars-purchase-privacy-light.png");
+        instrumentation.runOnMainSync(() -> {
+            StarsPurchasePrivacyView notice = find(sheet[0].getContainer(), StarsPurchasePrivacyView.class);
+            assertNotNull(notice);
+            assertTrue(notice.getText().toString().contains("Top Senders"));
+            Spanned text = (Spanned) notice.getText();
+            ClickableSpan[] links = text.getSpans(0, text.length(), ClickableSpan.class);
+            assertEquals(1, links.length);
+            links[0].onClick(notice);
+            assertTrue(StarsPrivacy.isEnabled(0));
+            assertTrue(notice.getText().toString().contains("is on"));
+            assertTrue(StarsPrivacyMockApi.isProtectedPost(0, -9990001, 9999));
+            assertFalse(UserConfig.getInstance(0).isClientActivated());
+        });
+        screenshot("stars-purchase-privacy-enabled.png");
+        instrumentation.runOnMainSync(() -> sheet[0].dismiss());
+        settle();
+        final StarsIntroActivity.StarsNeededSheet[] needed = new StarsIntroActivity.StarsNeededSheet[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            needed[0] = new StarsIntroActivity.StarsNeededSheet(activity, null, 5000,
+                StarsIntroActivity.StarsNeededSheet.TYPE_REACTIONS, "Design Notes", () -> fail("No purchase in this test"), 0);
+            needed[0].show();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertNotNull("Insufficient balance also shows the disclaimer", find(needed[0].getContainer(), StarsPurchasePrivacyView.class));
+            needed[0].dismiss();
+        });
+        launch("Dark Blue");
+        instrumentation.runOnMainSync(() -> { StarsPrivacy.setEnabled(0, false); sheet[0] = preview().showPurchaseSheet(); });
+        screenshot("stars-purchase-privacy-dark.png");
+        instrumentation.runOnMainSync(() -> sheet[0].dismiss());
     }
 
     @Test public void privateTransactionAmounts() throws Exception {
@@ -532,7 +709,7 @@ public class StarsPrivacyTest {
             assertTrue(tagged("stars_channel_percentile").isEnabled());
             assertTrue(StarsPrivacyMockApi.isChannelPrivate(0, -7770001));
             String visible = texts(activity.getWindow().getDecorView()).toString();
-            assertTrue(visible.contains("New reactions are private."));
+            assertTrue(visible.contains("Existing and new reactions are hidden."));
             assertFalse(visible.contains("Only new reactions can be public."));
             // Apply the same theme callbacks used by Telegram's animated theme transition.
             Theme.applyTheme(Theme.getTheme("Dark Blue"));
@@ -545,7 +722,7 @@ public class StarsPrivacyTest {
         });
         screenshot("stars-channel-dark-polished.png");
         back();
-        instrumentation.runOnMainSync(() -> assertFalse(texts(activity.getWindow().getDecorView()).toString().contains("New reactions are private.")));
+        instrumentation.runOnMainSync(() -> assertFalse(texts(activity.getWindow().getDecorView()).toString().contains("Existing and new reactions are hidden.")));
 
         LocaleController.LocaleInfo original = LocaleController.getInstance().getCurrentLocaleInfo();
         try {
@@ -654,8 +831,17 @@ public class StarsPrivacyTest {
         Thread.sleep(1500);
         clickTag("stars_history_privacy");
         Thread.sleep(2000);
-        clickTag("stars_history_privacy");
+        final StarsIntroActivity.StarsOptionsSheet[] purchase = new StarsIntroActivity.StarsOptionsSheet[1];
+        instrumentation.runOnMainSync(() -> purchase[0] = preview().showPurchaseSheet());
         Thread.sleep(3000);
+        instrumentation.runOnMainSync(() -> {
+            StarsPurchasePrivacyView notice = find(purchase[0].getContainer(), StarsPurchasePrivacyView.class);
+            Spanned text = (Spanned) notice.getText();
+            text.getSpans(0, text.length(), ClickableSpan.class)[0].onClick(notice);
+        });
+        Thread.sleep(2500);
+        instrumentation.runOnMainSync(() -> purchase[0].dismiss());
+        Thread.sleep(1500);
         clickTag("stars_privacy_settings");
         Thread.sleep(2500);
         back();
