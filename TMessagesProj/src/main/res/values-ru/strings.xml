@@ -270,7 +270,7 @@
     <string name="StarsPrivacyDescription">Скрывайте прежние и новые реакции со звёздами из рейтингов и убирайте выделение звёзд. В истории остаются только сумма, ID, дата и время. Анимации сохраняются. На отмену есть 20 секунд.</string>
     <string name="StarsPrivacyScope">Настройка действует на всех ваших устройствах. Отключение влияет только на новые реакции. Ранее скрытая активность остаётся приватной.</string>
     <string name="StarsPrivacyActive">Приватные реакции включены</string>
-    <string name="StarsPrivacyPending">Отправка звёзд анонимно</string>
+    <string name="StarsPrivacyPending">Анонимная отправка</string>
     <string name="StarsPendingTitle">Отправка звёзд</string>
     <string name="StarsPrivacyDemo">Предпросмотр конфиденциальности звёзд</string>
     <string name="StarsPrivacyDemoInfo">Без сети · примеры операций</string>

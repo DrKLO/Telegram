@@ -11542,7 +11542,7 @@
     <string name="StarsPrivacyDescription">Hide your existing and new Star reactions from leaderboards and remove selected Star highlights. History keeps only amounts, IDs, dates and times. Animations stay the same. You have 20 seconds to undo.</string>
     <string name="StarsPrivacyScope">This setting applies to all your devices. Turning it off affects only future reactions. Previously hidden activity stays private.</string>
     <string name="StarsPrivacyActive">Private reactions are on</string>
-    <string name="StarsPrivacyPending">Sending Stars anonymously</string>
+    <string name="StarsPrivacyPending">Sending private Stars</string>
     <string name="StarsPendingTitle">Sending Stars</string>
     <string name="StarsPrivacyDemo">Stars Privacy preview</string>
     <string name="StarsPrivacyDemoInfo">Offline preview · sample transactions</string>
