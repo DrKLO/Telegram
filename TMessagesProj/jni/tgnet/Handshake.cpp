@@ -363,29 +363,17 @@ void Handshake::processHandshakeResponse_resPQ(TLObject *message, int64_t messag
             }
         } else {
             if (serverPublicKeys.empty()) {
-                if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
-                    serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                                  "MIIBCgKCAQEA1QscIAguzScSCkHjpgMMotzc/EaeQwVrP9mTyY0RWzuWtDuq9pty\n"
-                                                  "fa3bE1lyC3KF/KbYKOqOfq/j1Ud/IjrK3I3ekbw/huC21Qu3wSsqoDlbR5UElzjM\n"
-                                                  "ar/6wuPKCifTz9TxbvHY+NfHJVE1vgsyKuLDoKtaa91a5sBARco8wFUOeaaR+aJo\n"
-                                                  "oU/Rja1j/++FVYPrySSJtazZ8MAGwlHLQahLEmu3A/rQaKQBfWXVtsLFZ6WppkVT\n"
-                                                  "v1FYqiLTD6oQBtrgxVqWZV3Bwr85vPxMGGLcWX8r6DEg3cE63VwDvcChgGBuXmfY\n"
-                                                  "129ANNY6jviId5+pgynVAvWz2huF1n5sAwIDAQAB\n"
-                                                  "-----END RSA PUBLIC KEY-----");
-                    serverPublicKeysFingerprints.push_back(0x141b81bb5557a33f);
-} else {
-    serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
-                                                  "MIIBCgKCAQEA1QscIAguzScSCkHjpgMMotzc/EaeQwVrP9mTyY0RWzuWtDuq9pty\n"
-                                                  "fa3bE1lyC3KF/KbYKOqOfq/j1Ud/IjrK3I3ekbw/huC21Qu3wSsqoDlbR5UElzjM\n"
-                                                  "ar/6wuPKCifTz9TxbvHY+NfHJVE1vgsyKuLDoKtaa91a5sBARco8wFUOeaaR+aJo\n"
-                                                  "oU/Rja1j/++FVYPrySSJtazZ8MAGwlHLQahLEmu3A/rQaKQBfWXVtsLFZ6WppkVT\n"
-                                                  "v1FYqiLTD6oQBtrgxVqWZV3Bwr85vPxMGGLcWX8r6DEg3cE63VwDvcChgGBuXmfY\n"
-                                                  "129ANNY6jviId5+pgynVAvWz2huF1n5sAwIDAQAB\n"
-                                                  "-----END RSA PUBLIC KEY-----");
-    serverPublicKeysFingerprints.push_back(0x141b81bb5557a33f);
-}
+                serverPublicKeys.emplace_back("-----BEGIN RSA PUBLIC KEY-----\n"
+                                              "MIIBCgKCAQEA8uNSvmaymat2WYz/rl+esFAo3SOveL7AjQ7XxYij1lzlFJex1cYC\n"
+                                              "/Ns9h+1cTRVcYfuJUavjxrHHjBi87BlmTEunrWAFewKu4seGAbts7UuK8tOJERsP\n"
+                                              "dWcRAdot6WuT49k63d6NObolB9DPcERZkPPgGvAcw4cxUKjtNObHdR9sGydtv4kX\n"
+                                              "OlTHQ+XGZt6aQItzjPwMvmNhIc10LLiKpK2EZDR0rKK0WgOBAq6ajqCO/oqSfyDi\n"
+                                              "RHKpH6eY8tvV7JbeXA9c6wwnqiKpD+VZk6SmVSPgEbLCIA/5yV89VIPHoh9+bBVG\n"
+                                              "MUMfp/XRkw7xHDUwU8t3+xrgm5FyD33yaQIDAQAB\n"
+                                              "-----END RSA PUBLIC KEY-----");
+                // SHA-1 fingerprint of the TL-serialized RSA modulus and exponent.
+                serverPublicKeysFingerprints.push_back(static_cast<int64_t>(0x9092a605d9189818ULL));
             }
-
             size_t count2 = serverPublicKeysFingerprints.size();
             for (uint32_t a = 0; a < count1; a++) {
                 for (uint32_t b = 0; b < count2; b++) {
