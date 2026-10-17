@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -22,6 +23,7 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RoundVideoRecorderSettings;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.utils.camera.roundvideo.RoundVideoSession;
 
@@ -38,11 +40,12 @@ public class RoundVideoSettingsActivity extends BaseFragment {
     private static final int ROW_CAMERA_RESOLUTION = 3;
     private static final int ROW_FRAME_RATE = 4;
     private static final int ROW_BITRATE = 5;
-    private static final int ROW_GENERAL_INFO = 6;
-    private static final int ROW_COMPOSITION_HEADER = 7;
-    private static final int ROW_COMPOSITION = 8;
-    private static final int ROW_COMPOSITION_INFO = 9;
-    private static final int ROW_COUNT = BuildConfig.DEBUG_PRIVATE_VERSION ? 10 : 7;
+    private static final int ROW_CUSTOM_OPTIONS = 6;
+    private static final int ROW_GENERAL_INFO = 7;
+    private static final int ROW_COMPOSITION_HEADER = 8;
+    private static final int ROW_COMPOSITION = 9;
+    private static final int ROW_COMPOSITION_INFO = 10;
+    private static final int ROW_COUNT = BuildConfig.DEBUG_PRIVATE_VERSION ? 11 : 8;
 
     private static final int[] BITRATES = {
             750_000,
@@ -56,6 +59,8 @@ public class RoundVideoSettingsActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
+        boolean custom = RoundVideoRecorderSettings.useCustomRecorder(context);
+        SharedSettings.roundVideoCamera2Enabled.set(!custom);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString(R.string.RoundVideoSettings));
@@ -88,11 +93,25 @@ public class RoundVideoSettingsActivity extends BaseFragment {
 
     private void onRowClicked(int position) {
         if (position == ROW_ENABLED) {
-            SharedSettings.roundVideoCamera2Enabled.set(!SharedSettings.roundVideoCamera2Enabled.get());
-            adapter.notifyDataSetChanged();
+            showChoice(R.string.RoundVideoGeneral,
+                    Build.VERSION.SDK_INT >= 28
+                            ? new CharSequence[]{"Camera2 · встроенный Telegram", "CustomRecorder · моя библиотека"}
+                            : new CharSequence[]{"Camera2 · встроенный Telegram"},
+                    index -> {
+                        boolean custom = index == 1;
+                        RoundVideoRecorderSettings.setCustomRecorder(getParentActivity(), custom);
+                        SharedSettings.roundVideoCamera2Enabled.set(!custom);
+                    });
             return;
         }
-        if (!SharedSettings.roundVideoCamera2Enabled.get()) {
+        if (position == ROW_CUSTOM_OPTIONS) {
+            if (RoundVideoRecorderSettings.useCustomRecorder(getParentActivity())) {
+                RoundVideoRecorderSettings.showDialog(getParentActivity());
+            }
+            return;
+        }
+        if (RoundVideoRecorderSettings.useCustomRecorder(getParentActivity())
+                || !SharedSettings.roundVideoCamera2Enabled.get()) {
             return;
         }
         if (position == ROW_OUTPUT_RESOLUTION) {
@@ -190,7 +209,11 @@ public class RoundVideoSettingsActivity extends BaseFragment {
             if (position == ROW_ENABLED) {
                 return true;
             }
-            if (!SharedSettings.roundVideoCamera2Enabled.get()) {
+            if (position == ROW_CUSTOM_OPTIONS) {
+                return RoundVideoRecorderSettings.useCustomRecorder(context);
+            }
+            if (RoundVideoRecorderSettings.useCustomRecorder(context)
+                    || !SharedSettings.roundVideoCamera2Enabled.get()) {
                 return false;
             }
             return position == ROW_OUTPUT_RESOLUTION
@@ -224,7 +247,8 @@ public class RoundVideoSettingsActivity extends BaseFragment {
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-            boolean enabled = SharedSettings.roundVideoCamera2Enabled.get();
+            boolean custom = RoundVideoRecorderSettings.useCustomRecorder(context);
+            boolean enabled = !custom && SharedSettings.roundVideoCamera2Enabled.get();
             if (holder.getItemViewType() == TYPE_HEADER) {
                 HeaderCell cell = (HeaderCell) holder.itemView;
                 cell.setText(position == ROW_GENERAL_HEADER
@@ -232,24 +256,20 @@ public class RoundVideoSettingsActivity extends BaseFragment {
                         : LocaleController.getString(R.string.RoundVideoComposition));
             } else if (holder.getItemViewType() == TYPE_CHECK) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
-                cell.setEnabled(position == ROW_ENABLED || enabled);
-                if (position == ROW_ENABLED) {
-                    cell.setTextAndCheck(
-                            LocaleController.getString(R.string.RoundVideoUseNewRecorder),
-                            enabled,
-                            false
-                    );
-                } else {
-                    cell.setTextAndCheck(
-                            LocaleController.getString(R.string.RoundVideoCompositionEnabled),
-                            SharedSettings.roundVideoComposition.get(),
-                            false
-                    );
-                }
+                cell.setEnabled(enabled);
+                cell.setTextAndCheck(
+                        LocaleController.getString(R.string.RoundVideoCompositionEnabled),
+                        SharedSettings.roundVideoComposition.get(),
+                        false
+                );
             } else if (holder.getItemViewType() == TYPE_VALUE) {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                cell.setEnabled(enabled);
-                if (position == ROW_OUTPUT_RESOLUTION) {
+                cell.setEnabled(position == ROW_ENABLED || (position == ROW_CUSTOM_OPTIONS ? custom : enabled));
+                if (position == ROW_ENABLED) {
+                    cell.setTextAndValue("Рекордер видеосообщений", custom ? "CustomRecorder" : "Camera2 (Telegram)", true);
+                } else if (position == ROW_CUSTOM_OPTIONS) {
+                    cell.setTextAndValue("Настройки CustomRecorder", RoundVideoRecorderSettings.summary(context), false);
+                } else if (position == ROW_OUTPUT_RESOLUTION) {
                     cell.setTextAndValue(
                             LocaleController.getString(R.string.RoundVideoOutputResolution),
                             SharedSettings.roundVideoOutputResolution.get().getSize() + "p",
@@ -277,7 +297,9 @@ public class RoundVideoSettingsActivity extends BaseFragment {
             } else {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                 cell.setText(position == ROW_GENERAL_INFO
-                        ? LocaleController.getString(R.string.RoundVideoGeneralInfo)
+                        ? (custom
+                            ? "CustomRecorder работает на Android 9+. В автоматическом режиме параметры качества выбираются библиотекой."
+                            : LocaleController.getString(R.string.RoundVideoGeneralInfo))
                         : LocaleController.getString(R.string.RoundVideoCompositionInfo));
             }
         }
@@ -287,8 +309,7 @@ public class RoundVideoSettingsActivity extends BaseFragment {
             if (position == ROW_GENERAL_HEADER || position == ROW_COMPOSITION_HEADER) {
                 return TYPE_HEADER;
             }
-            if (position == ROW_ENABLED
-                    || position == ROW_COMPOSITION) {
+            if (position == ROW_COMPOSITION) {
                 return TYPE_CHECK;
             }
             if (position == ROW_GENERAL_INFO || position == ROW_COMPOSITION_INFO) {

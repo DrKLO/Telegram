@@ -12156,6 +12156,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         fillVideoAttribute(videoPath, attributeVideo, null);
                     }
+                    android.util.Log.i("RoundVideoAAR", "document attribute: round="
+                            + attributeVideo.round_message + " size=" + attributeVideo.w + "x"
+                            + attributeVideo.h + " isRound=" + isRound);
                 } else if (document.thumbs.isEmpty()) {
                     if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
                         thumb = videoEditedInfo.thumb;

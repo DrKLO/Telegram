@@ -85,7 +85,7 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
         // Use explicit constructor parameters, matching the actual 0.0.2 AAR API.
         recorder = new VideoMessageRecorder(
                 applicationContext,
-                RecordingMode.Auto.INSTANCE,
+                RoundVideoRecorderSettings.recordingMode(applicationContext),
                 DiagnosticsMode.Disabled,
                 state -> {
                     main.post(() -> onRecorderState(state));

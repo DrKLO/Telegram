@@ -727,7 +727,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void showCamera(boolean fromPaused) {
-        if (android.os.Build.VERSION.SDK_INT >= 28) {
+        if (RoundVideoRecorderSettings.useCustomRecorder(getContext())) {
             showAarCamera(fromPaused);
             return;
         }
@@ -1353,6 +1353,23 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 recordedTime = durationMs;
                 size = output.length();
                 videoEditedInfo = createAarVideoInfo(output, durationMs);
+                android.util.Log.i("RoundVideoAAR", "finalized mp4=" + output.getName()
+                        + " bytes=" + output.length() + " size="
+                        + videoEditedInfo.resultWidth + "x" + videoEditedInfo.resultHeight
+                        + " round=" + videoEditedInfo.roundVideo);
+                if (videoEditedInfo.resultWidth > 1280 || videoEditedInfo.resultHeight > 1280) {
+                    android.util.Log.e("RoundVideoAAR", "Video note exceeds Telegram's 1280px round-video limit");
+                    aarRecordedFile = null;
+                    videoEditedInfo = null;
+                    output.delete();
+                    AutoDeleteMediaTask.unlockFile(output);
+                    android.widget.Toast.makeText(getContext(),
+                            "Кружок больше 1280 пикселей. Уменьшите разрешение в настройках CustomRecorder.",
+                            android.widget.Toast.LENGTH_LONG).show();
+                    MediaController.getInstance().requestRecordAudioFocus(false);
+                    startAnimation(false, false);
+                    return;
+                }
                 if (aarStopState == 3) {
                     // Telegram UI switches from recording to the ready-to-send preview state.
                     NotificationCenter.getInstance(currentAccount).postNotificationName(
@@ -1408,6 +1425,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 0, 0, 0, ready.getAbsolutePath(), 0, true, 0, 0, 0);
         entry.ttl = aarTtl;
         entry.effectId = aarEffectId;
+        // Telegram's send pipeline uses VideoEditedInfo.roundVideo to set
+        // TL_documentAttributeVideo.round_message. A square MP4 alone isn't enough.
+        videoEditedInfo.roundVideo = true;
+        android.util.Log.i("RoundVideoAAR", "delegate.sendMedia: round="
+                + videoEditedInfo.roundVideo + " w=" + videoEditedInfo.resultWidth
+                + " h=" + videoEditedInfo.resultHeight + " file=" + ready.getName());
         delegate.sendMedia(entry, videoEditedInfo, aarNotify,
                 aarScheduleDate, aarScheduleRepeatPeriod, false, aarStars);
         videoEditedInfo = null;
