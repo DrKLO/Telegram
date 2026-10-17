@@ -11539,8 +11539,8 @@
     <!-- Personal Stars privacy -->
     <string name="StarsPrivacyTitle">Stars Privacy</string>
     <string name="StarsPrivacySwitch">Private Star Reactions</string>
-    <string name="StarsPrivacyDescription">Send Star reactions anonymously, without Top Senders or selected Star highlights. Keep only transaction IDs, dates and times. Star animations stay the same.</string>
-    <string name="StarsPrivacyScope">Turning this off affects new reactions only. Past private reactions and hidden transaction details stay private in this app. You have 20 seconds to undo a new reaction. Records on Telegram and other devices remain unchanged.</string>
+    <string name="StarsPrivacyDescription">Send anonymously, without Top Senders or selected Star highlights. History keeps only IDs, dates and times. Animations stay the same. You have 20 seconds to undo.</string>
+    <string name="StarsPrivacyScope">Turning this off affects new reactions only. Past private activity stays hidden in this app. Records on Telegram and other devices are unchanged.</string>
     <string name="StarsPrivacyActive">Private reactions are on</string>
     <string name="StarsPrivacyPending">Sending Stars anonymously</string>
     <string name="StarsPendingTitle">Sending Stars</string>
@@ -11553,16 +11553,16 @@
     <string name="StarsPrivacyPreviewLabel">Preview</string>
     <string name="StarsChannelPrivacy">Star reaction privacy</string>
     <string name="StarsChannelPrivate">Require anonymous reactions</string>
-    <string name="StarsChannelPrivateInfo">Hide donor names and leaderboards. Receipts keep only their ID and date. Personal reaction highlights disappear after 5 minutes; Private Star Reactions hides them immediately. Animations and the total Star count stay the same.</string>
-    <string name="StarsChannelPercentile">Show a private donor percentile</string>
-    <string name="StarsChannelPercentileInfo">After reacting, donors can see a rounded percentile, such as Top 10%, for 5 minutes. It is visible only to them, with no names or individual amounts. Groups smaller than 10 donors have no percentile.</string>
-    <string name="StarsChannelMockInfo">Preview: channel rules and percentiles are simulated on this device. Reactions in this mode use sample receipts and do not spend Stars.</string>
+    <string name="StarsChannelPrivateInfo">Hide donor names and leaderboards. Receipts keep only IDs, dates and times. Selected Star highlights clear after 5 minutes, or stay hidden with personal privacy on. Animations and total counts stay the same.</string>
+    <string name="StarsChannelPercentile">Show donor percentile</string>
+    <string name="StarsChannelPercentileInfo">Donors can see their rounded percentile, such as Top 10%, for 5 minutes. Only they can see it. Hidden with personal privacy on or fewer than 10 donors.</string>
+    <string name="StarsChannelMockInfo">Preview: channel rules are simulated on this device. No Stars are spent.</string>
     <string name="StarsChannelPending">Anonymous channel reaction · Preview</string>
     <string name="StarsChannelTopPercent">Top %1$d%% · Only you</string>
     <string name="StarsHistoryAnonymise">Anonymise transaction history</string>
     <string name="StarsReceiptAnonymise">Anonymise this transaction</string>
     <string name="StarsAnonymise">Anonymise</string>
-    <string name="StarsHistoryAnonymiseInfo">Keep only transaction IDs, dates and times. This action cannot be undone in the preview, even if you turn off Private Star Reactions. Long-press a transaction to anonymise just that record.</string>
+    <string name="StarsHistoryAnonymiseInfo">Permanently hide transaction details in this preview. Keep only IDs, dates and times. Long-press a transaction to anonymise just that record.</string>
     <string name="StarsHistoryAnonymiseConfirm">Keep only transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Existing records on Telegram and other devices remain unchanged.</string>
     <string name="StarsPrivacyDemoHint">Tap the Star to try a reaction. Hold it to open the reaction sheet.</string>
     <string name="StarsPrivacyMockReactionInfo">Preview reaction. No Stars will be spent.</string>
@@ -11570,4 +11570,8 @@
     <string name="StarsPrivacyDisabledNotice">Only new reactions can be public. Past private activity stays private.</string>
     <string name="StarsHistoryAnonymisedNotice">History anonymised in this preview.</string>
     <string name="StarsReactionPreviewPending">Star reaction · Preview</string>
+    <string name="StarsPrivacyReactionsHeader">Star Reactions</string>
+    <string name="StarsPrivacyHistoryHeader">Transaction History</string>
+    <string name="StarsPrivacyChannelHeader">Channel Privacy</string>
+    <string name="StarsHistoryAnonymiseAction">Anonymise history</string>
 </resources>

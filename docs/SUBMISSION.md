@@ -1,69 +1,138 @@
-# Designers × AI submission checklist
+# Private Star Reactions — submission handoff
 
-The [official announcement](https://t.me/designers/266) asks for **working,
-ready-to-implement code plus a video of the feature in action**, submitted by messaging
-`@designers`. The linked post does not announce a deadline or prize fund. Recheck
-that post and any newer instructions when the feature is ready.
+A Telegram Android concept for supporting channels with less public and local
+exposure. Personal privacy is on by default, including for Russian-language users.
+The key rule is simple: **opting out affects future contributions only; past private
+activity stays hidden in this app.**
 
-## Feature under review: Private Star Reactions
+The [Designers × AI announcement](https://t.me/designers/266), checked on
+17 October 2026, asks for working code and a video of the implemented feature,
+submitted by messaging `@designers`. That post specifies no deadline or prize fund.
+This repository prepares the handoff; nothing is sent to the organizers automatically.
 
-[Feature behaviour, API proposal and validation](STARS_PRIVACY.md).
-Source branch: `feature/stars-privacy`; setup remains in the earlier `setup/offline`
-and `setup/android` commits. The prototype uses Telegram's native Android controls.
-Personal anonymous paid post reactions use the existing API in a credentialed build.
-Channel enforcement, permanent history redaction, percentiles and anonymous live
-reactions use a local mock. Separating a new public contribution from past private
-Stars on the same post is also mocked; old receipt details and highlights stay hidden
-after switching privacy off. Native toggle bulletins explain this. No account or real
-payment is involved in the demo.
+## What to review
 
-Do not call this full payment anonymity or secure deletion: existing Telegram servers,
-other clients, payment providers and recipient records have not changed. Include the
-server work described in STARS_PRIVACY.md with any submission.
+- **Personal privacy:** Settings → Privacy and Security → Stars Privacy. Anonymous
+  post reactions, no named rankings or selected Star highlights, and receipts with
+  only ID and date/time. A brief native notice explains the effect of either toggle.
+- **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
+  animated counts and a real **20-second pre-send Undo**.
+- **Channel controls:** Channel settings → Reactions → Star reaction privacy.
+  Anonymous-only policy, five-minute selected-state expiry, optional donor-only
+  rounded percentiles and minimal receipts. Personal privacy takes precedence.
+- **History:** Long-press a transaction to anonymise it, or anonymise existing history
+  from Stars Privacy. Native confirmations; no restore action in the mock.
+- **Live Stars:** A usable native live-reaction flow, with a local anonymous send and
+  the same Undo interval.
 
-## Establish the offline environment
+The code is a working **client prototype**. The video uses an offline Android emulator
+and fixture data, without a Telegram account, phone number or real payments.
 
-The default development path is now the [offline emulator](OFFLINE.md). Its sample
-data demonstrates the implemented feature without proving live messaging or server
-enforcement. A submission video must show the implemented feature;
-identify any simulated data and untested server behavior clearly.
+## Existing API and required server work
 
-- [x] Offline build installs and launches in the ARM64 emulator without credentials.
-- [x] Telegram's preview components render in light/dark themes.
-- [x] Theme selection survives a process restart and incremental reinstall works.
-- [x] A screen recording exports to a decodable MP4.
+Ordinary anonymous post reactions use Telegram's existing API in the credentialed
+client. Anonymous leaderboard identity alone is not full payment anonymity.
 
-## Validate live integration when the feature needs it
+Channel enforcement, anonymous live reactions, permanent history redaction,
+percentiles and separate future public contributions on a previously private post
+are **local API mocks**. They spend no Stars and are marked Preview. Telegram's
+servers, recipient ledgers, payment providers, other clients and backups are unchanged.
+Local hidden presentation is not secure deletion. Clearing app data or using another
+client can reveal real server records again.
 
-- [ ] Android Studio sync and Java/native compilation succeed.
-- [ ] Features Lab installs alongside official Telegram.
-- [ ] A separate test account logs in with locally configured API credentials.
-- [ ] Saved Messages and light/dark themes work; the session survives restart.
-- [ ] An incremental update installs without clearing the account.
-- [ ] A phone recording exports to a playable MP4.
+[STARS_PRIVACY.md](STARS_PRIVACY.md) specifies the behavior, privacy precedence,
+implementation boundary, limitations and proposed server capabilities. These details
+must accompany the source and video. Do not describe this prototype as guaranteeing
+protection from device seizure, arrest or server disclosure.
 
-## Develop the feature
+## Reproduce and inspect the code
 
-- [x] Explain the user problem, entry point, and expected behavior.
-- [x] Implement native personal/admin/history/live flows and isolate missing API behaviour in a mock.
-- [ ] Check light/dark themes, relevant loading/empty/error states, navigation,
-      keyboard behavior, and real phone performance.
-- [ ] Record the tested phone/Android version and known limitations.
-- [ ] If the feature needs push notifications, maps, or another service, configure
-      and test that service before claiming the feature works end to end.
+Repository: [yes-i-like-pina-coladas/Telegram](https://github.com/yes-i-like-pina-coladas/Telegram/tree/feature/stars-privacy).
+Branch: `feature/stars-privacy`. Telegram baseline: **13.0.2 (7175)** at
+`f32ffeec763f0bdbf4bec25b52d654f77bff733d`.
 
-## Prepare the review package
+Setup ends at `d1a1265` (`setup/offline`); subsequent commits implement and polish
+this feature. Review only the feature with:
 
-- [x] Publish `feature/stars-privacy` to the public fork. Use `git rev-parse HEAD` to pin the submitted revision.
-- [x] Provide reproducible setup/build instructions and a concise explanation of
-      the change, with the feature diff separated from development setup.
-- [x] Provide a short MP4 showing the actual implemented behavior using staged data: local `artifacts/stars-privacy-demo.mp4`.
-- [ ] Inspect recordings, screenshots, logs, patches, and archives for personal data.
-- [ ] Exclude `local.properties`, debug/release signing keys, account/session files,
-      caches, build directories, and compile-check APKs from source archives.
-- [ ] Preserve licensing and clearly identify the build as unofficial. Check the
-      upstream README's distribution requirements before distributing any APK.
+```sh
+git diff d1a1265..HEAD -- TMessagesProj TMessagesProj_App
+```
 
-Publishing source in the fork does not send anything to Telegram. Send the final
-source link and reviewed video to `@designers` only when you explicitly choose to
-submit; this setup does not create a submission or contact the organizers.
+Follow [DEVELOPMENT.md](DEVELOPMENT.md) for a recursive shallow clone, Java 17,
+SDK 36, NDK 27.2.12479018, CMake 3.22.1 and Gradle 8.13. Follow
+[OFFLINE.md](OFFLINE.md) for the ARM64 emulator. Then:
+
+```sh
+./dev demo
+```
+
+Choose **Open Stars Privacy preview**. Try settings, tap or hold the sample post's
+Star, open a receipt, and use the live-reaction and channel-settings rows. Personal
+settings and channel controls use the same production classes as the full client.
+The offline package has no Internet permission or active account.
+
+## Verification
+
+```sh
+python3 -m unittest discover -s tests
+./dev privacy-test
+./dev smoke-test
+./dev compile-check
+```
+
+Test environment: Apple Silicon M3 / 16 GB RAM; Android 16 (API 36) AOSP emulator,
+ARM64, 720 × 1440 at 320 dpi. The native privacy suite covers eight scenarios,
+including private-history persistence, separate future public contributions, actual
+20-second waits, late Undo, live sends, channel precedence, irreversible history,
+rapid toggle reversals, theme updates, Russian label fit and switch accessibility.
+Screenshots and raw logs stay in ignored `artifacts/`.
+
+Live payments, real account login, cross-device behavior, server enforcement,
+physical-device performance and a five-minute real-time expiry recording remain
+unverified. They are outside the account-free demonstration. Firebase notifications
+remain deferred. These are known limitations, not acceptance checks silently marked
+as passed.
+
+## Record and assemble the handoff
+
+Install FFmpeg (`brew install ffmpeg`) for recording. Commit the reviewed source and
+documentation, then run on the existing emulator:
+
+```sh
+python3 Tools/record_stars_demo.py
+python3 Tools/prepare_stars_submission.py
+```
+
+The recorder rebuilds/installs the offline app and instrumentation APK, then runs the
+native `demoWalkthrough` scenario. It captures actual screen output and leaves the
+20-second waits intact. It records no microphone audio and does not synthesize motion.
+The walkthrough resets only the offline app's mock privacy fixtures and finishes in
+dark mode; it never touches a real account. Review the MP4 before sharing.
+
+The packaging command requires a clean committed checkout and a passing recording
+from that exact revision. It creates `artifacts/submission-<revision>/` and a ZIP with:
+
+- `MESSAGE.txt`: a concise draft message with immutable source and feature-diff links.
+- `stars-privacy-demo.mp4`: the reviewed native flow, with sample-data disclosure.
+- `recording.json`: revision, video SHA-256, duration, Android version and ABI.
+- This checklist, feature/API specification, build and offline guides, and GPL license.
+- `feature.patch`: feature changes against the published offline setup baseline.
+- Selected light/dark, Russian, reaction, receipt and channel screenshots.
+- `REVIEW.txt` and `SHA256SUMS` for inspecting the package.
+
+Only explicitly named assets and committed documents enter the package. It excludes
+APKs, debug/release keys, `local.properties`, account/session files, build outputs,
+caches and raw logs. The patch is for review on the setup baseline; the pinned public
+repository with its submodules is the complete reproducible source.
+
+## Before sending
+
+- [ ] Open the newly generated MP4 and inspect it from start to finish.
+- [ ] Confirm that its sample-data/Preview captions and API limitations are clear.
+- [ ] Inspect `MESSAGE.txt`, selected screenshots and the package contents.
+- [ ] Verify the pinned revision is present in the public fork and the checksums match.
+- [ ] Send the draft message, source link and MP4 to `@designers` when ready.
+
+Features Lab is an unofficial GPL-licensed development fork with a distinct name,
+package and icon. This handoff contains source and a demonstration, not a public APK
+release. No submission, organizer message or release is sent by these tools.

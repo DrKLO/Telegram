@@ -26,6 +26,7 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Stars.PaidReactionUndo;
 import org.telegram.ui.Stars.StarsIntroActivity;
@@ -178,6 +179,10 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         row.setBackground(Theme.getSelectorDrawable(true));
         row.setOnClickListener(v -> StarsIntroActivity.showTransactionSheet(getContext(), false, 0, currentAccount, transaction, getResourceProvider()));
         history.addView(row, LayoutHelper.createLinear(-1, -2));
+        if (history.isAttachedToWindow()) {
+            row.setAlpha(0f);
+            row.animate().alpha(1f).setDuration(220).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+        }
     }
 
     public StarsReactionsSheet showReactionSheet() {
@@ -291,11 +296,15 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
 
     private void refresh() {
         if (privacyCell == null) return;
-        privacyCell.setTextAndValue(LocaleController.getString(R.string.StarsPrivacySwitch), LocaleController.getString(StarsPrivacy.isEnabled(currentAccount) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), false);
+        privacyCell.setTextAndValue(LocaleController.getString(R.string.StarsPrivacySwitch), LocaleController.getString(StarsPrivacy.isEnabled(currentAccount) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), true);
         channelCell.setTextAndValue(LocaleController.getString(R.string.StarsChannelPrivacy), LocaleController.getString(StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), false);
         int bucket = StarsPrivacy.isEnabled(currentAccount) ? 0 : StarsPrivacyMockApi.donorPercentile(currentAccount, -CHANNEL, post.getId());
+        boolean revealPercentile = bucket > 0 && percentileCell.getVisibility() != View.VISIBLE;
+        percentileCell.animate().cancel();
         percentileCell.setVisibility(bucket == 0 ? View.GONE : View.VISIBLE);
+        percentileCell.setAlpha(revealPercentile ? 0f : 1f);
         if (bucket > 0) percentileCell.setText(LocaleController.formatString(R.string.StarsChannelTopPercent, bucket));
+        if (revealPercentile) percentileCell.animate().alpha(1f).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
         messageCell.forceResetMessageObject();
     }
 

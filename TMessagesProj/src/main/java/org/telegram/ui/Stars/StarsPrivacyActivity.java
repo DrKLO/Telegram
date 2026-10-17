@@ -2,79 +2,44 @@ package org.telegram.ui.Stars;
 
 import android.content.Context;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.FrameLayout;
-import android.widget.ScrollView;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.BulletinFactory;
 
-/** Uses the same settings cells, colours and switch as Privacy and Security. */
-public class StarsPrivacyActivity extends BaseFragment {
+/** Personal defaults and irreversible history actions, using Telegram settings cells. */
+public class StarsPrivacyActivity extends StarsPrivacySettingsActivity {
     public StarsPrivacyActivity(int account) {
         currentAccount = account;
     }
 
-    @Override
-    public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString(R.string.StarsPrivacyTitle));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override public void onItemClick(int id) { if (id == -1) finishFragment(); }
-        });
-        FrameLayout root = new FrameLayout(context);
-        ScrollView scroll = new ScrollView(context);
-        root.addView(scroll, LayoutHelper.createFrame(-1, -1));
-        scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        LinearLayout content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(content);
-
-        HeaderCell header = new HeaderCell(context);
-        header.setText(LocaleController.getString(R.string.StarsPrivacyTitle));
-        header.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        content.addView(header, LayoutHelper.createLinear(-1, -2));
-        TextCheckCell toggle = new TextCheckCell(context);
-        toggle.setTag("stars_privacy_toggle");
-        toggle.setBackground(Theme.getSelectorDrawable(true));
-        toggle.setTextAndCheck(LocaleController.getString(R.string.StarsPrivacySwitch), StarsPrivacy.isEnabled(currentAccount), false);
+    @Override public View createView(Context context) {
+        createSettingsView(context, R.string.StarsPrivacyTitle, false);
+        addHeader(R.string.StarsPrivacyReactionsHeader);
+        TextCheckCell toggle = addToggle("stars_privacy_toggle", R.string.StarsPrivacySwitch,
+            StarsPrivacy.isEnabled(currentAccount));
         toggle.setOnClickListener(v -> {
             boolean enabled = !StarsPrivacy.isEnabled(currentAccount);
             StarsPrivacy.setEnabled(currentAccount, enabled);
             toggle.setChecked(enabled);
-            BulletinFactory.of(root, getResourceProvider()).createSimpleBulletin(
-                R.raw.passcode_lock_close,
-                LocaleController.getString(enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice),
-                3, 5000).show();
+            showFeedback(R.raw.passcode_lock_close,
+                enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice);
         });
-        content.addView(toggle, LayoutHelper.createLinear(-1, -2));
-        info(context, content, R.string.StarsPrivacyDescription);
-        info(context, content, R.string.StarsPrivacyScope);
-        TextSettingsCell history = new TextSettingsCell(context);
-        history.setTag("stars_history_anonymise");
-        history.setBackground(Theme.getSelectorDrawable(true));
-        history.setTextAndValue(LocaleController.getString(R.string.StarsHistoryAnonymise), LocaleController.getString(R.string.StarsPrivacyPreviewLabel), false);
-        history.setOnClickListener(v -> StarsHistoryPrivacy.confirm(context, currentAccount, null, getResourceProvider(), () ->
-            BulletinFactory.of(root, getResourceProvider()).createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.StarsHistoryAnonymisedNotice), 3).show()));
-        content.addView(history, LayoutHelper.createLinear(-1, -2));
-        info(context, content, R.string.StarsHistoryAnonymiseInfo);
-        fragmentView = root;
-        return fragmentView;
-    }
+        addInfo(LocaleController.getString(R.string.StarsPrivacyDescription) + "\n\n"
+            + LocaleController.getString(R.string.StarsPrivacyScope));
 
-    private void info(Context context, LinearLayout content, int text) {
-        TextInfoPrivacyCell cell = new TextInfoPrivacyCell(context);
-        cell.setText(LocaleController.getString(text));
-        content.addView(cell, LayoutHelper.createLinear(-1, -2));
+        addHeader(R.string.StarsPrivacyHistoryHeader);
+        TextSettingsCell history = new TextSettingsCell(context, getResourceProvider());
+        history.setTag("stars_history_anonymise");
+        history.setTextAndValue(LocaleController.getString(R.string.StarsHistoryAnonymiseAction),
+            LocaleController.getString(R.string.StarsPrivacyPreviewLabel), false);
+        history.setOnClickListener(v -> setVisibleDialog(StarsHistoryPrivacy.confirm(context, currentAccount, null,
+            getResourceProvider(), () -> showFeedback(R.raw.contact_check, R.string.StarsHistoryAnonymisedNotice))));
+        content.addView(history, LayoutHelper.createLinear(-1, -2));
+        addInfo(LocaleController.getString(R.string.StarsHistoryAnonymiseInfo));
+        updateColors();
+        return fragmentView;
     }
 }

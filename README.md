@@ -24,6 +24,8 @@ native 20-second Undo, channel-admin controls, minimal receipts, irreversible
 history anonymisation and live Stars. Missing Telegram server capabilities are
 usable local mocks, marked Preview; no Stars are spent in the offline app.
 Run `./dev privacy-test` for the native feature checks.
+For a reproducible native walkthrough and a revision-pinned review package, see the
+[submission handoff](docs/SUBMISSION.md#record-and-assemble-the-handoff).
 The offline playground uses `org.telegram.features.offline.beta` and has no internet
 permission. Gradle and Android Studio default to this offline configuration.
 

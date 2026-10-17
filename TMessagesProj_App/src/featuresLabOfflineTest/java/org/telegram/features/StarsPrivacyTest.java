@@ -23,6 +23,9 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.Bulletin;
@@ -80,6 +83,8 @@ public class StarsPrivacyTest {
         instrumentation.runOnMainSync(() -> {
             assertNull(find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class));
             assertEquals(UserObject.ANONYMOUS, sheet[0].peer);
+            assertTrue(texts(sheet[0].getContainer()).toString().contains("Preview reaction. No Stars will be spent."));
+            assertFalse(texts(sheet[0].getContainer()).toString().contains("Terms of Service"));
         });
         screenshot("stars-private-reaction-sheet.png");
         instrumentation.runOnMainSync(() -> sheet[0].dismiss());
@@ -453,6 +458,79 @@ public class StarsPrivacyTest {
     }
 
     /** Reproducible staged walkthrough for a recording; not part of the verification suite. */
+    @Test public void nativeSettingsPolish() throws Exception {
+        launch("Blue");
+        clickTag("stars_channel_settings");
+        instrumentation.runOnMainSync(() -> {
+            View percentile = tagged("stars_channel_percentile");
+            assertFalse(percentile.isEnabled());
+            boolean before = StarsPrivacyMockApi.showsPercentile(0, -7770001);
+            percentile.performClick();
+            assertEquals(before, StarsPrivacyMockApi.showsPercentile(0, -7770001));
+            // Reverse while the native 200ms enabled-state animation is still running.
+            tagged("stars_channel_private").performClick();
+            tagged("stars_channel_private").performClick();
+            tagged("stars_channel_private").performClick();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(tagged("stars_channel_percentile").isEnabled());
+            assertTrue(StarsPrivacyMockApi.isChannelPrivate(0, -7770001));
+            String visible = texts(activity.getWindow().getDecorView()).toString();
+            assertTrue(visible.contains("New reactions are private."));
+            assertFalse(visible.contains("Only new reactions can be public."));
+            // Apply the same theme callbacks used by Telegram's animated theme transition.
+            Theme.applyTheme(Theme.getTheme("Dark Blue"));
+            BaseFragment fragment = find(activity.getWindow().getDecorView(), ActionBarLayout.class).getLastFragment();
+            for (ThemeDescription description : fragment.getThemeDescriptions()) {
+                description.setColor(Theme.getColor(description.getCurrentKey()), false, false);
+            }
+            assertEquals(Theme.getColor(Theme.key_windowBackgroundGray),
+                ((android.graphics.drawable.ColorDrawable) fragment.getFragmentView().getBackground()).getColor());
+        });
+        screenshot("stars-channel-dark-polished.png");
+        back();
+        instrumentation.runOnMainSync(() -> assertFalse(texts(activity.getWindow().getDecorView()).toString().contains("New reactions are private.")));
+
+        LocaleController.LocaleInfo original = LocaleController.getInstance().getCurrentLocaleInfo();
+        try {
+            instrumentation.runOnMainSync(() -> LocaleController.getInstance().applyLanguage(
+                LocaleController.getInstance().languagesDict.get("ru"), true, false, 0));
+            clickTag("stars_privacy_settings");
+            screenshot("stars-privacy-settings-russian.png");
+            instrumentation.runOnMainSync(() -> {
+                assertNoEllipsis(tagged("stars_privacy_toggle"));
+                assertNoEllipsis(tagged("stars_history_anonymise"));
+                android.view.accessibility.AccessibilityNodeInfo node = tagged("stars_privacy_toggle").createAccessibilityNodeInfo();
+                assertTrue(node.isCheckable());
+                assertTrue(node.isChecked());
+                node.recycle();
+            });
+            back();
+            clickTag("stars_channel_settings");
+            screenshot("stars-channel-settings-russian.png");
+            instrumentation.runOnMainSync(() -> {
+                assertNoEllipsis(tagged("stars_channel_private"));
+                assertNoEllipsis(tagged("stars_channel_percentile"));
+            });
+        } finally {
+            instrumentation.runOnMainSync(() -> LocaleController.getInstance().applyLanguage(original, true, false, 0));
+        }
+    }
+
+    private static void assertNoEllipsis(View view) {
+        if (view.getVisibility() != View.VISIBLE) return;
+        if (view instanceof TextView) {
+            android.text.Layout layout = ((TextView) view).getLayout();
+            if (layout != null) for (int i = 0; i < layout.getLineCount(); i++) {
+                assertEquals("Truncated settings label: " + ((TextView) view).getText(), 0, layout.getEllipsisCount(i));
+            }
+        }
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+            assertNoEllipsis(((ViewGroup) view).getChildAt(i));
+        }
+    }
+
     @Test public void demoWalkthrough() throws Exception {
         launch("Blue");
         Thread.sleep(1500);
@@ -469,9 +547,18 @@ public class StarsPrivacyTest {
         Thread.sleep(7000);
         clickTag("stars_privacy_undo");
         Thread.sleep(1000);
+        clickTag("FL-20261017-0001");
+        Thread.sleep(2500);
+        instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+        settle();
         instrumentation.runOnMainSync(() -> sheet[0] = preview().showLiveReactionSheet());
         Thread.sleep(2500);
-        instrumentation.runOnMainSync(() -> sheet[0].dismiss());
+        instrumentation.runOnMainSync(() -> {
+            sheet[0].setValue(10);
+            find(sheet[0].getContainer(), ButtonWithCounterView.class).performClick();
+        });
+        Thread.sleep(21000);
+        instrumentation.runOnMainSync(() -> assertEquals(1, preview().completedPayments));
         settle();
         clickTag("stars_channel_settings");
         clickTag("stars_channel_private");
@@ -484,7 +571,7 @@ public class StarsPrivacyTest {
         assertEquals(2, texts(tagged("FL-20261017-0001")).size());
         instrumentation.runOnMainSync(() -> preview().sendSampleReaction(50));
         Thread.sleep(21000);
-        instrumentation.runOnMainSync(() -> assertEquals(1, preview().completedPayments));
+        instrumentation.runOnMainSync(() -> assertEquals(2, preview().completedPayments));
         Thread.sleep(2000);
         instrumentation.runOnMainSync(() -> sheet[0] = preview().showReactionSheet());
         Thread.sleep(2500);
@@ -493,11 +580,18 @@ public class StarsPrivacyTest {
         clickTag("stars_privacy_settings");
         clickTag("stars_history_anonymise");
         Thread.sleep(3000);
-        instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+        instrumentation.runOnMainSync(() -> {
+            BaseFragment fragment = find(activity.getWindow().getDecorView(), ActionBarLayout.class).getLastFragment();
+            ((AlertDialog) fragment.getVisibleDialog()).getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        });
+        Thread.sleep(2500);
         settle();
         clickTag("stars_privacy_toggle");
         back();
         Thread.sleep(2000);
+        launch("Dark Blue");
+        clickTag("stars_privacy_settings");
+        Thread.sleep(2500);
     }
 
     private void launch(String theme) throws Exception {

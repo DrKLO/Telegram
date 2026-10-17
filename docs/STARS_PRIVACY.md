@@ -99,6 +99,13 @@ selector feedback, sheet transitions, 3D flying Star, Lottie effects, animated c
 and 20-second Undo stay intact. A native lock Lottie accompanies the brief setting
 notice. The dependent channel option uses TextCheckCell's own enabled-state animators
 with Telegram's easing, and history confirmation shows a native success bulletin.
+Both screens share a small native settings layout with section headers and Telegram's
+section shadows, short English/Russian labels, navigation-bar contrast and theme-change
+callbacks. Theme changes dismiss a notice before its old colours can become stale. Rapid toggles replace old notices; navigating away dismisses the notice.
+Disabled percentile controls reject accessibility/programmatic clicks as well as taps.
+New mock receipt rows and the donor-only percentile enter with a short alpha animation
+using Telegram's easing. A hidden percentile disappears immediately. Preview reaction
+sheets show a no-payment caption in the native footer instead of payment terms.
 Sensitive receipt details are removed immediately rather than faded out on screen.
 
 ## Existing API versus proposed API
@@ -183,27 +190,48 @@ It does not reset a live account or uninstall the app. Screenshots and test logs
 and `artifacts/stars-privacy-test.txt`. These tests do not validate real payments,
 server anonymity, cross-device enforcement or five minutes of wall-clock UI playback.
 
-Suggested video: personal setting → anonymous reaction and 20-second Undo → minimal
-receipt → admin policy → donor-only percentile with personal setting off → irreversible
-history confirmation → native live reaction. Identify the offline fixtures and proposed
+Recorded flow: personal setting → anonymous reaction and Undo → minimal receipt →
+native live send with its full 20-second wait → admin policy → privacy opt-out notice →
+channel send with its full wait → donor-only percentile → history anonymisation → dark settings. Identify the offline fixtures and proposed
 API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before sharing.
 
 ## Verified on 17 October 2026
 
 On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
 
-- All seven privacy instrumentation scenarios passed, including a real 20-second wait,
-  late Undo, a production-controller mock commit and a fresh-process history check.
+- All eight privacy instrumentation scenarios passed, including a real 20-second wait,
+  late Undo, a production-controller mock commit, a fresh-process history check,
+  theme updates, rapid toggle reversals, Russian label fit and native switch accessibility.
 - Both original offline playground smoke tests passed.
-- All eight Python helper tests passed.
+- All eleven Python helper/package tests passed.
 - Offline native build/reinstall and the full client compile check passed.
 - Native light/dark screens, animated toggle notices, anonymous reaction sheets, minimal
   receipt tables and channel/admin confirmations were visually inspected.
 - The refinement checks cover turning privacy off, unloaded/reused receipt rows, a restart
   with the switch off, and separate new public contributions on a previously private post.
 - The staged native walkthrough passed and was recorded to the local
-  `artifacts/stars-privacy-demo.mp4` (75 seconds, H.264/30 fps, ignored by Git).
+  `artifacts/stars-privacy-demo.mp4` (H.264/30 fps, ignored by Git).
+  `artifacts/stars-privacy-demo.json` records its exact duration, source revision and hash.
   The export decoded successfully and sampled frames were visually checked.
 
 Real payments, cross-device behaviour and Telegram server enforcement have not been
 verified. No physical device, Telegram login, credentials or real Stars were used.
+
+## Review map
+
+| Area | Source |
+| --- | --- |
+| Personal defaults and precedence | `Stars/StarsPrivacy.java` |
+| Immutable local provenance and proposed server responses | `Stars/StarsPrivacyMockApi.java` |
+| Native settings, theme callbacks and feedback lifecycle | `Stars/StarsPrivacySettingsActivity.java`, `StarsPrivacyActivity.java`, `StarsChannelPrivacyActivity.java` |
+| Reaction deadline and send integration | `Stars/PaidReactionUndo.java`, `StarsController.java` |
+| Native post sheet and receipt presentation | `Stars/StarsReactionsSheet.java`, `StarsIntroActivity.java` |
+| Shared irreversible confirmation | `Stars/StarsHistoryPrivacy.java` |
+| Live integration | `Stories/LiveCommentsView.java` |
+| Account-free fixtures | `TMessagesProj_App/src/featuresLab/java/org/telegram/features/StarsPrivacyPreview.java` |
+| Native regression tests and film scenario | `TMessagesProj_App/src/featuresLabOfflineTest/java/org/telegram/features/StarsPrivacyTest.java` |
+
+Paths beginning `Stars/` or `Stories/` are relative to
+`TMessagesProj/src/main/java/org/telegram/ui/`. The recording and handoff helpers are
+`Tools/record_stars_demo.py` and `Tools/prepare_stars_submission.py`. They use only the
+offline package and a fixed allowlist of review files; they never submit or publish.

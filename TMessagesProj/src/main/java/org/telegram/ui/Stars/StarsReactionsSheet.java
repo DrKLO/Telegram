@@ -128,6 +128,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 //    private final StarsIntroActivity.StarsBalanceView balanceView;
     private final ImageView closeView;
     private final TextView statusView;
+    private final LinkSpanDrawable.LinksTextView termsView;
     private final ButtonWithCounterView buttonView;
     @Nullable
     private final View separatorView;
@@ -526,13 +527,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
 
         if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && privateStars) {
-            TextView previewInfo = new TextView(context);
             balanceCloud.setVisibility(View.GONE);
-            previewInfo.setText(getString(R.string.StarsPrivacyMockReactionInfo));
-            previewInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            previewInfo.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
-            previewInfo.setGravity(Gravity.CENTER);
-            layout.addView(previewInfo, LayoutHelper.createLinear(-1, -2, 24, 0, 24, 12));
         }
         if (messageObject != null && !StarsPrivacy.isEnabled(currentAccount)) {
             int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId, messageObject.getId());
@@ -648,11 +643,13 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 .show();
         });
 
-        LinkSpanDrawable.LinksTextView termsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
+        termsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
         termsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         termsView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         if (liveStories && !sendEnabled) {
             termsView.setText(getString(R.string.LiveStoryReactAdminCant));
+        } else if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && privateStars) {
+            termsView.setText(getString(R.string.StarsPrivacyMockReactionInfo));
         } else {
             termsView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.StarsReactionTerms), () -> {
                 Browser.openUrl(context, getString(R.string.StarsReactionTermsLink));
@@ -871,7 +868,10 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     }
 
     /** An offline fixture has no real balance or top-up flow. */
-    public void setOfflinePreview() { balanceCloud.setVisibility(View.GONE); }
+    public void setOfflinePreview() {
+        balanceCloud.setVisibility(View.GONE);
+        termsView.setText(getString(R.string.StarsPrivacyMockReactionInfo));
+    }
 
     // The native flying Star can land on the pending bulletin while payment awaits Undo.
     private View pendingReactionTarget;
