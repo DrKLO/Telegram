@@ -14,7 +14,11 @@ The default offline entry now uses `MainTabsActivity`, `SettingsActivity`,
 - The real purchase sheet, visibility warning and inline privacy action; personal
   settings and the irreversible history confirmation.
 - Chat Star taps/long presses, the actual 20-second Undo, exact receipt amounts,
-  and profile → Edit → Reactions → channel privacy/percentile controls.
+  and profile → Edit → Reactions → inline channel privacy. It verifies that
+  discard does not apply the policy, Update Reactions does, and reopening retains
+  it. Turning paid reactions off disables the dependent control while retaining
+  its checked preference. A 50-Star send with personal privacy off must create a minimal receipt, hide
+  its selected state and show a large donor-only percentile after privacy is on.
 - Live-story Star controls, 20-second Undo and receipt amounts, plus native dark history.
 
 The integration exposed and fixed a live-view attachment callback that ran before
@@ -23,7 +27,11 @@ navigation inset after padding its root, avoiding a second inset in native tabs.
 Transaction cells no longer install their own long-click listener: it intercepted
 the list's normal receipt taps. The production recycler handles both gestures,
 and native navigation tests verify the receipt and long-press confirmation windows.
-UI tests reject targets covered by floating controls and capture failures.
+UI tests reject targets covered by floating controls and capture failures. Sheet
+buttons are resolved in their own window, and reaction coordinates are read again
+after returning from the editor because the keyboard can change the chat layout.
+Held gestures wait for the native dialog window before releasing; a timeout cancels
+the gesture rather than adding an unintended Star during slow live rendering.
 The standalone story window uses explicit IME insets; the legacy height heuristic
 mistook the system navigation bar for a keyboard and placed live Star controls
 below the visible window. This override is confined to the offline build.
@@ -42,6 +50,8 @@ does not verify login, billing, real live video or server enforcement.
 
 | Finding | Correction and regression coverage |
 | --- | --- |
+| The large percentage clipped with Android’s nonlinear text scaling. | Its height now includes the rendered native text height; compact LTR/RTL tests cover 150% text and the widest 100% value. |
+| The new admin row covered the native card’s rounded bottom corners. | A transparent native rounded ripple preserves the shared section background. Enabled state affects text/switch alpha rather than splitting the section. |
 | A pending public reaction could survive an on/off privacy cycle and become public after its deadline. | Enabling personal or channel privacy cancels pending public sends and rolls back reserved balance/counts. Anonymous pending sends retain their anonymous intent. The production post controller, live view and preview are covered. |
 | Switching live streams could carry a pending reaction or donor state into the next stream. | A stream change cancels the pending send and clears its counts, donor lists and public-contribution provenance. A delayed assertion checks that no receipt appears. |
 | An already-open public receipt did not react to a privacy change. | Its identifying contents become invisible synchronously before native dismissal; reopening shows only amount, ID and date. The observer follows the view lifecycle. |
@@ -63,7 +73,7 @@ intentionally share persisted privacy state to test restart behavior. The suite
 includes real 20-second Undo intervals and a real five-minute open-sheet expiry.
 The privacy suite also checks that Internet and Play billing permissions are absent.
 The two original offline smoke tests check rendering, lack of Internet permission,
-absence of an active Telegram account and theme persistence. Twelve Python tests
+absence of an active Telegram account and theme persistence. Thirteen Python tests
 cover local configuration, device selection, build guards and package integrity.
 
 Commands:

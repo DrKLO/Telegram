@@ -48,7 +48,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
     private ChatMessageCell messageCell;
     private TextSettingsCell privacyCell;
     private TextSettingsCell channelCell;
-    private TextInfoPrivacyCell percentileCell;
+    private org.telegram.ui.Stars.StarsDonorPercentileView percentileCell;
     private LinearLayout history;
     private StarsPrivacyView historyPrivacyView;
     private FrameLayout root;
@@ -106,7 +106,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         messageCell.setMessageObject(post, null, false, false, true);
         content.addView(messageCell, LayoutHelper.createLinear(-1, -2));
 
-        percentileCell = new TextInfoPrivacyCell(context);
+        percentileCell = new org.telegram.ui.Stars.StarsDonorPercentileView(context, getResourceProvider());
         percentileCell.setTag("stars_donor_percentile");
         content.addView(percentileCell, LayoutHelper.createLinear(-1, -2));
         TextSettingsCell live = new TextSettingsCell(context);
@@ -343,13 +343,8 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         if (privacyCell == null) return;
         privacyCell.setTextAndValue(LocaleController.getString(R.string.StarsPrivacySwitch), LocaleController.getString(StarsPrivacy.isEnabled(currentAccount) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), true);
         channelCell.setTextAndValue(LocaleController.getString(R.string.StarsChannelPrivacy), LocaleController.getString(StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), false);
-        int bucket = StarsPrivacy.isEnabled(currentAccount) ? 0 : StarsPrivacyMockApi.donorPercentile(currentAccount, -CHANNEL, post.getId());
-        boolean revealPercentile = bucket > 0 && percentileCell.getVisibility() != View.VISIBLE;
-        percentileCell.animate().cancel();
-        percentileCell.setVisibility(bucket == 0 ? View.GONE : View.VISIBLE);
-        percentileCell.setAlpha(revealPercentile ? 0f : 1f);
-        if (bucket > 0) percentileCell.setText(LocaleController.formatString(R.string.StarsChannelTopPercent, bucket));
-        if (revealPercentile) percentileCell.animate().alpha(1f).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+        int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, -CHANNEL, post.getId());
+        percentileCell.setPercentile(bucket, true);
         messageCell.forceResetMessageObject();
     }
 

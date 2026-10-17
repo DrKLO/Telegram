@@ -40,14 +40,14 @@ def main():
         lab.adb('shell', 'am', 'force-stop', lab.OFFLINE_PACKAGE, serial=serial)
         with (out / ('native-recording-' + method + '.log')).open('w') as log:
             # Stop only this script's recorder, never unrelated recordings.
-            command = f'screenrecord --time-limit 150 --bit-rate 4000000 {remote}.mp4 & recorder_pid=$!; echo "$recorder_pid" > {remote}.pid; wait "$recorder_pid"'
+            command = f'screenrecord --time-limit 180 --bit-rate 4000000 {remote}.mp4 & recorder_pid=$!; echo "$recorder_pid" > {remote}.pid; wait "$recorder_pid"'
             recorder = subprocess.Popen(base + ['shell', command], stdout=log, stderr=subprocess.STDOUT)
             try:
                 time.sleep(1)
                 result = subprocess.run(base + ['shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
                     'org.telegram.features.NativeStarsFlowTest#' + method,
                     lab.OFFLINE_PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner'],
-                    capture_output=True, text=True, timeout=145)
+                    capture_output=True, text=True, timeout=175)
                 results.append(result.stdout + result.stderr)
                 (out / 'stars-privacy-demo-test.txt').write_text('\n'.join(results))
             finally:
@@ -65,12 +65,12 @@ def main():
         lab.adb('pull', remote + '.mp4', segment, serial=serial)
         lab.adb('shell', 'rm', remote + '.mp4', remote + '.pid', serial=serial)
         segments.append(segment)
-    # Consecutive actual captures, including navigation and both real 20-second waits.
+    # Consecutive actual captures, including navigation and all real 20-second waits.
     playlist = out / 'native-demo-segments.txt'
     playlist.write_text(''.join("file '" + segment.name + "'\n" for segment in segments))
     video = out / 'stars-privacy-demo.mp4'
     temporary = out / 'stars-privacy-demo-next.mp4'
-    # Keep the genuine timing, including both 20-second waits. No motion is fabricated.
+    # Keep the genuine timing, including all 20-second waits. No motion is fabricated.
     subprocess.run([ffmpeg, '-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', str(playlist),
                     '-vf', 'fps=30', '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
                     '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', str(temporary)], check=True)

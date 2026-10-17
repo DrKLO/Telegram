@@ -24,7 +24,7 @@ anonymise that receipt. The live-reaction row opens the native live Stars sheet.
 The corresponding entry points in the full client are:
 
 - Settings → Privacy and Security → Stars Privacy.
-- Channel settings → Reactions → Star reaction privacy (when paid reactions are available).
+- Channel settings → Reactions → Keep Stars anonymous (when paid reactions are available).
 - My Stars → long-press a transaction, or open a private receipt.
 - Stars Privacy → Anonymise transaction history for all existing pages.
 
@@ -72,20 +72,26 @@ addresses a whole post, so we do not assume it can safely split a sender's
 past private and future public contributions. These sends are marked Preview and spend
 no Stars; ordinary anonymous sends while privacy is on still use the supported API.
 
-**Channel policy.** Require anonymous reactions is off until the admin enables it.
-It overrides a donor's personal switch, removes named leaderboards, and returns
-redacted receipts. With the personal switch off, a new reaction's selected state
-lasts five minutes. With the personal switch on, there is no selected state at all.
-An older reaction with no transient timestamp, including after a restart, stays
-unselected. Aggregate Stars remain visible.
+**Channel policy.** **Keep Stars anonymous** sits directly below **Enable Paid
+Reactions** in the production channel **Edit → Reactions** panel. It is off until
+an admin enables it. The switch is a draft until **Update Reactions** succeeds;
+the existing unsaved-changes dialog can apply or discard it. Disabling paid
+reactions retains the saved privacy preference for when Stars are enabled again.
+The mock policy overrides a donor's personal switch, removes named leaderboards
+and selected Star states immediately, and returns minimal receipts. Aggregate
+Stars and native sending effects remain visible. Previously protected reactions
+and receipts remain private after either switch is turned off.
 
-**Percentile.** Instead of public rankings, the admin can allow a rounded, donor-only
-Top 10/25/50/100% label for five minutes. It is hidden by the personal privacy switch.
-Turning personal privacy off cannot restore an earlier hidden percentile. A new channel
-reaction can start a fresh five-minute interval. The mock uses a fixed aggregate fixture
-of ten donors; it does not infer a whole population from Telegram's top-three list. Ties share rank and cohorts below ten
-have no label. This is an explicit design choice for the previously unspecified
-percentile audience; no donor names or individual amounts appear in it.
+**Percentile.** Enabling channel privacy replaces named rankings with the donor's
+own large **Top 10/25/50/100%** figure. The number uses Telegram's AnimatedTextView,
+blue theme token and easing; the caption says only the donor can see it. It is
+also visible with personal privacy enabled, because it contains no donor identity.
+A completed channel reaction starts a five-minute interval; expiry removes the
+figure from an open sheet. Nothing is restored from receipt history after restart.
+The mock uses a fixed aggregate fixture of ten donors; it does not infer a whole
+population from Telegram's top-three list. Ties share rank and cohorts below ten
+have no figure. The component test screen additionally exposes a percentile toggle
+for testing policy updates; the production admin switch enables it by default.
 
 **History anonymisation.** A native confirmation applies to one transaction or all
 transactions through the confirmation time, including unloaded pages. There is no
@@ -142,18 +148,23 @@ animator setting, cancels interrupted motion and settles when detached. Privacy
 changes synchronously before motion starts. A brief native notice explains that
 opting out affects new reactions only.
 
-Both privacy screens use Telegram's ActionBar, HeaderCell, TextCheckCell,
-TextSettingsCell, TextInfoPrivacyCell and theme tokens. The native switch animation,
-selector feedback, sheet transitions, 3D flying Star, Lottie effects, animated counters
-and 20-second Undo stay intact. A native lock Lottie accompanies the brief setting
-notice. The dependent channel option uses TextCheckCell's own enabled-state animators
-with Telegram's easing, and history confirmation shows a native success bulletin.
-Both screens share a small native settings layout with section headers and Telegram's
-section shadows, short English/Russian labels, navigation-bar contrast and theme-change
-callbacks. Theme changes dismiss a notice before its old colours can become stale. Rapid toggles replace old notices; navigating away dismisses the notice.
-Disabled percentile controls reject accessibility/programmatic clicks as well as taps.
-New mock receipt rows and the donor-only percentile enter with a short alpha animation
-using Telegram's easing. A hidden percentile disappears immediately. Preview reaction
+Personal settings use Telegram's ActionBar, HeaderCell, TextCheckCell,
+TextSettingsCell, TextInfoPrivacyCell and theme tokens. The channel toggle lives in
+the production reaction editor, sharing its native switches, rounded section
+background, Update Reactions action and unsaved-changes dialog. Its transparent
+rounded ripple preserves the shared card corners. Disabled controls reject
+accessibility/programmatic clicks as well as taps, retaining the privacy preference.
+The native switch animation, sheet transitions, 3D flying Star, Lottie effects,
+animated counters and 20-second Undo stay intact. A native lock Lottie accompanies
+the brief personal-setting notice; history confirmation uses a success bulletin.
+Personal settings retain short English/Russian labels and theme-change callbacks.
+Theme changes dismiss a notice before its old colours can become stale. Rapid
+toggles replace old notices; navigating away dismisses the notice. The separate
+channel component-test page remains available only through the test playground.
+New mock receipt rows enter with a short alpha animation. The large donor-only
+percentile uses Telegram's animated number renderer, a subtle 6 dp entrance and
+its native easing, respecting reduced-motion settings. Anonymous live chips use
+Telegram's existing monochrome lock instead of the purple incognito avatar. A hidden percentile disappears immediately. Preview reaction
 sheets show a no-payment caption in the native footer instead of payment terms.
 Sensitive receipt details are removed immediately rather than faded out on screen.
 
@@ -243,7 +254,7 @@ checks a fresh process with the switch disabled, then leaves its personal switch
 It does not reset a live account or uninstall the app. Screenshots and test logs are saved under ignored `artifacts/stars-privacy/`
 and `artifacts/stars-privacy-test.txt`. These tests do not validate real payments,
 server anonymity or cross-device enforcement. The suite includes a real five-minute
-wait to verify that the highlight and percentile disappear from an open sheet.
+wait to verify that the percentile disappears from an open sheet while the Star stays unselected throughout.
 
 Recorded flow: animated history privacy control → purchase visibility notice → personal setting → anonymous reaction and Undo → minimal receipt →
 native live send with its full 20-second wait → admin policy → privacy opt-out notice →
@@ -264,7 +275,7 @@ On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
   additions cover pending-public-send cancellation, stream switching, open receipts,
   purchase accessibility actions, compact RTL/large-text layouts and actual five-minute expiry.
 - Both original offline playground smoke tests passed.
-- All twelve Python helper/package tests passed.
+- All thirteen Python helper/package tests passed.
 - Offline native build/reinstall and the full client compile check passed.
 - Native light/dark screens, animated toggle notices, anonymous reaction sheets, minimal
   receipt tables and channel/admin confirmations were visually inspected.
@@ -287,15 +298,19 @@ See [QA.md](QA.md) for the audit findings, evidence and remaining validation bou
 | Animated control beside history | `Stars/StarsPrivacyView.java` |
 | Personal defaults and precedence | `Stars/StarsPrivacy.java` |
 | Immutable local provenance and proposed server responses | `Stars/StarsPrivacyMockApi.java` |
-| Native settings, theme callbacks and feedback lifecycle | `Stars/StarsPrivacySettingsActivity.java`, `StarsPrivacyActivity.java`, `StarsChannelPrivacyActivity.java` |
+| Native personal settings and feedback lifecycle | `Stars/StarsPrivacySettingsActivity.java`, `StarsPrivacyActivity.java` |
+| Inline channel admin switch and Apply/Discard | `Components/Reactions/ChatCustomReactionsEditActivity.java` |
+| Large percentile and native lock glyph | `Stars/StarsDonorPercentileView.java`, `StarsPrivacyIcon.java` |
 | Reaction deadline and send integration | `Stars/PaidReactionUndo.java`, `StarsController.java` |
 | Native post sheet and receipt presentation | `Stars/StarsReactionsSheet.java`, `StarsIntroActivity.java` |
 | Shared irreversible confirmation | `Stars/StarsHistoryPrivacy.java` |
 | Live integration | `Stories/LiveCommentsView.java` |
-| Account-free fixtures | `TMessagesProj_App/src/featuresLab/java/org/telegram/features/StarsPrivacyPreview.java` |
-| Native regression tests and film scenario | `TMessagesProj_App/src/featuresLabOfflineTest/java/org/telegram/features/StarsPrivacyTest.java` |
+| Account-free production-screen fixtures | `TMessagesProj_App/src/featuresLab/java/org/telegram/features/OfflineTelegramData.java` |
+| Supplementary component harness | `TMessagesProj_App/src/featuresLab/java/org/telegram/features/StarsPrivacyPreview.java` |
+| Privacy regression tests | `TMessagesProj_App/src/featuresLabOfflineTest/java/org/telegram/features/StarsPrivacyTest.java` |
+| Production navigation and recorded scenarios | `TMessagesProj_App/src/featuresLabOfflineTest/java/org/telegram/features/NativeStarsFlowTest.java` |
 
-Paths beginning `Stars/` or `Stories/` are relative to
+Paths beginning `Stars/`, `Stories/` or `Components/` are relative to
 `TMessagesProj/src/main/java/org/telegram/ui/`. The recording and handoff helpers are
 `Tools/record_stars_demo.py` and `Tools/prepare_stars_submission.py`. They use only the
 offline package and a fixed allowlist of review files; they never submit or publish.

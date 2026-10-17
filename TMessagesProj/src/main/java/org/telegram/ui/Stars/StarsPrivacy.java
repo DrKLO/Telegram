@@ -60,7 +60,7 @@ public final class StarsPrivacy {
         StarsController.MessageId id = StarsController.MessageId.from(message);
         observeReaction(account, message);
         if (isEnabled(account) || !reaction.chosen) return false;
-        if (StarsPrivacyMockApi.isChannelPrivate(account, id.did)) return StarsPrivacyMockApi.showHighlight(account, id.did, id.mid);
+        if (StarsPrivacyMockApi.isChannelPrivate(account, id.did)) return false;
         return !StarsPrivacyMockApi.isProtectedPost(account, id.did, id.mid)
             || StarsPrivacyMockApi.publicContribution(account, id.did, id.mid) > 0;
     }

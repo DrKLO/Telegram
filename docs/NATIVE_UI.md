@@ -20,8 +20,11 @@ by the live client; sample data is provided behind the UI.
 5. Open **Chats → Design Notes**. Tap the post's Star for a reaction, or hold it
    for Telegram's actual reaction sheet. The actual chat animation and 20-second
    Undo run through `StarsController`; completed sample sends appear in history.
-6. Open the channel's header, choose **Edit → Reactions → Star reaction privacy**
-   for the channel-admin controls. These policies still model proposed server APIs.
+6. Open the channel's header and choose **Edit → Reactions**. **Keep Stars
+   anonymous** is directly below **Enable Paid Reactions**. Save with **Update
+   Reactions**, or use the existing discard dialog. After sending Stars, hold the
+   post's Star again to see your large donor-only percentile. Selected Star states
+   stay hidden even with personal privacy off. These policies model proposed APIs.
 7. Open **Design Notes** in the live-story strip. The production story viewer,
    Star button, reaction sheet, comments and Undo display use simulated stream
    metadata. Live video/audio and actual broadcasting are not connected.
@@ -68,3 +71,7 @@ Native UI tests complement the existing component privacy tests. They do not
 validate real account login, billing, server enforcement, cross-device history
 redaction or a real live broadcast. The earlier packaged demo predates this
 navigation change and must not be presented as evidence for this revision.
+
+The offline provider also remembers the paid-reactions enable switch across app
+restarts. The separate channel anonymity preference is saved only with the native
+Update Reactions action. Turning Stars off retains that preference.

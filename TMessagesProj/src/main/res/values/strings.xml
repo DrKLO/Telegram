@@ -11552,12 +11552,14 @@
     <string name="StarsPrivacyLiveReaction">Live Star reaction</string>
     <string name="StarsPrivacyPreviewLabel">Preview</string>
     <string name="StarsChannelPrivacy">Star reaction privacy</string>
-    <string name="StarsChannelPrivate">Require anonymous reactions</string>
-    <string name="StarsChannelPrivateInfo">Hide donor names and leaderboards. Receipts keep only amounts, IDs, dates and times. Selected Star highlights clear after 5 minutes, or stay hidden with personal privacy on. Animations and total counts stay the same.</string>
+    <string name="StarsChannelPrivate">Keep Stars anonymous</string>
+    <string name="StarsChannelPrivateInfo">Hide names, leaderboards and selected Stars. Each donor sees only their own rounded percentile. Receipts keep amounts, IDs, dates and times. Animations and total counts stay the same.</string>
     <string name="StarsChannelPercentile">Show donor percentile</string>
-    <string name="StarsChannelPercentileInfo" formatted="false">Donors can see their rounded percentile, such as Top 10%, for 5 minutes. Only they can see it. Hidden with personal privacy on or fewer than 10 donors.</string>
+    <string name="StarsChannelPercentileInfo" formatted="false">Donors can see their rounded percentile, such as Top 10%, for 5 minutes. Only they can see it. Hidden with fewer than 10 donors.</string>
     <string name="StarsChannelMockInfo">Preview: channel rules are simulated on this device. No Stars are spent.</string>
     <string name="StarsChannelPending">Channel Stars · Preview</string>
+    <string name="StarsChannelPercentileTop">You are in the top</string>
+    <string name="StarsChannelPercentilePrivate">of supporters · Only you can see this</string>
     <string name="StarsChannelTopPercent">Top %1$d%% · Only you</string>
     <string name="StarsHistoryAnonymise">Anonymise transaction history</string>
     <string name="StarsReceiptAnonymise">Anonymise this transaction</string>

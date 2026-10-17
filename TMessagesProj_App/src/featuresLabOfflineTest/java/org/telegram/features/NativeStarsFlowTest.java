@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 
 /** Navigation through actual production screens. No replacement screen or direct fragment launch. */
 @RunWith(AndroidJUnit4.class)
-@androidx.test.filters.SdkSuppress(minSdkVersion = 29)
+@androidx.test.filters.SdkSuppress(minSdkVersion = 30)
 public class NativeStarsFlowTest {
     private final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
     private FeaturesLabActivity activity;
@@ -121,6 +121,7 @@ public class NativeStarsFlowTest {
 
     @Test public void channelReactionAndAdmin() throws Exception {
         launch();
+        instrumentation.runOnMainSync(() -> org.telegram.ui.Stars.StarsPrivacyMockApi.setChannelPrivate(0, -OfflineTelegramData.CHANNEL, false));
         final int[] chat = new int[2];
         instrumentation.runOnMainSync(() -> {
             View row = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.DialogCell.class);
@@ -133,19 +134,9 @@ public class NativeStarsFlowTest {
         screenshot("10-channel.png");
         final int[] before = new int[1];
         instrumentation.runOnMainSync(() -> before[0] = org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0].size());
-        final int[] point = new int[2];
-        instrumentation.runOnMainSync(() -> {
-            assertTrue(activity.navigation().getLastFragment() instanceof org.telegram.ui.ChatActivity);
-            org.telegram.ui.Cells.ChatMessageCell cell = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.ChatMessageCell.class);
-            assertNotNull("Real channel post", cell);
-            org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble layout = cell.reactionsLayoutInBubble;
-            org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.ReactionButton star = layout.getReactionButton(org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.VisibleReaction.asStar());
-            assertNotNull("Paid reaction in the real post", star);
-            cell.getLocationOnScreen(point);
-            point[0] += layout.x + star.x + star.width / 2;
-            point[1] += layout.y + star.y + star.height / 2;
-        });
+        final int[] point = postStarPoint();
         press(point, true);
+        instrumentation.runOnMainSync(() -> assertNotNull("A hold opens the native post sheet", starsSheetButton()));
         screenshot("11-post-reaction-sheet.png");
         back();
         press(point, false);
@@ -165,17 +156,76 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> assertTrue(activity.navigation().getLastFragment() instanceof org.telegram.ui.Components.Reactions.ChatCustomReactionsEditActivity));
         back(); // Close the production emoji keyboard before scrolling the settings.
         screenshot("16-channel-reactions.png");
-        click("Star reaction privacy");
-        instrumentation.runOnMainSync(() -> assertTrue(activity.navigation().getLastFragment() instanceof org.telegram.ui.Stars.StarsChannelPrivacyActivity));
-        if (!org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, OfflineTelegramData.CHANNEL * -1)) click("Require anonymous reactions");
-        instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));
-        if (!org.telegram.ui.Stars.StarsPrivacyMockApi.showsPercentile(0, -OfflineTelegramData.CHANNEL)) click("Show donor percentile");
-        instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.showsPercentile(0, -OfflineTelegramData.CHANNEL)));
+        click("Keep Stars anonymous");
+        instrumentation.runOnMainSync(() -> assertFalse("Draft must not change channel policy", org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));
+        back();
+        assertWindowText("Discard");
+        click("Discard");
+        instrumentation.runOnMainSync(() -> assertFalse("Discard keeps the saved policy", org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));
+        click("Reactions");
+        back();
+        click("Keep Stars anonymous");
         screenshot("17-channel-privacy.png");
+        click("Update Reactions");
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL));
+            assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.showsPercentile(0, -OfflineTelegramData.CHANNEL));
+        });
+        click("Reactions");
+        back();
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Cells.TextCheckCell control = activity.navigation().getLastFragment().getFragmentView().findViewWithTag("stars_channel_private");
+            assertNotNull(control);
+            assertTrue("Reopening the native admin panel keeps the saved setting", control.isChecked());
+        });
+        click("Enable Paid Reactions");
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Cells.TextCheckCell control = activity.navigation().getLastFragment().getFragmentView().findViewWithTag("stars_channel_private");
+            assertFalse("Privacy cannot be edited while Stars are disabled", control.isEnabled());
+            assertTrue("Disabling Stars preserves the privacy preference", control.isChecked());
+            control.performClick();
+            assertTrue("Disabled control ignores programmatic clicks", control.isChecked());
+        });
+        click("Enable Paid Reactions");
+        back(); // Edit
+        back(); // Profile
+        back(); // Channel
+        final boolean[] keyboard = new boolean[1];
+        instrumentation.runOnMainSync(() -> keyboard[0] = activity.getWindow().getDecorView().getRootWindowInsets().isVisible(android.view.WindowInsets.Type.ime()));
+        if (keyboard[0]) back();
+        instrumentation.runOnMainSync(() -> org.telegram.ui.Stars.StarsPrivacy.setEnabled(0, false));
+        press(postStarPoint(), true);
+        sendStarsFromSheet(); // Native slider's default 50 Stars, with the same 20-second Undo.
+        Thread.sleep(21000);
+        instrumentation.runOnMainSync(() -> {
+            java.util.ArrayList<org.telegram.tgnet.tl.TL_stars.StarsTransaction> history = org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0];
+            assertEquals(before[0] + 2, history.size());
+            assertEquals(-50, history.get(0).amount.amount);
+            assertTrue("Channel default protects receipts with personal privacy off", history.get(0) instanceof org.telegram.ui.Stars.StarsPrivacyMockApi.RedactedTransaction);
+            org.telegram.ui.Cells.ChatMessageCell cell = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.ChatMessageCell.class);
+            for (org.telegram.tgnet.TLRPC.ReactionCount reaction : cell.getMessageObject().messageOwner.reactions.results) {
+                if (reaction.reaction instanceof org.telegram.tgnet.TLRPC.TL_reactionPaid)
+                    assertFalse(org.telegram.ui.Stars.StarsPrivacy.showSelectedState(0, cell.getMessageObject(), reaction));
+            }
+            org.telegram.ui.Stars.StarsPrivacy.setEnabled(0, true);
+        });
+        press(postStarPoint(), true);
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Stars.StarsDonorPercentileView percentile = null;
+            for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                assertNull("Private channels have no named leaderboard", find(window, org.telegram.ui.Stars.StarsReactionsSheet.TopSendersView.class));
+                org.telegram.ui.Stars.StarsDonorPercentileView candidate = find(window, org.telegram.ui.Stars.StarsDonorPercentileView.class);
+                if (candidate != null) percentile = candidate;
+            }
+            assertNotNull("Own percentile is visible with personal privacy on", percentile);
+            assertEquals(50, percentile.getPercentile());
+        });
+        screenshot("18-channel-percentile.png");
     }
 
     @Test public void liveStoryStars() throws Exception {
         launch();
+        instrumentation.runOnMainSync(() -> org.telegram.ui.Stars.StarsPrivacyMockApi.setChannelPrivate(0, -OfflineTelegramData.CHANNEL, true));
         final int[] avatar = new int[2];
         instrumentation.runOnMainSync(() -> {
             View row = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.DialogCell.class);
@@ -215,6 +265,7 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> before[0] = org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0].size());
         instrumentation.runOnMainSync(() -> totalBefore[0] = find(viewer[0].getWindowView(), org.telegram.ui.Stories.LiveCommentsView.class).getStarsCount());
         press(point, true);
+        instrumentation.runOnMainSync(() -> assertNotNull("A hold opens the native live sheet", starsSheetButton()));
         screenshot("21-live-stars-sheet.png");
         back();
         press(point, false);
@@ -229,6 +280,27 @@ public class NativeStarsFlowTest {
             assertEquals("A refresh keeps the completed reaction in the aggregate", totalBefore[0] + 1,
                 find(viewer[0].getWindowView(), org.telegram.ui.Stories.LiveCommentsView.class).getStarsCount());
         });
+        instrumentation.runOnMainSync(() -> {
+            View star = find(viewer[0].getWindowView(), org.telegram.ui.Stories.PaidReactionButton.class);
+            assertNotNull(star);
+            star.getLocationOnScreen(point);
+            point[0] += star.getWidth() / 2;
+            point[1] += star.getHeight() / 2;
+
+        });
+        press(point, true);
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Stars.StarsDonorPercentileView percentile = null;
+            for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                org.telegram.ui.Stars.StarsDonorPercentileView candidate = find(window, org.telegram.ui.Stars.StarsDonorPercentileView.class);
+                if (candidate != null) percentile = candidate;
+            }
+            assertNotNull("Live percentile must be rendered in the sheet", percentile);
+            assertEquals(100, percentile.getPercentile());
+            assertEquals("Opening the live sheet must not send another reaction", before[0] + 1, org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0].size());
+        });
+        screenshot("24-live-percentile.png");
+        instrumentation.runOnMainSync(() -> assertEquals(100, org.telegram.ui.Stars.StarsPrivacyMockApi.donorPercentile(0, -OfflineTelegramData.CHANNEL, 0)));
         instrumentation.runOnMainSync(() -> assertFalse(UserConfig.getInstance(0).isClientActivated()));
     }
 
@@ -241,13 +313,80 @@ public class NativeStarsFlowTest {
         screenshot("31-history-dark.png");
     }
 
+    private View starsSheetButton() {
+        View button = null;
+        for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+            if (window == activity.getWindow().getDecorView()) continue;
+            View candidate = find(window, org.telegram.ui.Stories.recorder.ButtonWithCounterView.class);
+            if (candidate != null) button = candidate;
+        }
+        return button;
+    }
+
+    private void sendStarsFromSheet() throws Exception {
+        final int[] point = new int[2];
+        instrumentation.runOnMainSync(() -> {
+            View button = starsSheetButton();
+            assertNotNull("Native Stars sheet send button", button);
+            button.getLocationOnScreen(point);
+            point[0] += button.getWidth() / 2;
+            point[1] += button.getHeight() / 2;
+        });
+        press(point, false);
+    }
+
+    private int[] postStarPoint() {
+        final int[] point = new int[2];
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(activity.navigation().getLastFragment() instanceof org.telegram.ui.ChatActivity);
+            org.telegram.ui.Cells.ChatMessageCell cell = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.ChatMessageCell.class);
+            assertNotNull("Real channel post", cell);
+            org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble layout = cell.reactionsLayoutInBubble;
+            org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.ReactionButton star = layout.getReactionButton(org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.VisibleReaction.asStar());
+            assertNotNull("Paid reaction in the real post", star);
+            cell.getLocationOnScreen(point);
+            point[0] += layout.x + star.x + star.width / 2;
+            point[1] += layout.y + star.y + star.height / 2;
+        });
+        return point;
+    }
+
     private void press(int[] point, boolean hold) throws Exception {
         assertTrue("Tap must be on screen", point[0] >= 0 && point[0] < activity.getResources().getDisplayMetrics().widthPixels
             && point[1] >= 0 && point[1] < activity.getResources().getDisplayMetrics().heightPixels);
+        int initialWindow = -1;
+        if (hold) {
+            AccessibilityNodeInfo root = instrumentation.getUiAutomation().getRootInActiveWindow();
+            assertNotNull(root);
+            initialWindow = root.getWindowId();
+            root.recycle();
+        }
         long down = SystemClock.uptimeMillis();
-        instrumentation.sendPointerSync(android.view.MotionEvent.obtain(down, down, android.view.MotionEvent.ACTION_DOWN, point[0], point[1], 0));
-        Thread.sleep(hold ? 750 : 70);
-        instrumentation.sendPointerSync(android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), android.view.MotionEvent.ACTION_UP, point[0], point[1], 0));
+        android.view.MotionEvent event = android.view.MotionEvent.obtain(down, down, android.view.MotionEvent.ACTION_DOWN, point[0], point[1], 0);
+        event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, true));
+        event.recycle();
+        boolean opened = !hold;
+        if (hold) {
+            // Keep holding until Android opens the native sheet/dialog. Live rendering
+            // can delay its long-press callback; releasing on a fixed timer can add a Star.
+            long deadline = SystemClock.uptimeMillis() + 8000;
+            while (!opened && SystemClock.uptimeMillis() < deadline) {
+                Thread.sleep(100);
+                AccessibilityNodeInfo root = instrumentation.getUiAutomation().getRootInActiveWindow();
+                if (root != null) {
+                    opened = root.getWindowId() != initialWindow;
+                    root.recycle();
+                }
+            }
+        } else {
+            Thread.sleep(70);
+        }
+        event = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), opened ? android.view.MotionEvent.ACTION_UP : android.view.MotionEvent.ACTION_CANCEL, point[0], point[1], 0);
+        event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, true));
+        event.recycle();
+        assertTrue("Held control must open its native sheet or dialog", opened);
         settle();
     }
 
@@ -333,7 +472,7 @@ public class NativeStarsFlowTest {
     }
 
     private boolean behindTabs(String label, android.graphics.Rect bounds) {
-        if (label.equals("Settings") || label.equals("Chats")) return false;
+        if (label.equals("Settings") || label.equals("Chats") || label.equals("Update Reactions")) return false;
         BaseFragment fragment = activity.navigation().getLastFragment();
         View overlay = null;
         if (fragment instanceof MainTabsActivity) overlay = find(fragment.getFragmentView(), org.telegram.ui.MainTabsLayout.class);

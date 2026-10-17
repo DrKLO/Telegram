@@ -1219,7 +1219,9 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             final boolean anonymous = StarsPrivacy.isPrivate(currentAccount, dialogId) || send_as == UserObject.ANONYMOUS;
             final TL_stars.StarsTransaction receipt;
             if (anonymous) {
-                receipt = StarsPrivacyMockApi.sendAnonymousLiveReaction(stars).asTransaction();
+                receipt = (StarsPrivacyMockApi.isChannelPrivate(currentAccount, dialogId)
+                    ? StarsPrivacyMockApi.sendChannelReaction(currentAccount, dialogId, 0, stars)
+                    : StarsPrivacyMockApi.sendAnonymousLiveReaction(stars)).asTransaction();
             } else {
                 long generation = StarsPrivacyMockApi.reactionPrivacyGeneration(currentAccount);
                 if (publicReactionGeneration != generation) {
@@ -1791,8 +1793,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             final String title;
             int backgroundColor1, backgroundColor2;
             if (message.dialogId == UserObject.ANONYMOUS) {
-                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
-                avatarView.setImageDrawable(avatarDrawable);
+                avatarView.setImageDrawable(org.telegram.ui.Stars.StarsPrivacyIcon.create(getContext(), 22, 0xFFFFFFFF));
                 title = getString(R.string.StarsReactionAnonymous);
             } else if (message.dialogId >= 0) {
                 final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(message.dialogId);

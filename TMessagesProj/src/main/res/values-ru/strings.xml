@@ -280,12 +280,14 @@
     <string name="StarsPrivacyLiveReaction">Звёзды в трансляции</string>
     <string name="StarsPrivacyPreviewLabel">Предпросмотр</string>
     <string name="StarsChannelPrivacy">Приватность реакций за звёзды</string>
-    <string name="StarsChannelPrivate">Только анонимные реакции</string>
-    <string name="StarsChannelPrivateInfo">Имена отправителей и рейтинги скрыты. В истории — только сумма, ID, дата и время. Выделение звезды исчезает через 5 минут или скрыто сразу при личной приватности. Анимации и общие суммы сохраняются.</string>
+    <string name="StarsChannelPrivate">Анонимные звёзды</string>
+    <string name="StarsChannelPrivateInfo">Имена, рейтинги и выделение звёзд скрыты. Каждый отправитель видит только свой округлённый процентиль. В истории — сумма, ID, дата и время. Анимации и общие суммы сохраняются.</string>
     <string name="StarsChannelPercentile">Процентиль отправителя</string>
-    <string name="StarsChannelPercentileInfo" formatted="false">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт при личной приватности или если отправителей меньше 10.</string>
+    <string name="StarsChannelPercentileInfo" formatted="false">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт, если отправителей меньше 10.</string>
     <string name="StarsChannelMockInfo">Предпросмотр: правила канала моделируются на этом устройстве. Звёзды не тратятся.</string>
     <string name="StarsChannelPending">Канал · Прототип</string>
+    <string name="StarsChannelPercentileTop">Вы входите в топ</string>
+    <string name="StarsChannelPercentilePrivate">отправителей · Видно только вам</string>
     <string name="StarsChannelTopPercent">Топ %1$d%% · Видно только вам</string>
     <string name="StarsHistoryAnonymise">Анонимизировать историю</string>
     <string name="StarsReceiptAnonymise">Анонимизировать транзакцию</string>

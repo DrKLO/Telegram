@@ -22,8 +22,8 @@ import java.util.UUID;
  * Telegram's real ledger, backups or other clients. See docs/STARS_PRIVACY.md.
  */
 public final class StarsPrivacyMockApi {
-    public static final long HIGHLIGHT_MS = 5 * 60_000L;
-    private static final HashMap<String, Long> highlights = new HashMap<>();
+    public static final long PERCENTILE_MS = 5 * 60_000L;
+    private static final HashMap<String, Long> percentileDeadlines = new HashMap<>();
     private static final HashMap<String, Integer> percentiles = new HashMap<>();
 
     private StarsPrivacyMockApi() {}
@@ -54,7 +54,7 @@ public final class StarsPrivacyMockApi {
                 if (key.startsWith("public_post_" + dialogId + ":")) edit.remove(key);
             }
             edit.commit();
-            highlights.keySet().removeIf(key -> key.startsWith(account + ":" + dialogId + ":"));
+            percentileDeadlines.keySet().removeIf(key -> key.startsWith(account + ":" + dialogId + ":"));
             percentiles.keySet().removeIf(key -> key.startsWith(account + ":" + dialogId + ":"));
         }
         state(account).edit().putBoolean("channel_" + dialogId, enabled).apply();
@@ -105,17 +105,17 @@ public final class StarsPrivacyMockApi {
         Receipt receipt = sendAnonymousLiveReaction(stars);
         protectPost(account, dialogId, messageId);
         String key = key(account, dialogId, messageId);
-        long deadline = SystemClock.elapsedRealtime() + HIGHLIGHT_MS;
-        highlights.put(key, deadline);
+        long deadline = SystemClock.elapsedRealtime() + PERCENTILE_MS;
+        percentileDeadlines.put(key, deadline);
         // Fixture distribution represents server aggregates, never reconstructed from top_reactors.
         percentiles.put(key, percentileBucket(stars, new long[] {5, 10, 15, 20, 25, 30, 40, 50, 75, 100}));
         AndroidUtilities.runOnUIThread(() -> {
-            if (highlights.get(key) != null && highlights.get(key) == deadline) {
-                highlights.remove(key);
+            if (percentileDeadlines.get(key) != null && percentileDeadlines.get(key) == deadline) {
+                percentileDeadlines.remove(key);
                 percentiles.remove(key);
                 changed(account);
             }
-        }, HIGHLIGHT_MS);
+        }, PERCENTILE_MS);
         changed(account);
         return receipt;
     }
@@ -141,8 +141,6 @@ public final class StarsPrivacyMockApi {
             if (key.startsWith("public_post_")) edit.remove(key);
         }
         edit.commit();
-        highlights.keySet().removeIf(key -> key.startsWith(account + ":"));
-        percentiles.keySet().removeIf(key -> key.startsWith(account + ":"));
     }
 
     public static void protectPost(int account, long dialogId, int messageId) {
@@ -192,13 +190,13 @@ public final class StarsPrivacyMockApi {
         return receipt;
     }
 
-    public static boolean isHighlightActive(long now, long deadline) {
-        return deadline > 0 && now < deadline && deadline - now <= HIGHLIGHT_MS;
+    public static boolean isPercentileActive(long now, long deadline) {
+        return deadline > 0 && now < deadline && deadline - now <= PERCENTILE_MS;
     }
 
-    public static boolean showHighlight(int account, long dialogId, int messageId) {
-        Long deadline = highlights.get(key(account, dialogId, messageId));
-        return deadline != null && isHighlightActive(SystemClock.elapsedRealtime(), deadline);
+    public static boolean hasRecentPercentile(int account, long dialogId, int messageId) {
+        Long deadline = percentileDeadlines.get(key(account, dialogId, messageId));
+        return deadline != null && isPercentileActive(SystemClock.elapsedRealtime(), deadline);
     }
 
     /** Coarse donor-only bucket; ties share rank. 0 means insufficient cohort, so show nothing. */
@@ -211,7 +209,7 @@ public final class StarsPrivacyMockApi {
     }
 
     public static int donorPercentile(int account, long dialogId, int messageId) {
-        if (!showsPercentile(account, dialogId) || !showHighlight(account, dialogId, messageId)) return 0;
+        if (!showsPercentile(account, dialogId) || !hasRecentPercentile(account, dialogId, messageId)) return 0;
         Integer value = percentiles.get(key(account, dialogId, messageId));
         return value == null ? 0 : value;
     }

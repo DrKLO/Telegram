@@ -50,7 +50,7 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
         full.read_inbox_max_id = 101;
         full.read_outbox_max_id = 101;
         full.paid_media_allowed = true;
-        full.paid_reactions_available = true;
+        full.paid_reactions_available = receipts.getBoolean("paid_reactions_enabled", true);
         full.available_reactions = new TLRPC.TL_chatReactionsNone();
         full.flags |= 1 << 30;
         full.reactions_limit = 11;
@@ -257,7 +257,10 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
             TLRPC.TL_messages_setChatAvailableReactions change = (TLRPC.TL_messages_setChatAvailableReactions) request;
             full.available_reactions = change.available_reactions;
             full.reactions_limit = change.reactions_limit;
-            if ((change.flags & 2) != 0) full.paid_reactions_available = change.paid_enabled;
+            if ((change.flags & 2) != 0) {
+                full.paid_reactions_available = change.paid_enabled;
+                receipts.edit().putBoolean("paid_reactions_enabled", change.paid_enabled).commit();
+            }
             return new TLRPC.TL_updates();
         }
         if (request instanceof TLRPC.TL_channels_getFullChannel) {

@@ -153,7 +153,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private final boolean protectedPost;
     private final boolean privateStars;
     private final long privacyGeneration;
-    private TextView percentileView;
+    private StarsDonorPercentileView percentileView;
     private final ArrayList<TLRPC.MessageReactor> reactors;
 
     private final BalanceCloud balanceCloud;
@@ -534,13 +534,9 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && (privateStars || protectedPost)) {
             balanceCloud.setVisibility(View.GONE);
         }
-        if (messageObject != null) {
-            percentileView = new TextView(context);
-            percentileView.setTag("stars_donor_percentile");
-            percentileView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            percentileView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
-            percentileView.setGravity(Gravity.CENTER);
-            layout.addView(percentileView, LayoutHelper.createLinear(-1, -2, 20, 0, 20, 12));
+        if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, privacyDialogId)) {
+            percentileView = new StarsDonorPercentileView(context, resourcesProvider);
+            layout.addView(percentileView, LayoutHelper.createLinear(-1, -2, 24, 0, 24, 16));
             updatePercentile();
         }
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
@@ -713,9 +709,8 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setScaleSize(.42f);
         if (peer == UserObject.ANONYMOUS) {
-            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
-            avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundGray, resourcesProvider), Theme.getColor(Theme.key_avatar_backgroundGray, resourcesProvider));
-            dialogImageView.setForUserOrChat(null, avatarDrawable);
+            dialogImageView.setImageDrawable(StarsPrivacyIcon.create(getContext(), 24,
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)));
         } else if (peer >= 0) {
             TLRPC.User _user = MessagesController.getInstance(currentAccount).getUser(peer);
             avatarDrawable.setInfo(_user);
@@ -771,11 +766,10 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     }
 
     private void updatePercentile() {
-        if (percentileView == null || messageObject == null) return;
-        int bucket = StarsPrivacy.isEnabled(currentAccount) ? 0 : StarsPrivacyMockApi.donorPercentile(
-            currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
-        percentileView.setVisibility(bucket > 0 ? View.VISIBLE : View.GONE);
-        percentileView.setText(bucket > 0 ? formatString(R.string.StarsChannelTopPercent, bucket) : "");
+        if (percentileView == null) return;
+        int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId,
+            messageObject == null ? 0 : StarsController.MessageId.from(messageObject).mid);
+        percentileView.setPercentile(bucket, isShowing());
     }
 
     private boolean canSwitchPeer() {

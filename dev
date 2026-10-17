@@ -244,7 +244,7 @@ def smoke_test(privacy=False):
     methods = [
         'deadlineAndMockContract', 'retroactiveReactionPrivacy', 'liveRetroactivePrivacy',
         'purchasePrivacyNotice', 'privacyChangeCancelsPendingPublicSends', 'openReceiptRespondsToPrivacy',
-        'channelHighlightExpiresInOpenSheet', 'productionPendingReactionCancelsSafely',
+        'channelPercentileExpiresInOpenSheet', 'productionPendingReactionCancelsSafely',
         'nativePrivacyScreensAndRecycledRows', 'privateTransactionAmounts', 'anonymousChoiceAfterOptOut',
         'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'compactRtlAndLargeText', 'historyPrivacyControl',
         # The last two scenarios deliberately share persisted fixtures across fresh processes.

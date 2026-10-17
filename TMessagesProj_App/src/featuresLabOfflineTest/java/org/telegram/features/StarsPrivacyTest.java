@@ -426,7 +426,7 @@ public class StarsPrivacyTest {
     }
 
     /** Real deadline and open-view invalidation; intentionally takes five minutes. */
-    @Test public void channelHighlightExpiresInOpenSheet() throws Exception {
+    @Test public void channelPercentileExpiresInOpenSheet() throws Exception {
         launch("Blue");
         final StarsReactionsSheet[] sheet = new StarsReactionsSheet[1];
         final long[] sentAt = new long[1];
@@ -439,11 +439,11 @@ public class StarsPrivacyTest {
         });
         settle();
         instrumentation.runOnMainSync(() -> {
-            assertTrue(reaction().choosen);
+            assertFalse("Channel privacy hides selected Stars immediately", reaction().choosen);
             assertEquals(View.VISIBLE, sheet[0].getContainer().findViewWithTag("stars_donor_percentile").getVisibility());
         });
-        Thread.sleep(Math.max(0, sentAt[0] + StarsPrivacyMockApi.HIGHLIGHT_MS - 5000 - android.os.SystemClock.elapsedRealtime()));
-        instrumentation.runOnMainSync(() -> assertTrue("Still selected just before five minutes", reaction().choosen));
+        Thread.sleep(Math.max(0, sentAt[0] + StarsPrivacyMockApi.PERCENTILE_MS - 5000 - android.os.SystemClock.elapsedRealtime()));
+        instrumentation.runOnMainSync(() -> assertFalse("Selected Stars stay hidden before percentile expiry", reaction().choosen));
         Thread.sleep(6000);
         instrumentation.runOnMainSync(() -> {
             assertFalse(reaction().choosen);
@@ -761,22 +761,22 @@ public class StarsPrivacyTest {
             StarsPrivacyMockApi.Receipt receipt = StarsPrivacyMockApi.sendChannelReaction(0, -7770001, 101, 50);
             assertTrue(receipt.asTransaction() instanceof StarsPrivacyMockApi.RedactedTransaction);
             assertEquals(-50, receipt.asTransaction().amount.amount);
-            assertTrue(StarsPrivacyMockApi.showHighlight(0, -7770001, 101));
+            assertTrue(StarsPrivacyMockApi.hasRecentPercentile(0, -7770001, 101));
             assertEquals(50, StarsPrivacyMockApi.donorPercentile(0, -7770001, 101));
-            assertTrue(StarsPrivacyMockApi.isHighlightActive(299999, 300000));
-            assertFalse(StarsPrivacyMockApi.isHighlightActive(300000, 300000));
-            assertFalse(StarsPrivacyMockApi.isHighlightActive(1, 0));
+            assertTrue(StarsPrivacyMockApi.isPercentileActive(299999, 300000));
+            assertFalse(StarsPrivacyMockApi.isPercentileActive(300000, 300000));
+            assertFalse(StarsPrivacyMockApi.isPercentileActive(1, 0));
             assertEquals(0, StarsPrivacyMockApi.percentileBucket(5, new long[] {1, 2}));
             assertEquals(10, StarsPrivacyMockApi.percentileBucket(100, new long[] {5,10,15,20,25,30,40,50,75,100}));
         });
         settle();
-        instrumentation.runOnMainSync(() -> assertTrue(reaction().choosen));
+        instrumentation.runOnMainSync(() -> assertFalse(reaction().choosen));
         screenshot("stars-private-donor-percentile.png");
         instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, true));
         settle();
         instrumentation.runOnMainSync(() -> {
             assertFalse(reaction().choosen);
-            assertEquals(View.GONE, tagged("stars_donor_percentile").getVisibility());
+            assertEquals("Personal privacy retains the donor-only aggregate", View.VISIBLE, tagged("stars_donor_percentile").getVisibility());
             StarsPrivacyMockApi.setChannelPrivate(0, -7770001, false);
             StarsPrivacy.setEnabled(0, false);
         });
@@ -821,7 +821,7 @@ public class StarsPrivacyTest {
             assertTrue("Explicit redaction overrides public provenance", StarsPrivacyMockApi.isAnonymised(0, future));
             StarsPrivacy.setEnabled(0, true);
             StarsPrivacy.setEnabled(0, false);
-            assertFalse("Old highlights cannot return after toggling twice", StarsPrivacyMockApi.showHighlight(0, -7770001, 101));
+            assertFalse("Disabled channel percentiles cannot return after toggling twice", StarsPrivacyMockApi.hasRecentPercentile(0, -7770001, 101));
         });
     }
 
@@ -844,7 +844,7 @@ public class StarsPrivacyTest {
         instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, true));
     }
 
-    /** Reproducible staged walkthrough for a recording; not part of the verification suite. */
+    /** Native switch feedback, dynamic theme colors and Russian settings layout. */
     @Test public void nativeSettingsPolish() throws Exception {
         launch("Blue");
         clickTag("stars_channel_settings");
@@ -930,13 +930,19 @@ public class StarsPrivacyTest {
                     LocaleController.isRTL = rtl;
                     org.telegram.ui.Stars.StarsPrivacyView control = new org.telegram.ui.Stars.StarsPrivacyView(largeText, 0, preview());
                     StarsPurchasePrivacyView notice = new StarsPurchasePrivacyView(largeText, 0, null);
+                    org.telegram.ui.Stars.StarsDonorPercentileView percentile = new org.telegram.ui.Stars.StarsDonorPercentileView(largeText, null);
+                    percentile.setPercentile(100, false);
                     int width = org.telegram.messenger.AndroidUtilities.dp(320);
-                    for (View view : new View[] {control, notice}) {
+                    for (View view : new View[] {control, notice, percentile}) {
                         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                         view.layout(0, 0, width, view.getMeasuredHeight());
                         assertNoClippedText(view);
                     }
+                    org.telegram.ui.Components.AnimatedTextView number = (org.telegram.ui.Components.AnimatedTextView) percentile.getChildAt(1);
+                    assertTrue("Large percentile must fit its width", number.getDrawable().getCurrentWidth() <= number.getWidth());
+                    assertTrue("Large percentile must fit its height", number.getDrawable().getHeight() <= number.getHeight());
+                    assertTrue("Percentile exposes one concise accessible label", percentile.getContentDescription().toString().contains("100%"));
                     assertTrue(control.getChildAt(rtl ? 0 : 2) instanceof org.telegram.ui.Components.Switch);
                     assertTrue("Large-text setting is respected", notice.getTextView().getTextSize() > org.telegram.messenger.AndroidUtilities.dp(14));
                     android.view.accessibility.AccessibilityNodeInfo node = control.createAccessibilityNodeInfo();

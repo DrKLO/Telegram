@@ -55,8 +55,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Stars.StarsChannelPrivacyActivity;
+import org.telegram.ui.Stars.StarsPrivacyMockApi;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BulletinFactory;
@@ -98,6 +97,8 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     private final HashMap<Long, AnimatedEmojiSpan> initialSelectedEmojis = new LinkedHashMap<>();
     private final List<TLRPC.TL_availableReaction> allAvailableReactions = new ArrayList<>();
     private boolean initialPaid;
+    private boolean privateStars, initialPrivateStars;
+    private TextCheckCell privateStarsCell;
 
     private final int maxReactionsCount = getMessagesController().boostsChannelLevelMax;
     private boolean emojiKeyboardVisible = false;
@@ -132,6 +133,8 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         if (info == null) {
             return false;
         }
+
+        privateStars = initialPrivateStars = StarsPrivacyMockApi.isChannelPrivate(currentAccount, -chatId);
 
         getMessagesController().getBoostsController().getBoostsStats(-chatId, boostsStatus -> {
             this.boostsStatus = boostsStatus;
@@ -318,25 +321,29 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
 
         if (info.paid_media_allowed) {
             paidCheckCell = new TextCheckCell(context);
-            paidCheckCell.setTextAndCheck(LocaleController.getString(R.string.ChannelEnablePaidReactions), false, false);
+            paidCheckCell.setTextAndCheck(LocaleController.getString(R.string.ChannelEnablePaidReactions), false, true);
             switchLayout.addView(paidCheckCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             paidCheckCell.setOnClickListener(v -> {
-                toggleStarsEnabled();
+                if (!actionButton.isLoading()) toggleStarsEnabled();
             });
 
-            TextSettingsCell privacyCell = new TextSettingsCell(context);
-            privacyCell.setTextAndValue(getString(R.string.StarsChannelPrivacy), getString(R.string.StarsPrivacyPreviewLabel), false);
-            privacyCell.setBackground(Theme.getSelectorDrawable(true));
-            privacyCell.setOnClickListener(v -> presentFragment(new StarsChannelPrivacyActivity(currentAccount, -chatId)));
-            switchLayout.addView(privacyCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            privateStarsCell = new TextCheckCell(context);
+            privateStarsCell.setTag("stars_channel_private");
+            privateStarsCell.setTextAndCheck(getString(R.string.StarsChannelPrivate), privateStars, false);
+            privateStarsCell.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 0, 16));
+            privateStarsCell.setOnClickListener(v -> {
+                if (!paidCheckCell.isChecked() || actionButton.isLoading()) return;
+                privateStars = !privateStars;
+                privateStarsCell.setChecked(privateStars);
+            });
+            switchLayout.addView(privateStarsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            updatePrivateStarsEnabled();
 
             infoCell = new TextInfoPrivacyCell(context, 12, resourceProvider);
             infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
             infoCell.setTopPadding(12);
             infoCell.setBottomPadding(70);
-            infoCell.setText(AndroidUtilities.withLearnMore(LocaleController.getString(R.string.ChannelEnablePaidReactionsInfo), () -> {
-                Browser.openUrl(getContext(), LocaleController.getString(R.string.ChannelEnablePaidReactionsInfoLink));
-            }));
+            infoCell.setText(getString(R.string.StarsChannelPrivateInfo));
             switchLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
             infoCell3.setBottomPadding(70);
@@ -375,7 +382,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                 }
                 actionButton.setLoading(false);
                 if (error.text.equals("CHAT_NOT_MODIFIED")) {
-                    finishFragment();
+                    applyStarsPrivacyAndFinish();
                 } else {
                     Runnable runnable = () -> {
                         if (boostsStatus != null && error.text.equals("BOOSTS_REQUIRED")) {
@@ -390,7 +397,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                     };
                     AndroidUtilities.runOnUIThread(runnable, boostsStatus == null ? 200 : 0);
                 }
-            }, this::finishFragment);
+            }, this::applyStarsPrivacyAndFinish);
         });
         rootLayout.addView(scrollView);
         rootLayout.addView(actionButtonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 13 + 48 + 13, Gravity.BOTTOM, 0, 0, 0, 0));
@@ -565,6 +572,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
                     selectAnimatedEmojiDialog.unselect(span.documentId);
                     if (span.documentId == -1 && paidCheckCell != null) {
                         paidCheckCell.setChecked(false);
+                        updatePrivateStarsEnabled();
                         editText.setMaxLength(maxReactionsCount);
                     }
                     if (isFast) {
@@ -773,7 +781,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         if (boostsStatus != null && boostsStatus.level < selectedCustomReactions) {
             hasChanges = false;
         }
-        if (initialPaid != paid) {
+        if (initialPaid != (paidCheckCell != null && paidCheckCell.isChecked()) || initialPrivateStars != privateStars) {
             hasChanges = true;
         }
         if (invoked && hasChanges) {
@@ -982,6 +990,23 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }
             setCheckedEnableReactionCell(selectedType, true, true);
         }
+        updatePrivateStarsEnabled();
         editText.updateAnimatedEmoji(true);
+    }
+
+    private void updatePrivateStarsEnabled() {
+        if (privateStarsCell == null) return;
+        boolean enabled = paidCheckCell.isChecked();
+        privateStarsCell.setEnabled(enabled, null);
+        privateStarsCell.getCheckBox().setEnabled(enabled);
+    }
+
+    private void applyStarsPrivacyAndFinish() {
+        // Save the proposed channel policy with the same Apply/Discard boundary as reactions.
+        if (privateStarsCell != null && privateStars != initialPrivateStars) {
+            if (privateStars) StarsPrivacyMockApi.setShowsPercentile(currentAccount, -chatId, true);
+            StarsPrivacyMockApi.setChannelPrivate(currentAccount, -chatId, privateStars);
+        }
+        finishFragment();
     }
 }

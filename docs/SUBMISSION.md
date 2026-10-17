@@ -30,9 +30,11 @@ anonymises receipt details rather than deleting receipts entirely.
   one-tap link to enable privacy. The offline preview uses sample prices and cannot purchase.
 - **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
   animated counts and a real **20-second pre-send Undo**.
-- **Channel controls:** Channel settings → Reactions → Star reaction privacy.
-  Anonymous-only policy, five-minute selected-state expiry, optional donor-only
-  rounded percentiles and minimal receipts. Personal privacy takes precedence.
+- **Channel controls:** Channel settings → Reactions → Keep Stars anonymous.
+  The inline switch saves with Update Reactions and participates in native Discard.
+  It removes named rankings and selected Star states immediately, keeps minimal
+  receipts, and shows large donor-only percentiles for five minutes after sending.
+  This also applies with personal privacy off.
 - **History:** Long-press a transaction to anonymise it, or anonymise existing history
   from Stars Privacy. Native confirmations; no restore action in the mock.
 - **Live Stars:** A usable native live-reaction flow, with a local anonymous send and
@@ -81,7 +83,7 @@ SDK 36, NDK 27.2.12479018, CMake 3.22.1 and Gradle 8.13. Follow
 ```
 
 Open **Settings → Telegram Stars**. Tap or hold the Star in **Chats → Design Notes**,
-open a receipt, and use **channel header → Edit → Reactions → Star reaction privacy**.
+open a receipt, and use **channel header → Edit → Reactions → Keep Stars anonymous**.
 The channel avatar opens the real live-story viewer with sample metadata.
 See [NATIVE_UI.md](NATIVE_UI.md) for all production navigation paths.
 The offline package has no Internet permission or active account.
@@ -126,7 +128,7 @@ python3 Tools/prepare_stars_submission.py
 The recorder rebuilds/installs the offline app and instrumentation APK, then runs
 the four `NativeStarsFlowTest` scenarios in separate processes. It joins actual
 captures of Settings/history, the channel/admin flow, live Stars and dark mode,
-leaving both 20-second waits intact. It records no microphone audio and does not
+leaving all 20-second waits intact. It records no microphone audio and does not
 synthesize motion. The walkthrough changes only offline sample preferences and
 creates sample receipts. It never touches a real account. Review the MP4 before sharing.
 
