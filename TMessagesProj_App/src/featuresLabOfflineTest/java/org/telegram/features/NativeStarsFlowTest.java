@@ -611,7 +611,8 @@ public class NativeStarsFlowTest {
         long down = SystemClock.uptimeMillis();
         android.view.MotionEvent event = android.view.MotionEvent.obtain(down, down, android.view.MotionEvent.ACTION_DOWN, point[0], point[1], 0);
         event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
-        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, true));
+        // Waiting for rendering after DOWN can turn a short tap into a long press.
+        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, hold));
         event.recycle();
         boolean opened = !hold;
         if (hold) {
@@ -631,7 +632,7 @@ public class NativeStarsFlowTest {
         }
         event = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), opened ? android.view.MotionEvent.ACTION_UP : android.view.MotionEvent.ACTION_CANCEL, point[0], point[1], 0);
         event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
-        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, true));
+        assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, hold));
         event.recycle();
         assertTrue("Held control must open its native sheet or dialog", opened);
         settle();
