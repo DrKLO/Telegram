@@ -191,4 +191,6 @@ android {
     }
 }
 
-apply plugin: 'com.google.gms.google-services'
+if (!rootProject.ext.amegramSourceChecks) {
+    apply plugin: 'com.google.gms.google-services'
+}

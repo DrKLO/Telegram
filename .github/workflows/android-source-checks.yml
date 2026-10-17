@@ -1,0 +1,69 @@
+name: Android source checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      # Source-check mode always uses ID 0 / empty hash and cannot package an APK.
+      AMEGRAM_API_ID: ''
+      AMEGRAM_API_HASH: ''
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate configuration boundaries
+        run: |
+          python3 -m unittest discover -s tools/tests -v
+          python3 tools/check_build_contract.py
+      - name: Fetch only source-check submodules at recorded revisions
+        run: git submodule update --init --recursive --depth=1 -- TMessagesProj_Modules/media TMessagesProj/lib/jlatexmath
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned Android tools
+        # ubuntu-24.04 supplies Android command-line tools.
+        run: |
+          python3 -c 'import os, subprocess; subprocess.run([os.path.join(os.environ["ANDROID_HOME"], "cmdline-tools/latest/bin/sdkmanager"), "--licenses"], input="y\n" * 100, text=True, stdout=subprocess.DEVNULL, check=True)'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          cache-read-only: true
+      - name: Verify variant IDs, compile sources/resources and run unit tests
+        run: >-
+          ./gradlew -PamegramSourceChecks=true --no-daemon --no-parallel --max-workers=1
+          '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
+          --console=plain checkAmeGramApplicationIds
+          :TMessagesProj:compileDebugJavaWithJavac
+          :TMessagesProj:compileDebugLibraryResources
+          :TMessagesProj:testDebugUnitTest
+          :TMessagesProj_App:processAfatDebugResources
+      - name: Verify that source-check mode cannot package APKs
+        run: |
+          if ./gradlew -PamegramSourceChecks=true --no-daemon --no-parallel --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' :TMessagesProj_App:assembleAfatDebug > source-guard.log 2>&1; then
+            echo 'Source-check mode unexpectedly allowed APK packaging.' >&2
+            exit 1
+          fi
+          grep -F 'Source-check mode cannot package APKs or bundles.' source-guard.log
+      - name: Retain unit-test evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: unit-test-results
+          path: |
+            TMessagesProj/build/reports/tests/testDebugUnitTest/
+            TMessagesProj/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 7

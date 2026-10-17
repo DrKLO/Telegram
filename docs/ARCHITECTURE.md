@@ -67,3 +67,7 @@ BuildVars reads API values generated from AMEGRAM_API_ID/AMEGRAM_API_HASH; missi
 ## Verification boundaries
 
 See [VERIFICATION.md](VERIFICATION.md) for actual commands/results. Compiling Java/Kotlin and resources does not verify login, messaging, JNI, Android account coexistence, push or rendering. No user authentication was attempted. No credentials, protocol implementation, transport security or cryptographic algorithm was weakened for these changes.
+
+## Source-check profile update
+
+The 2026-10-17 [build audit](BUILD_AUDIT.md) adds a credential-free PR profile, removes Firebase generation from the shared library, removes tracked service JSON fixtures and verifies final regular variant IDs. Normal application identity, production signing and visual tokens are unchanged. See that audit for current verification results rather than treating the initial blockers above as current.

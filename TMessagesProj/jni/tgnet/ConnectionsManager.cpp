@@ -2205,7 +2205,7 @@ void ConnectionsManager::failNotRunningRequest(int32_t token) {
                 if (LOGS_ENABLED) DEBUG_D("cancelled queued rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
                 requestsQueue.erase(iter);
                 removeRequestFromGuid(token);
-                return true;
+                return;
             }
         }
     });

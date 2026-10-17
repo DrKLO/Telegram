@@ -19,7 +19,7 @@ Implementation is not equivalent to device verification. See [verification](docs
 
 ## Development
 
-Read [building](docs/BUILDING.md), [architecture](docs/ARCHITECTURE.md), [features](docs/FEATURES.md), [roadmap](docs/ROADMAP.md) and [upstream maintenance](docs/UPSTREAM.md). API credentials are provided through the build environment; never commit or log them. Distribution packaging is intentionally blocked until signing and service integrations are ready. Do not publish the upstream dummy configuration.
+Read the current [build audit and CI scope](docs/BUILD_AUDIT.md), [building](docs/BUILDING.md), [architecture](docs/ARCHITECTURE.md), [features](docs/FEATURES.md), [roadmap](docs/ROADMAP.md) and [upstream maintenance](docs/UPSTREAM.md). API credentials are provided through the build environment; never commit or log them. Distribution packaging is intentionally blocked until signing and service integrations are ready. Do not publish the upstream dummy configuration.
 
 The supported first build target is the regular `TMessagesProj_App` debug variant. Other upstream application modules are retained for synchronization, not endorsed as AmeGram distribution targets.
 

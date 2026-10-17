@@ -2,6 +2,10 @@
 
 ## 0.1.0-alpha — Unreleased
 
+- Add pinned, credential-free pull-request source/resource/unit checks and AGP application-ID verification.
+- Remove tracked service JSON fixtures from new trees, protect local configuration/signing paths and keep Firebase generation in the app module.
+- Pin the Gradle distribution checksum and document current build/component/emulator compatibility.
+- Correct the native queued-request callback return type and localize About metadata without changing the interface.
 - Audit Telegram Android 13.0.2 (7175), preserve its history and document upstream synchronization.
 - Introduce AmeGram package/version preparation, independent temporary launcher branding and per-variant Android account types.
 - Read Telegram API configuration from environment variables; block APK packaging without it and block distribution pending integration review.

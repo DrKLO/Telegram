@@ -248,7 +248,7 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+// Firebase values belong to the consuming application, not this shared library.
 
 task checkVisibility {
     doFirst {
