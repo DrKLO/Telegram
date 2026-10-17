@@ -428,7 +428,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             } else if (position == birthdayRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY));
             } else if (position == starsPrivacyRow) {
-                presentFragment(new org.telegram.ui.Stars.StarsPrivacyActivity());
+                presentFragment(new org.telegram.ui.Stars.StarsPrivacyActivity(currentAccount));
             } else if (position == giftsRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_GIFTS));
             } else if (position == forwardsRow) {

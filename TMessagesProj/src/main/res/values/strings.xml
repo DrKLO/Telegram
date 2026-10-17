@@ -11539,8 +11539,8 @@
     <!-- Personal Stars privacy -->
     <string name="StarsPrivacyTitle">Stars Privacy</string>
     <string name="StarsPrivacySwitch">Private Star Reactions</string>
-    <string name="StarsPrivacyDescription">Send new Star reactions anonymously. Hide Top Senders and selected Star highlights. In My Stars, show only transaction IDs and dates. Star animations stay the same.</string>
-    <string name="StarsPrivacyScope">This setting applies to this account in this app. It hides transaction details here; it does not delete records from Telegram or other devices, hide payments from recipients, or change past reactions. You have 20 seconds to undo a new reaction. Leaving the reaction screen cancels an unsent reaction.</string>
+    <string name="StarsPrivacyDescription">Send Star reactions anonymously, without Top Senders or selected Star highlights. Keep only transaction IDs, dates and times. Star animations stay the same.</string>
+    <string name="StarsPrivacyScope">Turning this off affects new reactions only. Past private reactions and hidden transaction details stay private in this app. You have 20 seconds to undo a new reaction. Records on Telegram and other devices remain unchanged.</string>
     <string name="StarsPrivacyActive">Private reactions are on</string>
     <string name="StarsPrivacyPending">Sending Stars anonymously</string>
     <string name="StarsPendingTitle">Sending Stars</string>
@@ -11566,4 +11566,8 @@
     <string name="StarsHistoryAnonymiseConfirm">Keep only transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Existing records on Telegram and other devices remain unchanged.</string>
     <string name="StarsPrivacyDemoHint">Tap the Star to try a reaction. Hold it to open the reaction sheet.</string>
     <string name="StarsPrivacyMockReactionInfo">Preview reaction. No Stars will be spent.</string>
+    <string name="StarsPrivacyEnabledNotice">New reactions are private. Past private activity stays private.</string>
+    <string name="StarsPrivacyDisabledNotice">Only new reactions can be public. Past private activity stays private.</string>
+    <string name="StarsHistoryAnonymisedNotice">History anonymised in this preview.</string>
+    <string name="StarsReactionPreviewPending">Star reaction · Preview</string>
 </resources>

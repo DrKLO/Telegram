@@ -74,7 +74,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         privacyCell = new TextSettingsCell(context);
         privacyCell.setTag("stars_privacy_settings");
         privacyCell.setBackground(Theme.getSelectorDrawable(true));
-        privacyCell.setOnClickListener(v -> presentFragment(new StarsPrivacyActivity()));
+        privacyCell.setOnClickListener(v -> presentFragment(new StarsPrivacyActivity(currentAccount)));
         content.addView(privacyCell, LayoutHelper.createLinear(-1, -2));
         channelCell = new TextSettingsCell(context);
         channelCell.setTag("stars_channel_settings");
@@ -143,7 +143,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         TLRPC.TL_reactionCount reaction = new TLRPC.TL_reactionCount();
         reaction.reaction = new TLRPC.TL_reactionPaid();
         reaction.count = 125;
-        reaction.chosen = true; // Keep the real state; privacy changes only its presentation.
+        reaction.chosen = true; // Retain raw server state; private provenance controls presentation.
         message.reactions.results.add(reaction);
         for (int i = 0; i < 3; i++) {
             TLRPC.TL_user user = new TLRPC.TL_user();
@@ -185,8 +185,8 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
             post.messageOwner.reactions.top_reactors, true, false, 0, getResourceProvider());
         sheet.setMessageCell(null, post.getId(), messageCell);
         sheet.setOnSend((peer, stars) -> {
-            sendSampleReaction(stars);
-            return 101;
+            sendSampleReaction(stars, peer);
+            return post.getId();
         });
         sheet.setOfflinePreview();
         showDialog(sheet);
@@ -213,10 +213,14 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
     }
 
     public void sendSampleReaction(long amount) {
+        sendSampleReaction(amount, 0);
+    }
+
+    private void sendSampleReaction(long amount, long requestedPeer) {
         if (pending == null) {
             pending = new PaidReactionUndo();
             pendingStars = 0;
-            pendingPeer = StarsPrivacy.resolvePeer(currentAccount, -CHANNEL, 0);
+            pendingPeer = StarsPrivacy.resolvePeer(currentAccount, -CHANNEL, requestedPeer);
             Bulletin.TwoLineAnimatedLottieLayout layout = new Bulletin.TwoLineAnimatedLottieLayout(getContext(), getResourceProvider());
             layout.setAnimation(R.raw.stars_topup);
             layout.titleTextView.setText(LocaleController.getString(pendingLive ? R.string.StarsPrivacyLivePreview : StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL) ? R.string.StarsChannelPending : pendingPeer == UserObject.ANONYMOUS ? R.string.StarsPrivacyPending : R.string.StarsPendingTitle));
@@ -260,8 +264,11 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
             addTransaction(receipt.asTransaction());
         } else if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL)) {
             addTransaction(StarsPrivacyMockApi.sendChannelReaction(currentAccount, -CHANNEL, post.getId(), pendingStars).asTransaction());
+        } else if (lastPaymentPeer == UserObject.ANONYMOUS) {
+            StarsPrivacyMockApi.protectPost(currentAccount, -CHANNEL, post.getId());
+            addTransaction(StarsPrivacyMockApi.sendAnonymousLiveReaction(pendingStars).asTransaction());
         } else {
-            addTransaction("FL-20261017-" + (1000 + completedPayments), -pendingStars, (int) (System.currentTimeMillis() / 1000));
+            addTransaction(StarsPrivacyMockApi.sendPublicReaction(currentAccount, -CHANNEL, post.getId(), pendingStars));
         }
         pendingLive = false;
         pending = null;

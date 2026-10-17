@@ -1610,7 +1610,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private Runnable cancelCurrentGift;
         private boolean needDivider;
         public void set(TL_stars.StarsTransaction transaction, boolean bot, boolean divider) {
-            lastTransaction = StarsPrivacyMockApi.project(currentAccount, transaction);
+            lastTransaction = StarsPrivacyMockApi.project(currentAccount, transaction, !bot);
             lastBot = bot;
             setOnLongClickListener(v -> {
                 if (lastBot || lastTransaction.amount instanceof TL_stars.TL_starsTonAmount) return false;
@@ -1621,7 +1621,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 cancelCurrentGift.run();
                 cancelCurrentGift = null;
             }
-            boolean privateHistory = !(transaction.amount instanceof TL_stars.TL_starsTonAmount) && (StarsPrivacyMockApi.shouldRedact(currentAccount, transaction) || !bot && StarsPrivacy.isEnabled(currentAccount));
+            boolean privateHistory = lastTransaction instanceof StarsPrivacyMockApi.RedactedTransaction;
             imageViewContainer.setVisibility(privateHistory ? GONE : VISIBLE);
             textLayout.setPadding(privateHistory ? dp(20) : 0, 0, privateHistory ? dp(20) : 0, 0);
             if (privateHistory) {
@@ -3840,8 +3840,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         if (transaction == null || context == null)
             return null;
 
-        if (!(transaction.amount instanceof TL_stars.TL_starsTonAmount) && (StarsPrivacyMockApi.shouldRedact(currentAccount, transaction) || !bot && StarsPrivacy.isEnabled(currentAccount))) {
-            return showPrivateTransactionSheet(context, currentAccount, transaction, resourcesProvider);
+        TL_stars.StarsTransaction projected = StarsPrivacyMockApi.project(currentAccount, transaction, !bot);
+        if (projected instanceof StarsPrivacyMockApi.RedactedTransaction) {
+            return showPrivateTransactionSheet(context, currentAccount, projected, resourcesProvider);
         }
         final boolean ton = transaction.amount instanceof TL_stars.TL_starsTonAmount;
         final boolean giveaway = (transaction.flags & 8192) != 0;

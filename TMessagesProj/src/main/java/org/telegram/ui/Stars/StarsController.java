@@ -1879,7 +1879,7 @@ public class StarsController {
         }
 
         public String getToastTitle() {
-            if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did)) return getString(R.string.StarsChannelPending);
+            if (mockAtStart || StarsPrivacy.usesMockSend(currentAccount, messageObject)) return getString(R.string.StarsReactionPreviewPending);
             if (isAnonymous()) {
                 return getString(R.string.StarsPrivacyPending);
             } else if (getPeerId() != 0 && getPeerId() != UserConfig.getInstance(currentAccount).getClientUserId()) {
@@ -1900,7 +1900,7 @@ public class StarsController {
             this.messageObject = messageObject;
             this.chatActivity = chatActivity;
             anonymousAtStart = StarsPrivacy.isPrivate(currentAccount, message.did);
-            mockAtStart = StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did);
+            mockAtStart = StarsPrivacy.usesMockSend(currentAccount, messageObject);
 
             final Context context = getContext(chatActivity);
             bulletinLayout = new Bulletin.TwoLineAnimatedLottieLayout(context, chatActivity.themeDelegate);
@@ -2019,7 +2019,7 @@ public class StarsController {
             final ConnectionsManager connectionsManager = ConnectionsManager.getInstance(currentAccount);
 
             final long totalStars = amount;
-            if (!mockAtStart && !StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did) && starsController.balanceAvailable() && starsController.getBalance(false) < totalStars) {
+            if (!mockAtStart && !StarsPrivacy.usesMockSend(currentAccount, messageObject) && starsController.balanceAvailable() && starsController.getBalance(false) < totalStars) {
                 cancel();
 
                 String name;
@@ -2043,11 +2043,17 @@ public class StarsController {
             if (!undo.commit(android.os.SystemClock.elapsedRealtime())) return;
             committed = true;
 
-            if (mockAtStart || StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did)) {
-                StarsPrivacyMockApi.Receipt receipt = StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did)
-                    ? StarsPrivacyMockApi.sendChannelReaction(currentAccount, message.did, message.mid, amount)
-                    : StarsPrivacyMockApi.sendAnonymousLiveReaction(amount);
-                transactions[ALL_TRANSACTIONS].add(0, receipt.asTransaction());
+            if (isAnonymous()) StarsPrivacyMockApi.protectPost(currentAccount, message.did, message.mid);
+            if (mockAtStart || StarsPrivacy.usesMockSend(currentAccount, messageObject)) {
+                TL_stars.StarsTransaction receipt;
+                if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, message.did)) {
+                    receipt = StarsPrivacyMockApi.sendChannelReaction(currentAccount, message.did, message.mid, amount).asTransaction();
+                } else if (isAnonymous()) {
+                    receipt = StarsPrivacyMockApi.sendAnonymousLiveReaction(amount).asTransaction();
+                } else {
+                    receipt = StarsPrivacyMockApi.sendPublicReaction(currentAccount, message.did, message.mid, amount);
+                }
+                transactions[ALL_TRANSACTIONS].add(0, receipt);
                 minus = Math.max(0, minus - reservedAmount);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starTransactionsLoaded);
@@ -2132,7 +2138,7 @@ public class StarsController {
         final long totalStars = amount;
         final Context context = getContext(chatActivity);
         if (context == null) return null;
-        if (checkBalance && !StarsPrivacyMockApi.isChannelPrivate(currentAccount, key.did) && s.balanceAvailable() && s.getBalance(false) <= 0) {
+        if (checkBalance && !StarsPrivacy.usesMockSend(currentAccount, messageObject) && s.balanceAvailable() && s.getBalance(false) <= 0) {
             final long dialogId = chatActivity.getDialogId();
             String name;
             if (dialogId >= 0) {
@@ -2160,7 +2166,7 @@ public class StarsController {
             currentPendingReactions = new PendingPaidReactions(key, messageObject, chatActivity, ConnectionsManager.getInstance(currentAccount).getCurrentTime(), affect);
         }
         final long totalStars2 = currentPendingReactions.amount + amount;
-        if (checkBalance && !StarsPrivacyMockApi.isChannelPrivate(currentAccount, key.did) && s.balanceAvailable() && s.getBalance(false) < totalStars2) {
+        if (checkBalance && !StarsPrivacy.usesMockSend(currentAccount, messageObject) && s.balanceAvailable() && s.getBalance(false) < totalStars2) {
             currentPendingReactions.cancel();
             final long dialogId = chatActivity.getDialogId();
             String name;

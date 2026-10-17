@@ -934,7 +934,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         Bulletin previous = starsBulletin;
         starsBulletin = null;
         if (previous != null) previous.hide();
-        sentStars = true;
+        if (!mockStars && !org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)) sentStars = true;
         send(org.telegram.ui.Stars.StarsPrivacy.resolvePeer(currentAccount, dialogId, starsPeer), new TLRPC.TL_textWithEntities(), stars, mockStars);
     }
 
@@ -1273,7 +1273,8 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     public boolean didSendStars() {
-        return !org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId) && (sentStars || localStars > 0);
+        return !org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)
+            && (sentStars || localStars > 0 && !mockStars && starsPeer != org.telegram.messenger.UserObject.ANONYMOUS);
     }
 
     public boolean areSendingStars() {

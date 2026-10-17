@@ -12,7 +12,10 @@ Source branch: `feature/stars-privacy`; setup remains in the earlier `setup/offl
 and `setup/android` commits. The prototype uses Telegram's native Android controls.
 Personal anonymous paid post reactions use the existing API in a credentialed build.
 Channel enforcement, permanent history redaction, percentiles and anonymous live
-reactions use a local mock. No account or real payment is involved in the demo.
+reactions use a local mock. Separating a new public contribution from past private
+Stars on the same post is also mocked; old receipt details and highlights stay hidden
+after switching privacy off. Native toggle bulletins explain this. No account or real
+payment is involved in the demo.
 
 Do not call this full payment anonymity or secure deletion: existing Telegram servers,
 other clients, payment providers and recipient records have not changed. Include the

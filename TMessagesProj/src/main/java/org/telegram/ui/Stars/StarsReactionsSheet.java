@@ -149,6 +149,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
     private final MessageObject messageObject;
     private final long privacyDialogId;
+    private final boolean protectedPost;
     private final ArrayList<TLRPC.MessageReactor> reactors;
 
     private final BalanceCloud balanceCloud;
@@ -212,7 +213,11 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             }
         }
         privacyDialogId = messageObject == null ? dialogId : StarsController.MessageId.from(messageObject).did;
+        StarsPrivacy.observeReaction(currentAccount, messageObject);
+        protectedPost = messageObject != null && StarsPrivacyMockApi.isProtectedPost(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
         final boolean privateStars = StarsPrivacy.isPrivate(currentAccount, privacyDialogId);
+        // Never feed an old private total into the sent label, slider or leaderboard.
+        if (privateStars || protectedPost) me = null;
         final boolean withTopSenders = !privateStars && reactors != null && !reactors.isEmpty();
         if (liveStories) {
             TLRPC.MessageReactor myReactor = null;
@@ -520,7 +525,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
         }
 
-        if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, privacyDialogId) || liveStories && privateStars) {
+        if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && privateStars) {
             TextView previewInfo = new TextView(context);
             balanceCloud.setVisibility(View.GONE);
             previewInfo.setText(getString(R.string.StarsPrivacyMockReactionInfo));
@@ -593,7 +598,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                     }
                 };
 
-                if (!(liveStories && privateStars || StarsPrivacyMockApi.isChannelPrivate(currentAccount, privacyDialogId)) && starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
+                if (!(liveStories && privateStars || StarsPrivacy.usesMockSend(currentAccount, messageObject)) && starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
                     if (liveStories) {
                         new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, DialogObject.getShortName(currentAccount, dialogId), send, dialogId).show();
                     } else {
@@ -674,7 +679,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         container.addView(icon3dView, LayoutHelper.createFrame(150, 150));
         slider.setValue(50);
 
-        if (!privateStars && reactors != null) {
+        if (!privateStars && !protectedPost && reactors != null) {
             long top = 0;
             for (int i = 0; i < reactors.size(); ++i) {
                 final TLRPC.MessageReactor reactor = reactors.get(i);
@@ -788,12 +793,13 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                         }
                     }
                     if (reactor.my || dialogId == selfId) {
-                        existingStars = reactor.count;
+                        existingStars = protectedPost ? 0 : reactor.count;
                         continue;
                     }
                     array.add(SenderData.of(reactor.anonymous, false, dialogId, reactor.count));
                 }
             }
+            if (protectedPost) existingStars = StarsPrivacyMockApi.publicContribution(currentAccount, privacyDialogId, StarsController.MessageId.from(messageObject).mid);
             if (existingStars + my_stars > 0) {
                 array.add(SenderData.of(peer == UserObject.ANONYMOUS, true, selfId, existingStars + my_stars));
             }
@@ -805,8 +811,8 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private boolean sending;
     private boolean checkedVisiblity = false;
     private void checkVisibility() {
-        // Opening a sheet must not change the visibility of a past reaction.
-        if (StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
+        // A send-as choice is for the next contribution, never the protected past total.
+        if (protectedPost || StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
         if (checkedVisiblity) return;
         checkedVisiblity = true;
         if (messageObject == null) return;

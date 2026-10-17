@@ -267,8 +267,8 @@
     <!-- Personal Stars privacy -->
     <string name="StarsPrivacyTitle">Конфиденциальность звёзд</string>
     <string name="StarsPrivacySwitch">Приватные реакции звёздами</string>
-    <string name="StarsPrivacyDescription">Отправлять новые реакции звёздами анонимно. Скрывать лидеров и выделение поставленных звёзд. В разделе «Мои звёзды» показывать только номера, дату и время операций. Анимации звёзд сохраняются.</string>
-    <string name="StarsPrivacyScope">Настройка действует для этого аккаунта в этом приложении. Она скрывает подробности операций здесь, но не удаляет записи с серверов Telegram и других устройств, не скрывает платежи от получателей и не меняет прошлые реакции. Новую реакцию можно отменить в течение 20 секунд. При выходе с экрана реакции неотправленная реакция отменяется.</string>
+    <string name="StarsPrivacyDescription">Отправляйте звёзды анонимно, без рейтинга отправителей и выделения ваших реакций. В истории остаются только ID, дата и время. Анимация звёзд сохраняется.</string>
+    <string name="StarsPrivacyScope">Выключение настройки влияет только на новые реакции. Прежние приватные реакции и скрытые детали транзакций останутся скрытыми в этом приложении. Новую реакцию можно отменить в течение 20 секунд. Записи на серверах Telegram и других устройствах останутся без изменений.</string>
     <string name="StarsPrivacyActive">Приватные реакции включены</string>
     <string name="StarsPrivacyPending">Отправка звёзд анонимно</string>
     <string name="StarsPendingTitle">Отправка звёзд</string>
@@ -294,4 +294,8 @@
     <string name="StarsHistoryAnonymiseConfirm">Оставить только ID, дату и время транзакций?\n\nВ предпросмотре это действие нельзя отменить. Записи на серверах Telegram и других устройствах останутся без изменений.</string>
     <string name="StarsPrivacyDemoHint">Нажмите на звезду, чтобы поставить реакцию. Удерживайте её, чтобы открыть меню реакций.</string>
     <string name="StarsPrivacyMockReactionInfo">Тестовая реакция. Звёзды не будут потрачены.</string>
+    <string name="StarsPrivacyEnabledNotice">Новые реакции будут приватными. Прежние приватные данные останутся скрытыми.</string>
+    <string name="StarsPrivacyDisabledNotice">Публичными могут стать только новые реакции. Прежние приватные данные останутся скрытыми.</string>
+    <string name="StarsHistoryAnonymisedNotice">История анонимизирована в предпросмотре.</string>
+    <string name="StarsReactionPreviewPending">Реакция за звёзды · Предпросмотр</string>
 </resources>

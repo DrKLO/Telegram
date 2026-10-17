@@ -68,7 +68,14 @@ public class StarsPrivacyTest {
         screenshot("stars-private-light.png");
 
         final StarsReactionsSheet[] sheet = new StarsReactionsSheet[1];
-        instrumentation.runOnMainSync(() -> sheet[0] = preview.showReactionSheet());
+        instrumentation.runOnMainSync(() -> {
+            TLRPC.TL_messageReactor privatePast = new TLRPC.TL_messageReactor();
+            privatePast.my = true;
+            privatePast.anonymous = true;
+            privatePast.count = 999;
+            messageCell().getMessageObject().messageOwner.reactions.top_reactors.add(privatePast);
+            sheet[0] = preview.showReactionSheet();
+        });
         settle();
         instrumentation.runOnMainSync(() -> {
             assertNull(find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class));
@@ -105,21 +112,50 @@ public class StarsPrivacyTest {
         clickTag("stars_privacy_settings");
         screenshot("stars-privacy-settings-light.png");
         clickTag("stars_privacy_toggle");
-        instrumentation.runOnMainSync(() -> assertFalse(StarsPrivacy.isEnabled(0)));
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("Only new reactions can be public. Past private activity stays private."));
+        });
+        screenshot("stars-privacy-off-notice.png");
         back();
         instrumentation.runOnMainSync(() -> {
-            assertTrue(reaction().choosen);
-            assertTrue(texts(tagged("FL-20261017-0001")).toString().contains("Design Notes"));
+            assertFalse("Turning off cannot reveal an old chosen state", reaction().choosen);
+            assertEquals(2, texts(tagged("FL-20261017-0001")).size());
+            assertFalse(texts(tagged("FL-20261017-0001")).toString().contains("Design Notes"));
+            TL_stars.TL_starsTransaction unloaded = new TL_stars.TL_starsTransaction();
+            unloaded.id = "unloaded-private-receipt";
+            unloaded.date = 1792227600;
+            unloaded.amount = TL_stars.StarsAmount.ofStars(-100);
+            assertTrue("Unloaded pages remain private", StarsPrivacyMockApi.project(0, unloaded) instanceof StarsPrivacyMockApi.RedactedTransaction);
+            StarsIntroActivity.StarsTransactionView recycled = (StarsIntroActivity.StarsTransactionView) tagged("FL-20261017-0002");
+            TL_stars.StarsTransaction fresh = StarsPrivacyMockApi.sendPublicReaction(0, -7770001, 101, 7);
+            recycled.set(fresh, false, true);
+            assertTrue("A new public receipt has ordinary native details", texts(recycled).toString().contains("Design Notes"));
+            assertEquals("Only the new contribution enters rankings", 7, StarsPrivacyMockApi.publicContribution(0, -7770001, 101));
+            // Re-fetch a protected ID through a reused row; do not retain its original content.
+            unloaded.id = "FL-20261017-0001";
+            recycled.set(unloaded, false, true);
+            assertEquals(2, texts(recycled).size());
         });
-        screenshot("stars-standard-light.png");
+        settle();
+        instrumentation.runOnMainSync(() -> assertTrue("Only the fresh public reaction can highlight", reaction().choosen));
+        screenshot("stars-private-past-public-future.png");
         instrumentation.runOnMainSync(() -> sheet[0] = preview.showReactionSheet());
         settle();
-        instrumentation.runOnMainSync(() -> assertNotNull(find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class)));
+        instrumentation.runOnMainSync(() -> {
+            assertNotNull(find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class));
+            assertFalse("The sheet must not reveal the old private sent total", texts(sheet[0].getContainer()).toString().contains("999"));
+            sheet[0].peer = 1234; // Selecting a new identity must not modify the old post on dismissal.
+        });
         screenshot("stars-standard-reaction-sheet.png");
-        instrumentation.runOnMainSync(() -> sheet[0].dismiss());
+        instrumentation.runOnMainSync(() -> {
+            sheet[0].dismiss();
+            assertEquals(Long.valueOf(UserObject.ANONYMOUS), messageCell().getMessageObject().getMyPaidReactionPeer());
+        });
         settle();
         clickTag("stars_privacy_settings");
         clickTag("stars_privacy_toggle");
+        instrumentation.runOnMainSync(() -> assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("New reactions are private. Past private activity stays private.")));
         back();
         instrumentation.runOnMainSync(() -> {
             assertFalse(reaction().choosen);
@@ -130,6 +166,33 @@ public class StarsPrivacyTest {
         screenshot("stars-private-dark.png");
         clickTag("stars_privacy_settings");
         screenshot("stars-privacy-settings-dark.png");
+    }
+
+    @Test public void anonymousChoiceAfterOptOut() throws Exception {
+        launch("Blue");
+        final StarsReactionsSheet[] sheet = new StarsReactionsSheet[1];
+        instrumentation.runOnMainSync(() -> {
+            StarsPrivacy.setEnabled(0, false);
+            sheet[0] = preview().showReactionSheet();
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            sheet[0].peer = UserObject.ANONYMOUS;
+            sheet[0].setValue(9);
+            find(sheet[0].getContainer(), ButtonWithCounterView.class).performClick();
+        });
+        Thread.sleep(21000);
+        instrumentation.runOnMainSync(() -> {
+            assertEquals(1, preview().completedPayments);
+            assertEquals("The explicit sheet choice overrides the public default", UserObject.ANONYMOUS, preview().lastPaymentPeer);
+            assertEquals(0, StarsPrivacyMockApi.publicContribution(0, -7770001, 101));
+            assertFalse(reaction().choosen);
+            ViewGroup history = (ViewGroup) tagged("FL-20261017-0001").getParent();
+            View latest = history.getChildAt(history.getChildCount() - 1);
+            assertTrue(latest.getTag().toString().startsWith("preview-"));
+            assertEquals(2, texts(latest).size());
+        });
+        screenshot("stars-anonymous-choice-after-opt-out.png");
     }
 
     @Test public void twentySecondUndoAndLiveMock() throws Exception {
@@ -226,6 +289,26 @@ public class StarsPrivacyTest {
             assertEquals(300, controller.getBalance(false));
             assertEquals(1, controller.transactions[StarsController.ALL_TRANSACTIONS].size());
             assertTrue(controller.transactions[StarsController.ALL_TRANSACTIONS].get(0) instanceof StarsPrivacyMockApi.RedactedTransaction);
+            org.telegram.ui.ChatActivity chat = mock[0].chatActivity;
+            org.telegram.messenger.MessageObject message = mock[0].messageObject;
+            mock[0] = controller.new PendingPaidReactions(StarsController.MessageId.from(message), message, chat, 0, true);
+            controller.currentPendingReactions = mock[0];
+            mock[0].peer = 0L;
+            mock[0].add(7, true);
+            assertEquals(0, mock[0].getPeerId());
+        });
+        Thread.sleep(21000);
+        instrumentation.runOnMainSync(() -> {
+            StarsController controller = StarsController.getInstance(0);
+            assertTrue(mock[0].committed);
+            assertEquals("The split-contribution mock must not debit a balance", 300, controller.getBalance(false));
+            assertEquals(2, controller.transactions[StarsController.ALL_TRANSACTIONS].size());
+            TL_stars.StarsTransaction fresh = controller.transactions[StarsController.ALL_TRANSACTIONS].get(0);
+            assertFalse(fresh instanceof StarsPrivacyMockApi.RedactedTransaction);
+            assertFalse(StarsPrivacyMockApi.shouldRedact(0, fresh));
+            assertEquals(-7, fresh.amount.amount);
+            assertEquals(7, StarsPrivacyMockApi.publicContribution(0, -7770001, 101));
+            assertTrue("The older private receipt stays minimal", controller.transactions[StarsController.ALL_TRANSACTIONS].get(1) instanceof StarsPrivacyMockApi.RedactedTransaction);
             StarsPrivacy.setEnabled(0, true);
         });
     }
@@ -329,7 +412,7 @@ public class StarsPrivacyTest {
             assertEquals(0, redacted.amount.amount);
             assertTrue(StarsPrivacyMockApi.isAnonymised(0, record));
             assertTrue("Direction tabs must not reveal anonymised records", StarsPrivacyMockApi.hasPrivateHistory(0));
-            assertFalse(StarsPrivacyMockApi.isAnonymised(1, record));
+            assertFalse(StarsPrivacyMockApi.isAnonymised(2, record));
             confirmation[0] = StarsHistoryPrivacy.confirm(activity, 0, null, null, null);
         });
         screenshot("stars-anonymise-history-confirmation.png");
@@ -342,14 +425,20 @@ public class StarsPrivacyTest {
             assertTrue(StarsPrivacyMockApi.isAnonymised(0, unloaded));
             unloaded.date = (int) (System.currentTimeMillis() / 1000) + 10;
             assertFalse(StarsPrivacyMockApi.isAnonymised(0, unloaded));
+            TL_stars.StarsTransaction future = StarsPrivacyMockApi.sendPublicReaction(0, -7770001, 101, 3);
+            assertFalse("Exact provenance distinguishes a new receipt in the cutoff second", StarsPrivacyMockApi.isAnonymised(0, future));
+            StarsPrivacyMockApi.anonymise(0, future.id);
+            assertTrue("Explicit redaction overrides public provenance", StarsPrivacyMockApi.isAnonymised(0, future));
             StarsPrivacy.setEnabled(0, true);
+            StarsPrivacy.setEnabled(0, false);
+            assertFalse("Old highlights cannot return after toggling twice", StarsPrivacyMockApi.showHighlight(0, -7770001, 101));
         });
     }
 
     @Test public void privacySurvivesProcessRestart() throws Exception {
         launch(null);
         instrumentation.runOnMainSync(() -> {
-            assertTrue(StarsPrivacy.isEnabled(0));
+            assertFalse("Disabled preference survives process restart", StarsPrivacy.isEnabled(0));
             assertFalse(reaction().choosen);
             assertEquals(2, texts(tagged("FL-20261017-0001")).size());
         });
@@ -359,7 +448,8 @@ public class StarsPrivacyTest {
             restored.date = 1792227600;
             assertTrue("Redaction survives a fresh app process", StarsPrivacyMockApi.isAnonymised(0, restored));
         });
-        screenshot("stars-privacy-restored.png");
+        screenshot("stars-privacy-restored-disabled.png");
+        instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, true));
     }
 
     /** Reproducible staged walkthrough for a recording; not part of the verification suite. */
@@ -389,7 +479,9 @@ public class StarsPrivacyTest {
         back();
         clickTag("stars_privacy_settings");
         clickTag("stars_privacy_toggle");
+        Thread.sleep(3500);
         back();
+        assertEquals(2, texts(tagged("FL-20261017-0001")).size());
         instrumentation.runOnMainSync(() -> preview().sendSampleReaction(50));
         Thread.sleep(21000);
         instrumentation.runOnMainSync(() -> assertEquals(1, preview().completedPayments));
