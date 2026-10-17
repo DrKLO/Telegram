@@ -335,6 +335,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         switchCameraButton.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
         buttonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
         switchCameraButton.setOnClickListener(v -> {
+            if (aarRecorder != null) {
+                aarRecorder.switchCamera();
+                return;
+            }
             if (!cameraReady || !isCameraSessionInitiated() || cameraThread == null) {
                 return;
             }
@@ -392,6 +396,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         flashButton.setScaleType(ImageView.ScaleType.CENTER);
         buttonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
         flashButton.setOnClickListener(v -> {
+            if (aarRecorder != null) return;
             flashing = !flashing;
             updateFlash();
         });
@@ -575,6 +580,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
     @Override
     protected void onDetachedFromWindow() {
+        AndroidUtilities.cancelRunOnUIThread(aarMaxDurationStop);
+        if (aarRecorder != null && !aarFinishing) {
+            aarRecorder.cancel();
+            aarRecorder.close();
+            aarRecorder = null;
+        }
         super.onDetachedFromWindow();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileUploaded);
         if (flashViews != null) {
@@ -599,6 +610,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void destroy(boolean async) {
+        AndroidUtilities.cancelRunOnUIThread(aarMaxDurationStop);
+        if (aarRecorder != null && !aarFinishing) {
+            aarRecorder.close();
+            aarRecorder = null;
+        }
         if (useCamera2) {
             for (int a = 0; a < camera2Sessions.length; ++a) {
                 if (camera2Sessions[a] != null) {
@@ -668,6 +684,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void togglePause() {
+        if (aarRecorder != null) {
+            sendAarCamera(3, true, 0, 0, 0, 0L, 0L);
+            return;
+        }
         if (recording) {
             cancelled = recordedTime < 800;
             recording = false;
@@ -707,6 +727,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void showCamera(boolean fromPaused) {
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            showAarCamera(fromPaused);
+            return;
+        }
         if (textureView != null) {
             return;
         }
@@ -973,6 +997,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void send(int state, boolean notify, int scheduleDate, int scheduleRepeatPeriod, int ttl, long effectId, long stars) {
+        if (aarRecorder != null || aarRecordedFile != null || aarFinishing) {
+            sendAarCamera(state, notify, scheduleDate, scheduleRepeatPeriod, ttl, effectId, stars);
+            return;
+        }
         if (textureView == null) {
             return;
         }
@@ -1079,6 +1107,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void cancel(boolean byGesture) {
+        if (aarRecorder != null || aarRecordedFile != null || aarFinishing) {
+            cancelAarCamera(byGesture);
+            return;
+        }
         stopProgressTimer();
         if (videoPlayer != null) {
             videoPlayer.releasePlayer(true);
@@ -1125,6 +1157,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void hideCamera(boolean async) {
+        if (aarRecorder != null && !aarFinishing) {
+            aarRecorder.close();
+            aarRecorder = null;
+        }
         destroy(async);
         cameraContainer.setTranslationX(0);
         textureOverlayView.setTranslationX(0);
@@ -1142,7 +1178,271 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         cameraContainer.setImageReceiver(null);
     }
 
+    // START video-message-recorder-0.0.2 bridge (Android 9+).
+    // This is a source integration for the upstream Telegram InstantCameraView.
+    private VideoMessageRecorderAdapter aarRecorder;
+    private File aarRecordedFile;
+    private boolean aarFinishing;
+    private int aarStopState;
+    private boolean aarNotify;
+    private int aarScheduleDate;
+    private int aarScheduleRepeatPeriod;
+    private int aarTtl;
+    private long aarEffectId;
+    private long aarStars;
+    private final Runnable aarMaxDurationStop = () -> {
+        if (aarRecorder != null && recording && !aarFinishing) {
+            sendAarCamera(2, true, 0, 0, 0, 0L, 0L);
+        }
+    };
+
+    private void showAarCamera(boolean fromPaused) {
+        if (aarRecorder != null || aarFinishing || textureView != null) return;
+        if (aarRecordedFile != null) {
+            // Version 0.0.2 has no pause/resume API. A new recording replaces the paused one.
+            aarRecordedFile.delete();
+            aarRecordedFile = null;
+        }
+        cancelled = false;
+        recording = false;
+        cameraReady = false;
+        recordedTime = 0;
+        recordPlusTime = 0;
+        progress = 0;
+        videoEditedInfo = null;
+        file = null;
+        encryptedFile = null;
+        key = null;
+        iv = null;
+        aarStopState = 0;
+        textureOverlayView.setImageResource(R.drawable.icplaceholder);
+        textureOverlayView.setVisibility(View.VISIBLE);
+        textureOverlayView.setAlpha(1f);
+        needDrawFlickerStub = false;
+        if (switchCameraDrawable == null) {
+            switchCameraDrawable = new RLottieDrawable(R.raw.roundcamera_flip, buttonsSizePx, buttonsSizePx);
+            switchCameraDrawable.setCurrentFrame(0);
+            switchCameraDrawable.setCallback(switchCameraButton);
+        }
+        switchCameraButton.setImageDrawable(switchCameraDrawable);
+        flashButton.setVisibility(View.GONE); // Flash isn't exposed by the library's public API.
+        cameraFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_DOCUMENT),
+                System.currentTimeMillis() + "_" + SharedConfig.getLastLocalId() + ".mp4");
+        SharedConfig.saveConfig();
+        AutoDeleteMediaTask.lockFile(cameraFile);
+        textureView = new TextureView(getContext());
+        cameraContainer.addView(textureView,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        updateTextureViewSize = true;
+        setVisibilityFromPause = fromPaused;
+        setVisibility(VISIBLE);
+        startAnimation(true, fromPaused);
+        MediaController.getInstance().requestRecordAudioFocus(true);
+
+        aarRecorder = new VideoMessageRecorderAdapter(getContext(), textureView,
+                new VideoMessageRecorderAdapter.Listener() {
+                    @Override public void onCameraReady() {
+                        if (textureView != null) {
+                            cameraReady = true;
+                            // A running open-animation can reset alpha, so hide the overlay itself.
+                            textureOverlayView.setVisibility(View.INVISIBLE);
+                        }
+                    }
+                    @Override public void onRecordingStarted() {
+                        if (aarFinishing || cancelled) return;
+                        recordStartTime = System.currentTimeMillis();
+                        recording = true;
+                        AndroidUtilities.runOnUIThread(aarMaxDurationStop, 59_500L);
+                        invalidate();
+                        AndroidUtilities.lockOrientation(delegate.getParentActivity());
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(
+                                NotificationCenter.recordStarted, recordingGuid, false);
+                    }
+                    @Override public void onVideoNoteReady(File recordedFile, long durationMs) {
+                        aarRecorder = null; // Underlying library has already been closed by adapter.
+                        finishAarRecording(recordedFile, durationMs);
+                    }
+                    @Override public void onCancelled() {
+                        aarRecorder = null;
+                        aarFinishing = false;
+                    }
+                    @Override public void onError(Exception exception) {
+                        FileLog.e(exception);
+                        aarFinishing = false;
+                        if (aarRecorder != null) {
+                            aarRecorder.close();
+                            aarRecorder = null;
+                        }
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(
+                                NotificationCenter.recordStopped, recordingGuid, 6);
+                        MediaController.getInstance().requestRecordAudioFocus(false);
+                        startAnimation(false, false);
+                    }
+                });
+        aarRecorder.startSession();
+    }
+
+    private void sendAarCamera(int state, boolean notify, int scheduleDate,
+                               int scheduleRepeatPeriod, int ttl, long effectId, long stars) {
+        if (aarFinishing) return;
+        AndroidUtilities.cancelRunOnUIThread(aarMaxDurationStop);
+        aarStopState = state;
+        aarNotify = notify;
+        aarScheduleDate = scheduleDate;
+        aarScheduleRepeatPeriod = scheduleRepeatPeriod;
+        aarTtl = ttl;
+        aarEffectId = effectId;
+        aarStars = stars;
+
+        // A paused/previewed clip is already finalized and can be sent directly.
+        if (aarRecordedFile != null && state == 4) {
+            sendCompletedAarVideo();
+            return;
+        }
+        if (aarRecorder == null) return;
+        if (!recording || recordStartTime == 0L) {
+            cancelAarCamera(false);
+            return;
+        }
+        recording = false;
+        recordedTime = System.currentTimeMillis() - recordStartTime;
+        aarFinishing = true;
+        NotificationCenter.getInstance(currentAccount).postNotificationName(
+                NotificationCenter.recordStopped, recordingGuid,
+                recordedTime < 800 ? 4 : state == 3 ? 2 : 5);
+        if (recordedTime < 800) {
+            aarRecorder.cancel();
+            aarFinishing = false;
+            NotificationCenter.getInstance(currentAccount).postNotificationName(
+                    NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
+            startAnimation(false, false);
+            MediaController.getInstance().requestRecordAudioFocus(false);
+        } else {
+            aarRecorder.finishAndSend(); // Finished file arrives asynchronously.
+        }
+    }
+
+    private void finishAarRecording(File original, long durationMs) {
+        if (cancelled || aarStopState == 0 || original == null || !original.isFile() || original.length() == 0) {
+            if (original != null) original.delete();
+            aarFinishing = false;
+            startAnimation(false, false);
+            return;
+        }
+        final File output = cameraFile;
+        // Copy off UI thread, then switch back for Telegram delegate/NotificationCenter.
+        new Thread(() -> {
+            Exception failure = null;
+            try {
+                if (!original.equals(output)) {
+                    AndroidUtilities.copyFile(original, output);
+                    original.delete();
+                }
+            } catch (Exception e) {
+                failure = e;
+            }
+            final Exception copyFailure = failure;
+            AndroidUtilities.runOnUIThread(() -> {
+                aarFinishing = false;
+                if (copyFailure != null || output == null || !output.isFile() || output.length() == 0) {
+                    if (copyFailure != null) FileLog.e(copyFailure);
+                    cancelAarCamera(false);
+                    return;
+                }
+                aarRecordedFile = output;
+                recordedTime = durationMs;
+                size = output.length();
+                videoEditedInfo = createAarVideoInfo(output, durationMs);
+                if (aarStopState == 3) {
+                    // Telegram UI switches from recording to the ready-to-send preview state.
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(
+                            NotificationCenter.audioDidSent, recordingGuid,
+                            videoEditedInfo, output.getAbsolutePath(), null);
+                } else {
+                    sendCompletedAarVideo();
+                }
+                MediaController.getInstance().requestRecordAudioFocus(false);
+            });
+        }, "TelegramAarVideoCopy").start();
+    }
+
+    private VideoEditedInfo createAarVideoInfo(File mp4, long durationMs) {
+        int width = 360, height = 360, frameRate = 30;
+        long actualDuration = durationMs;
+        android.media.MediaMetadataRetriever metadata = new android.media.MediaMetadataRetriever();
+        try {
+            metadata.setDataSource(mp4.getAbsolutePath());
+            String w = metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+            String h = metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+            String d = metadata.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+            if (w != null) width = Integer.parseInt(w);
+            if (h != null) height = Integer.parseInt(h);
+            if (d != null) actualDuration = Long.parseLong(d);
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            try {
+                metadata.release();
+            } catch (java.io.IOException e) {
+                FileLog.e(e);
+            }
+        }
+        VideoEditedInfo info = new VideoEditedInfo();
+        info.roundVideo = true;
+        info.startTime = -1;
+        info.endTime = -1;
+        info.originalPath = mp4.getAbsolutePath();
+        info.estimatedDuration = Math.max(1, actualDuration);
+        info.estimatedSize = Math.max(1, mp4.length());
+        info.framerate = frameRate;
+        info.resultWidth = info.originalWidth = width;
+        info.resultHeight = info.originalHeight = height;
+        return info;
+    }
+
+    private void sendCompletedAarVideo() {
+        File ready = aarRecordedFile;
+        if (ready == null || !ready.exists() || videoEditedInfo == null) return;
+        aarRecordedFile = null;
+        MediaController.PhotoEntry entry = new MediaController.PhotoEntry(
+                0, 0, 0, ready.getAbsolutePath(), 0, true, 0, 0, 0);
+        entry.ttl = aarTtl;
+        entry.effectId = aarEffectId;
+        delegate.sendMedia(entry, videoEditedInfo, aarNotify,
+                aarScheduleDate, aarScheduleRepeatPeriod, false, aarStars);
+        videoEditedInfo = null;
+        if (aarScheduleDate != 0) startAnimation(false, false);
+    }
+
+    private void cancelAarCamera(boolean byGesture) {
+        AndroidUtilities.cancelRunOnUIThread(aarMaxDurationStop);
+        cancelled = true;
+        recording = false;
+        aarStopState = 0;
+        if (aarRecorder != null && !aarFinishing) {
+            aarRecorder.cancel();
+            // Don't close while finalizing; the adapter must complete stop asynchronously.
+        }
+        if (aarRecordedFile != null) {
+            aarRecordedFile.delete();
+            aarRecordedFile = null;
+        }
+        if (cameraFile != null) {
+            cameraFile.delete();
+            AutoDeleteMediaTask.unlockFile(cameraFile);
+        }
+        NotificationCenter.getInstance(currentAccount).postNotificationName(
+                NotificationCenter.recordStopped, recordingGuid, byGesture ? 0 : 6);
+        MediaController.getInstance().requestRecordAudioFocus(false);
+        startAnimation(false, false);
+    }
+    // END video-message-recorder-0.0.2 bridge.
+
     private void switchCamera() {
+        if (aarRecorder != null) {
+            aarRecorder.switchCamera();
+            return;
+        }
         legacyCameraSwitchStartedNs = SystemClock.elapsedRealtimeNanos();
         legacyCameraSwitchSequence++;
         legacyCameraSwitchTargetSurface = useCamera2 && bothCameras

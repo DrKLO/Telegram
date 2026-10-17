@@ -84,7 +84,7 @@
 
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.segmentation.subject"/>
+    <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.segmentation.subject,io.github.webarmour.videomessagerecorder"/>
 
     <queries>
         <package android:name="com.google.android.apps.maps"/>

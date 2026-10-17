@@ -16,6 +16,8 @@ configurations.all {
 }
 
 dependencies {
+    implementation files('../TMessagesProj/libs/video-message-recorder-0.0.2.aar')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.20'
     implementation project(':TMessagesProj')
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')

@@ -42,6 +42,8 @@ configurations.all {
 }
 
 dependencies {
+    compileOnly files('libs/video-message-recorder-0.0.2.aar')
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:2.1.20'
     implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
