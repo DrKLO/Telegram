@@ -92,13 +92,14 @@ public final class StarsPrivacyView extends LinearLayout implements Notification
         }
         setOnClickListener(v -> {
             boolean enabled = !StarsPrivacy.isEnabled(account);
-            // Privacy is applied synchronously; motion never delays redaction of history.
-            StarsPrivacy.setEnabled(account, enabled);
-            updateState(enabled, true);
-            if (feedback != null) feedback.hide(false, 0);
-            feedback = BulletinFactory.of(fragment).createSimpleBulletin(R.raw.passcode_lock_close,
-                LocaleController.getString(enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice), 4, 5000);
-            feedback.show();
+            fragment.setVisibleDialog(StarsPrivacyConfirmation.request(context, account, enabled, resourcesProvider, () -> {
+                // Once confirmed, privacy applies synchronously, before the illustration animates.
+                updateState(enabled, true);
+                if (feedback != null) feedback.hide(false, 0);
+                feedback = BulletinFactory.of(fragment).createSimpleBulletin(R.raw.passcode_lock_close,
+                    LocaleController.getString(enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice), 4, 5000);
+                feedback.show();
+            }));
         });
         updateColors();
         updateState(StarsPrivacy.isEnabled(account), false);

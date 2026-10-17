@@ -243,7 +243,7 @@ def smoke_test(privacy=False):
     suite = 'StarsPrivacyTest' if privacy else 'OfflineSmokeTest'
     methods = [
         'deadlineAndMockContract', 'retroactiveReactionPrivacy', 'liveRetroactivePrivacy',
-        'purchasePrivacyNotice', 'privacyChangeCancelsPendingPublicSends', 'openReceiptRespondsToPrivacy',
+        'privacyEnableConfirmation', 'purchasePrivacyNotice', 'privacyChangeCancelsPendingPublicSends', 'openReceiptRespondsToPrivacy',
         'channelPercentileExpiresInOpenSheet', 'productionPendingReactionCancelsSafely',
         'nativePrivacyScreensAndRecycledRows', 'privateTransactionAmounts', 'anonymousChoiceAfterOptOut',
         'twentySecondUndoAndLiveMock', 'nativeSettingsPolish', 'compactRtlAndLargeText', 'historyPrivacyControl',

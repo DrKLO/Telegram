@@ -36,19 +36,23 @@ public final class StarsChannelPrivacyActivity extends StarsPrivacySettingsActiv
             + LocaleController.getString(R.string.StarsChannelMockInfo));
         privacy.setOnClickListener(v -> {
             boolean enabled = !StarsPrivacyMockApi.isChannelPrivate(currentAccount, dialogId);
-            StarsPrivacyMockApi.setChannelPrivate(currentAccount, dialogId, enabled);
-            privacy.setChecked(enabled);
-            if (controlsAnimation != null) controlsAnimation.cancel();
-            ArrayList<Animator> animators = new ArrayList<>();
-            percentile.setEnabled(enabled, animators);
-            controlsAnimation = new AnimatorSet();
-            controlsAnimation.playTogether(animators);
-            controlsAnimation.setDuration(200);
-            controlsAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            controlsAnimation.start();
-            showFeedback(R.raw.passcode_lock_close,
-                enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice);
-            percentile.setChecked(StarsPrivacyMockApi.showsPercentile(currentAccount, dialogId));
+            Runnable apply = () -> {
+                StarsPrivacyMockApi.setChannelPrivate(currentAccount, dialogId, enabled);
+                privacy.setChecked(enabled);
+                if (controlsAnimation != null) controlsAnimation.cancel();
+                ArrayList<Animator> animators = new ArrayList<>();
+                percentile.setEnabled(enabled, animators);
+                controlsAnimation = new AnimatorSet();
+                controlsAnimation.playTogether(animators);
+                controlsAnimation.setDuration(200);
+                controlsAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                controlsAnimation.start();
+                showFeedback(R.raw.passcode_lock_close,
+                    enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice);
+                percentile.setChecked(StarsPrivacyMockApi.showsPercentile(currentAccount, dialogId));
+            };
+            if (enabled) setVisibleDialog(StarsPrivacyConfirmation.channel(context, currentAccount, getResourceProvider(), apply));
+            else apply.run();
         });
         percentile.setOnClickListener(v -> {
             // Also guard accessibility/programmatic clicks while the parent option is off.

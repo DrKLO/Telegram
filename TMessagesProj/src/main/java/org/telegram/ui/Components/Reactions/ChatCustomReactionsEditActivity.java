@@ -333,8 +333,15 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             privateStarsCell.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 0, 16));
             privateStarsCell.setOnClickListener(v -> {
                 if (!paidCheckCell.isChecked() || actionButton.isLoading()) return;
-                privateStars = !privateStars;
-                privateStarsCell.setChecked(privateStars);
+                if (!privateStars) {
+                    setVisibleDialog(org.telegram.ui.Stars.StarsPrivacyConfirmation.channel(context, currentAccount, resourceProvider, () -> {
+                        privateStars = true;
+                        privateStarsCell.setChecked(true);
+                    }));
+                } else {
+                    privateStars = false;
+                    privateStarsCell.setChecked(false);
+                }
             });
             switchLayout.addView(privateStarsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             updatePrivateStarsEnabled();

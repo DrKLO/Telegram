@@ -25,7 +25,8 @@ anonymises receipt details rather than deleting receipts entirely.
   above transaction history, with Telegram’s gold Star and closing-lock animation.
   The same setting is available under Privacy and Security → Stars Privacy. Anonymous
   post reactions, no named rankings or selected Star highlights, and receipts with
-  only the signed Stars amount, ID and date/time. A brief native notice explains the effect of either toggle.
+  only the signed Stars amount, ID and date/time. Every enable attempt opens a native confirmation explaining irreversibility and
+  the cross-device mock; opting out keeps the short notice.
 - **Buying Stars:** A native inline visibility notice above purchase packages, with a
   one-tap link to enable privacy. The offline preview uses sample prices and cannot purchase.
 - **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
@@ -40,6 +41,11 @@ anonymises receipt details rather than deleting receipts entirely.
   from Stars Privacy. Native confirmations; no restore action in the mock.
 - **Live Stars:** A usable native live-reaction flow, with a local anonymous send and
   the same Undo interval.
+
+The demo also shows a selected Star before privacy, the same post without its
+personal marker afterward, and a completed private send with only the aggregate
+count visible. Intended account-wide protection across devices is disclosed in the
+confirmation; this offline prototype does not actually synchronize another device.
 
 The code is a working **client prototype**. The video uses an offline Android emulator
 and fixture data, without a Telegram account, phone number or real payments. The

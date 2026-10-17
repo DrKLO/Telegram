@@ -16,7 +16,10 @@ by the live client; sample data is provided behind the UI.
    IDs and dates. These are fictitious transactions, not actual payments.
 2. Tap **Buy More Stars** to inspect the real package sheet and privacy notice.
    Prices are samples; tapping a package does not start billing.
-3. Toggle the history privacy control. The short notice explains that opting out
+3. Enable the history privacy control. A native confirmation explains irreversible
+   protection and the cross-device API mock. Cancel leaves the setting unchanged.
+   The same confirmation appears on every enable attempt, including purchase links
+   and channel privacy. The short opt-out notice explains that disabling privacy
    affects new reactions only. Existing protected receipts remain private.
    Open a receipt to inspect its Stars amount, ID and date/time.
 4. Return to **Settings → Privacy & Security → Stars Privacy** for the personal
@@ -92,6 +95,11 @@ speed. Launches, navigation detours and inactive waits are cut. The 20-second Un
 continues to run in the app; its omitted wait is disclosed in the caption. The full
 uncut capture is retained as `artifacts/stars-privacy-walkthrough.mp4` for timing QA.
 The edit manifest records each source hash and cut boundary.
+
+The recording also compares the same post before and after enabling privacy, then
+shows a completed private send: the selected Star marker disappears while the
+aggregate count and native effects remain. No other device is connected; cross-device
+protection is a proposed server policy, disclosed as a simulation in the dialogs.
 
 The public opening fixture is created only by the offline test. Normal first-launch
 privacy remains enabled, and there is no product action to restore protected history.

@@ -72,6 +72,20 @@ addresses a whole post, so we do not assume it can safely split a sender's
 past private and future public contributions. These sends are marked Preview and spend
 no Stars; ordinary anonymous sends while privacy is on still use the supported API.
 
+**Enable confirmation.** Every user-initiated enable attempt opens a native Telegram
+AlertDialog before changing privacy. It explains that existing activity cannot be
+made public again, that switching off affects future reactions only, and that the
+intended protection across all devices is simulated pending Telegram server support.
+History, personal settings, purchase links and purchase accessibility actions share
+this confirmation. Cancel does not change privacy or seal a history boundary. Rapid
+repeated requests reuse one dialog. Channel-admin enable actions use the same native
+pattern with channel-specific text; the production editor still applies only on Save.
+
+The selected Star indicator disappears immediately under privacy. The aggregate
+post count and native sending animation stay visible. This removes the in-app marker
+that identifies the user’s contribution; it does not establish forensic erasure or
+change copies on other devices in this prototype.
+
 **Channel policy.** **Keep Stars anonymous** sits directly below **Enable Paid
 Reactions** in the production channel **Edit → Reactions** panel. It is off until
 an admin enables it. The switch is a draft until **Update Reactions** succeeds;
@@ -226,6 +240,11 @@ These are proposed capabilities, not existing TL methods:
 6. Account-wide retroactive hiding of existing paid-reaction identities, including
    posts not loaded by the requesting client. Other viewers must receive anonymous
    aggregates; later public contributions must not restore any prior identity or amount.
+   The server must persist the account preference and irreversible boundaries, notify
+   every active session, and apply them again on login, reconnect and history reload.
+   Clients must invalidate identifying cached presentations and remove selected Star
+   markers. An offline second device cannot be promised immediate synchronization;
+   older clients need capability handling before this can be presented as protection.
 7. A precise anonymity threat model and independent review before describing the
    feature as protecting donors from account/device seizure or server disclosure.
 
@@ -263,8 +282,9 @@ and `artifacts/stars-privacy-test.txt`. These tests do not validate real payment
 server anonymity or cross-device enforcement. The suite includes a real five-minute
 wait to verify that the percentile disappears from an open sheet while the Star stays unselected throughout.
 
-Recorded flow: public sample history and receipt → privacy removes identifying
-information → minimal receipt and irreversible opt-out notice → purchase warning →
+Recorded flow: public sample history, receipt and selected Star → native enable confirmation →
+privacy removes identifying information and the selected marker → irreversible
+opt-out notice and minimal receipt → purchase warning →
 history anonymisation → native admin policy → animated slider percentile → Undo →
 live Stars → dark history. The short edit removes launches and inactive intervals,
 keeps UI motion at normal speed, and adds concise captions above the app. The full

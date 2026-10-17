@@ -180,3 +180,15 @@ renderer decodes the completed MP4 before replacing the demo. The manifest inclu
 source hashes and cut boundaries so the short edit can be checked against the full
 capture. Review caption fit and the public-to-private and rolling-rank transitions
 visually before sharing a generated package.
+
+## Repeated enable confirmation
+
+The privacy suite now includes `privacyEnableConfirmation` (18 scenarios total).
+It checks the native modal at the history control, personal setting and purchase
+link, repeated enable attempts, cancellation without a new privacy boundary, the
+cross-device limitation copy and dark appearance. Purchase accessibility actions
+share the confirmation. Rapid requests reuse a single modal; channel privacy uses
+the same pattern while preserving the editor’s Save/Discard behavior. Native flow
+tests compare the real selected Star before privacy, after enabling it, and after a
+completed private send. They verify that the aggregate reaction remains visible.
+No test claims real synchronization between devices; that is proposed server work.

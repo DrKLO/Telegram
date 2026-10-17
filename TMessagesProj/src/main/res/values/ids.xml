@@ -65,4 +65,6 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="stars_privacy_confirm" type="id" />
+    <item name="stars_privacy_cancel" type="id" />
 </resources>

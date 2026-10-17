@@ -454,6 +454,76 @@ public class StarsPrivacyTest {
         instrumentation.runOnMainSync(() -> sheet[0].dismiss());
     }
 
+    @Test public void privacyEnableConfirmation() throws Exception {
+        launch("Blue");
+        instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, false));
+        revealHistoryControl();
+        final long[] generation = new long[1];
+        instrumentation.runOnMainSync(() -> {
+            generation[0] = StarsPrivacyMockApi.reactionPrivacyGeneration(0);
+            tagged("stars_history_privacy").performClick();
+            assertFalse(StarsPrivacy.isEnabled(0));
+        });
+        settle();
+        screenshot("stars-privacy-enable-confirmation.png");
+        instrumentation.runOnMainSync(() -> {
+            View confirm = privacyDialogAction("stars_privacy_confirm");
+            assertNotNull(confirm);
+            String copy = texts(confirm.getRootView()).toString();
+            assertTrue(copy.contains("cannot be made public again"));
+            assertTrue(copy.contains("future reactions"));
+            assertTrue(copy.contains("All devices"));
+            assertTrue(copy.contains("simulated"));
+            assertTrue(copy.contains("server support"));
+            privacyDialogAction("stars_privacy_cancel").performClick();
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertEquals("Cancel must not seal history", generation[0], StarsPrivacyMockApi.reactionPrivacyGeneration(0));
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> tagged("stars_history_privacy").performClick());
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertNotNull("The disclaimer appears on every enable attempt", privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_confirm").performClick();
+            assertTrue(StarsPrivacy.isEnabled(0));
+            assertTrue(StarsPrivacyMockApi.reactionPrivacyGeneration(0) > generation[0]);
+        });
+        settle();
+        clickTag("stars_privacy_settings");
+        clickTag("stars_privacy_toggle");
+        instrumentation.runOnMainSync(() -> tagged("stars_privacy_toggle").performClick());
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertNotNull("Settings uses the same confirmation", privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_confirm").performClick();
+        });
+        settle();
+        back();
+        instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, false));
+        final StarsIntroActivity.StarsOptionsSheet[] purchase = new StarsIntroActivity.StarsOptionsSheet[1];
+        instrumentation.runOnMainSync(() -> {
+            purchase[0] = preview().showPurchaseSheet();
+            StarsPurchasePrivacyView notice = find(purchase[0].getContainer(), StarsPurchasePrivacyView.class);
+            Spanned text = (Spanned) notice.getText();
+            text.getSpans(0, text.length(), ClickableSpan.class)[0].onClick(notice);
+        });
+        settle();
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertNotNull("The purchase link cannot bypass confirmation", privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_cancel").performClick();
+            purchase[0].dismiss();
+        });
+        launch("Dark Blue");
+        instrumentation.runOnMainSync(() -> StarsPrivacy.setEnabled(0, false));
+        revealHistoryControl();
+        instrumentation.runOnMainSync(() -> tagged("stars_history_privacy").performClick());
+        settle();
+        screenshot("stars-privacy-enable-confirmation-dark.png");
+        instrumentation.runOnMainSync(() -> privacyDialogAction("stars_privacy_cancel").performClick());
+    }
+
     @Test public void purchasePrivacyNotice() throws Exception {
         launch("Blue");
         final StarsIntroActivity.StarsOptionsSheet[] sheet = new StarsIntroActivity.StarsOptionsSheet[1];
@@ -475,6 +545,9 @@ public class StarsPrivacyTest {
             assertTrue(node.getActionList().stream().anyMatch(action -> action.getId() == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));
             node.recycle();
             assertTrue(notice.performAccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, null));
+            assertFalse("Accessibility must not skip confirmation", StarsPrivacy.isEnabled(0));
+            assertNotNull(privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_confirm").performClick();
             assertTrue(StarsPrivacy.isEnabled(0));
             assertTrue(notice.getText().toString().contains("is on"));
             assertTrue(StarsPrivacyMockApi.isProtectedPost(0, -9990001, 9999));
@@ -863,8 +936,11 @@ public class StarsPrivacyTest {
             assertEquals(before, StarsPrivacyMockApi.showsPercentile(0, -7770001));
             // Reverse while the native 200ms enabled-state animation is still running.
             tagged("stars_channel_private").performClick();
+            assertNotNull(privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_confirm").performClick();
             tagged("stars_channel_private").performClick();
             tagged("stars_channel_private").performClick();
+            privacyDialogAction("stars_privacy_confirm").performClick();
         });
         settle();
         instrumentation.runOnMainSync(() -> {
@@ -987,10 +1063,13 @@ public class StarsPrivacyTest {
             assertEquals(3, texts(tagged("FL-20261017-0001")).size());
             assertFalse(reaction().choosen);
             assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("Only new reactions can be public."));
-            // Reverse during the settling animation; the final preference must win.
+            // Rapid repeated requests cannot bypass or stack the confirmation.
             tagged("stars_history_privacy").performClick();
             tagged("stars_history_privacy").performClick();
             tagged("stars_history_privacy").performClick();
+            assertFalse(StarsPrivacy.isEnabled(0));
+            assertNotNull(privacyDialogAction("stars_privacy_confirm"));
+            privacyDialogAction("stars_privacy_confirm").performClick();
             assertTrue(StarsPrivacy.isEnabled(0));
             assertEquals(UserObject.ANONYMOUS, StarsPrivacy.resolvePeer(0, 1234));
             assertEquals(3, texts(tagged("FL-20261017-0001")).size());
@@ -1073,6 +1152,7 @@ public class StarsPrivacyTest {
             StarsPurchasePrivacyView notice = find(purchase[0].getContainer(), StarsPurchasePrivacyView.class);
             Spanned text = (Spanned) notice.getText();
             text.getSpans(0, text.length(), ClickableSpan.class)[0].onClick(notice);
+            privacyDialogAction("stars_privacy_confirm").performClick();
         });
         Thread.sleep(2500);
         instrumentation.runOnMainSync(() -> purchase[0].dismiss());
@@ -1174,6 +1254,21 @@ public class StarsPrivacyTest {
     private void clickTag(String tag) throws Exception {
         instrumentation.runOnMainSync(() -> { View view = tagged(tag); assertNotNull(tag, view); assertTrue(view.performClick()); });
         settle();
+        // General scenarios accept the real modal; the dedicated test covers cancellation and repetition.
+        instrumentation.runOnMainSync(() -> {
+            View confirmation = privacyDialogAction("stars_privacy_confirm");
+            if (confirmation != null) confirmation.performClick();
+        });
+        settle();
+    }
+
+    private View privacyDialogAction(String tag) {
+        for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+            View action = window.findViewById(tag.equals("stars_privacy_confirm")
+                ? org.telegram.messenger.R.id.stars_privacy_confirm : org.telegram.messenger.R.id.stars_privacy_cancel);
+            if (action != null && action.isShown()) return action;
+        }
+        return null;
     }
     private void back() throws Exception { instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); settle(); }
     private void settle() throws Exception { instrumentation.runOnMainSync(() -> {}); Thread.sleep(500); }

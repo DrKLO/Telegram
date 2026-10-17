@@ -11540,7 +11540,7 @@
     <string name="StarsPrivacyTitle">Stars Privacy</string>
     <string name="StarsPrivacySwitch">Private Star Reactions</string>
     <string name="StarsPrivacyDescription">Hide your existing and new Star reactions from leaderboards and remove selected Star highlights. History keeps only amounts, IDs, dates and times. Animations stay the same. You have 20 seconds to undo.</string>
-    <string name="StarsPrivacyScope">Turning this off affects new reactions only. Previously hidden activity stays hidden in this app. Hiding past leaderboard positions is simulated in this preview; records on Telegram and other devices are unchanged.</string>
+    <string name="StarsPrivacyScope">Turning this off affects new reactions only. Previously hidden activity stays private. The intended policy applies on all your devices; cross-device privacy and past leaderboard removal are simulated here. Telegram server support is required.</string>
     <string name="StarsPrivacyActive">Private reactions are on</string>
     <string name="StarsPrivacyPending">Sending Stars anonymously</string>
     <string name="StarsPendingTitle">Sending Stars</string>
@@ -11566,9 +11566,12 @@
     <string name="StarsReceiptAnonymise">Anonymise this transaction</string>
     <string name="StarsAnonymise">Anonymise</string>
     <string name="StarsHistoryAnonymiseInfo">Permanently hide transaction details in this preview. Keep only amounts, IDs, dates and times. Long-press a transaction to anonymise just that record.</string>
-    <string name="StarsHistoryAnonymiseConfirm">Keep only Star amounts, transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Existing records on Telegram and other devices remain unchanged.</string>
+    <string name="StarsHistoryAnonymiseConfirm">Keep only Star amounts, transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Protection across all devices is simulated; Telegram server support is required. Other devices and server records are unchanged.</string>
     <string name="StarsPrivacyDemoHint">Tap the Star to try a reaction. Hold it to open the reaction sheet.</string>
     <string name="StarsPrivacyMockReactionInfo">Preview reaction. No Stars will be spent.</string>
+    <string name="StarsChannelEnableConfirm">Once applied, existing activity cannot be made public again. Turning this off affects only future reactions.\n\nAll devices · Preview\nChannel-wide protection is simulated and requires Telegram server support on every device.</string>
+    <string name="StarsPrivacyEnableConfirm">Existing activity cannot be made public again. Turning this off affects only future reactions.\n\nAll devices · Preview\nYour selected Stars and identifying receipt details are hidden here. Cross-device protection is simulated and requires Telegram server support.</string>
+    <string name="StarsPrivacyConfirmAction">Make Private</string>
     <string name="StarsPrivacyEnabledNotice">Existing and new reactions are hidden. Turning this off affects only new reactions.</string>
     <string name="StarsPrivacyDisabledNotice">Only new reactions can be public. Past private activity stays private.</string>
     <string name="StarsHistoryAnonymisedNotice">History anonymised in this preview.</string>

@@ -73,13 +73,39 @@ public class NativeStarsFlowTest {
         Thread.sleep(2500);
         demoEnd();
         back();
+        back();
+        openChannelFromChats();
+        demoStart("public_selected_star");
+        assertPostSelected(true);
+        screenshot("03d-public-selected-star.png");
+        Thread.sleep(2500);
+        demoEnd();
+        back();
+        click("Settings");
+        click("Telegram Stars");
+        swipe(true);
         demoStart("privacy_enable");
         click("Make my Stars private");
+        assertWindowText("cannot be made public again");
+        assertWindowText("All devices");
+        screenshot("03f-privacy-confirmation.png");
+        Thread.sleep(5000);
+        confirmPrivate();
         instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
         screenshot("03a-privacy-enabled.png");
         assertNoWindowText("Pavel Durov");
         Thread.sleep(2500);
         demoEnd();
+        back();
+        openChannelFromChats();
+        demoStart("private_selected_star");
+        assertPostSelected(false);
+        screenshot("03e-private-unselected-star.png");
+        Thread.sleep(2500);
+        demoEnd();
+        back();
+        click("Settings");
+        click("Telegram Stars");
         scrollBack();
         openPurchaseSheet();
         screenshot("04-purchase.png");
@@ -141,6 +167,9 @@ public class NativeStarsFlowTest {
             privacyLink[1] += text.getTotalPaddingTop() + (layout.getLineTop(line) + layout.getLineBottom(line)) / 2;
         });
         press(privacyLink, false);
+        assertWindowText("All devices");
+        screenshot("04d-purchase-privacy-confirmation.png");
+        confirmPrivate();
         instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
         screenshot("04c-purchase-privacy-enabled.png");
         Thread.sleep(2000);
@@ -204,7 +233,11 @@ public class NativeStarsFlowTest {
             assertEquals("Exactly one post receipt", before[0] + 1, history.size());
             assertEquals(-1, history.get(0).amount.amount);
         });
+        demoStart("private_star_sent");
+        assertPostSelected(false);
         screenshot("13-post-sent.png");
+        Thread.sleep(2500);
+        demoEnd();
         click("Design Notes");
         screenshot("14-channel-profile.png");
         click("Edit");
@@ -214,6 +247,9 @@ public class NativeStarsFlowTest {
         back(); // Close the production emoji keyboard before scrolling the settings.
         screenshot("16-channel-reactions.png");
         click("Keep Stars anonymous");
+        assertWindowText("All devices");
+        screenshot("16a-channel-privacy-confirmation.png");
+        confirmPrivate(false);
         instrumentation.runOnMainSync(() -> assertFalse("Draft must not change channel policy", org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));
         back();
         assertWindowText("Discard");
@@ -223,6 +259,7 @@ public class NativeStarsFlowTest {
         back();
         demoStart("channel_privacy");
         click("Keep Stars anonymous");
+        confirmPrivate(false);
         screenshot("17-channel-privacy.png");
         Thread.sleep(2500);
         click("Update Reactions");
@@ -502,6 +539,47 @@ public class NativeStarsFlowTest {
             point[1] += layout.y + star.y + star.height / 2;
         });
         return point;
+    }
+
+    private void confirmPrivate() throws Exception { confirmPrivate(true); }
+    private void confirmPrivate(boolean personal) throws Exception {
+        final int[] point = new int[2];
+        instrumentation.runOnMainSync(() -> {
+            View action = null;
+            for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                View found = window.findViewById(org.telegram.messenger.R.id.stars_privacy_confirm);
+                if (found != null && found.isShown()) action = found;
+            }
+            assertNotNull("Every enable action must show the native confirmation", action);
+            if (personal) assertFalse("Privacy must wait for confirmation", org.telegram.ui.Stars.StarsPrivacy.isEnabled(0));
+            action.getLocationOnScreen(point);
+            point[0] += action.getWidth() / 2;
+            point[1] += action.getHeight() / 2;
+        });
+        press(point, false);
+    }
+
+    private void openChannelFromChats() throws Exception {
+        click("Chats");
+        final int[] point = new int[2];
+        instrumentation.runOnMainSync(() -> {
+            View row = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.DialogCell.class);
+            assertNotNull("Native channel row", row);
+            row.getLocationOnScreen(point);
+            point[0] += row.getWidth() / 2;
+            point[1] += row.getHeight() / 2;
+        });
+        press(point, false);
+    }
+
+    private void assertPostSelected(boolean selected) {
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Cells.ChatMessageCell cell = find(activity.navigation().getLastFragment().getFragmentView(), org.telegram.ui.Cells.ChatMessageCell.class);
+            assertNotNull(cell);
+            org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.ReactionButton star = cell.reactionsLayoutInBubble.getReactionButton(org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble.VisibleReaction.asStar());
+            assertNotNull("The public aggregate Star count remains", star);
+            assertEquals("Only the personal selected marker changes", selected, star.choosen);
+        });
     }
 
     private void openPurchaseSheet() throws Exception {

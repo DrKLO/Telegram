@@ -22,10 +22,11 @@ public class StarsPrivacyActivity extends StarsPrivacySettingsActivity {
             StarsPrivacy.isEnabled(currentAccount));
         toggle.setOnClickListener(v -> {
             boolean enabled = !StarsPrivacy.isEnabled(currentAccount);
-            StarsPrivacy.setEnabled(currentAccount, enabled);
-            toggle.setChecked(enabled);
-            showFeedback(R.raw.passcode_lock_close,
-                enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice);
+            setVisibleDialog(StarsPrivacyConfirmation.request(context, currentAccount, enabled, getResourceProvider(), () -> {
+                toggle.setChecked(enabled);
+                showFeedback(R.raw.passcode_lock_close,
+                    enabled ? R.string.StarsPrivacyEnabledNotice : R.string.StarsPrivacyDisabledNotice);
+            }));
         });
         addInfo(LocaleController.getString(R.string.StarsPrivacyDescription) + "\n\n"
             + LocaleController.getString(R.string.StarsPrivacyScope));

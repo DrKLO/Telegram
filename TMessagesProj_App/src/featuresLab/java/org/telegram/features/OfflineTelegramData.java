@@ -101,6 +101,8 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
         TLRPC.TL_reactionCount stars = new TLRPC.TL_reactionCount();
         stars.reaction = new TLRPC.TL_reactionPaid();
         stars.count = 125 + (int) receipts.getLong("post_total", 0);
+        // Native serialization reads the selection from this flag, not the Java boolean alone.
+        stars.flags |= 1;
         stars.chosen = true;
         message.reactions.results.add(stars);
         for (int i = 0; i < 3; i++) {

@@ -14,10 +14,12 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 /** A short, actionable notice shared by both native Stars purchase sheets. */
 public final class StarsPurchasePrivacyView extends TextInfoPrivacyCell implements NotificationCenter.NotificationCenterDelegate {
     private final int account;
+    private final Theme.ResourcesProvider privacyResourcesProvider;
 
     public StarsPurchasePrivacyView(Context context, int account, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
         this.account = account;
+        privacyResourcesProvider = resourcesProvider;
         setTag("stars_purchase_privacy");
         getTextView().setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14);
         setTopPadding(8);
@@ -37,7 +39,7 @@ public final class StarsPurchasePrivacyView extends TextInfoPrivacyCell implemen
 
     @Override public boolean performAccessibilityAction(int action, Bundle arguments) {
         if (action == AccessibilityNodeInfo.ACTION_CLICK && !StarsPrivacy.isEnabled(account)) {
-            StarsPrivacy.setEnabled(account, true);
+            requestPrivacy();
             return true;
         }
         return super.performAccessibilityAction(action, arguments);
@@ -47,7 +49,11 @@ public final class StarsPurchasePrivacyView extends TextInfoPrivacyCell implemen
         setText(StarsPrivacy.isEnabled(account)
             ? LocaleController.getString(R.string.StarsPurchasePrivacyOn)
             : AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.StarsPurchasePrivacyOff),
-                () -> StarsPrivacy.setEnabled(account, true)));
+                this::requestPrivacy));
+    }
+
+    private void requestPrivacy() {
+        StarsPrivacyConfirmation.request(getContext(), account, true, privacyResourcesProvider, null);
     }
 
     @Override protected void onAttachedToWindow() {
