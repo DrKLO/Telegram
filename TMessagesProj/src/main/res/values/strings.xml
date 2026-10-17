@@ -11559,6 +11559,7 @@
     <string name="StarsChannelMockInfo">Preview: channel rules are simulated on this device. No Stars are spent.</string>
     <string name="StarsChannelPending">Channel Stars · Preview</string>
     <string name="StarsChannelPercentileTop">You are in the top</string>
+    <string name="StarsChannelPercentileProjected">You would be in the top</string>
     <string name="StarsChannelPercentilePrivate">of supporters · Only you can see this</string>
     <string name="StarsChannelTopPercent">Top %1$d%% · Only you</string>
     <string name="StarsHistoryAnonymise">Anonymise transaction history</string>

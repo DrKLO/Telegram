@@ -10,7 +10,10 @@ The default offline entry now uses `MainTabsActivity`, `SettingsActivity`,
 `StarsIntroActivity`, the actual channel/profile/reaction editor and the live
 `StoryViewer`. `NativeStarsFlowTest` adds four fresh-process scenarios for:
 
-- Settings → Telegram Stars → history/receipt; opting out keeps old receipts private.
+- Settings → Telegram Stars → public sample history with avatars and post links →
+  privacy removes identifying details; opting out keeps old receipts private. The
+  test checks the projected receipt fields and actual visible text, including post
+  links, rather than assuming the controller replaces its cached server objects.
 - The real purchase sheet, visibility warning and inline privacy action; personal
   settings and the irreversible history confirmation.
 - Chat Star taps/long presses, the actual 20-second Undo, exact receipt amounts,
@@ -19,6 +22,9 @@ The default offline entry now uses `MainTabsActivity`, `SettingsActivity`,
   it. Turning paid reactions off disables the dependent control while retaining
   its checked preference. A 50-Star send with personal privacy off must create a minimal receipt, hide
   its selected state and show a large donor-only percentile after privacy is on.
+- Actual touch drags increase Stars from 1 to 40, 75 and 100 while the projected
+  rank decreases from Top 100% to 50%, 25% and 10%. No receipt is created by a drag,
+  and the mock preview leaves the completed donation unchanged.
 - Live-story Star controls, 20-second Undo and receipt amounts, plus native dark history.
 
 The integration exposed and fixed a live-view attachment callback that ran before
@@ -163,3 +169,14 @@ prosecution, disclosure, device inspection or correlation of amounts and timesta
   preview exercises the shared production controls, rows, sheets and send controller.
 - Firebase push remains deferred. No APK release or message to organizers is part of
   this package. The user reviews the video and sends the final submission manually.
+
+## Edited video validation
+
+The Python suite now has 17 tests, including device-clock marker pairing, missing
+or out-of-bounds cut rejection, pacing bounds and caption escaping. The recording
+helper preserves the previous demo if a scenario fails. Each cut uses actual UI
+frames at normal speed; a separate caption band avoids covering controls. The
+renderer decodes the completed MP4 before replacing the demo. The manifest includes
+source hashes and cut boundaries so the short edit can be checked against the full
+capture. Review caption fit and the public-to-private and rolling-rank transitions
+visually before sharing a generated package.

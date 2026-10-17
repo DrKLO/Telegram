@@ -19,7 +19,9 @@ import org.telegram.ui.Components.LayoutHelper;
 /** A donor's own coarse rank, without names, avatars or a public donor list. */
 public final class StarsDonorPercentileView extends LinearLayout {
     private final AnimatedTextView number;
+    private final TextView title;
     private int percentile;
+    private boolean preview;
     private final int minimumNumberHeight;
 
     public StarsDonorPercentileView(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -30,7 +32,7 @@ public final class StarsDonorPercentileView extends LinearLayout {
         setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(8));
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
 
-        TextView title = new TextView(context);
+        title = new TextView(context);
         title.setText(LocaleController.getString(R.string.StarsChannelPercentileTop));
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
@@ -59,20 +61,29 @@ public final class StarsDonorPercentileView extends LinearLayout {
     }
 
     public void setPercentile(int value, boolean animated) {
-        if (value == percentile) return;
+        setPercentile(value, animated, false);
+    }
+
+    public void setPercentile(int value, boolean animated, boolean preview) {
+        if (value == percentile && this.preview == preview) return;
+        int previous = percentile;
+        this.preview = preview;
+        title.setText(LocaleController.getString(preview
+            ? R.string.StarsChannelPercentileProjected : R.string.StarsChannelPercentileTop));
         boolean reveal = percentile == 0 && value > 0;
         percentile = value;
         animate().cancel();
         boolean motion = animated && (Build.VERSION.SDK_INT < 26 || ValueAnimator.areAnimatorsEnabled());
         String valueText = value > 0 ? LocaleController.formatNumber(value, ',') + "%" : "";
-        number.setText(valueText, motion && !reveal);
+        // Use the same rolling digits as Telegram's counters, following rank direction.
+        number.setText(valueText, motion && !reveal, value < previous);
         // Android's nonlinear font scaling can make a fixed sp box shorter than its text.
         int height = Math.max(minimumNumberHeight, (int) Math.ceil(number.getDrawable().getHeight()));
         if (number.getLayoutParams().height != height) {
             number.getLayoutParams().height = height;
             number.requestLayout();
         }
-        setContentDescription(value > 0 ? LocaleController.getString(R.string.StarsChannelPercentileTop)
+        setContentDescription(value > 0 ? title.getText()
             + " " + valueText + " " + LocaleController.getString(R.string.StarsChannelPercentilePrivate) : null);
         setVisibility(value > 0 ? VISIBLE : GONE);
         setAlpha(1f);
@@ -86,6 +97,7 @@ public final class StarsDonorPercentileView extends LinearLayout {
     }
 
     public int getPercentile() { return percentile; }
+    public boolean isPreview() { return preview; }
 
     @Override protected void onDetachedFromWindow() {
         animate().cancel();

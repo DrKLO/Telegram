@@ -763,6 +763,13 @@ public class StarsPrivacyTest {
             assertEquals(-50, receipt.asTransaction().amount.amount);
             assertTrue(StarsPrivacyMockApi.hasRecentPercentile(0, -7770001, 101));
             assertEquals(50, StarsPrivacyMockApi.donorPercentile(0, -7770001, 101));
+            assertEquals(100, StarsPrivacyMockApi.previewDonorPercentile(0, -7770001, 1));
+            assertEquals(50, StarsPrivacyMockApi.previewDonorPercentile(0, -7770001, 40));
+            assertEquals(25, StarsPrivacyMockApi.previewDonorPercentile(0, -7770001, 75));
+            assertEquals(10, StarsPrivacyMockApi.previewDonorPercentile(0, -7770001, 100));
+            assertEquals("Previewing must not change the completed rank", 50, StarsPrivacyMockApi.donorPercentile(0, -7770001, 101));
+            assertFalse("Previewing must not create a completed donation", StarsPrivacyMockApi.hasRecentPercentile(0, -7770001, 999));
+            assertEquals(0, StarsPrivacyMockApi.previewDonorPercentile(0, -9990001, 100));
             assertTrue(StarsPrivacyMockApi.isPercentileActive(299999, 300000));
             assertFalse(StarsPrivacyMockApi.isPercentileActive(300000, 300000));
             assertFalse(StarsPrivacyMockApi.isPercentileActive(1, 0));

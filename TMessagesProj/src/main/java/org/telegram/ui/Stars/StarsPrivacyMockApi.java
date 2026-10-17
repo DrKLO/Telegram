@@ -23,6 +23,7 @@ import java.util.UUID;
  */
 public final class StarsPrivacyMockApi {
     public static final long PERCENTILE_MS = 5 * 60_000L;
+    private static final long[] DEMO_COHORT = {5, 10, 15, 20, 25, 30, 40, 50, 75, 100};
     private static final HashMap<String, Long> percentileDeadlines = new HashMap<>();
     private static final HashMap<String, Integer> percentiles = new HashMap<>();
 
@@ -108,7 +109,7 @@ public final class StarsPrivacyMockApi {
         long deadline = SystemClock.elapsedRealtime() + PERCENTILE_MS;
         percentileDeadlines.put(key, deadline);
         // Fixture distribution represents server aggregates, never reconstructed from top_reactors.
-        percentiles.put(key, percentileBucket(stars, new long[] {5, 10, 15, 20, 25, 30, 40, 50, 75, 100}));
+        percentiles.put(key, percentileBucket(stars, DEMO_COHORT));
         AndroidUtilities.runOnUIThread(() -> {
             if (percentileDeadlines.get(key) != null && percentileDeadlines.get(key) == deadline) {
                 percentileDeadlines.remove(key);
@@ -212,6 +213,12 @@ public final class StarsPrivacyMockApi {
         if (!showsPercentile(account, dialogId) || !hasRecentPercentile(account, dialogId, messageId)) return 0;
         Integer value = percentiles.get(key(account, dialogId, messageId));
         return value == null ? 0 : value;
+    }
+
+    /** Read-only estimate for the slider. Never sends, reserves Stars or changes history. */
+    public static int previewDonorPercentile(int account, long dialogId, long stars) {
+        if (!showsPercentile(account, dialogId)) return 0;
+        return percentileBucket(stars, DEMO_COHORT);
     }
 
     public static boolean hasPrivateHistory(int account) {

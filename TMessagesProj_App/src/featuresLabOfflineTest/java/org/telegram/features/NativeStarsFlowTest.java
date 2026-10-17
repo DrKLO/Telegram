@@ -37,7 +37,14 @@ public class NativeStarsFlowTest {
     };
 
     @Test public void settingsToHistory() throws Exception {
-        launch();
+        // A new illustrative fixture, not a reversal of any protected activity.
+        instrumentation.runOnMainSync(() -> {
+            assertTrue(org.telegram.messenger.OfflineDemo.enabled());
+            instrumentation.getTargetContext().getSharedPreferences("native_demo_receipts", 0).edit().clear().commit();
+            instrumentation.getTargetContext().getSharedPreferences("stars_privacy_mock_0", 0).edit().clear().commit();
+            org.telegram.messenger.MessagesController.getMainSettings(0).edit().putBoolean("privateStarReactions", false).commit();
+        });
+        launch("Blue", false);
         screenshot("01-chats.png");
         click("Settings");
         instrumentation.runOnMainSync(() -> assertTrue(((MainTabsActivity) activity.navigation().getLastFragment()).getCurrentVisibleFragment() instanceof SettingsActivity));
@@ -46,34 +53,76 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> assertTrue(activity.navigation().getLastFragment() instanceof StarsIntroActivity));
         screenshot("03-my-stars.png");
         swipe(true); // Keep the privacy control above its temporary bottom bulletin.
-        click("Make my Stars private");
-        instrumentation.runOnMainSync(() -> assertFalse(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
+        demoStart("public_history");
+        assertWindowText("Pavel Durov");
+        instrumentation.runOnMainSync(() -> {
+            assertFalse(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0));
+            for (org.telegram.tgnet.tl.TL_stars.StarsTransaction receipt : org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0]) {
+                assertFalse(receipt instanceof org.telegram.ui.Stars.StarsPrivacyMockApi.RedactedTransaction);
+                assertTrue(receipt.msg_id > 0);
+                assertTrue((receipt.flags & 256) != 0);
+            }
+        });
+        screenshot("03b-public-history.png");
+        Thread.sleep(2500);
+        demoEnd();
+        demoStart("public_receipt");
+        click("Pavel Durov");
+        assertWindowText("durov/101");
+        screenshot("03c-public-receipt.png");
+        Thread.sleep(2500);
+        demoEnd();
+        back();
+        demoStart("privacy_enable");
         click("Make my Stars private");
         instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
         screenshot("03a-privacy-enabled.png");
+        assertNoWindowText("Pavel Durov");
+        Thread.sleep(2500);
+        demoEnd();
         scrollBack();
-        click("Buy More Stars");
+        openPurchaseSheet();
         screenshot("04-purchase.png");
         back();
+        swipe(true);
+        demoStart("privacy_off");
         click("Make my Stars private");
         instrumentation.runOnMainSync(() -> {
             assertFalse(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0));
             for (org.telegram.tgnet.tl.TL_stars.StarsTransaction receipt : org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0]) {
-                assertTrue("Opt-out must not reveal an existing receipt", receipt instanceof org.telegram.ui.Stars.StarsPrivacyMockApi.RedactedTransaction);
+                // The controller can retain a server record; every UI entry projects it.
+                assertTrue("Protection must survive opt-out", org.telegram.ui.Stars.StarsPrivacyMockApi.shouldRedact(0, receipt));
+                org.telegram.tgnet.tl.TL_stars.StarsTransaction projected = org.telegram.ui.Stars.StarsPrivacyMockApi.project(0, receipt);
+                assertTrue("Opt-out must not reveal an existing receipt", projected instanceof org.telegram.ui.Stars.StarsPrivacyMockApi.RedactedTransaction);
+                assertEquals(0, projected.msg_id);
+                assertEquals(0, projected.flags);
+                assertTrue(projected.peer instanceof org.telegram.tgnet.tl.TL_stars.TL_starsTransactionPeerUnsupported);
+                assertEquals(receipt.amount.amount, projected.amount.amount);
             }
         });
+        assertNoWindowText("Pavel Durov");
+        assertWindowText("FL-20261017-0001");
         screenshot("05-history-privacy-notice.png");
+        Thread.sleep(2500);
+        demoEnd();
+        demoStart("private_receipt");
         click("FL-20261017-0001");
         assertWindowText("Transaction ID");
+        assertNoWindowText("durov/101");
+        assertNoWindowText("Pavel Durov");
         screenshot("06-private-receipt.png");
+        Thread.sleep(2500);
+        demoEnd();
         back();
         click("FL-20261017-0001", true);
         assertWindowText("cannot be undone");
         screenshot("06b-anonymise-one-receipt.png");
         back();
         scrollBack();
-        click("Buy More Stars");
+        openPurchaseSheet();
+        demoStart("purchase_warning");
         screenshot("04b-purchase-privacy-off.png");
+        Thread.sleep(2000);
         final int[] privacyLink = new int[2];
         instrumentation.runOnMainSync(() -> {
             org.telegram.ui.Stars.StarsPurchasePrivacyView notice = null;
@@ -94,6 +143,8 @@ public class NativeStarsFlowTest {
         press(privacyLink, false);
         instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
         screenshot("04c-purchase-privacy-enabled.png");
+        Thread.sleep(2000);
+        demoEnd();
         back();
         back();
         scrollBack();
@@ -103,7 +154,10 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> assertTrue(activity.navigation().getLastFragment() instanceof org.telegram.ui.Stars.StarsPrivacyActivity));
         screenshot("08-stars-privacy-settings.png");
         click("Anonymise history");
+        demoStart("anonymise_history");
         screenshot("09-anonymise-history.png");
+        Thread.sleep(2500);
+        demoEnd();
         final int[] confirm = new int[2];
         instrumentation.runOnMainSync(() -> {
             org.telegram.ui.ActionBar.AlertDialog dialog = (org.telegram.ui.ActionBar.AlertDialog) activity.navigation().getLastFragment().getVisibleDialog();
@@ -139,9 +193,12 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> assertNotNull("A hold opens the native post sheet", starsSheetButton()));
         screenshot("11-post-reaction-sheet.png");
         back();
+        demoStart("undo");
         press(point, false);
         screenshot("12-post-undo.png");
-        Thread.sleep(21000);
+        Thread.sleep(2500);
+        demoEnd();
+        Thread.sleep(18500);
         instrumentation.runOnMainSync(() -> {
             java.util.ArrayList<org.telegram.tgnet.tl.TL_stars.StarsTransaction> history = org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0];
             assertEquals("Exactly one post receipt", before[0] + 1, history.size());
@@ -164,9 +221,12 @@ public class NativeStarsFlowTest {
         instrumentation.runOnMainSync(() -> assertFalse("Discard keeps the saved policy", org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));
         click("Reactions");
         back();
+        demoStart("channel_privacy");
         click("Keep Stars anonymous");
         screenshot("17-channel-privacy.png");
+        Thread.sleep(2500);
         click("Update Reactions");
+        demoEnd();
         instrumentation.runOnMainSync(() -> {
             assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL));
             assertTrue(org.telegram.ui.Stars.StarsPrivacyMockApi.showsPercentile(0, -OfflineTelegramData.CHANNEL));
@@ -221,6 +281,24 @@ public class NativeStarsFlowTest {
             assertEquals(50, percentile.getPercentile());
         });
         screenshot("18-channel-percentile.png");
+        dragStars(1);
+        assertPercentile(100, true);
+        screenshot("18a-percentile-preview-100.png");
+        demoStart("slider_percentile");
+        Thread.sleep(1000);
+        dragStars(40);
+        assertPercentile(50, true);
+        Thread.sleep(1000);
+        dragStars(75);
+        assertPercentile(25, true);
+        Thread.sleep(1000);
+        dragStars(100);
+        assertPercentile(10, true);
+        screenshot("18b-percentile-preview-10.png");
+        Thread.sleep(2000);
+        demoEnd();
+        instrumentation.runOnMainSync(() -> assertEquals("Slider preview must not create a receipt", before[0] + 2,
+            org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0].size()));
     }
 
     @Test public void liveStoryStars() throws Exception {
@@ -267,6 +345,9 @@ public class NativeStarsFlowTest {
         press(point, true);
         instrumentation.runOnMainSync(() -> assertNotNull("A hold opens the native live sheet", starsSheetButton()));
         screenshot("21-live-stars-sheet.png");
+        demoStart("live_privacy");
+        Thread.sleep(3000);
+        demoEnd();
         back();
         press(point, false);
         screenshot("22-live-undo.png");
@@ -300,6 +381,9 @@ public class NativeStarsFlowTest {
             assertEquals("Opening the live sheet must not send another reaction", before[0] + 1, org.telegram.ui.Stars.StarsController.getInstance(0).transactions[0].size());
         });
         screenshot("24-live-percentile.png");
+        demoStart("live_percentile");
+        Thread.sleep(3000);
+        demoEnd();
         instrumentation.runOnMainSync(() -> assertEquals(100, org.telegram.ui.Stars.StarsPrivacyMockApi.donorPercentile(0, -OfflineTelegramData.CHANNEL, 0)));
         instrumentation.runOnMainSync(() -> assertFalse(UserConfig.getInstance(0).isClientActivated()));
     }
@@ -309,8 +393,77 @@ public class NativeStarsFlowTest {
         click("Settings");
         click("Telegram Stars");
         screenshot("30-my-stars-dark.png");
+        demoStart("dark_history");
         swipe(true);
         screenshot("31-history-dark.png");
+        Thread.sleep(2500);
+        demoEnd();
+    }
+
+    private String demoClip;
+    private void demoStart(String id) {
+        assertNull("Demo clips must not overlap", demoClip);
+        demoClip = id;
+        demoMark("start");
+    }
+
+    private void demoEnd() {
+        assertNotNull(demoClip);
+        demoMark("end");
+        demoClip = null;
+    }
+
+    private void demoMark(String edge) {
+        android.os.Bundle mark = new android.os.Bundle();
+        mark.putString("demo_clip", demoClip);
+        mark.putString("demo_edge", edge);
+        mark.putLong("demo_time_ms", SystemClock.elapsedRealtime());
+        instrumentation.sendStatus(2, mark);
+    }
+
+    private void assertPercentile(int value, boolean preview) {
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Stars.StarsDonorPercentileView found = null;
+            for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                org.telegram.ui.Stars.StarsDonorPercentileView candidate = find(window, org.telegram.ui.Stars.StarsDonorPercentileView.class);
+                if (candidate != null) found = candidate;
+            }
+            assertNotNull("Visible native percentile", found);
+            assertEquals(value, found.getPercentile());
+            assertEquals(preview, found.isPreview());
+        });
+    }
+
+    private void dragStars(int stars) throws Exception {
+        float[] coordinates = new float[3];
+        instrumentation.runOnMainSync(() -> {
+            org.telegram.ui.Stars.StarsReactionsSheet.StarsSlider slider = null;
+            for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                org.telegram.ui.Stars.StarsReactionsSheet.StarsSlider candidate = find(window, org.telegram.ui.Stars.StarsReactionsSheet.StarsSlider.class);
+                if (candidate != null) slider = candidate;
+            }
+            assertNotNull(slider);
+            int[] location = new int[2];
+            slider.getLocationOnScreen(location);
+            float pad = org.telegram.messenger.AndroidUtilities.dp(14);
+            float width = slider.getWidth() - 2 * pad;
+            coordinates[0] = location[0] + pad + slider.getProgress() * width;
+            // Telegram's drag handler maps deltas to the full view width.
+            coordinates[1] = coordinates[0] + (slider.getProgress(stars) - slider.getProgress()) * slider.getWidth();
+            coordinates[2] = location[1] + org.telegram.messenger.AndroidUtilities.dp(147);
+        });
+        long down = SystemClock.uptimeMillis();
+        for (int step = 0; step <= 21; step++) {
+            int action = step == 0 ? android.view.MotionEvent.ACTION_DOWN : step == 21 ? android.view.MotionEvent.ACTION_UP : android.view.MotionEvent.ACTION_MOVE;
+            android.view.MotionEvent event = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), action,
+                coordinates[0] + (coordinates[1] - coordinates[0]) * Math.min(step, 20) / 20, coordinates[2], 0);
+            event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            // Do not wait for globally idle rendering: the native particles animate continuously.
+            assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, false));
+            event.recycle();
+            Thread.sleep(25);
+        }
+        settle();
     }
 
     private View starsSheetButton() {
@@ -349,6 +502,22 @@ public class NativeStarsFlowTest {
             point[1] += layout.y + star.y + star.height / 2;
         });
         return point;
+    }
+
+    private void openPurchaseSheet() throws Exception {
+        // A fling can consume the first tap while it settles. Retry only if no sheet opened.
+        for (int attempt = 0; attempt < 2; attempt++) {
+            click("Buy More Stars");
+            final boolean[] opened = new boolean[1];
+            instrumentation.runOnMainSync(() -> {
+                for (View window : android.view.inspector.WindowInspector.getGlobalWindowViews()) {
+                    if (find(window, org.telegram.ui.Stars.StarsPurchasePrivacyView.class) != null) opened[0] = true;
+                }
+            });
+            if (opened[0]) return;
+            settle();
+        }
+        fail("The native purchase sheet did not open");
     }
 
     private void press(int[] point, boolean hold) throws Exception {
@@ -411,7 +580,8 @@ public class NativeStarsFlowTest {
         for (int step = 0; step <= 16; step++) {
             int action = step == 0 ? android.view.MotionEvent.ACTION_DOWN : step == 16 ? android.view.MotionEvent.ACTION_UP : android.view.MotionEvent.ACTION_MOVE;
             android.view.MotionEvent event = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(), action, width / 2f, start + (end - start) * step / 16, 0);
-            instrumentation.getUiAutomation().injectInputEvent(event, true);
+            event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            assertTrue(instrumentation.getUiAutomation().injectInputEvent(event, step == 16));
             event.recycle();
             Thread.sleep(20);
         }
@@ -419,13 +589,21 @@ public class NativeStarsFlowTest {
     }
 
     private void launch() throws Exception { launch("Blue"); }
-    private void launch(String theme) throws Exception {
+    private void launch(String theme) throws Exception { launch(theme, true); }
+    private void launch(String theme, boolean privateStars) throws Exception {
         instrumentation.runOnMainSync(() -> Theme.applyTheme(Theme.getTheme(theme)));
         Intent intent = new Intent(instrumentation.getTargetContext(), FeaturesLabActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         activity = (FeaturesLabActivity) instrumentation.startActivitySync(intent);
         settle();
-        instrumentation.runOnMainSync(() -> org.telegram.ui.Stars.StarsPrivacy.setEnabled(0, true));
+        if (privateStars) instrumentation.runOnMainSync(() -> org.telegram.ui.Stars.StarsPrivacy.setEnabled(0, true));
+    }
+
+    private void assertNoWindowText(String text) {
+        AccessibilityNodeInfo root = instrumentation.getUiAutomation().getRootInActiveWindow();
+        assertNotNull(root);
+        assertTrue("Visible window must not contain: " + text, root.findAccessibilityNodeInfosByText(text).isEmpty());
+        root.recycle();
     }
 
     private void assertWindowText(String text) {

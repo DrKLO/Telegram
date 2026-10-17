@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import time
 import uuid
+from edit_stars_demo import parse_marks, duration, render
 
 ROOT = Path(__file__).resolve().parents[1]
 loader = importlib.machinery.SourceFileLoader('features_lab', str(ROOT / 'dev'))
@@ -34,13 +35,14 @@ def main():
     base = [str(lab.sdk_path() / 'platform-tools/adb'), '-s', serial]
     methods = ['settingsToHistory', 'channelReactionAndAdmin', 'liveStoryStars', 'darkSettings']
     segments = []
+    recordings = []
     results = []
     for index, method in enumerate(methods):
         remote = '/sdcard/stars-demo-' + uuid.uuid4().hex
         lab.adb('shell', 'am', 'force-stop', lab.OFFLINE_PACKAGE, serial=serial)
         with (out / ('native-recording-' + method + '.log')).open('w') as log:
             # Stop only this script's recorder, never unrelated recordings.
-            command = f'screenrecord --time-limit 180 --bit-rate 4000000 {remote}.mp4 & recorder_pid=$!; echo "$recorder_pid" > {remote}.pid; wait "$recorder_pid"'
+            command = f'cat /proc/uptime > {remote}.start; screenrecord --time-limit 180 --bit-rate 4000000 {remote}.mp4 & recorder_pid=$!; echo "$recorder_pid" > {remote}.pid; wait "$recorder_pid"'
             recorder = subprocess.Popen(base + ['shell', command], stdout=log, stderr=subprocess.STDOUT)
             try:
                 time.sleep(1)
@@ -50,6 +52,11 @@ def main():
                     capture_output=True, text=True, timeout=175)
                 results.append(result.stdout + result.stderr)
                 (out / 'stars-privacy-demo-test.txt').write_text('\n'.join(results))
+            except subprocess.TimeoutExpired as error:
+                partial = error.stdout or b''
+                if isinstance(partial, bytes): partial = partial.decode(errors='replace')
+                (out / ('native-timeout-' + method + '.txt')).write_text(partial)
+                raise SystemExit('Native recording timed out: ' + method + '. Previous video preserved.')
             finally:
                 pid = lab.adb('shell', 'cat', remote + '.pid', serial=serial, capture=True, check=False).stdout.strip()
                 if pid.isdigit():
@@ -63,31 +70,37 @@ def main():
             raise SystemExit('Native walkthrough failed: ' + method + '. Previous video preserved.')
         segment = out / ('native-demo-' + str(index) + '.mp4')
         lab.adb('pull', remote + '.mp4', segment, serial=serial)
-        lab.adb('shell', 'rm', remote + '.mp4', remote + '.pid', serial=serial)
+        start_seconds = float(lab.adb('shell', 'cat', remote + '.start', serial=serial, capture=True).stdout.split()[0])
+        recordings.append({'file': segment.name, 'method': method, 'start_seconds': start_seconds,
+                           'duration_seconds': duration(ffmpeg, segment),
+                           'sha256': hashlib.sha256(segment.read_bytes()).hexdigest(),
+                           'marks': parse_marks(result.stdout)})
+        lab.adb('shell', 'rm', remote + '.mp4', remote + '.pid', remote + '.start', serial=serial)
         segments.append(segment)
     # Consecutive actual captures, including navigation and all real 20-second waits.
     playlist = out / 'native-demo-segments.txt'
     playlist.write_text(''.join("file '" + segment.name + "'\n" for segment in segments))
     video = out / 'stars-privacy-demo.mp4'
-    temporary = out / 'stars-privacy-demo-next.mp4'
-    # Keep the genuine timing, including all 20-second waits. No motion is fabricated.
+    uncut = out / 'stars-privacy-walkthrough.mp4'
+    temporary = out / 'stars-privacy-walkthrough-next.mp4'
+    # Preserve the full capture for timing QA, including every real 20-second wait.
     subprocess.run([ffmpeg, '-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', str(playlist),
                     '-vf', 'fps=30', '-c:v', 'libx264', '-preset', 'fast', '-crf', '22',
                     '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', str(temporary)], check=True)
     subprocess.run([ffmpeg, '-v', 'error', '-i', str(temporary), '-f', 'null', '-'], check=True)
-    temporary.replace(video)
-    # Standalone FFmpeg distributions do not always bundle ffprobe.
-    probe = subprocess.run([ffmpeg, '-hide_banner', '-i', str(video)], capture_output=True, text=True)
-    duration = re.search(r'Duration: (\d+):(\d+):(\d+\.\d+)', probe.stderr)
-    if not duration:
-        raise SystemExit('Could not read the exported video duration.')
-    hours, minutes, seconds = map(float, duration.groups())
+    temporary.replace(uncut)
+    (out / 'stars-privacy-capture.json').write_text(json.dumps({
+        'source_commit': source_commit, 'working_tree_dirty': dirty_at_start,
+        'recordings': recordings,
+    }, indent=2) + '\n')
+    edited = render(ffmpeg, out, recordings)
     metadata = {
         'source_commit': source_commit,
         'working_tree_dirty': dirty_at_start or bool(lab.run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
             or source_commit != lab.run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
-        'video_sha256': hashlib.sha256(video.read_bytes()).hexdigest(),
-        'duration_seconds': hours * 3600 + minutes * 60 + seconds,
+        **edited,
+        'uncut_video_sha256': hashlib.sha256(uncut.read_bytes()).hexdigest(),
+        'uncut_duration_seconds': duration(ffmpeg, uncut),
         'android_version': lab.adb('shell', 'getprop', 'ro.build.version.release', serial=serial, capture=True).stdout.strip(),
         'abi': lab.phone_abi(serial),
         'offline_package': lab.OFFLINE_PACKAGE,

@@ -154,6 +154,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private final boolean privateStars;
     private final long privacyGeneration;
     private StarsDonorPercentileView percentileView;
+    private long percentilePreviewStars = -1;
     private final ArrayList<TLRPC.MessageReactor> reactors;
 
     private final BalanceCloud balanceCloud;
@@ -254,6 +255,10 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             @Override
             public void onValueChanged(int value) {
                 updateSenders(value);
+                if (percentileView != null) {
+                    percentilePreviewStars = value;
+                    updatePercentile();
+                }
                 if (buttonView != null) {
                     buttonView.setText(StarsIntroActivity.replaceStars(formatString(R.string.StarsReactionSend, LocaleController.formatNumber(value, ',')), starRef), true);
                 }
@@ -767,9 +772,12 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
     private void updatePercentile() {
         if (percentileView == null) return;
-        int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId,
-            messageObject == null ? 0 : StarsController.MessageId.from(messageObject).mid);
-        percentileView.setPercentile(bucket, isShowing());
+        boolean preview = percentilePreviewStars >= 0;
+        int bucket = preview
+            ? StarsPrivacyMockApi.previewDonorPercentile(currentAccount, privacyDialogId, percentilePreviewStars)
+            : StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId,
+                messageObject == null ? 0 : StarsController.MessageId.from(messageObject).mid);
+        percentileView.setPercentile(bucket, isShowing(), preview);
     }
 
     private boolean canSwitchPeer() {

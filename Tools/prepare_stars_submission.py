@@ -15,13 +15,15 @@ DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md'
 NATIVE_SCREENSHOT_CAPTIONS = {
     '02a-settings-stars-entry.png': ('Telegram Settings', 'The real Settings tab and Telegram Stars entry, with native rounded sections and bottom navigation.'),
     '03-my-stars.png': ('My Stars', 'Telegram’s production balance page, animated header and purchase actions.'),
+    '03b-public-history.png': ('Before privacy', 'Illustrative transactions show public channel names and bundled avatars, with today’s date and signed amounts.'),
+    '03c-public-receipt.png': ('Identifiable receipt', 'The native receipt includes the sample channel and post link before privacy is enabled. No real payment is represented.'),
     '03a-privacy-enabled.png': ('Make my Stars private', 'The gold Star and closing-lock motion sit directly above the real transaction history.'),
     '05a-transaction-history.png': ('Privacy beside history', 'The animated privacy control sits above the real transaction list. Amounts remain visible.'),
     '05-history-privacy-notice.png': ('New reactions only', 'Turning privacy off explains that previously protected activity stays private.'),
     '04-purchase.png': ('Purchase notice', 'The production package sheet explains visibility; offline prices are samples and no purchase is made.'),
     '04b-purchase-privacy-off.png': ('Visibility warning', 'With privacy off, the native purchase notice explains that reactions may reveal the profile in Top Senders.'),
     '04c-purchase-privacy-enabled.png': ('Enable privacy while buying', 'The inline link enables the same personal preference and updates the notice immediately.'),
-    '06-private-receipt.png': ('Minimal receipt', 'A real transaction opens a native receipt with its Stars amount, ID and date/time.'),
+    '06-private-receipt.png': ('Minimal receipt', 'A sample transaction opens a native receipt with its Stars amount, ID and date/time.'),
     '06b-anonymise-one-receipt.png': ('Anonymise one record', 'Long-pressing a row in the actual history opens the native irreversible-action confirmation.'),
     '07-privacy-security.png': ('Privacy & Security', 'The personal Stars Privacy entry is part of Telegram’s real privacy settings.'),
     '08-stars-privacy-settings.png': ('Personal preference', 'Native personal controls reached through Settings → Privacy & Security.'),
@@ -31,6 +33,8 @@ NATIVE_SCREENSHOT_CAPTIONS = {
     '12-post-undo.png': ('20-second Undo', 'A Star tap runs the native effect and pending-send countdown; a completed send creates a receipt.'),
     '17-channel-privacy.png': ('Channel admin controls', 'Keep Stars anonymous sits below Enable Paid Reactions, with native Update/Discard behavior. Enforcement remains a local API mock.'),
     '18-channel-percentile.png': ('Your donor percentile', 'Large animated numbers replace named rankings. Only the donor sees this coarse aggregate; personal privacy can remain enabled.'),
+    '18a-percentile-preview-100.png': ('Projected rank · Top 100%', 'Moving the real Stars slider previews a donor-only percentile without sending a reaction.'),
+    '18b-percentile-preview-10.png': ('Projected rank · Top 10%', 'As the amount increases, Telegram’s rolling digits animate through smaller percentile buckets. This is a labelled estimate.'),
     '20-live-story.png': ('Live-story viewer', 'The production story and Star controls use sample stream metadata; no video broadcast is connected.'),
     '21-live-stars-sheet.png': ('Live Stars', 'The native live sheet uses a subtle monochrome lock in its anonymous chip; sending is simulated.'),
     '22-live-undo.png': ('Live Undo', 'The production live Star animation and 20-second cancellation path.'),
@@ -155,7 +159,9 @@ def main():
     (destination / 'REVIEW.txt').write_text(
         f'Private Star Reactions\nSource revision: {revision}\n'
         f'Offline setup baseline: {git("rev-parse", BASE).decode().strip()}\n'
-        f'Video: {metadata["duration_seconds"]:.1f} seconds, actual emulator capture; no audio.\n\n'
+        f'Video: {metadata["duration_seconds"]:.1f} seconds, edited actual emulator capture; no audio. '
+        'Native motion plays at normal speed. Launch screens and inactive intervals are cut; '
+        'captions sit in a separate band above the app. The recording manifest includes the cut list and raw segment hashes.\n\n'
         'Source is available at the pinned public URL in MESSAGE.txt. Clone recursively using '
         'DEVELOPMENT.md, check out the revision above, then run ./dev demo. The patch is for '
         'review/application on the offline setup baseline, not a standalone source archive.\n\n'

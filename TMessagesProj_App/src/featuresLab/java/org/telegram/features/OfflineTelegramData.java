@@ -18,13 +18,23 @@ import org.telegram.ui.Stars.StarsPrivacyMockApi;
 /** Supplies data to the real Telegram screens; never creates or saves an authenticated user. */
 final class OfflineTelegramData implements OfflineDemo.DataSource {
     static final long CHANNEL = 7770001;
+    private static final long DUROV_CHANNEL = 7770002;
+    private static final long TELEGRAM_CHANNEL = 7770003;
     private final TLRPC.TL_user user = new TLRPC.TL_user();
     private final TLRPC.TL_channel channel = new TLRPC.TL_channel();
     private final TLRPC.TL_channelFull full = new TLRPC.TL_channelFull();
     private final SharedPreferences receipts;
+    private final TLRPC.TL_channel durov;
+    private final TLRPC.TL_channel telegram;
+    private final int sampleDate;
 
     OfflineTelegramData(Context context) {
         receipts = context.getSharedPreferences("native_demo_receipts", 0);
+        int now = (int) (System.currentTimeMillis() / 1000);
+        sampleDate = receipts.getInt("sample_date", now);
+        if (!receipts.contains("sample_date")) receipts.edit().putInt("sample_date", sampleDate).commit();
+        durov = sampleChannel(context, DUROV_CHANNEL, "Pavel Durov", "durov");
+        telegram = sampleChannel(context, TELEGRAM_CHANNEL, "Telegram", "telegram");
         user.id = 8880000;
         user.first_name = "Features Lab";
         user.last_name = "";
@@ -64,6 +74,8 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
         org.telegram.ui.Stars.StarsController.getInstance(0).getBalance();
         controller.putUser(user, true);
         controller.putChat(channel, true);
+        controller.putChat(durov, true);
+        controller.putChat(telegram, true);
         controller.putChatFull(full);
         controller.getStoriesController().putStories(-CHANNEL, stories());
         controller.processLoadedDialogs((TLRPC.messages_Dialogs) respond(0, new TLRPC.TL_messages_getDialogs()), null, null, 0, 0, 20, 0, true, false, false);
@@ -104,6 +116,8 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
     private void peers(java.util.ArrayList<TLRPC.User> users, java.util.ArrayList<TLRPC.Chat> chats) {
         users.add(user);
         chats.add(channel);
+        chats.add(durov);
+        chats.add(telegram);
         for (int i = 0; i < 3; i++) {
             TLRPC.TL_user donor = new TLRPC.TL_user();
             donor.id = 8880001 + i;
@@ -218,8 +232,9 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
                         result.balance.amount += row.getLong("amount");
                     }
                 } catch (org.json.JSONException error) { throw new IllegalStateException(error); }
-                result.history.add(transaction("FL-20261017-0001", -25, 1792227600));
-                result.history.add(transaction("FL-20261017-0002", -10, 1792225800));
+                // Illustrative transactions, never an assertion of payments to these channels.
+                result.history.add(transaction("FL-20261017-0001", -25, sampleDate, DUROV_CHANNEL, 101));
+                result.history.add(transaction("FL-20261017-0002", -10, sampleDate, TELEGRAM_CHANNEL, 202));
                 if (request instanceof TL_stars.TL_getStarsSubscriptions) result.history.clear();
                 if (request instanceof TL_stars.TL_payments_getStarsTransactions) {
                     TL_stars.TL_payments_getStarsTransactions filter = (TL_stars.TL_payments_getStarsTransactions) request;
@@ -273,16 +288,39 @@ final class OfflineTelegramData implements OfflineDemo.DataSource {
     }
 
     private TL_stars.StarsTransaction transaction(String id, long amount, int date) {
+        return transaction(id, amount, date, CHANNEL, 101);
+    }
+
+    private TL_stars.StarsTransaction transaction(String id, long amount, int date, long channelId, int postId) {
         TL_stars.TL_starsTransaction transaction = new TL_stars.TL_starsTransaction();
         transaction.id = id;
         transaction.date = date;
         transaction.amount = TL_stars.StarsAmount.ofStars(amount);
         transaction.peer = new TL_stars.TL_starsTransactionPeer();
         transaction.peer.peer = new TLRPC.TL_peerChannel();
-        transaction.peer.peer.channel_id = CHANNEL;
+        transaction.peer.peer.channel_id = channelId;
         transaction.reaction = true;
-        transaction.msg_id = 101;
+        transaction.flags |= 256;
+        transaction.msg_id = postId;
         return StarsPrivacyMockApi.project(0, transaction);
+    }
+
+    private static TLRPC.TL_channel sampleChannel(Context context, long id, String name, String username) {
+        TLRPC.TL_channel chat = new TLRPC.TL_channel();
+        chat.id = id;
+        chat.title = name;
+        chat.username = username;
+        chat.broadcast = true;
+        chat.flags |= 64;
+        chat.photo = new TLRPC.TL_chatPhoto();
+        // Reuse Telegram's native avatar loading path with a bundled, offline placeholder.
+        try (java.io.InputStream input = context.getAssets().open("demo/" + username + ".jpg")) {
+            chat.photo.strippedBitmap = new android.graphics.drawable.BitmapDrawable(context.getResources(),
+                android.graphics.BitmapFactory.decodeStream(input));
+        } catch (java.io.IOException error) {
+            throw new IllegalStateException("Missing offline channel avatar", error);
+        }
+        return chat;
     }
 
     @Override public void recordTransaction(int account, TL_stars.StarsTransaction transaction, boolean live) {

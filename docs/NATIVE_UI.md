@@ -10,6 +10,10 @@ by the live client; sample data is provided behind the UI.
 1. Open **Settings**, scroll to **Telegram Stars**, and open it. The production
    page retains its animated Star header, balance, purchase/gift actions and
    transaction list. **Make my Stars private** sits immediately above history.
+   The recorded scenario starts with a new public sample: today’s receipts for
+   Pavel Durov and Telegram, with bundled channel avatars and post links. Enabling
+   privacy removes names, avatars and post links while retaining signed amounts,
+   IDs and dates. These are fictitious transactions, not actual payments.
 2. Tap **Buy More Stars** to inspect the real package sheet and privacy notice.
    Prices are samples; tapping a package does not start billing.
 3. Toggle the history privacy control. The short notice explains that opting out
@@ -24,7 +28,10 @@ by the live client; sample data is provided behind the UI.
    anonymous** is directly below **Enable Paid Reactions**. Save with **Update
    Reactions**, or use the existing discard dialog. After sending Stars, hold the
    post's Star again to see your large donor-only percentile. Selected Star states
-   stay hidden even with personal privacy off. These policies model proposed APIs.
+   stay hidden even with personal privacy off. Dragging the native Stars slider
+   previews **Top 100% → 50% → 25% → 10%** with Telegram’s rolling digits. The
+   label distinguishes this estimate from a completed donation; moving the slider
+   neither sends Stars nor changes history. These policies model proposed APIs.
 7. Open **Design Notes** in the live-story strip. The production story viewer,
    Star button, reaction sheet, comments and Undo display use simulated stream
    metadata. Live video/audio and actual broadcasting are not connected.
@@ -75,3 +82,17 @@ navigation change and must not be presented as evidence for this revision.
 The offline provider also remembers the paid-reactions enable switch across app
 restarts. The separate channel anonymity preference is saved only with the native
 Update Reactions action. Turning Stars off retains that preference.
+
+## Edited demonstration
+
+`Tools/record_stars_demo.py` records the four real navigation tests and uses device
+clock markers to produce a short, captioned `artifacts/stars-privacy-demo.mp4`.
+The caption band sits above the app; native gestures and animations play at normal
+speed. Launches, navigation detours and inactive waits are cut. The 20-second Undo
+continues to run in the app; its omitted wait is disclosed in the caption. The full
+uncut capture is retained as `artifacts/stars-privacy-walkthrough.mp4` for timing QA.
+The edit manifest records each source hash and cut boundary.
+
+The public opening fixture is created only by the offline test. Normal first-launch
+privacy remains enabled, and there is no product action to restore protected history.
+Avatar source attribution is in `TMessagesProj_App/src/featuresLab/assets/demo/README.txt`.

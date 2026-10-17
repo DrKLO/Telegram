@@ -1,5 +1,5 @@
 > Native-navigation revision: use the real-screen walkthrough in [NATIVE_UI.md](NATIVE_UI.md).
-> Earlier videos and screenshot packages predate this change and need replacement.
+> Use the package matching the tested source revision; earlier packages remain historical evidence.
 
 # Private Star Reactions — submission handoff
 
@@ -34,14 +34,17 @@ anonymises receipt details rather than deleting receipts entirely.
   The inline switch saves with Update Reactions and participates in native Discard.
   It removes named rankings and selected Star states immediately, keeps minimal
   receipts, and shows large donor-only percentiles for five minutes after sending.
-  This also applies with personal privacy off.
+  This also applies with personal privacy off. Dragging the Stars slider previews
+  the donor’s rank with native rolling digits, without spending Stars.
 - **History:** Long-press a transaction to anonymise it, or anonymise existing history
   from Stars Privacy. Native confirmations; no restore action in the mock.
 - **Live Stars:** A usable native live-reaction flow, with a local anonymous send and
   the same Undo interval.
 
 The code is a working **client prototype**. The video uses an offline Android emulator
-and fixture data, without a Telegram account, phone number or real payments.
+and fixture data, without a Telegram account, phone number or real payments. The
+opening public receipts use Pavel Durov’s and Telegram’s names and bundled avatars
+to demonstrate familiar UI; the payments and post associations are fictitious.
 
 ## Existing API and required server work
 
@@ -126,10 +129,12 @@ python3 Tools/prepare_stars_submission.py
 ```
 
 The recorder rebuilds/installs the offline app and instrumentation APK, then runs
-the four `NativeStarsFlowTest` scenarios in separate processes. It joins actual
-captures of Settings/history, the channel/admin flow, live Stars and dark mode,
-leaving all 20-second waits intact. It records no microphone audio and does not
-synthesize motion. The walkthrough changes only offline sample preferences and
+the four `NativeStarsFlowTest` scenarios in separate processes. Device-time markers
+select a short edit of Settings/history, the channel/admin flow, live Stars and dark
+mode. Launches and inactive intervals are removed; native UI motion stays at normal
+speed. Short captions sit on a separate background above the app. The omitted Undo
+wait is disclosed; the full `stars-privacy-walkthrough.mp4` retains all real waits for
+local timing QA. It records no microphone audio and does not synthesize motion. The walkthrough changes only offline sample preferences and
 creates sample receipts. It never touches a real account. Review the MP4 before sharing.
 
 The packaging command requires a clean committed checkout and a passing recording
@@ -141,7 +146,8 @@ The privacy suite includes a real five-minute wait. It creates `artifacts/submis
 
 - `MESSAGE.txt`: a concise draft message with immutable source and feature-diff links.
 - `stars-privacy-demo.mp4`: the reviewed native flow, with sample-data disclosure.
-- `recording.json`: revision, video SHA-256, duration, Android version and ABI.
+- `recording.json`: revision, video SHA-256, duration, Android version, ABI, source
+  capture hashes and the edit decision list.
 - `qa.json`: tested revision, scenario names and screenshot hashes.
 - `native-ui-qa.json`: production-navigation scenarios and native screenshot hashes.
 - This checklist, QA report, feature/API specification, build and offline guides, and GPL license.

@@ -93,6 +93,13 @@ population from Telegram's top-three list. Ties share rank and cohorts below ten
 have no figure. The component test screen additionally exposes a percentile toggle
 for testing policy updates; the production admin switch enables it by default.
 
+Dragging the native Stars slider shows a read-only estimate labelled **You would
+be in the top**. As the amount rises, the coarse rank decreases with Telegram’s
+rolling-number animation (100%, 50%, 25%, 10% in the demo). It uses the same mock
+aggregate fixture, creates no receipt, and leaves the completed rank and its
+five-minute deadline untouched. A proposed server endpoint would supply estimates
+without revealing donors or charging Stars. Closing the sheet discards the estimate.
+
 **History anonymisation.** A native confirmation applies to one transaction or all
 transactions through the confirmation time, including unloaded pages. There is no
 restore action. Mock tombstones survive process restarts and re-fetches, and cannot
@@ -256,10 +263,13 @@ and `artifacts/stars-privacy-test.txt`. These tests do not validate real payment
 server anonymity or cross-device enforcement. The suite includes a real five-minute
 wait to verify that the percentile disappears from an open sheet while the Star stays unselected throughout.
 
-Recorded flow: animated history privacy control → purchase visibility notice → personal setting → anonymous reaction and Undo → minimal receipt →
-native live send with its full 20-second wait → admin policy → privacy opt-out notice →
-channel send with its full wait → donor-only percentile → history anonymisation → dark settings. Identify the offline fixtures and proposed
-API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before sharing.
+Recorded flow: public sample history and receipt → privacy removes identifying
+information → minimal receipt and irreversible opt-out notice → purchase warning →
+history anonymisation → native admin policy → animated slider percentile → Undo →
+live Stars → dark history. The short edit removes launches and inactive intervals,
+keeps UI motion at normal speed, and adds concise captions above the app. The full
+capture retains the actual Undo waits. Both sample data and proposed API behaviour
+are disclosed. Review [SUBMISSION.md](SUBMISSION.md) before sharing.
 
 ## Verified on 17 October 2026
 

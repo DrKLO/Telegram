@@ -287,6 +287,7 @@
     <string name="StarsChannelMockInfo">Предпросмотр: правила канала моделируются на этом устройстве. Звёзды не тратятся.</string>
     <string name="StarsChannelPending">Канал · Прототип</string>
     <string name="StarsChannelPercentileTop">Вы входите в топ</string>
+    <string name="StarsChannelPercentileProjected">Вы попадёте в топ</string>
     <string name="StarsChannelPercentilePrivate">отправителей · Видно только вам</string>
     <string name="StarsChannelTopPercent">Топ %1$d%% · Видно только вам</string>
     <string name="StarsHistoryAnonymise">Анонимизировать историю</string>

@@ -218,6 +218,7 @@ android {
         sourceSets.debug.java.srcDir 'src/featuresLab/java'
         defaultConfig.manifestPlaceholders = [featuresLabOffline: rootProject.ext.featuresLabOffline.toString()]
         if (rootProject.ext.featuresLabOffline) {
+            sourceSets.debug.assets.srcDir 'src/featuresLab/assets'
             sourceSets.afat.manifest.srcFile 'src/featuresLabOffline/AndroidManifest.xml'
             sourceSets.androidTest.java.srcDir 'src/featuresLabOfflineTest/java'
             defaultConfig.testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
