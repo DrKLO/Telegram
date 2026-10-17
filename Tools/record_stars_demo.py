@@ -20,8 +20,7 @@ loader.exec_module(lab)
 
 def main():
     ffmpeg = shutil.which('ffmpeg')
-    ffprobe = shutil.which('ffprobe')
-    if not ffmpeg or not ffprobe:
+    if not ffmpeg:
         raise SystemExit('Install FFmpeg first (brew install ffmpeg).')
     serial = lab.device(required=True)
     lab.install(offline=True)
@@ -67,12 +66,17 @@ def main():
                     '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', str(temporary)], check=True)
     subprocess.run([ffmpeg, '-v', 'error', '-i', str(temporary), '-f', 'null', '-'], check=True)
     temporary.replace(video)
-    probe = json.loads(subprocess.check_output([ffprobe, '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(video)]))
+    # Standalone FFmpeg distributions do not always bundle ffprobe.
+    probe = subprocess.run([ffmpeg, '-hide_banner', '-i', str(video)], capture_output=True, text=True)
+    duration = re.search(r'Duration: (\d+):(\d+):(\d+\.\d+)', probe.stderr)
+    if not duration:
+        raise SystemExit('Could not read the exported video duration.')
+    hours, minutes, seconds = map(float, duration.groups())
     metadata = {
         'source_commit': lab.run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
         'working_tree_dirty': bool(lab.run(['git', 'status', '--porcelain'], capture=True).stdout.strip()),
         'video_sha256': hashlib.sha256(video.read_bytes()).hexdigest(),
-        'duration_seconds': float(probe['format']['duration']),
+        'duration_seconds': hours * 3600 + minutes * 60 + seconds,
         'android_version': lab.adb('shell', 'getprop', 'ro.build.version.release', serial=serial, capture=True).stdout.strip(),
         'abi': lab.phone_abi(serial),
         'offline_package': lab.OFFLINE_PACKAGE,
