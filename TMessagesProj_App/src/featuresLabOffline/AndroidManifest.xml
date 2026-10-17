@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Enforced by Android: this APK cannot contact Telegram or any other server. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <application>
+        <activity android:name="org.telegram.ui.LaunchActivity" android:enabled="false" tools:replace="android:enabled" />
+        <activity-alias android:name="org.telegram.messenger.DefaultIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+        <activity-alias android:name="org.telegram.messenger.VintageIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+        <activity-alias android:name="org.telegram.messenger.AquaIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+        <activity-alias android:name="org.telegram.messenger.PremiumIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+        <activity-alias android:name="org.telegram.messenger.TurboIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+        <activity-alias android:name="org.telegram.messenger.NoxIcon" android:targetActivity="org.telegram.features.FeaturesLabActivity" tools:replace="android:targetActivity" />
+    </application>
+</manifest>

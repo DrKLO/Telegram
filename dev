@@ -9,10 +9,13 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parent
 LOCAL = ROOT / 'local.properties'
 PACKAGE = 'org.telegram.features.beta'
+OFFLINE_PACKAGE = 'org.telegram.features.offline.beta'
+AVD = 'Features_Lab_API_36'
 NDK = '27.2.12479018'
 
 
@@ -125,7 +128,7 @@ def device(required=False):
     if ready:
         return ready[0]
     if required:
-        raise SystemExit('No authorized phone. Enable USB debugging, connect a data cable, and accept the phone prompt. Run ./dev devices.')
+        raise SystemExit('No authorized device. Run ./dev emulator, or connect a phone with USB debugging. Run ./dev devices.')
     return None
 
 
@@ -140,9 +143,9 @@ def phone_abi(serial):
     raise SystemExit('The connected device does not support an ARM ABI supported by this setup.')
 
 
-def build(compile_only=False):
+def build(compile_only=False, offline=False):
     bootstrap()
-    if not compile_only and not credentials_valid():
+    if not compile_only and not offline and not credentials_valid():
         raise SystemExit('Run ./dev configure first. Credentials stay in ignored local.properties. For compilation without login, use ./dev compile-check.')
     serial = device()
     abi = phone_abi(serial) if serial else properties().get('featuresLab.abi', 'arm64-v8a')
@@ -150,6 +153,7 @@ def build(compile_only=False):
     print(f'Building Features Lab for {abi}' + (' (compile check: no login credentials)' if compile_only else ''), flush=True)
     run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebug',
          '-PfeaturesLab=true', f'-PfeaturesLabAbi={abi}',
+         f'-PfeaturesLabOffline={str(offline).lower()}',
          f'-PfeaturesLabCompileOnly={str(compile_only).lower()}', '--console=plain'], env=environment())
     apk = ROOT / 'TMessagesProj_App/build/outputs/apk/afat/debug/app.apk'
     if not apk.exists():
@@ -158,6 +162,92 @@ def build(compile_only=False):
     if compile_only:
         print('Compile-check APK only: do not use this artifact for account login or distribution.')
     return apk
+
+
+def emulator():
+    """Start only our dedicated AVD; preserve its data and avoid snapshot disk usage."""
+    bootstrap()
+    binary = sdk_path() / 'emulator/emulator'
+    if not binary.exists():
+        raise SystemExit('Install Android Emulator and create Features_Lab_API_36; see docs/OFFLINE.md.')
+    available = run([binary, '-list-avds'], capture=True).stdout.splitlines()
+    if AVD not in available:
+        raise SystemExit('Features_Lab_API_36 is missing. Follow docs/OFFLINE.md to create it.')
+    for row in adb('devices', capture=True).stdout.splitlines()[1:]:
+        fields = row.split()
+        if len(fields) >= 2 and fields[0].startswith('emulator-') and fields[1] == 'device':
+            name = adb('emu', 'avd', 'name', serial=fields[0], capture=True, check=False).stdout.splitlines()
+            if name and name[0] == AVD:
+                print(f'{AVD} is already running ({fields[0]}).')
+                return fields[0]
+    if shutil.disk_usage(ROOT).free < 5e9:
+        raise SystemExit('The emulator needs at least 5 GB of free working space.')
+    logs = ROOT / 'artifacts'
+    logs.mkdir(exist_ok=True)
+    # Choose an unused emulator console/ADB port pair.
+    import socket
+    port = None
+    for candidate in range(5554, 5585, 2):
+        try:
+            with socket.socket() as console, socket.socket() as bridge:
+                console.bind(('127.0.0.1', candidate))
+                bridge.bind(('127.0.0.1', candidate + 1))
+                port = candidate
+                break
+        except OSError:
+            continue
+    if port is None:
+        raise SystemExit('No free emulator port pair.')
+    with (logs / 'emulator.log').open('a') as log:
+        subprocess.Popen([str(binary), '-avd', AVD, '-port', str(port), '-memory', '2560',
+                          '-cores', '2', '-no-snapshot', '-no-boot-anim', '-camera-back', 'none',
+                          '-camera-front', 'none'], stdout=log, stderr=log, stdin=subprocess.DEVNULL,
+                         start_new_session=True, env=environment())
+    serial = f'emulator-{port}'
+    print(f'Booting {AVD}; log: {logs / "emulator.log"}', flush=True)
+    deadline = time.monotonic() + 180
+    while time.monotonic() < deadline:
+        ready = adb('shell', 'getprop', 'sys.boot_completed', serial=serial, capture=True, check=False)
+        if ready.stdout.strip() == '1':
+            print(f'Emulator ready: {serial}', flush=True)
+            return serial
+        time.sleep(2)
+    raise SystemExit('Emulator did not boot within 3 minutes; inspect artifacts/emulator.log.')
+
+
+def install(offline=False):
+    serial = device(required=True)
+    phone_abi(serial)
+    apk = build(offline=offline)
+    package = OFFLINE_PACKAGE if offline else PACKAGE
+    activity = 'org.telegram.features.FeaturesLabActivity' if offline else 'org.telegram.ui.LaunchActivity'
+    # Never uninstall or clear user data to work around a signing conflict.
+    adb('install', '-r', apk, serial=serial)
+    adb('shell', 'am', 'start', '-n', f'{package}/{activity}', serial=serial)
+
+
+def smoke_test():
+    serial = device(required=True)
+    install(offline=True)
+    run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebugAndroidTest',
+         '-PfeaturesLab=true', '-PfeaturesLabOffline=true', '--console=plain'], env=environment())
+    test_apk = ROOT / 'TMessagesProj_App/build/outputs/apk/androidTest/afat/debug/TMessagesProj_App-afat-debug-androidTest.apk'
+    adb('install', '-r', test_apk, serial=serial)
+    artifacts = ROOT / 'artifacts'
+    artifacts.mkdir(exist_ok=True)
+    results = []
+    for method in ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']:
+        adb('shell', 'am', 'force-stop', OFFLINE_PACKAGE, serial=serial)
+        result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+                     'org.telegram.features.OfflineSmokeTest#' + method,
+                     OFFLINE_PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner', serial=serial, capture=True)
+        print(result.stdout)
+        results.append(result.stdout + result.stderr)
+        (artifacts / 'offline-smoke-test.txt').write_text('\n'.join(results))
+        adb('pull', f'/sdcard/Android/data/{OFFLINE_PACKAGE}/files/smoke', artifacts, serial=serial, check=False)
+        if not re.search(r'OK \(\d+ tests?\)', result.stdout):
+            raise SystemExit('Offline smoke test failed; inspect artifacts/offline-smoke-test.txt.')
+    adb('shell', 'am', 'start', '-n', OFFLINE_PACKAGE + '/org.telegram.features.FeaturesLabActivity', serial=serial)
 
 
 def doctor():
@@ -175,15 +265,15 @@ def doctor():
     bad = [line for line in modules.stdout.splitlines() if line and line[0] in '-+U']
     print('Submodules: ' + ('need initialization / pinned checkout' if bad else 'at pinned commits'))
     errors.extend(bad)
-    print('API credentials: ' + ('configured (values hidden)' if credentials_valid() else 'not configured; run ./dev configure'))
+    print('API credentials: ' + ('configured (values hidden)' if credentials_valid() else 'not configured; not needed for ./dev demo'))
     serial = device()
     if serial:
         abi = phone_abi(serial)
         save_properties({'featuresLab.abi': abi})
         version = adb('shell', 'getprop', 'ro.build.version.release', serial=serial, capture=True).stdout.strip()
-        print(f'Phone: Android {version}; saved build ABI: {abi}')
+        print(f'Device: Android {version}; saved build ABI: {abi}')
     else:
-        print('Phone: not connected or not authorized')
+        print('Device: none connected; run ./dev demo for the account-free emulator')
     if errors:
         raise SystemExit(1)
 
@@ -203,7 +293,7 @@ def configure():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio'])
+    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio', 'emulator', 'demo', 'offline-build', 'offline-install', 'smoke-test'])
     parser.add_argument('seconds', nargs='?', type=int, default=30, help='record duration, 1–180 seconds')
     args = parser.parse_args()
     if args.command == 'doctor':
@@ -212,20 +302,24 @@ def main():
         configure()
     elif args.command == 'devices':
         adb('devices', '-l')
-    elif args.command in ('build', 'compile-check'):
-        build(args.command == 'compile-check')
-    elif args.command == 'install':
-        serial = device(required=True)
-        phone_abi(serial)
-        apk = build()
-        # Never uninstall or clear user data to work around a signing conflict.
-        adb('install', '-r', apk, serial=serial)
-        adb('shell', 'am', 'start', '-n', f'{PACKAGE}/org.telegram.ui.LaunchActivity', serial=serial)
+    elif args.command in ('build', 'compile-check', 'offline-build'):
+        build(args.command == 'compile-check', args.command == 'offline-build')
+    elif args.command in ('install', 'offline-install'):
+        install(offline=args.command == 'offline-install')
+    elif args.command == 'emulator':
+        emulator()
+    elif args.command == 'demo':
+        os.environ['ANDROID_SERIAL'] = emulator()
+        install(offline=True)
+    elif args.command == 'smoke-test':
+        smoke_test()
     elif args.command == 'logs':
         serial = device(required=True)
-        pid = adb('shell', 'pidof', PACKAGE, serial=serial, capture=True, check=False).stdout.strip().split()
+        pid = adb('shell', 'pidof', OFFLINE_PACKAGE, serial=serial, capture=True, check=False).stdout.strip().split()
         if not pid:
-            raise SystemExit('Features Lab is not running. Open it on the phone first.')
+            pid = adb('shell', 'pidof', PACKAGE, serial=serial, capture=True, check=False).stdout.strip().split()
+        if not pid:
+            raise SystemExit('Features Lab is not running. Open it on the emulator or phone first.')
         adb('logcat', '--pid=' + pid[0], serial=serial)
     elif args.command == 'record':
         if not 1 <= args.seconds <= 180:
@@ -235,7 +329,7 @@ def main():
         out = ROOT / 'artifacts' / name
         out.parent.mkdir(exist_ok=True)
         remote = '/sdcard/' + name
-        print(f'Recording for {args.seconds}s. Demonstrate the flow on your phone.', flush=True)
+        print(f'Recording for {args.seconds}s. Demonstrate the flow on the selected emulator or phone.', flush=True)
         adb('shell', 'screenrecord', '--time-limit', str(args.seconds), remote, serial=serial)
         adb('pull', remote, out, serial=serial)
         adb('shell', 'rm', remote, serial=serial)

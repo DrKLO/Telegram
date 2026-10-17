@@ -6,13 +6,19 @@ This is an unofficial development fork for preparing working feature concepts fo
 
 ```sh
 ./dev doctor
-./dev configure  # Enter your own API credentials locally; do not commit them.
-./dev install    # Build, install, and launch on an authorized Android phone.
+./dev demo       # Boot the emulator, build, install, and open the offline playground.
 ```
+
+Start with the [account-free emulator workflow](docs/OFFLINE.md). It uses Telegram's
+real preview components with sample data; no phone, Telegram account, Google
+account, or API credentials are needed. Live messaging is a separate optional
+workflow (`./dev configure`, then `./dev install`).
 
 Baseline: Telegram 13.0.2 (7175), commit `f32ffeec763f0bdbf4bec25b52d654f77bff733d`.
 The development app is **Features Lab** (`org.telegram.features.beta`). Firebase
 push notifications are deliberately disabled. No feature has been implemented yet.
+The offline playground uses `org.telegram.features.offline.beta` and has no internet
+permission. Gradle and Android Studio default to this offline configuration.
 
 ### Upstream project documentation
 

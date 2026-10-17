@@ -19,6 +19,11 @@ dependencies {
     implementation project(':TMessagesProj')
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
+    if (rootProject.ext.featuresLabOffline) {
+        androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+        androidTestImplementation 'androidx.test:runner:1.5.2'
+        androidTestImplementation 'androidx.viewpager:viewpager:1.0.0'
+    }
 }
 
 android {
@@ -26,6 +31,9 @@ android {
     buildToolsVersion '36.0.0'
 
     defaultConfig.applicationId = rootProject.ext.featuresLab ? 'org.telegram.features' : APP_PACKAGE
+    if (rootProject.ext.featuresLabOffline) {
+        defaultConfig.applicationId = 'org.telegram.features.offline'
+    }
 
 
     lintOptions {
@@ -203,13 +211,20 @@ android {
         productFlavors.afat.ndk.abiFilters.add(rootProject.ext.featuresLabAbi)
         sourceSets.debug.manifest.srcFile 'src/featuresLab/AndroidManifest.xml'
         sourceSets.debug.res.srcDir 'src/featuresLab/res'
+        sourceSets.debug.java.srcDir 'src/featuresLab/java'
+        defaultConfig.manifestPlaceholders = [featuresLabOffline: rootProject.ext.featuresLabOffline.toString()]
+        if (rootProject.ext.featuresLabOffline) {
+            sourceSets.afat.manifest.srcFile 'src/featuresLabOffline/AndroidManifest.xml'
+            sourceSets.androidTest.java.srcDir 'src/featuresLabOfflineTest/java'
+            defaultConfig.testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+        }
     }
 }
 
 if (rootProject.ext.featuresLab) {
     tasks.register('validateFeaturesLabCredentials') {
         doLast {
-            if (!rootProject.ext.featuresLabCredentialsValid && !rootProject.ext.featuresLabCompileOnly) {
+            if (!rootProject.ext.featuresLabCredentialsValid && !rootProject.ext.featuresLabCompileOnly && !rootProject.ext.featuresLabOffline) {
                 throw new GradleException('Run ./dev configure to enter your own Telegram API credentials locally. Use ./dev compile-check only for a non-login build check.')
             }
         }

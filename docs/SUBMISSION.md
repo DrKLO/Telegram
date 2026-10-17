@@ -5,7 +5,19 @@ ready-to-implement code plus a video of the feature in action**, submitted by me
 `@designers`. The linked post does not announce a deadline or prize fund. Recheck
 that post and any newer instructions when the feature is ready.
 
-## Establish the base environment
+## Establish the offline environment
+
+The default development path is now the [offline emulator](OFFLINE.md). Its sample
+data and built-in preview screens are a development aid, not a completed feature
+or proof of live messaging. A submission video must show the implemented feature;
+identify any simulated data and untested server behavior clearly.
+
+- [x] Offline build installs and launches in the ARM64 emulator without credentials.
+- [x] Telegram's preview components render in light/dark themes.
+- [x] Theme selection survives a process restart and incremental reinstall works.
+- [x] A screen recording exports to a decodable MP4.
+
+## Validate live integration when the feature needs it
 
 - [ ] Android Studio sync and Java/native compilation succeed.
 - [ ] Features Lab installs alongside official Telegram.
