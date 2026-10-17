@@ -185,10 +185,15 @@ public class LivePlayer implements NotificationCenter.NotificationCenterDelegate
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storyGroupCallUpdated);
 
+        if (org.telegram.messenger.OfflineDemo.enabled()) {
+            // Keep the production story/comments UI without starting a real media call.
+            setEmptyStream(true);
+            poll2();
+            return;
+        }
         if (outgoing) {
             recordingVideoCapturer = NativeInstance.createVideoCapturer(instanceSink, isFront ? 1 : 0);
         }
-
         configureAudio();
         init();
     }

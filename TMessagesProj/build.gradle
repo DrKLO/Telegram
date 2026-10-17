@@ -138,6 +138,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 36
         buildConfigField 'boolean', 'FEATURES_LAB', 'false'
+        buildConfigField 'boolean', 'FEATURES_LAB_OFFLINE', 'false'
         buildConfigField 'int', 'FEATURES_LAB_API_ID', rootProject.ext.featuresLabApiId
         buildConfigField 'String', 'FEATURES_LAB_API_HASH', groovy.json.JsonOutput.toJson(rootProject.ext.featuresLabApiHash)
         if (rootProject.ext.featuresLab) {
@@ -164,6 +165,7 @@ android {
     buildTypes {
         debug {
             buildConfigField 'boolean', 'FEATURES_LAB', rootProject.ext.featuresLab.toString()
+            buildConfigField 'boolean', 'FEATURES_LAB_OFFLINE', rootProject.ext.featuresLabOffline.toString()
             jniDebuggable true
             shrinkResources false
             multiDexEnabled true

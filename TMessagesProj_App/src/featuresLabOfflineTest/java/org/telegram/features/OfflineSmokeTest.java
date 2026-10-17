@@ -86,6 +86,7 @@ public class OfflineSmokeTest {
             while (stream.read() != -1) { }
         }
         Intent intent = new Intent(instrumentation.getTargetContext(), FeaturesLabActivity.class);
+        intent.putExtra("component_tests", true);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         activity = instrumentation.startActivitySync(intent);
         instrumentation.waitForIdleSync();

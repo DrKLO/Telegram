@@ -17,6 +17,10 @@ configurations.all {
 
 dependencies {
     implementation project(':TMessagesProj')
+    if (rootProject.ext.featuresLab) {
+        implementation 'androidx.core:core:1.16.0'
+        implementation 'androidx.collection:collection:1.2.0'
+    }
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
     if (rootProject.ext.featuresLabOffline) {

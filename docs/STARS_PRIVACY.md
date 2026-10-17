@@ -1,3 +1,7 @@
+> The app now opens the real Telegram navigation. Follow [NATIVE_UI.md](NATIVE_UI.md)
+> for Settings, channel and live-story paths. The component preview described below
+> is retained for isolated regression tests, not the submission walkthrough.
+
 # Private Star Reactions
 
 A native Telegram Android prototype for Designers × AI, based on Telegram 13.0.2.

@@ -1214,7 +1214,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     private int send(long send_as, TLRPC.TL_textWithEntities text, long stars, boolean forceMock) {
         final int id = UserConfig.getInstance(currentAccount).getNewMessageId();
-        if (stars > 0 && android.text.TextUtils.isEmpty(text.text) && (forceMock || StarsPrivacy.isPrivate(currentAccount, dialogId) || StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount))) {
+        if (stars > 0 && android.text.TextUtils.isEmpty(text.text) && (forceMock || org.telegram.messenger.OfflineDemo.enabled() || StarsPrivacy.isPrivate(currentAccount, dialogId) || StarsPrivacyMockApi.hasRetroactiveProtection(currentAccount))) {
             // Proposed server behavior: keep the native interaction, with a local receipt.
             final boolean anonymous = StarsPrivacy.isPrivate(currentAccount, dialogId) || send_as == UserObject.ANONYMOUS;
             final TL_stars.StarsTransaction receipt;
@@ -1234,6 +1234,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 receipt.reaction = false; // Live receipts have no channel-post link.
             }
             StarsController.getInstance(currentAccount).transactions[StarsController.ALL_TRANSACTIONS].add(0, receipt);
+            org.telegram.messenger.OfflineDemo.recordTransaction(currentAccount, receipt, true);
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starTransactionsLoaded);
             push(receipt.date, id, false, anonymous ? UserObject.ANONYMOUS : send_as, text, stars, false);
             setCollapsed(false, true);

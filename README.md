@@ -6,11 +6,11 @@ This is an unofficial development fork for preparing working feature concepts fo
 
 ```sh
 ./dev doctor
-./dev demo       # Boot the emulator, build, install, and open the offline playground.
+./dev demo       # Boot the emulator, build, install, and open the native offline client.
 ```
 
 Start with the [account-free emulator workflow](docs/OFFLINE.md). It uses Telegram's
-real preview components with sample data; no phone, Telegram account, Google
+production Settings, My Stars, chat and story screens with sample data; no phone, Telegram account, Google
 account, or API credentials are needed. Live messaging is a separate optional
 workflow (`./dev configure`, then `./dev install`).
 
@@ -19,15 +19,16 @@ The development app is **Features Lab** (`org.telegram.features.beta`). Firebase
 push notifications are deliberately disabled.
 
 **Implemented feature: [Private Star Reactions](docs/STARS_PRIVACY.md).** Open
-**Stars Privacy preview** in the playground to try the personal privacy setting,
+**Settings → Telegram Stars** to try the personal privacy setting,
 native 20-second Undo, channel-admin controls, minimal receipts, irreversible
 history anonymisation and live Stars. Missing Telegram server capabilities are
 usable local mocks, marked Preview; no Stars are spent in the offline app.
-Run `./dev privacy-test` for the native feature checks, including a real five-minute
+Follow the [native-screen walkthrough](docs/NATIVE_UI.md) for channel and live-story paths.
+Run `./dev native-test` for production navigation and `./dev privacy-test` for detailed feature checks, including a real five-minute
 expiry wait. See the [QA report](docs/QA.md) for findings and remaining validation gaps.
 For a reproducible native walkthrough and a revision-pinned review package, see the
 [submission handoff](docs/SUBMISSION.md#record-and-assemble-the-handoff).
-The offline playground uses `org.telegram.features.offline.beta` and has no Internet
+The offline client uses `org.telegram.features.offline.beta` and has no Internet
 or billing permission. Gradle and Android Studio default to this offline configuration.
 
 ### Upstream project documentation

@@ -1176,6 +1176,17 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
 
                 public int measureKeyboardHeight() {
                     View rootView = getRootView();
+                    if (org.telegram.messenger.OfflineDemo.enabled()) {
+                        // The standalone host is edge-to-edge. Its navigation bar
+                        // must not be mistaken for a keyboard by the legacy height heuristic.
+                        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                        if (insets != null) {
+                            return insets.isVisible(WindowInsetsCompat.Type.ime())
+                                ? Math.max(0, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+                                    - insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
+                                : 0;
+                        }
+                    }
                     getWindowVisibleDisplayFrame(AndroidUtilities.rectTmp2);
                     if (AndroidUtilities.rectTmp2.bottom == 0 && AndroidUtilities.rectTmp2.top == 0) {
                         return 0;

@@ -11,7 +11,30 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'd1a1265'
 REPOSITORY = 'https://github.com/yes-i-like-pina-coladas/Telegram'
-DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md', 'QA.md']
+DOCUMENTS = ['STARS_PRIVACY.md', 'SUBMISSION.md', 'DEVELOPMENT.md', 'OFFLINE.md', 'NATIVE_UI.md', 'QA.md']
+NATIVE_SCREENSHOT_CAPTIONS = {
+    '02a-settings-stars-entry.png': ('Telegram Settings', 'The real Settings tab and Telegram Stars entry, with native rounded sections and bottom navigation.'),
+    '03-my-stars.png': ('My Stars', 'Telegram’s production balance page, animated header and purchase actions.'),
+    '03a-privacy-enabled.png': ('Make my Stars private', 'The gold Star and closing-lock motion sit directly above the real transaction history.'),
+    '05a-transaction-history.png': ('Privacy beside history', 'The animated privacy control sits above the real transaction list. Amounts remain visible.'),
+    '05-history-privacy-notice.png': ('New reactions only', 'Turning privacy off explains that previously protected activity stays private.'),
+    '04-purchase.png': ('Purchase notice', 'The production package sheet explains visibility; offline prices are samples and no purchase is made.'),
+    '04b-purchase-privacy-off.png': ('Visibility warning', 'With privacy off, the native purchase notice explains that reactions may reveal the profile in Top Senders.'),
+    '04c-purchase-privacy-enabled.png': ('Enable privacy while buying', 'The inline link enables the same personal preference and updates the notice immediately.'),
+    '06-private-receipt.png': ('Minimal receipt', 'A real transaction opens a native receipt with its Stars amount, ID and date/time.'),
+    '06b-anonymise-one-receipt.png': ('Anonymise one record', 'Long-pressing a row in the actual history opens the native irreversible-action confirmation.'),
+    '07-privacy-security.png': ('Privacy & Security', 'The personal Stars Privacy entry is part of Telegram’s real privacy settings.'),
+    '08-stars-privacy-settings.png': ('Personal preference', 'Native personal controls reached through Settings → Privacy & Security.'),
+    '09-anonymise-history.png': ('Anonymise history', 'Native confirmation explains the irreversible local action and retained fields.'),
+    '10-channel.png': ('Channel post', 'The real chat screen, message bubble and Star reaction use sample channel data.'),
+    '11-post-reaction-sheet.png': ('Post reaction', 'Long-pressing the real Star opens Telegram’s production slider sheet.'),
+    '12-post-undo.png': ('20-second Undo', 'A Star tap runs the native effect and pending-send countdown; a completed send creates a receipt.'),
+    '17-channel-privacy.png': ('Channel admin controls', 'Reached through the actual profile, Edit and Reactions screens. Enforcement remains a local API mock.'),
+    '20-live-story.png': ('Live-story viewer', 'The production story and Star controls use sample stream metadata; no video broadcast is connected.'),
+    '21-live-stars-sheet.png': ('Live Stars', 'The actual live reaction sheet; unsupported anonymous sending is simulated.'),
+    '22-live-undo.png': ('Live Undo', 'The production live Star animation and 20-second cancellation path.'),
+    '31-history-dark.png': ('Native dark theme', 'The real My Stars history, privacy control and signed amounts in Telegram’s dark palette.'),
+}
 SCREENSHOT_CAPTIONS = {
     'stars-history-privacy-light.png': ('Make my Stars private', 'The animated native privacy control sits directly above transaction history.'),
     'stars-history-privacy-dark.png': ('History control · dark', 'The same control and minimal receipt rows use Telegram’s dark theme.'),
@@ -66,6 +89,12 @@ def main():
     for name in SCREENSHOTS:
         if qa['screenshots'].get(name) != sha256(artifacts / 'stars-privacy' / name):
             raise SystemExit(f'Screenshot does not match its QA evidence: {name}')
+    native_qa = json.loads((artifacts / 'native-ui-qa.json').read_text())
+    if native_qa['source_commit'] != revision or native_qa['working_tree_dirty'] or not native_qa['scenario_passed']:
+        raise SystemExit('Run ./dev native-test on this clean committed revision before packaging.')
+    for name in NATIVE_SCREENSHOT_CAPTIONS:
+        if native_qa['screenshots'].get(name) != sha256(artifacts / 'native-ui' / name):
+            raise SystemExit(f'Native screenshot does not match its QA evidence: {name}')
     destination = artifacts / ('submission-' + revision[:12])
     if destination.exists():
         raise SystemExit(f'Package already exists: {destination}. Preserving it; choose the existing package.')
@@ -73,6 +102,7 @@ def main():
     shutil.copy2(video, destination / video.name)
     shutil.copy2(artifacts / 'stars-privacy-demo.json', destination / 'recording.json')
     shutil.copy2(artifacts / 'stars-privacy-qa.json', destination / 'qa.json')
+    shutil.copy2(artifacts / 'native-ui-qa.json', destination / 'native-ui-qa.json')
     for name in DOCUMENTS:
         (destination / name).write_bytes(git('show', revision + ':docs/' + name))
     # A feature-only patch, applied on the published offline setup baseline.
@@ -82,10 +112,16 @@ def main():
     images.mkdir()
     for name in SCREENSHOTS:
         shutil.copy2(artifacts / 'stars-privacy' / name, images / name)
-    cards = ''.join(
+    for name in NATIVE_SCREENSHOT_CAPTIONS:
+        shutil.copy2(artifacts / 'native-ui' / name, images / name)
+    def cards_for(captions):
+        return ''.join(
         f'<figure><a href="screenshots/{html.escape(name)}"><img loading="lazy" src="screenshots/{html.escape(name)}" alt="{html.escape(title)}"></a>'
         f'<figcaption><h2>{html.escape(title)}</h2><p>{html.escape(caption)}</p></figcaption></figure>'
-        for name, (title, caption) in SCREENSHOT_CAPTIONS.items())
+        for name, (title, caption) in captions.items())
+    cards = cards_for(NATIVE_SCREENSHOT_CAPTIONS)
+    cards += '<header style="grid-column:1/-1"><h1>Supplementary component checks</h1><p>Isolated fixtures for edge cases, Russian labels and theme checks. These are separate from the production navigation above.</p></header>'
+    cards += cards_for(SCREENSHOT_CAPTIONS)
     (destination / 'SCREENSHOTS.html').write_text(
         '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>Private Star Reactions — screen review</title><style>'
@@ -94,7 +130,7 @@ def main():
         'main{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,340px));justify-content:center;gap:28px}'
         'figure{margin:0;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px #15253612}'
         'img{width:100%;height:auto;display:block}figcaption{padding:18px}p{margin:0}small{color:#526274}'
-        '</style><header><h1>Private Star Reactions</h1><p>Key screens with brief descriptions. Actual Android emulator screenshots; sample data and local API mocks.</p>'
+        '</style><header><h1>Private Star Reactions · real Telegram screens</h1><p>Production navigation with brief descriptions. Actual Android emulator screenshots; sample data and local API mocks.</p>'
         f'<small>Source revision: {revision}. Select a screenshot to open its full resolution.</small></header><main>'
         + cards + '</main></html>')
     (destination / 'MESSAGE.txt').write_text(

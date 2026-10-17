@@ -219,6 +219,10 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         row.set(transaction, false, true);
         row.setBackground(Theme.getSelectorDrawable(true));
         row.setOnClickListener(v -> StarsIntroActivity.showTransactionSheet(getContext(), false, 0, currentAccount, transaction, getResourceProvider()));
+        row.setOnLongClickListener(v -> {
+            org.telegram.ui.Stars.StarsHistoryPrivacy.confirm(getContext(), currentAccount, transaction, getResourceProvider(), null);
+            return true;
+        });
         history.addView(row, LayoutHelper.createLinear(-1, -2));
         if (history.isAttachedToWindow()) {
             row.setAlpha(0f);

@@ -242,7 +242,8 @@ public class UserConfig extends BaseController {
 
     public long getClientUserId() {
         synchronized (sync) {
-            return currentUser != null ? currentUser.id : 0;
+            TLRPC.User user = currentUser != null ? currentUser : OfflineDemo.self(currentAccount);
+            return user != null ? user.id : 0;
         }
     }
 
@@ -254,7 +255,7 @@ public class UserConfig extends BaseController {
 
     public TLRPC.User getCurrentUser() {
         synchronized (sync) {
-            return currentUser;
+            return currentUser != null ? currentUser : OfflineDemo.self(currentAccount);
         }
     }
 

@@ -31,6 +31,12 @@ class SubmissionTests(unittest.TestCase):
         self.qa = {'source_commit': self.revision, 'working_tree_dirty': False, 'scenario_passed': True,
                    'screenshots': {name: submission.sha256(images / name) for name in submission.SCREENSHOTS}}
         self.write_qa()
+        native = self.artifacts / 'native-ui'
+        native.mkdir()
+        for name in submission.NATIVE_SCREENSHOT_CAPTIONS:
+            (native / name).write_bytes(b'native fixture image')
+        self.native_qa = {**self.qa, 'screenshots': {name: submission.sha256(native / name) for name in submission.NATIVE_SCREENSHOT_CAPTIONS}}
+        (self.artifacts / 'native-ui-qa.json').write_text(json.dumps(self.native_qa))
         self.root_patch = patch.object(submission, 'ROOT', self.root)
         self.root_patch.start()
         self.addCleanup(self.root_patch.stop)
@@ -66,6 +72,18 @@ class SubmissionTests(unittest.TestCase):
     def test_dirty_checkout_is_rejected(self):
         with patch.object(submission, 'git', return_value=b' M source.java'):
             with self.assertRaisesRegex(SystemExit, 'Commit the reviewed source'):
+                submission.main()
+
+    def test_native_evidence_is_required_and_verified(self):
+        with patch.object(submission, 'git', side_effect=self.git):
+            self.native_qa['working_tree_dirty'] = True
+            (self.artifacts / 'native-ui-qa.json').write_text(json.dumps(self.native_qa))
+            with self.assertRaisesRegex(SystemExit, 'Run ./dev native-test'):
+                submission.main()
+            self.native_qa['working_tree_dirty'] = False
+            (self.artifacts / 'native-ui-qa.json').write_text(json.dumps(self.native_qa))
+            (self.artifacts / 'native-ui' / next(iter(submission.NATIVE_SCREENSHOT_CAPTIONS))).write_bytes(b'changed')
+            with self.assertRaisesRegex(SystemExit, 'Native screenshot does not match'):
                 submission.main()
 
     def test_video_must_match_revision_and_hash(self):

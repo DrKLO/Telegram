@@ -2054,6 +2054,7 @@ public class StarsController {
                     receipt = StarsPrivacyMockApi.sendPublicReaction(currentAccount, message.did, message.mid, amount);
                 }
                 transactions[ALL_TRANSACTIONS].add(0, receipt);
+                org.telegram.messenger.OfflineDemo.recordTransaction(currentAccount, receipt, false);
                 minus = Math.max(0, minus - reservedAmount);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starBalanceUpdated);
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starTransactionsLoaded);

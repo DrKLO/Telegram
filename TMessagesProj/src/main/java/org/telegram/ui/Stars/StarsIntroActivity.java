@@ -1618,11 +1618,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         public void set(TL_stars.StarsTransaction transaction, boolean bot, boolean divider) {
             lastTransaction = StarsPrivacyMockApi.project(currentAccount, transaction, !bot);
             lastBot = bot;
-            setOnLongClickListener(v -> {
-                if (lastBot || lastTransaction.amount instanceof TL_stars.TL_starsTonAmount) return false;
-                StarsHistoryPrivacy.confirm(getContext(), currentAccount, lastTransaction, null, null);
-                return true;
-            });
+            // RecyclerListView owns tap and long-press dispatch. A row-level
+            // long-click listener consumes DOWN and prevents its receipt tap.
             if (cancelCurrentGift != null) {
                 cancelCurrentGift.run();
                 cancelCurrentGift = null;
@@ -2645,6 +2642,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         }
 
         protected CharSequence getPurchaseTerms() {
+            if (org.telegram.messenger.OfflineDemo.enabled()) return getString(R.string.StarsPurchasePreviewInfo);
             return AndroidUtilities.replaceSingleTag(getString(R.string.StarsTOS), () ->
                 Browser.openUrl(getContext(), getString(R.string.StarsTOSLink)));
         }
@@ -2683,6 +2681,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 adapter.update(true);
                 recyclerListView.smoothScrollBy(0, dp(300));
             } else if (item.instanceOf(StarTierView.Factory.class)) {
+                if (org.telegram.messenger.OfflineDemo.enabled()) {
+                    BulletinFactory.of(getContainer(), resourcesProvider).createSimpleBulletin(R.raw.stars_topup, getString(R.string.StarsPurchasePreviewInfo)).show();
+                    return;
+                }
                 if (item.object instanceof TL_stars.TL_starsTopupOption) {
                     Activity activity = AndroidUtilities.findActivity(getContext());
                     if (activity == null) {

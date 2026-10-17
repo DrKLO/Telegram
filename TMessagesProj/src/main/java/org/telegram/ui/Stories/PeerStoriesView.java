@@ -2371,6 +2371,8 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
             @Override
             protected void onStarsCountUpdated() {
+                // Privacy is applied on attachment, before the live controls are created.
+                if (starsButton == null) return;
                 starsButton.setCount((int) getStarsCount());
                 starsButton.setFilled(areSendingStars());
             }

@@ -279,6 +279,42 @@ def smoke_test(privacy=False):
     adb('shell', 'am', 'start', '-n', OFFLINE_PACKAGE + '/org.telegram.features.FeaturesLabActivity', serial=serial)
 
 
+def native_test():
+    """Exercise the production navigation with the offline data provider."""
+    source_commit = run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip()
+    dirty_at_start = bool(run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
+    (ROOT / 'artifacts/native-ui-qa.json').unlink(missing_ok=True)
+    serial = device(required=True)
+    install(offline=True)
+    run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebugAndroidTest',
+         '-PfeaturesLab=true', '-PfeaturesLabOffline=true', '--console=plain'], env=environment())
+    adb('install', '-r', ROOT / 'TMessagesProj_App/build/outputs/apk/androidTest/afat/debug/TMessagesProj_App-afat-debug-androidTest.apk', serial=serial)
+    methods = ['settingsToHistory', 'channelReactionAndAdmin', 'liveStoryStars', 'darkSettings']
+    outputs = []
+    for method in methods:
+        adb('shell', 'am', 'force-stop', OFFLINE_PACKAGE, serial=serial)
+        result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
+                     'org.telegram.features.NativeStarsFlowTest#' + method,
+                     OFFLINE_PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner',
+                     serial=serial, capture=True)
+        outputs.append(result.stdout + result.stderr)
+        print(outputs[-1], flush=True)
+        (ROOT / 'artifacts/native-ui-test.txt').write_text('\n'.join(outputs))
+        if 'OK (1 test)' not in outputs[-1]:
+            raise SystemExit('Native navigation test failed: ' + method)
+    adb('pull', '/sdcard/Android/data/' + OFFLINE_PACKAGE + '/files/native-ui', ROOT / 'artifacts', serial=serial)
+    evidence = {
+        'source_commit': source_commit,
+        'working_tree_dirty': dirty_at_start or bool(run(['git', 'status', '--porcelain'], capture=True).stdout.strip())
+            or source_commit != run(['git', 'rev-parse', 'HEAD'], capture=True).stdout.strip(),
+        'scenario_passed': True,
+        'scenarios': methods,
+        'screenshots': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in sorted((ROOT / 'artifacts/native-ui').glob('[0-9]*.png'))},
+    }
+    (ROOT / 'artifacts/native-ui-qa.json').write_text(json.dumps(evidence, indent=2) + '\n')
+
+
 def doctor():
     bootstrap()
     print(f'Java 17: {java_home()}\nAndroid SDK: {sdk_path()}')
@@ -322,7 +358,7 @@ def configure():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio', 'emulator', 'demo', 'offline-build', 'offline-install', 'smoke-test', 'privacy-test'])
+    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio', 'emulator', 'demo', 'offline-build', 'offline-install', 'smoke-test', 'privacy-test', 'native-test'])
     parser.add_argument('seconds', nargs='?', type=int, default=30, help='record duration, 1–180 seconds')
     args = parser.parse_args()
     if args.command == 'doctor':
@@ -340,6 +376,8 @@ def main():
     elif args.command == 'demo':
         os.environ['ANDROID_SERIAL'] = emulator()
         install(offline=True)
+    elif args.command == 'native-test':
+        native_test()
     elif args.command in ('smoke-test', 'privacy-test'):
         smoke_test(privacy=args.command == 'privacy-test')
     elif args.command == 'logs':

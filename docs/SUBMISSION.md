@@ -1,3 +1,6 @@
+> Native-navigation revision: use the real-screen walkthrough in [NATIVE_UI.md](NATIVE_UI.md).
+> Earlier videos and screenshot packages predate this change and need replacement.
+
 # Private Star Reactions — submission handoff
 
 A Telegram Android concept for supporting channels with less public and local
@@ -77,9 +80,10 @@ SDK 36, NDK 27.2.12479018, CMake 3.22.1 and Gradle 8.13. Follow
 ./dev demo
 ```
 
-Choose **Open Stars Privacy preview**. Try settings, tap or hold the sample post's
-Star, open a receipt, and use the live-reaction and channel-settings rows. Personal
-settings and channel controls use the same production classes as the full client.
+Open **Settings → Telegram Stars**. Tap or hold the Star in **Chats → Design Notes**,
+open a receipt, and use **channel header → Edit → Reactions → Star reaction privacy**.
+The channel avatar opens the real live-story viewer with sample metadata.
+See [NATIVE_UI.md](NATIVE_UI.md) for all production navigation paths.
 The offline package has no Internet permission or active account.
 
 ## Verification
@@ -88,6 +92,7 @@ The offline package has no Internet permission or active account.
 python3 -m unittest discover -s tests
 ./dev privacy-test
 ./dev smoke-test
+./dev native-test
 ./dev compile-check
 ```
 
@@ -118,25 +123,30 @@ python3 Tools/record_stars_demo.py
 python3 Tools/prepare_stars_submission.py
 ```
 
-The recorder rebuilds/installs the offline app and instrumentation APK, then runs the
-native `demoWalkthrough` scenario. It captures actual screen output and leaves the
-20-second waits intact. It records no microphone audio and does not synthesize motion.
-The walkthrough resets only the offline app's mock privacy fixtures and finishes in
-dark mode; it never touches a real account. Review the MP4 before sharing.
+The recorder rebuilds/installs the offline app and instrumentation APK, then runs
+the four `NativeStarsFlowTest` scenarios in separate processes. It joins actual
+captures of Settings/history, the channel/admin flow, live Stars and dark mode,
+leaving both 20-second waits intact. It records no microphone audio and does not
+synthesize motion. The walkthrough changes only offline sample preferences and
+creates sample receipts. It never touches a real account. Review the MP4 before sharing.
 
 The packaging command requires a clean committed checkout and a passing recording
 from that exact revision. It also requires a passing privacy suite from that clean
 revision and verifies every selected screenshot against the suite’s SHA-256 manifest.
+Native navigation screenshots require their own passing revision-bound manifest;
+the recorder generates it after all four scenarios pass, or use `./dev native-test`.
 The privacy suite includes a real five-minute wait. It creates `artifacts/submission-<revision>/` and a ZIP with:
 
 - `MESSAGE.txt`: a concise draft message with immutable source and feature-diff links.
 - `stars-privacy-demo.mp4`: the reviewed native flow, with sample-data disclosure.
 - `recording.json`: revision, video SHA-256, duration, Android version and ABI.
 - `qa.json`: tested revision, scenario names and screenshot hashes.
+- `native-ui-qa.json`: production-navigation scenarios and native screenshot hashes.
 - This checklist, QA report, feature/API specification, build and offline guides, and GPL license.
 - `feature.patch`: feature changes against the published offline setup baseline.
 - `SCREENSHOTS.html`: a portable gallery of the key screens with brief descriptions.
-- Selected light/dark, Russian, reaction, receipt and channel screenshots.
+- Production navigation screens first, followed by supplementary light/dark,
+  Russian, reaction, receipt and channel component checks.
 - `REVIEW.txt` and `SHA256SUMS` for inspecting the package.
 
 Only explicitly named assets and committed documents enter the package. It excludes

@@ -42,7 +42,7 @@ public final class StarsPrivacy {
         if (message == null) return false;
         observeReaction(account, message);
         StarsController.MessageId id = StarsController.MessageId.from(message);
-        return StarsPrivacyMockApi.isChannelPrivate(account, id.did)
+        return org.telegram.messenger.OfflineDemo.enabled() || StarsPrivacyMockApi.isChannelPrivate(account, id.did)
             || !isEnabled(account) && StarsPrivacyMockApi.isProtectedPost(account, id.did, id.mid);
     }
 

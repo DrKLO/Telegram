@@ -8762,7 +8762,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (instance != null && instance.getActionBarLayout() != null) {
             return instance.getActionBarLayout().getLastFragment();
         }
-        return null;
+        return org.telegram.messenger.OfflineDemo.lastFragment();
     }
 
     // last fragment that is not finishing itself
@@ -8790,7 +8790,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (instance != null && instance.getActionBarLayout() != null) {
             return instance.getActionBarLayout().getSafeLastFragment();
         }
-        return null;
+        return org.telegram.messenger.OfflineDemo.lastFragment();
     }
 
     public int getNavigationBarColor() {

@@ -7,13 +7,13 @@ Run this from the project directory:
 ```
 
 This boots **Features Lab API 36**, builds and installs the offline APK, and opens
-the playground. No physical phone, SIM, Google account, Telegram account, `api_id`,
+Telegram's real tab navigation with sample data. No physical phone, SIM, Google account, Telegram account, `api_id`,
 or `api_hash` is required. The emulator stays open after the command completes.
 
 ## What you can do
 
-- Open **Stars Privacy preview** for the implemented personal, channel-admin, history and live-reaction flows. See [STARS_PRIVACY.md](STARS_PRIVACY.md).
-- Open the original chat and message preview, then swipe between its two pages.
+- Use the real **Settings → Telegram Stars**, personal privacy, channel and live-story paths. See the [native UI walkthrough](NATIVE_UI.md).
+- Open **Design Notes** in Chats for the actual channel/post UI, or its live-story bubble for the actual live interface.
 - Inspect Telegram's actual `DialogCell` and `ChatMessageCell` components with
   built-in sample content, rather than a web recreation of the app.
 - Switch between light and dark themes; the selected theme is saved on the device.
@@ -27,15 +27,15 @@ restart. It changes the offline app's selected theme to dark, saves screenshots 
 results in `artifacts/`, and retains app data. It does not test the online package.
 
 The host is `TMessagesProj_App/src/featuresLab/java/org/telegram/features/FeaturesLabActivity.java`.
-Add future preview entry points in its `Playground` fragment. The existing preview
+The `Playground` fragment is retained for isolated component tests. The legacy theme preview
 is `TMessagesProj/src/main/java/org/telegram/ui/ThemePreviewActivity.java`; shared
 components live under `TMessagesProj/src/main/java/org/telegram/ui/Cells` and
 `Components`. Feature code should reuse the same components used by the live app.
 
 ## Boundaries
 
-This is an **offline UI playground**, not a full account-free Telegram client.
-The stock preview composer/search controls do not send messages or search a server.
+This is an **offline build of the real UI with sample data**, not a full account-free Telegram service.
+The native composer/search controls do not send messages or search a server.
 There is no login session, Saved Messages account, synchronization, calling, push,
 or live chat history. The Stars privacy feature uses local fixtures and mocked server capabilities.
 Real payments and server enforcement still need separate integration tests.
@@ -97,7 +97,7 @@ On the M3 Mac with the Android 16 ARM64 AOSP emulator:
 - Eight helper tests passed, including credential-free offline builds and installing
   into the separate package without clearing data.
 - The merged/installed APK has no INTERNET permission or Firebase startup provider;
-  its normal login activity is disabled and all launcher icons target the playground.
+  its normal login activity is disabled and all launcher icons target the offline host.
 - A screen recording exported and decoded successfully. A 15-second H.264/30 fps
   preview clip is available locally at `artifacts/offline-preview-demo.mp4`.
 

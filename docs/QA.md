@@ -4,6 +4,40 @@ Audit date: 17 October 2026. Target: the native, account-free Android prototype 
 `feature/stars-privacy`, based on Telegram 13.0.2. This is a client implementation
 review and emulator validation, not certification of payment anonymity.
 
+## Production navigation revision
+
+The default offline entry now uses `MainTabsActivity`, `SettingsActivity`,
+`StarsIntroActivity`, the actual channel/profile/reaction editor and the live
+`StoryViewer`. `NativeStarsFlowTest` adds four fresh-process scenarios for:
+
+- Settings → Telegram Stars → history/receipt; opting out keeps old receipts private.
+- The real purchase sheet, visibility warning and inline privacy action; personal
+  settings and the irreversible history confirmation.
+- Chat Star taps/long presses, the actual 20-second Undo, exact receipt amounts,
+  and profile → Edit → Reactions → channel privacy/percentile controls.
+- Live-story Star controls, 20-second Undo and receipt amounts, plus native dark history.
+
+The integration exposed and fixed a live-view attachment callback that ran before
+the lazily created Star button existed. The offline host also consumes the system
+navigation inset after padding its root, avoiding a second inset in native tabs.
+Transaction cells no longer install their own long-click listener: it intercepted
+the list's normal receipt taps. The production recycler handles both gestures,
+and native navigation tests verify the receipt and long-press confirmation windows.
+UI tests reject targets covered by floating controls and capture failures.
+The standalone story window uses explicit IME insets; the legacy height heuristic
+mistook the system navigation bar for a keyboard and placed live Star controls
+below the visible window. This override is confined to the offline build.
+The offline adapter persists aggregate post/live totals separately from minimal
+receipts. The live scenario waits through a subsequent server-data poll and checks
+that the total still includes the completed send.
+
+Run `./dev native-test` for this coverage. The recording tool runs the same four
+scenarios and writes `native-ui-qa.json`, with the exact revision and image hashes.
+The packager requires this evidence in addition to the component suite. The older
+results below describe the component audit at `614d2bdfafa5`; use the generated
+manifests for the results of a particular subsequent revision. Native mock data
+does not verify login, billing, real live video or server enforcement.
+
 ## Findings addressed
 
 | Finding | Correction and regression coverage |

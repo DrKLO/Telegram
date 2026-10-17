@@ -383,12 +383,20 @@ public class ConnectionsManager extends BaseController {
 
     public int sendRequestSync(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
+        if (org.telegram.messenger.OfflineDemo.enabled()) {
+            org.telegram.messenger.OfflineDemo.request(currentAccount, object, onComplete, null);
+            return requestToken;
+        }
         sendRequestInternal(object, onComplete, null, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         return requestToken;
     }
 
     public int sendRequest(final TLObject object, final RequestDelegate onComplete, final RequestDelegateTimestamp onCompleteTimestamp, final QuickAckDelegate onQuickAck, final WriteToSocketDelegate onWriteToSocket, final int flags, final int datacenterId, final int connectionType, final boolean immediate) {
         final int requestToken = lastRequestToken.getAndIncrement();
+        if (org.telegram.messenger.OfflineDemo.enabled()) {
+            org.telegram.messenger.OfflineDemo.request(currentAccount, object, onComplete, onCompleteTimestamp);
+            return requestToken;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             sendRequestInternal(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate, requestToken);
         });
@@ -622,6 +630,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public int getConnectionState() {
+        if (org.telegram.messenger.OfflineDemo.enabled()) return ConnectionStateConnected;
         if (connectionState == ConnectionStateConnected && isUpdating) {
             return ConnectionStateUpdating;
         }
@@ -633,6 +642,10 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
+        if (org.telegram.messenger.OfflineDemo.enabled()) {
+            native_setNetworkAvailable(currentAccount, false, ApplicationLoader.getCurrentNetworkType(), false);
+            return;
+        }
         byte selectedStrategy = getIpStrategy();
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("selected ip strategy " + selectedStrategy);
@@ -688,7 +701,7 @@ public class ConnectionsManager extends BaseController {
             packageId = "";
         }
 
-        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
+        native_init(currentAccount, version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, systemLangCode, configPath, logPath, regId, cFingerprint, installer, packageId, timezoneOffset, userId, userPremium, enablePushConnection, !org.telegram.messenger.OfflineDemo.enabled() && ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), SharedConfig.measureDevicePerformanceClass());
         checkConnection();
     }
 

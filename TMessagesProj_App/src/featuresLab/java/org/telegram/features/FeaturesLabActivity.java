@@ -1,4 +1,4 @@
-/* Local development host; uses Telegram's real theme-preview UI with sample data.
+/* Local development host; uses Telegram's production navigation with sample data.
  * Licensed under GNU GPL v2 or later, like the surrounding Telegram source. */
 package org.telegram.features;
 
@@ -27,13 +27,19 @@ import java.util.ArrayList;
 /** No simulated login or account data. The offline manifest removes INTERNET. */
 public final class FeaturesLabActivity extends Activity {
     private ActionBarLayout navigation;
+    private android.widget.FrameLayout windowContent;
 
     @Override
     protected void onCreate(Bundle state) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTheme(R.style.Theme_TMessages);
         super.onCreate(state);
+        boolean componentTests = getIntent().getBooleanExtra("component_tests", false);
+        OfflineTelegramData data = componentTests ? null : new OfflineTelegramData(this);
+        org.telegram.messenger.OfflineDemo.install(data);
+        ApplicationLoader.mainInterfacePaused = false;
         ApplicationLoader.postInitApplication();
+        if (data != null) data.seed();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         AndroidUtilities.fillStatusBarHeight(this, false);
         Theme.createCommonChatResources();
@@ -41,23 +47,48 @@ public final class FeaturesLabActivity extends Activity {
         Theme.createDialogsResources(this);
         navigation = new ActionBarLayout(this, false);
         navigation.setFragmentStack(new ArrayList<>());
-        setContentView(navigation);
-        navigation.presentFragment(new Playground());
+        org.telegram.messenger.OfflineDemo.setNavigation(navigation);
+        windowContent = new android.widget.FrameLayout(this);
+        windowContent.addView(navigation, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(windowContent, (view, insets) -> {
+            // Activity-owned bars must not cover native bulletins or transaction rows.
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            AndroidUtilities.statusBarHeight = bars.top;
+            view.setPadding(bars.left, 0, bars.right, bars.bottom);
+            // The host has already reserved these edges. Native fragments must not
+            // apply the same navigation inset a second time.
+            return insets.inset(bars.left, 0, bars.right, bars.bottom);
+        });
+        setContentView(windowContent);
+        windowContent.requestApplyInsets();
+        navigation.presentFragment(getIntent().getBooleanExtra("component_tests", false)
+            ? new Playground() : new org.telegram.ui.MainTabsActivity());
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                 android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::navigateBack);
         }
     }
 
+    ActionBarLayout navigation() { return navigation; }
+
     @Override
     protected void onResume() {
         super.onResume();
+        ApplicationLoader.mainInterfacePaused = false;
+        AndroidUtilities.setLightNavigationBar(this, !Theme.isCurrentThemeDark());
+        AndroidUtilities.setLightStatusBar(this, !Theme.isCurrentThemeDark());
+        getWindow().setNavigationBarColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        if (android.os.Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
+        if (windowContent != null) windowContent.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        org.telegram.messenger.MessagesController.getInstance(0).sortDialogs(null);
+        org.telegram.messenger.NotificationCenter.getInstance(0).postNotificationName(org.telegram.messenger.NotificationCenter.dialogsNeedReload);
         if (navigation != null) navigation.onResume();
     }
 
     @Override
     protected void onPause() {
         if (navigation != null) navigation.onPause();
+        ApplicationLoader.mainInterfacePaused = true;
         super.onPause();
     }
 
@@ -71,7 +102,7 @@ public final class FeaturesLabActivity extends Activity {
     private void navigateBack() {
         if (navigation != null && navigation.getFragmentStack().size() > 1) {
             navigation.onBackPressed();
-        } else {
+        } else if (navigation == null || navigation.getLastFragment() == null || navigation.getLastFragment().onBackPressed(true)) {
             finish();
         }
     }

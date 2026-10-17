@@ -6,8 +6,9 @@ app. This checkout starts from Telegram **13.0.2 (7175)**, commit
 
 **Current default: account-free emulator development.** Start with
 [OFFLINE.md](OFFLINE.md) and `./dev demo`. The phone/account sections below describe
-the optional live Telegram workflow. Offline previews exercise real UI components
+the optional live Telegram workflow. The offline client uses production navigation
 with sample data, without creating a Telegram account or simulating a login.
+See [NATIVE_UI.md](NATIVE_UI.md) for the Settings, purchase, channel and live-story paths.
 
 ## Toolchain
 
