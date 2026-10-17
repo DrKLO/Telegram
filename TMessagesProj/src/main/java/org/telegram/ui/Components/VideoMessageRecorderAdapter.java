@@ -42,6 +42,12 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
         void onError(Exception exception);
     }
 
+    // CUSTOM_RECORDER_START_DELAY_V1
+    // Start encoder after the first rendered preview frame, not directly on cameraReady.
+    // This only masks camera startup exposure settling; it does not trim frames
+    // after recording has already begun or mask transitions during a camera switch.
+    // CUSTOM_RECORDER_CONFIGURABLE_START_DELAY_V1
+
     private enum Completion { NONE, SEND, DISCARD }
 
     private final Context applicationContext;
@@ -53,8 +59,38 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
     private boolean pendingStart;
     private boolean recordStarted;
     private boolean cameraReadyNotified;
+    private boolean previewHasFrame;
+    private boolean cameraReadyForStart;
+    private boolean startDelayScheduled;
     private Completion completion = Completion.NONE;
     private long startedAt;
+
+    // Always executes on Android main thread, as do camera-state and TextureView callbacks.
+    private final Runnable startRecordingAfterPreview = this::startRecordingDelayed;
+
+    private void startRecordingDelayed() {
+        startDelayScheduled = false;
+        if (recorder == null || completion != Completion.NONE || recordStarted
+                || !pendingStart || !cameraReadyForStart || !previewHasFrame) {
+            return;
+        }
+        pendingStart = false;
+        recordStarted = true;
+        startedAt = SystemClock.elapsedRealtime();
+        recorder.startRecording();
+        listener.onRecordingStarted();
+    };
+
+    private void scheduleRecordingStartIfReady() {
+        if (recorder == null || completion != Completion.NONE || recordStarted
+                || !pendingStart || !cameraReadyForStart || !previewHasFrame
+                || startDelayScheduled) {
+            return;
+        }
+        startDelayScheduled = true;
+        main.postDelayed(startRecordingAfterPreview,
+                RoundVideoRecorderSettings.recordingStartDelayMs(applicationContext));
+    }
 
     public VideoMessageRecorderAdapter(Context context, TextureView preview, Listener listener) {
         this.applicationContext = context.getApplicationContext();
@@ -81,6 +117,9 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
         pendingStart = true;
         recordStarted = false;
         cameraReadyNotified = false;
+        previewHasFrame = false;
+        cameraReadyForStart = false;
+        startDelayScheduled = false;
         startedAt = 0L;
         // Use explicit constructor parameters, matching the actual 0.0.2 AAR API.
         recorder = new VideoMessageRecorder(
@@ -151,19 +190,20 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
     private void onRecorderState(CameraUiState state) {
         // The AAR callback may run on a camera or worker thread; this method runs on main.
         if (recorder == null || completion != Completion.NONE) return;
+        cameraReadyForStart = state.getCameraReady() && !state.isBusy()
+                && !state.isSwitchingCamera() && !state.isRecording();
+        if (!cameraReadyForStart && startDelayScheduled) {
+            // If camera reconfigures while waiting, restart the delay once it's ready again.
+            main.removeCallbacks(startRecordingAfterPreview);
+            startDelayScheduled = false;
+        }
         if (state.getCameraReady() && !state.isBusy() && !state.isSwitchingCamera()) {
             if (!cameraReadyNotified) {
                 cameraReadyNotified = true;
                 listener.onCameraReady();
             }
-            if (pendingStart && !state.isRecording()) {
-                pendingStart = false;
-                recordStarted = true;
-                startedAt = SystemClock.elapsedRealtime();
-                recorder.startRecording();
-                listener.onRecordingStarted();
-            }
         }
+        scheduleRecordingStartIfReady();
     }
 
     private void onRecordingFinished(File file) {
@@ -196,6 +236,10 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
     }
 
     private void disposeRecorder() {
+        main.removeCallbacks(startRecordingAfterPreview);
+        startDelayScheduled = false;
+        cameraReadyForStart = false;
+        previewHasFrame = false;
         pendingStart = false;
         recordStarted = false;
         if (recorder != null) {
@@ -232,5 +276,10 @@ public final class VideoMessageRecorderAdapter implements TextureView.SurfaceTex
         surface = null;
         return true; // TextureView releases the SurfaceTexture itself.
     }
-    @Override public void onSurfaceTextureUpdated(SurfaceTexture st) { }
+    @Override public void onSurfaceTextureUpdated(SurfaceTexture st) {
+        if (!previewHasFrame && recorder != null && completion == Completion.NONE) {
+            previewHasFrame = true;
+            scheduleRecordingStartIfReady();
+        }
+    }
 }

@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.text.InputType;
+import android.widget.EditText;
 
 import io.github.webarmour.videomessagerecorder.RecordingMode;
 import io.github.webarmour.videomessagerecorder.camera.AePrioritySetting;
@@ -42,6 +44,10 @@ public final class RoundVideoRecorderSettings {
     private static final String TONEMAP = "tonemap";
     private static final String ZOOM = "zoom";
     private static final String AUDIO_BITRATE = "audio_bitrate";
+    // CUSTOM_RECORDER_CONFIGURABLE_START_DELAY_V1
+    private static final String RECORDING_START_DELAY = "recording_start_delay_ms";
+    private static final int DEFAULT_RECORDING_START_DELAY_MS = 50;
+    private static final int MAX_RECORDING_START_DELAY_MS = 2000;
 
     private static final String[] QUALITIES = {
             "COMPACT", "TELEGRAM", "IPHONE_LIKE", "HIGH", "TELEGRAM_NOTE_MAX", "HD", "FULL_HD"
@@ -60,6 +66,15 @@ public final class RoundVideoRecorderSettings {
 
     public static boolean useCustomRecorder(Context c) {
         return Build.VERSION.SDK_INT >= 28 && prefs(c).getBoolean(RECORDER, false);
+    }
+
+    /** Delay from camera-ready AND first preview frame to actual AAR recording start.
+     *  0 ms disables the additional timer but retains the ready/first-frame gate.
+     *  Applies to the next recording; never affects Telegram's Camera2 path.
+     */
+    public static long recordingStartDelayMs(Context context) {
+        int saved = prefs(context).getInt(RECORDING_START_DELAY, DEFAULT_RECORDING_START_DELAY_MS);
+        return Math.max(0, Math.min(MAX_RECORDING_START_DELAY_MS, saved));
     }
 
     public static void setCustomRecorder(Context c, boolean enabled) {
@@ -153,6 +168,7 @@ public final class RoundVideoRecorderSettings {
                         "Фронтальная камера: свет и фокус",
                         "Обработка изображения и стабилизация",
                         "Качество звука",
+                        "Задержка начала записи · " + recordingStartDelayMs(context) + " мс",
                         "Сбросить параметры CustomRecorder"
                 }, (dialog, item) -> {
                     switch (item) {
@@ -165,7 +181,8 @@ public final class RoundVideoRecorderSettings {
                         case 2: showFrontCamera(context); break;
                         case 3: showProcessing(context); break;
                         case 4: showAudio(context); break;
-                        case 5:
+                        case 5: showRecordingStartDelay(context); break;
+                        case 6:
                             new AlertDialog.Builder(context)
                                     .setTitle("Сброс настроек")
                                     .setMessage("Сбросить только параметры CustomRecorder? Выбор рекордера сохранится.")
@@ -287,6 +304,44 @@ public final class RoundVideoRecorderSettings {
                         case 5: enumChoose(context, TONEMAP, "Тональная обработка", TonemapSetting.values(), 3); break;
                     }
                 }).setNegativeButton("Назад", (d, w) -> showDialog(context)).show();
+    }
+
+    private static void showRecordingStartDelay(Context context) {
+        final EditText input = new EditText(context);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setSingleLine(true);
+        input.setSelectAllOnFocus(true);
+        input.setText(Long.toString(recordingStartDelayMs(context)));
+        input.setSelection(input.length());
+
+        final AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle("Задержка начала записи")
+                .setMessage("Время после готовности камеры и первого кадра до начала записи. "
+                        + "0 мс — без дополнительной задержки. Допустимо: 0–"
+                        + MAX_RECORDING_START_DELAY_MS + " мс. Работает только для CustomRecorder.")
+                .setView(input)
+                .setPositiveButton("Сохранить", null)
+                .setNegativeButton("Назад", (d, which) -> showDialog(context))
+                .create();
+        dialog.setOnShowListener(ignored ->
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                    String raw = input.getText().toString().trim();
+                    int delay;
+                    try {
+                        delay = Integer.parseInt(raw);
+                    } catch (NumberFormatException ex) {
+                        input.setError("Введите целое число от 0 до " + MAX_RECORDING_START_DELAY_MS);
+                        return;
+                    }
+                    if (delay < 0 || delay > MAX_RECORDING_START_DELAY_MS) {
+                        input.setError("Допустимо: 0–" + MAX_RECORDING_START_DELAY_MS + " мс");
+                        return;
+                    }
+                    prefs(context).edit().putInt(RECORDING_START_DELAY, delay).apply();
+                    dialog.dismiss();
+                    showDialog(context);
+                }));
+        dialog.show();
     }
 
     private static void showAudio(Context context) {
