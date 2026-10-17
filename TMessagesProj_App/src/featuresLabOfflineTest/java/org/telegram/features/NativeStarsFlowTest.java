@@ -45,6 +45,7 @@ public class NativeStarsFlowTest {
         click("Telegram Stars");
         instrumentation.runOnMainSync(() -> assertTrue(activity.navigation().getLastFragment() instanceof StarsIntroActivity));
         screenshot("03-my-stars.png");
+        swipe(true); // Keep the privacy control above its temporary bottom bulletin.
         click("Make my Stars private");
         instrumentation.runOnMainSync(() -> assertFalse(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
         click("Make my Stars private");
