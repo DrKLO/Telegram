@@ -601,7 +601,10 @@ public class StarsPrivacyTest {
             assertTrue(send.performClick());
         });
         Thread.sleep(6500);
-        instrumentation.runOnMainSync(() -> assertEquals(0, preview.completedPayments));
+        instrumentation.runOnMainSync(() -> {
+            assertEquals(0, preview.completedPayments);
+            assertPendingTitleFits();
+        });
         Thread.sleep(14500);
         instrumentation.runOnMainSync(() -> {});
         instrumentation.runOnMainSync(() -> {
@@ -612,6 +615,7 @@ public class StarsPrivacyTest {
             assertTrue(texts(history.getChildAt(history.getChildCount() - 1)).contains("-25 ⭐️"));
             assertFalse(UserConfig.getInstance(0).isClientActivated());
         });
+        revealNewestTransaction();
         screenshot("stars-private-live-receipt.png");
         instrumentation.runOnMainSync(() -> preview.sendSampleReaction(1));
         back(); // Leaving the reaction screen cancels instead of submitting early.
@@ -1022,6 +1026,23 @@ public class StarsPrivacyTest {
         settle();
     }
 
+    private void revealNewestTransaction() throws Exception {
+        instrumentation.runOnMainSync(() -> {
+            ViewGroup history = (ViewGroup) tagged("FL-20261017-0001").getParent();
+            View latest = history.getChildAt(history.getChildCount() - 1);
+            latest.requestRectangleOnScreen(new android.graphics.Rect(0, 0, latest.getWidth(), latest.getHeight()), true);
+        });
+        settle();
+    }
+
+    private void assertPendingTitleFits() {
+        Bulletin.TwoLineAnimatedLottieLayout banner = find(activity.getWindow().getDecorView(), Bulletin.TwoLineAnimatedLottieLayout.class);
+        assertNotNull(banner);
+        org.telegram.ui.Components.AnimatedTextView title = banner.titleTextView;
+        assertTrue("The Preview label must fit beside Undo without fading out",
+            title.getPaint().measureText(title.getText().toString()) <= title.getWidth() - title.getPaddingLeft() - title.getPaddingRight());
+    }
+
     @Test public void demoWalkthrough() throws Exception {
         launch("Blue");
         revealHistoryControl();
@@ -1068,7 +1089,8 @@ public class StarsPrivacyTest {
         });
         Thread.sleep(21000);
         instrumentation.runOnMainSync(() -> assertEquals(1, preview().completedPayments));
-        settle();
+        revealNewestTransaction();
+        Thread.sleep(1500);
         clickTag("stars_channel_settings");
         clickTag("stars_channel_private");
         Thread.sleep(3000);
@@ -1079,6 +1101,8 @@ public class StarsPrivacyTest {
         back();
         assertEquals(3, texts(tagged("FL-20261017-0001")).size());
         instrumentation.runOnMainSync(() -> preview().sendSampleReaction(50));
+        settle();
+        instrumentation.runOnMainSync(this::assertPendingTitleFits);
         Thread.sleep(21000);
         instrumentation.runOnMainSync(() -> assertEquals(2, preview().completedPayments));
         Thread.sleep(2000);

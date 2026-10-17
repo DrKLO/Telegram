@@ -22,7 +22,7 @@ SCREENSHOT_CAPTIONS = {
     'stars-private-reaction-sheet.png': ('Private post reaction', 'The native slider and send action remain, with identity and leaderboard controls hidden.'),
     'stars-twenty-second-undo.png': ('20-second Undo', 'The pending reaction keeps Telegram’s native countdown and Undo action.'),
     'stars-private-transaction.png': ('Private receipt', 'Only the signed Stars amount, transaction ID and date/time remain.'),
-    'stars-private-amounts.png': ('Amounts retained', 'Private history still shows native amounts, including fractional Stars.'),
+    'stars-private-amounts.png': ('Amounts retained', 'Private history retains signed Stars amounts beside each minimal record.'),
     'stars-private-live-sheet.png': ('Live Stars', 'Live reactions keep the native sheet and animation flow; unsupported anonymity uses a labelled mock.'),
     'stars-private-live-receipt.png': ('Live receipt', 'The completed simulated live reaction produces a minimal receipt with its actual Stars amount.'),
     'stars-channel-admin.png': ('Channel controls', 'Admins can require anonymous reactions and allow a donor-only percentile.'),

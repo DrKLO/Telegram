@@ -276,7 +276,7 @@
     <string name="StarsPrivacyDemoInfo">Без сети · примеры операций</string>
     <string name="StarsPrivacyOn">Вкл.</string>
     <string name="StarsPrivacyOff">Выкл.</string>
-    <string name="StarsPrivacyLivePreview">Приватная реакция в трансляции · Предпросмотр</string>
+    <string name="StarsPrivacyLivePreview">Эфир · Прототип</string>
     <string name="StarsPrivacyLiveReaction">Звёзды в трансляции</string>
     <string name="StarsPrivacyPreviewLabel">Предпросмотр</string>
     <string name="StarsChannelPrivacy">Приватность реакций за звёзды</string>
@@ -285,7 +285,7 @@
     <string name="StarsChannelPercentile">Процентиль отправителя</string>
     <string name="StarsChannelPercentileInfo" formatted="false">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт при личной приватности или если отправителей меньше 10.</string>
     <string name="StarsChannelMockInfo">Предпросмотр: правила канала моделируются на этом устройстве. Звёзды не тратятся.</string>
-    <string name="StarsChannelPending">Анонимная реакция в канале · Предпросмотр</string>
+    <string name="StarsChannelPending">Канал · Прототип</string>
     <string name="StarsChannelTopPercent">Топ %1$d%% · Видно только вам</string>
     <string name="StarsHistoryAnonymise">Анонимизировать историю</string>
     <string name="StarsReceiptAnonymise">Анонимизировать транзакцию</string>
@@ -297,7 +297,7 @@
     <string name="StarsPrivacyEnabledNotice">Прежние и новые реакции скрыты. Отключение повлияет только на новые реакции.</string>
     <string name="StarsPrivacyDisabledNotice">Публичными могут стать только новые реакции. Прежние приватные данные останутся скрытыми.</string>
     <string name="StarsHistoryAnonymisedNotice">История анонимизирована в предпросмотре.</string>
-    <string name="StarsReactionPreviewPending">Реакция за звёзды · Предпросмотр</string>
+    <string name="StarsReactionPreviewPending">Звёзды · Прототип</string>
     <string name="StarsPrivacyReactionsHeader">Реакции за звёзды</string>
     <string name="StarsPrivacyHistoryHeader">История транзакций</string>
     <string name="StarsPrivacyChannelHeader">Приватность канала</string>

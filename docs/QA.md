@@ -19,6 +19,7 @@ review and emulator validation, not certification of payment anonymity.
 | The submission packager could include screenshots unrelated to its recording revision. | It now requires a passing suite on the same clean commit and checks screenshot hashes before creating the package. Python tests reject dirty/stale/failed QA and changed screenshots. |
 | The offline host used only the legacy Back override. | It now registers Android 13+ system Back and retains the older-device fallback. Native navigation tests send real Back key events instead of calling the Activity method directly. |
 | Android Lint interpreted the literal “10%” in the donor explanation as a formatting directive. | Both language resources mark this explanation as unformatted text. The actual percentile label retains its numeric format argument. |
+| Long live/channel pending titles clipped the “Preview” label beside Undo. | Shorter English and Russian titles keep the mock status visible in the native banner. The Star count remains in the subtitle. |
 | Verification documentation still described ten tests and an untested five-minute expiry. | The report and submission guide now describe the expanded suite and separate remaining limitations. |
 
 ## Verification
