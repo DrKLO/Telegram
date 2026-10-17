@@ -1226,10 +1226,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 if (bot_id == 0) {
                     StarsController s = StarsController.getInstance(currentAccount, ton);
                     items.add(UItem.asSpace(StarsController.ALL_TRANSACTIONS));
-                    if (s.hasTransactions(StarsController.INCOMING_TRANSACTIONS)) {
+                    if ((ton || !StarsPrivacy.isEnabled(currentAccount) && !StarsPrivacyMockApi.hasPrivateHistory(currentAccount)) && s.hasTransactions(StarsController.INCOMING_TRANSACTIONS)) {
                         items.add(UItem.asSpace(StarsController.INCOMING_TRANSACTIONS));
                     }
-                    if (s.hasTransactions(StarsController.OUTGOING_TRANSACTIONS)) {
+                    if ((ton || !StarsPrivacy.isEnabled(currentAccount) && !StarsPrivacyMockApi.hasPrivateHistory(currentAccount)) && s.hasTransactions(StarsController.OUTGOING_TRANSACTIONS)) {
                         items.add(UItem.asSpace(StarsController.OUTGOING_TRANSACTIONS));
                     }
                 } else {
@@ -1278,9 +1278,10 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
 
         @Override
         public void didReceivedNotification(int id, int account, Object... args) {
-            if (id == NotificationCenter.starTransactionsLoaded) {
+            if (id == NotificationCenter.starTransactionsLoaded || id == NotificationCenter.starsPrivacyChanged) {
                 adapter.fill();
-                viewPager.fillTabs(true);
+                if (id == NotificationCenter.starsPrivacyChanged) viewPager.setPosition(0);
+                viewPager.fillTabs(id != NotificationCenter.starsPrivacyChanged);
             }
         }
 
@@ -1311,12 +1312,14 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             adapter.fill();
             viewPager.fillTabs(false);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starTransactionsLoaded);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starsPrivacyChanged);
             super.onAttachedToWindow();
         }
 
         @Override
         protected void onDetachedFromWindow() {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starTransactionsLoaded);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged);
             super.onDetachedFromWindow();
         }
 
@@ -1352,7 +1355,11 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                     }
                 };
 
-                listView = new UniversalRecyclerView(context, currentAccount, classGuid, true, this::fillItems, this::onClick, null, resourcesProvider);
+                listView = new UniversalRecyclerView(context, currentAccount, classGuid, true, this::fillItems, this::onClick, (item, view, position, x, y) -> {
+                    if (ton || bot_id != 0 || !(item.object instanceof TL_stars.StarsTransaction)) return false;
+                    StarsHistoryPrivacy.confirm(context, currentAccount, (TL_stars.StarsTransaction) item.object, resourcesProvider, null);
+                    return true;
+                }, resourcesProvider);
                 addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                 listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
@@ -1465,7 +1472,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         }
     }
 
-    public static class StarsTransactionView extends LinearLayout {
+    public static class StarsTransactionView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
 
         private final int currentAccount;
 
@@ -1486,6 +1493,26 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private final SpannableString ton;
 
         private boolean threeLines;
+        private TL_stars.StarsTransaction lastTransaction;
+        private boolean lastBot;
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starsPrivacyChanged);
+            if (lastTransaction != null) set(lastTransaction, lastBot, needDivider);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starsPrivacyChanged);
+            super.onDetachedFromWindow();
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            if (lastTransaction != null) set(lastTransaction, lastBot, needDivider);
+        }
 
         public StarsTransactionView(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -1583,6 +1610,37 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         private Runnable cancelCurrentGift;
         private boolean needDivider;
         public void set(TL_stars.StarsTransaction transaction, boolean bot, boolean divider) {
+            lastTransaction = StarsPrivacyMockApi.project(currentAccount, transaction);
+            lastBot = bot;
+            setOnLongClickListener(v -> {
+                if (lastBot || lastTransaction.amount instanceof TL_stars.TL_starsTonAmount) return false;
+                StarsHistoryPrivacy.confirm(getContext(), currentAccount, lastTransaction, null, null);
+                return true;
+            });
+            if (cancelCurrentGift != null) {
+                cancelCurrentGift.run();
+                cancelCurrentGift = null;
+            }
+            boolean privateHistory = !(transaction.amount instanceof TL_stars.TL_starsTonAmount) && (StarsPrivacyMockApi.shouldRedact(currentAccount, transaction) || !bot && StarsPrivacy.isEnabled(currentAccount));
+            imageViewContainer.setVisibility(privateHistory ? GONE : VISIBLE);
+            textLayout.setPadding(privateHistory ? dp(20) : 0, 0, privateHistory ? dp(20) : 0, 0);
+            if (privateHistory) {
+                threeLines = false;
+                titleTextViewParams.bottomMargin = dp(4.33f);
+                imageView.setImageDrawable(null);
+                imageView2.setImageDrawable(null);
+                titleTextView.setText(transaction.id);
+                subtitleTextView.setText("");
+                subtitleTextView.setVisibility(GONE);
+                amountTextView.setText("");
+                amountTextView.setVisibility(GONE);
+                dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                dateTextView.setText(LocaleController.formatShortDateTime(transaction.date));
+                setWillNotDraw(!(needDivider = divider));
+                requestLayout();
+                invalidate();
+                return;
+            }
             long did = DialogObject.getPeerDialogId(transaction.peer.peer);
 
             final boolean isTon = transaction.amount instanceof TL_stars.TL_starsTonAmount;
@@ -1817,7 +1875,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             if (needDivider) {
-                canvas.drawRect(LocaleController.isRTL ? 0 : dp(72), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(72) : 0), getMeasuredHeight(), Theme.dividerPaint);
+                int inset = dp(imageViewContainer.getVisibility() == GONE ? 20 : 72);
+                canvas.drawRect(LocaleController.isRTL ? 0 : inset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? inset : 0), getMeasuredHeight(), Theme.dividerPaint);
             }
         }
 
@@ -3756,10 +3815,34 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         };
     }
 
+    private static BottomSheet showPrivateTransactionSheet(Context context, int currentAccount, TL_stars.StarsTransaction transaction, Theme.ResourcesProvider resourcesProvider) {
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(16), dp(12), dp(16), dp(16));
+        TableView table = new TableView(context, resourcesProvider);
+        table.addRowMonospaced(getString(R.string.StarsTransactionID), transaction.id, 13, () -> AndroidUtilities.addToClipboard(transaction.id));
+        table.addRowDateTime(getString(R.string.StarsTransactionDate), transaction.date);
+        content.addView(table, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        BottomSheet sheet = new BottomSheet.Builder(context, false, resourcesProvider).setCustomView(content).create();
+        if (!StarsPrivacyMockApi.isAnonymised(currentAccount, transaction)) {
+            org.telegram.ui.Cells.TextSettingsCell anonymise = new org.telegram.ui.Cells.TextSettingsCell(context);
+            anonymise.setTextAndValue(getString(R.string.StarsReceiptAnonymise), getString(R.string.StarsPrivacyPreviewLabel), false);
+            anonymise.setBackground(Theme.getSelectorDrawable(true));
+            anonymise.setOnClickListener(v -> StarsHistoryPrivacy.confirm(context, currentAccount, transaction, resourcesProvider, sheet::dismiss));
+            content.addView(anonymise, LayoutHelper.createLinear(-1, -2));
+        }
+        sheet.fixNavigationBar();
+        sheet.show();
+        return sheet;
+    }
+
     public static BottomSheet showTransactionSheet(Context context, boolean bot, long dialogId, int currentAccount, TL_stars.StarsTransaction transaction, Theme.ResourcesProvider resourcesProvider) {
         if (transaction == null || context == null)
             return null;
 
+        if (!(transaction.amount instanceof TL_stars.TL_starsTonAmount) && (StarsPrivacyMockApi.shouldRedact(currentAccount, transaction) || !bot && StarsPrivacy.isEnabled(currentAccount))) {
+            return showPrivateTransactionSheet(context, currentAccount, transaction, resourcesProvider);
+        }
         final boolean ton = transaction.amount instanceof TL_stars.TL_starsTonAmount;
         final boolean giveaway = (transaction.flags & 8192) != 0;
         final boolean affiliate_to_bot = (transaction.flags & 131072) != 0 && !transaction.paid_message;

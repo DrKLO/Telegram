@@ -158,6 +158,7 @@ public class NotificationCenter {
     public static final int quickRepliesUpdated = totalEvents++;
     public static final int quickRepliesDeleted = totalEvents++;
     public static final int bookmarkAdded = totalEvents++;
+    public static final int starsPrivacyChanged = totalEvents++;
     public static final int starReactionAnonymousUpdate = totalEvents++;
     public static final int businessLinksUpdated = totalEvents++;
     public static final int businessLinkCreated = totalEvents++;

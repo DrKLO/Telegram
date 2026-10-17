@@ -2949,6 +2949,7 @@ public class ChatActivity extends BaseFragment implements
                 .add(NotificationCenter.didUpdateMessagesViews)
                 .add(NotificationCenter.didUpdatePollResults)
                 .add(NotificationCenter.availableEffectsUpdate)
+                .add(NotificationCenter.starsPrivacyChanged)
                 .add(NotificationCenter.starReactionAnonymousUpdate);
             if (currentEncryptedChat != null) {
                 observersGroup.add(NotificationCenter.didVerifyMessagesStickers);
@@ -3401,6 +3402,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onFragmentDestroy() {
+        if (StarsController.getInstance(currentAccount).currentPendingReactions != null && StarsController.getInstance(currentAccount).currentPendingReactions.chatActivity == this) {
+            StarsController.getInstance(currentAccount).undoPaidReaction();
+        }
         super.onFragmentDestroy();
         if (messageMetricsView != null) {
             messageMetricsView.finish();
@@ -24589,6 +24593,8 @@ public class ChatActivity extends BaseFragment implements
             updateVisibleRows(msg -> msg != null && msg.getFactCheck() != null);
         } else if (id == NotificationCenter.availableEffectsUpdate) {
             updateVisibleRows(msg -> msg != null && msg.getEffect() != null);
+        } else if (id == NotificationCenter.starsPrivacyChanged) {
+            updateVisibleRows();
         } else if (id == NotificationCenter.starReactionAnonymousUpdate) {
             final long did = (long) args[0];
             final int  mid = (int) args[1];
@@ -30091,6 +30097,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onPause() {
+        if (StarsController.getInstance(currentAccount).currentPendingReactions != null && StarsController.getInstance(currentAccount).currentPendingReactions.chatActivity == this) {
+            StarsController.getInstance(currentAccount).undoPaidReaction();
+        }
         super.onPause();
         scrolling = false;
         if (scrimPopupWindow != null) {

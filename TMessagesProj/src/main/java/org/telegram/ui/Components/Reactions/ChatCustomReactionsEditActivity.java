@@ -55,6 +55,8 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SlideIntChooseView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Stars.StarsChannelPrivacyActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BulletinFactory;
@@ -321,6 +323,12 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             paidCheckCell.setOnClickListener(v -> {
                 toggleStarsEnabled();
             });
+
+            TextSettingsCell privacyCell = new TextSettingsCell(context);
+            privacyCell.setTextAndValue(getString(R.string.StarsChannelPrivacy), getString(R.string.StarsPrivacyPreviewLabel), false);
+            privacyCell.setBackground(Theme.getSelectorDrawable(true));
+            privacyCell.setOnClickListener(v -> presentFragment(new StarsChannelPrivacyActivity(currentAccount, -chatId)));
+            switchLayout.addView(privacyCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             infoCell = new TextInfoPrivacyCell(context, 12, resourceProvider);
             infoCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));

@@ -100,6 +100,7 @@ import org.telegram.ui.GradientClip;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stars.StarsReactionsSheet;
+import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
@@ -351,7 +352,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             final ItemOptions o = ItemOptions.makeOptions(container, new DarkThemeResourceProvider(), v);
             o.addText(LocaleController.formatString(R.string.LiveStoryMessageSent, LocaleController.formatDateTime(message.date, true)), 15);
             o.addGap();
-            o.add(R.drawable.msg_openprofile, getString(R.string.OpenProfile), () -> {
+            o.addIf(message.dialogId != UserObject.ANONYMOUS, R.drawable.msg_openprofile, getString(R.string.OpenProfile), () -> {
                 storyViewer.presentFragment(ProfileActivity.of(message.dialogId));
             });
             o.addIf(!message.isReaction, R.drawable.msg_copy, getString(R.string.Copy), () -> {
@@ -361,7 +362,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
                 }
             });
             o.addIf(
-                    dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || isAdmin(),
+                    message.dialogId != UserObject.ANONYMOUS && (dialogId == UserConfig.getInstance(currentAccount).getClientUserId() || isAdmin()),
                     R.drawable.msg_delete, getString(R.string.Delete), () -> {
                         if (isMe(message.dialogId)) {
                             final TL_phone.deleteGroupCallMessages req = new TL_phone.deleteGroupCallMessages();
@@ -744,6 +745,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
     @Override
     protected void onDetachedFromWindow() {
+        cancelStars();
         super.onDetachedFromWindow();
         if (inputCall != null) {
             AndroidUtilities.cancelRunOnUIThread(pollStarsRunnable);
@@ -813,13 +815,24 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         return null;
     }
 
-    public static final long REACTIONS_TIMEOUT = 5_000;
+    public static final long REACTIONS_TIMEOUT = org.telegram.ui.Stars.PaidReactionUndo.DURATION_MS;
     private Bulletin starsBulletin;
+    private org.telegram.ui.Stars.PaidReactionUndo starsUndo;
+    private long starsPeer;
+    private boolean mockStars;
     private Bulletin.TwoLineAnimatedLottieLayout bulletinLayout;
     private Bulletin.UndoButton bulletinButton;
     private Bulletin.TimerView timerView;
 
     public void sendStars(long stars, boolean withEffects) {
+        sendStars(stars, withEffects, getDefaultPeerId());
+    }
+
+    private void sendStars(long stars, boolean withEffects, long requestedPeer) {
+        long resolved = org.telegram.ui.Stars.StarsPrivacy.resolvePeer(currentAccount, dialogId, requestedPeer);
+        if (localStars > 0 && starsPeer != resolved) cancelStars();
+        starsPeer = resolved;
+        if (localStars == 0) mockStars = org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId);
         if (starsBulletin == null || !starsBulletin.isShowing()) {
             final Theme.ResourcesProvider resourcesProvider = new DarkThemeResourceProvider();
             bulletinLayout = new Bulletin.TwoLineAnimatedLottieLayout(getContext(), resourcesProvider);
@@ -829,24 +842,30 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
             bulletinButton.setText(LocaleController.getString(R.string.StarsSentUndo));
             bulletinButton.setUndoAction(this::cancelStars);
             timerView = new Bulletin.TimerView(getContext(), resourcesProvider);
-            timerView.timeLeft = REACTIONS_TIMEOUT;
+            timerView.setTimeLeft(REACTIONS_TIMEOUT);
             timerView.setColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
             bulletinButton.addView(timerView, LayoutHelper.createFrame(20, 20, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
             bulletinButton.undoTextView.setPadding(dp(12), dp(8), dp(20 + 10), dp(8));
             bulletinLayout.setButton(bulletinButton);
             starsBulletin = BulletinFactory.of(topBulletinContainer, resourcesProvider).create(bulletinLayout, -1);
             starsBulletin.hideAfterBottomSheet = false;
+            starsUndo = new org.telegram.ui.Stars.PaidReactionUndo();
             starsBulletin.show(true);
-            starsBulletin.setOnHideListener(closeBulletin);
+            final Bulletin createdBulletin = starsBulletin;
+            starsBulletin.setOnHideListener(() -> {
+                if (starsBulletin == createdBulletin) cancelStars();
+            });
         }
 
         localStars += stars;
-        onCancelledStarReaction(getDefaultPeerId());
-        onStarReaction(getDefaultPeerId(), getTotalMyStars(), (int) localStars);
+        starsUndo.restart(android.os.SystemClock.elapsedRealtime());
+        final long reactionPeer = starsPeer;
+        onCancelledStarReaction(reactionPeer);
+        onStarReaction(reactionPeer, getTotalMyStars(), (int) localStars);
 
         bulletinLayout.titleTextView.setText(getStarsToastTitle());
         bulletinLayout.subtitleTextView.setText(getStarsToastSubtitle());
-        timerView.timeLeft = REACTIONS_TIMEOUT;
+        timerView.setTimeLeft(REACTIONS_TIMEOUT);
 
         AndroidUtilities.cancelRunOnUIThread(closeBulletin);
         AndroidUtilities.runOnUIThread(closeBulletin, REACTIONS_TIMEOUT);
@@ -892,53 +911,47 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
         });
         sheet.setLiveCommentsView(this);
         sheet.setOnSend((peer, stars) -> {
-            closeBulletin.run();
-            localStars = stars;
-            Bulletin b = BulletinFactory.of(topBulletinContainer, new DarkThemeResourceProvider())
-                .createSimpleBulletin(R.raw.stars_topup, getStarsToastTitle(), getStarsToastSubtitle());
-            b.hideAfterBottomSheet = false;
-            b.show(true);
-
-            localStars = 0;
-            sentStars = true;
-
-            int msg_id = send(new TLRPC.TL_textWithEntities(), stars);
-
-            final long minStars = livePlayer == null ? 0 : livePlayer.getSendPaidMessagesStars();
-            final boolean fromAdmin = getDefaultPeerId() == this.dialogId && isAdmin();
-            if (stars < minStars && !fromAdmin) {
-                return Integer.MIN_VALUE;
-            }
-
-            return msg_id;
+            sendStars(stars, true, peer);
+            sheet.setPendingReactionTarget(starsBulletin.getLayout());
+            return 0;
         });
         sheet.show();
     }
 
-    private Runnable closeBulletin = () -> {
-        AndroidUtilities.cancelRunOnUIThread(this.closeBulletin);
-        if (starsBulletin != null) {
-            starsBulletin.hide();
-            starsBulletin = null;
+    private final Runnable closeBulletin = this::finishStarReaction;
+
+    private void finishStarReaction() {
+        if (localStars <= 0 || starsUndo == null) return;
+        long remaining = starsUndo.remaining(android.os.SystemClock.elapsedRealtime());
+        if (remaining > 0) {
+            AndroidUtilities.cancelRunOnUIThread(closeBulletin);
+            AndroidUtilities.runOnUIThread(closeBulletin, remaining);
+            return;
         }
-        if (localStars > 0) {
-            final long stars = localStars;
-            localStars = 0;
-            sentStars = true;
-            send(new TLRPC.TL_textWithEntities(), stars);
-        } else {
-            onStarsCountUpdated();
-        }
-    };
+        if (!starsUndo.commit(android.os.SystemClock.elapsedRealtime())) return;
+        final long stars = localStars;
+        localStars = 0;
+        Bulletin previous = starsBulletin;
+        starsBulletin = null;
+        if (previous != null) previous.hide();
+        sentStars = true;
+        send(org.telegram.ui.Stars.StarsPrivacy.resolvePeer(currentAccount, dialogId, starsPeer), new TLRPC.TL_textWithEntities(), stars, mockStars);
+    }
 
     public void cancelStars() {
+        AndroidUtilities.cancelRunOnUIThread(closeBulletin);
+        if (starsUndo != null) starsUndo.cancel();
         localStars = 0;
-        onCancelledStarReaction(getDefaultPeerId());
+        Bulletin previous = starsBulletin;
+        starsBulletin = null;
+        if (previous != null) previous.hide();
+        onCancelledStarReaction(starsPeer);
         onStarsButtonCancelled();
         onStarsCountUpdated();
     }
 
     private String getStarsToastTitle() {
+        if (org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyLivePreview);
 //        if (isAnonymous()) {
 //            return getString(R.string.StarsSentAnonymouslyTitle);
 //        } else if (getPeerId() != 0 && getPeerId() != UserConfig.getInstance(currentAccount).getClientUserId()) {
@@ -1136,7 +1149,21 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     public int send(long send_as, TLRPC.TL_textWithEntities text, long stars) {
+        return send(send_as, text, stars, false);
+    }
+
+    private int send(long send_as, TLRPC.TL_textWithEntities text, long stars, boolean forceMock) {
         final int id = UserConfig.getInstance(currentAccount).getNewMessageId();
+        if (stars > 0 && android.text.TextUtils.isEmpty(text.text) && (forceMock || org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId))) {
+            // Proposed server behavior: keep the native interaction, with a local receipt.
+            final org.telegram.ui.Stars.StarsPrivacyMockApi.Receipt receipt = org.telegram.ui.Stars.StarsPrivacyMockApi.sendAnonymousLiveReaction(stars);
+            StarsController.getInstance(currentAccount).transactions[StarsController.ALL_TRANSACTIONS].add(0, receipt.asTransaction());
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starTransactionsLoaded);
+            push(receipt.date, id, false, receipt.sender, text, stars, false);
+            setCollapsed(false, true);
+            onStarsCountUpdated();
+            return id;
+        }
         final TL_phone.sendGroupCallMessage req = new TL_phone.sendGroupCallMessage();
         req.call = inputCall;
         req.message = text;
@@ -1246,7 +1273,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     public boolean didSendStars() {
-        return sentStars || localStars > 0;
+        return !org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, dialogId) && (sentStars || localStars > 0);
     }
 
     public boolean areSendingStars() {
@@ -1479,6 +1506,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private int getPlace(long dialogId) {
+        if (org.telegram.ui.Stars.StarsPrivacy.isPrivate(currentAccount, this.dialogId)) return 0;
         return topPlaces.getOrDefault(dialogId, 0);
     }
 
@@ -1671,7 +1699,11 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
 
             final String title;
             int backgroundColor1, backgroundColor2;
-            if (message.dialogId >= 0) {
+            if (message.dialogId == UserObject.ANONYMOUS) {
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_ANONYMOUS);
+                avatarView.setImageDrawable(avatarDrawable);
+                title = getString(R.string.StarsReactionAnonymous);
+            } else if (message.dialogId >= 0) {
                 final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(message.dialogId);
                 avatarDrawable.setInfo(user);
                 avatarView.setForUserOrChat(user, avatarDrawable);

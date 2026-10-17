@@ -98,6 +98,7 @@ public final class FeaturesLabActivity extends Activity {
             text(context, "Build your next Telegram idea", 26);
             text(context, "No account. No phone. Sample data stays on this virtual device.", 16);
             text(context, "Explore Telegram's actual chat list, message bubbles, and theme components. Swipe between the two preview pages.", 16);
+            button(context, "Open Stars Privacy preview", () -> presentFragment(new StarsPrivacyPreview()));
             button(context, "Open chat & message preview", () -> presentFragment(new ThemePreviewActivity(Theme.getCurrentTheme())));
             appearance = text(context, "", 14);
             button(context, "Use light theme", () -> selectTheme("Blue"));

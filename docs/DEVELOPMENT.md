@@ -43,7 +43,7 @@ licenses when prompted. Then run `./dev doctor` from the checkout.
 ## Reproduce this checkout
 
 ```sh
-GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch setup/offline \
+GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch feature/stars-privacy \
   --recurse-submodules --shallow-submodules \
   https://github.com/yes-i-like-pina-coladas/Telegram.git
 cd Telegram
@@ -113,6 +113,7 @@ always performs a normal credential-checked rebuild before installing.
 | `./dev emulator` | Start the dedicated virtual device without rebuilding |
 | `./dev offline-build` | Build the offline APK without credentials |
 | `./dev offline-install` | Build/install the offline APK on a selected device |
+| `./dev privacy-test` | Verify personal/admin/history privacy and 20-second Undo in the offline app |
 | `./dev smoke-test` | Check offline rendering, isolation, and theme persistence |
 | `./dev doctor` | Check toolchain, pinned submodules, credential presence, and phone |
 | `./dev configure` | Enter API credentials locally |

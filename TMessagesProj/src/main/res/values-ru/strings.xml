@@ -263,4 +263,35 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+
+    <!-- Personal Stars privacy -->
+    <string name="StarsPrivacyTitle">Конфиденциальность звёзд</string>
+    <string name="StarsPrivacySwitch">Приватные реакции звёздами</string>
+    <string name="StarsPrivacyDescription">Отправлять новые реакции звёздами анонимно. Скрывать лидеров и выделение поставленных звёзд. В разделе «Мои звёзды» показывать только номера, дату и время операций. Анимации звёзд сохраняются.</string>
+    <string name="StarsPrivacyScope">Настройка действует для этого аккаунта в этом приложении. Она скрывает подробности операций здесь, но не удаляет записи с серверов Telegram и других устройств, не скрывает платежи от получателей и не меняет прошлые реакции. Новую реакцию можно отменить в течение 20 секунд. При выходе с экрана реакции неотправленная реакция отменяется.</string>
+    <string name="StarsPrivacyActive">Приватные реакции включены</string>
+    <string name="StarsPrivacyPending">Отправка звёзд анонимно</string>
+    <string name="StarsPendingTitle">Отправка звёзд</string>
+    <string name="StarsPrivacyDemo">Предпросмотр конфиденциальности звёзд</string>
+    <string name="StarsPrivacyDemoInfo">Без сети · примеры операций</string>
+    <string name="StarsPrivacyOn">Вкл.</string>
+    <string name="StarsPrivacyOff">Выкл.</string>
+    <string name="StarsPrivacyLivePreview">Приватная реакция в трансляции · Предпросмотр</string>
+    <string name="StarsPrivacyLiveReaction">Звёзды в трансляции</string>
+    <string name="StarsPrivacyPreviewLabel">Предпросмотр</string>
+    <string name="StarsChannelPrivacy">Приватность реакций за звёзды</string>
+    <string name="StarsChannelPrivate">Только анонимные реакции</string>
+    <string name="StarsChannelPrivateInfo">Скрывать имена отправителей и рейтинги. В истории остаются только ID, дата и время. Выделение вашей реакции исчезает через 5 минут; личная настройка приватности скрывает его сразу. Анимация и общее число звёзд сохраняются.</string>
+    <string name="StarsChannelPercentile">Личный процентиль отправителя</string>
+    <string name="StarsChannelPercentileInfo">После реакции отправителю на 5 минут показывается округлённый процентиль, например «Топ 10%». Его видит только отправитель, без имён и отдельных сумм. Для групп меньше 10 отправителей процентиль не показывается.</string>
+    <string name="StarsChannelMockInfo">Предпросмотр: правила канала и процентили моделируются на этом устройстве. Реакции в этом режиме создают тестовые записи и не тратят звёзды.</string>
+    <string name="StarsChannelPending">Анонимная реакция в канале · Предпросмотр</string>
+    <string name="StarsChannelTopPercent">Топ %1$d%% · Видно только вам</string>
+    <string name="StarsHistoryAnonymise">Анонимизировать историю</string>
+    <string name="StarsReceiptAnonymise">Анонимизировать транзакцию</string>
+    <string name="StarsAnonymise">Анонимизировать</string>
+    <string name="StarsHistoryAnonymiseInfo">Оставить только ID, дату и время транзакций. В предпросмотре это действие нельзя отменить, даже выключив приватные реакции. Удерживайте транзакцию, чтобы анонимизировать только её.</string>
+    <string name="StarsHistoryAnonymiseConfirm">Оставить только ID, дату и время транзакций?\n\nВ предпросмотре это действие нельзя отменить. Записи на серверах Telegram и других устройствах останутся без изменений.</string>
+    <string name="StarsPrivacyDemoHint">Нажмите на звезду, чтобы поставить реакцию. Удерживайте её, чтобы открыть меню реакций.</string>
+    <string name="StarsPrivacyMockReactionInfo">Тестовая реакция. Звёзды не будут потрачены.</string>
 </resources>

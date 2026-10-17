@@ -12,7 +12,8 @@ or `api_hash` is required. The emulator stays open after the command completes.
 
 ## What you can do
 
-- Open the chat and message preview, then swipe between its two pages.
+- Open **Stars Privacy preview** for the implemented personal, channel-admin, history and live-reaction flows. See [STARS_PRIVACY.md](STARS_PRIVACY.md).
+- Open the original chat and message preview, then swipe between its two pages.
 - Inspect Telegram's actual `DialogCell` and `ChatMessageCell` components with
   built-in sample content, rather than a web recreation of the app.
 - Switch between light and dark themes; the selected theme is saved on the device.
@@ -36,8 +37,8 @@ components live under `TMessagesProj/src/main/java/org/telegram/ui/Cells` and
 This is an **offline UI playground**, not a full account-free Telegram client.
 The stock preview composer/search controls do not send messages or search a server.
 There is no login session, Saved Messages account, synchronization, calling, push,
-or live chat history. A future feature may need additional local fixtures and a
-separate integration test with a real account; no feature has been implemented yet.
+or live chat history. The Stars privacy feature uses local fixtures and mocked server capabilities.
+Real payments and server enforcement still need separate integration tests.
 
 The offline package is `org.telegram.features.offline.beta`, separate from both
 official Telegram and the optional live lab build. Its merged manifest removes

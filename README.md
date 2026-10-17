@@ -16,7 +16,14 @@ workflow (`./dev configure`, then `./dev install`).
 
 Baseline: Telegram 13.0.2 (7175), commit `f32ffeec763f0bdbf4bec25b52d654f77bff733d`.
 The development app is **Features Lab** (`org.telegram.features.beta`). Firebase
-push notifications are deliberately disabled. No feature has been implemented yet.
+push notifications are deliberately disabled.
+
+**Implemented feature: [Private Star Reactions](docs/STARS_PRIVACY.md).** Open
+**Stars Privacy preview** in the playground to try the personal privacy setting,
+native 20-second Undo, channel-admin controls, minimal receipts, irreversible
+history anonymisation and live Stars. Missing Telegram server capabilities are
+usable local mocks, marked Preview; no Stars are spent in the offline app.
+Run `./dev privacy-test` for the native feature checks.
 The offline playground uses `org.telegram.features.offline.beta` and has no internet
 permission. Gradle and Android Studio default to this offline configuration.
 

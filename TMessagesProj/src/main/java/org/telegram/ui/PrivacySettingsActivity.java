@@ -104,6 +104,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     @Keep
     private int giftsRow;
     @Keep
+    private int starsPrivacyRow;
+    @Keep
     private int birthdayRow;
     @Keep
     private int forwardsRow;
@@ -425,6 +427,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_MUSIC));
             } else if (position == birthdayRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY));
+            } else if (position == starsPrivacyRow) {
+                presentFragment(new org.telegram.ui.Stars.StarsPrivacyActivity());
             } else if (position == giftsRow) {
                 presentFragment(new PrivacyControlActivity(ContactsController.PRIVACY_RULES_TYPE_GIFTS));
             } else if (position == forwardsRow) {
@@ -748,6 +752,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
         birthdayRow = rowCount++;
         giftsRow = rowCount++;
+        starsPrivacyRow = rowCount++;
         bioRow = rowCount++;
         musicRow = rowCount++;
         groupsRow = rowCount++;
@@ -1032,7 +1037,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     position == forwardsRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_FORWARDS) ||
                     position == phoneNumberRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_PHONE) ||
                     position == voicesRow && !getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_VOICE_MESSAGES) ||
-                    position == noncontactsRow ||
+                    position == noncontactsRow || position == starsPrivacyRow ||
                     position == deleteAccountRow && !getContactsController().getLoadingDeleteInfo() ||
                     position == newChatsRow && !getContactsController().getLoadingGlobalSettings() ||
                     position == emailLoginRow || position == paymentsClearRow || position == secretMapRow ||
@@ -1149,6 +1154,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             value = formatRulesString(getAccountInstance(), ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);
                         }
                         textCell.setTextAndValue(getString(R.string.PrivacyBirthday), value, true);
+                    } else if (position == starsPrivacyRow) {
+                        textCell.setTextAndValue(getString(R.string.StarsPrivacyTitle), getString(org.telegram.ui.Stars.StarsPrivacy.isEnabled(currentAccount) ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff), true);
                     } else if (position == giftsRow) {
                         if (getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_GIFTS)) {
                             showLoading = true;

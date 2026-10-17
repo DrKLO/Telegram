@@ -2357,6 +2357,7 @@ public class Bulletin {
 
         private final Paint progressPaint;
         public long timeLeft;
+        public long duration = 5_000;
         private int prevSeconds;
         private String timeLeftString;
         private int textWidth;
@@ -2384,6 +2385,13 @@ public class Bulletin {
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
 
             setColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+        }
+
+        public void setTimeLeft(long milliseconds) {
+            duration = milliseconds;
+            timeLeft = milliseconds;
+            lastUpdateTime = android.os.SystemClock.elapsedRealtime();
+            invalidate();
         }
 
         public void setColor(int color) {
@@ -2441,15 +2449,15 @@ public class Bulletin {
                 canvas.restore();
             }
 
-            canvas.drawArc(rect, -90, -360 * (Math.max(0, timeLeft) / 5000.0f), false, progressPaint);
+            canvas.drawArc(rect, -90, -360 * (Math.min(duration, Math.max(0, timeLeft)) / (float) Math.max(1, duration)), false, progressPaint);
 
             if (lastUpdateTime != 0) {
-                long newTime = System.currentTimeMillis();
+                long newTime = android.os.SystemClock.elapsedRealtime();
                 long dt = newTime - lastUpdateTime;
                 timeLeft -= dt;
                 lastUpdateTime = newTime;
             } else {
-                lastUpdateTime = System.currentTimeMillis();
+                lastUpdateTime = android.os.SystemClock.elapsedRealtime();
             }
             invalidate();
         }

@@ -148,6 +148,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private final GLIconTextureView icon3dView;
 
     private final MessageObject messageObject;
+    private final long privacyDialogId;
     private final ArrayList<TLRPC.MessageReactor> reactors;
 
     private final BalanceCloud balanceCloud;
@@ -210,7 +211,9 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 }
             }
         }
-        final boolean withTopSenders = reactors != null && !reactors.isEmpty();
+        privacyDialogId = messageObject == null ? dialogId : StarsController.MessageId.from(messageObject).did;
+        final boolean privateStars = StarsPrivacy.isPrivate(currentAccount, privacyDialogId);
+        final boolean withTopSenders = !privateStars && reactors != null && !reactors.isEmpty();
         if (liveStories) {
             TLRPC.MessageReactor myReactor = null;
             if (reactors != null) {
@@ -225,6 +228,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         } else {
             peer = StarsController.getInstance(currentAccount).getPaidReactionsDialogId(messageObject);
         }
+        peer = StarsPrivacy.resolvePeer(currentAccount, privacyDialogId, peer);
         lastSelectedPeer = peer == UserObject.ANONYMOUS ? selfId : peer;
 
         fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
@@ -494,6 +498,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         checkLayout.addView(checkBox, LayoutHelper.createLinear(21, 21, Gravity.CENTER_VERTICAL, 0, 0, 9, 0));
         checkLayout.addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
         checkLayout.setOnClickListener(v -> {
+            if (StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
             checkBox.setChecked(!checkBox.isChecked(), true);
             peer = checkBox.isChecked() ? lastSelectedPeer : UserObject.ANONYMOUS;
             updatePeerDialog();
@@ -501,6 +506,13 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 topSendersView.setMyPrivacy(peer);
             }
         });
+        if (privateStars) {
+            checkBox.setVisibility(View.GONE);
+            checkTextView.setText(getString(R.string.StarsPrivacyActive));
+            checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            checkLayout.setEnabled(false);
+            dialogSelectorLayout.setVisibility(View.INVISIBLE);
+        }
         ScaleStateListAnimator.apply(checkLayout, .05f, 1.2f);
         checkLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
 
@@ -508,6 +520,26 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
         }
 
+        if (StarsPrivacyMockApi.isChannelPrivate(currentAccount, privacyDialogId) || liveStories && privateStars) {
+            TextView previewInfo = new TextView(context);
+            balanceCloud.setVisibility(View.GONE);
+            previewInfo.setText(getString(R.string.StarsPrivacyMockReactionInfo));
+            previewInfo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            previewInfo.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            previewInfo.setGravity(Gravity.CENTER);
+            layout.addView(previewInfo, LayoutHelper.createLinear(-1, -2, 24, 0, 24, 12));
+        }
+        if (messageObject != null && !StarsPrivacy.isEnabled(currentAccount)) {
+            int bucket = StarsPrivacyMockApi.donorPercentile(currentAccount, privacyDialogId, messageObject.getId());
+            if (bucket > 0) {
+                TextView percentile = new TextView(context);
+                percentile.setText(formatString(R.string.StarsChannelTopPercent, bucket));
+                percentile.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                percentile.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+                percentile.setGravity(Gravity.CENTER);
+                layout.addView(percentile, LayoutHelper.createLinear(-1, -2, 20, 0, 20, 12));
+            }
+        }
         buttonView = new ButtonWithCounterView(context, resourcesProvider);
         buttonView.setRound();
         if (sendEnabled || liveStories) {
@@ -535,6 +567,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 final StarsController starsController = StarsController.getInstance(currentAccount);
 
                 final Runnable send = () -> {
+                    peer = StarsPrivacy.resolvePeer(currentAccount, privacyDialogId, peer);
                     if (onSendListener != null) {
                         sentMessageId = onSendListener.run(peer, totalStars);
                         if (sentMessageId == Integer.MIN_VALUE) {
@@ -560,7 +593,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                     }
                 };
 
-                if (starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
+                if (!(liveStories && privateStars || StarsPrivacyMockApi.isChannelPrivate(currentAccount, privacyDialogId)) && starsController.balanceAvailable() && starsController.getBalance().amount < totalStars) {
                     if (liveStories) {
                         new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, totalStars, StarsIntroActivity.StarsNeededSheet.TYPE_LIVE_COMMENTS, DialogObject.getShortName(currentAccount, dialogId), send, dialogId).show();
                     } else {
@@ -573,6 +606,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
 
         dialogSelectorLayout.setOnClickListener(v -> {
+            if (StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
             final ArrayList<TLObject> chats = BotStarsController.getInstance(currentAccount).getAdminedChannels();
             chats.add(0, UserConfig.getInstance(currentAccount).getCurrentUser());
 
@@ -640,7 +674,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         container.addView(icon3dView, LayoutHelper.createFrame(150, 150));
         slider.setValue(50);
 
-        if (reactors != null) {
+        if (!privateStars && reactors != null) {
             long top = 0;
             for (int i = 0; i < reactors.size(); ++i) {
                 final TLRPC.MessageReactor reactor = reactors.get(i);
@@ -771,6 +805,8 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     private boolean sending;
     private boolean checkedVisiblity = false;
     private void checkVisibility() {
+        // Opening a sheet must not change the visibility of a past reaction.
+        if (StarsPrivacy.isPrivate(currentAccount, privacyDialogId)) return;
         if (checkedVisiblity) return;
         checkedVisiblity = true;
         if (messageObject == null) return;
@@ -828,13 +864,20 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
     }
 
+    /** An offline fixture has no real balance or top-up flow. */
+    public void setOfflinePreview() { balanceCloud.setVisibility(View.GONE); }
+
+    // The native flying Star can land on the pending bulletin while payment awaits Undo.
+    private View pendingReactionTarget;
+    public void setPendingReactionTarget(View view) { pendingReactionTarget = view; }
+
     private ValueAnimator iconAnimator;
     private void animate3dIcon(Runnable pushed) {
         final View cell;
         final ReactionsLayoutInBubble reactionsLayout;
         final ReactionsLayoutInBubble.ReactionButton button;
-        if (messageObject == null || chatActivity.fragmentView == null || !chatActivity.fragmentView.isAttachedToWindow()) {
-            if (commentsView == null) return;
+        if (messageObject == null || (chatActivity == null ? messageCell == null || !messageCell.isAttachedToWindow() : chatActivity.fragmentView == null || !chatActivity.fragmentView.isAttachedToWindow())) {
+            if (commentsView == null && pendingReactionTarget == null) return;
             cell = null;
             reactionsLayout = null;
             button = null;
@@ -851,7 +894,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             } else {
                 reactionsLayoutInBubble = null;
             }
-            if (_button == null && reactionsLayoutInBubble != null) {
+            if (_button == null && reactionsLayoutInBubble != null && chatActivity != null) {
                 MessageObject.GroupedMessages group = chatActivity.getValidGroupedMessage(messageObject);
                 if (group != null && !group.posArray.isEmpty()) {
                     MessageObject msg = null;
@@ -906,12 +949,18 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         final RectF to = new RectF();
         final Runnable updateTo = () -> {
             if (liveStories) {
-                final LiveCommentsView.LiveCommentView _commentView = commentView[0] != null ? commentView[0] : (commentView[0] = commentsView.findComment(sentMessageId));
+                final LiveCommentsView.LiveCommentView _commentView = commentView[0] != null ? commentView[0] : commentsView == null ? null : (commentView[0] = commentsView.findComment(sentMessageId));
                 if (_commentView != null) {
                     _commentView.setDrawStar(false);
                     _commentView.getLocationInWindow(loc);
                     _commentView.getStarLocation(to);
                     to.offset(loc[0], loc[1]);
+                } else if (pendingReactionTarget != null) {
+                    pendingReactionTarget.getLocationInWindow(loc);
+                    float cy = loc[1] + pendingReactionTarget.getHeight() / 2f;
+                    to.set(loc[0] + dp(12), cy - dp(12), loc[0] + dp(36), cy + dp(12));
+                } else {
+                    to.set(from);
                 }
             } else {
                 cell.getLocationInWindow(loc);

@@ -301,7 +301,7 @@ public class ReactionsLayoutInBubble {
                             }
                         }
                     }
-                    if (isSmall && reactionCount.count > 1 && reactionCount.chosen) {
+                    if (isSmall && reactionCount.count > 1 && org.telegram.ui.Stars.StarsPrivacy.showSelectedState(currentAccount, messageObject, reactionCount)) {
                         ReactionButton button2 = new ReactionLayoutButton(null, reactionCount, isSmall, isTag);
                         button2.inGroup = messageObject.hasValidGroupId();
                         reactionButtons.add(button2);
@@ -740,6 +740,8 @@ public class ReactionsLayoutInBubble {
     public class ReactionLayoutButton extends ReactionButton {
         public ReactionLayoutButton(ReactionButton reuseFrom, TLRPC.ReactionCount reactionCount, boolean isSmall, boolean isTag) {
             super(reuseFrom, currentAccount, parentView, reactionCount, isSmall, isTag, resourcesProvider);
+            choosen = org.telegram.ui.Stars.StarsPrivacy.showSelectedState(currentAccount, messageObject, reactionCount);
+            isSelected = choosen;
         }
 
         @Override
@@ -889,7 +891,7 @@ public class ReactionsLayoutInBubble {
             this.reaction = reactionCount.reaction;
             this.visibleReaction = VisibleReaction.fromTL(reactionCount.reaction);
             this.count = reactionCount.count;
-            this.choosen = reactionCount.chosen;
+            this.choosen = org.telegram.ui.Stars.StarsPrivacy.showSelectedState(currentAccount, reactionCount);
             this.realCount = reactionCount.count;
             this.choosenOrder = reactionCount.chosen_order;
             this.isSmall = isSmall;
@@ -903,7 +905,7 @@ public class ReactionsLayoutInBubble {
                 throw new RuntimeException("unsupported");
             }
             imageReceiver.setParentView(parentView);
-            isSelected = reactionCount.chosen;
+            isSelected = this.choosen;
             counterDrawable.updateVisibility = false;
             counterDrawable.shortFormat = true;
 

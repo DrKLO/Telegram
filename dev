@@ -226,7 +226,7 @@ def install(offline=False):
     adb('shell', 'am', 'start', '-n', f'{package}/{activity}', serial=serial)
 
 
-def smoke_test():
+def smoke_test(privacy=False):
     serial = device(required=True)
     install(offline=True)
     run([ROOT / 'gradlew', ':TMessagesProj_App:assembleAfatDebugAndroidTest',
@@ -236,17 +236,21 @@ def smoke_test():
     artifacts = ROOT / 'artifacts'
     artifacts.mkdir(exist_ok=True)
     results = []
-    for method in ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']:
+    suite = 'StarsPrivacyTest' if privacy else 'OfflineSmokeTest'
+    methods = ['deadlineAndMockContract', 'productionPendingReactionCancelsSafely', 'nativePrivacyScreensAndRecycledRows', 'twentySecondUndoAndLiveMock', 'channelPolicyAndIrreversibleHistory', 'privacySurvivesProcessRestart'] if privacy else ['offlinePlaygroundRendersWithoutAccount', 'themeSurvivesProcessRestart']
+    folder = 'stars-privacy' if privacy else 'smoke'
+    for method in methods:
         adb('shell', 'am', 'force-stop', OFFLINE_PACKAGE, serial=serial)
         result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
-                     'org.telegram.features.OfflineSmokeTest#' + method,
+                     'org.telegram.features.' + suite + '#' + method,
                      OFFLINE_PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner', serial=serial, capture=True)
-        print(result.stdout)
+        print(result.stdout, flush=True)
         results.append(result.stdout + result.stderr)
-        (artifacts / 'offline-smoke-test.txt').write_text('\n'.join(results))
-        adb('pull', f'/sdcard/Android/data/{OFFLINE_PACKAGE}/files/smoke', artifacts, serial=serial, check=False)
+        (artifacts / ('stars-privacy-test.txt' if privacy else 'offline-smoke-test.txt')).write_text('\n'.join(results))
+        if adb('shell', 'test', '-d', f'/sdcard/Android/data/{OFFLINE_PACKAGE}/files/{folder}', serial=serial, capture=True, check=False).returncode == 0:
+            adb('pull', f'/sdcard/Android/data/{OFFLINE_PACKAGE}/files/{folder}', artifacts, serial=serial, check=False)
         if not re.search(r'OK \(\d+ tests?\)', result.stdout):
-            raise SystemExit('Offline smoke test failed; inspect artifacts/offline-smoke-test.txt.')
+            raise SystemExit('Android test failed; inspect artifacts/' + ('stars-privacy-test.txt' if privacy else 'offline-smoke-test.txt'))
     adb('shell', 'am', 'start', '-n', OFFLINE_PACKAGE + '/org.telegram.features.FeaturesLabActivity', serial=serial)
 
 
@@ -293,7 +297,7 @@ def configure():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio', 'emulator', 'demo', 'offline-build', 'offline-install', 'smoke-test'])
+    parser.add_argument('command', choices=['doctor', 'configure', 'devices', 'build', 'compile-check', 'install', 'logs', 'record', 'studio', 'emulator', 'demo', 'offline-build', 'offline-install', 'smoke-test', 'privacy-test'])
     parser.add_argument('seconds', nargs='?', type=int, default=30, help='record duration, 1–180 seconds')
     args = parser.parse_args()
     if args.command == 'doctor':
@@ -311,8 +315,8 @@ def main():
     elif args.command == 'demo':
         os.environ['ANDROID_SERIAL'] = emulator()
         install(offline=True)
-    elif args.command == 'smoke-test':
-        smoke_test()
+    elif args.command in ('smoke-test', 'privacy-test'):
+        smoke_test(privacy=args.command == 'privacy-test')
     elif args.command == 'logs':
         serial = device(required=True)
         pid = adb('shell', 'pidof', OFFLINE_PACKAGE, serial=serial, capture=True, check=False).stdout.strip().split()
