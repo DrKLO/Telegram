@@ -86,8 +86,8 @@ public class StarsPrivacyTest {
         instrumentation.runOnMainSync(() -> {
             assertNull(find(sheet[0].getContainer(), StarsReactionsSheet.TopSendersView.class));
             assertEquals(UserObject.ANONYMOUS, sheet[0].peer);
-            assertTrue(texts(sheet[0].getContainer()).toString().contains("Preview reaction. No Stars will be spent."));
-            assertFalse(texts(sheet[0].getContainer()).toString().contains("Terms of Service"));
+            assertFalse(texts(sheet[0].getContainer()).toString().contains("Preview reaction"));
+            assertTrue(texts(sheet[0].getContainer()).toString().contains("Terms of Service"));
         });
         screenshot("stars-private-reaction-sheet.png");
         instrumentation.runOnMainSync(() -> sheet[0].dismiss());
@@ -472,9 +472,10 @@ public class StarsPrivacyTest {
             String copy = texts(confirm.getRootView()).toString();
             assertTrue(copy.contains("cannot be made public again"));
             assertTrue(copy.contains("future reactions"));
-            assertTrue(copy.contains("All devices"));
-            assertTrue(copy.contains("simulated"));
-            assertTrue(copy.contains("server support"));
+            assertTrue(copy.contains("all your devices"));
+            assertFalse(copy.contains("Preview"));
+            assertFalse(copy.contains("simulated"));
+            assertFalse(copy.contains("server support"));
             privacyDialogAction("stars_privacy_cancel").performClick();
             assertFalse(StarsPrivacy.isEnabled(0));
             assertEquals("Cancel must not seal history", generation[0], StarsPrivacyMockApi.reactionPrivacyGeneration(0));
@@ -871,7 +872,14 @@ public class StarsPrivacyTest {
         final AlertDialog[] confirmation = new AlertDialog[1];
         instrumentation.runOnMainSync(() -> confirmation[0] = StarsHistoryPrivacy.confirm(activity, 0, record, null, null));
         screenshot("stars-anonymise-receipt-confirmation.png");
-        instrumentation.runOnMainSync(() -> confirmation[0].getButton(AlertDialog.BUTTON_POSITIVE).performClick());
+        instrumentation.runOnMainSync(() -> {
+            String copy = texts(confirmation[0].getWindow().getDecorView()).toString();
+            assertTrue(copy.contains("This cannot be undone"));
+            assertTrue(copy.contains("Star amounts, transaction IDs, dates and times"));
+            assertFalse(copy.contains("preview"));
+            assertFalse(copy.contains("server"));
+            confirmation[0].getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        });
         settle();
         instrumentation.runOnMainSync(() -> {
             TL_stars.StarsTransaction redacted = StarsPrivacyMockApi.project(0, record);
@@ -886,7 +894,14 @@ public class StarsPrivacyTest {
             confirmation[0] = StarsHistoryPrivacy.confirm(activity, 0, null, null, null);
         });
         screenshot("stars-anonymise-history-confirmation.png");
-        instrumentation.runOnMainSync(() -> confirmation[0].getButton(AlertDialog.BUTTON_POSITIVE).performClick());
+        instrumentation.runOnMainSync(() -> {
+            String copy = texts(confirmation[0].getWindow().getDecorView()).toString();
+            assertTrue(copy.contains("This cannot be undone"));
+            assertTrue(copy.contains("Star amounts, transaction IDs, dates and times"));
+            assertFalse(copy.contains("preview"));
+            assertFalse(copy.contains("server"));
+            confirmation[0].getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        });
         settle();
         instrumentation.runOnMainSync(() -> {
             TL_stars.TL_starsTransaction unloaded = new TL_stars.TL_starsTransaction();
@@ -1057,11 +1072,13 @@ public class StarsPrivacyTest {
         launch("Blue");
         revealHistoryControl();
         screenshot("stars-history-privacy-light.png");
+        instrumentation.runOnMainSync(() -> assertTrue(texts(tagged("stars_history_privacy")).contains("On")));
         clickTag("stars_history_privacy");
         instrumentation.runOnMainSync(() -> {
             assertFalse(StarsPrivacy.isEnabled(0));
             assertEquals(3, texts(tagged("FL-20261017-0001")).size());
             assertFalse(reaction().choosen);
+            assertTrue(texts(tagged("stars_history_privacy")).contains("Off"));
             assertTrue(texts(activity.getWindow().getDecorView()).toString().contains("Only new reactions can be public."));
             // Rapid repeated requests cannot bypass or stack the confirmation.
             tagged("stars_history_privacy").performClick();
@@ -1131,7 +1148,7 @@ public class StarsPrivacyTest {
         Bulletin.TwoLineAnimatedLottieLayout banner = find(activity.getWindow().getDecorView(), Bulletin.TwoLineAnimatedLottieLayout.class);
         assertNotNull(banner);
         org.telegram.ui.Components.AnimatedTextView title = banner.titleTextView;
-        assertTrue("The Preview label must fit beside Undo without fading out",
+        assertTrue("The pending title must fit beside Undo without fading out",
             title.getPaint().measureText(title.getText().toString()) <= title.getWidth() - title.getPaddingLeft() - title.getPaddingRight());
     }
 

@@ -1879,7 +1879,7 @@ public class StarsController {
         }
 
         public String getToastTitle() {
-            if (mockAtStart || StarsPrivacy.usesMockSend(currentAccount, messageObject)) return getString(R.string.StarsReactionPreviewPending);
+            if (mockAtStart || StarsPrivacy.usesMockSend(currentAccount, messageObject)) return getString(R.string.StarsPendingTitle);
             if (isAnonymous()) {
                 return getString(R.string.StarsPrivacyPending);
             } else if (getPeerId() != 0 && getPeerId() != UserConfig.getInstance(currentAccount).getClientUserId()) {

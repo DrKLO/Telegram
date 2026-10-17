@@ -17,7 +17,9 @@ by the live client; sample data is provided behind the UI.
 2. Tap **Buy More Stars** to inspect the real package sheet and privacy notice.
    Prices are samples; tapping a package does not start billing.
 3. Enable the history privacy control. A native confirmation explains irreversible
-   protection and the cross-device API mock. Cancel leaves the setting unchanged.
+   protection and future-only opt-out in customer-facing language. Cancel leaves the
+   setting unchanged. The control subtitle is simply **On** or **Off**. Cross-device
+   behavior is simulated, as documented in the README and API limitations.
    The same confirmation appears on every enable attempt, including purchase links
    and channel privacy. The short opt-out notice explains that disabling privacy
    affects new reactions only. Existing protected receipts remain private.

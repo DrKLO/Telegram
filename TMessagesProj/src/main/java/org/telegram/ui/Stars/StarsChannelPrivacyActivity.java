@@ -23,7 +23,7 @@ public final class StarsChannelPrivacyActivity extends StarsPrivacySettingsActiv
     }
 
     @Override public View createView(Context context) {
-        createSettingsView(context, R.string.StarsPrivacyReactionsHeader, true);
+        createSettingsView(context, R.string.StarsPrivacyReactionsHeader, false);
         addHeader(R.string.StarsPrivacyChannelHeader);
         TextCheckCell privacy = addToggle("stars_channel_private", R.string.StarsChannelPrivate,
             StarsPrivacyMockApi.isChannelPrivate(currentAccount, dialogId));
@@ -32,8 +32,7 @@ public final class StarsChannelPrivacyActivity extends StarsPrivacySettingsActiv
         TextCheckCell percentile = addToggle("stars_channel_percentile", R.string.StarsChannelPercentile,
             StarsPrivacyMockApi.showsPercentile(currentAccount, dialogId));
         percentile.setEnabled(StarsPrivacyMockApi.isChannelPrivate(currentAccount, dialogId), null);
-        addInfo(LocaleController.getString(R.string.StarsChannelPercentileInfo) + "\n\n"
-            + LocaleController.getString(R.string.StarsChannelMockInfo));
+        addInfo(LocaleController.getString(R.string.StarsChannelPercentileInfo));
         privacy.setOnClickListener(v -> {
             boolean enabled = !StarsPrivacyMockApi.isChannelPrivate(currentAccount, dialogId);
             Runnable apply = () -> {

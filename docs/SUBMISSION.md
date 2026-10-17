@@ -26,7 +26,7 @@ anonymises receipt details rather than deleting receipts entirely.
   The same setting is available under Privacy and Security → Stars Privacy. Anonymous
   post reactions, no named rankings or selected Star highlights, and receipts with
   only the signed Stars amount, ID and date/time. Every enable attempt opens a native confirmation explaining irreversibility and
-  the cross-device mock; opting out keeps the short notice.
+  future-only opt-out; the control shows simply **On** or **Off**.
 - **Buying Stars:** A native inline visibility notice above purchase packages, with a
   one-tap link to enable privacy. The offline preview uses sample prices and cannot purchase.
 - **Reaction feedback:** Telegram's existing slider, flying 3D Star, Lottie effects,
@@ -44,8 +44,9 @@ anonymises receipt details rather than deleting receipts entirely.
 
 The demo also shows a selected Star before privacy, the same post without its
 personal marker afterward, and a completed private send with only the aggregate
-count visible. Intended account-wide protection across devices is disclosed in the
-confirmation; this offline prototype does not actually synchronize another device.
+count visible. The confirmation describes intended account-wide protection in
+customer-facing language. This offline prototype does not actually synchronize
+another device; that limitation is documented here and in the README.
 
 The code is a working **client prototype**. The video uses an offline Android emulator
 and fixture data, without a Telegram account, phone number or real payments. The
@@ -60,7 +61,8 @@ client. Anonymous leaderboard identity alone is not full payment anonymity.
 Channel enforcement, anonymous live reactions, permanent history redaction,
 percentiles, retroactive hiding of existing leaderboard positions, and separate future
 public contributions after account-wide protection
-are **local API mocks**. They spend no Stars and are marked Preview. Telegram's
+are **local API mocks**. They spend no Stars. The customer-facing UI simulates the
+finished product; technical mock disclosures live in the README and these notes. Telegram's
 servers, recipient ledgers, payment providers, other clients and backups are unchanged.
 Local hidden presentation is not secure deletion. Clearing app data or using another
 client can reveal real server records again.
@@ -171,7 +173,8 @@ repository with its submodules is the complete reproducible source.
 ## Before sending
 
 - [ ] Open the newly generated MP4 and inspect it from start to finish.
-- [ ] Confirm that its sample-data/Preview captions and API limitations are clear.
+- [ ] Include the README and API limitations with the finished-product UI demo;
+      make clear that sample transactions are fictitious and cross-device protection is mocked.
 - [ ] Inspect `MESSAGE.txt`, selected screenshots and the package contents.
 - [ ] Verify the pinned revision is present in the public fork and the checksums match.
 - [ ] Send the draft message, source link and MP4 to `@designers` when ready.

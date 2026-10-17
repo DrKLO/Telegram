@@ -151,12 +151,11 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
         }
         StarsIntroActivity.StarsOptionsSheet sheet = new StarsIntroActivity.StarsOptionsSheet(getContext(), getResourceProvider()) {
             @Override protected ArrayList<TL_stars.TL_starsTopupOption> getOptions() { return options; }
-            @Override protected CharSequence getPurchaseTerms() { return LocaleController.getString(R.string.StarsPurchasePreviewInfo); }
             @Override public void onItemClick(UItem item, UniversalAdapter adapter) {
                 if (item.object instanceof TL_stars.TL_starsTopupOption) {
                     // Preview taps never enter billing or activate an account.
                     BulletinFactory.of(getContainer(), getResourceProvider())
-                        .createSimpleBulletin(R.raw.stars_topup, LocaleController.getString(R.string.StarsPurchasePreviewInfo)).show();
+                        .createSimpleBulletin(R.raw.stars_topup, LocaleController.getString(R.string.StarsPurchaseUnavailable)).show();
                 } else {
                     super.onItemClick(item, adapter);
                 }
@@ -273,7 +272,7 @@ public final class StarsPrivacyPreview extends BaseFragment implements Notificat
             pendingPeer = StarsPrivacy.resolvePeer(currentAccount, -CHANNEL, requestedPeer);
             Bulletin.TwoLineAnimatedLottieLayout layout = new Bulletin.TwoLineAnimatedLottieLayout(getContext(), getResourceProvider());
             layout.setAnimation(R.raw.stars_topup);
-            layout.titleTextView.setText(LocaleController.getString(pendingLive ? R.string.StarsPrivacyLivePreview : StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL) ? R.string.StarsChannelPending : pendingPeer == UserObject.ANONYMOUS ? R.string.StarsPrivacyPending : R.string.StarsPendingTitle));
+            layout.titleTextView.setText(LocaleController.getString(pendingLive ? R.string.StarsPrivacyPending : StarsPrivacyMockApi.isChannelPrivate(currentAccount, -CHANNEL) ? R.string.StarsPrivacyPending : pendingPeer == UserObject.ANONYMOUS ? R.string.StarsPrivacyPending : R.string.StarsPendingTitle));
             Bulletin.UndoButton undo = new Bulletin.UndoButton(getContext(), true, false, getResourceProvider());
             undo.setText(LocaleController.getString(R.string.StarsSentUndo));
             undo.setUndoAction(this::cancelPending);

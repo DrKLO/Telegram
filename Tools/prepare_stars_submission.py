@@ -18,7 +18,7 @@ NATIVE_SCREENSHOT_CAPTIONS = {
     '03b-public-history.png': ('Before privacy', 'Illustrative transactions show public channel names and bundled avatars, with today’s date and signed amounts.'),
     '03c-public-receipt.png': ('Identifiable receipt', 'The native receipt includes the sample channel and post link before privacy is enabled. No real payment is represented.'),
     '03d-public-selected-star.png': ('Selected Star before privacy', 'The real post shows a selected Star before the personal privacy preference is enabled.'),
-    '03f-privacy-confirmation.png': ('Confirm private Stars', 'Every enable attempt explains irreversible protection, future-only opt-out and the cross-device server limitation.'),
+    '03f-privacy-confirmation.png': ('Confirm private Stars', 'Every enable attempt explains irreversible protection and future-only opt-out in customer-facing language.'),
     '03e-private-unselected-star.png': ('Personal marker removed', 'The same post no longer marks the Star as yours. Its aggregate count remains visible.'),
     '03a-privacy-enabled.png': ('Make my Stars private', 'The gold Star and closing-lock motion sit directly above the real transaction history.'),
     '05a-transaction-history.png': ('Privacy beside history', 'The animated privacy control sits above the real transaction list. Amounts remain visible.'),
@@ -36,7 +36,7 @@ NATIVE_SCREENSHOT_CAPTIONS = {
     '11-post-reaction-sheet.png': ('Post reaction', 'Long-pressing the real Star opens Telegram’s production slider sheet.'),
     '12-post-undo.png': ('20-second Undo', 'A Star tap runs the native effect and pending-send countdown; a completed send creates a receipt.'),
     '13-post-sent.png': ('Private Star after sending', 'The native animation and aggregate count remain, with no personal selected marker after the send completes.'),
-    '16a-channel-privacy-confirmation.png': ('Channel privacy disclaimer', 'The admin enable dialog explains irreversible protection and the cross-device mock before changing the draft.'),
+    '16a-channel-privacy-confirmation.png': ('Channel privacy disclaimer', 'The admin enable dialog explains irreversible protection and future-only opt-out before changing the draft.'),
     '17-channel-privacy.png': ('Channel admin controls', 'Keep Stars anonymous sits below Enable Paid Reactions, with native Update/Discard behavior. Enforcement remains a local API mock.'),
     '18-channel-percentile.png': ('Your donor percentile', 'Large animated numbers replace named rankings. Only the donor sees this coarse aggregate; personal privacy can remain enabled.'),
     '18a-percentile-preview-100.png': ('Projected rank · Top 100%', 'Moving the real Stars slider previews a donor-only percentile without sending a reaction.'),
@@ -52,7 +52,7 @@ SCREENSHOT_CAPTIONS = {
     'stars-privacy-enable-confirmation-dark.png': ('Confirmation · dark', 'The same disclaimer uses Telegram’s native dark dialog palette.'),
     'stars-history-privacy-light.png': ('Make my Stars private', 'The animated native privacy control sits directly above transaction history.'),
     'stars-history-privacy-dark.png': ('History control · dark', 'The same control and minimal receipt rows use Telegram’s dark theme.'),
-    'stars-privacy-settings-light.png': ('Personal settings', 'Private reactions, history anonymisation and the prototype’s limitations in native settings cells.'),
+    'stars-privacy-settings-light.png': ('Personal settings', 'Private reactions and irreversible history anonymisation in native settings cells.'),
     'stars-privacy-off-notice.png': ('Opt-out notice', 'A brief notice explains that only new reactions can become public.'),
     'stars-purchase-privacy-light.png': ('Before buying Stars', 'The purchase sheet explains profile visibility and offers a one-tap privacy action.'),
     'stars-purchase-privacy-enabled.png': ('Purchase privacy enabled', 'The notice updates immediately after enabling privacy; sample packages cannot purchase.'),
@@ -119,6 +119,7 @@ def main():
     shutil.copy2(artifacts / 'native-ui-qa.json', destination / 'native-ui-qa.json')
     for name in DOCUMENTS:
         (destination / name).write_bytes(git('show', revision + ':docs/' + name))
+    (destination / 'README.md').write_bytes(git('show', revision + ':README.md'))
     # A feature-only patch, applied on the published offline setup baseline.
     (destination / 'feature.patch').write_bytes(git('diff', '--binary', BASE, revision))
     (destination / 'LICENSE').write_bytes(git('show', revision + ':LICENSE'))

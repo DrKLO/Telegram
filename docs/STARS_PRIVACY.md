@@ -69,13 +69,15 @@ receipt and ranking contain only the new amount. Opening or dismissing its sheet
 calls `messages.togglePaidReactionPrivacy` for the old contribution. Telegram's
 [current privacy API](https://core.telegram.org/method/messages.togglePaidReactionPrivacy)
 addresses a whole post, so we do not assume it can safely split a sender's
-past private and future public contributions. These sends are marked Preview and spend
+past private and future public contributions. These sends are mocked and spend
 no Stars; ordinary anonymous sends while privacy is on still use the supported API.
 
 **Enable confirmation.** Every user-initiated enable attempt opens a native Telegram
 AlertDialog before changing privacy. It explains that existing activity cannot be
-made public again, that switching off affects future reactions only, and that the
-intended protection across all devices is simulated pending Telegram server support.
+made public again and that switching off affects future reactions only. Its
+customer-facing copy describes the intended protection on all devices. Cross-device
+behavior remains a local mock; this engineering limitation belongs in the README
+and submission notes, outside the simulated product UI.
 History, personal settings, purchase links and purchase accessibility actions share
 this confirmation. Cancel does not change privacy or seal a history boundary. Rapid
 repeated requests reuse one dialog. Channel-admin enable actions use the same native
@@ -137,10 +139,10 @@ clock model is used for ordinary reactions, live reactions and the offline previ
 **Buying Stars.** Both Buy Stars and the insufficient-balance purchase sheet show a
 short native notice above the packages. When privacy is off: “Star reactions may
 show your profile in Top Senders when privacy is off. Make my Stars private.” The
-last phrase is an inline link that enables the same setting immediately and protects
-past activity in the mock. The notice updates to confirm privacy is on. Its inline action is also exposed to accessibility services. It does not
+last phrase is an inline link that opens the same enable confirmation and then
+protects past activity in the mock. The notice updates to confirm privacy is on. Its inline action is also exposed to accessibility services. It does not
 start a purchase. The offline preview uses the production Buy Stars sheet with sample
-packages and a no-purchase footer; package taps cannot enter billing.
+packages and the native terms footer; package taps cannot enter billing.
 
 Past own live reactions are also projected anonymously, including late-loaded history.
 A generation boundary keeps live highlights and rankings from reusing old totals; new
@@ -185,8 +187,9 @@ channel component-test page remains available only through the test playground.
 New mock receipt rows enter with a short alpha animation. The large donor-only
 percentile uses Telegram's animated number renderer, a subtle 6 dp entrance and
 its native easing, respecting reduced-motion settings. Anonymous live chips use
-Telegram's existing monochrome lock instead of the purple incognito avatar. A hidden percentile disappears immediately. Preview reaction
-sheets show a no-payment caption in the native footer instead of payment terms.
+Telegram's existing monochrome lock instead of the purple incognito avatar. A hidden percentile disappears immediately. Reaction
+and purchase sheets keep Telegram's normal terms footer. Offline purchase taps
+remain blocked and show the existing “Purchasing stars is not available at this time.” notice.
 Sensitive receipt details are removed immediately rather than faded out on screen.
 
 ## Existing API versus proposed API
@@ -202,11 +205,14 @@ Sensitive receipt details are removed immediately rather than faded out on scree
 | Enforced channel policy and donor percentile | `StarsPrivacyMockApi`, local admin state and aggregate fixtures; channel-policy reactions are simulated |
 | Irreversible history anonymisation and private-channel receipt redaction | Persisted local mock of a server redaction contract; no Telegram ledger mutation |
 
-The mocked flows are marked **Preview** at their controls/send surface. They remain
-usable, including live Stars. A normal anonymous post reaction in a credentialed
-live build still uses the existing payment API; the prototype does not silently
-replace those supported anonymous payments with mocks. Public contributions after account-wide protection
-use the explicitly labelled mock described above.
+The product screens intentionally simulate the finished customer experience:
+short **On/Off** status, native confirmations and no preview/server explanations in
+privacy dialogs, tooltips, send banners or history actions. These documents and
+the submission describe the mocked behavior. Live Stars remain usable in the demo.
+A normal anonymous post reaction in a credentialed live build still uses the
+existing payment API; public contributions after account-wide protection use the
+mock described above. Removing preview copy does not change payment routing or
+add any server capability.
 
 This is not proof of full payment anonymity. The existing API's anonymous leaderboard
 identity does not make a transfer unlinkable to Telegram, a payment provider or the
@@ -250,8 +256,10 @@ These are proposed capabilities, not existing TL methods:
 
 The current boundary is `StarsPrivacyMockApi`. It deliberately has no network or
 payment calls. Its local state models the missing server responses so the design
-can be evaluated now. Replace it with negotiated server support rather than merely
-removing the Preview labels. Existing Telegram servers do not enforce these policies.
+can be evaluated now. It must be replaced with negotiated server support before
+shipping the intended product behavior. Existing Telegram servers do not enforce
+these policies; the finished-product wording in this design exercise is not
+evidence of server implementation.
 
 Relevant existing API documentation:
 [paid reactions](https://core.telegram.org/api/reactions#paid-reactions),

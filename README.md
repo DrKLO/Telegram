@@ -22,7 +22,19 @@ push notifications are deliberately disabled.
 **Settings → Telegram Stars** to try the personal privacy setting,
 native 20-second Undo, channel-admin controls, minimal receipts, irreversible
 history anonymisation and live Stars. Missing Telegram server capabilities are
-usable local mocks, marked Preview; no Stars are spent in the offline app.
+usable local mocks; no Stars are spent in the offline app.
+
+**Design simulation and API limitations.** The customer-facing screens show the
+intended finished experience, including protection across all devices. Dialogs
+explain irreversible changes without implementation notes, and the history switch
+shows simply **On** or **Off**. Cross-device synchronization, retroactive leaderboard
+removal, permanent server-side history redaction, channel enforcement, anonymous
+live reactions and donor percentiles are simulated locally. This client does not
+change other devices, Telegram server records, recipient ledgers or backups;
+clearing local data can expose real server records again. These capabilities need
+Telegram server changes before production use. The offline build has no Internet
+or billing permission. See [the API boundary](docs/STARS_PRIVACY.md#existing-api-versus-proposed-api)
+and [submission limitations](docs/SUBMISSION.md#existing-api-and-required-server-work).
 Follow the [native-screen walkthrough](docs/NATIVE_UI.md) for channel and live-story paths.
 Run `./dev native-test` for production navigation and `./dev privacy-test` for detailed feature checks, including a real five-minute
 expiry wait. See the [QA report](docs/QA.md) for findings and remaining validation gaps.

@@ -87,7 +87,7 @@ public class NativeStarsFlowTest {
         demoStart("privacy_enable");
         click("Make my Stars private");
         assertWindowText("cannot be made public again");
-        assertWindowText("All devices");
+        assertWindowText("all your devices");
         screenshot("03f-privacy-confirmation.png");
         Thread.sleep(5000);
         confirmPrivate();
@@ -167,7 +167,7 @@ public class NativeStarsFlowTest {
             privacyLink[1] += text.getTotalPaddingTop() + (layout.getLineTop(line) + layout.getLineBottom(line)) / 2;
         });
         press(privacyLink, false);
-        assertWindowText("All devices");
+        assertWindowText("all your devices");
         screenshot("04d-purchase-privacy-confirmation.png");
         confirmPrivate();
         instrumentation.runOnMainSync(() -> assertTrue(org.telegram.ui.Stars.StarsPrivacy.isEnabled(0)));
@@ -247,7 +247,7 @@ public class NativeStarsFlowTest {
         back(); // Close the production emoji keyboard before scrolling the settings.
         screenshot("16-channel-reactions.png");
         click("Keep Stars anonymous");
-        assertWindowText("All devices");
+        assertWindowText("all devices");
         screenshot("16a-channel-privacy-confirmation.png");
         confirmPrivate(false);
         instrumentation.runOnMainSync(() -> assertFalse("Draft must not change channel policy", org.telegram.ui.Stars.StarsPrivacyMockApi.isChannelPrivate(0, -OfflineTelegramData.CHANNEL)));

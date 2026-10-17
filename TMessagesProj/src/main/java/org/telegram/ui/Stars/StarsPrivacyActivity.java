@@ -35,7 +35,7 @@ public class StarsPrivacyActivity extends StarsPrivacySettingsActivity {
         TextSettingsCell history = new TextSettingsCell(context, getResourceProvider());
         history.setTag("stars_history_anonymise");
         history.setTextAndValue(LocaleController.getString(R.string.StarsHistoryAnonymiseAction),
-            LocaleController.getString(R.string.StarsPrivacyPreviewLabel), false);
+            null, false);
         history.setOnClickListener(v -> setVisibleDialog(StarsHistoryPrivacy.confirm(context, currentAccount, null,
             getResourceProvider(), () -> showFeedback(R.raw.contact_check, R.string.StarsHistoryAnonymisedNotice))));
         content.addView(history, LayoutHelper.createLinear(-1, -2));

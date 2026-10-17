@@ -69,7 +69,7 @@ does not verify login, billing, real live video or server enforcement.
 | The submission packager could include screenshots unrelated to its recording revision. | It now requires a passing suite on the same clean commit and checks screenshot hashes before creating the package. Python tests reject dirty/stale/failed QA and changed screenshots. |
 | The offline host used only the legacy Back override. | It now registers Android 13+ system Back and retains the older-device fallback. Native navigation tests send real Back key events instead of calling the Activity method directly. |
 | Android Lint interpreted the literal “10%” in the donor explanation as a formatting directive. | Both language resources mark this explanation as unformatted text. The actual percentile label retains its numeric format argument. |
-| Long live/channel pending titles clipped the “Preview” label beside Undo. | Shorter English and Russian titles keep the mock status visible in the native banner. The Star count remains in the subtitle. |
+| Long live/channel pending titles clipped beside Undo. | Short English and Russian sending titles fit the native banner. The Star count remains in the subtitle; mock disclosures now live in the README and submission notes. |
 | Verification documentation still described ten tests and an untested five-minute expiry. | The report and submission guide now describe the expanded suite and separate remaining limitations. |
 
 ## Verification
@@ -186,9 +186,12 @@ visually before sharing a generated package.
 The privacy suite now includes `privacyEnableConfirmation` (18 scenarios total).
 It checks the native modal at the history control, personal setting and purchase
 link, repeated enable attempts, cancellation without a new privacy boundary, the
-cross-device limitation copy and dark appearance. Purchase accessibility actions
+customer-facing all-device copy, absence of preview/server explanations and dark appearance. Purchase accessibility actions
 share the confirmation. Rapid requests reuse a single modal; channel privacy uses
 the same pattern while preserving the editor’s Save/Discard behavior. Native flow
 tests compare the real selected Star before privacy, after enabling it, and after a
 completed private send. They verify that the aggregate reaction remains visible.
-No test claims real synchronization between devices; that is proposed server work.
+The history control checks exact **On** and **Off** subtitles. Both single-receipt
+and all-history confirmations explain retained amounts, IDs, dates and times and
+irreversibility, without implementation jargon. No test claims real synchronization
+between devices; that is proposed server work documented in the README.

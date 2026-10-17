@@ -2642,7 +2642,6 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         }
 
         protected CharSequence getPurchaseTerms() {
-            if (org.telegram.messenger.OfflineDemo.enabled()) return getString(R.string.StarsPurchasePreviewInfo);
             return AndroidUtilities.replaceSingleTag(getString(R.string.StarsTOS), () ->
                 Browser.openUrl(getContext(), getString(R.string.StarsTOSLink)));
         }
@@ -2682,7 +2681,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 recyclerListView.smoothScrollBy(0, dp(300));
             } else if (item.instanceOf(StarTierView.Factory.class)) {
                 if (org.telegram.messenger.OfflineDemo.enabled()) {
-                    BulletinFactory.of(getContainer(), resourcesProvider).createSimpleBulletin(R.raw.stars_topup, getString(R.string.StarsPurchasePreviewInfo)).show();
+                    BulletinFactory.of(getContainer(), resourcesProvider).createSimpleBulletin(R.raw.stars_topup, getString(R.string.StarsPurchaseUnavailable)).show();
                     return;
                 }
                 if (item.object instanceof TL_stars.TL_starsTopupOption) {
@@ -3858,7 +3857,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         BottomSheet sheet = new BottomSheet.Builder(context, false, resourcesProvider).setCustomView(content).create();
         if (!StarsPrivacyMockApi.isAnonymised(currentAccount, transaction)) {
             org.telegram.ui.Cells.TextSettingsCell anonymise = new org.telegram.ui.Cells.TextSettingsCell(context);
-            anonymise.setTextAndValue(getString(R.string.StarsReceiptAnonymise), getString(R.string.StarsPrivacyPreviewLabel), false);
+            anonymise.setTextAndValue(getString(R.string.StarsReceiptAnonymise), null, false);
             anonymise.setBackground(Theme.getSelectorDrawable(true));
             anonymise.setOnClickListener(v -> StarsHistoryPrivacy.confirm(context, currentAccount, transaction, resourcesProvider, sheet::dismiss));
             content.addView(anonymise, LayoutHelper.createLinear(-1, -2));

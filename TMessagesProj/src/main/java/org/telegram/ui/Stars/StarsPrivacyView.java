@@ -121,7 +121,7 @@ public final class StarsPrivacyView extends LinearLayout implements Notification
         boolean changed = checked != enabled;
         checked = enabled;
         toggle.setChecked(enabled, animated);
-        subtitle.setText(LocaleController.getString(enabled ? R.string.StarsPrivacyHistoryPrivate : R.string.StarsPrivacyHistoryFuture));
+        subtitle.setText(LocaleController.getString(enabled ? R.string.StarsPrivacyOn : R.string.StarsPrivacyOff));
         setContentDescription(title.getText() + ". " + subtitle.getText());
         if (!changed && animated) return;
         cancelMotion();

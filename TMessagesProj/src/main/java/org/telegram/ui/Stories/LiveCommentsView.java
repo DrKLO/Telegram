@@ -1014,8 +1014,7 @@ public class LiveCommentsView extends FrameLayout implements NotificationCenter.
     }
 
     private String getStarsToastTitle() {
-        if (StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyLivePreview);
-        if (mockStars) return getString(R.string.StarsReactionPreviewPending);
+        if (StarsPrivacy.isPrivate(currentAccount, dialogId)) return getString(R.string.StarsPrivacyPending);
         return getString(R.string.StarsPendingTitle);
     }
 

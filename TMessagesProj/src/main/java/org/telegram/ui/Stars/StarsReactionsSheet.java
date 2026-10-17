@@ -652,8 +652,6 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         termsView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         if (liveStories && !sendEnabled) {
             termsView.setText(getString(R.string.LiveStoryReactAdminCant));
-        } else if (StarsPrivacy.usesMockSend(currentAccount, messageObject) || liveStories && (privateStars || protectedPost)) {
-            termsView.setText(getString(R.string.StarsPrivacyMockReactionInfo));
         } else {
             termsView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.StarsReactionTerms), () -> {
                 Browser.openUrl(context, getString(R.string.StarsReactionTermsLink));
@@ -911,7 +909,6 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     /** An offline fixture has no real balance or top-up flow. */
     public void setOfflinePreview() {
         balanceCloud.setVisibility(View.GONE);
-        termsView.setText(getString(R.string.StarsPrivacyMockReactionInfo));
     }
 
     // The native flying Star can land on the pending bulletin while payment awaits Undo.
