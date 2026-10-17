@@ -2,6 +2,7 @@
 """Cut genuine UI captures at device-time markers and add a separate caption band."""
 import hashlib
 import re
+import struct
 import subprocess
 
 
@@ -50,6 +51,29 @@ def parse_marks(output):
     if pending:
         raise ValueError('Unfinished demo clips: ' + ', '.join(pending))
     return complete
+
+
+def frame_clock(data):
+    """Read Android screenrecord's Winscope v2 elapsed-realtime frame timestamps.
+
+    Format: https://android.googlesource.com/platform/frameworks/av/+/master/cmds/screenrecord/screenrecord.cpp
+    The first encoded frame, rather than shell-command launch, is video time zero.
+    """
+    magic = b'#VV1NSC0PET1ME2#'
+    offset = data.find(magic)
+    if offset < 0 or data.find(magic, offset + len(magic)) >= 0:
+        raise ValueError('Missing or ambiguous screenrecord frame clock')
+    offset += len(magic)
+    if len(data) < offset + 16:
+        raise ValueError('Truncated screenrecord frame clock')
+    version, _, count = struct.unpack_from('<IqI', data, offset)
+    if version != 2 or not 1 <= count <= 1000000 or len(data) < offset + 16 + count * 8:
+        raise ValueError('Invalid screenrecord frame clock')
+    times = struct.unpack_from('<' + str(count) + 'Q', data, offset + 16)
+    if any(b <= a for a, b in zip(times, times[1:])):
+        raise ValueError('Non-monotonic screenrecord frame clock')
+    return {'start_seconds': times[0] / 1e9, 'last_frame_seconds': times[-1] / 1e9,
+            'frame_count': count, 'timebase': 'Android screenrecord Winscope v2 elapsed realtime'}
 
 
 def plan_cuts(recordings):

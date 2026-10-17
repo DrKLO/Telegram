@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import time
 import uuid
-from edit_stars_demo import parse_marks, duration, render
+from edit_stars_demo import parse_marks, duration, render, frame_clock
 
 ROOT = Path(__file__).resolve().parents[1]
 loader = importlib.machinery.SourceFileLoader('features_lab', str(ROOT / 'dev'))
@@ -52,6 +52,13 @@ def main():
                     capture_output=True, text=True, timeout=175)
                 results.append(result.stdout + result.stderr)
                 (out / 'stars-privacy-demo-test.txt').write_text('\n'.join(results))
+                if result.returncode == 0 and re.search(r'OK \(\d+ tests?\)', result.stdout):
+                    # Static screens may emit no new frames. A real navigation event
+                    # after every end marker flushes the held final screen into MP4.
+                    # This Home transition lies outside all edited clips.
+                    lab.adb('shell', 'input', 'keyevent', 'KEYCODE_HOME', serial=serial)
+                    time.sleep(1)
+
             except subprocess.TimeoutExpired as error:
                 partial = error.stdout or b''
                 if isinstance(partial, bytes): partial = partial.decode(errors='replace')
@@ -70,8 +77,9 @@ def main():
             raise SystemExit('Native walkthrough failed: ' + method + '. Previous video preserved.')
         segment = out / ('native-demo-' + str(index) + '.mp4')
         lab.adb('pull', remote + '.mp4', segment, serial=serial)
-        start_seconds = float(lab.adb('shell', 'cat', remote + '.start', serial=serial, capture=True).stdout.split()[0])
-        recordings.append({'file': segment.name, 'method': method, 'start_seconds': start_seconds,
+        command_start = float(lab.adb('shell', 'cat', remote + '.start', serial=serial, capture=True).stdout.split()[0])
+        clock = frame_clock(segment.read_bytes())
+        recordings.append({'file': segment.name, 'method': method, 'command_start_seconds': command_start, **clock,
                            'duration_seconds': duration(ffmpeg, segment),
                            'sha256': hashlib.sha256(segment.read_bytes()).hexdigest(),
                            'marks': parse_marks(result.stdout)})

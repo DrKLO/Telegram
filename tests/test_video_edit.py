@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import struct
 
 spec = importlib.util.spec_from_file_location('video_edit', Path(__file__).resolve().parents[1] / 'Tools/edit_stars_demo.py')
 edit = importlib.util.module_from_spec(spec)
@@ -43,6 +44,21 @@ class VideoEditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Duplicate'): edit.plan_cuts(recordings * 2)
         recordings[0]['marks']['slider_percentile'] = (70, 195)
         with self.assertRaisesRegex(ValueError, 'pacing'): edit.plan_cuts(recordings)
+
+    def test_frame_clock_uses_encoded_frame_time(self):
+        metadata = b'#VV1NSC0PET1ME2#' + struct.pack('<IqIQQ', 2, 999, 2, 12300000000, 13500000000)
+        clock = edit.frame_clock(b'mp4 prefix' + metadata + b'mp4 suffix')
+        self.assertEqual(12.3, clock['start_seconds'])
+        self.assertEqual(13.5, clock['last_frame_seconds'])
+        self.assertEqual(2, clock['frame_count'])
+
+    def test_missing_truncated_or_invalid_frame_clock_is_rejected(self):
+        magic = b'#VV1NSC0PET1ME2#'
+        valid = magic + struct.pack('<IqIQQ', 2, 0, 2, 100, 200)
+        for invalid in [b'', magic, valid[:-1], valid + valid,
+                        magic + struct.pack('<IqI', 1, 0, 0),
+                        magic + struct.pack('<IqIQQ', 2, 0, 2, 200, 100)]:
+            with self.assertRaises(ValueError): edit.frame_clock(invalid)
 
     def test_caption_band_has_separate_positions_and_escapes_overrides(self):
         self.assertEqual('0:01:00.00', edit.ass_time(59.999))

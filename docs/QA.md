@@ -172,8 +172,11 @@ prosecution, disclosure, device inspection or correlation of amounts and timesta
 
 ## Edited video validation
 
-The Python suite now has 17 tests, including device-clock marker pairing, missing
-or out-of-bounds cut rejection, pacing bounds and caption escaping. The recording
+The Python suite now has 19 tests, including device-clock marker pairing, encoded
+frame-clock validation, missing or out-of-bounds cut rejection, pacing bounds and
+caption escaping. Recording aligns cuts with Android’s embedded Winscope frame
+timestamps. After each completed scenario, a Home transition outside the cut list
+flushes static final frames before recording stops. The recording
 helper preserves the previous demo if a scenario fails. Each cut uses actual UI
 frames at normal speed; a separate caption band avoids covering controls. The
 renderer decodes the completed MP4 before replacing the demo. The manifest includes
