@@ -40,9 +40,11 @@ public. Past private activity stays private.** Enabling privacy has a matching n
 
 When enabled, every new ordinary post reaction explicitly uses Telegram's
 `paidReactionPrivacyAnonymous`. Top Senders, the identity selector, selected Star
-highlights and transaction details are hidden. History rows and receipts show
-only transaction ID and date/time. Incoming/outgoing tabs are hidden. They also remain hidden after history anonymisation
-to avoid revealing a redacted record through its direction. TON transactions are outside
+highlights and identifying transaction details are hidden. History rows and receipts show
+only the signed Stars amount, transaction ID and date/time. Amounts use Telegram’s
+native Star icon, number formatting and incoming/outgoing colours. Private receipts
+show the same amount in the native table. Incoming/outgoing tabs remain hidden in the
+privacy view; the amount’s sign still indicates whether Stars were received or spent. TON transactions are outside
 this Stars feature. Aggregate
 reaction counts and Telegram's existing animations remain.
 
@@ -80,7 +82,10 @@ percentile audience; no donor names or individual amounts appear in it.
 transactions through the confirmation time, including unloaded pages. There is no
 restore action. Mock tombstones survive process restarts and re-fetches, and cannot
 be reversed by disabling either privacy switch. A redacted receipt contains only
-ID and timestamp; its local TL representation has no peer, title, message or amount.
+signed Stars amount, ID and timestamp; its local TL representation has no peer, title
+or message. Amounts (including fractional Stars) survive redaction, re-fetches and
+privacy toggles. Mock post, channel and live receipts retain the actual Stars sent
+as a negative amount.
 Anonymisation is used instead of deleting the remaining receipt, so a user can still
 refer to its ID. Future transactions are outside an all-history cutoff.
 
@@ -145,7 +150,7 @@ This is not proof of full payment anonymity. The existing API's anonymous leader
 identity does not make a transfer unlinkable to Telegram, a payment provider or the
 recipient's accounting records. The personal switch does not rewrite past public
 reactions on Telegram's servers. Minimal local presentation is not secure deletion of cached messages, account
-files, backups or a server ledger. Transaction IDs and times can still be correlated.
+files, backups or a server ledger. Transaction amounts, IDs and times can still be correlated.
 The mock's protection keys and public contribution counters are themselves local app
 data, not an encrypted or erased ledger. Clearing that data or using another client
 can reveal real server records again. These limitations must accompany the submission.
@@ -158,7 +163,8 @@ These are proposed capabilities, not existing TL methods:
    clients, with admin authorization and updates when the policy changes.
 2. Anonymous live reactions separated from named paid comments, with explicit
    capability negotiation, idempotent sends and anonymous receipt responses.
-3. Minimal receipts whose schema omits sender/recipient/message/amount fields,
+3. Minimal receipts that retain signed Stars amounts, IDs and dates while omitting
+   sender, recipient and message fields,
    plus a server-side irrevocable redaction operation by ID or history cutoff.
    Every history page, search, export, cache refresh and other signed-in client
    must honour it. Define retention, backups and recipient-ledger behaviour.
@@ -195,7 +201,7 @@ The privacy suite exercises real native views and the production reaction contro
 account isolation; deadline/cancellation/rollback; a balance refresh during Undo;
 light/dark settings and sheets; native toggle notices; protected history after disable;
 new public receipts on the same post; explicit anonymous choices after opt-out;
-row reuse; live mock sends; channel overrides;
+row reuse; signed, zero, large and fractional Stars amounts; live mock sends; channel overrides;
 five-minute boundary logic; percentile thresholds; irreversible single/all history
 redaction, unloaded pages and process restart. No live API account is used.
 
@@ -214,9 +220,12 @@ API behaviour in the video caption. Review [SUBMISSION.md](SUBMISSION.md) before
 
 On the Apple Silicon Mac / Android 16 ARM64 AOSP emulator:
 
-- All nine privacy instrumentation scenarios passed, including a real 20-second wait,
+- All ten privacy instrumentation scenarios passed, including a real 20-second wait,
   late Undo, a production-controller mock commit, a fresh-process history check,
   theme updates, rapid toggle reversals, Russian label fit and native switch accessibility.
+  Amount checks cover signed, zero, large and fractional values, native row/receipt
+  presentation, mock sends, immutable redaction and process restart. The late-Undo
+  test measures from the send’s monotonic timestamp so screenshot time cannot extend its wait.
   The history control also passed with Android system animations disabled.
 - Both original offline playground smoke tests passed.
 - All eleven Python helper/package tests passed.

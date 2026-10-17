@@ -15,7 +15,7 @@ SCREENSHOTS = ['stars-privacy-settings-light.png', 'stars-privacy-settings-dark.
                'stars-private-reaction-sheet.png', 'stars-private-transaction.png',
                'stars-channel-dark-polished.png', 'stars-privacy-settings-russian.png',
                'stars-history-privacy-light.png', 'stars-history-privacy-dark.png',
-               'stars-history-privacy-russian.png']
+               'stars-history-privacy-russian.png', 'stars-private-amounts.png']
 
 
 def git(*args):
@@ -54,7 +54,7 @@ def main():
         shutil.copy2(artifacts / 'stars-privacy' / name, images / name)
     (destination / 'MESSAGE.txt').write_text(
         'Private Star Reactions — Telegram Android concept\n\n'
-        'A private-by-default way to support channels: anonymous reactions, minimal receipts, '
+        'A private-by-default way to support channels: anonymous reactions, receipts showing only Stars amounts, IDs and dates, '
         'a 20-second Undo, and past private activity that stays hidden after opting out. '
         'The Make my Stars private control sits beside transaction history, with Telegram\'s '
         'gold Star and closing-lock animation. Built with native components, with channel controls, '

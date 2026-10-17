@@ -11539,7 +11539,7 @@
     <!-- Personal Stars privacy -->
     <string name="StarsPrivacyTitle">Stars Privacy</string>
     <string name="StarsPrivacySwitch">Private Star Reactions</string>
-    <string name="StarsPrivacyDescription">Send anonymously, without Top Senders or selected Star highlights. History keeps only IDs, dates and times. Animations stay the same. You have 20 seconds to undo.</string>
+    <string name="StarsPrivacyDescription">Send anonymously, without Top Senders or selected Star highlights. History keeps only amounts, IDs, dates and times. Animations stay the same. You have 20 seconds to undo.</string>
     <string name="StarsPrivacyScope">Turning this off affects new reactions only. Past private activity stays hidden in this app. Records on Telegram and other devices are unchanged.</string>
     <string name="StarsPrivacyActive">Private reactions are on</string>
     <string name="StarsPrivacyPending">Sending Stars anonymously</string>
@@ -11553,7 +11553,7 @@
     <string name="StarsPrivacyPreviewLabel">Preview</string>
     <string name="StarsChannelPrivacy">Star reaction privacy</string>
     <string name="StarsChannelPrivate">Require anonymous reactions</string>
-    <string name="StarsChannelPrivateInfo">Hide donor names and leaderboards. Receipts keep only IDs, dates and times. Selected Star highlights clear after 5 minutes, or stay hidden with personal privacy on. Animations and total counts stay the same.</string>
+    <string name="StarsChannelPrivateInfo">Hide donor names and leaderboards. Receipts keep only amounts, IDs, dates and times. Selected Star highlights clear after 5 minutes, or stay hidden with personal privacy on. Animations and total counts stay the same.</string>
     <string name="StarsChannelPercentile">Show donor percentile</string>
     <string name="StarsChannelPercentileInfo">Donors can see their rounded percentile, such as Top 10%, for 5 minutes. Only they can see it. Hidden with personal privacy on or fewer than 10 donors.</string>
     <string name="StarsChannelMockInfo">Preview: channel rules are simulated on this device. No Stars are spent.</string>
@@ -11562,8 +11562,8 @@
     <string name="StarsHistoryAnonymise">Anonymise transaction history</string>
     <string name="StarsReceiptAnonymise">Anonymise this transaction</string>
     <string name="StarsAnonymise">Anonymise</string>
-    <string name="StarsHistoryAnonymiseInfo">Permanently hide transaction details in this preview. Keep only IDs, dates and times. Long-press a transaction to anonymise just that record.</string>
-    <string name="StarsHistoryAnonymiseConfirm">Keep only transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Existing records on Telegram and other devices remain unchanged.</string>
+    <string name="StarsHistoryAnonymiseInfo">Permanently hide transaction details in this preview. Keep only amounts, IDs, dates and times. Long-press a transaction to anonymise just that record.</string>
+    <string name="StarsHistoryAnonymiseConfirm">Keep only Star amounts, transaction IDs, dates and times?\n\nThis cannot be undone in this preview. Existing records on Telegram and other devices remain unchanged.</string>
     <string name="StarsPrivacyDemoHint">Tap the Star to try a reaction. Hold it to open the reaction sheet.</string>
     <string name="StarsPrivacyMockReactionInfo">Preview reaction. No Stars will be spent.</string>
     <string name="StarsPrivacyEnabledNotice">New reactions are private. Past private activity stays private.</string>
@@ -11575,6 +11575,7 @@
     <string name="StarsPrivacyChannelHeader">Channel Privacy</string>
     <string name="StarsHistoryAnonymiseAction">Anonymise history</string>
     <string name="StarsPrivacyMakePrivate">Make my Stars private</string>
-    <string name="StarsPrivacyHistoryPrivate">On · Only IDs and dates in history</string>
+    <string name="StarsPrivacyHistoryPrivate">On · Amounts, IDs and dates</string>
     <string name="StarsPrivacyHistoryFuture">Off · New reactions only</string>
+    <string name="StarsTransactionAmount">Amount</string>
 </resources>

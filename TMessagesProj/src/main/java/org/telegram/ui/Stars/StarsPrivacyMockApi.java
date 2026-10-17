@@ -71,11 +71,13 @@ public final class StarsPrivacyMockApi {
 
     /** Local-only subtype, never serialized to Telegram. Contains no hidden original record. */
     public static final class RedactedTransaction extends TL_stars.TL_starsTransaction {
-        public RedactedTransaction(String id, int date) {
+        public RedactedTransaction(String id, int date, TL_stars.StarsAmount amount) {
             this.id = id;
             this.date = date;
             peer = new TL_stars.TL_starsTransactionPeerUnsupported();
-            amount = TL_stars.StarsAmount.ofStars(0);
+            // Keep accounting information, without retaining the original record or amount object.
+            this.amount = TL_stars.StarsAmount.ofStars(amount.amount);
+            this.amount.nanos = amount.nanos;
         }
     }
 
@@ -83,13 +85,18 @@ public final class StarsPrivacyMockApi {
         public final String id = "preview-" + UUID.randomUUID();
         public final int date = (int) (System.currentTimeMillis() / 1000L);
         public final long sender = UserObject.ANONYMOUS;
+        private final long stars;
 
-        public TL_stars.StarsTransaction asTransaction() { return new RedactedTransaction(id, date); }
+        private Receipt(long stars) { this.stars = stars; }
+
+        public TL_stars.StarsTransaction asTransaction() {
+            return new RedactedTransaction(id, date, TL_stars.StarsAmount.ofStars(-stars));
+        }
     }
 
     public static Receipt sendAnonymousLiveReaction(long stars) {
         if (stars <= 0) throw new IllegalArgumentException("A reaction must contain Stars");
-        return new Receipt();
+        return new Receipt(stars);
     }
 
     public static Receipt sendChannelReaction(int account, long dialogId, int messageId, long stars) {
@@ -247,6 +254,6 @@ public final class StarsPrivacyMockApi {
             ids.add(transaction.id);
             state(account).edit().putStringSet("redacted_ids", ids).commit();
         }
-        return new RedactedTransaction(transaction.id, transaction.date);
+        return new RedactedTransaction(transaction.id, transaction.date, transaction.amount);
     }
 }

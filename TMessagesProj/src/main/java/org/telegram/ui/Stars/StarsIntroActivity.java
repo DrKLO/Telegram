@@ -1629,7 +1629,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             }
             boolean privateHistory = lastTransaction instanceof StarsPrivacyMockApi.RedactedTransaction;
             imageViewContainer.setVisibility(privateHistory ? GONE : VISIBLE);
-            textLayout.setPadding(privateHistory ? dp(20) : 0, 0, privateHistory ? dp(20) : 0, 0);
+            textLayout.setPadding(privateHistory ? dp(20) : 0, 0, 0, 0);
             if (privateHistory) {
                 threeLines = false;
                 titleTextViewParams.bottomMargin = dp(4.33f);
@@ -1638,8 +1638,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 titleTextView.setText(transaction.id);
                 subtitleTextView.setText("");
                 subtitleTextView.setVisibility(GONE);
-                amountTextView.setText("");
-                amountTextView.setVisibility(GONE);
+                setAmount(lastTransaction.amount, false, true);
                 dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 dateTextView.setText(LocaleController.formatShortDateTime(transaction.date));
                 setWillNotDraw(!(needDivider = divider));
@@ -1858,19 +1857,27 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
                 imageView.setImageDrawable(null);
             }
 
-            if (transaction.amount.amount > 0 || transaction.amount.amount == 0 && transaction.amount.nanos > 0) {
+            setAmount(transaction.amount, isTon, false);
+            setWillNotDraw(!(needDivider = divider));
+        }
+
+        private void setAmount(TL_stars.StarsAmount amount, boolean isTon, boolean showZero) {
+            if (amount.positive()) {
                 amountTextView.setVisibility(View.VISIBLE);
                 amountTextView.setTextColor(Theme.getColor(Theme.key_color_green));
-                amountTextView.setText(TextUtils.concat("+", formatStarsAmount(transaction.amount), " ", isTon ? ton : star));
-            } else if (transaction.amount.amount < 0 || transaction.amount.amount == 0 && transaction.amount.nanos < 0) {
+                amountTextView.setText(TextUtils.concat("+", formatStarsAmount(amount), " ", isTon ? ton : star));
+            } else if (amount.negative()) {
                 amountTextView.setVisibility(View.VISIBLE);
                 amountTextView.setTextColor(Theme.getColor(Theme.key_color_red));
-                amountTextView.setText(TextUtils.concat(formatStarsAmount(transaction.amount), " ", isTon ? ton : star));
+                amountTextView.setText(TextUtils.concat(formatStarsAmount(amount), " ", isTon ? ton : star));
+            } else if (showZero) {
+                amountTextView.setVisibility(View.VISIBLE);
+                amountTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+                amountTextView.setText(TextUtils.concat(formatStarsAmount(amount), " ", star));
             } else {
+                amountTextView.setText("");
                 amountTextView.setVisibility(View.GONE);
             }
-
-            setWillNotDraw(!(needDivider = divider));
         }
 
         public void setLoading() {
@@ -3826,6 +3833,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(16), dp(12), dp(16), dp(16));
         TableView table = new TableView(context, resourcesProvider);
+        table.addRow(getString(R.string.StarsTransactionAmount), replaceStarsWithPlain(transaction.amount,
+            TextUtils.concat(transaction.amount.positive() ? "+" : "", formatStarsAmount(transaction.amount), " ⭐️"), .8f));
         table.addRowMonospaced(getString(R.string.StarsTransactionID), transaction.id, 13, () -> AndroidUtilities.addToClipboard(transaction.id));
         table.addRowDateTime(getString(R.string.StarsTransactionDate), transaction.date);
         content.addView(table, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

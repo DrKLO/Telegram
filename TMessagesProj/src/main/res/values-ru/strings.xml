@@ -267,7 +267,7 @@
     <!-- Personal Stars privacy -->
     <string name="StarsPrivacyTitle">Конфиденциальность звёзд</string>
     <string name="StarsPrivacySwitch">Приватные реакции звёздами</string>
-    <string name="StarsPrivacyDescription">Отправляйте реакции анонимно — без рейтингов и выделенных звёзд. В истории остаются только ID, дата и время. Анимации сохраняются. На отмену есть 20 секунд.</string>
+    <string name="StarsPrivacyDescription">Отправляйте реакции анонимно — без рейтингов и выделенных звёзд. В истории остаются только сумма, ID, дата и время. Анимации сохраняются. На отмену есть 20 секунд.</string>
     <string name="StarsPrivacyScope">Отключение влияет только на новые реакции. Прежние приватные данные остаются скрытыми в этом приложении. Записи в Telegram и на других устройствах не меняются.</string>
     <string name="StarsPrivacyActive">Приватные реакции включены</string>
     <string name="StarsPrivacyPending">Отправка звёзд анонимно</string>
@@ -281,7 +281,7 @@
     <string name="StarsPrivacyPreviewLabel">Предпросмотр</string>
     <string name="StarsChannelPrivacy">Приватность реакций за звёзды</string>
     <string name="StarsChannelPrivate">Только анонимные реакции</string>
-    <string name="StarsChannelPrivateInfo">Имена отправителей и рейтинги скрыты. В истории — только ID, дата и время. Выделение звезды исчезает через 5 минут или скрыто сразу при личной приватности. Анимации и общие суммы сохраняются.</string>
+    <string name="StarsChannelPrivateInfo">Имена отправителей и рейтинги скрыты. В истории — только сумма, ID, дата и время. Выделение звезды исчезает через 5 минут или скрыто сразу при личной приватности. Анимации и общие суммы сохраняются.</string>
     <string name="StarsChannelPercentile">Процентиль отправителя</string>
     <string name="StarsChannelPercentileInfo">Отправитель видит свой округлённый процентиль, например «Топ 10%», в течение 5 минут. Только для него. Скрыт при личной приватности или если отправителей меньше 10.</string>
     <string name="StarsChannelMockInfo">Предпросмотр: правила канала моделируются на этом устройстве. Звёзды не тратятся.</string>
@@ -290,8 +290,8 @@
     <string name="StarsHistoryAnonymise">Анонимизировать историю</string>
     <string name="StarsReceiptAnonymise">Анонимизировать транзакцию</string>
     <string name="StarsAnonymise">Анонимизировать</string>
-    <string name="StarsHistoryAnonymiseInfo">Навсегда скрыть детали в предпросмотре, оставив только ID, дату и время. Удерживайте транзакцию, чтобы анонимизировать только её.</string>
-    <string name="StarsHistoryAnonymiseConfirm">Оставить только ID, дату и время транзакций?\n\nВ предпросмотре это действие нельзя отменить. Записи на серверах Telegram и других устройствах останутся без изменений.</string>
+    <string name="StarsHistoryAnonymiseInfo">Навсегда скрыть детали в предпросмотре, оставив только суммы, ID, даты и время. Удерживайте транзакцию, чтобы анонимизировать только её.</string>
+    <string name="StarsHistoryAnonymiseConfirm">Оставить только суммы, ID, даты и время транзакций?\n\nВ предпросмотре это действие нельзя отменить. Записи на серверах Telegram и других устройствах останутся без изменений.</string>
     <string name="StarsPrivacyDemoHint">Нажмите на звезду, чтобы поставить реакцию. Удерживайте её, чтобы открыть меню реакций.</string>
     <string name="StarsPrivacyMockReactionInfo">Тестовая реакция. Звёзды не будут потрачены.</string>
     <string name="StarsPrivacyEnabledNotice">Новые реакции будут приватными. Прежние приватные данные останутся скрытыми.</string>
@@ -303,6 +303,7 @@
     <string name="StarsPrivacyChannelHeader">Приватность канала</string>
     <string name="StarsHistoryAnonymiseAction">Скрыть детали истории</string>
     <string name="StarsPrivacyMakePrivate">Сделать мои звёзды анонимными</string>
-    <string name="StarsPrivacyHistoryPrivate">Вкл. · В истории только ID и даты</string>
+    <string name="StarsPrivacyHistoryPrivate">Вкл. · Суммы, ID и даты</string>
     <string name="StarsPrivacyHistoryFuture">Выкл. · Только новые реакции</string>
+    <string name="StarsTransactionAmount">Количество</string>
 </resources>
