@@ -754,7 +754,21 @@ public class NativeStarsFlowTest {
         return null;
     }
 
-    private void settle() throws Exception { instrumentation.runOnMainSync(() -> {}); Thread.sleep(1100); }
+    private void settle() throws Exception {
+        instrumentation.runOnMainSync(() -> {});
+        Thread.sleep(1100);
+        // Recording can delay a frame. Never tap through an unfinished native
+        // fragment transition just because a fixed delay has elapsed.
+        long deadline = SystemClock.uptimeMillis() + 8000;
+        while (true) {
+            final boolean[] moving = new boolean[1];
+            instrumentation.runOnMainSync(() -> moving[0] = activity != null && activity.navigation() != null
+                && activity.navigation().isTransitionAnimationInProgress());
+            if (!moving[0]) return;
+            assertTrue("Native navigation must finish before the next gesture", SystemClock.uptimeMillis() < deadline);
+            Thread.sleep(100);
+        }
+    }
     private void screenshot(String name) throws Exception {
         android.util.Log.i("NativeFlow", "screenshot " + name);
         Bitmap bitmap = instrumentation.getUiAutomation().takeScreenshot();

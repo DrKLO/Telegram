@@ -119,7 +119,9 @@ def main():
     shutil.copy2(artifacts / 'native-ui-qa.json', destination / 'native-ui-qa.json')
     for name in DOCUMENTS:
         (destination / name).write_bytes(git('show', revision + ':docs/' + name))
-    (destination / 'README.md').write_bytes(git('show', revision + ':README.md'))
+    # README links are repository-relative; point them at the matching committed source.
+    readme = git('show', revision + ':README.md').decode()
+    (destination / 'README.md').write_text(readme.replace('](docs/', f']({REPOSITORY}/blob/{revision}/docs/'))
     # A feature-only patch, applied on the published offline setup baseline.
     (destination / 'feature.patch').write_bytes(git('diff', '--binary', BASE, revision))
     (destination / 'LICENSE').write_bytes(git('show', revision + ':LICENSE'))
