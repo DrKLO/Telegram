@@ -123,6 +123,7 @@ import org.telegram.ui.Components.ScrimOptions;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
+import org.telegram.ui.Wallet.WalletSendEnterAmount;
 import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
@@ -547,158 +548,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public ProfileBirthdayEffect.BirthdayEffectFetcher birthdayFetcher;
 
     private CharSequence currentBio;
-    // ============ Steam Profile Section ============
-    private static final String STEAM_MARKER = "\\n[XGRAM_STEAM:";
-
-    private TextView steamProfileTextView;
-    private LinearLayout steamProfileCard;
-    private LinearLayout steamProfileActions;
-    private TextView steamOpenButton;
-    private TextView steamCopyButton;
-    private ImageView steamIconView;
-    private FrameLayout steamIconWrap;
-    private boolean steamCardAnimating = false;
-
-    private String getProfileSteamId() {
-        if (userInfo == null || userInfo.about == null) return "";
-        int start = userInfo.about.lastIndexOf(STEAM_MARKER);
-        if (start < 0) return "";
-        int end = userInfo.about.indexOf("]", start);
-        if (end < 0) return "";
-        String id = userInfo.about.substring(start + STEAM_MARKER.length(), end).trim();
-        return id.matches("[0-9]{17}") ? id : "";
-    }
-
-    private String getProfileBioWithoutSteam() {
-        if (userInfo == null || userInfo.about == null) return "";
-        int start = userInfo.about.lastIndexOf(STEAM_MARKER);
-        if (start < 0) return userInfo.about;
-        int end = userInfo.about.indexOf("]", start);
-        return end < 0 ? userInfo.about
-                : (userInfo.about.substring(0, start) + userInfo.about.substring(end + 1)).trim();
-    }
-
-    private boolean isOwnProfile() {
-        TLRPC.User user = getMessagesController().getUser(userId);
-        return user != null && user.id == getUserConfig().getClientUserId();
-    }
-
-    private TextView makeSteamButton(String text, int bgColor) {
-        TextView button = new TextView(getContext());
-        button.setText(text);
-        button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-        button.setTextColor(0xFFFFFFFF);
-        button.setGravity(Gravity.CENTER);
-        button.setTypeface(AndroidUtilities.bold());
-        button.setPadding(dp(12), dp(5), dp(12), dp(5));
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(bgColor);
-        background.setCornerRadius(dp(10));
-        button.setBackground(background);
-        button.setClickable(true);
-        button.setFocusable(true);
-        return button;
-    }
-
-    private void hideSteamCard() {
-        if (steamProfileCard == null) return;
-        steamProfileCard.animate().cancel();
-        steamCardAnimating = false;
-        if (steamProfileCard.getVisibility() == View.VISIBLE) {
-            steamCardAnimating = true;
-            steamProfileCard.animate()
-                    .alpha(0f)
-                    .translationY(dp(8))
-                    .setDuration(180)
-                    .withEndAction(() -> {
-                        steamCardAnimating = false;
-                        if (steamProfileCard != null) {
-                            steamProfileCard.setVisibility(View.GONE);
-                        }
-                    })
-                    .start();
-        } else {
-            steamProfileCard.setVisibility(View.GONE);
-        }
-    }
-
-    private void updateSteamProfileLabel() {
-        if (steamProfileCard == null || steamProfileTextView == null || steamProfileActions == null) return;
-        if (userId == 0) {
-            hideSteamCard();
-            return;
-        }
-
-        String steamId = getProfileSteamId();
-        if (steamId.isEmpty()) {
-            if (!isOwnProfile() && userInfo != null) {
-                steamProfileCard.animate().cancel();
-                steamCardAnimating = false;
-                steamProfileCard.setVisibility(View.VISIBLE);
-                steamProfileCard.setAlpha(1f);
-                steamProfileCard.setTranslationY(0f);
-                steamProfileTextView.setText("Steam · محدودیت در نمایش اطلاعات");
-                steamProfileActions.setVisibility(View.GONE);
-            } else {
-                hideSteamCard();
-            }
-            return;
-        }
-
-        steamProfileCard.animate().cancel();
-        steamCardAnimating = false;
-        if (steamProfileCard.getVisibility() != View.VISIBLE) {
-            steamProfileCard.setVisibility(View.VISIBLE);
-            steamProfileCard.setAlpha(0f);
-            steamProfileCard.setTranslationY(dp(8));
-            steamCardAnimating = true;
-            steamProfileCard.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(220)
-                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                    .withEndAction(() -> steamCardAnimating = false)
-                    .start();
-        } else {
-            steamProfileCard.setAlpha(1f);
-            steamProfileCard.setTranslationY(0f);
-        }
-
-        steamProfileTextView.setText("Steam ID  ·  " + steamId);
-        steamProfileActions.setVisibility(View.VISIBLE);
-
-        final String id = steamId;
-        if (steamOpenButton != null) {
-            steamOpenButton.setOnClickListener(v -> {
-                Activity activity = getParentActivity();
-                if (activity == null) return;
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW,
-                            Uri.parse("https://steamcommunity.com/profiles/" + id));
-                    activity.startActivity(intent);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            });
-        }
-        if (steamCopyButton != null) {
-            steamCopyButton.setOnClickListener(v -> {
-                try {
-                    android.content.ClipboardManager clipboard =
-                            (android.content.ClipboardManager) ApplicationLoader.applicationContext
-                                    .getSystemService(Context.CLIPBOARD_SERVICE);
-                    if (clipboard == null) return;
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Steam ID", id));
-                    BulletinFactory.of(ProfileActivity.this)
-                            .createCopyBulletin("Steam ID کپی شد")
-                            .show();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            });
-        }
-    }
-    // ============ End Steam Section ============
 
     private long selectedUser;
     private int onlineCount = -1;
@@ -752,6 +601,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int delete_group = 45;
     private final static int enable_no_forwards = 46;
     private final static int disable_no_forwards = 47;
+    private final static int send_money = 48;
 
     private Rect rect = new Rect();
 
@@ -2507,23 +2357,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        if (steamProfileCard != null) {
-            steamProfileCard.animate().cancel();
-            steamProfileCard = null;
-        }
-        if (steamOpenButton != null) {
-            steamOpenButton.setOnClickListener(null);
-            steamOpenButton = null;
-        }
-        if (steamCopyButton != null) {
-            steamCopyButton.setOnClickListener(null);
-            steamCopyButton = null;
-        }
-        steamProfileTextView = null;
-        steamProfileActions = null;
-        steamIconView = null;
-        steamIconWrap = null;
-        steamCardAnimating = false;
         if (sharedMediaLayout != null) {
             sharedMediaLayout.onDestroy();
         }
@@ -2928,6 +2761,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     openDiscussion();
                 } else if (id == gift_premium) {
                     onGiftPermiumClicked();
+                } else if (id == send_money) {
+                    presentFragment(new WalletSendEnterAmount(getMessagesController().getUser(userId)).setAllowOpenChat());
                 } else if (id == channel_stories) {
                     Bundle args = new Bundle();
                     args.putInt("type", MediaActivity.TYPE_ARCHIVED_CHANNEL_STORIES);
@@ -5803,79 +5638,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView[a].setFocusable(a == 0);
             avatarContainer2.addView(onlineTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 109 - (a == 1 || a == 2 || a == 3 ? 4 : 0), (a == 1 || a == 2 || a == 3 ? -2 : 0), (a == 0 ? rightMargin - (hasTitleExpanded ? 10 : 0) : 8) - (a == 1 || a == 2 || a == 3 ? 4 : 0), 0));
         }
-        // ====== XGram Steam Card ======
-        steamProfileCard = new LinearLayout(context);
-        steamProfileCard.setOrientation(LinearLayout.HORIZONTAL);
-        steamProfileCard.setGravity(Gravity.CENTER_VERTICAL);
-        steamProfileCard.setPadding(dp(10), dp(8), dp(10), dp(8));
-
-        GradientDrawable steamCardBg = new GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                new int[]{0xFF1B2838, 0xFF0F1922});
-        steamCardBg.setCornerRadius(dp(14));
-        steamCardBg.setStroke(dp(1), 0x804A9EFF);
-        steamProfileCard.setBackground(steamCardBg);
-        steamProfileCard.setElevation(dp(4));
-        steamProfileCard.setVisibility(View.GONE);
-
-        steamIconWrap = new FrameLayout(context);
-        GradientDrawable iconBg = new GradientDrawable();
-        iconBg.setShape(GradientDrawable.OVAL);
-        iconBg.setColor(0xFF1B2838);
-        iconBg.setStroke(dp(1), 0xFF66C0F4);
-        steamIconWrap.setBackground(iconBg);
-        steamProfileCard.addView(steamIconWrap, LayoutHelper.createLinear(
-                36, 36, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
-
-        steamIconView = new ImageView(context);
-        steamIconView.setImageResource(R.drawable.xgram_steam_logo);
-        steamIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        steamIconWrap.addView(steamIconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
-
-        LinearLayout steamContent = new LinearLayout(context);
-        steamContent.setOrientation(LinearLayout.VERTICAL);
-        steamContent.setGravity(Gravity.CENTER_VERTICAL);
-        steamProfileCard.addView(steamContent,
-                new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
-
-        TextView steamTitle = new TextView(context);
-        steamTitle.setText("STEAM");
-        steamTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
-        steamTitle.setLetterSpacing(0.15f);
-        steamTitle.setTextColor(0xFF66C0F4);
-        steamTitle.setTypeface(AndroidUtilities.bold());
-        steamContent.addView(steamTitle, LayoutHelper.createLinear(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-
-        steamProfileTextView = new TextView(context);
-        steamProfileTextView.setTextColor(0xFFFFFFFF);
-        steamProfileTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        steamProfileTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        steamProfileTextView.setSingleLine(true);
-        steamProfileTextView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
-        steamProfileTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        steamContent.addView(steamProfileTextView, LayoutHelper.createLinear(
-                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 1, 0, 0));
-
-        steamProfileActions = new LinearLayout(context);
-        steamProfileActions.setOrientation(LinearLayout.HORIZONTAL);
-        steamProfileActions.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        steamContent.addView(steamProfileActions, LayoutHelper.createLinear(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
-
-        steamOpenButton = makeSteamButton("مشاهده", 0xFF2879C7);
-        steamCopyButton = makeSteamButton("کپی", 0xFF34465A);
-
-        LinearLayout.LayoutParams steamOpenParams = new LinearLayout.LayoutParams(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-        steamOpenParams.rightMargin = dp(6);
-        steamProfileActions.addView(steamOpenButton, steamOpenParams);
-        steamProfileActions.addView(steamCopyButton, new LinearLayout.LayoutParams(
-                LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-
-        avatarContainer2.addView(steamProfileCard, LayoutHelper.createFrame(
-                292, 62, Gravity.LEFT | Gravity.TOP, 109, 66, 8, 0));
-
         checkPhotoDescriptionAlpha();
         avatarContainer2.addView(animatedStatusView);
 
@@ -9470,8 +9232,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             final long uid = (Long) args[0];
             if (uid == userId) {
                 userInfo = (TLRPC.UserFull) args[1];
-                updateSteamProfileLabel();
-                AndroidUtilities.runOnUIThread(this::updateSteamProfileLabel, 100);
                 if (ratingView != null) {
                     ratingView.set(userInfo.stars_rating);
                 }
@@ -11499,7 +11259,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (avatarContainer == null || nameTextView == null || getParentActivity() == null) {
             return;
         }
-        updateSteamProfileLabel();
         String onlineTextOverride;
         int currentConnectionState = getConnectionsManager().getConnectionState();
         if (currentConnectionState == ConnectionsManager.ConnectionStateWaitingForNetwork) {
@@ -12426,6 +12185,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGift));
                         giftAction = true;
                     }
+                    if (getMessagesController().config.walletAvailable.get() && !MessagesController.isSupportUser(user) && !UserObject.isService(user.id)) {
+                        otherItem.addSubItem(send_money, R.drawable.ic_gram, LocaleController.getString(R.string.WalletSendMoney));
+                    }
                     otherItem.addSubItem(start_secret_chat, R.drawable.msg_secret, LocaleController.getString(R.string.StartEncryptedChat));
                     otherItem.setSubItemShown(start_secret_chat, DialogObject.isEmpty(getMessagesController().isUserContactBlocked(userId)));
 
@@ -12470,7 +12232,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
                     if ((chatInfo.can_view_stats || chatInfo.can_view_revenue || chatInfo.can_view_stars_revenue || getMessagesController().getStoriesController().canPostStories(getDialogId())) && topicId == 0) {
-                        //otherItem.addSubItem(statistics, R.drawable.msg_stats, LocaleController.getString(R.string.Statistics));
+                        otherItem.addSubItem(statistics, R.drawable.msg_stats, LocaleController.getString(R.string.Statistics));
                     }
                     ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
                     callItemVisible = call != null;
@@ -13897,7 +13659,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (position == userInfoRow) {
                         TLRPC.User user = userInfo.user != null ? userInfo.user : getMessagesController().getUser(userInfo.id);
                         boolean addlinks = isBot || (user != null && user.premium && userInfo.about != null);
-                        aboutLinkCell.setTextAndValue(getProfileBioWithoutSteam(), LocaleController.getString(R.string.UserBio), addlinks);
+                        aboutLinkCell.setTextAndValue(userInfo.about, LocaleController.getString(R.string.UserBio), addlinks);
                     } else if (position == channelInfoRow) {
                         String text = chatInfo.about;
                         while (text.contains("\n\n\n")) {
@@ -13907,7 +13669,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == bioRow) {
                         String value;
                         if (userInfo == null || !TextUtils.isEmpty(userInfo.about)) {
-                            value = userInfo == null ? LocaleController.getString(R.string.Loading) : getProfileBioWithoutSteam();
+                            value = userInfo == null ? LocaleController.getString(R.string.Loading) : userInfo.about;
                             aboutLinkCell.setTextAndValue(value, LocaleController.getString(R.string.UserBio), getUserConfig().isPremium());
                             currentBio = userInfo != null ? userInfo.about : null;
                         } else {
@@ -14219,7 +13981,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (position == infoSectionRow) {
                         final long did = getDialogId();
                         TLObject obj = getMessagesController().getUserOrChat(did);
-                        TL_bots.botVerification bot_verification = userInfo != null ? userInfo.bot_verification : chatInfo != null ? chatInfo.bot_verification : null;
+                        TL_bots.BotVerification bot_verification = userInfo != null ? userInfo.bot_verification : chatInfo != null ? chatInfo.bot_verification : null;
                         Long bot_manager_id = userInfo != null && TLObject.hasFlag(userInfo.flags2, TLObject.FLAG_25) ? userInfo.bot_manager_id : null;
                         if (botAppRow >= 0 || bot_verification != null || bot_manager_id != null) {
                             cell.setFixedSize(0);
@@ -14239,7 +14001,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 sb.append("x");
                                 sb.setSpan(new AnimatedEmojiSpan(bot_verification.icon, cell.getTextView().getPaint().getFontMetricsInt()), sb.length() - 1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 sb.append(" ");
-                                SpannableString description = new SpannableString(bot_verification.description);
+                                SpannableString description = new SpannableString(MessageObject.formatTextWithEntities(bot_verification.description));
                                 try {
                                     AndroidUtilities.addLinksSafe(description, Linkify.WEB_URLS, false, false);
                                     URLSpan[] spans = description.getSpans(0, description.length(), URLSpan.class);
@@ -14879,7 +14641,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     new SearchResult(218, getString(R.string.VoipUseLessData), "useLessDataForCallsRow", getString(R.string.DataSettings), R.drawable.msg2_data, () -> f.presentFragment(new DataSettingsActivity())).withLink("tg://settings/data/use-less-data"),
                     new SearchResult(219, getString(R.string.VoipQuickReplies), "quickRepliesRow", getString(R.string.DataSettings), R.drawable.msg2_data, () -> f.presentFragment(new DataSettingsActivity())),
                     new SearchResult(220, getString(R.string.ProxySettings), getString(R.string.DataSettings), R.drawable.msg2_data, () -> f.presentFragment(new ProxyListActivity())).withLink("tg://settings/data/proxy"),
-                    new SearchResult(221, getString(R.string.UseProxyForCalls), "callsRow", getString(R.string.DataSettings), getString(R.string.ProxySettings), R.drawable.msg2_data, () -> f.presentFragment(new ProxyListActivity())).withLink("tg://settings/data/proxy/use-for-calls"),
                     new SearchResult(111, getString(R.string.PrivacyDeleteCloudDrafts), "clearDraftsRow", getString(R.string.DataSettings), R.drawable.msg2_data, () -> f.presentFragment(new DataSettingsActivity())).withLink("tg://settings/privacy/data-settings/delete-cloud-drafts"),
                     new SearchResult(222, getString(R.string.SaveToGallery), "saveToGallerySectionRow", getString(R.string.DataSettings), R.drawable.msg2_data, () -> f.presentFragment(new DataSettingsActivity())),
                     new SearchResult(223, getString(R.string.SaveToGalleryPrivate), "saveToGalleryPeerRow", getString(R.string.DataSettings), getString(R.string.SaveToGallery), R.drawable.msg2_data, () -> f.presentFragment(new DataSettingsActivity())).withLink("tg://settings/data/save-to-photos/chats"),
