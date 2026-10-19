@@ -1,46 +1,30 @@
-## Telegram messenger for Android
+# AmeGram for Android
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+**Telegram without the glass.**
 
-## Creating your Telegram Application
+AmeGram is an independent, unofficial Telegram client for Android, developed by **Umi**. It is not affiliated with or endorsed by Telegram. The initial development milestone is **0.1.0-alpha**; no release or verified installable APK is available from this milestone yet.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+The goal is a maintainable, feature-rich client with modern functionality, classic clarity, purple accents and solid surfaces. Telegram authentication, messaging, MTProto and cryptography remain upstream implementations. There is no mock messaging backend.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+## Foundation
 
-### API, Protocol documentation
+- AmeGram Settings entry in the existing Settings screen.
+- A persistent, device-local OLED background preference for **AmeGram Settings only**, effective with Telegram's dark theme.
+- Links to existing Telegram appearance, folders, notification and privacy settings.
+- An informational AmeLab section; no experimental controls are available yet.
+- Central light/dark design tokens, English/Russian text, independent temporary launcher monogram and application ID `dev.umi.amegram` (`.beta` for the regular debug build).
+- Source-level Liquid Glass feature gate; broader upstream blur/navigation redesign remains future work.
 
-Telegram API manuals: https://core.telegram.org/api
+Implementation is not equivalent to device verification. See [verification](docs/VERIFICATION.md) for commands, actual results and blockers.
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+## Development
 
-### Compilation Guide
+Read the current [build audit and CI scope](docs/BUILD_AUDIT.md), [building](docs/BUILDING.md), [architecture](docs/ARCHITECTURE.md), [features](docs/FEATURES.md), [roadmap](docs/ROADMAP.md) and [upstream maintenance](docs/UPSTREAM.md). API credentials are provided through the build environment; never commit or log them. Distribution packaging is intentionally blocked until signing and service integrations are ready. Do not publish the upstream dummy configuration.
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+The supported first build target is the regular `TMessagesProj_App` debug variant. Other upstream application modules are retained for synchronization, not endorsed as AmeGram distribution targets.
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 36.
+## License and upstream notices
 
-1. Clone the Telegram source code with its submodules:
-   ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
-   ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
-   ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
-   ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+This project derives from [Telegram for Android](https://github.com/DrKLO/Telegram), pinned initially to `f32ffeec763f0bdbf4bec25b52d654f77bff733d` (13.0.2 / 7175). The upstream source headers specify **GNU GPL version 2 or later**; the [LICENSE](LICENSE) contains GPL v2. Existing copyright notices and third-party licenses remain applicable. AmeGram-specific files use `GPL-2.0-or-later`. Publish corresponding source and satisfy component licenses when distributing builds.
 
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+The unmodified starting [upstream README](docs/TELEGRAM_UPSTREAM_README.md) is preserved for provenance; its branding and configuration instructions describe Telegram, not AmeGram. Telegram's [API terms](https://core.telegram.org/api/terms), [API registration requirements](https://core.telegram.org/api/obtaining_api_id) and [security guidance](https://core.telegram.org/mtproto/security_guidelines) also apply. Obtain your own API ID, use independent branding, protect user data and publish the source of distributed modifications.

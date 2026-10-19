@@ -3,6 +3,7 @@ package org.telegram.plugin
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ApplicationVariant
+import com.android.build.api.variant.ResValue
 import com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -19,6 +20,11 @@ class TelegramBuildAppPlugin : Plugin<Project> {
                 ?: error("Apply com.android.application/library before org.telegram.build-app-plugin")
 
         androidComponents.onVariants { variant ->
+            val appVariant = variant as ApplicationVariant
+            variant.resValues.put(
+                variant.makeResValueKey("string", "amegram_account_type"),
+                ResValue(appVariant.applicationId.get(), "Independent AmeGram Android account type")
+            )
             val suffix = variant.name.replaceFirstChar { it.uppercase() }
 
             val task = project.tasks.register<TelegramStringsTask>(

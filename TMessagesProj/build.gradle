@@ -42,6 +42,7 @@ configurations.all {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
@@ -135,6 +136,8 @@ android {
     }
 
     defaultConfig {
+        buildConfigField 'int', 'AMEGRAM_API_ID', rootProject.ext.amegramApiId.toString()
+        buildConfigField 'String', 'AMEGRAM_API_HASH', '"' + rootProject.ext.amegramApiHash + '"'
         minSdkVersion 23
         targetSdkVersion 36
 
@@ -245,7 +248,7 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+// Firebase values belong to the consuming application, not this shared library.
 
 task checkVisibility {
     doFirst {

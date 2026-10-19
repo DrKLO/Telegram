@@ -231,20 +231,20 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
                                 String productId = params.zza().getProductId();
                                 if (purchase.getProducts().contains(productId)) {
                                     productsToBeConsumed.incrementAndGet();
-                                    FileLog.d("BillingController.launchBillingFlow, consuming " + purchase.getPurchaseToken());
+                                    FileLog.d("BillingController purchase operation; token omitted");
                                     billingClient.consumeAsync(
                                         ConsumeParams.newBuilder()
                                             .setPurchaseToken(purchase.getPurchaseToken())
                                             .build(),
                                         (billingResult1, s) -> {
                                             if (billingResult1.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                                                FileLog.d("BillingController.launchBillingFlow, consumed " + purchase.getPurchaseToken() + ": OK");
+                                                FileLog.d("BillingController purchase operation; token omitted");
                                                 productsConsumed.add(productId);
                                                 if (productsToBeConsumed.get() == productsConsumed.size()) {
                                                     callback.run();
                                                 }
                                             } else {
-                                                FileLog.d("BillingController.launchBillingFlow, consumed " + purchase.getPurchaseToken() + ": " + billingResult1.getResponseCode() + " " + billingResult1.getDebugMessage());
+                                                FileLog.d("BillingController purchase operation; token omitted");
                                                 productsConsumed.add(null);
                                                 if (productsToBeConsumed.get() == productsConsumed.size()) {
                                                     callback.run();
@@ -456,13 +456,13 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             purpose instanceof TLRPC.TL_inputStorePaymentStarsGiveaway ||
             purpose instanceof TLRPC.TL_inputStorePaymentAuthCode
         ) {
-            FileLog.d("BillingController consumeGiftPurchase " + purpose + " " + purchase.getOrderId() + " " + purchase.getPurchaseToken());
+            FileLog.d("BillingController purchase operation; token omitted");
             billingClient.consumeAsync(
                 ConsumeParams.newBuilder()
                     .setPurchaseToken(purchase.getPurchaseToken())
                     .build(),
                 (r, s) -> {
-                    FileLog.d("BillingController consumeGiftPurchase " + purpose + " " + purchase.getOrderId() + " " + purchase.getPurchaseToken() + " done: " + (r.getResponseCode() == BillingClient.BillingResponseCode.OK ? "OK" : r.getResponseCode()) + " " + r.getDebugMessage());
+                    FileLog.d("BillingController purchase operation; token omitted");
                     if (onDone != null) {
                         onDone.run();
                     }

@@ -14,3 +14,22 @@ TMessagesProj_AppHockeyApp/afat/
 TMessagesProj_AppStandalone/afat/
 TMessagesProj_AppHuawei/afat/
 TMessagesProj/jni/ffmpeg/build_android
+
+# Local AmeGram development scratch files
+/work/
+
+buildSrc/.kotlin/
+# Owner service configuration and signing material must stay local in every source set.
+google-services.json
+agconnect-services.json
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.key
+.env
+.env.*
+!.env.example
+
+# Python check tooling caches
+__pycache__/
