@@ -1855,6 +1855,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             continue;
                                         }
                                     }
+                                    if (!BuildVars.NO_SCOPED_STORAGE) {
+                                        path = MediaController.copyFileToCache(uri, "file");
+                                    }
                                     if (path != null) {
                                         if (path.startsWith("file:")) {
                                             path = path.replace("file://", "");
