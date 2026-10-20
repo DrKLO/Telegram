@@ -1784,6 +1784,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private TLRPC.User currentForwardUser;
     private TLRPC.User currentViaBotUser;
+    // the bot a message was sent through, in the words drawn at its top, while they are drawn
+    private CharSequence accessibilityViaBotText;
     private TLRPC.Chat currentForwardChannel;
     private String currentForwardName;
     private String currentForwardNameString;
@@ -18808,6 +18810,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         String viaUsername = null;
+        accessibilityViaBotText = null;
         CharSequence viaString = null;
         if (messageObject.isWelcomeMessage() && !messageObject.isWelcomeAnchored() && delegate != null && delegate.getChatMode() == ChatActivity.MODE_DEFAULT && messageObject.messageOwner.from_id != null && messageObject.messageOwner.from_id.user_id != 0) {
             final TLRPC.User botUser = MessagesController.getInstance(currentAccount).getUser(messageObject.messageOwner.from_id.user_id);
@@ -18961,6 +18964,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     color = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outViaBotNameText : Theme.key_chat_inViaBotNameText);
                 }
                 String viaBotString = getString(R.string.ViaBot);
+                accessibilityViaBotText = viaBotString + " " + viaUsername;
                 if (currentNameString.length() > 0) {
                     SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
                     stringBuilder.append(nameStringFinal).append(" ").append(viaBotString).append(" ").append(viaUsername);
@@ -26600,6 +26604,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 didClickedImage();
             }
             return true;
+        } else if (action == R.id.acc_action_via_bot) {
+            // what a press on the bot's name does
+            if (delegate != null && currentMessageObject != null && !TextUtils.isEmpty(accessibilityViaBotText)) {
+                if (currentViaBotUser != null && currentViaBotUser.bot_inline_placeholder == null) {
+                    delegate.didPressViaBotNotInline(this, currentViaBotUser.id);
+                } else {
+                    String username = UserObject.getPublicUsername(currentViaBotUser);
+                    delegate.didPressViaBot(this, username != null ? username : currentMessageObject.messageOwner.via_bot_name);
+                }
+            }
+            return true;
         } else if (action == R.id.acc_action_small_button) {
             didPressMiniButton(true);
         } else if (action == R.id.acc_action_msg_options) {
@@ -27106,6 +27121,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         sb.append('\n');
                     }
+                    // the bot is drawn on the line of the sender's name, after it, or alone where
+                    // no name is drawn
+                    if (!TextUtils.isEmpty(accessibilityViaBotText)) {
+                        if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
+                            sb.replace(sb.length() - 1, sb.length(), " ");
+                        }
+                        sb.append(accessibilityViaBotText);
+                        sb.append('\n');
+                    }
                     if (drawForwardedName) {
                         for (int a = 0; a < 2; a++) {
                             if (forwardedNameLayout[a] != null && forwardedNameLayout[a].getText() != null) {
@@ -27378,6 +27402,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 int smallIcon = getMiniIconForCurrentState();
                 if (smallIcon == MediaActionDrawable.ICON_DOWNLOAD) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, getString("AccActionDownload", R.string.AccActionDownload)));
+                }
+                if (!TextUtils.isEmpty(accessibilityViaBotText)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_via_bot, accessibilityViaBotText));
                 }
                 if (drawSummarizeButton || drawSummaryReply) {
                     info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
