@@ -192,8 +192,18 @@ public class GroupCallMessageCell extends ViewGroup
         layoutInvalidated = true;
 
         messageTextView.setText(messageText);
+        // a reaction is drawn, and the comment was read as the name of the one who sent it alone
+        messageTextView.setContentDescription(message.visibleReaction != null ? getAccessibilityText(message) : null);
 
         requestLayout();
+    }
+
+    public static CharSequence getAccessibilityText(GroupCallMessage message) {
+        final String name = DialogObject.getName(MessagesController.getInstance(message.currentAccount).getUserOrChat(message.fromId));
+        if (message.visibleReaction != null) {
+            return message.visibleReaction.emojicon != null ? name + ": " + message.visibleReaction.emojicon : name;
+        }
+        return message.message != null && message.message.text != null ? name + ": " + message.message.text : name;
     }
 
     private final ClickableSpan senderNameSpan = new ClickableSpan() {
