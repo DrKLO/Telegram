@@ -6941,6 +6941,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         } else if (error.text.contains("CODE_EMPTY") || error.text.contains("CODE_INVALID") || error.text.contains("EMAIL_CODE_INVALID") || error.text.contains("PHONE_CODE_INVALID")) {
                             shakeWrongCode();
                             isWrongCode = true;
+                        } else if (error.text.contains("EMAIL_NOT_ALLOWED")) {
+                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailNotAllowed));
                         } else if (error.text.contains("EMAIL_TOKEN_INVALID")) {
                             needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), getString(R.string.EmailTokenInvalid));
                         } else if (error.text.contains("EMAIL_VERIFY_EXPIRED")) {
