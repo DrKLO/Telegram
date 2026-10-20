@@ -671,16 +671,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 editor.commit();
             } else if (position == contactJoinedRow) {
                 SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                SharedPreferences.Editor editor = preferences.edit();
                 enabled = preferences.getBoolean("EnableContactJoined", true);
-                MessagesController.getInstance(currentAccount).enableJoined = !enabled;
-                editor.putBoolean("EnableContactJoined", !enabled);
-                editor.commit();
-                TL_account.setContactSignUpNotification req = new TL_account.setContactSignUpNotification();
-                req.silent = enabled;
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-
-                });
+                MessagesController.getInstance(currentAccount).setContactSignUpNotificationEnabled(!enabled);
             } /*else if (position == storiesRow) {
                 SharedPreferences preferences = getNotificationsSettings();
                 SharedPreferences.Editor editor = preferences.edit();
