@@ -5607,6 +5607,10 @@ public class NotificationsController extends BaseController implements Notificat
                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
                     .setShowsUserInterface(false)
                     .build();
+            // a wearable shows only the actions of the extender, so the read action has to be there too
+            if (dialogKey.dialogId != UserObject.VERIFY && dialogKey.dialogId != UserObject.OAUTH && !waitingForPasscode && !dialogKey.story && (lastMessageObject == null || !lastMessageObject.isStoryReactionPush)) {
+                wearableExtender.addAction(readAction);
+            }
 
             String dismissalID;
             if (!DialogObject.isEncryptedDialog(dialogId)) {
