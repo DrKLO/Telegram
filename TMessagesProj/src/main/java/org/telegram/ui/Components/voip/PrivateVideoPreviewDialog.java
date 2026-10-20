@@ -283,6 +283,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
             micIconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             micEnabled = true;
             micIcon.setCurrentFrame(micEnabled ? 69 : 36);
+            micIconView.setContentDescription(LocaleController.getString(R.string.VoipMute));
             micIconView.setOnClickListener(v -> {
                 micEnabled = !micEnabled;
                 if (micEnabled) {
