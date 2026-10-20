@@ -519,6 +519,21 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         public CropState cropState;
 
+        // Sending as a document uploads the original video without VideoEditedInfo, losing these edits
+        public boolean hasVideoEditsLostAsDocument() {
+            if (!isVideo) {
+                return false;
+            }
+            if (editedInfo != null && (editedInfo.muted || editedInfo.startTime > 0 || editedInfo.endTime > 0)) {
+                return true;
+            }
+            return cropState != null && !cropState.isEmpty()
+                || savedFilterState != null
+                || paintPath != null
+                || mediaEntities != null && !mediaEntities.isEmpty()
+                || coverPath != null;
+        }
+
         public String getPath() {
             return null;
         }
