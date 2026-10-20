@@ -447,13 +447,28 @@ public class BotForumHelper extends BaseController {
         }
 
         performSendBotTopicCreate(inputPeer, topicName, randomId, topicId -> {
+            if (topicId <= 0) {
+                AndroidUtilities.runOnUIThread(send);
+                return;
+            }
             if (req instanceof TLRPC.TL_messages_forwardMessages) {
                 TLRPC.TL_messages_forwardMessages request = (TLRPC.TL_messages_forwardMessages) req;
                 request.top_msg_id = topicId;
                 request.flags |= 512;
             } else {
+                // Bind the message to the newly created thread exactly like a
+                // message sent inside an existing topic: reply_to_msg_id points
+                // to the thread root and top_msg_id carries the thread id.
+                // Previously only reply_to_msg_id was set, so the server treated
+                // the message as a plain reply in the currently open ("New Chat")
+                // context instead of a message in the new thread: the thread
+                // stayed empty on every client, the message appeared outside of
+                // it, and later messages sent into that thread started a new bot
+                // context because the thread had no seeded message.
                 final TLRPC.TL_inputReplyToMessage fixedReplyTo = new TLRPC.TL_inputReplyToMessage();
                 fixedReplyTo.reply_to_msg_id = topicId;
+                fixedReplyTo.top_msg_id = topicId;
+                fixedReplyTo.flags |= 1;
                 TlUtils.setInputReplyToFromSendMessageRequest(req, fixedReplyTo);
             }
 
