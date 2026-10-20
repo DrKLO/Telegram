@@ -5121,7 +5121,24 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (currentDialogId != 0) {
                         disableShowCheck = true;
                         Bundle args2 = new Bundle();
-                        args2.putLong("dialog_id", currentDialogId);
+                        long mediaDialogId = currentDialogId;
+                        long mediaTopicId = topicId;
+                        if (currentMessageObject != null) {
+                            mediaDialogId = currentMessageObject.getDialogId();
+                            if (currentMessageObject.messageOwner != null && DialogObject.isChatDialog(mediaDialogId)) {
+                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-mediaDialogId);
+                                if (ChatObject.isForum(chat)) {
+                                    long messageTopicId = MessageObject.getTopicId(currentAccount, currentMessageObject.messageOwner, true);
+                                    if (messageTopicId != 0) {
+                                        mediaTopicId = messageTopicId;
+                                    }
+                                }
+                            }
+                        }
+                        args2.putLong("dialog_id", mediaDialogId);
+                        if (mediaTopicId != 0) {
+                            args2.putLong("topic_id", mediaTopicId);
+                        }
                         MediaActivity mediaActivity = new MediaActivity(args2, null);
                         if (parentChatActivity != null) {
                             mediaActivity.setChatInfo(parentChatActivity.getCurrentChatInfo());
@@ -5139,6 +5156,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     long dialogId = currentDialogId;
                     if (currentMessageObject != null) {
                         dialogId = currentMessageObject.getDialogId();
+                    }
+                    long topicDialogId = dialogId;
+                    long selectedTopicId = topicId;
+                    if (currentMessageObject.messageOwner != null && DialogObject.isChatDialog(topicDialogId)) {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-topicDialogId);
+                        if (ChatObject.isForum(chat)) {
+                            long messageTopicId = MessageObject.getTopicId(currentAccount, currentMessageObject.messageOwner, true);
+                            if (messageTopicId != 0) {
+                                selectedTopicId = messageTopicId;
+                            }
+                        }
                     }
                     if (DialogObject.isEncryptedDialog(dialogId)) {
                         args.putInt("enc_id", DialogObject.getEncryptedChatId(dialogId));
@@ -5160,7 +5188,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (parentActivity instanceof LaunchActivity) {
                         LaunchActivity launchActivity = (LaunchActivity) parentActivity;
                         boolean remove = launchActivity.getMainFragmentsCount() > 1 || AndroidUtilities.isTablet();
-                        launchActivity.presentFragment(new ChatActivity(args), remove, true);
+                        ChatActivity chatActivity = new ChatActivity(args);
+                        if (selectedTopicId != 0) {
+                            chatActivity.highlightMessageId = currentMessageObject.getId();
+                            ForumUtilities.applyTopic(chatActivity, MessagesStorage.TopicKey.of(topicDialogId, selectedTopicId));
+                        }
+                        launchActivity.presentFragment(chatActivity, remove, true);
                     }
                     closePhoto(false, false);
                     currentMessageObject = null;
@@ -14182,7 +14215,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (!messageObject.scheduled && !messageObject.isQuickReply() && !messageObject.isSponsored() && !(MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaInvoice) && !(MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage) && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty)) {
                     needSearchImageInArr = true;
                     imagesByIds[0].put(messageObject.getId(), messageObject);
-                    if (parentChatActivity == null || !parentChatActivity.isThreadChat() && parentChatActivity.getChatMode() != ChatActivity.MODE_SAVED && parentChatActivity.getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
+                    if (parentChatActivity == null || (!parentChatActivity.isThreadChat() || topicId != 0) && parentChatActivity.getChatMode() != ChatActivity.MODE_SAVED && parentChatActivity.getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
                         menuItem.showSubItem(gallery_menu_showinchat);
                         boolean canWrite = true;
                         long dialogId = messageObject.getDialogId();
@@ -14265,7 +14298,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             MessageObject openingObject = imagesArr.get(index);
             menuItem.setSubItemShown(gallery_menu_create_sticker, !noforwards && openingObject.isPhoto());
-            if (!openingObject.scheduled && !openingObject.isQuickReply() && !openingObject.isSponsored() && (parentChatActivity == null || !parentChatActivity.isThreadChat())) {
+            if (!openingObject.scheduled && !openingObject.isQuickReply() && !openingObject.isSponsored() && (parentChatActivity == null || !parentChatActivity.isThreadChat() || topicId != 0)) {
                 opennedFromMedia = parentChatActivity == null;
                 if (parentFragment instanceof ProfileActivity) {
                     openedFromProfile = true;
