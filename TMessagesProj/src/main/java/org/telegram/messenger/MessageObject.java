@@ -103,6 +103,7 @@ import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Wallet.GramWallet;
 import org.telegram.ui.community.CommunityUtils;
+import org.telegram.ui.iv.RichMessageConvert;
 import org.telegram.ui.web.BotWebViewContainer;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 
@@ -2917,10 +2918,18 @@ public class MessageObject {
                 } else {
                     message.message = newMessage.message;
                     message.entities = newMessage.entities;
+                    message.rich_message = newMessage.rich_message;
                     message.media = new TLRPC.TL_messageMediaWebPage();
                     message.media.webpage = new TLRPC.TL_webPage();
                     message.media.webpage.site_name = getString(R.string.EventLogOriginalMessages);
-                    if (TextUtils.isEmpty(oldMessage.message)) {
+                    if (oldMessage.rich_message != null) {
+                        final CharSequence[] originalText = {RichMessageConvert.toCharSequence(oldMessage.rich_message)};
+                        if (TextUtils.isEmpty(originalText[0])) {
+                            originalText[0] = formatRichMessage(oldMessage.rich_message, false, false, Integer.MAX_VALUE);
+                        }
+                        webPageDescriptionEntities = MediaDataController.getInstance(currentAccount).getEntities(originalText, true, false);
+                        message.media.webpage.description = originalText[0].toString();
+                    } else if (TextUtils.isEmpty(oldMessage.message)) {
                         message.media.webpage.description = getString(R.string.EventLogOriginalCaptionEmpty);
                     } else {
                         message.media.webpage.description = oldMessage.message;
@@ -9151,13 +9160,19 @@ public class MessageObject {
         return h;
     }
 
-    public int textHeight(ChatMessageCell.TransitionParams tp) {
-        if (textLayoutBlocks == null) return 0;
-        int h = 0;
-        for (int i = 0; i < textLayoutBlocks.size(); ++i) {
-            h += textLayoutBlocks.get(i).padTop + textLayoutBlocks.get(i).height(tp) + textLayoutBlocks.get(i).padBottom;
+    public int textHeight(ChatMessageCell.TransitionParams transitionParams) {
+        if (richLayout != null) {
+            return richLayout.getHeight();
         }
-        return h;
+        if (textLayoutBlocks == null) {
+            return 0;
+        }
+        int height = 0;
+        for (int i = 0; i < textLayoutBlocks.size(); ++i) {
+            final TextLayoutBlock block = textLayoutBlocks.get(i);
+            height += block.padTop + block.height(transitionParams) + block.padBottom;
+        }
+        return height;
     }
 
     public static class TextLayoutBlocks {
