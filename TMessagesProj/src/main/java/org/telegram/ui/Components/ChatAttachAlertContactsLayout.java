@@ -183,6 +183,17 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             });
         }
 
+        // a row picked in the list shows it by a check box drawn on it, which a screen reader did not
+        // read
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            if (checkBox != null && checkBox.getVisibility() == VISIBLE) {
+                info.setCheckable(true);
+                info.setChecked(checkBox.isChecked());
+            }
+        }
+
         public void setChecked(boolean checked, boolean animated) {
             if (checkBox.getVisibility() != VISIBLE) {
                 checkBox.setVisibility(VISIBLE);

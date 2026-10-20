@@ -539,6 +539,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             emojifyContainer.addView(emojifyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 3, -1, 2, 0));
             addView(emojifyContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, -3, -6, -3));
             ScaleStateListAnimator.apply(emojifyContainer, 0.025f, 1.5f);
+            CheckableRowAccessibility.apply(emojifyContainer, emojifyCheckbox);
 
             anotherExample = new LinearLayout(context);
             anotherExample.setPadding(dp(6), dp(3), dp(6), dp(3));

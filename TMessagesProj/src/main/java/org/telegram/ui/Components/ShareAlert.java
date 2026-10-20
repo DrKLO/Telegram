@@ -1788,6 +1788,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             timestampTextView.setText(LocaleController.formatString(R.string.VideoShareAddTimestamp, AndroidUtilities.formatShortDuration(video_timestamp)));
             timestampLayout.addView(timestampTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
             ScaleStateListAnimator.apply(timestampLayout, 0.025f, 1.5f);
+            CheckableRowAccessibility.apply(timestampLayout, timestampCheckbox);
             timestampLayout.setOnClickListener(v -> {
                 timestampCheckbox.setChecked(!timestampCheckbox.isChecked(), true);
                 updateLinkTextView();
