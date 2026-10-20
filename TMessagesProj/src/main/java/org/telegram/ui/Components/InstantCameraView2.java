@@ -50,7 +50,7 @@ import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Stories.recorder.FlashViews;
-import org.telegram.utils.camera.roundvideo.RoundVideoSession;
+import org.telegram.utils.recorder.round.RoundVideoSession;
 
 import java.io.File;
 import java.io.FileOutputStream;

@@ -11388,7 +11388,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user.bot_active_users != 0) {
                     newString2 = LocaleController.formatPluralStringComma("BotUsers", user.bot_active_users, ',');
                 } else {
-                    newString2 = LocaleController.getString(R.string.Bot);
+                    newString2 = UserObject.getBotStatus(user);
                 }
             } else {
                 isOnline[0] = false;

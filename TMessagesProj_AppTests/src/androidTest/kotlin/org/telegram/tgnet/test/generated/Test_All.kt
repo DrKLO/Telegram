@@ -366,7 +366,7 @@ public class Test_All {
     @Test
     public fun test_000050_BotVerifierSettings_TL_botVerifierSettings() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_BotVerifierSettings.TL_botVerifierSettings::class,
-          org.telegram.tgnet.tl.TL_bots.botVerifierSettings::TLdeserialize, null)
+          org.telegram.tgnet.tl.TL_bots.BotVerifierSettings::TLdeserialize, null)
 
     }
 
@@ -11732,7 +11732,7 @@ public class Test_All {
     @Test
     public fun test_001622_BotVerifierSettings_TL_botVerifierSettings_layer229() {
       test_TLdeserialize(org.telegram.tgnet.model.generated.TlGen_BotVerifierSettings.TL_botVerifierSettings_layer229::class,
-          org.telegram.tgnet.tl.TL_bots.botVerifierSettings::TLdeserialize, 229)
+          org.telegram.tgnet.tl.TL_bots.BotVerifierSettings::TLdeserialize, 229)
 
     }
 

@@ -60,6 +60,8 @@ public class AppGlobalConfig {
     public final ConfigBoolean disableBlurInLightTheme = ofBoolean("android_disable_blur_in_light_theme", false);
     public final ConfigBoolean disableBlurInDarkTheme = ofBoolean("android_disable_blur_in_dark_theme", false);
 
+    public final ConfigBoolean audioRecorderV2Disabled = ofBoolean("android_audio_recorder_v2_disabled", false);
+
     public final ConfigTime noForwardsRequestExpirePeriod = ofTime("no_forwards_request_expire_period", 86400, TimeUnit.SECONDS);
     public final ConfigTime pollClosePeriodMax = ofTime("poll_close_period_max", 86400 * 30, TimeUnit.SECONDS);
 

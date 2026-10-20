@@ -1,4 +1,4 @@
-package org.telegram.utils.camera.roundvideo;
+package org.telegram.utils.recorder.round;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;

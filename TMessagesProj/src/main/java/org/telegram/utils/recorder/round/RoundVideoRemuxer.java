@@ -1,4 +1,4 @@
-package org.telegram.utils.camera.roundvideo;
+package org.telegram.utils.recorder.round;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;

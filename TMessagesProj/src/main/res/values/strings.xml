@@ -3722,6 +3722,11 @@
     <string name="SendingGif">Sending GIF...</string>
     <!--bot-->
     <string name="Bot">bot</string>
+    <string name="BotTypeAgent">Agent</string>
+    <string name="BotTypeGame">Game</string>
+    <string name="BotTypeApp">App</string>
+    <string name="BotTypeAI">AI</string>
+    <string name="BotTypeNonBinary">Non-binary</string>
     <string name="BotShare">Share</string>
     <string name="BotSettings">Settings</string>
     <string name="BotHelp">Help</string>
@@ -11268,6 +11273,14 @@
     <string name="RoundVideoComposition">Composition</string>
     <string name="RoundVideoCompositionEnabled">Round video styling</string>
     <string name="RoundVideoCompositionInfo">Disable styling to record a plain square without outside-circle blur, dimming or Telegram overlays.</string>
+
+    <string name="AudioRecorderSettings">Voice Messages</string>
+    <string name="AudioRecorderGeneral">Recorder</string>
+    <string name="AudioRecorderUseNewRecorder">Use new recorder</string>
+    <string name="AudioRecorderNoiseSuppression">Noise suppression</string>
+    <string name="AudioRecorderNoiseSuppressionOff">Off</string>
+    <string name="AudioRecorderNoiseSuppressionRNNoise">RNNoise</string>
+    <string name="AudioRecorderGeneralInfo">RNNoise removes background noise may affect music or very quiet speech.</string>
 
     <!-- Wallet -->
     <string name="WalletUseDevicePasscode">Use device PIN or password</string>

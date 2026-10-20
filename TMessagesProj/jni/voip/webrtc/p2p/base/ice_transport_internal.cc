@@ -10,6 +10,7 @@
 
 #include "p2p/base/ice_transport_internal.h"
 
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "p2p/base/p2p_constants.h"
 
@@ -35,7 +36,10 @@ RTCError VerifyCandidate(const Candidate& cand) {
     return RTCError::OK();
   }
   if (port < 1024) {
-    if ((port != 80) && (port != 443)) {
+    // Telegram reflector addresses are synthetic hostnames whose port identifies
+    // the relay server. ReflectorPort validates and handles these candidates.
+    if (!absl::EndsWith(cand.address().hostname(), ".reflector") &&
+        (port != 80) && (port != 443)) {
       return RTCError(RTCErrorType::INVALID_PARAMETER,
                       "candidate has port below 1024, but not 80 or 443");
     }
