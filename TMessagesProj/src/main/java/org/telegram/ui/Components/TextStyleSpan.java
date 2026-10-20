@@ -41,6 +41,7 @@ public class TextStyleSpan extends MetricAffectingSpan {
             start = run.start;
             end = run.end;
             urlEntity = run.urlEntity;
+            lng = run.lng;
             header = run.header;
         }
 
@@ -135,6 +136,10 @@ public class TextStyleSpan extends MetricAffectingSpan {
             textSize = size;
         }
         color = textColor;
+    }
+
+    public TextStyleSpan(TextStyleSpan span) {
+        this(new TextStyleRun(span.style), span.textSize, span.color);
     }
 
     public int getStyleFlags() {
