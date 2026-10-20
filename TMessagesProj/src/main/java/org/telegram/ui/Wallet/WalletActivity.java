@@ -91,6 +91,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_toncenter;
 import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -276,10 +277,14 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
         actionBar.setClipToPadding(false);
 
         final ActionBarMenu menu = actionBar.createMenu();
-        menu.addItem(2, R.drawable.scan_qr).setOnClickListener(v -> {
+        final ActionBarMenuItem scanItem = menu.addItem(2, R.drawable.scan_qr);
+        scanItem.setContentDescription(LocaleController.getString(R.string.WalletScanQRCode));
+        scanItem.setOnClickListener(v -> {
             openWalletQrScanner();
         });
-        menu.addItem(1, R.drawable.ic_ab_other).setOnClickListener(v -> {
+        final ActionBarMenuItem moreItem = menu.addItem(1, R.drawable.ic_ab_other);
+        moreItem.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+        moreItem.setOnClickListener(v -> {
             final GramWallet wallet = GramWallet.getInstance(currentAccount);
             final ItemOptions o = ItemOptions.makeOptions(WalletActivity.this, v, true);
             o.translate(0, -dp(48));
@@ -597,6 +602,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
         };
         card.setDiamondOnCard(true);
         card.setCardOnClickListener(v -> openWalletQRAlert(getContext(), currentAccount, getResourceProvider()));
+        card.setCardClickAccessibilityLabel(LocaleController.getString(R.string.WalletShowMyQR));
         listView.addEdgeEffectListener(cardOverscrollListener);
         cardShadowView = new View(context) {
             @Override
@@ -2406,6 +2412,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                     run.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
                     sb.setSpan(new TextStyleSpan(run), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     commentView.setText(sb);
+                    commentView.setContentDescription(LocaleController.getString(R.string.Spoiler));
                     final MessageDrawable commentBackground = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false);
                     commentBackground.shadow = false;
                     commentBackground.overrideColor = Theme.getColor(Theme.key_wallet_comment, resourceProvider);
@@ -2429,6 +2436,7 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                             run2.flags |= TextStyleSpan.FLAG_STYLE_SPOILER;
                             sb2.setSpan(new TextStyleSpan(run2), 0, sb2.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             commentView.setText(sb2);
+                            commentView.setContentDescription(null);
                             commentView.setTextIsSelectable(true);
                             commentView.setOnClickListener(null);
                             ScaleStateListAnimator.reset(commentView);
@@ -2573,6 +2581,22 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                 lockView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(typingCommentEncrypted[0] ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteGrayText2, resourceProvider), PorterDuff.Mode.SRC_IN));
                 lockView.setImageResource(typingCommentEncrypted[0] ? R.drawable.wallet_comment_locked : R.drawable.wallet_comment_unlocked);
                 lockView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), Theme.RIPPLE_MASK_CIRCLE_20DP));
+                lockViewContainer.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(host, info);
+                        info.setClassName("android.widget.CheckBox");
+                        info.setCheckable(true);
+                        info.setChecked(!typingCommentEncrypted[0]);
+                        info.setContentDescription(LocaleController.getString(R.string.WalletMakeCommentPublic));
+                    }
+
+                    @Override
+                    public void onInitializeAccessibilityEvent(View host, android.view.accessibility.AccessibilityEvent event) {
+                        super.onInitializeAccessibilityEvent(host, event);
+                        event.setChecked(!typingCommentEncrypted[0]);
+                    }
+                });
                 final HintView2[] lastHint = new HintView2[1];
                 lockViewContainer.setOnClickListener(v -> {
                     typingCommentEncrypted[0] = !typingCommentEncrypted[0];
@@ -3415,6 +3439,8 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
             super(context);
 
             final AddressRingView ringView = new AddressRingView(context, address);
+            ringView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            ringView.setContentDescription(address);
             addView(ringView, LayoutHelper.createFrame(
                     LayoutHelper.MATCH_PARENT,
                     LayoutHelper.MATCH_PARENT,
@@ -3551,6 +3577,8 @@ public class WalletActivity extends UniversalFragment implements NotificationCen
                 }
             };
             qrContainer.setOnClickListener(showAddress);
+            qrContainer.setContentDescription(LocaleController.getString(R.string.QrCode));
+            WalletAccessibility.setClickLabel(qrContainer, LocaleController.getString(R.string.WalletCopyAddress));
             copyButton.setOnClickListener(showAddress);
             showQrButton.setOnClickListener(v -> setShowingAddress(false));
         }

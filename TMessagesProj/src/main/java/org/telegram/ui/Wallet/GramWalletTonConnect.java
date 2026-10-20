@@ -1172,6 +1172,7 @@ public class GramWalletTonConnect {
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
         closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         ScaleStateListAnimator.apply(closeView);
         topLayout.addView(closeView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 0, 0, 0));
 
@@ -1448,6 +1449,7 @@ public class GramWalletTonConnect {
         }
         card.addView(content, LayoutHelper.createLinear(-1, -2));
         if (text) {
+            WalletAccessibility.setClickLabel(content, LocaleController.getString(R.string.Copy));
             content.setOnClickListener(v -> {
                 if (AndroidUtilities.addToClipboard(data.optString("text"))) {
                     BulletinFactory.of(sheet.topBulletinContainer, resourcesProvider)
@@ -1581,6 +1583,7 @@ public class GramWalletTonConnect {
         backView.setScaleType(ImageView.ScaleType.CENTER);
         backView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
         backView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        backView.setContentDescription(LocaleController.getString(R.string.AccDescrGoBack));
         ScaleStateListAnimator.apply(backView);
         actionBar.addView(backView, LayoutHelper.createLinear(48, 48, 0f, Gravity.CENTER_VERTICAL | Gravity.LEFT, 4, 0, 0, 0));
 

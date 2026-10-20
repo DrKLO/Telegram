@@ -357,6 +357,9 @@ public class WalletKeysBackupFragment extends UniversalFragment implements Notif
             wordView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             wordView.setText(words.get(i));
             row.addView(wordView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                row.setScreenReaderFocusable(true);
+            }
 
             column.addView(row, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 0, i == from ? 0 : 10, 0, 0));
         }

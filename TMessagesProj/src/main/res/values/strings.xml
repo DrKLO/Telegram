@@ -11332,6 +11332,7 @@
     <string name="WalletTransferStatusReceived">received</string>
     <string name="WalletBack">Back</string>
     <string name="WalletCurrency">Currency</string>
+    <string name="AccDescrWalletSwitchCurrency">Switch currency</string>
     <string name="WalletKeysAndBackup">Keys &amp; Backup</string>
     <string name="WalletConnectedApps">Connected Apps</string>
     <string name="WalletWhatIsWallet">What is Wallet?</string>

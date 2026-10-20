@@ -34,6 +34,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -4206,6 +4207,29 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             info.setText(accessibilityText);
         }
         info.setEnabled(true);
+        if (hasWalletActionLayout() && walletActionLayout != null) {
+            // a transfer is drawn with more than its text, and opens on a tap
+            final CharSequence details = walletActionLayout.getAccessibilityDetails();
+            if (!TextUtils.isEmpty(details)) {
+                final CharSequence full = TextUtils.concat(accessibilityText, "\n", details);
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                    info.setContentDescription(full.toString());
+                } else {
+                    info.setText(full);
+                }
+            }
+            info.setClickable(true);
+            info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK);
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_CLICK && hasWalletActionLayout()) {
+            openGramTransaction();
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     public void setInvalidateColors(boolean invalidate) {
