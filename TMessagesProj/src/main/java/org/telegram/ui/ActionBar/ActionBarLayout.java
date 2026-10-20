@@ -1739,6 +1739,33 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         return lastFragment;
     }
 
+    /**
+     * Ends any pending fragment transition, swipe-back or predictive back gesture right away.
+     * Must be called before moving fragments between layouts: otherwise {@link #rebuildAllFragmentViews}
+     * is postponed until an animation that may never finish, leaving an empty container on screen.
+     */
+    public void finishTransitionsImmediately() {
+        if (backAnimator != null) {
+            final AnimatorSet animator = backAnimator;
+            backAnimator = null;
+            animator.end();
+        }
+        if (startedTracking && !animationInProgress) {
+            predictiveInput = false;
+            predictiveBackInProgress = false;
+            containerView.setAlpha(1.0f);
+            onSlideAnimationEnd(true);
+        }
+        maybeStartTracking = false;
+        if (velocityTracker != null) {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
+        if (transitionAnimationInProgress) {
+            onAnimationEndCheck(true);
+        }
+    }
+
     @Override
     public boolean checkTransitionAnimation() {
         if (transitionAnimationPreviewMode) {
