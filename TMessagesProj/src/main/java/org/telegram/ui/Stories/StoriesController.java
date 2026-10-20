@@ -1279,6 +1279,10 @@ public class StoriesController {
     }
 
     public boolean markStoryAsRead(TL_stories.PeerStories userStories, TL_stories.StoryItem storyItem, boolean profile) {
+        // HAKOGRAM: phantom - don't read stories
+        if (org.telegram.messenger.hakogram.HakoConfig.isNoReadStories()) {
+            return false;
+        }
         if (storyItem == null || userStories == null) {
             return false;
         }
