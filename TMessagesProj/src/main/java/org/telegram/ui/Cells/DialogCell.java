@@ -1796,7 +1796,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() ||
                                 triedMessageName != null ||
                                 message != null && message.messageOwner != null && message.messageOwner.guestchat_via_from != null ||
-                                chat != null && chat.id > 0 && (fromChat == null || fromChat.id != chat.id) && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message) ||
+                                chat != null && chat.id > 0 && (fromChat == null || fromChat.id != chat.id) && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message) && !useFromUserAsAvatar ||
                                 user != null && user.id == UserObject.VERIFY && message != null && message.getForwardedFromId() != null
                             ) {
                                 messageNameString = AndroidUtilities.escape(triedMessageName != null ? triedMessageName : getMessageNameString());
@@ -2198,7 +2198,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 nameString = getString(R.string.ArchivedChats);
             } else {
                 if (chat != null) {
-                    if (useFromUserAsAvatar) {
+                    if (useFromUserAsAvatar && chat.forum) {
                         if (topicIconInName == null) {
                             topicIconInName = new Drawable[1];
                         }
@@ -2207,6 +2207,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         if (nameString == null) {
                             nameString = "";
                         }
+                    } else if (useFromUserAsAvatar) {
+                        nameString = AndroidUtilities.escape(getMessageNameString());
                     } else if (isTopic) {
                         if (topicIconInName == null) {
                             topicIconInName = new Drawable[1];
