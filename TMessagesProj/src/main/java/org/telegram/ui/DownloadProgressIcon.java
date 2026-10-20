@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -183,6 +184,8 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
         }
     }
 
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
+
     public void updateProgress() {
         MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
         long total = 0;
@@ -195,6 +198,7 @@ public class DownloadProgressIcon extends View implements NotificationCenter.Not
             progress = 1f;
         } else {
             progress = downloaded / (float) total;
+            transferAnnouncer.onProgress(downloaded, total, false);
         }
         if (progress > 1f) {
             progress = 1f;
