@@ -2731,10 +2731,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     getLocationController().locationsCache.put(dialog_id, res.messages);
                     getNotificationCenter().postNotificationName(NotificationCenter.liveLocationsCacheChanged, dialog_id);
                     fetchRecentLocations(res.messages);
-                    getLocationController().markLiveLoactionsAsRead(dialogId);
+                    getLocationController().markLiveLocationsAsRead(dialogId);
                     if (markAsReadRunnable == null) {
                         markAsReadRunnable = () -> {
-                            getLocationController().markLiveLoactionsAsRead(dialogId);
+                            getLocationController().markLiveLocationsAsRead(dialogId);
                             if (isPaused || markAsReadRunnable == null) {
                                 return;
                             }
