@@ -822,7 +822,7 @@ public class DataSettingsActivity extends BaseFragment {
                                 videos = true;
                                 count++;
                             }
-                            if (!files && (preset.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                            if (!files && (preset.mask[a] & DownloadController.AUTODOWNLOAD_TYPE_FILES) != 0) {
                                 files = true;
                                 count++;
                             }
