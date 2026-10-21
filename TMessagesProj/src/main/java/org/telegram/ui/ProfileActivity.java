@@ -583,6 +583,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int delete_topic = 23;
     private final static int report = 24;
 
+    // --- hidden items ---
+    private static final boolean HIDE_STATISTICS = true;
+
     private final static int edit_info = 30;
     private final static int logout = 31;
     private final static int search_button = 32;
@@ -12224,7 +12227,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             streamAction = true;
                         }
                     }
-                    if ((chatInfo.can_view_stats || chatInfo.can_view_revenue || chatInfo.can_view_stars_revenue || getMessagesController().getStoriesController().canPostStories(getDialogId())) && topicId == 0) {
+                    if (!HIDE_STATISTICS && (chatInfo.can_view_stats || chatInfo.can_view_revenue || chatInfo.can_view_stars_revenue || getMessagesController().getStoriesController().canPostStories(getDialogId())) && topicId == 0) {
                         otherItem.addSubItem(statistics, R.drawable.msg_stats, LocaleController.getString(R.string.Statistics));
                     }
                     ChatObject.Call call = getMessagesController().getGroupCall(chatId, false);
