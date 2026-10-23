@@ -426,6 +426,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                     isExternalStorageManager = Environment.isExternalStorageManager();
                 }
                 if (!BuildVars.NO_SCOPED_STORAGE && (item.icon == R.drawable.files_storage || item.icon == R.drawable.files_internal) && !isExternalStorageManager) {
+                    if (!parentAlert.checkEditingCaptionLimit()) {
+                        return;
+                    }
                     delegate.startDocumentSelectActivity();
                 } else if (file == null) {
                     if (item.icon == R.drawable.files_gallery) {

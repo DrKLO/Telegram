@@ -20371,6 +20371,11 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    // External pickers have no caption field, so the text being edited stays as the caption
+    private void fillEditingMediaWithFieldText() {
+        fillEditingMediaWithCaption(chatActivityEnterView != null ? chatActivityEnterView.getFieldText() : null, null);
+    }
+
     private void sendUriAsDocument(Uri uri) {
         sendUriAsDocument(uri, true, 0);
     }
@@ -20406,7 +20411,7 @@ public class ChatActivity extends BaseFragment implements
                 return;
             }
         }
-        fillEditingMediaWithCaption(null, null);
+        fillEditingMediaWithFieldText();
         if (sendAsUri) {
             SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, editingMessageObject, notify, schedule_date, null, getMessageChatSendParams(), false);
         } else {
@@ -20455,11 +20460,11 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     if (editingMessageObject == null && chatMode == MODE_SCHEDULED) {
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate, scheduleRepeatPeriod) -> {
-                            fillEditingMediaWithCaption(null, null);
+                            fillEditingMediaWithFieldText();
                             SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), null, uri, dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, null, 0, editingMessageObject, notify, scheduleDate, chatMode, getMessageChatSendParams());
                         }, themeDelegate);
                     } else {
-                        fillEditingMediaWithCaption(null, null);
+                        fillEditingMediaWithFieldText();
                         SendMessagesHelper.prepareSendingPhoto(getAccountInstance(), null, uri, dialog_id, replyingMessageObject, getThreadMessage(), replyingQuote, null, null, null, null, 0, editingMessageObject, true, 0, chatMode, getMessageChatSendParams());
                     }
                 }
@@ -20475,7 +20480,7 @@ public class ChatActivity extends BaseFragment implements
                             chatAttachAlert.dismiss();
                         }
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate, scheduleRepeatPeriod) -> {
-                            fillEditingMediaWithCaption(null, null);
+                            fillEditingMediaWithFieldText();
                             sendUriAsDocument(data.getData(), notify, scheduleDate);
                             afterMessageSend();
                         }, themeDelegate);
@@ -20485,7 +20490,7 @@ public class ChatActivity extends BaseFragment implements
                             chatAttachAlert.dismiss();
                         }
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate, scheduleRepeatPeriod) -> {
-                            fillEditingMediaWithCaption(null, null);
+                            fillEditingMediaWithFieldText();
                             ClipData clipData = data.getClipData();
                             for (int i = 0; i < clipData.getItemCount(); i++) {
                                 sendUriAsDocument(clipData.getItemAt(i).getUri(), notify, scheduleDate);
@@ -20497,7 +20502,7 @@ public class ChatActivity extends BaseFragment implements
                         showAttachmentError();
                     }
                 } else {
-                    fillEditingMediaWithCaption(null, null);
+                    fillEditingMediaWithFieldText();
                     if (data.getData() != null) {
                         sendUriAsDocument(data.getData());
                     } else if (data.getClipData() != null) {
