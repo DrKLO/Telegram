@@ -4445,6 +4445,14 @@ public class LocaleController {
         final Context context = ApplicationLoader.applicationContext;
         String value;
 
+        // The app name comes from our resources, not from cloud language packs.
+        if (stringRes == R.string.AppName || "AppName".equals(key)) {
+            return context.getString(R.string.AppName);
+        }
+        if (stringRes == R.string.AppNameBeta || "AppNameBeta".equals(key)) {
+            return context.getString(R.string.AppNameBeta);
+        }
+
         if (BuildVars.USE_CLOUD_STRINGS) {
             value = localizationExternal.getByResNameOrResId(context, key, stringRes);
             if (value != null) {
