@@ -12,6 +12,13 @@ Kite сделан на основе [официального исходного
 
 ## Сборка на Ubuntu
 
+0. Установите JDK 17 (нужен именно JDK, а не только JRE):
+
+   ```bash
+   sudo apt install -y openjdk-17-jdk
+   echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc && source ~/.bashrc
+   ```
+
 1. Установите [Android Studio](https://developer.android.com/studio). В *SDK Manager* выберите:
    Android SDK Platform 36, Build-Tools 36.0.0, **NDK 27.2.12479018** и **CMake 3.22.1**
    (во вкладке *SDK Tools* включите *Show Package Details*, чтобы выбрать точную версию).
