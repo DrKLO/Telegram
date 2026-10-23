@@ -1336,6 +1336,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     BaseFragment chatFragment = fragmentStack.get(a);
                     if (chatFragment instanceof ChatActivity) {
                         ((ChatActivity) chatFragment).setIgnoreAttachOnPause(true);
+                        ((ChatActivity) chatFragment).setKeepVoiceRecordingOnPause(true);
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();
@@ -1359,6 +1360,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     BaseFragment chatFragment = fragmentStack.get(a);
                     if (chatFragment instanceof ChatActivity) {
                         ((ChatActivity) chatFragment).setIgnoreAttachOnPause(true);
+                        ((ChatActivity) chatFragment).setKeepVoiceRecordingOnPause(true);
                     }
                     chatFragment.onPause();
                     chatFragment.onFragmentDestroy();

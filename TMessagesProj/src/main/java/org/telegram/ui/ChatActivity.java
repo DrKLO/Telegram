@@ -787,6 +787,10 @@ public class ChatActivity extends BaseFragment implements
     private boolean waitingForReplyMessageLoad;
 
     private boolean ignoreAttachOnPause;
+    private boolean keepVoiceRecordingOnPause;
+    private boolean restoreVoiceRecording;
+    private boolean restoreVoiceRecordingOnce;
+    private long restoreVoiceRecordingTimerStart;
 
     private boolean allowStickersPanel = true;
     private boolean allowContextBotPanel;
@@ -9023,6 +9027,17 @@ public class ChatActivity extends BaseFragment implements
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         Timer.finish(t);
 
+        if (restoreVoiceRecording) {
+            restoreVoiceRecording = false;
+            final boolean once = restoreVoiceRecordingOnce;
+            final long timerStart = restoreVoiceRecordingTimerStart;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.restoreVoiceRecording(once, timerStart);
+                }
+            });
+        }
+
         return fragmentView;
     }
 
@@ -13843,6 +13858,12 @@ public class ChatActivity extends BaseFragment implements
 
     protected void setIgnoreAttachOnPause(boolean value) {
         ignoreAttachOnPause = value;
+    }
+
+    // tablet layout change moves the fragment to another ActionBarLayout and recreates its views;
+    // a voice message being recorded should survive the next onPause and reattach to the new input view
+    protected void setKeepVoiceRecordingOnPause(boolean value) {
+        keepVoiceRecordingOnPause = value;
     }
 
     public ChatActivityEnterView getChatActivityEnterViewForStickers() {
@@ -30099,7 +30120,25 @@ public class ChatActivity extends BaseFragment implements
         }
         long replyId = threadMessageId;
         getMessagesController().markDialogAsReadNow(dialog_id, replyId);
-        MediaController.getInstance().stopRaiseToEarSensors(this, true, true);
+        final boolean keepVoiceRecording = keepVoiceRecordingOnPause && chatActivityEnterView != null && chatActivityEnterView.isRecordingAudioVideo() && !chatActivityEnterView.isInVideoMode() && !MediaController.getInstance().isRecordingPaused();
+        keepVoiceRecordingOnPause = false;
+        if (keepVoiceRecording) {
+            restoreVoiceRecording = true;
+            restoreVoiceRecordingOnce = chatActivityEnterView.isVoiceOnce();
+            restoreVoiceRecordingTimerStart = chatActivityEnterView.getRecordTimerStartTime();
+            // the layout change recreates the view synchronously; if it did not, pause the recording as before
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!restoreVoiceRecording) {
+                    return;
+                }
+                restoreVoiceRecording = false;
+                final MediaController mediaController = MediaController.getInstance();
+                if (mediaController.isRecordingAudio() && !mediaController.isRecordingPaused() && mediaController.getRecordingGuid() == classGuid) {
+                    mediaController.toggleRecordingPause(false);
+                }
+            });
+        }
+        MediaController.getInstance().stopRaiseToEarSensors(this, true, !keepVoiceRecording);
         paused = true;
         wasPaused = true;
         if (chatMode == 0) {
