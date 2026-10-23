@@ -4344,6 +4344,24 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         return commentTextViewLocation[1];
     }
 
+    // External pickers keep the text being edited as the caption, without this sheet's send-time limit check
+    public boolean checkEditingCaptionLimit() {
+        if (editingMessageObject == null || currentLimit - codepointCount >= 0) {
+            return true;
+        }
+        if (!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && MessagesController.getInstance(currentAccount).captionLengthLimitPremium > codepointCount) {
+            BulletinFactory.of(sizeNotifierFrameLayout, resourcesProvider).createCaptionLimitBulletin(MessagesController.getInstance(currentAccount).captionLengthLimitPremium, () -> {
+                dismiss(true);
+                if (baseFragment != null) {
+                    baseFragment.presentFragment(new PremiumPreviewFragment("caption_limit"));
+                }
+            }).show();
+        } else {
+            BulletinFactory.of(sizeNotifierFrameLayout, resourcesProvider).createErrorBulletin(getString(R.string.TooLongError), resourcesProvider).show();
+        }
+        return false;
+    }
+
     private void showCaptionLimitBulletin(BaseFragment parentFragment) {
         if (!(parentFragment instanceof ChatActivity) || !ChatObject.isChannelAndNotMegaGroup(((ChatActivity) parentFragment).getCurrentChat())) {
             return;
