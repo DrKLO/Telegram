@@ -6568,6 +6568,11 @@ public class ChatActivityEnterView extends FrameLayout implements
                 FileLog.e(e);
             }
         }
+        if (recordInterfaceState != 0 && !isInVideoMode()) {
+            // the voice recording UI took the orientation lock and won't get to release it
+            final Activity activity = parentActivity;
+            AndroidUtilities.runOnUIThread(() -> AndroidUtilities.unlockOrientation(activity));
+        }
         if (sizeNotifierLayout != null) {
             sizeNotifierLayout.setDelegate(null);
         }

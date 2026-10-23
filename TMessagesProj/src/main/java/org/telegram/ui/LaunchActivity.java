@@ -7131,6 +7131,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         AndroidUtilities.resetTabletFlag();
         invalidateTabletMode();
         checkLayout();
+        AndroidUtilities.runOnUIThread(() -> AndroidUtilities.applyPendingOrientationUnlock(this));
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.onConfigurationChanged();
@@ -7154,6 +7155,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_SYSTEM) {
             Theme.checkAutoNightThemeConditions();
         }
+    }
+
+    @Override
+    public void setRequestedOrientation(int requestedOrientation) {
+        AndroidUtilities.clearPendingOrientationUnlock();
+        super.setRequestedOrientation(requestedOrientation);
     }
 
     @Override

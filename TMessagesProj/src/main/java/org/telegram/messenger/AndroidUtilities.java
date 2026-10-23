@@ -273,6 +273,9 @@ public class AndroidUtilities {
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     public static float touchSlop;
     private static int prevOrientation = -10;
+    private static int pendingUnlockOrientation = -10;
+    private static int pendingLockedOrientation = -10;
+    private static WeakReference<Activity> pendingUnlockActivity;
     private static boolean waitingForSms = false;
     private static boolean waitingForCall = false;
     private static final Object smsLock = new Object();
@@ -1916,7 +1919,8 @@ public class AndroidUtilities {
             return;
         }
         try {
-            prevOrientation = activity.getRequestedOrientation();
+            prevOrientation = getPendingUnlockOrientation(activity);
+            clearPendingOrientationUnlock();
             WindowManager manager = (WindowManager) activity.getSystemService(Activity.WINDOW_SERVICE);
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
@@ -1960,7 +1964,8 @@ public class AndroidUtilities {
             return;
         }
         try {
-            prevOrientation = activity.getRequestedOrientation();
+            prevOrientation = getPendingUnlockOrientation(activity);
+            clearPendingOrientationUnlock();
             activity.setRequestedOrientation(orientation);
         } catch (Exception e) {
             FileLog.e(e);
@@ -1974,9 +1979,53 @@ public class AndroidUtilities {
         }
         try {
             if (prevOrientation != -10) {
+                final int lockedOrientation = activity.getRequestedOrientation();
                 activity.setRequestedOrientation(prevOrientation);
+                if (isLargeScreen(activity)) {
+                    // a lock taken on a foldable's small screen: the large screen ignores the request, so apply it again on the next small one
+                    pendingUnlockOrientation = prevOrientation;
+                    pendingLockedOrientation = lockedOrientation;
+                    pendingUnlockActivity = new WeakReference<>(activity);
+                }
                 prevOrientation = -10;
             }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static boolean isLargeScreen(Activity activity) {
+        return activity.getResources().getConfiguration().smallestScreenWidthDp >= 600;
+    }
+
+    private static int getPendingUnlockOrientation(Activity activity) {
+        if (pendingUnlockOrientation != -10 && pendingUnlockActivity != null && pendingUnlockActivity.get() == activity) {
+            return pendingUnlockOrientation;
+        }
+        return activity.getRequestedOrientation();
+    }
+
+    // any other orientation request replaces the one the pending unlock would restore
+    public static void clearPendingOrientationUnlock() {
+        pendingUnlockOrientation = -10;
+        pendingLockedOrientation = -10;
+        pendingUnlockActivity = null;
+    }
+
+    public static void applyPendingOrientationUnlock(Activity activity) {
+        if (activity == null || pendingUnlockOrientation == -10 || prevOrientation != -10 || isLargeScreen(activity)) {
+            return;
+        }
+        if (pendingUnlockActivity == null || pendingUnlockActivity.get() != activity) {
+            return;
+        }
+        final int locked = pendingLockedOrientation;
+        final int unlocked = pendingUnlockOrientation;
+        clearPendingOrientationUnlock();
+        try {
+            // Activity skips a request equal to its last one, so restate the lock the system still holds first
+            activity.setRequestedOrientation(locked);
+            activity.setRequestedOrientation(unlocked);
         } catch (Exception e) {
             FileLog.e(e);
         }

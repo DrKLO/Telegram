@@ -4661,6 +4661,10 @@ public class ChatActivity extends BaseFragment implements
 
         CharSequence oldMessage;
         if (chatActivityEnterView != null) {
+            // views are recreated without onPause (e.g. folding or unfolding a foldable): keep the recording visible
+            if (!restoreVoiceRecording) {
+                saveVoiceRecordingForRestore();
+            }
             chatActivityEnterView.onDestroy();
             if (!chatActivityEnterView.isEditingMessage()) {
                 oldMessage = chatActivityEnterView.getFieldText();
@@ -13864,6 +13868,17 @@ public class ChatActivity extends BaseFragment implements
     // a voice message being recorded should survive the next onPause and reattach to the new input view
     protected void setKeepVoiceRecordingOnPause(boolean value) {
         keepVoiceRecordingOnPause = value;
+    }
+
+    // remembers an active voice recording so the next createView shows it again in the new input view
+    private boolean saveVoiceRecordingForRestore() {
+        if (chatActivityEnterView == null || !chatActivityEnterView.isRecordingAudioVideo() || chatActivityEnterView.isInVideoMode() || MediaController.getInstance().isRecordingPaused()) {
+            return false;
+        }
+        restoreVoiceRecording = true;
+        restoreVoiceRecordingOnce = chatActivityEnterView.isVoiceOnce();
+        restoreVoiceRecordingTimerStart = chatActivityEnterView.getRecordTimerStartTime();
+        return true;
     }
 
     public ChatActivityEnterView getChatActivityEnterViewForStickers() {
@@ -30120,12 +30135,9 @@ public class ChatActivity extends BaseFragment implements
         }
         long replyId = threadMessageId;
         getMessagesController().markDialogAsReadNow(dialog_id, replyId);
-        final boolean keepVoiceRecording = keepVoiceRecordingOnPause && chatActivityEnterView != null && chatActivityEnterView.isRecordingAudioVideo() && !chatActivityEnterView.isInVideoMode() && !MediaController.getInstance().isRecordingPaused();
+        final boolean keepVoiceRecording = keepVoiceRecordingOnPause && saveVoiceRecordingForRestore();
         keepVoiceRecordingOnPause = false;
         if (keepVoiceRecording) {
-            restoreVoiceRecording = true;
-            restoreVoiceRecordingOnce = chatActivityEnterView.isVoiceOnce();
-            restoreVoiceRecordingTimerStart = chatActivityEnterView.getRecordTimerStartTime();
             // the layout change recreates the view synchronously; if it did not, pause the recording as before
             AndroidUtilities.runOnUIThread(() -> {
                 if (!restoreVoiceRecording) {
