@@ -6193,6 +6193,41 @@ public class ChatActivityEnterView extends FrameLayout implements
         return recordingAudioVideo && recordCircle.isSendButtonVisible();
     }
 
+    public boolean isVoiceOnce() {
+        return voiceOnce;
+    }
+
+    public long getRecordTimerStartTime() {
+        return recordTimerView != null && recordTimerView.isRunning ? recordTimerView.startTime : 0;
+    }
+
+    /** Shows a voice recording that kept running while the input view was recreated, in the locked state. */
+    public void restoreVoiceRecording(boolean once, long timerStartTime) {
+        final MediaController mediaController = MediaController.getInstance();
+        if (destroyed || recordingAudioVideo || !mediaController.isRecordingAudio() || mediaController.isRecordingPaused() || mediaController.getRecordingGuid() != recordingGuid) {
+            return;
+        }
+        isInVideoMode = false;
+        if (audioVideoSendButton != null) {
+            audioVideoSendButton.setState(ChatActivityEnterViewAnimatedIconView.State.VOICE, false);
+        }
+        recordingAudioVideo = true;
+        updateRecordInterface(RECORD_STATE_ENTER, true);
+        if (once) {
+            voiceOnce = true;
+            if (controlsView != null) {
+                controlsView.periodDrawable.setValue(1, true, false);
+            }
+            MediaDataController.getInstance(currentAccount).toggleDraftVoiceOnce(dialog_id, parentFragment != null && parentFragment.isTopic ? parentFragment.getTopicId() : 0, true);
+        }
+        millisecondsRecorded = timerStartTime > 0 ? System.currentTimeMillis() - timerStartTime : mediaController.recordTimeCount;
+        if (recordTimerView != null) {
+            recordTimerView.start(millisecondsRecorded);
+        }
+        sendButtonVisible = true;
+        startLockTransition();
+    }
+
     public void cancelRecordingAudioVideo() {
         if (hasRecordVideo && isInVideoMode()) {
             CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
