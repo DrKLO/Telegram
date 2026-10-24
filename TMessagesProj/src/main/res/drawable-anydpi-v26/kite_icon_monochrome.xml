@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kite launcher icon: single-colour layer for themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="20"
+        android:scaleX="0.84"
+        android:scaleY="0.84">
+        <group
+            android:translateX="1"
+            android:translateY="-4">
+            <path
+                android:pathData="M54,66 C50,70 58,74 54,78 C50,82 57,85 54,89"
+                android:strokeColor="#FFFFFF"
+                android:strokeAlpha="0.9"
+                android:strokeWidth="1.8"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M54,73 L50,70.5 L50,75.5 Z M54,73 L58,70.5 L58,75.5 Z M54,83 L50.5,80.8 L50.5,85.2 Z M54,83 L57.5,80.8 L57.5,85.2 Z"
+                android:fillColor="#FFFFFF"
+                android:fillAlpha="0.9" />
+            <path
+                android:pathData="M54,24 L71,45 L54,66 L37,45 Z"
+                android:fillColor="#FFFFFF" />
+        </group>
+    </group>
+</vector>
