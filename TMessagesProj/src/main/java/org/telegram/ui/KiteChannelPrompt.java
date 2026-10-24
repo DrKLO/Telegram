@@ -2,8 +2,6 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.content.SharedPreferences;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MessagesController;
@@ -15,40 +13,53 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.BulletinFactory;
 
 /**
- * Asks once per account whether the user wants to join the Kite news channel.
- * Joining happens only after the user taps "Subscribe".
+ * Asks on every app start whether the user wants to join the Kite news channel,
+ * until they are a member. Joining happens only after the user taps "Subscribe".
  */
 public final class KiteChannelPrompt {
 
     public static final String CHANNEL_USERNAME = "usekite";
 
-    private static final String PREF_SHOWN = "kite_channel_prompt_shown";
     private static final long SHOW_DELAY_MS = 5000;
+
+    // Accounts already asked since the app process started.
+    private static final boolean[] askedThisLaunch = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
 
     private KiteChannelPrompt() {
     }
 
     public static void maybeShow(BaseFragment fragment) {
         final int account = fragment.getCurrentAccount();
-        if (!UserConfig.getInstance(account).isClientActivated() || wasShown(account)) {
+        if (!UserConfig.getInstance(account).isClientActivated() || askedThisLaunch[account]) {
             return;
         }
         // Let the permission dialogs that DialogsActivity shows first go away.
-        AndroidUtilities.runOnUIThread(() -> show(fragment), SHOW_DELAY_MS);
+        AndroidUtilities.runOnUIThread(() -> showIfNotMember(fragment), SHOW_DELAY_MS);
     }
 
-    private static boolean wasShown(int account) {
-        return MessagesController.getMainSettings(account).getBoolean(PREF_SHOWN, false);
+    private static void showIfNotMember(BaseFragment fragment) {
+        final int account = fragment.getCurrentAccount();
+        if (askedThisLaunch[account]) {
+            return;
+        }
+        MessagesController.getInstance(account).getUserNameResolver().resolve(CHANNEL_USERNAME, peerId -> {
+            if (peerId != null && peerId != Long.MAX_VALUE && peerId < 0) {
+                final TLRPC.Chat chat = MessagesController.getInstance(account).getChat(-peerId);
+                if (chat != null && !ChatObject.isNotInChat(chat)) {
+                    return;
+                }
+            }
+            show(fragment);
+        });
     }
 
     private static void show(BaseFragment fragment) {
         final int account = fragment.getCurrentAccount();
         if (fragment.getParentActivity() == null || fragment.getVisibleDialog() != null
-                || LaunchActivity.getSafeLastFragment() != fragment || wasShown(account)) {
+                || LaunchActivity.getSafeLastFragment() != fragment || askedThisLaunch[account]) {
             return;
         }
-        final SharedPreferences prefs = MessagesController.getMainSettings(account);
-        prefs.edit().putBoolean(PREF_SHOWN, true).apply();
+        askedThisLaunch[account] = true;
 
         fragment.showDialog(new AlertDialog.Builder(fragment.getParentActivity())
             .setTitle(getString(R.string.KiteChannelPromptTitle))
