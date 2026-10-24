@@ -7146,6 +7146,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     .create());
             }
         }
+        if (tosAccepted && !onlySelect && folderId == 0 && communityId == 0) {
+            KiteChannelPrompt.maybeShow(this);
+        }
         showFiltersHint();
         if (viewPages != null) {
             for (int a = 0; a < viewPages.length; a++) {

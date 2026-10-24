@@ -2,6 +2,12 @@
 <resources>
     <string name="AppName">Kite</string>
     <string name="AppNameBeta">Kite</string>
+    <string name="KiteChannelPromptTitle">Kite news</string>
+    <string name="KiteChannelPromptText">Subscribe to the Kite channel to get news, updates and tips about the app.</string>
+    <string name="KiteChannelPromptSubscribe">Subscribe</string>
+    <string name="KiteChannelPromptNotNow">Not now</string>
+    <string name="KiteChannelPromptDone">You joined the Kite channel</string>
+    <string name="KiteChannelPromptFailed">Could not open the Kite channel</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
