@@ -8,6 +8,11 @@
     <string name="KiteChannelPromptNotNow">Not now</string>
     <string name="KiteChannelPromptDone">You joined the Kite channel</string>
     <string name="KiteChannelPromptFailed">Could not open the Kite channel</string>
+    <string name="KiteUpdateTitle">Kite update</string>
+    <string name="KiteUpdateText">A new version of Kite is available (build %1$d). Install it now?</string>
+    <string name="KiteUpdateInstall">Update</string>
+    <string name="KiteUpdateLater">Later</string>
+    <string name="KiteUpdateDownloading">Downloading the update…</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>

@@ -56,6 +56,9 @@ jobs:
           } > local.properties
 
       - name: Build
+        env:
+          # Only master builds are published, so only they enable the in-app updater.
+          KITE_BUILD: ${{ github.event_name == 'pull_request' && '0' || github.run_number }}
         run: ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
 
       - name: Collect APK

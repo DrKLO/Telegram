@@ -16,6 +16,8 @@ Kite сделан на основе [официального исходного
 <https://github.com/Garricho/kite-android/releases/latest/download/Kite.apk>
 (release-сборка `io.github.garricho.kite`, только arm64).
 
+Сборки из CI сами проверяют новый релиз (не чаще раза в 3 часа) и предлагают обновиться: APK скачивается, затем Android просит подтвердить установку.
+
 Один раз нужно включить Actions во вкладке **Actions** форка. Ещё нужно добавить секреты `TG_API_ID` и `TG_API_HASH`
 в **Settings → Secrets and variables → Actions**.
 
