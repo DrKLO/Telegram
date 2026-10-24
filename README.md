@@ -10,6 +10,15 @@ Kite сделан на основе [официального исходного
   (они работают только для официальных ID);
 - свой тип системного аккаунта для синхронизации контактов.
 
+## Скачать готовый APK
+
+Каждый коммит в `master` собирается GitHub Actions. Последняя сборка всегда лежит здесь:
+<https://github.com/Garricho/kite-android/releases/latest/download/Kite.apk>
+(release-сборка `io.github.garricho.kite`, только arm64).
+
+Один раз нужно включить Actions во вкладке **Actions** форка. Ещё нужно добавить секреты `TG_API_ID` и `TG_API_HASH`
+в **Settings → Secrets and variables → Actions**.
+
 ## Сборка на Ubuntu
 
 0. Установите JDK 17 (нужен именно JDK, а не только JRE):
