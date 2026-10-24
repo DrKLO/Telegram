@@ -34,6 +34,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class MentionCell extends LinearLayout {
 
@@ -58,7 +59,7 @@ public class MentionCell extends LinearLayout {
         imageView.setRoundRadius(dp(14));
         addView(imageView, LayoutHelper.createLinear(28, 28, 8, 4, 0, 0));
 
-        nameTextView = new TextView(context) {
+        nameTextView = new PersianTextView(context) {
             @Override
             public void setText(CharSequence text, BufferType type) {
                 text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
@@ -72,7 +73,7 @@ public class MentionCell extends LinearLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
-        usernameTextView = new TextView(context);
+        usernameTextView = new PersianTextView(context);
         usernameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         usernameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         usernameTextView.setSingleLine(true);

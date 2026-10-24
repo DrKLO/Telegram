@@ -31,6 +31,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Switch;
 
 public class NotificationsCheckCell extends FrameLayout {
@@ -74,7 +75,7 @@ public class NotificationsCheckCell extends FrameLayout {
             addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
         }
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -93,7 +94,7 @@ public class NotificationsCheckCell extends FrameLayout {
         valueTextView.setEllipsizeByGradient(true);
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 80 : (withImage ? 64 : padding), 38 - 9 - (withImage ? 2 : 0) + (currentHeight - 70) / 2, LocaleController.isRTL ? (withImage ? 64 : padding) : 80, 0));
 
-        multilineValueTextView = new TextView(context);
+        multilineValueTextView = new PersianTextView(context);
         multilineValueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         multilineValueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         multilineValueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);

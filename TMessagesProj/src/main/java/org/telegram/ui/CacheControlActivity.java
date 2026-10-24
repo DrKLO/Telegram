@@ -103,6 +103,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.NestedSizeNotifierLayout;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
@@ -1234,7 +1235,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
         actionModeSubtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         actionModeLayout.addView(actionModeSubtitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 10, 18, 0));
 
-        actionModeClearButton = new TextView(context);
+        actionModeClearButton = new PersianTextView(context);
         actionModeClearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         actionModeClearButton.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
         actionModeClearButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
@@ -1671,7 +1672,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             addView(title, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
             for (int i = 0; i < 3; ++i) {
-                subtitle[i] = new TextView(context);
+                subtitle[i] = new PersianTextView(context);
                 subtitle[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                 subtitle[i].setGravity(Gravity.CENTER);
                 subtitle[i].setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
@@ -1872,7 +1873,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             progressView = new ProgressView(context);
             addView(progressView, LayoutHelper.createFrame(240, 5, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 16 + 150 + 16 + 28 + 16, 0, 0));
 
-            title = new TextView(context);
+            title = new PersianTextView(context);
             title.setGravity(Gravity.CENTER_HORIZONTAL);
             title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -1880,7 +1881,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             title.setText(LocaleController.getString(R.string.ClearingCache));
             addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 16 + 150 + 16 + 28 + 16 + 5 + 30, 0, 0));
 
-            subtitle = new TextView(context);
+            subtitle = new PersianTextView(context);
             subtitle.setGravity(Gravity.CENTER_HORIZONTAL);
             subtitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -2093,7 +2094,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             ScaleStateListAnimator.apply(button, 0.02f, 1.2f);
 
             if (LocaleController.isRTL) {
-                rtlTextView = new TextView(context);
+                rtlTextView = new PersianTextView(context);
                 rtlTextView.setText(LocaleController.getString(R.string.ClearCache));
                 rtlTextView.setGravity(Gravity.CENTER);
                 rtlTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -2717,7 +2718,7 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
             super(context);
             this.resourcesProvider = resourcesProvider;
 
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setSingleLine();
             textView.setLines(1);
             textView.setMaxLines(1);

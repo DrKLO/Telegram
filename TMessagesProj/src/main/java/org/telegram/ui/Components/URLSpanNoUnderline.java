@@ -68,4 +68,8 @@ public class URLSpanNoUnderline extends URLSpan {
     public TLObject getObject() {
         return object;
     }
+
+    public TextStyleSpan.TextStyleRun getTextStyleRun() {
+        return style;
+    }
 }

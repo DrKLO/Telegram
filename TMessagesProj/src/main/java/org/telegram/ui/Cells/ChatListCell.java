@@ -18,6 +18,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontCanvasText;
 import org.telegram.ui.Components.RadioButton;
 
 public class ChatListCell extends LinearLayout {
@@ -27,6 +28,7 @@ public class ChatListCell extends LinearLayout {
         private RadioButton button;
         private boolean isThreeLines;
         private RectF rect = new RectF();
+        private final PersianFontCanvasText fontText = new PersianFontCanvasText();
         private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
         public ListView(Context context, boolean threeLines) {
@@ -68,10 +70,10 @@ public class ChatListCell extends LinearLayout {
             canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.dialogs_onlineCirclePaint);
 
             String text = isThreeLines ? LocaleController.getString(R.string.ChatListExpanded) : LocaleController.getString(R.string.ChatListDefault);
-            int width = (int) Math.ceil(textPaint.measureText(text));
+            int width = (int) Math.ceil(fontText.measure(text, textPaint));
 
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            canvas.drawText(text, (getMeasuredWidth() - width) / 2, AndroidUtilities.dp(96), textPaint);
+            fontText.draw(canvas, text, (getMeasuredWidth() - width) / 2, AndroidUtilities.dp(96), textPaint);
 
             for (int a = 0; a < 2; a++) {
                 int cy = AndroidUtilities.dp(a == 0 ? 21 : 53);

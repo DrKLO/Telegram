@@ -1393,7 +1393,7 @@ public class ViewPagerFixed extends FrameLayout {
                 String counterText;
                 if (currentTab.counter > 0) {
                     counterText = String.format("%d", currentTab.counter);
-                    counterWidth = (int) Math.ceil(textCounterPaint.measureText(counterText));
+                    counterWidth = (int) Math.ceil(counterFontText.measure(counterText, textCounterPaint));
                     countWidth = Math.max(dp(10), counterWidth) + dp(10);
                 } else {
                     counterText = null;
@@ -1456,7 +1456,7 @@ public class ViewPagerFixed extends FrameLayout {
                         if (currentTab.id != Integer.MAX_VALUE) {
                             textCounterPaint.setAlpha((int) (255 * (1.0f - editingStartAnimationProgress)));
                         }
-                        canvas.drawText(counterText, rect.left + (rect.width() - counterWidth) / 2, countTop + dp(14.5f), textCounterPaint);
+                        counterFontText.draw(canvas, counterText, rect.left + (rect.width() - counterWidth) / 2, countTop + dp(14.5f), textCounterPaint);
                     }
                     if (currentTab.id != Integer.MAX_VALUE && (isEditing || editingStartAnimationProgress != 0)) {
                         deletePaint.setColor(textCounterPaint.getColor());
@@ -1481,6 +1481,7 @@ public class ViewPagerFixed extends FrameLayout {
 
         private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final TextPaint textCounterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final PersianFontCanvasText counterFontText = new PersianFontCanvasText();
         private final Paint deletePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private final Paint counterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 

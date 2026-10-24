@@ -76,6 +76,7 @@ import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -448,7 +449,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 lockImageView.setVisibility(!AndroidUtilities.isSmallScreen() && AndroidUtilities.displaySize.x < AndroidUtilities.displaySize.y ? View.VISIBLE : View.GONE);
                 innerLinearLayout.addView(lockImageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL));
 
-                titleTextView = new TextView(context);
+                titleTextView = new PersianTextView(context);
                 titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 titleTextView.setTypeface(AndroidUtilities.bold());
                 if (type == TYPE_SETUP_CODE) {
@@ -466,7 +467,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
                 descriptionTextSwitcher = new TextViewSwitcher(context);
                 descriptionTextSwitcher.setFactory(() -> {
-                    TextView tv = new TextView(context);
+                    TextView tv = new PersianTextView(context);
                     tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
                     tv.setGravity(Gravity.CENTER_HORIZONTAL);
                     tv.setLineSpacing(dp(2), 1);
@@ -477,7 +478,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 descriptionTextSwitcher.setOutAnimation(context, R.anim.alpha_out);
                 innerLinearLayout.addView(descriptionTextSwitcher, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 8, 20, 0));
 
-                TextView forgotPasswordButton = new TextView(context);
+                TextView forgotPasswordButton = new PersianTextView(context);
                 forgotPasswordButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 forgotPasswordButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
                 forgotPasswordButton.setPadding(dp(32), 0, dp(32), 0);
@@ -489,7 +490,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 frameLayout.addView(forgotPasswordButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
                 VerticalPositionAutoAnimator.attach(forgotPasswordButton);
 
-                passcodesDoNotMatchTextView = new TextView(context);
+                passcodesDoNotMatchTextView = new PersianTextView(context);
                 passcodesDoNotMatchTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 passcodesDoNotMatchTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
                 passcodesDoNotMatchTextView.setText(LocaleController.getString(R.string.PasscodesDoNotMatchTryAgain));

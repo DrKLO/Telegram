@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.RecyclerListView;
@@ -80,7 +81,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -90,7 +91,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 22 : 71, 10, LocaleController.isRTL ? 71 : 22, 0));
 
-        valueTextView = new TextView(context);
+        valueTextView = new PersianTextView(context);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
@@ -110,7 +111,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addView(addButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 18, 14, 0));
 
-        delButton = new TextView(context);
+        delButton = new PersianTextView(context);
         delButton.setGravity(Gravity.CENTER);
         delButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
         delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

@@ -8,11 +8,13 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
@@ -21,6 +23,7 @@ import android.widget.EditText;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
@@ -31,6 +34,13 @@ import java.util.Stack;
 
 public class EditTextEffects extends EditText {
     private final static int SPOILER_TIMEOUT = 10000;
+
+    private boolean updatingPersianFont;
+    private boolean lastPersianFontEnabled;
+    private Typeface lastFontTypeface;
+    private boolean lastFontFakeBold;
+    private float lastFontSkew;
+    private CharSequence lastFontHint;
 
     private List<SpoilerEffect> spoilers = new ArrayList<>();
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
@@ -70,9 +80,62 @@ public class EditTextEffects extends EditText {
     public EditTextEffects(Context context) {
         super(context, null, 0, R.style.EditTextNoBackgroundStyle);
 
+        // Add this directly to TextView before EditTextBoldCursor initializes its watcher list.
+        super.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                updatePersianFont(s);
+            }
+        });
+        updatePersianFont(getText());
+
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             clickDetector = new SpoilersClickDetector(this, spoilers, this::onSpoilerClicked);
         }
+    }
+
+    private void updatePersianFont(Editable text) {
+        if (updatingPersianFont) {
+            return;
+        }
+        updatingPersianFont = true;
+        try {
+            PersianFontApplier.applyToEditable(text, getPaint());
+        } finally {
+            updatingPersianFont = false;
+        }
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        boolean typographyChanged = lastPersianFontEnabled != SharedConfig.useVazirmatnFont
+                || lastFontTypeface != getTypeface()
+                || lastFontFakeBold != getPaint().isFakeBoldText()
+                || lastFontSkew != getPaint().getTextSkewX();
+        if (typographyChanged) {
+            updatePersianFont(getText());
+        }
+        CharSequence hint = getHint();
+        if (hint != lastFontHint || typographyChanged) {
+            CharSequence styledHint = PersianFontApplier.applyForPaint(hint, getPaint());
+            if (styledHint != hint) {
+                setHint(styledHint);
+            }
+            lastFontHint = getHint();
+        }
+        lastPersianFontEnabled = SharedConfig.useVazirmatnFont;
+        lastFontTypeface = getTypeface();
+        lastFontFakeBold = getPaint().isFakeBoldText();
+        lastFontSkew = getPaint().getTextSkewX();
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     private void onSpoilerClicked(SpoilerEffect eff, float x, float y) {

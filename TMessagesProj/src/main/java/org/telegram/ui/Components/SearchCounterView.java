@@ -18,6 +18,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SearchCounterView extends View {
@@ -53,6 +54,7 @@ public class SearchCounterView extends View {
     public float horizontalPadding;
 
     String currentString;
+    private boolean countFontEnabled;
     private final Theme.ResourcesProvider resourcesProvider;
 
     public SearchCounterView(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -77,8 +79,13 @@ public class SearchCounterView extends View {
     float dx = 0;
 
     public void setCount(String newStr, int count, boolean animated) {
-        if (currentString != null && currentString.equals(newStr)) {
+        if (currentString != null && currentString.equals(newStr)
+                && countFontEnabled == SharedConfig.useVazirmatnFont) {
             return;
+        }
+        if (countFontEnabled != SharedConfig.useVazirmatnFont) {
+            animated = false;
+            countFontEnabled = SharedConfig.useVazirmatnFont;
         }
         if (countAnimator != null) {
             countAnimator.cancel();
@@ -100,8 +107,8 @@ public class SearchCounterView extends View {
                 countWidth = 0;
                 countLayout = null;
             } else {
-                countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(textPaint.measureText(newStr)));
-                countLayout = new StaticLayout(newStr, textPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(newStr, textPaint), textPaint)));
+                countLayout = new StaticLayout(PersianFontApplier.applyForPaint(newStr, textPaint), textPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
             }
             invalidate();
         }
@@ -182,16 +189,16 @@ public class SearchCounterView extends View {
                     }
                 }
 
-                int countOldWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(textPaint.measureText(oldStr)));
-                int countNewWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(textPaint.measureText(newStr)));
-                countOldLayout = new StaticLayout(oldSpannableStr, textPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                countAnimationStableLayout = new StaticLayout(stableStr, textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                countAnimationInLayout = new StaticLayout(newSpannableStr, textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                int countOldWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(oldStr, textPaint), textPaint)));
+                int countNewWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(newStr, textPaint), textPaint)));
+                countOldLayout = new StaticLayout(PersianFontApplier.applyForPaint(oldSpannableStr, textPaint), textPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                countAnimationStableLayout = new StaticLayout(PersianFontApplier.applyForPaint(stableStr, textPaint), textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                countAnimationInLayout = new StaticLayout(PersianFontApplier.applyForPaint(newSpannableStr, textPaint), textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
                 if (countStartIndex > 0) {
                     SpannableStringBuilder stableString2 = new SpannableStringBuilder(newStr);
                     stableString2.setSpan(new EmptyStubSpan(), countStartIndex, newStr.length(), 0);
-                    countAnimationStableLayout2 = new StaticLayout(stableString2, textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                    countAnimationStableLayout2 = new StaticLayout(PersianFontApplier.applyForPaint(stableString2, textPaint), textPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 } else {
                     countAnimationStableLayout2 = null;
                 }
@@ -203,8 +210,8 @@ public class SearchCounterView extends View {
             countAnimator.start();
         }
         if (count > 0) {
-            countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(textPaint.measureText(newStr)));
-            countLayout = new StaticLayout(newStr, textPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+            countWidth = Math.max(AndroidUtilities.dp(12), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(newStr, textPaint), textPaint)));
+            countLayout = new StaticLayout(PersianFontApplier.applyForPaint(newStr, textPaint), textPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
         }
 
         currentCount = count;

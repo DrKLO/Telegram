@@ -32,6 +32,7 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -39,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-public class SpoilersTextView extends TextView implements TextSelectionHelper.SimpleSelectabeleView {
+public class SpoilersTextView extends PersianTextView implements TextSelectionHelper.SimpleSelectabeleView {
     private SpoilersClickDetector clickDetector;
     protected List<SpoilerEffect> spoilers = new ArrayList<>();
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();

@@ -24,6 +24,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.PhotoEditorSeekBar;
 
 public class PhotoEditToolCell extends FrameLayout {
@@ -59,7 +60,7 @@ public class PhotoEditToolCell extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        nameTextView = new TextView(context);
+        nameTextView = new PersianTextView(context);
         nameTextView.setGravity(Gravity.RIGHT);
         nameTextView.setTextColor(0xffffffff);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
@@ -68,7 +69,7 @@ public class PhotoEditToolCell extends FrameLayout {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
-        valueTextView = new TextView(context);
+        valueTextView = new PersianTextView(context);
         valueTextView.setTextColor(getThemedColor(Theme.key_chat_editMediaButton));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         valueTextView.setGravity(Gravity.RIGHT);

@@ -39,6 +39,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.LauncherIconController;
@@ -223,7 +224,7 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
             iconView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             addView(iconView, LayoutHelper.createLinear(58, 58, Gravity.CENTER_HORIZONTAL));
 
-            titleView = new TextView(context);
+            titleView = new PersianTextView(context);
             titleView.setSingleLine();
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

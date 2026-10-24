@@ -62,6 +62,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.PhotoBubbleClip;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.Text;
@@ -570,9 +571,10 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             }
         }
         if (contact != null) {
-            int w = (int) (Theme.dialogs_countTextPaint.measureText(getString(R.string.Invite)) + 1);
+            CharSequence inviteText = PersianFontApplier.applyForPaint(getString(R.string.Invite), Theme.dialogs_countTextPaint);
+            int w = (int) (Layout.getDesiredWidth(inviteText, Theme.dialogs_countTextPaint) + 1);
 
-            actionLayout = new StaticLayout(getString(R.string.Invite), Theme.dialogs_countTextPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            actionLayout = new StaticLayout(inviteText, Theme.dialogs_countTextPaint, Math.max(1, w), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!LocaleController.isRTL) {
                 actionLeft = getMeasuredWidth() - w - dp(19) - dp(16);
             } else {
@@ -592,8 +594,8 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
             if (unreadCount != 0) {
                 lastUnreadCount = unreadCount;
                 String countString = String.format(Locale.US, "%d", unreadCount);
-                countWidth = Math.max(dp(12), (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(countString)));
-                countLayout = new StaticLayout(countString, Theme.dialogs_countTextPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                countWidth = Math.max(dp(12), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(countString, Theme.dialogs_countTextPaint), Theme.dialogs_countTextPaint)));
+                countLayout = new StaticLayout(PersianFontApplier.applyForPaint(countString, Theme.dialogs_countTextPaint), Theme.dialogs_countTextPaint, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 int w = countWidth + dp(18);
                 nameWidth -= w;
                 statusWidth -= w;
@@ -631,7 +633,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (nameWidth < 0) {
             nameWidth = 0;
         }
-        CharSequence nameStringFinal = TextUtils.ellipsize(nameString, currentNamePaint, nameWidth - dp(12), TextUtils.TruncateAt.END);
+        CharSequence nameStringFinal = TextUtils.ellipsize(PersianFontApplier.applyForPaint(nameString, currentNamePaint), currentNamePaint, nameWidth - dp(12), TextUtils.TruncateAt.END);
         if (nameStringFinal != null) {
             nameStringFinal = Emoji.replaceEmoji(nameStringFinal, currentNamePaint.getFontMetricsInt(), false);
         }
@@ -716,7 +718,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         }
 
         if (!TextUtils.isEmpty(statusString)) {
-            CharSequence statusStringFinal = TextUtils.ellipsize(statusString, currentStatusPaint, statusWidth - dp(12), TextUtils.TruncateAt.END);
+            CharSequence statusStringFinal = TextUtils.ellipsize(PersianFontApplier.applyForPaint(statusString, currentStatusPaint), currentStatusPaint, statusWidth - dp(12), TextUtils.TruncateAt.END);
             statusLayout = new StaticLayout(statusStringFinal, currentStatusPaint, statusWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             nameTop = dp(9);
             nameLockTop -= dp(10);

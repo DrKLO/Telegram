@@ -1170,7 +1170,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
             imageLayoutView.addView(imageView, imageViewParams = LayoutHelper.createFrame(34, 34, Gravity.CENTER));
             avatarDrawable = new AvatarDrawable();
 
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), selectT));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
             textView.setGravity(Gravity.CENTER);

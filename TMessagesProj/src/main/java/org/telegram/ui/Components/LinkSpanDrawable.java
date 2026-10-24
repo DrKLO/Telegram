@@ -512,7 +512,7 @@ public class LinkSpanDrawable<S extends CharacterStyle> {
         }
     }
 
-    public static class LinksTextView extends TextView {
+    public static class LinksTextView extends PersianTextView {
         public interface OnLinkPress {
             public void run(ClickableSpan span);
         }

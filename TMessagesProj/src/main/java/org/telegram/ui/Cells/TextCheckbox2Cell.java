@@ -24,6 +24,7 @@ import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Switch;
 
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class TextCheckbox2Cell extends FrameLayout {
     public TextCheckbox2Cell(Context context, int padding, boolean dialog) {
         super(context);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -78,7 +79,7 @@ public class TextCheckbox2Cell extends FrameLayout {
         textView.setEllipsize(TextUtils.TruncateAt.END);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? padding : 64, 0, LocaleController.isRTL ? 64 : padding, 0));
 
-        valueTextView = new TextView(context);
+        valueTextView = new PersianTextView(context);
         valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayText2));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);

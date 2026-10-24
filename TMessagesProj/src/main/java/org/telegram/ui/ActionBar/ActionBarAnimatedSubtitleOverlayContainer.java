@@ -9,7 +9,6 @@ import android.text.SpannableString;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -17,6 +16,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
@@ -92,7 +92,7 @@ public class ActionBarAnimatedSubtitleOverlayContainer extends FrameLayout imple
         return titleOverlayAnimator.getMetadata().getTotalVisibility();
     }
 
-    private class SimpleTextViewReplaceable extends TextView implements Destroyable {
+    private class SimpleTextViewReplaceable extends PersianTextView implements Destroyable {
         public SimpleTextViewReplaceable(Context context) {
             super(context);
         }

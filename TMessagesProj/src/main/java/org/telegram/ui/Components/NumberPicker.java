@@ -42,6 +42,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
@@ -49,6 +50,7 @@ import java.util.Locale;
 public class NumberPicker extends LinearLayout {
 
     public static final int DEFAULT_SIZE_PER_COUNT = 42;
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private int SELECTOR_WHEEL_ITEM_COUNT = 3;
     private static final long DEFAULT_LONG_PRESS_UPDATE_INTERVAL = 300;
     private int SELECTOR_MIDDLE_ITEM_INDEX = SELECTOR_WHEEL_ITEM_COUNT / 2;
@@ -70,6 +72,7 @@ public class NumberPicker extends LinearLayout {
     private int mMaxWidth;
     private boolean mComputeMaxWidth;
     private int mTextSize;
+    private boolean measuredWithVazirmatn;
     private int mSelectorTextGapHeight;
     private String[] mDisplayedValues;
     private int mMinValue;
@@ -175,7 +178,7 @@ public class NumberPicker extends LinearLayout {
 
         setWillNotDraw(false);
 
-        mInputText = new TextView(getContext());
+        mInputText = new PersianTextView(getContext());
         mInputText.setGravity(Gravity.CENTER);
         mInputText.setSingleLine(true);
         mInputText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
@@ -292,6 +295,10 @@ public class NumberPicker extends LinearLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (measuredWithVazirmatn != SharedConfig.useVazirmatnFont) {
+            measuredWithVazirmatn = SharedConfig.useVazirmatnFont;
+            tryComputeMaxWidth();
+        }
         final int newWidthMeasureSpec = makeMeasureSpec(widthMeasureSpec, mMaxWidth);
         final int newHeightMeasureSpec = makeMeasureSpec(heightMeasureSpec, mMaxHeight);
         super.onMeasure(newWidthMeasureSpec, newHeightMeasureSpec);
@@ -605,7 +612,7 @@ public class NumberPicker extends LinearLayout {
         if (mDisplayedValues == null) {
             float maxDigitWidth = 0;
             for (int i = 0; i <= 9; i++) {
-                final float digitWidth = mSelectorWheelPaint.measureText(formatNumberWithLocale(i));
+                final float digitWidth = fontText.measure(formatNumberWithLocale(i), mSelectorWheelPaint);
                 if (digitWidth > maxDigitWidth) {
                     maxDigitWidth = digitWidth;
                 }
@@ -619,7 +626,7 @@ public class NumberPicker extends LinearLayout {
             maxTextWidth = (int) (numberOfDigits * maxDigitWidth);
         } else {
             for (String mDisplayedValue : mDisplayedValues) {
-                final float textWidth = mSelectorWheelPaint.measureText(mDisplayedValue);
+                final float textWidth = fontText.measure(mDisplayedValue, mSelectorWheelPaint);
                 if (textWidth > maxTextWidth) {
                     maxTextWidth = (int) textWidth;
                 }
@@ -809,13 +816,13 @@ public class NumberPicker extends LinearLayout {
                         oldAlpha = mSelectorWheelPaint.getAlpha();
                         mSelectorWheelPaint.setAlpha((int) (oldAlpha * p / 0.1f));
                     }
-                    canvas.drawText(scrollSelectorValue, x, y, mSelectorWheelPaint);
+                    fontText.draw(canvas, scrollSelectorValue, x, y, mSelectorWheelPaint);
                     canvas.restore();
                     if (oldAlpha != -1) {
                         mSelectorWheelPaint.setAlpha(oldAlpha);
                     }
                 } else {
-                    canvas.drawText(scrollSelectorValue, x, y, mSelectorWheelPaint);
+                    fontText.draw(canvas, scrollSelectorValue, x, y, mSelectorWheelPaint);
                 }
             }
             y += mSelectorElementHeight;

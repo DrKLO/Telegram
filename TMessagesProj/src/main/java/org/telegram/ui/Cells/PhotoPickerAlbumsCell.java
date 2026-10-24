@@ -27,6 +27,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class PhotoPickerAlbumsCell extends FrameLayout {
 
@@ -58,7 +59,7 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             linearLayout.setBackgroundResource(R.drawable.album_shadow);
             addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.BOTTOM));
 
-            nameTextView = new TextView(context);
+            nameTextView = new PersianTextView(context);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             nameTextView.setTextColor(0xffffffff);
             nameTextView.setSingleLine(true);
@@ -67,7 +68,7 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             nameTextView.setGravity(Gravity.BOTTOM);
             linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 8, 0, 0, 5));
 
-            countTextView = new TextView(context);
+            countTextView = new PersianTextView(context);
             countTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             countTextView.setTextColor(0xffffffff);
             countTextView.setSingleLine(true);

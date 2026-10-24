@@ -1,0 +1,116 @@
+# Optional Vazirmatn font
+
+Enable **Use Vazirmatn font** in Settings > Chat Settings. The setting is off by
+default and persists in the global main preferences. Changing it rebuilds the
+fragment views; cached message layouts check the setting before reuse.
+
+Only Arabic-script letters, Persian/Arabic digits, and their combining marks and
+joiners receive font spans. This is script detection, not language detection.
+Latin text, ASCII digits, punctuation, and emoji keep their existing fonts.
+Regular, Medium, and Bold assets are distributed with their SIL OFL license.
+Telegram's Medium assets, including the typeface returned by AndroidUtilities.bold()
+and rich-message bold formatting, map consistently to Vazirmatn Medium (500).
+Native Bold/StyleSpan.BOLD and bold headers map to Bold (700); regular maps to
+Regular (400). PersianFontSpan applies an optical text-size factor of 0.94 to
+the styled script run in both measurement and drawing. This keeps Vazirmatn
+slightly smaller and visually lighter while retaining the weight hierarchy.
+The base TextPaint, Latin runs, ASCII numbers, emoji, and code keep their size.
+Do not apply another size factor at individual call sites. This is an initial
+visual adjustment, not a calibrated match to every device's fallback font.
+
+The shared integration points are PersianTextView, SimpleTextView,
+AnimatedTextView, Text, StaticLayoutEx, and PersianFontCanvasText.
+LinksTextView, SpoilersTextView, TextViewEmojis, and TextViewWithLoading inherit
+the native text-view integration, including typeface and setting refresh.
+Settings cells, dialog previews, message bodies, sender
+names, forwarded headers, replies/quotes, and the chat/story caption inputs have
+additional integration where they measure or build text themselves.
+
+Code and monospace spans and replacement spans keep their original rendering.
+EmptyStubSpan is an exception: invisible animation placeholders receive font
+metrics so hidden digits reserve the same width as the visible digits.
+Font application preserves the original characters and other spans. Editable
+text is styled in place without replacing its text, selection, or composing
+spans. Unchanged font spans are reused when typing. EditTextEffects handles
+text edits; EditTextCaption refreshes font spans before notifying its page
+delegate about rich-formatting changes, even when no delegate is installed.
+Do not duplicate those font passes in individual input owners.
+
+Direct Canvas.drawText calls, independent TextViews, WebViews, system surfaces,
+and decorative story text renderers are not globally intercepted. Chat-list
+previews, the NumberPicker wheel, theme names, wallpaper controls, outline input
+labels, and SlideChooseView use the Canvas helper. Its per-view cache holds at
+most 32 labels and invalidates when the font setting or measured paint
+properties change. Unstyled labels retain native Canvas.drawText rendering.
+Chat-list and folder-tab badges (both tab implementations), shared counters,
+search counters, boost badges, unread-panel labels, and localized poll
+percentages use styled measurement and drawing. Bot-ad titles,
+explanation links, and sponsor-information panels use the native text-view
+integration; sponsored-message title labels also measure their styled text.
+The animated proxy subtitle, account-info actions, and native login text views
+(including country selection and phone-number confirmation) use PersianTextView.
+Owner/admin labels receive spans before measuring. Their text origin and the
+bot-menu text origin subtract StaticLayout.getLineLeft(0), preserving the
+existing button/badge geometry for RTL and LTR text even with Vazirmatn off.
+The bot-menu label is clipped to the visible expansion area during animation.
+Folder titles refresh their font spans when their title, base weight, italic
+state, or font setting changes rather than rebuilding font spans every frame.
+Integrate new
+native text surfaces with PersianFontApplier.applyForPaint before measuring or
+ellipsizing text. Prefer PersianTextView for native TextViews and
+PersianFontCanvasText for short, single-line Canvas labels, using the same
+helper for measurement and drawing. Use applyToEditable for editable text.
+Do not change a shared
+TextPaint's typeface globally, as that would affect Latin text too.
+
+## Validation
+
+The instrumentation suite is
+`org.telegram.ui.Components.PersianFontApplierTest` in TMessagesProj_AppTests.
+It contains 24 tests covering bundled fonts, script boundaries, formatting,
+links, code, replacement spans, repeat application, disabling, selection, IME
+composition, native text-view variants, rich input without a page delegate,
+folder-title refresh, Canvas cache/rendering behavior, weight consistency,
+Persian-digit counter refresh and placeholders, bot-ad text surfaces, optical
+sizing, animated proxy subtitles, and bot-menu rendering with both scripts and
+both font settings.
+
+The latest RTL/login/optical-size changes have only been parsed for Java syntax and
+checked for diff whitespace. The updated instrumentation suite has not been
+executed against this source state. A passing build or an older test run does
+not validate these latest changes. See
+[persian-font-review.md](persian-font-review.md) for outstanding release evidence.
+
+On Windows PowerShell, quote the entire Gradle project-property argument:
+
+```powershell
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :TMessagesProj_App:assembleAfatDebug
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :TMessagesProj_AppTests:connectedAfatDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=org.telegram.ui.Components.PersianFontApplierTest'
+```
+
+To run only the Java font suite without generating or compiling the unrelated
+protocol fixtures, use the optional init script:
+
+```powershell
+java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain :TMessagesProj_AppTests:connectedAfatDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=org.telegram.ui.Components.PersianFontApplierTest' -I Tools/persian-font-tests.init.gradle -x :TMessagesProj_AppTests:generateScheme --max-workers=4
+```
+
+Before release, check Persian and English UI languages, restart persistence,
+toggle off/on while returning to existing chats, mixed-script messages, bold and
+italic links, spoilers, inline/block code, emoji, RTL replies/quotes, forwarded
+messages, editing/drafts, story captions, accessibility text, and large text
+sizes. Check that ellipsizing, wrapping, and touch targets follow the styled
+layout. Device testing is needed in addition to compilation and span tests.
+
+If Gradle's connected-test runner cannot resolve its UTP dependencies, build
+`:TMessagesProj_AppTests:assembleAfatDebug` and
+`:TMessagesProj_AppTests:assembleAfatDebugAndroidTest` with the same init script,
+install the two APKs from that module with `adb install -r`, and run:
+
+```powershell
+adb shell am instrument -w -r -e class org.telegram.ui.Components.PersianFontApplierTest org.telegram.messenger.web.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+This uses the separate `.web` test host. Check the instrumentation output for
+the actual test count and failures; the command's shell exit code alone does
+not establish success.

@@ -314,6 +314,7 @@ public class CaptionContainerView extends FrameLayout {
             }
         };
         editText.glassDesignForEmojiView = true;
+        editText.getEditText().setDelegate(() -> editText.getEditText().invalidateEffects());
         editText.getEditText().addTextChangedListener(new EditTextSuggestionsFix());
         editText.setFocusable(true);
         editText.setFocusableInTouchMode(true);

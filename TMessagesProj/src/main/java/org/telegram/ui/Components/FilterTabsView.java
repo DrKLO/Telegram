@@ -26,6 +26,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
@@ -61,6 +62,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -124,15 +126,36 @@ public class FilterTabsView extends FrameLayout {
         public boolean isDefault;
         public boolean isLocked;
         public boolean noanimate;
+        private boolean fontEnabled;
+        private Typeface fontTypeface;
+        private boolean fontFakeBold;
+        private float fontSkew;
+        private CharSequence fontTitle;
 
         public Tab(int i, CharSequence title, boolean noanimate) {
             this.id = i;
             this.title = title;
+            updateFont();
             this.noanimate = noanimate;
         }
 
+        private void updateFont() {
+            if (title != fontTitle || fontEnabled != SharedConfig.useVazirmatnFont
+                    || fontTypeface != textPaint.getTypeface()
+                    || fontFakeBold != textPaint.isFakeBoldText()
+                    || fontSkew != textPaint.getTextSkewX()) {
+                title = PersianFontApplier.applyForPaint(title, textPaint);
+                fontTitle = title;
+                fontEnabled = SharedConfig.useVazirmatnFont;
+                fontTypeface = textPaint.getTypeface();
+                fontFakeBold = textPaint.isFakeBoldText();
+                fontSkew = textPaint.getTextSkewX();
+            }
+        }
+
         public int getWidth(boolean store) {
-            int width = titleWidth = (int) Math.ceil(HintView2.measureCorrectly(title, textPaint));
+            updateFont();
+            int width = titleWidth = (int) Math.ceil(Layout.getDesiredWidth(title, textPaint));
             int c;
             if (store) {
                 c = delegate.getTabCounter(id);
@@ -149,7 +172,7 @@ public class FilterTabsView extends FrameLayout {
             final int counterResultWidth;
             if (c > 0) {
                 String counterText = String.format("%d", c);
-                int counterWidth = (int) Math.ceil(textCounterPaint.measureText(counterText));
+                int counterWidth = (int) Math.ceil(counterFontText.measure(counterText, textCounterPaint));
                 int countWidth = Math.max(dp(TAB_COUNTER_HEIGHT - 10), counterWidth) + dp(10);
                 counterResultWidth = countWidth + dp(-2);
             } else {
@@ -168,6 +191,7 @@ public class FilterTabsView extends FrameLayout {
             title = Emoji.replaceEmoji(title, textPaint.getFontMetricsInt(), false);
 //            MessageObject.addEntitiesToText(title, newEntities, false, false, false, true);
             title = MessageObject.replaceAnimatedEmoji(title, newEntities, textPaint.getFontMetricsInt());
+            updateFont();
             this.noanimate = noanimate;
             return true;
         }
@@ -372,7 +396,7 @@ public class FilterTabsView extends FrameLayout {
                 } else {
                     counterText = String.format("%d", currentTab.counter);
                 }
-                counterWidth = (int) Math.ceil(textCounterPaint.measureText(counterText));
+                counterWidth = (int) Math.ceil(counterFontText.measure(counterText, textCounterPaint));
                 countWidth = (int) Math.max(dp(TAB_COUNTER_HEIGHT - 10), counterWidth) + dp(10);
             } else {
                 counterText = null;
@@ -392,7 +416,7 @@ public class FilterTabsView extends FrameLayout {
                 textX = textX * changeProgress + animateFromTextX * (1f - changeProgress);
             }
 
-            if (!TextUtils.equals(currentTab.title, currentText)) {
+            if (currentTab.title != currentText) {
                 currentText = currentTab.title;
                 textLayout = new StaticLayout(currentText, textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                 textLayoutEmojis = AnimatedEmojiSpan.update(currentTab.noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, textLayoutEmojis, textLayout);
@@ -535,7 +559,7 @@ public class FilterTabsView extends FrameLayout {
                         if (showRemove) {
                             textCounterPaint.setAlpha((int) (255 * (1.0f - editingStartAnimationProgress)));
                         }
-                        canvas.drawText(counterText, rect.left + (rect.width() - counterWidth) / 2, countTop + dp(12.5f), textCounterPaint);
+                        counterFontText.draw(canvas, counterText, rect.left + (rect.width() - counterWidth) / 2, countTop + dp(12.5f), textCounterPaint);
                     }
                 }
 
@@ -616,8 +640,8 @@ public class FilterTabsView extends FrameLayout {
                 animateFromCountWidth = lastCountWidth;
                 animateFromCounterWidth = lastCounterWidth;
                 if (animateFromTabCount > 0 && currentTab.counter > 0) {
-                    String oldStr = String.valueOf(animateFromTabCount);
-                    String newStr = String.valueOf(currentTab.counter);
+                    String oldStr = String.format("%d", animateFromTabCount);
+                    String newStr = String.format("%d", currentTab.counter);
 
                     if (oldStr.length() == newStr.length()) {
                         SpannableStringBuilder oldSpannableStr = new SpannableStringBuilder(oldStr);
@@ -632,15 +656,15 @@ public class FilterTabsView extends FrameLayout {
                             }
                         }
 
-                        int countOldWidth = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(oldStr));
-                        outCounter = new StaticLayout(oldSpannableStr, textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                        stableCounter = new StaticLayout(stableStr, textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                        inCounter = new StaticLayout(newSpannableStr, textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        int countOldWidth = (int) Math.ceil(counterFontText.measure(oldStr, textCounterPaint));
+                        outCounter = new StaticLayout(PersianFontApplier.applyForPaint(oldSpannableStr, textCounterPaint), textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        stableCounter = new StaticLayout(PersianFontApplier.applyForPaint(stableStr, textCounterPaint), textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        inCounter = new StaticLayout(PersianFontApplier.applyForPaint(newSpannableStr, textCounterPaint), textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                     } else {
-                        int countOldWidth = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(oldStr));
-                        outCounter = new StaticLayout(oldStr, textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                        int countNewWidth = (int) Math.ceil(Theme.dialogs_countTextPaint.measureText(newStr));
-                        inCounter = new StaticLayout(newStr, textCounterPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        int countOldWidth = (int) Math.ceil(counterFontText.measure(oldStr, textCounterPaint));
+                        outCounter = new StaticLayout(PersianFontApplier.applyForPaint(oldStr, textCounterPaint), textCounterPaint, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        int countNewWidth = (int) Math.ceil(counterFontText.measure(newStr, textCounterPaint));
+                        inCounter = new StaticLayout(PersianFontApplier.applyForPaint(newStr, textCounterPaint), textCounterPaint, countNewWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                     }
                 }
                 changed = true;
@@ -650,7 +674,7 @@ public class FilterTabsView extends FrameLayout {
             String counterText = null;
             if (currentTab.counter > 0) {
                 counterText = String.format("%d", currentTab.counter);
-                int counterWidth = (int) Math.ceil(textCounterPaint.measureText(counterText));
+                int counterWidth = (int) Math.ceil(counterFontText.measure(counterText, textCounterPaint));
                 countWidth = Math.max(dp(TAB_COUNTER_HEIGHT - 10), counterWidth) + dp(10);
             } else {
                 countWidth = 0;
@@ -690,9 +714,9 @@ public class FilterTabsView extends FrameLayout {
                     }
                     inStr.setSpan(new EmptyStubSpan(), startFrom, startFrom + substring.length(), 0);
 
-                    titleAnimateInLayout = new StaticLayout(inStr, textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                    titleAnimateInLayout = new StaticLayout(PersianFontApplier.applyForPaint(inStr, textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                     if (attached) titleAnimateInLayoutEmojis = AnimatedEmojiSpan.update(currentTab.noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleAnimateInLayoutEmojis, titleAnimateInLayout);
-                    titleAnimateStableLayout = new StaticLayout(stabeStr, textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                    titleAnimateStableLayout = new StaticLayout(PersianFontApplier.applyForPaint(stabeStr, textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                     if (attached) titleAnimateStableLayoutEmojis = AnimatedEmojiSpan.update(currentTab.noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleAnimateStableLayoutEmojis, titleAnimateStableLayout);
                     animateTextChange = true;
                     animateTextChangeOut = animateOut;
@@ -702,9 +726,9 @@ public class FilterTabsView extends FrameLayout {
                     AnimatedEmojiSpan.release(this, titleAnimateOutLayoutEmojis);
                     changed = true;
                 } else {
-                    titleAnimateInLayout = new StaticLayout(currentTab.title, textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                    titleAnimateInLayout = new StaticLayout(PersianFontApplier.applyForPaint(currentTab.title, textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                     if (attached) titleAnimateInLayoutEmojis = AnimatedEmojiSpan.update(currentTab.noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleAnimateInLayoutEmojis, titleAnimateInLayout);
-                    titleAnimateOutLayout = new StaticLayout(lastTitle, textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                    titleAnimateOutLayout = new StaticLayout(PersianFontApplier.applyForPaint(lastTitle, textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                     if (attached) titleAnimateOutLayoutEmojis = AnimatedEmojiSpan.update(currentTab.noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleAnimateOutLayoutEmojis, titleAnimateOutLayout);
                     titleAnimateStableLayout = null;
                     AnimatedEmojiSpan.release(this, titleAnimateStableLayoutEmojis);
@@ -780,6 +804,7 @@ public class FilterTabsView extends FrameLayout {
     }
 
     public final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private final PersianFontCanvasText counterFontText = new PersianFontCanvasText();
     private final TextPaint textCounterPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint deletePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint counterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

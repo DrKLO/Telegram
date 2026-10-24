@@ -34,6 +34,7 @@ public class StaticLayoutEx {
 
     public static StaticLayout createStaticLayout2(CharSequence source, TextPaint paint, int width, Layout.Alignment align, float spacingmult, float spacingadd, boolean includepad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
         if (Build.VERSION.SDK_INT >= 23) {
+            source = PersianFontApplier.applyForPaint(source, paint);
             StaticLayout.Builder builder = StaticLayout.Builder.obtain(source, 0, source.length(), paint, ellipsisWidth)
                     .setAlignment(align)
                     .setLineSpacing(spacingadd, spacingmult)
@@ -55,6 +56,7 @@ public class StaticLayoutEx {
 
     public static StaticLayout createStaticLayout(CharSequence source, TextPaint paint, int outerWidth, Layout.Alignment align, float spacingMult, float spacingAdd, boolean includePad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines, boolean canContainUrl) {
         try {
+            source = PersianFontApplier.applyForPaint(source, paint);
             if (maxLines == 1) {
                 int index = TextUtils.indexOf(source, "\n") - 1;
                 if (index > 0) {

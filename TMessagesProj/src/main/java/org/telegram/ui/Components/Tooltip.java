@@ -8,12 +8,11 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
-public class Tooltip extends TextView {
+public class Tooltip extends PersianTextView {
 
     private View anchor;
     private ViewPropertyAnimator animator;

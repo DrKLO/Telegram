@@ -66,6 +66,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
 
@@ -128,7 +129,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         public TextDetailProxyCell(Context context) {
             super(context);
 
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setLines(1);
@@ -138,7 +139,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 56 : 21), 10, (LocaleController.isRTL ? 21 : 56), 0));
 
-            valueTextView = new TextView(context);
+            valueTextView = new PersianTextView(context);
             valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             valueTextView.setLines(1);

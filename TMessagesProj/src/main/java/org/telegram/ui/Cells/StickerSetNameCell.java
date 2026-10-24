@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.ColorSpanUnderline;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 
@@ -74,7 +75,7 @@ public class StickerSetNameCell extends FrameLayout {
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setGravity(Gravity.CENTER);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(isGlassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.bold());
@@ -92,7 +93,7 @@ public class StickerSetNameCell extends FrameLayout {
         addView(layout, lp);
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL));
 
-        editView = new TextView(context);
+        editView = new PersianTextView(context);
         editView.setTextColor(isGlassDesign ? getGlassIconColor(0.6f) :getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
         editView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         editView.setTypeface(AndroidUtilities.bold());
@@ -108,7 +109,7 @@ public class StickerSetNameCell extends FrameLayout {
         layout.addView(editView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 5, 1, 0, 0));
         editView.setVisibility(View.GONE);
 
-        urlTextView = new TextView(context);
+        urlTextView = new PersianTextView(context);
         urlTextView.setTextColor(isGlassDesign ? getGlassIconColor(0.6f) :getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
         urlTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         urlTextView.setEllipsize(TextUtils.TruncateAt.END);

@@ -44,6 +44,7 @@ import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.EmptyStubSpan;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
@@ -300,7 +301,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     public void setTypeface(Typeface typeface) {
+        if (textPaint.getTypeface() == typeface) {
+            return;
+        }
         textPaint.setTypeface(typeface);
+        recreateLayoutMaybe();
+        invalidate();
     }
 
     public int getSideDrawablesSize() {
@@ -380,7 +386,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     protected boolean createLayout(int width) {
-        CharSequence text = this.text;
+        CharSequence text = PersianFontApplier.applyForPaint(this.text, textPaint);
         replacingDrawableTextIndex = -1;
         rightDrawableHidden = false;
         if (text != null) {
@@ -1166,7 +1172,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
     }
 
     public float getExactWidth() {
-        return getPaint().measureText(getText().toString())
+        CharSequence styled = PersianFontApplier.applyForPaint(getText(), getPaint());
+        return (styled != null ? Layout.getDesiredWidth(styled, getPaint()) : 0)
                 + getSideDrawablesSize()
                 - (leftDrawable != null || rightDrawable != null || rightDrawable2 != null ? drawablePadding : 0);
     }

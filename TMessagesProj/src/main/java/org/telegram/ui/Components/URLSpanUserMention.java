@@ -51,4 +51,9 @@ public class URLSpanUserMention extends URLSpanNoUnderline {
             p.setUnderlineText(false);
         }
     }
+
+    @Override
+    public TextStyleSpan.TextStyleRun getTextStyleRun() {
+        return style;
+    }
 }

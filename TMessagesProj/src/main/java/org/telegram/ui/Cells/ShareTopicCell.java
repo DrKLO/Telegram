@@ -35,6 +35,7 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.Forum.ForumBubbleDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterDrawable;
+import org.telegram.ui.Components.PersianTextView;
 
 @SuppressLint("ViewConstructor")
 public class ShareTopicCell extends FrameLayout {
@@ -59,7 +60,7 @@ public class ShareTopicCell extends FrameLayout {
         imageView.setRoundRadius(AndroidUtilities.dp(28));
         addView(imageView, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
-        nameTextView = new TextView(context);
+        nameTextView = new PersianTextView(context);
         nameTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         nameTextView.setMaxLines(2);

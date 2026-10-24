@@ -46,6 +46,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.RecyclerListViewWithOverlayDraw;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
 public class StickerEmojiCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, RecyclerListViewWithOverlayDraw.OverlayView {
@@ -102,7 +103,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         imageView.setAllowLoadingOnAttachedOnly(true);
         imageView.setLayerNum(1);
 
-        emojiTextView = new TextView(context);
+        emojiTextView = new PersianTextView(context);
         emojiTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
        // addView(emojiTextView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT));
 

@@ -19,6 +19,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class TextBlockCell extends FrameLayout {
 
@@ -28,7 +29,7 @@ public class TextBlockCell extends FrameLayout {
     public TextBlockCell(Context context) {
         super(context);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);

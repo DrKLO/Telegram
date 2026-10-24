@@ -18,6 +18,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.LinkSpanDrawable;
 
 public class SponsoredMessageInfoView extends FrameLayout {
@@ -30,7 +31,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-        TextView textView = new TextView(context);
+        TextView textView = new PersianTextView(context);
         textView.setText(LocaleController.getString(R.string.SponsoredMessageInfo));
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -71,7 +72,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
         buttonPaint.setStyle(Paint.Style.STROKE);
         buttonPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         buttonPaint.setStrokeWidth(AndroidUtilities.dp(1));
-        TextView button = new TextView(context) {
+        TextView button = new PersianTextView(context) {
 
             @Override
             protected void onDraw(Canvas canvas) {

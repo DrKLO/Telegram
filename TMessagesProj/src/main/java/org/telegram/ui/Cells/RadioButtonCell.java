@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RadioButton;
 
 public class RadioButtonCell extends FrameLayout {
@@ -46,7 +47,7 @@ public class RadioButtonCell extends FrameLayout {
         }
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 20), 10, (LocaleController.isRTL ? 20 : 0), 0));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         if (dialog) {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         } else {
@@ -59,7 +60,7 @@ public class RadioButtonCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 23 : 61), 10, (LocaleController.isRTL ? 61 : 23), 0));
 
-        valueTextView = new TextView(context);
+        valueTextView = new PersianTextView(context);
         if (dialog) {
             valueTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
         } else {

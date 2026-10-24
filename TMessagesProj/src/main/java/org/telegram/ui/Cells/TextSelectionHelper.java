@@ -65,6 +65,7 @@ import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CornerPath;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
 
@@ -564,7 +565,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         });
                         popupLayout.setShownFromBottom(false);
 
-                        deleteView = new TextView(textSelectionOverlay.getContext());
+                        deleteView = new PersianTextView(textSelectionOverlay.getContext());
                         deleteView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
                         deleteView.setGravity(Gravity.CENTER_VERTICAL);
                         deleteView.setPadding(dp(20), 0, dp(20), 0);
@@ -578,7 +579,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         popupLayout.addView(deleteView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48));
 
                         if (canCut()) {
-                            TextView cutView = new TextView(textSelectionOverlay.getContext());
+                            TextView cutView = new PersianTextView(textSelectionOverlay.getContext());
                             cutView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
                             cutView.setGravity(Gravity.CENTER_VERTICAL);
                             cutView.setPadding(dp(20), 0, dp(20), 0);
@@ -594,7 +595,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         }
 
                         if (canPaste()) {
-                            TextView pasteView = new TextView(textSelectionOverlay.getContext());
+                            TextView pasteView = new PersianTextView(textSelectionOverlay.getContext());
                             pasteView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
                             pasteView.setGravity(Gravity.CENTER_VERTICAL);
                             pasteView.setPadding(dp(20), 0, dp(20), 0);

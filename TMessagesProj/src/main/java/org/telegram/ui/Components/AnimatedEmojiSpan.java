@@ -164,6 +164,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     public AnimatedEmojiSpan(long documentId, Paint.FontMetricsInt fontMetrics) {
         this(documentId, 1.2f, fontMetrics);
     }
+
     public AnimatedEmojiSpan(long documentId, float scale, Paint.FontMetricsInt fontMetrics) {
         this.documentId = documentId;
         this.scale = scale;
@@ -586,7 +587,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                     }
                     for (int j = 0; j < prev.holders.size(); ++j) {
                         if (prev.holders.get(j).span == span &&
-                            prev.holders.get(j).layout == textLayout) {
+                                prev.holders.get(j).layout == textLayout) {
                             holder = prev.holders.get(j);
                             break;
                         }
@@ -1110,13 +1111,15 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         return result;
     }
 
-    public static class TextViewEmojis extends TextView {
+    public static class TextViewEmojis extends PersianTextView {
         private int cacheType = AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+
         public TextViewEmojis(Context context) {
             super(context);
         }
 
         private ColorFilter emojiColorFilter;
+
         public void setEmojiColor(int emojiColor) {
             emojiColorFilter = new PorterDuffColorFilter(emojiColor, PorterDuff.Mode.SRC_IN);
         }

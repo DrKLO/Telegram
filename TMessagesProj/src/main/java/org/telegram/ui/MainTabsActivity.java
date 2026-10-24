@@ -68,6 +68,7 @@ import org.telegram.ui.Components.FolderDrawable;
 import org.telegram.ui.Components.HintsController;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
@@ -712,7 +713,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         avatarView.setForUserOrChat(user, avatarDrawable);
         avatarContainer.addView(avatarView, LayoutHelper.createLinear(32, 32, Gravity.CENTER, 1, 1, 1, 1));
 
-        final TextView textView = new TextView(getContext());
+        final TextView textView = new PersianTextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         textView.setText(UserObject.getUserName(user));

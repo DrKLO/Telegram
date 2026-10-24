@@ -645,6 +645,7 @@ public class AnimatedTextView extends View {
         }
 
         private StaticLayout makeLayout(CharSequence textPart, int width) {
+            textPart = PersianFontApplier.applyForPaint(textPart, textPaint);
             if (width <= 0) {
                 width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
             }
@@ -671,6 +672,7 @@ public class AnimatedTextView extends View {
                     width
                 );
             }
+
         }
 
         private static class WordSequence implements CharSequence {
@@ -1134,7 +1136,15 @@ public class AnimatedTextView extends View {
         }
 
         public void setTypeface(Typeface typeface) {
+            if (textPaint.getTypeface() == typeface) {
+                return;
+            }
             textPaint.setTypeface(typeface);
+            if (currentText != null) {
+                CharSequence text = toSetText != null ? toSetText : currentText;
+                currentText = null;
+                setText(text, false);
+            }
         }
 
         public void setGravity(int gravity) {

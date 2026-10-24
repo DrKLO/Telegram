@@ -64,6 +64,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianFontSpan;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -664,6 +666,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private StaticLayout swipeMessageTextLayout;
     private int swipeMessageTextId;
     private int swipeMessageWidth;
+    private boolean swipeMessageFontEnabled;
     private int readOutboxMaxId = -1;
     private final DialogUpdateHelper updateHelper = new DialogUpdateHelper();
 
@@ -2263,8 +2266,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         int timeWidth;
         if (drawTime) {
             final TextPaint tp = getTimeTextPaint();
-            timeWidth = (int) Math.ceil(tp.measureText(timeString));
-            timeLayout = new StaticLayout(timeString, tp, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            CharSequence timeText = PersianFontApplier.applyForPaint(timeString, tp);
+            timeWidth = (int) Math.ceil(Layout.getDesiredWidth(timeText, tp));
+            timeLayout = new StaticLayout(timeText, tp, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             timeWidth += dp(getIsPinned() ? 24 : 0);
             if (!LocaleController.isRTL) {
                 timeLeft = getMeasuredWidth() - dp(15) - timeWidth;
@@ -2390,7 +2394,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (nameString instanceof String) {
                 nameString = ((String) nameString).replace('\n', ' ');
             }
-            CharSequence nameStringFinal = nameString;
+            CharSequence nameStringFinal = PersianFontApplier.applyForPaint(
+                    nameString,
+                    Theme.dialogs_namePaint[paintIndex]
+            );
             if (nameLayoutEllipsizeByGradient) {
                 nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
                 ellipsizeWidth += dp(48);
@@ -2398,7 +2405,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             } else if (isForChannelSubscriberCell) {
                 channelShouldUseLineWidth = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
             }
-            nameIsEllipsized = Theme.dialogs_namePaint[paintIndex].measureText(nameStringFinal.toString()) > ellipsizeWidth;
+            nameIsEllipsized = Layout.getDesiredWidth(
+                    nameStringFinal,
+                    Theme.dialogs_namePaint[paintIndex]
+            ) > ellipsizeWidth;
             if (!twoLinesForName) {
                 nameStringFinal = TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END);
             }
@@ -2509,8 +2519,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else if (countString != null || mentionString != null || drawReactionMention || drawPollVotesMention) {
             if (countString != null) {
-                countWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Theme.dialogs_countTextPaint2.measureText(countString)));
-                countLayout = new StaticLayout(countString, Theme.dialogs_countTextPaint2, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                countWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(countString, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2)));
+                countLayout = new StaticLayout(PersianFontApplier.applyForPaint(countString, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2, countWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 int w = countWidth + dp(BADGE_GAP);
                 messageWidth -= w;
                 if (!LocaleController.isRTL) {
@@ -2528,8 +2538,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             if (mentionString != null) {
                 if (currentDialogFolderId != 0) {
-                    mentionWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Theme.dialogs_countTextPaint2.measureText(mentionString)));
-                    mentionLayout = new StaticLayout(mentionString, Theme.dialogs_countTextPaint2, mentionWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                    mentionWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(mentionString, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2)));
+                    mentionLayout = new StaticLayout(PersianFontApplier.applyForPaint(mentionString, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2, mentionWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 } else {
                     mentionWidth = dp(BADGE_TEXT_MIN_WIDTH);
                 }
@@ -2701,6 +2711,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         messageNameString = s;
                     }
                 }
+                messageNameString = PersianFontApplier.applyForPaint(
+                        messageNameString,
+                        Theme.dialogs_messageNamePaint
+                );
                 messageNameLayout = StaticLayoutEx.createStaticLayout(messageNameString, Theme.dialogs_messageNamePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false, TextUtils.TruncateAt.END, messageWidth, 1);
             } catch (Exception e) {
                 FileLog.e(e);
@@ -2748,10 +2762,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         try {
             if (!TextUtils.isEmpty(typingString)) {
+                typingString = PersianFontApplier.applyForPaint(
+                        typingString,
+                        Theme.dialogs_messagePrintingPaint[paintIndex]
+                );
+
                 if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && !hasTags()) {
                     typingLayout = StaticLayoutEx.createStaticLayout(typingString, Theme.dialogs_messagePrintingPaint[paintIndex], messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, dp(1), false, TextUtils.TruncateAt.END, messageWidth, typingString != null ? 1 : 2);
                 } else {
-                    typingString = TextUtils.ellipsize(typingString, currentMessagePaint, messageWidth - dp(12), TextUtils.TruncateAt.END);
+                    typingString = TextUtils.ellipsize(
+                            typingString,
+                            Theme.dialogs_messagePrintingPaint[paintIndex],
+                            messageWidth - dp(12),
+                            TextUtils.TruncateAt.END
+                    );
                     typingLayout = new StaticLayout(typingString, Theme.dialogs_messagePrintingPaint[paintIndex], messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 }
             }
@@ -2761,19 +2785,34 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         try {
             CharSequence messageStringFinal;
+
+            if (messageString instanceof Spanned) {
+                messageString = new SpannableStringBuilder(messageString);
+            }
+
             // Removing links and bold spans to get rid of underlining and boldness
             if (messageString instanceof Spannable) {
                 Spannable messageStringSpannable = (Spannable) messageString;
                 for (Object span : messageStringSpannable.getSpans(0, messageStringSpannable.length(), Object.class)) {
+                    if (span instanceof PersianFontSpan) {
+                        messageStringSpannable.removeSpan(span);
+                        continue;
+                    }
+
                     if (span instanceof ClickableSpan || span instanceof CodeHighlighting.Span || currentDialogCommunityId == 0 && !isFolderCell() && span instanceof TypefaceSpan || span instanceof CodeHighlighting.ColorSpan || span instanceof QuoteSpan || span instanceof QuoteSpan.QuoteStyleSpan || (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == android.graphics.Typeface.BOLD)) {
                         messageStringSpannable.removeSpan(span);
                     }
                 }
             }
+            messageString = PersianFontApplier.applyForPaint(messageString, currentMessagePaint);
+
             if ((useForceThreeLines || SharedConfig.useThreeLinesLayout) && !hasTags() && currentDialogFolderId != 0 && currentDialogFolderDialogsCount > 1) {
-                messageStringFinal = messageNameString;
-                messageNameString = null;
                 currentMessagePaint = Theme.dialogs_messagePaint[paintIndex];
+                messageStringFinal = PersianFontApplier.applyForPaint(
+                        messageNameString,
+                        currentMessagePaint
+                );
+                messageNameString = null;
             } else if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout || hasTags() || messageNameString != null || ChatObject.isMonoForum(chat) && ChatObject.canManageMonoForum(currentAccount, chat)) {
                 if (!isForumCell() && messageString instanceof Spanned && ((Spanned) messageString).getSpans(0, messageString.length(), FixedWidthSpan.class).length <= 0) {
                     messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - dp(12 + (thumbsCount * (thumbSize + 2) - 2) + 5), TextUtils.TruncateAt.END);
@@ -3657,10 +3696,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             }
                         }
 
-                        int countOldWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Theme.dialogs_countTextPaint2.measureText(oldStr)));
-                        countOldLayout = new StaticLayout(oldSpannableStr, Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                        countAnimationStableLayout = new StaticLayout(stableStr, Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
-                        countAnimationInLayout = new StaticLayout(newSpannableStr, Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        int countOldWidth = Math.max(dp(BADGE_TEXT_MIN_WIDTH), (int) Math.ceil(Layout.getDesiredWidth(PersianFontApplier.applyForPaint(oldStr, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2)));
+                        countOldLayout = new StaticLayout(PersianFontApplier.applyForPaint(oldSpannableStr, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        countAnimationStableLayout = new StaticLayout(PersianFontApplier.applyForPaint(stableStr, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                        countAnimationInLayout = new StaticLayout(PersianFontApplier.applyForPaint(newSpannableStr, Theme.dialogs_countTextPaint2), Theme.dialogs_countTextPaint2, countOldWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                     } else {
                         countOldLayout = countLayout;
                     }
@@ -3990,15 +4029,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
             canvas.clipRect(tx, 0, getMeasuredWidth(), getMeasuredHeight());
 
-            int width = (int) Math.ceil(Theme.dialogs_countTextPaint2.measureText(swipeMessage));
-
-            if (swipeMessageTextId != swipeMessageStringId || swipeMessageWidth != getMeasuredWidth()) {
+            if (swipeMessageTextId != swipeMessageStringId || swipeMessageWidth != getMeasuredWidth()
+                    || swipeMessageFontEnabled != SharedConfig.useVazirmatnFont) {
                 swipeMessageTextId = swipeMessageStringId;
                 swipeMessageWidth = getMeasuredWidth();
-                swipeMessageTextLayout = new StaticLayout(swipeMessage, Theme.dialogs_archiveTextPaint, Math.min(dp(80), width), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                swipeMessageFontEnabled = SharedConfig.useVazirmatnFont;
+                CharSequence label = PersianFontApplier.applyForPaint(swipeMessage, Theme.dialogs_archiveTextPaint);
+                int width = (int) Math.ceil(Layout.getDesiredWidth(label, Theme.dialogs_archiveTextPaint));
+                swipeMessageTextLayout = new StaticLayout(label, Theme.dialogs_archiveTextPaint, Math.min(dp(80), width), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
                 if (swipeMessageTextLayout.getLineCount() > 1) {
-                    swipeMessageTextLayout = new StaticLayout(swipeMessage, Theme.dialogs_archiveTextPaintSmall, Math.min(dp(82), width), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                    label = PersianFontApplier.applyForPaint(swipeMessage, Theme.dialogs_archiveTextPaintSmall);
+                    width = (int) Math.ceil(Layout.getDesiredWidth(label, Theme.dialogs_archiveTextPaintSmall));
+                    swipeMessageTextLayout = new StaticLayout(label, Theme.dialogs_archiveTextPaintSmall, Math.min(dp(82), width), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                 }
             }
 

@@ -43,6 +43,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 
 public class HintDialogCell extends FrameLayout {
@@ -83,7 +84,7 @@ public class HintDialogCell extends FrameLayout {
         imageView.setRoundRadius(AndroidUtilities.dp(27));
         addView(imageView, LayoutHelper.createFrame(54, 54, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
-        nameTextView = new TextView(context) {
+        nameTextView = new PersianTextView(context) {
             @Override
             public void setText(CharSequence text, BufferType type) {
                 text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);

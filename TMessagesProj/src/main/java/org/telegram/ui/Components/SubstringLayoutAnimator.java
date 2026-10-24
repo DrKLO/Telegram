@@ -62,16 +62,16 @@ public class SubstringLayoutAnimator {
                 }
                 inStr.setSpan(new EmptyStubSpan(), startFrom, startFrom + substring.length(), 0);
 
-                animateInLayout = new StaticLayout(inStr, paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
-                animateStableLayout = new StaticLayout(stabeStr, paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                animateInLayout = new StaticLayout(PersianFontApplier.applyForPaint(inStr, paint), paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                animateStableLayout = new StaticLayout(PersianFontApplier.applyForPaint(stabeStr, paint), paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                 animateTextChange = true;
                 animateTextChangeOut = animateOut;
                 xOffset = startFrom == 0 ? 0 : -animateStableLayout.getPrimaryHorizontal(startFrom);
                 animateOutLayout = null;
                 replaceAnimation = false;
             } else {
-                animateInLayout = new StaticLayout(text, paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
-                animateOutLayout = new StaticLayout(hint, paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                animateInLayout = new StaticLayout(PersianFontApplier.applyForPaint(text, paint), paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+                animateOutLayout = new StaticLayout(PersianFontApplier.applyForPaint(hint, paint), paint, AndroidUtilities.dp(400), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
                 animateStableLayout = null;
                 animateTextChange = true;
                 replaceAnimation = true;

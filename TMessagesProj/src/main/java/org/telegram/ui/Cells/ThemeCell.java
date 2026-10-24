@@ -29,6 +29,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,7 +58,7 @@ public class ThemeCell extends FrameLayout {
         paintStroke.setStyle(Paint.Style.STROKE);
         paintStroke.setStrokeWidth(AndroidUtilities.dp(2));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);

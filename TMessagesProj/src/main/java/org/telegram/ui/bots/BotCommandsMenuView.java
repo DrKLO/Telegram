@@ -31,6 +31,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.MenuDrawable;
@@ -38,6 +39,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StaticLayoutEx;
@@ -63,6 +65,8 @@ public class BotCommandsMenuView extends View {
     private String menuText = getString(R.string.BotsMenuTitle);
     StaticLayout menuTextLayout;
     private float menuTextWidth;
+    private float menuTextLeft;
+    private boolean menuTextFontEnabled;
     boolean isOpened;
 
     public boolean isWebView;
@@ -113,14 +117,17 @@ public class BotCommandsMenuView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int size = MeasureSpec.getSize(widthMeasureSpec) + MeasureSpec.getSize(heightMeasureSpec) << 16;
-        if (lastSize != size || menuTextLayout == null) {
+        if (lastSize != size || menuTextLayout == null
+                || menuTextFontEnabled != SharedConfig.useVazirmatnFont) {
             backDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
             textPaint.setTextSize(AndroidUtilities.dp(15));
             lastSize = size;
+            menuTextFontEnabled = SharedConfig.useVazirmatnFont;
             CharSequence c = Emoji.replaceEmoji(menuText, textPaint.getFontMetricsInt(), false);
             int w = (int) (AndroidUtilities.displaySize.x * .6f);
             menuTextLayout = StaticLayoutEx.createStaticLayout(c, textPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false, TextUtils.TruncateAt.END, w, 1);
             menuTextWidth = menuTextLayout.getLineCount() > 0 ? menuTextLayout.getLineWidth(0) : 0;
+            menuTextLeft = menuTextLayout.getLineCount() > 0 ? menuTextLayout.getLineLeft(0) : 0;
         }
         onTranslationChanged((menuTextWidth + AndroidUtilities.dp(4)) * expandProgress);
         int width = AndroidUtilities.dp(40);
@@ -185,7 +192,10 @@ public class BotCommandsMenuView extends View {
 
             if (expandProgress > 0) {
                 canvas.save();
-                canvas.translate(AndroidUtilities.dp(34), (getMeasuredHeight() - menuTextLayout.getHeight()) / 2f);
+                canvas.clipRect(AndroidUtilities.dp(34), 0,
+                        AndroidUtilities.dp(40) + (menuTextWidth + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
+                // StaticLayout places RTL glyphs at the right edge of its wider layout.
+                canvas.translate(AndroidUtilities.dp(34) - menuTextLeft, (getMeasuredHeight() - menuTextLayout.getHeight()) / 2f);
                 menuTextLayout.draw(canvas);
                 canvas.restore();
             }
@@ -329,7 +339,7 @@ public class BotCommandsMenuView extends View {
             setOrientation(HORIZONTAL);
             setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(8));
 
-            description = new TextView(context) {
+            description = new PersianTextView(context) {
                 @Override
                 public void setText(CharSequence text, BufferType type) {
                     text = Emoji.replaceEmoji(text, getPaint().getFontMetricsInt(), false);
@@ -344,7 +354,7 @@ public class BotCommandsMenuView extends View {
             description.setEllipsize(TextUtils.TruncateAt.END);
             addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL, 0, 0, AndroidUtilities.dp(8), 0));
 
-            command = new TextView(context);
+            command = new PersianTextView(context);
             command.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             command.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             command.setTag(Theme.key_windowBackgroundWhiteGrayText);

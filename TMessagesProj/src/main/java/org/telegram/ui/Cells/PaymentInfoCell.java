@@ -26,6 +26,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.util.Locale;
 
@@ -43,7 +44,7 @@ public class PaymentInfoCell extends FrameLayout {
         imageView.getImageReceiver().setRoundRadius(dp(8));
         addView(imageView, LayoutHelper.createFrame(100, 100, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 10, 10, 10, 0));
 
-        nameTextView = new TextView(context);
+        nameTextView = new PersianTextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setLines(1);
@@ -54,7 +55,7 @@ public class PaymentInfoCell extends FrameLayout {
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 9, LocaleController.isRTL ? 123 : 10, 0));
 
-        detailTextView = new TextView(context);
+        detailTextView = new PersianTextView(context);
         detailTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         detailTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         detailTextView.setMaxLines(3);
@@ -62,7 +63,7 @@ public class PaymentInfoCell extends FrameLayout {
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 33, LocaleController.isRTL ? 123 : 10, 0));
 
-        detailExTextView = new TextView(context);
+        detailExTextView = new PersianTextView(context);
         detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         detailExTextView.setLines(1);

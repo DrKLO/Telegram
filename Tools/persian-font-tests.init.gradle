@@ -1,0 +1,10 @@
+// Isolate the font tests from the generated TL protocol fixtures.
+gradle.projectsEvaluated {
+    def tests = gradle.rootProject.findProject(':TMessagesProj_AppTests')
+    if (tests == null) {
+        return
+    }
+    tests.android.sourceSets.androidTest.java.setSrcDirs(['src/androidTest/java'])
+    tests.android.sourceSets.androidTest.resources.setSrcDirs([])
+    tests.kotlin.sourceSets.getByName('androidTest').kotlin.setSrcDirs([])
+}

@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RadioButton;
 
 public class PhotoEditRadioCell extends FrameLayout {
@@ -54,7 +55,7 @@ public class PhotoEditRadioCell extends FrameLayout {
     public PhotoEditRadioCell(Context context) {
         super(context);
 
-        nameTextView = new TextView(context);
+        nameTextView = new PersianTextView(context);
         nameTextView.setGravity(Gravity.RIGHT);
         nameTextView.setTextColor(0xffffffff);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);

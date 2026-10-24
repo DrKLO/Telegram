@@ -80,6 +80,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
@@ -98,7 +99,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private FrameLayout wrappedSearchFrameLayout;
 
     public static void addText(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, String text, Theme.ResourcesProvider resourcesProvider) {
-        final TextView textView = new TextView(popupLayout.getContext());
+        final TextView textView = new PersianTextView(popupLayout.getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         textView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
@@ -256,7 +257,7 @@ public class ActionBarMenuItem extends FrameLayout {
         parentMenu = menu;
 
         if (text) {
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setTypeface(AndroidUtilities.bold());
             textView.setGravity(Gravity.CENTER);
@@ -489,7 +490,7 @@ public class ActionBarMenuItem extends FrameLayout {
 
     public TextView addSubItem(int id, CharSequence text) {
         createPopupLayout();
-        TextView textView = new TextView(getContext());
+        TextView textView = new PersianTextView(getContext());
         textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
         textView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         if (!LocaleController.isRTL) {
@@ -672,7 +673,7 @@ public class ActionBarMenuItem extends FrameLayout {
     public View addDivider(int color) {
         createPopupLayout();
 
-        TextView cell = new TextView(getContext());
+        TextView cell = new PersianTextView(getContext());
         cell.setBackgroundColor(color);
         cell.setMinimumWidth(AndroidUtilities.dp(196));
         popupLayout.addView(cell);
@@ -1473,7 +1474,7 @@ public class ActionBarMenuItem extends FrameLayout {
             }
             searchContainer.setVisibility(GONE);
 
-            searchFieldCaption = new TextView(getContext());
+            searchFieldCaption = new PersianTextView(getContext());
             searchFieldCaption.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             searchFieldCaption.setTextColor(getThemedColor(Theme.key_actionBarDefaultSearch));
             searchFieldCaption.setSingleLine(true);
@@ -2228,7 +2229,7 @@ public class ActionBarMenuItem extends FrameLayout {
             closeIconView.setImageResource(R.drawable.ic_close_white);
             addView(closeIconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
-            titleView = new TextView(context);
+            titleView = new PersianTextView(context);
             titleView.setSingleLine();
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

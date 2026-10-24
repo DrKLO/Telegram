@@ -61,6 +61,7 @@ import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianFontSpan;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -333,6 +334,9 @@ public class HintView2 extends View {
             return paint.measureText(text.toString());
         }
         Spanned spanned = (Spanned) text;
+        if (paint instanceof TextPaint && spanned.getSpans(0, text.length(), PersianFontSpan.class).length > 0) {
+            return Layout.getDesiredWidth(text, (TextPaint) paint);
+        }
         TypefaceSpan[] spans = spanned.getSpans(0, text.length(), TypefaceSpan.class);
 //        AnimatedEmojiSpan[] animatedSpans = spanned.getSpans(0, text.length(), AnimatedEmojiSpan.class);
 //        Emoji.EmojiSpan[] emojiSpans = spanned.getSpans(0, text.length(), Emoji.EmojiSpan.class);

@@ -21,6 +21,7 @@ import org.telegram.ui.ActionBar.Theme;
 public class WallpaperCheckBoxView extends View {
 
     Theme.ResourcesProvider resourcesProvider;
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private Paint eraserPaint;
     private Paint checkPaint;
     private TextPaint textPaint;
@@ -132,7 +133,7 @@ public class WallpaperCheckBoxView extends View {
 
         textPaint.setColor(Theme.getColor(Theme.key_chat_serviceText, resourcesProvider));
         int x = (getMeasuredWidth() - currentTextSize - AndroidUtilities.dp(28)) / 2;
-        canvas.drawText(currentText, x + AndroidUtilities.dp(28), AndroidUtilities.dp(21), textPaint);
+        fontText.draw(canvas, currentText, x + AndroidUtilities.dp(28), AndroidUtilities.dp(21), textPaint);
 
         canvas.save();
         canvas.translate(x, AndroidUtilities.dp(7));

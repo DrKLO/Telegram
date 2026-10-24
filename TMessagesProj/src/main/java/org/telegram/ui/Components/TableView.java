@@ -491,7 +491,7 @@ public class TableView extends TableLayout {
         addView(row);
     }
 
-    public static class TableRowTitle extends TextView {
+    public static class TableRowTitle extends PersianTextView {
 
         private final TableView table;
         private final Theme.ResourcesProvider resourcesProvider;

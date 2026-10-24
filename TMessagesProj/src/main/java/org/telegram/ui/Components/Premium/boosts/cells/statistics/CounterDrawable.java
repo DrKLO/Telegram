@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
+import org.telegram.ui.Components.PersianFontCanvasText;
 
 public class CounterDrawable extends Drawable {
 
@@ -26,7 +27,7 @@ public class CounterDrawable extends Drawable {
     private final Paint bgPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF bgRoundRect = new RectF();
     private final Drawable icon;
-    private float textWith;
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private String text;
 
     public CounterDrawable(Context context) {
@@ -39,7 +40,6 @@ public class CounterDrawable extends Drawable {
 
     public void setText(String text) {
         this.text = text;
-        textWith = textPaint.measureText(text);
         invalidateSelf();
     }
 
@@ -51,7 +51,7 @@ public class CounterDrawable extends Drawable {
         icon.setBounds(bounds.left + dp(2), bounds.top + dp(1), bounds.left + dp(2) + icon.getIntrinsicWidth(), getBounds().top + dp(1) + icon.getIntrinsicHeight());
         icon.draw(canvas);
         if (text != null) {
-            canvas.drawText(text, dp(16.5f) + bounds.left, bounds.top + dp(13f), textPaint);
+            fontText.draw(canvas, text, dp(16.5f) + bounds.left, bounds.top + dp(13f), textPaint);
         }
     }
 
@@ -72,7 +72,7 @@ public class CounterDrawable extends Drawable {
 
     @Override
     public int getIntrinsicWidth() {
-        return (int) (dp(23) + textWith);
+        return (int) (dp(23) + (text == null ? 0 : fontText.measure(text, textPaint)));
     }
 
     @Override

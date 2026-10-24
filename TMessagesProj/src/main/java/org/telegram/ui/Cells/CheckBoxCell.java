@@ -50,6 +50,7 @@ import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianTextView;
 
 public class CheckBoxCell extends FrameLayout {
 
@@ -180,7 +181,7 @@ public class CheckBoxCell extends FrameLayout {
             textView = linksTextView;
         }
 
-        valueTextView = new TextView(context);
+        valueTextView = new PersianTextView(context);
         valueTextView.setTag(type == TYPE_CHECK_BOX_DEFAULT || type == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);

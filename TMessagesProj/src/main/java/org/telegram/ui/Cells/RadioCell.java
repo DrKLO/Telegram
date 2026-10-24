@@ -25,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RadioButton;
 
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class RadioCell extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         if (dialog) {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         } else {

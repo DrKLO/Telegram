@@ -19,6 +19,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class BotSwitchCell extends FrameLayout {
 
@@ -27,7 +28,7 @@ public class BotSwitchCell extends FrameLayout {
     public BotSwitchCell(Context context) {
         super(context);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTextColor(Theme.getColor(Theme.key_chat_botSwitchToInlineText));
         textView.setTypeface(AndroidUtilities.bold());

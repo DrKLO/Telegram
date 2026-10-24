@@ -563,7 +563,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
         }
         text = Emoji.replaceEmoji(text, tab.getPaint().getFontMetricsInt(), false);
         tab.setText(text);
-        int tabWidth = (int) Math.ceil(HintView2.measureCorrectly(text, tab.getPaint())) + dp(32);// + tab.getPaddingLeft() + tab.getPaddingRight();
+        int tabWidth = (int) Math.ceil(Layout.getDesiredWidth(tab.getText(), tab.getPaint())) + dp(32);// + tab.getPaddingLeft() + tab.getPaddingRight();
         tabsContainer.addView(tab, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT));
         allTextWidth += tabWidth;
         positionToWidth.put(position, tabWidth);
