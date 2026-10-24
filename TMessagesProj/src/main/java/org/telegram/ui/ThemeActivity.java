@@ -671,9 +671,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             chatListRow = rowCount++;
             chatListInfoRow = rowCount++;
 
-            appIconHeaderRow = rowCount++;
-            appIconSelectorRow = rowCount++;
-            appIconShadowRow = rowCount++;
+            // Kite has a single launcher icon, so the alternate icon picker is hidden.
 
             swipeGestureHeaderRow = rowCount++;
             swipeGestureRow = rowCount++;
