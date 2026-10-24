@@ -145,6 +145,11 @@ android {
         buildConfigField "int", "TG_API_ID", tgApiId
         buildConfigField "String", "TG_API_HASH", "\"" + tgApiHash + "\""
 
+        // CI build number (GitHub run number). The in-app updater compares it
+        // with the latest GitHub release; 0 means a local build, no update checks.
+        def kiteBuild = (System.getenv("KITE_BUILD") ?: getProps("KITE_BUILD") ?: "0").toString().trim()
+        buildConfigField "int", "KITE_BUILD", kiteBuild.isInteger() ? kiteBuild : "0"
+
         // Optional: limit native ABIs for faster local builds (KITE_ABIS=arm64-v8a).
         def kiteAbis = (getProps("KITE_ABIS") ?: "").toString().trim()
         if (kiteAbis) {
