@@ -2,6 +2,8 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.app.Dialog;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MessagesController;
@@ -53,20 +55,48 @@ public final class KiteChannelPrompt {
         });
     }
 
+    private static final int MAX_SHOW_ATTEMPTS = 12;
+
     private static void show(BaseFragment fragment) {
+        show(fragment, 0);
+    }
+
+    private static void show(BaseFragment fragment, int attempt) {
         final int account = fragment.getCurrentAccount();
-        if (fragment.getParentActivity() == null || fragment.getVisibleDialog() != null
-                || LaunchActivity.getSafeLastFragment() != fragment || askedThisLaunch[account]) {
+        if (askedThisLaunch[account] || attempt >= MAX_SHOW_ATTEMPTS) {
             return;
         }
-        askedThisLaunch[account] = true;
+        final BaseFragment host = chatListHost(fragment);
+        Dialog shown = null;
+        if (host != null && host.getVisibleDialog() == null) {
+            shown = host.showDialog(new AlertDialog.Builder(host.getParentActivity())
+                .setTitle(getString(R.string.KiteChannelPromptTitle))
+                .setMessage(getString(R.string.KiteChannelPromptText))
+                .setPositiveButton(getString(R.string.KiteChannelPromptSubscribe), (dialog, which) -> join(host, account))
+                .setNegativeButton(getString(R.string.KiteChannelPromptNotNow), null)
+                .create());
+        }
+        if (shown != null) {
+            askedThisLaunch[account] = true;
+        } else {
+            // Another dialog, a transition or another screen is in the way: try again later.
+            AndroidUtilities.runOnUIThread(() -> show(fragment, attempt + 1), SHOW_DELAY_MS);
+        }
+    }
 
-        fragment.showDialog(new AlertDialog.Builder(fragment.getParentActivity())
-            .setTitle(getString(R.string.KiteChannelPromptTitle))
-            .setMessage(getString(R.string.KiteChannelPromptText))
-            .setPositiveButton(getString(R.string.KiteChannelPromptSubscribe), (dialog, which) -> join(fragment, account))
-            .setNegativeButton(getString(R.string.KiteChannelPromptNotNow), null)
-            .create());
+    /**
+     * The fragment that should host Kite dialogs while the chat list is on screen.
+     * Since 12.x the chat list lives inside MainTabsActivity, which is then the top fragment.
+     */
+    static BaseFragment chatListHost(BaseFragment fragment) {
+        if (fragment.getParentActivity() == null) {
+            return null;
+        }
+        final BaseFragment top = LaunchActivity.getSafeLastFragment();
+        if (top == fragment || top instanceof MainTabsActivity) {
+            return top.getParentActivity() != null ? top : null;
+        }
+        return null;
     }
 
     private static void join(BaseFragment fragment, int account) {
