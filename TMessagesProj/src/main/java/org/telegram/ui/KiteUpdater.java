@@ -128,13 +128,16 @@ public final class KiteUpdater {
     }
 
     private static void showUpdateDialog(BaseFragment fragment, Release release) {
-        if (fragment.getParentActivity() == null || fragment.getVisibleDialog() != null) {
+        final BaseFragment host = KiteChannelPrompt.chatListHost(fragment);
+        if (host == null || host.getVisibleDialog() != null) {
+            // Try again on the next check instead of waiting the full interval.
+            MessagesController.getGlobalMainSettings().edit().remove(PREF_LAST_CHECK).apply();
             return;
         }
-        fragment.showDialog(new AlertDialog.Builder(fragment.getParentActivity())
+        host.showDialog(new AlertDialog.Builder(host.getParentActivity())
             .setTitle(getString(R.string.KiteUpdateTitle))
             .setMessage(formatString(R.string.KiteUpdateText, release.build))
-            .setPositiveButton(getString(R.string.KiteUpdateInstall), (dialog, which) -> download(fragment, release))
+            .setPositiveButton(getString(R.string.KiteUpdateInstall), (dialog, which) -> download(host, release))
             .setNegativeButton(getString(R.string.KiteUpdateLater), (dialog, which) ->
                 MessagesController.getGlobalMainSettings().edit().putInt(PREF_SKIPPED, release.build).apply())
             .create());
