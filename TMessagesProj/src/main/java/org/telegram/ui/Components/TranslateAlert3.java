@@ -495,7 +495,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             layout1.setOrientation(LinearLayout.HORIZONTAL);
             addView(layout1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT));
 
-            text1View = new TextView(context);
+            text1View = new PersianTextView(context);
             text1View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             text1View.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD));
             layout1.addView(text1View, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 0, 0, 0));
@@ -506,7 +506,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             ScaleStateListAnimator.apply(layout2);
             layout1.addView(layout2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, -6, 0, 0, 0));
 
-            text2View = new TextView(context);
+            text2View = new PersianTextView(context);
             text2View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             text2View.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD));
             layout2.addView(text2View, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 0, 0, 0));
@@ -516,7 +516,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             layout2.addView(imageView, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL | Gravity.LEFT, 1, 0, 0, 0));
             imageView.setTranslationY(dp(1));
 
-            text3View = new TextView(context);
+            text3View = new PersianTextView(context);
             text3View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             text3View.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD));
             layout1.addView(text3View, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, -6, 0, 0, 0));
@@ -531,7 +531,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             emojifyCheckbox.setChecked(false, false);
             emojifyCheckbox.setDrawBackgroundAsArc(10);
             emojifyContainer.addView(emojifyCheckbox, LayoutHelper.createLinear(22, 22, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
-            emojifyTextView = new TextView(context);
+            emojifyTextView = new PersianTextView(context);
             emojifyTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             emojifyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             emojifyTextView.setTypeface(AndroidUtilities.bold());
@@ -551,7 +551,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             anotherExampleIcon.setImageResource(R.drawable.mini_replace2);
             anotherExample.addView(anotherExampleIcon, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
 
-            anotherExampleText = new TextView(context);
+            anotherExampleText = new PersianTextView(context);
             anotherExampleText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             anotherExampleText.setTypeface(AndroidUtilities.bold());
             anotherExampleText.setText(getString(R.string.AIEditorAnotherExample));
@@ -718,7 +718,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             shortTextView.setEllipsize(TextUtils.TruncateAt.END);
             addView(shortTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            moreView = new TextView(context);
+            moreView = new PersianTextView(context);
             moreView.setText(getString(R.string.DescriptionMore));
             moreView.setPadding(dp(8), 0, dp(8), 0);
             moreView.setGravity(Gravity.CENTER);

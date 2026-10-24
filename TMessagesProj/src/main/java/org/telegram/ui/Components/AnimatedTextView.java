@@ -41,6 +41,7 @@ import androidx.core.graphics.ColorUtils;
 import org.checkerframework.checker.units.qual.A;
 import org.checkerframework.checker.units.qual.C;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
@@ -436,7 +437,14 @@ public class AnimatedTextView extends View {
             setText(text, animated, true);
         }
 
+        private boolean fontEnabled = SharedConfig.useVazirmatnFont;
+
         public void setText(CharSequence text, boolean animated, boolean moveDown) {
+            boolean fontChanged = fontEnabled != SharedConfig.useVazirmatnFont;
+            fontEnabled = SharedConfig.useVazirmatnFont;
+            if (fontChanged) {
+                animated = false;
+            }
             if (this.currentText == null || text == null) {
                 animated = false;
             }
@@ -500,8 +508,11 @@ public class AnimatedTextView extends View {
                     includeOldPartHeight(oldPart);
                 };
 
-                CharSequence from = splitByWords ? new WordSequence(oldText) : oldText;
-                CharSequence to = splitByWords ? new WordSequence(currentText) : currentText;
+                // Resolve punctuation against the complete text before animation splits it.
+                CharSequence styledOldText = PersianFontApplier.applyForPaint(oldText, textPaint);
+                CharSequence styledCurrentText = PersianFontApplier.applyForPaint(currentText, textPaint);
+                CharSequence from = splitByWords ? new WordSequence(styledOldText) : styledOldText;
+                CharSequence to = splitByWords ? new WordSequence(styledCurrentText) : styledCurrentText;
 
                 diff(from, to, onEqualRegion, onNewPart, onOldPart);
 //                betterDiff(from, to, onEqualRegion, onNewPart, onOldPart);
@@ -570,10 +581,11 @@ public class AnimatedTextView extends View {
                 toSetTextMoveDown = false;
                 rawT = t = 0;
 
-                if (!text.equals(currentText)) {
+                if (fontChanged || !text.equals(currentText)) {
                     clearCurrentParts();
                     currentParts = new Part[1];
-                    currentParts[0] = new Part(makeLayout(currentText = text, width), 0, -1);
+                    currentText = text;
+                    currentParts[0] = new Part(makeLayout(PersianFontApplier.applyForPaint(text, textPaint), width), 0, -1);
                     currentWidth = currentParts[0].width;
                     resetCurrentHeight();
                     includeCurrentPartHeight(currentParts[0]);
@@ -645,7 +657,7 @@ public class AnimatedTextView extends View {
         }
 
         private StaticLayout makeLayout(CharSequence textPart, int width) {
-            textPart = PersianFontApplier.applyForPaint(textPart, textPaint);
+            // Parts already contain font spans resolved using their full-text context.
             if (width <= 0) {
                 width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
             }
@@ -784,7 +796,8 @@ public class AnimatedTextView extends View {
             if (a instanceof WordSequence && b instanceof WordSequence) {
                 CharSequence wordA = ((WordSequence) a).wordAt(aIndex);
                 CharSequence wordB = ((WordSequence) b).wordAt(bIndex);
-                return wordA == null && wordB == null || wordA != null && wordA.equals(wordB);
+                // Generated font spans have distinct identities even when the word is unchanged.
+                return TextUtils.equals(wordA, wordB);
             }
             return (a == null && b == null || a != null && b != null && a.charAt(aIndex) == b.charAt(bIndex));
         }
@@ -1018,6 +1031,12 @@ public class AnimatedTextView extends View {
         public void setTextSize(float textSizePx) {
             final float lastTextPaint = textPaint.getTextSize();
             textPaint.setTextSize(textSizePx);
+            if (fontEnabled != SharedConfig.useVazirmatnFont && currentText != null) {
+                CharSequence text = toSetText != null ? toSetText : currentText;
+                currentText = null;
+                setText(text, false);
+                return;
+            }
             if (Math.abs(lastTextPaint - textSizePx) > 0.5f) {
                 final int width = overrideFullWidth > 0 ? overrideFullWidth : bounds.width();
                 if (currentParts != null) {

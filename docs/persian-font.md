@@ -4,9 +4,17 @@ Enable **Use Vazirmatn font** in Settings > Chat Settings. The setting is off by
 default and persists in the global main preferences. Changing it rebuilds the
 fragment views; cached message layouts check the setting before reuse.
 
-Only Arabic-script letters, Persian/Arabic digits, and their combining marks and
-joiners receive font spans. This is script detection, not language detection.
-Latin text, ASCII digits, punctuation, and emoji keep their existing fonts.
+Arabic-script letters, Persian/Arabic digits, dedicated Arabic punctuation
+(including question mark, comma, semicolon, percent and numeric separators),
+and their combining marks and joiners receive font spans. Shared punctuation
+such as exclamation marks, periods, quotes and parentheses follows the nearby
+script within the same line. Opening quotes/brackets prefer the following
+script; other punctuation prefers the preceding script. Whitespace itself is
+not styled. This is script detection with a punctuation heuristic, not language
+detection. Latin text, ASCII digits, punctuation in Latin text, isolated shared
+punctuation with no script context, and emoji keep their existing fonts.
+AnimatedTextView resolves spans before splitting text into animated parts so
+punctuation retains its full-text context during animations and size changes.
 Regular, Medium, and Bold assets are distributed with their SIL OFL license.
 Telegram's Medium assets, including the typeface returned by AndroidUtilities.bold()
 and rich-message bold formatting, map consistently to Vazirmatn Medium (500).
@@ -67,19 +75,34 @@ TextPaint's typeface globally, as that would affect Latin text too.
 
 The instrumentation suite is
 `org.telegram.ui.Components.PersianFontApplierTest` in TMessagesProj_AppTests.
-It contains 24 tests covering bundled fonts, script boundaries, formatting,
+It contains 27 tests covering bundled fonts, script boundaries, formatting,
 links, code, replacement spans, repeat application, disabling, selection, IME
 composition, native text-view variants, rich input without a page delegate,
 folder-title refresh, Canvas cache/rendering behavior, weight consistency,
 Persian-digit counter refresh and placeholders, bot-ad text surfaces, optical
 sizing, animated proxy subtitles, and bot-menu rendering with both scripts and
-both font settings.
+both font settings, dedicated/contextual punctuation, formatting exclusions,
+and animated punctuation fragments.
 
-The latest RTL/login/optical-size changes have only been parsed for Java syntax and
+The latest punctuation/animation changes have only been parsed for Java syntax and
 checked for diff whitespace. The updated instrumentation suite has not been
 executed against this source state. A passing build or an older test run does
 not validate these latest changes. See
 [persian-font-review.md](persian-font-review.md) for outstanding release evidence.
+
+
+The standalone range detector suite needs only a JDK and does not build or run
+the Android app. Its 33 regressions cover dedicated and contextual punctuation,
+mixed scripts, quotes/brackets, numbers, newline boundaries, emoji/keycaps,
+joiners, malformed surrogates and linear access on a long punctuation run:
+
+```powershell
+javac -encoding UTF-8 -d build/font-check/punctuation-tests TMessagesProj/src/main/java/org/telegram/messenger/PersianTextUtils.java Tools/tests/PersianTextUtilsTest.java
+java -cp build/font-check/punctuation-tests PersianTextUtilsTest
+```
+
+These standalone checks passed. The updated Android instrumentation tests have
+not been executed.
 
 On Windows PowerShell, quote the entire Gradle project-property argument:
 

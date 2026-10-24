@@ -27,6 +27,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 
 public class StoryModeTabs extends FrameLayout implements FlashViews.Invertable {
@@ -66,7 +67,7 @@ public class StoryModeTabs extends FrameLayout implements FlashViews.Invertable 
         layout.setOrientation(LinearLayout.HORIZONTAL);
 
         liveLayout = new FrameLayout(context);
-        live = new TextView(context);
+        live = new PersianTextView(context);
         live.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         live.setTypeface(AndroidUtilities.bold());
         live.setTextColor(0xFFFFFFFF);
@@ -77,7 +78,7 @@ public class StoryModeTabs extends FrameLayout implements FlashViews.Invertable 
         ScaleStateListAnimator.apply(liveLayout);
 
         photoLayout = new FrameLayout(context);
-        photo = new TextView(context);
+        photo = new PersianTextView(context);
         photo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         photo.setTypeface(AndroidUtilities.bold());
         photo.setTextColor(0xFFFFFFFF);
@@ -88,7 +89,7 @@ public class StoryModeTabs extends FrameLayout implements FlashViews.Invertable 
         ScaleStateListAnimator.apply(photoLayout);
 
         videoLayout = new FrameLayout(context);
-        video = new TextView(context);
+        video = new PersianTextView(context);
         video.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         video.setTypeface(AndroidUtilities.bold());
         video.setTextColor(0xFFFFFFFF);

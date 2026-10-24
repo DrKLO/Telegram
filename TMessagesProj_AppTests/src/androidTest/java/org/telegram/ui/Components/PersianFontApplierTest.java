@@ -510,6 +510,104 @@ public class PersianFontApplierTest {
         return false;
     }
 
+    @Test
+    public void dedicatedPunctuationUsesFontInNativeTextView() {
+        onUiThread(() -> {
+            PersianTextView view = new PersianTextView(ApplicationLoader.applicationContext);
+            String value = "\u061f\u060c\u061b\u06d4\u066a\u066b\u066c";
+            view.setText(value);
+            assertTypeface(view.getText(), PersianFontManager.regular());
+            assertEquals(value, view.getText().toString());
+            SharedConfig.useVazirmatnFont = false;
+            measureView(view);
+            Spanned plain = (Spanned) view.getText();
+            assertEquals(0, plain.getSpans(0, plain.length(), PersianFontSpan.class).length);
+        });
+    }
+
+    @Test
+    public void contextualPunctuationPreservesFormattingAndCodeExclusions() {
+        String value = "\u0633\u0644\u0627\u0645! English?";
+        SpannableStringBuilder text = new SpannableStringBuilder(value);
+        StyleSpan bold = new StyleSpan(Typeface.BOLD);
+        text.setSpan(bold, 4, 5, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Spanned styled = (Spanned) PersianFontApplier.applyRegular(text);
+        assertSame(bold, styled.getSpans(4, 5, StyleSpan.class)[0]);
+        PersianFontSpan[] punctuation = styled.getSpans(4, 5, PersianFontSpan.class);
+        assertEquals(1, punctuation.length);
+        TextPaint paint = new TextPaint();
+        punctuation[0].updateMeasureState(paint);
+        assertSame(PersianFontManager.bold(), paint.getTypeface());
+        assertEquals(0, styled.getSpans(value.length() - 1, value.length(), PersianFontSpan.class).length);
+        assertEquals(value, styled.toString());
+
+        SpannableStringBuilder code = new SpannableStringBuilder("\u061f!");
+        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+        run.flags = TextStyleSpan.FLAG_STYLE_CODE;
+        code.setSpan(new TextStyleSpan(run), 0, code.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        assertNoFont(code);
+        assertSame("English?!", PersianFontApplier.applyRegular("English?!"));
+    }
+
+    @Test
+    public void animatedPunctuationKeepsContextAcrossSplitsAndSizeChanges() {
+        onUiThread(() -> {
+            for (boolean words : new boolean[] {false, true}) {
+                AnimatedTextView.AnimatedTextDrawable drawable = new AnimatedTextView.AnimatedTextDrawable(words, true, true);
+                drawable.setBounds(0, 0, 600, 100);
+                drawable.setTextSize(32);
+                String word = "\u0633\u0644\u0627\u0645";
+                drawable.setText(word + " " + word + "?", false);
+                try {
+                    drawable.setText(word + " " + word + "!", true);
+                    assertAnimatedExclamationFont(drawable, true);
+                    drawable.setTextSize(48);
+                    assertAnimatedExclamationFont(drawable, true);
+                    drawable.cancelAnimation();
+                    SharedConfig.useVazirmatnFont = false;
+                    drawable.setText(word + " " + word + "!", false);
+                    assertAnimatedExclamationFont(drawable, false);
+                    SharedConfig.useVazirmatnFont = true;
+                    drawable.setTextSize(32);
+                    assertAnimatedExclamationFont(drawable, true);
+                } finally {
+                    drawable.cancelAnimation();
+                }
+            }
+        });
+    }
+
+    private static void assertAnimatedExclamationFont(AnimatedTextView.AnimatedTextDrawable drawable, boolean enabled) {
+        try {
+            java.lang.reflect.Field partsField = drawable.getClass().getDeclaredField("currentParts");
+            partsField.setAccessible(true);
+            Object[] parts = (Object[]) partsField.get(drawable);
+            boolean found = false;
+            boolean stablePart = false;
+            for (Object part : parts) {
+                java.lang.reflect.Field oppositeField = part.getClass().getDeclaredField("toOppositeIndex");
+                oppositeField.setAccessible(true);
+                stablePart |= oppositeField.getInt(part) >= 0;
+                java.lang.reflect.Field layoutField = part.getClass().getDeclaredField("layout");
+                layoutField.setAccessible(true);
+                CharSequence text = ((StaticLayout) layoutField.get(part)).getText();
+                int index = TextUtils.indexOf(text, '!');
+                if (index >= 0) {
+                    found = true;
+                    int fonts = text instanceof Spanned
+                            ? ((Spanned) text).getSpans(index, index + 1, PersianFontSpan.class).length : 0;
+                    assertEquals(enabled ? 1 : 0, fonts);
+                }
+            }
+            assertTrue("The animated label must retain its exclamation mark", found);
+            if (drawable.isAnimating()) {
+                assertTrue("Unchanged words must retain their stable animation parts", stablePart);
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     private static StaticLayout counterLayout(CounterView.CounterDrawable counter) {
         try {
             java.lang.reflect.Field field = CounterView.CounterDrawable.class.getDeclaredField("countLayout");

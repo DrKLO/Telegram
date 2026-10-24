@@ -61,6 +61,7 @@ import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.PersianFontSpan;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -744,6 +745,7 @@ public class HintView2 extends View {
     }
 
     private void makeLayout(CharSequence text, int width) {
+        text = PersianFontApplier.applyForPaint(text, textPaint);
         textLayout = new StaticLayout(text, textPaint, width, textLayoutAlignment, 1f, 0f, false);
         float left = width, right = 0;
         for (int i = 0; i < textLayout.getLineCount(); ++i) {

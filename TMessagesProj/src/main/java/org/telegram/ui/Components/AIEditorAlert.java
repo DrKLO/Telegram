@@ -1223,6 +1223,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
         final TextPaint textPaint = new TextPaint();
         textPaint.setTextSize(dp(16));
+        text = PersianFontApplier.applyForPaint(text, textPaint);
         final Layout layout = new StaticLayout(text, textPaint, AndroidUtilities.displaySize.x - dp(20 + 20 + 12 + 12) - backgroundPaddingLeft - backgroundPaddingLeft, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
         return MathUtils.clamp(layout.getLineCount(), 1, 10);
     }
@@ -1781,7 +1782,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                 NotificationCenter.listenEmojiLoading(imageView);
                 layout.addView(imageView, LayoutHelper.createLinear(24, 24, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 4, 0, 0));
 
-                textView = new TextView(context);
+                textView = new PersianTextView(context);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 textView.setGravity(Gravity.CENTER);
@@ -2007,7 +2008,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             checkbox.setChecked(false, false);
             checkbox.setDrawBackgroundAsArc(10);
             checkboxLayout.addView(checkbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
-            final TextView checkboxTextView = new TextView(context);
+            final TextView checkboxTextView = new PersianTextView(context);
             checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
             checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             checkboxTextView.setText(getString(R.string.AIEditorStyleAddLink));
@@ -2328,14 +2329,14 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             icon.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE, currentAccount, tone.emoji_id));
             iconButton.addView(icon, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
 
-            title = new TextView(context);
+            title = new PersianTextView(context);
             title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTypeface(AndroidUtilities.bold());
             title.setGravity(Gravity.CENTER);
             title.setText(tone.title);
 
-            subtitle = new TextView(context);
+            subtitle = new PersianTextView(context);
             subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitle.setGravity(Gravity.CENTER);
