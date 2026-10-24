@@ -135,6 +135,22 @@ android {
     }
 
     defaultConfig {
+        // api_id / api_hash from https://my.telegram.org, kept out of git:
+        // put TG_API_ID / TG_API_HASH into local.properties (or env vars).
+        def tgApiId = (getProps("TG_API_ID") ?: System.getenv("TG_API_ID") ?: "").toString().trim()
+        def tgApiHash = (getProps("TG_API_HASH") ?: System.getenv("TG_API_HASH") ?: "").toString().trim()
+        if (!tgApiId.isInteger() || tgApiHash.isEmpty()) {
+            throw new GradleException("TG_API_ID / TG_API_HASH are not set. Add them to local.properties, see README.")
+        }
+        buildConfigField "int", "TG_API_ID", tgApiId
+        buildConfigField "String", "TG_API_HASH", "\"" + tgApiHash + "\""
+
+        // Optional: limit native ABIs for faster local builds (KITE_ABIS=arm64-v8a).
+        def kiteAbis = (getProps("KITE_ABIS") ?: "").toString().trim()
+        if (kiteAbis) {
+            ndk { abiFilters(*kiteAbis.split(",")*.trim()) }
+        }
+
         minSdkVersion 23
         targetSdkVersion 36
 

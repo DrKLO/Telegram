@@ -1,3 +1,63 @@
+# Kite для Android
+
+Kite сделан на основе [официального исходного кода Telegram для Android](https://github.com/DrKLO/Telegram)
+(лицензия GPL v2). Изменения этого форка от upstream:
+
+- своё имя приложения **Kite** и свой `applicationId` `io.github.garricho.kite`
+  (отладочная сборка: `io.github.garricho.kite.beta`), поэтому Kite ставится рядом с официальным Telegram;
+- `api_id`/`api_hash` берутся из `local.properties`, в git их нет;
+- отключены проверка обновлений официального приложения, Google Play Billing и passkeys
+  (они работают только для официальных ID);
+- свой тип системного аккаунта для синхронизации контактов.
+
+## Сборка на Ubuntu
+
+0. Установите JDK 17 (нужен именно JDK, а не только JRE):
+
+   ```bash
+   sudo apt install -y openjdk-17-jdk
+   echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc && source ~/.bashrc
+   ```
+
+1. Установите [Android Studio](https://developer.android.com/studio). В *SDK Manager* выберите:
+   Android SDK Platform 36, Build-Tools 36.0.0, **NDK 27.2.12479018** и **CMake 3.22.1**
+   (во вкладке *SDK Tools* включите *Show Package Details*, чтобы выбрать точную версию).
+2. Склонируйте репозиторий **с подмодулями**:
+
+   ```bash
+   git clone --recursive --shallow-submodules https://github.com/Garricho/kite-android.git
+   cd kite-android
+   ```
+
+   Если забыли `--recursive`, выполните: `git submodule update --init --recursive --depth=1`.
+3. Создайте файл `local.properties` в корне проекта (он в `.gitignore`):
+
+   ```properties
+   sdk.dir=/home/ВАШ_ПОЛЬЗОВАТЕЛЬ/Android/Sdk
+   TG_API_ID=12345678
+   TG_API_HASH=0123456789abcdef0123456789abcdef
+   # Необязательно: собирать нативный код только под ваш телефон (в разы быстрее)
+   KITE_ABIS=arm64-v8a
+   ```
+
+4. Подключите телефон с включённой отладкой по USB и соберите отладочную версию:
+
+   ```bash
+   ./gradlew :TMessagesProj_App:installAfatDebug
+   ```
+
+   Первая сборка долгая (компилируется нативный код), дальше быстрее.
+   Можно и из Android Studio: *Open* → папка проекта, конфигурация `TMessagesProj_App`, вариант `afatDebug`.
+
+## Перед публикацией в Play Market
+
+- своя иконка (официальный логотип использовать нельзя);
+- свой ключ подписи `TMessagesProj/config/release.keystore` и пароли в `gradle.properties`;
+- свой проект Firebase (`google-services.json`) для пуш-уведомлений;
+- открытый исходный код вашей версии (требование GPL).
+
+---
+
 ## Telegram messenger for Android
 
 [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
