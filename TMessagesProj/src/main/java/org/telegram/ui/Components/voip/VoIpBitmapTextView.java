@@ -8,11 +8,14 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.PersianFontApplier;
 
 /**
  * Fixed ANR on Samsung after one and a half minutes.
@@ -24,23 +27,23 @@ public class VoIpBitmapTextView extends View {
     private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float textWidth;
-    private final String text;
+    private final StaticLayout textLayout;
     private volatile Bitmap bitmap;
 
     public VoIpBitmapTextView(Context context, String text) {
         super(context);
-        textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(dp(13));
         textPaint.setColor(Color.WHITE);
         textPaint.setTypeface(AndroidUtilities.bold());
-        textWidth = textPaint.measureText(text);
-        this.text = text;
+        CharSequence styledText = PersianFontApplier.applyForPaint(text, textPaint);
+        textWidth = Layout.getDesiredWidth(styledText, textPaint);
+        textLayout = new StaticLayout(styledText, textPaint, Math.max(1, (int) Math.ceil(textWidth)), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
-                MeasureSpec.makeMeasureSpec((int) textWidth + getPaddingLeft() + getPaddingRight(), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec((int) Math.ceil(textWidth) + getPaddingLeft() + getPaddingRight(), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.EXACTLY)
         );
     }
@@ -48,13 +51,18 @@ public class VoIpBitmapTextView extends View {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (changed) {
+        int width = getMeasuredWidth();
+        int height = getMeasuredHeight();
+        if (changed && width > 0 && height > 0) {
             Utilities.globalQueue.postRunnable(() -> {
-                bitmap = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(bitmap);
-                int xPos = (getMeasuredWidth() / 2);
-                int yPos = (int) ((getMeasuredHeight() / 2) - ((textPaint.descent() + textPaint.ascent()) / 2));
-                canvas.drawText(text, xPos, yPos, textPaint);
+                Bitmap renderedBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(renderedBitmap);
+                int xPos = width / 2;
+                int yPos = (int) ((height / 2) - ((textPaint.descent() + textPaint.ascent()) / 2));
+                canvas.translate(xPos - (textLayout.getLineLeft(0) + textLayout.getLineRight(0)) / 2f,
+                        yPos - textLayout.getLineBaseline(0));
+                textLayout.draw(canvas);
+                bitmap = renderedBitmap;
                 postInvalidate();
             });
         }

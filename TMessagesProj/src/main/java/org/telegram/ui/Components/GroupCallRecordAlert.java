@@ -91,7 +91,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         containerView.setBackgroundDrawable(shadowDrawable);
         containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
-        TextView titleTextView = new TextView(getContext());
+        TextView titleTextView = new PersianTextView(getContext());
         if (ChatObject.isChannelOrGiga(chat)) {
             titleTextView.setText(LocaleController.getString(R.string.VoipChannelRecordVoiceChat));
         } else {
@@ -103,7 +103,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         titleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         containerView.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 29, 24, 0));
 
-        TextView infoTextView = new TextView(getContext());
+        TextView infoTextView = new PersianTextView(getContext());
         infoTextView.setText(LocaleController.getString(R.string.VoipRecordVoiceChatInfo));
         infoTextView.setTextColor(0xffffffff);
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -148,7 +148,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         rightView.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0, color}));
         containerView.addView(rightView, LayoutHelper.createFrame(120, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP, 0, 100, 0, 130));
 
-        positiveButton = new TextView(getContext()) {
+        positiveButton = new PersianTextView(getContext()) {
 
             private Paint[] gradientPaint = new Paint[titles.length];
             {
@@ -222,7 +222,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         containerView.addView(titlesLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 64, Gravity.BOTTOM));
 
         for (int a = 0; a < titles.length; a++) {
-            titles[a] = new TextView(context);
+            titles[a] = new PersianTextView(context);
             titles[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             titles[a].setTextColor(0xffffffff);
             titles[a].setTypeface(AndroidUtilities.bold());

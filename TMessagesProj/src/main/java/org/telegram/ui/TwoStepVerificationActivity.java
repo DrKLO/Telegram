@@ -68,6 +68,7 @@ import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -246,14 +247,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         lockImageView.setVisibility(AndroidUtilities.isSmallScreen() || (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y && !AndroidUtilities.isTablet()) ? View.GONE : View.VISIBLE);
         linearLayout.addView(lockImageView, LayoutHelper.createLinear(100, 100, Gravity.CENTER_HORIZONTAL));
 
-        titleTextView = new TextView(context);
+        titleTextView = new PersianTextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 8, 24, 0));
 
-        subtitleTextView = new TextView(context);
+        subtitleTextView = new PersianTextView(context);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -305,14 +306,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             }
         });
 
-        bottomTextView = new TextView(context);
+        bottomTextView = new PersianTextView(context);
         bottomTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         bottomTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         bottomTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         bottomTextView.setText(getString(R.string.YourEmailInfo));
         linearLayout.addView(bottomTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 40, 30, 40, 0));
 
-        resetWaitView = new TextView(context);
+        resetWaitView = new PersianTextView(context);
         resetWaitView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         resetWaitView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -332,7 +333,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         bottomButton.setOnClickListener(v -> onPasswordForgot());
         VerticalPositionAutoAnimator.attach(bottomButton);
 
-        cancelResetButton = new TextView(context);
+        cancelResetButton = new PersianTextView(context);
         cancelResetButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         cancelResetButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         cancelResetButton.setPadding(dp(32), 0, dp(32), 0);

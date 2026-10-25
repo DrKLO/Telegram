@@ -65,6 +65,9 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GroupCallFullscreenAdapter;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianFontCanvasText;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.GroupCallActivity;
@@ -190,14 +193,16 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         textPaint2.setColor(Color.WHITE);
 
         String videoOnPauseString = LocaleController.getString(R.string.VoipVideoOnPause);
-        StaticLayout staticLayout = new StaticLayout(LocaleController.getString(R.string.VoipVideoScreenSharingTwoLines), textPaint, dp(400), Layout.Alignment.ALIGN_CENTER, 1.0f, 0, false);
+        StaticLayout staticLayout = new StaticLayout(PersianFontApplier.applyForPaint(LocaleController.getString(R.string.VoipVideoScreenSharingTwoLines), textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_CENTER, 1.0f, 0, false);
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(call.chatId);
         String text = LocaleController.formatPluralString("Participants", MessagesController.getInstance(currentAccount).groupCallVideoMaxParticipants);
-        StaticLayout noVideoLayout = new StaticLayout(LocaleController.formatString("VoipVideoNotAvailable", R.string.VoipVideoNotAvailable, text), textPaint, dp(400), Layout.Alignment.ALIGN_CENTER, 1.0f, 0, false);
+        StaticLayout noVideoLayout = new StaticLayout(PersianFontApplier.applyForPaint(LocaleController.formatString("VoipVideoNotAvailable", R.string.VoipVideoNotAvailable, text), textPaint), textPaint, dp(400), Layout.Alignment.ALIGN_CENTER, 1.0f, 0, false);
         String sharingScreenString = LocaleController.getString(R.string.VoipVideoScreenSharing);
 
-        float textW = textPaint.measureText(videoOnPauseString);
-        float textW3 = textPaint2.measureText(sharingScreenString);
+        PersianFontCanvasText videoPausedCanvasText = new PersianFontCanvasText();
+        PersianFontCanvasText screenSharingCanvasText = new PersianFontCanvasText();
+        float textW = videoPausedCanvasText.measure(videoOnPauseString, textPaint);
+        float textW3 = screenSharingCanvasText.measure(sharingScreenString, textPaint2);
 
         this.textureView = new VoIPTextureView(parentContainer.getContext(), false, false, true, true) {
 
@@ -294,7 +299,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                             } else {
                                 stopSharingTextView.setAlpha(0.0f);
                             }
-                            canvas.drawText(sharingScreenString, x - textW3 / 2f + size / 2f, y + size + dp(32), textPaint2);
+                            screenSharingCanvasText.draw(canvas, sharingScreenString, x - textW3 / 2f + size / 2f, y + size + dp(32), textPaint2);
                         } else {
                             stopSharingTextView.setAlpha(0.0f);
                         }
@@ -378,7 +383,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                         a *= parentContainer.progressToFullscreenMode;
                         if (a > 0 && participant != call.videoNotAvailableParticipant) {
                             textPaint.setAlpha((int) (255 * a));
-                            canvas.drawText(videoOnPauseString, x - textW / 2f + iconSize / 2f, y + iconSize + dp(16), textPaint);
+                            videoPausedCanvasText.draw(canvas, videoOnPauseString, x - textW / 2f + iconSize / 2f, y + iconSize + dp(16), textPaint);
                         }
                     }
                 }
@@ -536,7 +541,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         screencastIcon.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
 
         final Drawable rippleDrawable = Theme.createSimpleSelectorRoundRectDrawable(dp(19), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Color.WHITE, 100));
-        stopSharingTextView = new TextView(parentContainer.getContext()) {
+        stopSharingTextView = new PersianTextView(parentContainer.getContext()) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (Math.abs(stopSharingTextView.getAlpha() - 1.0f) > 0.001f) {
@@ -560,7 +565,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         });
         addView(stopSharingTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38, Gravity.LEFT | Gravity.TOP));
 
-        noRtmpStreamTextView = new TextView(parentContainer.getContext());
+        noRtmpStreamTextView = new PersianTextView(parentContainer.getContext());
         noRtmpStreamTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         noRtmpStreamTextView.setPadding(dp(21), 0, dp(21), 0);
         noRtmpStreamTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));

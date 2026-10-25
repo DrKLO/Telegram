@@ -567,7 +567,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         passwordFrameLayout = new FrameLayout(context);
         backgroundFrameLayout.addView(passwordFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        passcodeTextView = new TextView(context);
+        passcodeTextView = new PersianTextView(context);
         passcodeTextView.setTextColor(0xffffffff);
         passcodeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18.33f);
         passcodeTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -575,7 +575,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         passcodeTextView.setAlpha(0f);
         passwordFrameLayout.addView(passcodeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 128));
 
-        retryTextView = new TextView(context);
+        retryTextView = new PersianTextView(context);
         retryTextView.setTextColor(0xffffffff);
         retryTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         retryTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -739,14 +739,14 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         numbersTitleContainer = new FrameLayout(context);
         numbersFrameLayout.addView(numbersTitleContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
 
-        TextView titleView = new TextView(context);
+        TextView titleView = new PersianTextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(0xFFFFFFFF);
         titleView.setText(title);
         numbersTitleContainer.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
 
-        subtitleView = new TextView(context);
+        subtitleView = new PersianTextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleView.setTextColor(0xFFFFFFFF);
         subtitleView.setText(subtitle);

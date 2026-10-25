@@ -2304,7 +2304,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             showMotionHint(enable);
         });
 
-        TextView doneItem = new TextView(context) {
+        TextView doneItem = new PersianTextView(context) {
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
             @Override
             protected void onDraw(Canvas canvas) {
@@ -2509,7 +2509,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         selectedView.setOrientation(LinearLayout.HORIZONTAL);
         selectedView.setGravity(Gravity.CENTER_VERTICAL);
 
-        selectedTextView = new TextView(context);
+        selectedTextView = new PersianTextView(context);
         selectedTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         selectedTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         selectedTextView.setTypeface(AndroidUtilities.bold());
@@ -2538,7 +2538,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         mediaPreviewView.addView(arrowView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 1, 4, 0));
 
-        mediaPreviewTextView = new TextView(context);
+        mediaPreviewTextView = new PersianTextView(context);
         mediaPreviewTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         mediaPreviewTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         mediaPreviewTextView.setTypeface(AndroidUtilities.bold());

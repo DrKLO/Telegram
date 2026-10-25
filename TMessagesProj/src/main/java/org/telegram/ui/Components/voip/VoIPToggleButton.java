@@ -31,6 +31,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 @SuppressLint("ViewConstructor")
 public class VoIPToggleButton extends FrameLayout {
@@ -88,7 +89,7 @@ public class VoIPToggleButton extends FrameLayout {
         addView(textLayoutContainer);
 
         for (int i = 0; i < 2; i++) {
-            TextView textView = new TextView(context);
+            TextView textView = new PersianTextView(context);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             textView.setTextColor(Color.WHITE);

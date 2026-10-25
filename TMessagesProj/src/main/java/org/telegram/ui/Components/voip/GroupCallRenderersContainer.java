@@ -57,6 +57,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.GroupCallActivity;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.util.ArrayList;
 
@@ -262,13 +263,13 @@ public class GroupCallRenderersContainer extends FrameLayout {
         addView(pinButton, LayoutHelper.createFrame(56, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
 
-        pinTextView = new TextView(context);
+        pinTextView = new PersianTextView(context);
         pinTextView.setTextColor(Color.WHITE);
         pinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         pinTextView.setTypeface(AndroidUtilities.bold());
         pinTextView.setText(LocaleController.getString(R.string.CallVideoPin));
 
-        unpinTextView = new TextView(context);
+        unpinTextView = new PersianTextView(context);
         unpinTextView.setTextColor(Color.WHITE);
         unpinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         unpinTextView.setTypeface(AndroidUtilities.bold());
@@ -334,7 +335,7 @@ public class GroupCallRenderersContainer extends FrameLayout {
         speakingMembersToast.addView(speakingMembersAvatars, LayoutHelper.createFrame(100, 32, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
 
-        speakingMembersText = new TextView(context);
+        speakingMembersText = new PersianTextView(context);
         speakingMembersText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         speakingMembersText.setTextColor(Color.WHITE);
         speakingMembersText.setLines(1);

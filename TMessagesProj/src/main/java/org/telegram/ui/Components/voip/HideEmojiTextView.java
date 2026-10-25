@@ -8,14 +8,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
 import android.view.View;
-import android.widget.TextView;
 import org.telegram.messenger.R;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.ui.Components.PersianTextView;
 
 @SuppressLint("ViewConstructor")
-public class HideEmojiTextView extends TextView {
+public class HideEmojiTextView extends PersianTextView {
 
     private final RectF bgRect = new RectF();
     private final VoIPBackgroundProvider backgroundProvider;

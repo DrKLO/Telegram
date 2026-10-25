@@ -34,6 +34,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
@@ -119,6 +120,7 @@ public class AvatarDrawable extends Drawable {
     private int alpha = 255;
     private Theme.ResourcesProvider resourcesProvider;
     private boolean invalidateTextLayout;
+    private boolean lastFontEnabled;
 
     public AvatarDrawable() {
         this((Theme.ResourcesProvider) null);
@@ -372,7 +374,11 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setTextSize(int size) {
-        namePaint.setTextSize(size);
+        if (namePaint.getTextSize() != size) {
+            namePaint.setTextSize(size);
+            textLayout = null;
+            invalidateTextLayout = true;
+        }
     }
 
     public void setInfo(long id, String firstName, String lastName) {
@@ -711,12 +717,15 @@ public class AvatarDrawable extends Drawable {
             Theme.avatarDrawables[1].setBounds(x, y, x + w, y + h);
             Theme.avatarDrawables[1].draw(canvas);
         } else {
-            if (invalidateTextLayout) {
+            boolean fontChanged = lastFontEnabled != SharedConfig.useVazirmatnFont;
+            if (invalidateTextLayout || fontChanged) {
                 invalidateTextLayout = false;
+                lastFontEnabled = SharedConfig.useVazirmatnFont;
                 if (stringBuilder.length() > 0) {
                     CharSequence text = stringBuilder.toString().toUpperCase();
                     text = Emoji.replaceEmoji(text, namePaint.getFontMetricsInt(), true);
-                    if (textLayout == null || !TextUtils.equals(text, textLayout.getText())) {
+                    text = PersianFontApplier.applyForPaint(text, namePaint);
+                    if (fontChanged || textLayout == null || !TextUtils.equals(text, textLayout.getText())) {
                         try {
                             textLayout = new StaticLayout(text, namePaint, dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                             if (textLayout.getLineCount() > 0) {

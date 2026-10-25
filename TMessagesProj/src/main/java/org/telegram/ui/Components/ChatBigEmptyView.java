@@ -46,7 +46,7 @@ public class ChatBigEmptyView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
 
         if (type == EMPTY_VIEW_TYPE_SECRET) {
-            statusTextView = new TextView(context);
+            statusTextView = new PersianTextView(context);
             statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             statusTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
             statusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -54,7 +54,7 @@ public class ChatBigEmptyView extends LinearLayout {
             textViews.add(statusTextView);
             addView(statusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
         } else if (type == EMPTY_VIEW_TYPE_GROUP) {
-            statusTextView = new TextView(context);
+            statusTextView = new PersianTextView(context);
             statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             statusTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
             statusTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -69,7 +69,7 @@ public class ChatBigEmptyView extends LinearLayout {
             addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 2, 0, 0));
         }
 
-        TextView textView = new TextView(context);
+        TextView textView = new PersianTextView(context);
         if (type == EMPTY_VIEW_TYPE_SECRET) {
             textView.setText(LocaleController.getString(R.string.EncryptedDescriptionTitle));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -103,7 +103,7 @@ public class ChatBigEmptyView extends LinearLayout {
             }
             imageViews.add(imageView);
 
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
             textViews.add(textView);

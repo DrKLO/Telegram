@@ -10,7 +10,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.text.TextPaint;
@@ -28,6 +27,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontCanvasText;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.ArrayList;
@@ -58,14 +59,14 @@ public class StoriesIntro extends FrameLayout {
         linearLayout.setPadding(0, AndroidUtilities.dp(48), 0, AndroidUtilities.dp(48));
         linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        TextView header = new TextView(context);
+        TextView header = new PersianTextView(context);
         header.setTextColor(Color.WHITE);
         header.setTypeface(AndroidUtilities.bold());
         header.setText(LocaleController.getString(R.string.StoriesIntroHeader));
         header.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         linearLayout.addView(header, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        TextView subHeader = new TextView(context);
+        TextView subHeader = new PersianTextView(context);
         subHeader.setTextColor(0x96FFFFFF); // 60%
         subHeader.setText(LocaleController.getString(R.string.StoriesIntroSubHeader));
         subHeader.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -94,7 +95,7 @@ public class StoriesIntro extends FrameLayout {
         for (StoriesIntroItemView storiesIntroItemView : items) {
             linearLayout.addView(storiesIntroItemView, layoutParams);
         }
-        TextView bottomText = new TextView(context);
+        TextView bottomText = new PersianTextView(context);
         bottomText.setTextColor(Color.WHITE);
         bottomText.setTypeface(AndroidUtilities.bold());
         bottomText.setText(LocaleController.getString(R.string.StoriesIntroDismiss));
@@ -187,7 +188,8 @@ public class StoriesIntro extends FrameLayout {
         private final TextPaint subHeaderTextPaint;
         private final RectF rectF;
         private float progress;
-        private final Rect textBounds = new Rect();
+        private final PersianFontCanvasText headerCanvasText = new PersianFontCanvasText();
+        private final PersianFontCanvasText subHeaderCanvasText = new PersianFontCanvasText();
 
         public StoriesIntroItemView(Context context, int rawRes, String header, String subHeader) {
             super(context);
@@ -213,10 +215,8 @@ public class StoriesIntro extends FrameLayout {
         }
 
         public int getRequiredWidth() {
-            headerTextPaint.getTextBounds(header, 0, header.length(), textBounds);
-            int headerWidth = textBounds.width();
-            subHeaderTextPaint.getTextBounds(subHeader, 0, subHeader.length(), textBounds);
-            int subHeaderWidth = textBounds.width();
+            int headerWidth = (int) Math.ceil(headerCanvasText.measure(header, headerTextPaint));
+            int subHeaderWidth = (int) Math.ceil(subHeaderCanvasText.measure(subHeader, subHeaderTextPaint));
             return AndroidUtilities.dp(88) + AndroidUtilities.dp(8) + Math.max(headerWidth, subHeaderWidth);
         }
 
@@ -280,8 +280,8 @@ public class StoriesIntro extends FrameLayout {
                 canvas.save();
                 canvas.scale(1 + 0.05f * progress, 1 + 0.05f * progress, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
             }
-            canvas.drawText(header, AndroidUtilities.dpf2(80), getMeasuredHeight() / 2f - AndroidUtilities.dpf2(4), headerTextPaint);
-            canvas.drawText(subHeader, AndroidUtilities.dpf2(80), getMeasuredHeight() / 2f + AndroidUtilities.dpf2(18), subHeaderTextPaint);
+            headerCanvasText.draw(canvas, header, AndroidUtilities.dpf2(80), getMeasuredHeight() / 2f - AndroidUtilities.dpf2(4), headerTextPaint);
+            subHeaderCanvasText.draw(canvas, subHeader, AndroidUtilities.dpf2(80), getMeasuredHeight() / 2f + AndroidUtilities.dpf2(18), subHeaderTextPaint);
             if (progress > 0) {
                 canvas.restore();
             }

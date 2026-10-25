@@ -17,6 +17,7 @@ import android.text.style.ReplacementSpan;
 import android.text.style.MetricAffectingSpan;
 import android.text.style.StyleSpan;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -36,8 +37,13 @@ import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.messenger.PersianFontManager;
 import org.telegram.messenger.PersianTextUtils;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 
@@ -511,6 +517,147 @@ public class PersianFontApplierTest {
     }
 
     @Test
+    public void attachmentProgressMeasuresLocalizedDigitsAndRefreshesAtTheSameByteCounts() {
+        onUiThread(() -> {
+            Locale previousLocale = Locale.getDefault();
+            try {
+                Theme.createChatResources(ApplicationLoader.applicationContext, false);
+                ChatMessageCell cell = new ChatMessageCell(ApplicationLoader.applicationContext, UserConfig.selectedAccount);
+                for (String name : new String[] {"infoWidth", "docTitleWidth", "backgroundWidth"}) {
+                    java.lang.reflect.Field field = ChatMessageCell.class.getDeclaredField(name);
+                    field.setAccessible(true);
+                    field.setInt(cell, AndroidUtilities.dp(1000));
+                }
+                java.lang.reflect.Field document = ChatMessageCell.class.getDeclaredField("documentAttach");
+                document.setAccessible(true);
+                document.set(cell, new TLRPC.TL_document());
+                java.lang.reflect.Field type = ChatMessageCell.class.getDeclaredField("documentAttachType");
+                type.setAccessible(true);
+                java.lang.reflect.Field layoutField = ChatMessageCell.class.getDeclaredField("loadingProgressLayout");
+                layoutField.setAccessible(true);
+                java.lang.reflect.Method create = ChatMessageCell.class.getDeclaredMethod("createLoadingProgressLayout", long.class, long.class);
+                create.setAccessible(true);
+                for (Locale locale : new Locale[] {new Locale("fa", "IR"), Locale.US}) {
+                    Locale.setDefault(locale);
+                    String expected = AndroidUtilities.formatFileSize(524288) + " / " + AndroidUtilities.formatFileSize(4194304);
+                    assertEquals("fa".equals(locale.getLanguage()), !PersianTextUtils.findPersianOrArabicRanges(expected).isEmpty());
+                    for (String name : new String[] {"DOCUMENT", "AUDIO", "MUSIC", "VIDEO", "GIF"}) {
+                        java.lang.reflect.Field constant = ChatMessageCell.class.getDeclaredField("DOCUMENT_ATTACH_TYPE_" + name);
+                        constant.setAccessible(true);
+                        type.setInt(cell, constant.getInt(null));
+                        layoutField.set(cell, null);
+                        for (boolean enabled : new boolean[] {true, false, true}) {
+                            SharedConfig.useVazirmatnFont = enabled;
+                            create.invoke(cell, 524288L, 4194304L);
+                            StaticLayout layout = (StaticLayout) layoutField.get(cell);
+                            assertEquals(expected, layout.getText().toString());
+                            for (int i = 0; i < expected.length(); i++) {
+                                char c = expected.charAt(i);
+                                if (!Character.isDigit(c)) continue;
+                                CharSequence text = layout.getText();
+                                int fonts = text instanceof Spanned
+                                        ? ((Spanned) text).getSpans(i, i + 1, PersianFontSpan.class).length : 0;
+                                assertEquals(enabled && PersianTextUtils.isPersianOrArabicDigit(c) ? 1 : 0, fonts);
+                            }
+                            assertEquals(Layout.getDesiredWidth(layout.getText(), layout.getPaint()), layout.getLineWidth(0), 1f);
+                            assertEquals((int) Math.ceil(layout.getLineWidth(0)), layout.getWidth());
+                            create.invoke(cell, 524288L, 4194304L);
+                            assertSame(layout, layoutField.get(cell));
+                        }
+                    }
+                }
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            } finally {
+                Locale.setDefault(previousLocale);
+            }
+        });
+    }
+
+    @Test
+    public void avatarInitialsRefreshForFontToggleAndSizeWithoutStylingLatin() {
+        onUiThread(() -> {
+            Theme.createCommonResources(ApplicationLoader.applicationContext);
+            AvatarDrawable drawable = new AvatarDrawable();
+            drawable.setBounds(0, 0, 100, 100);
+            Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+            try {
+                java.lang.reflect.Field field = AvatarDrawable.class.getDeclaredField("textLayout");
+                field.setAccessible(true);
+                Canvas canvas = new Canvas(bitmap);
+                for (String initials : new String[] {"\u0639\u200c\u0631", "\u0645\u200cA", "AB"}) {
+                    drawable.setInfo(1, null, null, initials);
+                    for (boolean enabled : new boolean[] {true, false, true}) {
+                        SharedConfig.useVazirmatnFont = enabled;
+                        drawable.draw(canvas);
+                        StaticLayout layout = (StaticLayout) field.get(drawable);
+                        assertNotNull(layout);
+                        CharSequence text = layout.getText();
+                        assertEquals(initials, text.toString());
+                        for (int i = 0; i < text.length(); i++) {
+                            char c = text.charAt(i);
+                            if (c == '\u200c') continue;
+                            int fonts = text instanceof Spanned
+                                    ? ((Spanned) text).getSpans(i, i + 1, PersianFontSpan.class).length : 0;
+                            assertEquals(enabled && c > 127 ? 1 : 0, fonts);
+                        }
+                        assertSame(AndroidUtilities.bold(), layout.getPaint().getTypeface());
+                        assertEquals(Layout.getDesiredWidth(text, layout.getPaint()), layout.getLineWidth(0), 1f);
+                        drawable.draw(canvas);
+                        assertSame(layout, field.get(drawable));
+                    }
+                }
+                StaticLayout previous = (StaticLayout) field.get(drawable);
+                drawable.setTextSize(36);
+                drawable.draw(canvas);
+                StaticLayout resized = (StaticLayout) field.get(drawable);
+                assertNotSame(previous, resized);
+                assertEquals(36f, resized.getPaint().getTextSize(), 0f);
+                assertEquals(Layout.getDesiredWidth(resized.getText(), resized.getPaint()), resized.getLineWidth(0), 1f);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            } finally {
+                bitmap.recycle();
+            }
+        });
+    }
+
+    @Test
+    public void archivePullLabelsRefreshAtTheSameWidthAfterFontToggle() {
+        onUiThread(() -> {
+            String word = "\u0633\u0644\u0627\u0645";
+            String[] labels = {word + "!", word + "\u061f"};
+            String[] fields = {"pullTooltipLayout", "releaseTooltipLayout"};
+            PullForegroundDrawable drawable = new PullForegroundDrawable(labels[0], labels[1]);
+            try {
+                java.lang.reflect.Method check = PullForegroundDrawable.class.getDeclaredMethod("checkTextLayouts", int.class);
+                check.setAccessible(true);
+                for (boolean enabled : new boolean[] {true, false, true}) {
+                    SharedConfig.useVazirmatnFont = enabled;
+                    check.invoke(drawable, 400);
+                    for (int i = 0; i < fields.length; i++) {
+                        java.lang.reflect.Field field = PullForegroundDrawable.class.getDeclaredField(fields[i]);
+                        field.setAccessible(true);
+                        StaticLayout layout = (StaticLayout) field.get(drawable);
+                        CharSequence text = layout.getText();
+                        assertEquals(labels[i], text.toString());
+                        assertEquals(1, layout.getLineCount());
+                        if (enabled) {
+                            assertTypeface(text, PersianFontManager.medium());
+                        } else if (text instanceof Spanned) {
+                            assertEquals(0, ((Spanned) text).getSpans(0, text.length(), PersianFontSpan.class).length);
+                        }
+                        CharSequence expected = PersianFontApplier.applyForPaint(labels[i], layout.getPaint());
+                        assertEquals(Layout.getDesiredWidth(expected, layout.getPaint()), layout.getLineWidth(0), 1f);
+                    }
+                }
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            }
+        });
+    }
+
+    @Test
     public void dedicatedPunctuationUsesFontInNativeTextView() {
         onUiThread(() -> {
             PersianTextView view = new PersianTextView(ApplicationLoader.applicationContext);
@@ -632,6 +779,10 @@ public class PersianFontApplierTest {
     }
 
     private static void measureView(View view) {
+        // Match the layout parameters a parent supplies before measuring a child.
+        if (view.getLayoutParams() == null) {
+            view.setLayoutParams(new ViewGroup.LayoutParams(600, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
         view.measure(View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.AT_MOST));
     }

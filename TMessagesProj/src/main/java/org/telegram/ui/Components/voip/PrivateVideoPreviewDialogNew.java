@@ -47,6 +47,8 @@ import org.telegram.ui.Components.BitmapShaderTools;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
+import org.telegram.ui.Components.PersianFontCanvasText;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.LaunchActivity;
 import org.webrtc.RendererCommon;
 
@@ -171,7 +173,8 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
         });
         addView(actionBar);
 
-        positiveButton = new TextView(getContext()) {
+        positiveButton = new PersianTextView(getContext()) {
+            private final PersianFontCanvasText buttonCanvasText = new PersianFontCanvasText();
             private final Paint whitePaint = new Paint();
             private final Paint[] gradientPaint = new Paint[titles.length];
 
@@ -225,7 +228,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
                 if (positiveButtonDrawText) {
                     int xPos = (getWidth() / 2);
                     int yPos = (int) ((getHeight() / 2) - ((positiveButton.getPaint().descent() + positiveButton.getPaint().ascent()) / 2));
-                    canvas.drawText(LocaleController.getString(R.string.VoipShareVideo), xPos, yPos, positiveButton.getPaint());
+                    buttonCanvasText.draw(canvas, LocaleController.getString(R.string.VoipShareVideo), xPos, yPos, positiveButton.getPaint());
                 }
             }
         };
@@ -496,7 +499,7 @@ public abstract class PrivateVideoPreviewDialogNew extends FrameLayout implement
             imageView.setImageResource(R.drawable.screencast_big);
             frameLayout.addView(imageView, LayoutHelper.createFrame(82, 82, Gravity.CENTER, 0, 0, 0, 60));
 
-            TextView textView = new TextView(getContext());
+            TextView textView = new PersianTextView(getContext());
             textView.setText(LocaleController.getString(R.string.VoipVideoPrivateScreenSharing));
             textView.setGravity(Gravity.CENTER);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);

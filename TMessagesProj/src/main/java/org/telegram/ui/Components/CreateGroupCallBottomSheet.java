@@ -93,7 +93,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
         };
         containerView.addView(divider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, CONTAINER_HEIGHT_DP, Gravity.BOTTOM, 0, 0, 0, 0));
 
-        TextView startBtn = new TextView(context);
+        TextView startBtn = new PersianTextView(context);
         startBtn.setGravity(Gravity.CENTER);
         startBtn.setEllipsize(TextUtils.TruncateAt.END);
         startBtn.setSingleLine(true);
@@ -107,7 +107,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
         startBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
         containerView.addView(startBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 6 + 48 + 6));
 
-        TextView scheduleBtn = new TextView(context);
+        TextView scheduleBtn = new PersianTextView(context);
         scheduleBtn.setGravity(Gravity.CENTER);
         scheduleBtn.setEllipsize(TextUtils.TruncateAt.END);
         scheduleBtn.setSingleLine(true);
@@ -274,7 +274,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
             imageView.playAnimation();
             addView(imageView, LayoutHelper.createLinear(112, 112, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 24, 0, 0));
 
-            TextView title = new TextView(context);
+            TextView title = new PersianTextView(context);
             title.setTypeface(AndroidUtilities.bold());
             title.setText(isChannelOrGiga
                     ? LocaleController.formatString(R.string.StartVoipChannelTitle)
@@ -284,7 +284,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
             title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 14, 0, 7));
 
-            TextView description = new TextView(context);
+            TextView description = new PersianTextView(context);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
             description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));

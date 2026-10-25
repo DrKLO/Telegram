@@ -32645,7 +32645,7 @@ public class ChatActivity extends BaseFragment implements
         emptyViewContainer.setTranslationX(getSideMenuWidth() / 2f);
 
         if (chatAdapter.isFiltered) {
-            emptyView = new TextView(getContext());
+            emptyView = new PersianTextView(getContext());
             emptyView.setText(LocaleController.getString(R.string.NoFilteredMessages));
             emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             emptyView.setGravity(Gravity.CENTER);
@@ -32737,7 +32737,7 @@ public class ChatActivity extends BaseFragment implements
                     emptyViewContainer.addView(emptyViewContent, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
                     updateGreetInfo();
                 } else {
-                    emptyView = new TextView(getContext());
+                    emptyView = new PersianTextView(getContext());
                     emptyView.setText(emptyMessage);
                     emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     emptyView.setGravity(Gravity.CENTER);

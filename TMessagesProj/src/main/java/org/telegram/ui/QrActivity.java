@@ -111,6 +111,7 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.ThemeSmallPreviewView;
 
@@ -1524,7 +1525,7 @@ public class QrActivity extends BaseFragment {
                 }
             };
 
-            titleView = new TextView(context);
+            titleView = new PersianTextView(context);
             titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
             titleView.setLines(1);
             titleView.setSingleLine(true);
@@ -1600,7 +1601,7 @@ public class QrActivity extends BaseFragment {
             bottomShadow.setBackground(ContextCompat.getDrawable(context, R.drawable.shadowdown));
             rootLayout.addView(bottomShadow);
 
-            shareButton = new TextView(context);
+            shareButton = new PersianTextView(context);
             shareButton.setBackground(Theme.AdaptiveRipple.filledRect(fragment.getThemedColor(Theme.key_featuredStickers_addButton), 24));
             shareButton.setEllipsize(TextUtils.TruncateAt.END);
             shareButton.setGravity(Gravity.CENTER);
@@ -1625,7 +1626,7 @@ public class QrActivity extends BaseFragment {
                 scanButtonIcon.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
                 scanButtonWrap.addView(scanButtonIcon);
 
-                scanButton = new TextView(context);
+                scanButton = new PersianTextView(context);
                 scanButton.setEllipsize(TextUtils.TruncateAt.END);
                 scanButton.setGravity(Gravity.CENTER);
                 scanButton.setLines(1);

@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.PersianTextView;
 
 @SuppressLint("ViewConstructor")
 public class RateCallLayout extends FrameLayout {
@@ -247,13 +248,13 @@ public class RateCallLayout extends FrameLayout {
             this.backgroundProvider = backgroundProvider;
             backgroundProvider.attach(this);
             setWillNotDraw(false);
-            titleTextView = new TextView(context);
+            titleTextView = new PersianTextView(context);
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setText(LocaleController.getString(R.string.VoipRateCallTitle));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
             titleTextView.setTypeface(AndroidUtilities.bold());
-            messageTextView = new TextView(context);
+            messageTextView = new PersianTextView(context);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setTextColor(Color.WHITE);
             messageTextView.setGravity(Gravity.CENTER_HORIZONTAL);

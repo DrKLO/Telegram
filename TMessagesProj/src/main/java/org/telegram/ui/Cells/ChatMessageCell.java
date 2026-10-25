@@ -1312,6 +1312,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private CountdownTimer pollCountDownTimer;
     private StaticLayout loadingProgressLayout;
     private long loadingProgressLayoutHash;
+    private boolean loadingProgressFontEnabled;
+    private boolean lastFontEnabled;
     private int infoX;
     private int infoWidth;
 
@@ -5965,6 +5967,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public static StaticLayout generateStaticLayout(CharSequence text, TextPaint paint, int maxWidth, int smallWidth, int linesCount, int maxLines) {
+        text = PersianFontApplier.applyForPaint(text, paint);
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
         int addedChars = 0;
         StaticLayout layout = new StaticLayout(text, paint, smallWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -6774,6 +6777,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public MultiLayoutTypingAnimator botDraftTypingAnimator;
 
     private void setMessageContent(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
+        boolean fontChanged = lastFontEnabled != SharedConfig.useVazirmatnFont;
+        lastFontEnabled = SharedConfig.useVazirmatnFont;
         if (messageObject.checkLayout() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
             currentMessageObject = null;
         }
@@ -6785,7 +6790,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         mediaSpoilerRevealProgress = 0f;
         TLRPC.Message newReply = messageObject.hasValidReplyMessageObject() ? messageObject.replyMessageObject.messageOwner : null;
         boolean messageIdChanged = currentMessageObject == null || currentMessageObject.getId() != messageObject.getId();
-        boolean messageChanged = currentMessageObject != messageObject || messageObject.forceUpdate || (isRoundVideo && isPlayingRound != (MediaController.getInstance().isPlayingMessage(currentMessageObject) && delegate != null && !delegate.keyboardIsOpened()));
+        boolean messageChanged = fontChanged || currentMessageObject != messageObject || messageObject.forceUpdate || (isRoundVideo && isPlayingRound != (MediaController.getInstance().isPlayingMessage(currentMessageObject) && delegate != null && !delegate.keyboardIsOpened()));
         boolean dataChanged = currentMessageObject != null && currentMessageObject.getId() == messageObject.getId() && lastSendState == MessageObject.MESSAGE_SEND_STATE_EDITING && messageObject.isSent() ||
                 currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet) ||
                 lastPostAuthor != messageObject.messageOwner.post_author ||
@@ -7259,7 +7264,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (!messageObject.shouldDrawWithoutBackground() && !messageObject.isAnimatedEmoji()) {
                     drawCommentButton = true;
                     int avatarsOffset = 0;
-                    String comment;
+                    CharSequence comment;
                     if (commentProgress == null) {
                         commentProgress = new InfiniteProgress(dp(7));
                     }
@@ -7317,7 +7322,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                         }
                     }
-                    commentWidth = totalCommentWidth = (int) Math.ceil(Theme.chat_commentTextPaint.measureText(comment));
+                    comment = PersianFontApplier.applyForPaint(comment, Theme.chat_commentTextPaint);
+                    commentWidth = totalCommentWidth = (int) Math.ceil(Layout.getDesiredWidth(comment, Theme.chat_commentTextPaint));
                     commentLayout = new StaticLayout(comment, Theme.chat_commentTextPaint, commentWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     if (commentCount != 0 && !LocaleController.isRTL) {
                         drawCommentNumber = true;
@@ -7339,8 +7345,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     totalCommentWidth += dp(70 + avatarsOffset);
                 } else {
                     if (!isRepliesChat && commentCount > 0) {
-                        String comment = LocaleController.formatShortNumber(commentCount, null);
-                        commentWidth = totalCommentWidth = (int) Math.ceil(Theme.chat_stickerCommentCountPaint.measureText(comment));
+                        CharSequence comment = PersianFontApplier.applyForPaint(LocaleController.formatShortNumber(commentCount, null), Theme.chat_stickerCommentCountPaint);
+                        commentWidth = totalCommentWidth = (int) Math.ceil(Layout.getDesiredWidth(comment, Theme.chat_stickerCommentCountPaint));
                         commentLayout = new StaticLayout(comment, Theme.chat_stickerCommentCountPaint, commentWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     } else {
                         commentLayout = null;
@@ -8019,7 +8025,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                     if (site_name != null) {
                         try {
-                            int width = (int) Math.ceil(Theme.chat_replyNamePaint.measureText(site_name.toString()) + 1 + site_name_additionalWidth);
+                            site_name = PersianFontApplier.applyForPaint(site_name, Theme.chat_replyNamePaint);
+                            int width = (int) Math.ceil(Layout.getDesiredWidth(site_name, Theme.chat_replyNamePaint) + 1 + site_name_additionalWidth);
                             int restLines = 0;
                             if (!isSmallImage) {
                                 siteNameLayout = new StaticLayout(site_name, Theme.chat_replyNamePaint, Math.min(width, linkPreviewMaxWidth), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -8377,8 +8384,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             documentAttach = document;
                             isSmallImage = smallImage = false;
                             documentAttachType = DOCUMENT_ATTACH_TYPE_WALLPAPER;
-                            String str = AndroidUtilities.formatFileSize(documentAttach.size);
-                            durationWidth = (int) Math.ceil(Theme.chat_durationPaint.measureText(str));
+                            CharSequence str = PersianFontApplier.applyForPaint(AndroidUtilities.formatFileSize(documentAttach.size), Theme.chat_durationPaint);
+                            durationWidth = (int) Math.ceil(Layout.getDesiredWidth(str, Theme.chat_durationPaint));
                             videoInfoLayout = new StaticLayout(str, Theme.chat_durationPaint, durationWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                         } else if (drawInstantViewType == 7) {
                             currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 700);
@@ -12794,9 +12801,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             documentAttachType = DOCUMENT_ATTACH_TYPE_VIDEO;
             if (!messageObject.needDrawBluredPreview()) {
                 updatePlayingMessageProgress();
-                String str;
-                str = String.format("%s", AndroidUtilities.formatFileSize(documentAttach.size));
-                docTitleWidth = (int) Math.ceil(Theme.chat_infoPaint.measureText(str));
+                CharSequence str = PersianFontApplier.applyForPaint(AndroidUtilities.formatFileSize(documentAttach.size), Theme.chat_infoPaint);
+                docTitleWidth = (int) Math.ceil(Layout.getDesiredWidth(str, Theme.chat_infoPaint));
                 docTitleLayout = new StaticLayout(str, Theme.chat_infoPaint, docTitleWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
             return 0;
@@ -12844,12 +12850,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             documentAttachType = DOCUMENT_ATTACH_TYPE_GIF;
             if (!messageObject.needDrawBluredPreview()) {
 
-                String str = getString("AttachGif", R.string.AttachGif);
-                infoWidth = (int) Math.ceil(Theme.chat_infoPaint.measureText(str));
+                CharSequence str = PersianFontApplier.applyForPaint(getString("AttachGif", R.string.AttachGif), Theme.chat_infoPaint);
+                infoWidth = (int) Math.ceil(Layout.getDesiredWidth(str, Theme.chat_infoPaint));
                 infoLayout = new StaticLayout(str, Theme.chat_infoPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
-                str = String.format("%s", AndroidUtilities.formatFileSize(documentAttach.size));
-                docTitleWidth = (int) Math.ceil(Theme.chat_infoPaint.measureText(str));
+                str = PersianFontApplier.applyForPaint(AndroidUtilities.formatFileSize(documentAttach.size), Theme.chat_infoPaint);
+                docTitleWidth = (int) Math.ceil(Layout.getDesiredWidth(str, Theme.chat_infoPaint));
                 docTitleLayout = new StaticLayout(str, Theme.chat_infoPaint, docTitleWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
             return 0;
@@ -12878,13 +12884,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 docTitleOffsetX = 0;
             }
 
-            String str = AndroidUtilities.formatFileSize(documentAttach.size) + " " + FileLoader.getDocumentExtension(documentAttach);
-            infoWidth = Math.min(maxWidth - dp(30), (int) Math.ceil(Theme.chat_infoPaint.measureText("000.0 mm / " + AndroidUtilities.formatFileSize(documentAttach.size))));
+            CharSequence str = PersianFontApplier.applyForPaint(AndroidUtilities.formatFileSize(documentAttach.size) + " " + FileLoader.getDocumentExtension(documentAttach), Theme.chat_infoPaint);
+            CharSequence sizeSample = PersianFontApplier.applyForPaint("000.0 mm / " + AndroidUtilities.formatFileSize(documentAttach.size), Theme.chat_infoPaint);
+            infoWidth = Math.max(dp(10), Math.min(maxWidth - dp(30), (int) Math.ceil(Layout.getDesiredWidth(sizeSample, Theme.chat_infoPaint))));
             CharSequence str2 = TextUtils.ellipsize(str, Theme.chat_infoPaint, infoWidth, TextUtils.TruncateAt.END);
             try {
-                if (infoWidth < 0) {
-                    infoWidth = dp(10);
-                }
                 infoLayout = new StaticLayout(str2, Theme.chat_infoPaint, infoWidth + dp(6), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             } catch (Exception e) {
                 FileLog.e(e);
@@ -13568,8 +13572,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else {
                 str = getString(R.string.InstantView);
             }
+            str = PersianFontApplier.applyForPaint(str, Theme.chat_instantViewPaint);
             if (currentMessageObject.isSponsored()) {
-                int buttonWidth = (int) (Theme.chat_instantViewPaint.measureText(str, 0, str.length()) + dp(10 + 24 + 10 + 31));
+                int buttonWidth = (int) Math.ceil(Layout.getDesiredWidth(str, Theme.chat_instantViewPaint) + dp(10 + 24 + 10 + 31));
                 if (backgroundWidth < buttonWidth) {
                     backgroundWidth = buttonWidth;
                 }
@@ -13659,7 +13664,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private InstantViewButton createInstantViewButton(int type, String str, int availableWidth, float parentWidth) {
         InstantViewButton instantViewButton = new InstantViewButton();
         instantViewButton.type = type;
-        instantViewButton.layout = new StaticLayout(TextUtils.ellipsize(str, Theme.chat_instantViewPaint, availableWidth, TextUtils.TruncateAt.END), Theme.chat_instantViewPaint, availableWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        CharSequence text = PersianFontApplier.applyForPaint(str, Theme.chat_instantViewPaint);
+        instantViewButton.layout = new StaticLayout(TextUtils.ellipsize(text, Theme.chat_instantViewPaint, availableWidth, TextUtils.TruncateAt.END), Theme.chat_instantViewPaint, availableWidth + dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         instantViewButton.buttonWidth = parentWidth;
         if (instantViewButton.layout.getLineCount() > 0) {
             instantViewButton.textX = (float) (instantViewButton.buttonWidth - Math.ceil(instantViewButton.layout.getLineWidth(0))) / 2;
@@ -18315,10 +18321,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return;
         }
         long hash = (loadedSize << 16) + totalSize;
-        if (loadingProgressLayout != null && loadingProgressLayoutHash == hash) {
+        if (loadingProgressLayout != null && loadingProgressLayoutHash == hash
+                && loadingProgressFontEnabled == SharedConfig.useVazirmatnFont) {
             return;
         }
         loadingProgressLayoutHash = hash;
+        loadingProgressFontEnabled = SharedConfig.useVazirmatnFont;
 
         if (lastLoadingSizeTotal == 0) {
             lastLoadingSizeTotal = totalSize;
@@ -18330,10 +18338,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         String totalStr = AndroidUtilities.formatFileSize(totalSize);
-        String maxAvailableString = String.format("000.0 mm / %s", totalStr);
+        CharSequence maxAvailableString = PersianFontApplier.applyForPaint(String.format("000.0 mm / %s", totalStr), Theme.chat_infoPaint);
         String str;
         int w;
-        w = (int) Math.ceil(Theme.chat_infoPaint.measureText(maxAvailableString));
+        w = (int) Math.ceil(Layout.getDesiredWidth(maxAvailableString, Theme.chat_infoPaint));
         boolean fullWidth = true;
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT) {
             int max = Math.max(this.infoWidth, docTitleWidth);
@@ -18358,7 +18366,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 str = String.format("%s / %s", AndroidUtilities.formatFileSize(loadedSize), totalStr);
             }
         }
-        w = (int) Math.ceil(Theme.chat_infoPaint.measureText(str));
+        CharSequence styled = PersianFontApplier.applyForPaint(str, Theme.chat_infoPaint);
+        w = (int) Math.ceil(Layout.getDesiredWidth(styled, Theme.chat_infoPaint));
         if (fullWidth && w > backgroundWidth - dp(48)) {
             int percent = (int) (Math.min(1f, loadedSize / (float) totalSize) * 100);
             if (percent >= 100) {
@@ -18366,9 +18375,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else {
                 str = String.format(Locale.US, "%2d%%", percent);
             }
-            w = (int) Math.ceil(Theme.chat_infoPaint.measureText(str));
+            styled = PersianFontApplier.applyForPaint(str, Theme.chat_infoPaint);
+            w = (int) Math.ceil(Layout.getDesiredWidth(styled, Theme.chat_infoPaint));
         }
-        loadingProgressLayout = new StaticLayout(str, Theme.chat_infoPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        loadingProgressLayout = new StaticLayout(styled, Theme.chat_infoPaint, w, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
     }
 
 
@@ -18534,7 +18544,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentTimeString = TextUtils.concat(formatString(R.string.MessageScheduledRepeatSeconds, period), ", ", currentTimeString);
             }
         }
-        timeTextWidth = timeWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentTimeString, 0, currentTimeString == null ? 0 : currentTimeString.length()));
+        currentTimeString = PersianFontApplier.applyForPaint(currentTimeString, Theme.chat_timePaint);
+        timeTextWidth = timeWidth = currentTimeString == null ? 0 : (int) Math.ceil(Layout.getDesiredWidth(currentTimeString, Theme.chat_timePaint));
         if (currentMessageObject.scheduled && currentMessageObject.messageOwner.date == 0x7FFFFFFE || currentMessageObject.notime) {
             timeWidth -= dp(8);
         }
@@ -18607,7 +18618,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
             signString = Emoji.replaceEmoji(signString, Theme.chat_timePaint.getFontMetricsInt(), false);
-            int width = (int) Math.ceil(Theme.chat_timePaint.measureText(signString, 0, signString.length()));
+            signString = PersianFontApplier.applyForPaint(signString, Theme.chat_timePaint);
+            int width = (int) Math.ceil(Layout.getDesiredWidth(signString, Theme.chat_timePaint));
             signWidth = Math.min(width, widthForSign);
             if (width > widthForSign) {
                 if (widthForSign <= 0) {

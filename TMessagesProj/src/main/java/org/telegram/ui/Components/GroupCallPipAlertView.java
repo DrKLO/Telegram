@@ -106,7 +106,7 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-        titleView = new TextView(context);
+        titleView = new PersianTextView(context);
         titleView.setTextColor(Color.WHITE);
         titleView.setTextSize(15);
         titleView.setMaxLines(2);
@@ -114,7 +114,7 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
         titleView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        subtitleView = new TextView(context);
+        subtitleView = new PersianTextView(context);
         subtitleView.setTextSize(12);
         subtitleView.setTextColor(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.6f)));
 
