@@ -70,6 +70,22 @@ jobs:
           unzip -l "$APK" | grep -o 'lib/[^/]*/' | sort | uniq -c
           mkdir -p dist && cp "$APK" "dist/telegram-${GITHUB_REF_NAME}-arm64-debug.apk"
 
+      - name: Symbolize crash addresses
+        if: always()
+        run: |
+          set +e
+          BIN="$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          LIB=$(find TMessagesProj/build -name 'libtmessages.49.so' -path '*arm64-v8a*' -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          echo "LIB=$LIB"
+          ID=$("$BIN/llvm-readelf" -n "$LIB" | grep -i 'Build ID' | awk '{print $3}')
+          OUT="buildid=$ID"
+          if [ -f .github/ci/crash-addrs.txt ]; then
+            OUT="$OUT"$'\n'"$("$BIN/llvm-addr2line" -f -C -i -e "$LIB" $(cat .github/ci/crash-addrs.txt) 2>&1)"
+          fi
+          echo "$OUT"
+          MSG=$(printf '%s' "$OUT" | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::notice title=symbolized::$MSG"
+
       - uses: actions/upload-artifact@v4
         with:
           name: apk-${{ github.ref_name }}
