@@ -470,6 +470,7 @@ public class ChatActivity extends BaseFragment implements
     private ThanosEffect chatListThanosEffect;
     private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
     private ChatListRecyclerView chatListView;
+    private ReplyThreadDrawer replyThreadDrawer;
     private ChatListItemAnimator chatListItemAnimator;
     private GridLayoutManagerFixed chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
@@ -5603,6 +5604,9 @@ public class ChatActivity extends BaseFragment implements
                     drawChatBackgroundElements(canvas);
                     super.dispatchDraw(canvas);
                     drawChatForegroundElements(canvas);
+                    if (replyThreadDrawer != null) {
+                        replyThreadDrawer.draw(canvas);
+                    }
                 }
                 canvas.restore();
             }
@@ -6881,6 +6885,9 @@ public class ChatActivity extends BaseFragment implements
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 final ChatActivity chatToUpdate = parentChatActivity != null ? parentChatActivity : ChatActivity.this;
 
+                if (replyThreadDrawer != null) {
+                    replyThreadDrawer.onScrolled(dy);
+                }
                 chatListView.invalidate();
                 if (contentView != null) {
                     contentView.updateBlurContent();
@@ -10703,6 +10710,9 @@ public class ChatActivity extends BaseFragment implements
         if (createUnreadMessageAfterId != 0) {
             scrollToMessageId(createUnreadMessageAfterId, 0, false, returnToLoadIndex, true, 0, null, inCaseLoading);
         } else if (returnToMessageId > 0) {
+            if (replyThreadDrawer != null) {
+                replyThreadDrawer.startReverse(returnToMessageId);
+            }
             scrollToMessageId(returnToMessageId, 0, true, returnToLoadIndex, true, 0, null, inCaseLoading);
         } else {
             scrollToLastMessage(true, !forceScrollToMessageBottom, inCaseLoading);
@@ -17043,6 +17053,61 @@ public class ChatActivity extends BaseFragment implements
     public static final boolean SCROLL_DEBUG_DELAY = false;
     private boolean pinnedProgressIsShowing;
     Runnable updatePinnedProgressRunnable;
+
+    private void startReplyThread(ChatMessageCell cell, int targetId) {
+        if (chatListView == null || cell == null || cell.getMessageObject() == null || targetId == 0) {
+            return;
+        }
+        if (replyThreadDrawer == null) {
+            replyThreadDrawer = new ReplyThreadDrawer(chatListView, themeDelegate, new ReplyThreadDrawer.ChainProvider() {
+                @Override
+                public int getReplyTarget(int messageId) {
+                    MessageObject object = messagesDict[0].get(messageId);
+                    return object != null ? object.getReplyMsgId() : 0;
+                }
+
+                private float fractionOfIndex(int index, int count) {
+                    return count <= 1 ? 0.5f : 1f - index / (float) (count - 1);
+                }
+
+                @Override
+                public float getMessageFraction(int messageId) {
+                    MessageObject object = messagesDict[0].get(messageId);
+                    if (object == null || chatAdapter == null) {
+                        return -1f;
+                    }
+                    ArrayList<MessageObject> messages = chatAdapter.getMessages();
+                    int index = messages.indexOf(object);
+                    return index < 0 ? -1f : fractionOfIndex(index, messages.size());
+                }
+
+                @Override
+                public void getViewport(float[] out) {
+                    out[0] = 0f;
+                    out[1] = 1f;
+                    if (chatAdapter == null || chatLayoutManager == null) {
+                        return;
+                    }
+                    int count = chatAdapter.getMessages().size();
+                    if (count <= 0) {
+                        return;
+                    }
+                    int first = chatLayoutManager.findFirstVisibleItemPosition() - chatAdapter.messagesStartRow;
+                    int last = chatLayoutManager.findLastVisibleItemPosition() - chatAdapter.messagesStartRow;
+                    first = Math.max(0, Math.min(count - 1, first));
+                    last = Math.max(0, Math.min(count - 1, last));
+                    // the list is reversed: the highest index is the oldest message at the top
+                    out[0] = fractionOfIndex(last, count);
+                    out[1] = fractionOfIndex(first, count);
+                }
+            });
+        }
+        boolean above = targetId < cell.getMessageObject().getId();
+        if (isSecretChat()) {
+            above = !above;
+        }
+        replyThreadDrawer.start(cell, targetId, above);
+    }
 
     public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll, int forcePinnedMessageId) {
         scrollToMessageId(id, fromMessageId, select, loadIndex, forceScroll, forcePinnedMessageId, null, null);
@@ -41358,6 +41423,7 @@ public class ChatActivity extends BaseFragment implements
                     final Integer finalTaskId = task_id;
                     final byte[] finalPollOptionId = option_id;
                     Runnable scroll = () -> {
+                        startReplyThread(cell, id);
                         scrollToMessageId(id, messageObject.getId(), true, messageObject.getDialogId() == mergeDialogId ? 1 : 0, true, 0, finalTaskId, finalPollOptionId, () -> {
                             progressDialogAtMessageId = messageObject.getId();
                             progressDialogAtMessageType = PROGRESS_REPLY;
