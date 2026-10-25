@@ -1289,31 +1289,45 @@ public class StoriesUtilities {
             return false;
         }
 
+        // whether a touch on the avatar is a touch on anything: an avatar that neither holds a
+        // story nor leads to a community lets the touch through to whatever is underneath it.
+        // The touch asks this as the finger goes down; anything that reaches the avatar another
+        // way has to ask it too.
+        public boolean isAvatarActionable() {
+            if (dialogId == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
+                return false;
+            }
+            final MessagesController messagesController = MessagesController.getInstance(UserConfig.selectedAccount);
+            final StoriesController storiesController = messagesController.getStoriesController();
+            TLRPC.User user = null;
+            TLRPC.Chat chat = null;
+            if (dialogId > 0) {
+                user = messagesController.getUser(dialogId);
+            } else {
+                chat = messagesController.getChat(-dialogId);
+            }
+            if (isAvatarClickable(dialogId, chat, user)) {
+                return true;
+            }
+            if (drawHiddenStoriesAsSegments) {
+                return storiesController.hasHiddenStories();
+            }
+            if (dialogId > 0) {
+                return storiesController.hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id != null && user.stories_max_id.max_id > 0;
+            }
+            return storiesController.hasStories(dialogId) || chat != null && !chat.stories_unavailable && chat.stories_max_id != null && chat.stories_max_id.max_id > 0;
+        }
+
+        // what the touch does once the finger comes up again
+        public void performAvatarAction(View view) {
+            child = view;
+            processOpenStory(view);
+        }
+
         public boolean checkOnTouchEvent(MotionEvent event, View view) {
             child = view;
-            StoriesController storiesController = MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController();
             if (event.getAction() == MotionEvent.ACTION_DOWN && originalAvatarRect.contains(event.getX(), event.getY())) {
-                TLRPC.User user = null;
-                TLRPC.Chat chat = null;
-                if (dialogId > 0) {
-                    user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialogId);
-                } else {
-                    chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialogId);
-                }
-                boolean hasStories;
-
-                if (isAvatarClickable(dialogId, chat, user)) {
-                    hasStories = true;
-                } else if (drawHiddenStoriesAsSegments) {
-                    hasStories = storiesController.hasHiddenStories();
-                } else {
-                    if (dialogId > 0) {
-                        hasStories = (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || user != null && !user.stories_unavailable && user.stories_max_id != null && user.stories_max_id.max_id > 0);
-                    } else {
-                        hasStories = (MessagesController.getInstance(UserConfig.selectedAccount).getStoriesController().hasStories(dialogId) || chat != null && !chat.stories_unavailable && chat.stories_max_id != null && chat.stories_max_id.max_id > 0);
-                    }
-                }
-                if (dialogId != UserConfig.getInstance(UserConfig.selectedAccount).clientUserId && hasStories) {
+                if (isAvatarActionable()) {
                     if (buttonBounce == null) {
                         buttonBounce = new ButtonBounce(view, 1.5f, 5f);
                     } else {
