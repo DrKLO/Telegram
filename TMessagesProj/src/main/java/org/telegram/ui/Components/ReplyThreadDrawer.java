@@ -267,66 +267,80 @@ public class ReplyThreadDrawer {
         refreshChain(now, false);
         final float top = list.getPaddingTop() + dp(14);
         final float bottom = list.getMeasuredHeight() - list.getPaddingBottom() - dp(14);
-        final float x = list.getMeasuredWidth() - dp(12);
+        // the narrow margin to the right of the bubbles, light on dark so it never melts into a blue bubble
+        final float x = list.getMeasuredWidth() - dp(4.5f);
         if (bottom - top < dp(60)) {
             return;
         }
+        final int light = ColorUtils.blendARGB(color, 0xFFFFFFFF, 0.8f);
+        final float length = bottom - top;
 
-        // track
-        railPaint.setStrokeWidth(dp(2.5f));
-        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (84 * alpha)));
+        // track with a dark underlay
+        railPaint.setStrokeWidth(dp(4));
+        railPaint.setColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (70 * alpha)));
+        canvas.drawLine(x, top, x, bottom, railPaint);
+        railPaint.setStrokeWidth(dp(2));
+        railPaint.setColor(ColorUtils.setAlphaComponent(light, (int) (120 * alpha)));
         canvas.drawLine(x, top, x, bottom, railPaint);
 
         // visible window
-        final float vTop = top + Math.max(0f, Math.min(1f, viewport[0])) * (bottom - top);
-        final float vBottom = top + Math.max(0f, Math.min(1f, viewport[1])) * (bottom - top);
-        railPaint.setStrokeWidth(dp(5));
-        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (150 * alpha)));
-        canvas.drawLine(x, vTop, x, Math.max(vBottom, vTop + dp(2)), railPaint);
+        final float vTop = top + clamp01(viewport[0]) * length;
+        final float vBottom = Math.max(top + clamp01(viewport[1]) * length, vTop + dp(3));
+        railPaint.setStrokeWidth(dp(5.5f));
+        railPaint.setColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (80 * alpha)));
+        canvas.drawLine(x, vTop, x, vBottom, railPaint);
+        railPaint.setStrokeWidth(dp(3.5f));
+        railPaint.setColor(ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (210 * alpha)));
+        canvas.drawLine(x, vTop, x, vBottom, railPaint);
 
         // links between the neighbours of the chain, they appear one after another
         for (int i = 0; i + 1 < chainCount; i++) {
             if (chainFrac[i] < 0 || chainFrac[i + 1] < 0) {
                 continue;
             }
-            final float local = Math.max(0f, Math.min(1f, reveal * (chainCount - 1) - i));
+            final float local = clamp01(reveal * (chainCount - 1) - i);
             if (local <= 0f) {
                 continue;
             }
-            final float y0 = top + chainFrac[i] * (bottom - top);
-            final float y1 = top + chainFrac[i + 1] * (bottom - top);
-            final float bulge = dp(10) + Math.min(dp(18), Math.abs(y1 - y0) * 0.12f);
+            final float y0 = top + chainFrac[i] * length;
+            final float y1 = top + chainFrac[i + 1] * length;
+            final float bulge = dp(18) + Math.min(dp(26), Math.abs(y1 - y0) * 0.14f);
             rail.reset();
             rail.moveTo(x, y0);
-            rail.quadTo(x - bulge * 1.6f, (y0 + y1) / 2f, x, y1);
+            rail.quadTo(x - bulge, (y0 + y1) / 2f, x, y1);
             measure.setPath(rail, false);
-            final float length = measure.getLength();
-            if (length < 1f) {
+            final float arc = measure.getLength();
+            if (arc < 1f) {
                 continue;
             }
             glint.reset();
-            measure.getSegment(0, length * local, glint, true);
+            measure.getSegment(0, arc * local, glint, true);
             glint.rLineTo(0, 0);
-            railPaint.setStrokeWidth(dp(2.4f));
-            railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (235 * alpha)));
+            railPaint.setStrokeWidth(dp(4));
+            railPaint.setColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (70 * alpha)));
+            canvas.drawPath(glint, railPaint);
+            railPaint.setStrokeWidth(dp(2.2f));
+            railPaint.setColor(ColorUtils.setAlphaComponent(light, (int) (240 * alpha)));
             canvas.drawPath(glint, railPaint);
         }
 
-        // dots
+        // dots: white with an accent core, dark outline
         for (int i = 0; i < chainCount; i++) {
             if (chainFrac[i] < 0) {
                 continue;
             }
-            final float local = Math.max(0f, Math.min(1f, reveal * (chainCount - 1) - (i - 1)));
-            final float y = top + chainFrac[i] * (bottom - top);
-            final float r = (i == 1 ? dp(6f) : dp(4.4f)) * (i == 0 ? 1f : local);
+            final float local = clamp01(reveal * (chainCount - 1) - (i - 1));
+            final float y = top + chainFrac[i] * length;
+            final float r = (i == 1 ? dp(6f) : dp(4.6f)) * (i == 0 ? 1f : local);
             if (r <= 0f) {
                 continue;
             }
-            fillPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (255 * alpha)));
+            fillPaint.setColor(ColorUtils.setAlphaComponent(0xFF000000, (int) (90 * alpha)));
+            canvas.drawCircle(x, y, r + dp(1.5f), fillPaint);
+            fillPaint.setColor(ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (255 * alpha)));
             canvas.drawCircle(x, y, r, fillPaint);
-            fillPaint.setColor(ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (235 * alpha)));
-            canvas.drawCircle(x, y, r * 0.42f, fillPaint);
+            fillPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (255 * alpha)));
+            canvas.drawCircle(x, y, r * 0.52f, fillPaint);
         }
     }
 
