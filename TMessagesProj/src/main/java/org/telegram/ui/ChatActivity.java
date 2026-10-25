@@ -12258,6 +12258,10 @@ public class ChatActivity extends BaseFragment implements
         return selectedMessagesIds[0].size() > 0 || selectedMessagesIds[1].size() > 0;
     }
 
+    private boolean canSaveSelectedMessage(MessageObject messageObject) {
+        return !isPeerNoForwards() && !(messageObject.messageOwner != null && messageObject.messageOwner.noforwards) && !messageObject.isRoundOnce() && !messageObject.isVoiceOnce();
+    }
+
     private boolean hasSelectedNoforwardsMessage() {
         try {
             for (int i = 0; i < selectedMessagesIds.length; ++i) {
@@ -19364,9 +19368,9 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         canForwardMessagesCount--;
                     }
-                    if (messageObject.isMusic() && !noforwards) {
+                    if (messageObject.isMusic() && canSaveSelectedMessage(messageObject)) {
                         canSaveMusicCount--;
-                    } else if (messageObject.isDocument() && !noforwards) {
+                    } else if (messageObject.isDocument() && canSaveSelectedMessage(messageObject)) {
                         canSaveDocumentsCount--;
                     } else {
                         cantSaveMessagesCount--;
@@ -19401,9 +19405,9 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         canForwardMessagesCount++;
                     }
-                    if (messageObject.isMusic() && !noforwards) {
+                    if (messageObject.isMusic() && canSaveSelectedMessage(messageObject)) {
                         canSaveMusicCount++;
-                    } else if (messageObject.isDocument() && !messageObject.isRoundOnce() && !messageObject.isVoiceOnce() && !noforwards) {
+                    } else if (messageObject.isDocument() && canSaveSelectedMessage(messageObject)) {
                         canSaveDocumentsCount++;
                     } else {
                         cantSaveMessagesCount++;
