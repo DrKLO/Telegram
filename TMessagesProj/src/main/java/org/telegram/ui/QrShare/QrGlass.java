@@ -23,9 +23,17 @@ import java.util.HashMap;
  * paths or Plus blend on the GPU (each was a GPU program of its own, compiled on the screens' first open).
  * UI thread only.
  */
-final class QrGlass {
+public final class QrGlass {
 
     private QrGlass() {
+    }
+
+    /** The rim of the big controls (close, bottom buttons): for glass drawn outside the QR screen (the passcode keys). */
+    public static final int RIM_BIG = RimTune.BIG;
+
+    /** The white fill of the controls' glass on a dark scene. */
+    public static int controlFill() {
+        return ((int) (255 * RimTune.v[RimTune.FILL] / 100f + 0.5f) << 24) | 0xFFFFFF;
     }
 
     // ---- the sheen: white 25% (light scene) / 8% (dark scene, a faint top highlight) → 0 over the top 40dp, a 1 × 64
@@ -61,7 +69,7 @@ final class QrGlass {
     }
 
     /** The sheen of a rounded rect without a clip: the ramp as a shader of the rounded rect itself. */
-    static void drawSheenRound(Canvas c, RectF r, float radius, boolean light, float alpha) {
+    public static void drawSheenRound(Canvas c, RectF r, float radius, boolean light, float alpha) {
         final Bitmap ramp = sheenRamp();
         if (sheenShader == null) {
             sheenShader = new BitmapShader(ramp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP); // below the ramp: 0
@@ -91,7 +99,7 @@ final class QrGlass {
      * The outline of the rounded rect (r, radius) in group grp. False where it is not baked (before Android 10: no Plus
      * there, the crescents are tinted per scene): the caller draws it itself.
      */
-    static boolean drawRim(Canvas c, RectF r, float radius, int grp, float alpha) {
+    public static boolean drawRim(Canvas c, RectF r, float radius, int grp, float alpha) {
         if (!QrRender.hasNodes()) return false;
         if (alpha <= 0.004f) return true;
         ensureRims();

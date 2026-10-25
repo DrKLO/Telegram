@@ -14,13 +14,27 @@ import androidx.annotation.Nullable;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Captures microphone PCM and encodes it into one Ogg/Opus output.
+ *
+ * <p>Capture and encoding run on separate threads, so the microphone starts immediately while
+ * the encoder is still re-encoding a retained prefix. Captured chunks queue up on the encoder
+ * thread until it is ready.</p>
+ */
 final class AudioCapture {
 
     interface Callback {
-        void onStarted(long initialFileSize);
+        /** Called when the microphone is recording; the encoder may still be preparing. */
+        void onStarted();
 
-        void onProgress(long capturedSamples, double amplitude, long committedFileSize);
+        /** Called with the raw microphone RMS amplitude at most every 32 ms. */
+        void onProgress(long capturedSamples, double amplitude);
+
+        /** Called when the output file has been flushed up to the given size. */
+        void onOutputCommitted(long committedFileSize);
 
         void onStopped(long capturedSamples, long finalFileSize);
 
@@ -36,86 +50,86 @@ final class AudioCapture {
 
     private final File outputFile;
     private final File prefixFile;
+    private final long prefixStartMs;
+    private final long prefixEndMs;
     private final AudioRecordingSession.NoiseSuppression noiseSuppression;
     private final AudioRecorderDiagnostics diagnostics;
     private final Callback callback;
-    private final HandlerThread thread;
-    private final Handler handler;
-    private final ByteBuffer readBuffer = ByteBuffer.allocateDirect(FRAME_BYTES)
-            .order(ByteOrder.nativeOrder());
-    private final ByteBuffer frameBuffer = ByteBuffer.allocateDirect(FRAME_BYTES)
-            .order(ByteOrder.nativeOrder());
+    private final HandlerThread captureThread;
+    private final Handler captureHandler;
+    private final HandlerThread encoderThread;
+    private final Handler encoderHandler;
+    private final ConcurrentLinkedQueue<ByteBuffer> chunkPool = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger queuedChunks = new AtomicInteger();
 
     private volatile boolean stopRequested;
+    private volatile boolean captureStopped;
+
+    // Capture thread.
     private AudioRecord audioRecord;
+    private long capturedSamples;
+    private long lastProgressMs;
+
+    // Encoder thread.
+    private final ByteBuffer frameBuffer = ByteBuffer.allocateDirect(FRAME_BYTES)
+            .order(ByteOrder.nativeOrder());
     private AudioRecorderNative encoder;
     private AudioNoiseSuppressor noiseSuppressor;
-    private boolean finished;
-    private Exception terminalFailure;
-    private long capturedSamples;
+    private Exception encoderFailure;
+    private boolean encodingFinished;
     private long lastFlushMs;
-    private long lastProgressMs;
-    private double latestProcessedAmplitude = -1d;
+    private int maximumQueuedChunks;
     private long noiseProcessingCount;
     private long noiseProcessingTotalNs;
     private long noiseProcessingMaxNs;
 
+    /**
+     * @param prefixFile    previous output whose range is re-encoded before the new samples
+     * @param prefixStartMs start of the retained prefix range
+     * @param prefixEndMs   end of the retained prefix range, or a negative value for the whole file
+     */
     AudioCapture(
             @NonNull File outputFile,
             @Nullable File prefixFile,
+            long prefixStartMs,
+            long prefixEndMs,
             @NonNull AudioRecordingSession.NoiseSuppression noiseSuppression,
             @NonNull AudioRecorderDiagnostics diagnostics,
             @NonNull Callback callback
     ) {
         this.outputFile = outputFile;
         this.prefixFile = prefixFile;
+        this.prefixStartMs = prefixStartMs;
+        this.prefixEndMs = prefixEndMs;
         this.noiseSuppression = noiseSuppression;
         this.diagnostics = diagnostics;
         this.callback = callback;
-        thread = new HandlerThread("AudioRecorderCapture", Process.THREAD_PRIORITY_AUDIO);
-        thread.start();
-        handler = new Handler(thread.getLooper());
+        captureThread = new HandlerThread("AudioRecorderCapture", Process.THREAD_PRIORITY_AUDIO);
+        captureThread.start();
+        captureHandler = new Handler(captureThread.getLooper());
+        encoderThread = new HandlerThread("AudioRecorderEncoder", Process.THREAD_PRIORITY_DEFAULT);
+        encoderThread.start();
+        encoderHandler = new Handler(encoderThread.getLooper());
     }
 
     void start() {
-        handler.post(this::startInternal);
+        encoderHandler.post(this::startEncoder);
+        captureHandler.post(this::startCapture);
     }
 
     void stop() {
         stopRequested = true;
-        handler.postAtFrontOfQueue(this::finishInternal);
+        if (!captureStopped) {
+            captureHandler.postAtFrontOfQueue(() -> stopCapture(null));
+        }
     }
 
-    private void startInternal() {
+    private void startCapture() {
         try {
             if (stopRequested) {
-                finishInternal();
+                stopCapture(null);
                 return;
             }
-            long encoderStartedAtMs = SystemClock.elapsedRealtime();
-            encoder = AudioRecorderNative.create(outputFile, SAMPLE_RATE, prefixFile);
-            if (encoder == null) {
-                throw new IllegalStateException("Unable to initialize native Opus recorder");
-            }
-            if (noiseSuppression == AudioRecordingSession.NoiseSuppression.RNNOISE) {
-                noiseSuppressor = AudioNoiseSuppressor.create();
-                if (noiseSuppressor == null) {
-                    diagnostics.log("RNNoise unavailable; recording unprocessed PCM");
-                } else {
-                    diagnostics.log("RNNoise started: sampleRate=" + SAMPLE_RATE
-                            + ", captureFrameSamples=" + FRAME_SAMPLES);
-                }
-            }
-            long initialFileSize = encoder.flush();
-            diagnostics.log("Opus encoder started: prefix="
-                    + (prefixFile == null ? "none" : prefixFile.getName())
-                    + ", initialBytes=" + initialFileSize
-                    + ", elapsedMs=" + (SystemClock.elapsedRealtime() - encoderStartedAtMs));
-            if (stopRequested) {
-                finishInternal();
-                return;
-            }
-
             int minimumBufferSize = AudioRecord.getMinBufferSize(
                     SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO,
@@ -142,74 +156,151 @@ final class AudioCapture {
             diagnostics.log("AudioRecord started: minBufferBytes=" + minimumBufferSize
                     + ", bufferBytes=" + audioRecordBufferSize
                     + ", sessionId=" + audioRecord.getAudioSessionId());
-            lastFlushMs = lastProgressMs = SystemClock.elapsedRealtime();
-            callback.onStarted(Math.max(0L, initialFileSize));
-            handler.post(this::readOnce);
+            lastProgressMs = SystemClock.elapsedRealtime();
+            callback.onStarted();
+            captureHandler.post(this::readOnce);
         } catch (Throwable error) {
-            fail(error);
+            stopCapture(asException(error));
         }
     }
 
     private void readOnce() {
-        if (finished) return;
+        if (captureStopped) return;
         if (stopRequested) {
-            finishInternal();
+            stopCapture(null);
             return;
         }
+        ByteBuffer chunk = obtainChunk();
+        boolean queued = false;
         try {
-            readBuffer.clear();
-            int bytesRead = audioRecord.read(readBuffer, readBuffer.capacity());
+            int bytesRead = audioRecord.read(chunk, chunk.capacity());
             if (bytesRead <= 0) {
                 throw new IllegalStateException("AudioRecord read failed: " + bytesRead);
             }
-            readBuffer.limit(bytesRead);
+            chunk.limit(bytesRead);
             long sum = 0L;
             int sampleCount = bytesRead / 2;
             for (int offset = 0; offset + 1 < bytesRead; offset += 2) {
-                int sample = readBuffer.getShort(offset);
+                int sample = chunk.getShort(offset);
                 sum += (long) sample * sample;
             }
             capturedSamples += sampleCount;
-
-            latestProcessedAmplitude = -1d;
-            copyAndEncode(bytesRead);
+            queuedChunks.incrementAndGet();
+            encoderHandler.post(() -> encodeChunk(chunk));
+            queued = true;
 
             long nowMs = SystemClock.elapsedRealtime();
-            long committedFileSize = -1L;
-            if (nowMs - lastFlushMs >= OUTPUT_FLUSH_INTERVAL_MS) {
-                committedFileSize = encoder.flush();
-                lastFlushMs = nowMs;
-            }
             if (nowMs - lastProgressMs >= PROGRESS_INTERVAL_MS) {
-                double rawAmplitude = sampleCount == 0
-                        ? 0d
-                        : Math.sqrt((double) sum / sampleCount);
-                double amplitude = latestProcessedAmplitude >= 0d
-                        ? latestProcessedAmplitude
-                        : rawAmplitude;
-                callback.onProgress(capturedSamples, amplitude, committedFileSize);
+                double amplitude = sampleCount == 0 ? 0d : Math.sqrt((double) sum / sampleCount);
+                callback.onProgress(capturedSamples, amplitude);
                 lastProgressMs = nowMs;
-            } else if (committedFileSize >= 0L) {
-                callback.onProgress(capturedSamples, -1d, committedFileSize);
             }
-            handler.post(this::readOnce);
+            captureHandler.post(this::readOnce);
         } catch (Throwable error) {
-            if (stopRequested) {
-                finishInternal();
-            } else {
-                fail(error);
-            }
+            if (!queued) recycleChunk(chunk);
+            stopCapture(stopRequested ? null : asException(error));
         }
     }
 
-    private void copyAndEncode(int bytesRead) {
-        readBuffer.position(0);
-        while (readBuffer.hasRemaining()) {
-            int byteCount = Math.min(readBuffer.remaining(), frameBuffer.remaining());
-            int previousLimit = readBuffer.limit();
-            readBuffer.limit(readBuffer.position() + byteCount);
-            frameBuffer.put(readBuffer);
-            readBuffer.limit(previousLimit);
+    private void stopCapture(@Nullable Exception failure) {
+        if (captureStopped) return;
+        captureStopped = true;
+        stopRequested = true;
+        if (failure != null) {
+            diagnostics.error("capture failed", failure);
+        }
+        if (audioRecord != null) {
+            try {
+                if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                    audioRecord.stop();
+                }
+            } catch (Throwable error) {
+                if (failure == null) failure = asException(error);
+            } finally {
+                audioRecord.release();
+                audioRecord = null;
+            }
+        }
+        long samples = capturedSamples;
+        Exception captureFailure = failure;
+        encoderHandler.post(() -> finishEncoding(samples, captureFailure));
+        captureThread.quitSafely();
+    }
+
+    private void startEncoder() {
+        try {
+            long startedAtMs = SystemClock.elapsedRealtime();
+            encoder = AudioRecorderNative.create(
+                    outputFile,
+                    SAMPLE_RATE,
+                    prefixFile,
+                    prefixStartMs,
+                    prefixEndMs
+            );
+            if (encoder == null) {
+                throw new IllegalStateException("Unable to initialize native Opus recorder");
+            }
+            if (noiseSuppression == AudioRecordingSession.NoiseSuppression.RNNOISE) {
+                noiseSuppressor = AudioNoiseSuppressor.create();
+                if (noiseSuppressor == null) {
+                    diagnostics.log("RNNoise unavailable; recording unprocessed PCM");
+                } else {
+                    diagnostics.log("RNNoise started: sampleRate=" + SAMPLE_RATE
+                            + ", captureFrameSamples=" + FRAME_SAMPLES);
+                }
+            }
+            long initialFileSize = encoder.flush();
+            diagnostics.log("Opus encoder started: prefix="
+                    + (prefixFile == null ? "none" : prefixFile.getName()
+                    + " " + prefixStartMs + ".." + prefixEndMs)
+                    + ", initialBytes=" + initialFileSize
+                    + ", queuedChunks=" + queuedChunks.get()
+                    + ", elapsedMs=" + (SystemClock.elapsedRealtime() - startedAtMs));
+            lastFlushMs = SystemClock.elapsedRealtime();
+            if (initialFileSize > 0L) {
+                callback.onOutputCommitted(initialFileSize);
+            }
+        } catch (Throwable error) {
+            failEncoder(error);
+        }
+    }
+
+    private void encodeChunk(@NonNull ByteBuffer chunk) {
+        int queued = queuedChunks.getAndDecrement();
+        try {
+            if (encoderFailure != null || encodingFinished) return;
+            maximumQueuedChunks = Math.max(maximumQueuedChunks, queued);
+            copyAndEncode(chunk);
+            long nowMs = SystemClock.elapsedRealtime();
+            if (nowMs - lastFlushMs >= OUTPUT_FLUSH_INTERVAL_MS) {
+                long committedFileSize = encoder.flush();
+                lastFlushMs = nowMs;
+                if (committedFileSize >= 0L) {
+                    callback.onOutputCommitted(committedFileSize);
+                }
+            }
+        } catch (Throwable error) {
+            failEncoder(error);
+        } finally {
+            recycleChunk(chunk);
+        }
+    }
+
+    private void failEncoder(@NonNull Throwable error) {
+        if (encoderFailure != null) return;
+        diagnostics.error("encoding failed", error);
+        encoderFailure = asException(error);
+        stopRequested = true;
+    }
+
+    private void copyAndEncode(@NonNull ByteBuffer chunk) {
+        chunk.position(0);
+        while (chunk.hasRemaining()) {
+            int byteCount = Math.min(chunk.remaining(), frameBuffer.remaining());
+            int previousLimit = chunk.limit();
+            chunk.limit(chunk.position() + byteCount);
+            frameBuffer.put(chunk);
+            chunk.limit(previousLimit);
             if (!frameBuffer.hasRemaining()) {
                 encodeFrame(FRAME_BYTES);
                 frameBuffer.clear();
@@ -231,13 +322,10 @@ final class AudioCapture {
                 diagnostics.log("RNNoise processing failed; recording unprocessed PCM");
                 noiseSuppressor.recycle();
                 noiseSuppressor = null;
-            } else {
-                latestProcessedAmplitude = calculateAmplitude(frameBuffer, byteCount);
-                if (noiseProcessingCount % 100L == 0L) {
-                    diagnostics.log("RNNoise processing: averageMs="
-                            + nsToMs(noiseProcessingTotalNs / noiseProcessingCount)
-                            + ", maxMs=" + nsToMs(noiseProcessingMaxNs));
-                }
+            } else if (noiseProcessingCount % 100L == 0L) {
+                diagnostics.log("RNNoise processing: averageMs="
+                        + nsToMs(noiseProcessingTotalNs / noiseProcessingCount)
+                        + ", maxMs=" + nsToMs(noiseProcessingMaxNs));
             }
             frameBuffer.position(0);
             frameBuffer.limit(byteCount);
@@ -247,24 +335,13 @@ final class AudioCapture {
         }
     }
 
-    private void finishInternal() {
-        if (finished) return;
-        finished = true;
-        Exception failure = terminalFailure;
+    private void finishEncoding(long samples, @Nullable Exception captureFailure) {
+        if (encodingFinished) return;
+        encodingFinished = true;
+        Exception failure = encoderFailure != null ? encoderFailure : captureFailure;
         try {
-            if (audioRecord != null) {
-                try {
-                    if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
-                        audioRecord.stop();
-                    }
-                } finally {
-                    audioRecord.release();
-                    audioRecord = null;
-                }
-            }
-            if (encoder != null && frameBuffer.position() > 0) {
-                int remainingBytes = frameBuffer.position();
-                encodeFrame(remainingBytes);
+            if (failure == null && encoder != null && frameBuffer.position() > 0) {
+                encodeFrame(frameBuffer.position());
                 frameBuffer.clear();
             }
         } catch (Throwable error) {
@@ -293,40 +370,37 @@ final class AudioCapture {
                     + ", averageMs=" + nsToMs(noiseProcessingTotalNs / noiseProcessingCount)
                     + ", maxMs=" + nsToMs(noiseProcessingMaxNs));
         }
-        diagnostics.log("capture stopped: samples=" + capturedSamples
-                + ", durationMs=" + samplesToMs(capturedSamples)
-                + ", bytes=" + finalSize);
+        diagnostics.log("capture stopped: samples=" + samples
+                + ", durationMs=" + samplesToMs(samples)
+                + ", bytes=" + finalSize
+                + ", maxQueuedChunks=" + maximumQueuedChunks);
         if (failure == null) {
-            callback.onStopped(capturedSamples, finalSize);
+            callback.onStopped(samples, finalSize);
         } else {
             callback.onError(failure);
         }
-        thread.quitSafely();
+        encoderThread.quitSafely();
+        chunkPool.clear();
     }
 
-    private void fail(@NonNull Throwable error) {
-        diagnostics.error("capture failed", error);
-        stopRequested = true;
-        terminalFailure = asException(error);
-        try {
-            finishInternal();
-        } catch (Throwable cleanupError) {
-            terminalFailure.addSuppressed(cleanupError);
+    @NonNull
+    private ByteBuffer obtainChunk() {
+        ByteBuffer chunk = chunkPool.poll();
+        if (chunk == null) {
+            chunk = ByteBuffer.allocateDirect(FRAME_BYTES).order(ByteOrder.nativeOrder());
+        }
+        chunk.clear();
+        return chunk;
+    }
+
+    private void recycleChunk(@NonNull ByteBuffer chunk) {
+        if (!encodingFinished) {
+            chunkPool.offer(chunk);
         }
     }
 
     private static long samplesToMs(long samples) {
         return samples * 1000L / SAMPLE_RATE;
-    }
-
-    private static double calculateAmplitude(@NonNull ByteBuffer buffer, int byteCount) {
-        long sum = 0L;
-        int sampleCount = byteCount / 2;
-        for (int offset = 0; offset + 1 < byteCount; offset += 2) {
-            int sample = buffer.getShort(offset);
-            sum += (long) sample * sample;
-        }
-        return sampleCount == 0 ? 0d : Math.sqrt((double) sum / sampleCount);
     }
 
     private static double nsToMs(long durationNs) {
@@ -337,4 +411,3 @@ final class AudioCapture {
         return error instanceof Exception ? (Exception) error : new RuntimeException(error);
     }
 }
-

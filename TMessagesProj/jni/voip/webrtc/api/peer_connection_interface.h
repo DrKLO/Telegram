@@ -144,7 +144,14 @@ namespace rtc {
 class Thread;
 }  // namespace rtc
 
+// TGCALLS SEAM: forward declarations keep the public header's footprint
+// unchanged; the complete types are only needed inside pc/.
+namespace cricket {
+class DtlsTransportFactory;
+}  // namespace cricket
+
 namespace webrtc {
+class RtpPacketReceived;
 
 // MediaFactory class definition is not part of the api.
 class MediaFactory;
@@ -655,6 +662,17 @@ class RTC_EXPORT PeerConnectionInterface : public webrtc::RefCountInterface {
 
     // Added to be able to control rollout of this feature.
     bool enable_implicit_rollback = false;
+
+    // TGCALLS SEAM (tgcalls::GroupInstanceReferenceImpl): never demux incoming
+    // RTP by payload type. Unified Plan enables payload-type routing for the
+    // single receiving m= section of a kind whenever the MID header extension
+    // is not negotiated on it, so media that arrives before its own m= section
+    // is signaled lands on an unrelated channel and creates an "unsignaled"
+    // receive stream there. An endpoint that signals every SSRC in its m=
+    // sections and learns about new SSRCs from the packets the demuxer drops
+    // (see RtpTransportInternal::SetUnDemuxableRtpPacketReceivedHandler) wants
+    // those packets dropped instead of routed by payload type.
+    bool disable_payload_type_demuxing = false;
 
     // The delay before doing a usage histogram report for long-lived
     // PeerConnections. Used for testing only.
@@ -1355,6 +1373,12 @@ class PeerConnectionObserver {
   // The heuristics for defining what constitutes "interesting" are
   // implementation-defined.
   virtual void OnInterestingUsage(int usage_pattern) {}
+
+  // TGCALLS SEAM (tgcalls::GroupInstanceReferenceImpl): an RTP packet the
+  // transport could not demux (no MID, SSRC or payload-type binding). Called
+  // on the network thread, after SRTP unprotect, before the packet is handed
+  // to Call for bandwidth estimation. Default no-op.
+  virtual void OnUnDemuxableRtpPacket(const RtpPacketReceived& packet) {}
 };
 
 // PeerConnectionDependencies holds all of PeerConnections dependencies.
@@ -1385,6 +1409,10 @@ struct RTC_EXPORT PeerConnectionDependencies final {
   std::unique_ptr<webrtc::AsyncDnsResolverFactoryInterface>
       async_dns_resolver_factory;
   std::unique_ptr<webrtc::IceTransportFactory> ice_transport_factory;
+  // TGCALLS SEAM (tgcalls::MtProtoDtlsTransportFactory): plumbs the factory
+  // that JsepTransportController::Config already accepts. Null means the
+  // stock cricket::DtlsTransport.
+  std::unique_ptr<cricket::DtlsTransportFactory> dtls_transport_factory;
   std::unique_ptr<rtc::RTCCertificateGeneratorInterface> cert_generator;
   std::unique_ptr<rtc::SSLCertificateVerifier> tls_cert_verifier;
   std::unique_ptr<webrtc::VideoBitrateAllocatorFactory>
@@ -1488,6 +1516,16 @@ class RTC_EXPORT PeerConnectionFactoryInterface
     // requirement, allowing unsecured media. Should only be used for
     // testing/debugging.
     bool disable_encryption = false;
+
+    // TGCALLS SEAM (tgcalls::MtProtoDtlsTransport): transport security is
+    // supplied below this stack by an external layer. Selects the plain
+    // RtpTransport (no SRTP) and drops BaseChannel's SRTP requirement, but
+    // leaves DTLS *enabled*: certificates, fingerprints, the SCTP factory and
+    // SDP negotiation stay stock. Pair it with
+    // PeerConnectionDependencies::dtls_transport_factory supplying a
+    // DtlsTransportInternal that performs no handshake. Default off: nothing
+    // changes for a caller that does not set it.
+    bool external_transport_security = false;
 
     // If set to true, any platform-supported network monitoring capability
     // won't be used, and instead networks will only be updated via polling.

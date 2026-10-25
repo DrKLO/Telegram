@@ -1171,6 +1171,14 @@ public class FileLoader extends BaseController {
         fileLoaderQueue.postRunnable(runnable);
     }
 
+    // Holds the stream open for a player that is about to be created, so the first requests
+    // go out while the viewer is built; the player's own stream joins the same operation.
+    private static final FileLoadOperationStream pendingPlayerStream = () -> {};
+
+    public void startVideoStream(TLRPC.Document document, Object parentObject) {
+        fileLoaderQueue.postRunnable(() -> loadFileInternal(document, null, null, null, null, parentObject, null, 0, FileStreamLoadOperation.getStreamPrioriy(document), pendingPlayerStream, 0, false, 0));
+    }
+
     protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final long offset, final boolean priority, int loadingPriority) {
         return loadStreamFile(stream, document, location, parentObject, offset, priority, loadingPriority, document == null ? 1 : 0);
     }

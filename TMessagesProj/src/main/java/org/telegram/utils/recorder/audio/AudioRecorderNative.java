@@ -20,12 +20,16 @@ final class AudioRecorderNative {
     static @Nullable AudioRecorderNative create(
             @NonNull File outputFile,
             int sampleRate,
-            @Nullable File prefixFile
+            @Nullable File prefixFile,
+            long prefixStartMs,
+            long prefixEndMs
     ) {
         long handle = nCreate(
                 outputFile.getAbsolutePath(),
                 sampleRate,
-                prefixFile == null ? null : prefixFile.getAbsolutePath()
+                prefixFile == null ? null : prefixFile.getAbsolutePath(),
+                prefixStartMs,
+                prefixEndMs
         );
         return handle == 0L ? null : new AudioRecorderNative(handle);
     }
@@ -91,7 +95,9 @@ final class AudioRecorderNative {
     private static native long nCreate(
             String outputPath,
             int sampleRate,
-            @Nullable String prefixPath
+            @Nullable String prefixPath,
+            long prefixStartMs,
+            long prefixEndMs
     );
 
     private static native int nWriteFrame(long handle, ByteBuffer frame, int length);

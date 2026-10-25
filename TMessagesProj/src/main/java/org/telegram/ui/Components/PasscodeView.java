@@ -21,6 +21,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -74,6 +75,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProviderBuilder;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.ui.QrShare.QrGlass;
+import org.telegram.ui.QrShare.QrRender;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
@@ -757,6 +760,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         passwordFrameLayout.addView(border, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
         numbersContainer = new FrameLayout(context);
+        numbersContainer.setClipChildren(false); // the outer keys' rims reach past the keypad's own bounds
         backgroundFrameLayout.addView(numbersContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         numbersFrameLayout = new FrameLayout(context) {
@@ -776,7 +780,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             }
         };
-        // the shadow of the glass goes beyond the buttons
+        // the rim of the glass goes beyond the buttons
         numbersFrameLayout.setClipChildren(false);
         numbersContainer.addView(numbersFrameLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
@@ -802,7 +806,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             ScaleStateListAnimator.apply(frameLayout, .15f, 1.5f);
             frameLayout.setTag(a);
             if (a == 11) {
-                frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
+                frameLayout.setBackground(createGlass(frameLayout));
+                frameLayout.setForeground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
                 frameLayout.setImage(R.drawable.filled_clear);
                 frameLayout.setOnLongClickListener(v -> {
                     passwordEditText.setText("");
@@ -816,7 +821,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 setNextFocus(frameLayout, R.id.passcode_btn_0);
             } else if (a == 10) {
                 fingerprintView = frameLayout;
-                frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
+                frameLayout.setBackground(createGlass(frameLayout));
+                frameLayout.setForeground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
                 frameLayout.setContentDescription(LocaleController.getString(R.string.AccDescrFingerprint));
                 frameLayout.setImage(R.drawable.fingerprint);
                 setNextFocus(frameLayout, R.id.passcode_btn_1);
@@ -994,17 +1000,80 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         }
     }
 
-    /** The glass of the QR screen controls; the buttons are measured with {@link #BUTTON_SIZE}, so it is a circle. */
+    /**
+     * The glass of the QR screen controls (Big group): the blurred background, the white fill, the top sheen and the baked
+     * rim, no shadow. The buttons are measured with {@link #BUTTON_SIZE}, so it is a circle.
+     */
     private Drawable createGlass(View view) {
+        final BlurredBackgroundProviderBuilder provider = new BlurredBackgroundProviderBuilder(null)
+            .setBackgroundColor((r, isDark) -> QrGlass.controlFill());
+        if (!QrRender.hasNodes()) {
+            // the rim is baked only from Android 10 (its crescents need Plus): the plain strokes before
+            provider.setStrokeColorTop(0x4DFFFFFF, 0x4DFFFFFF)
+                .setStrokeColorBottom(0x1AFFFFFF, 0x1AFFFFFF)
+                .setStrokeWidth(dpf2(1), dpf2(2 / 3f));
+        }
         // the position is taken on screen: the keypad is scaled down on short screens
-        return glassFactory.create(view, new BlurredBackgroundProviderBuilder(null)
-            .setBackgroundColor((r, isDark) -> 0x24FFFFFF)
-            .setStrokeColorTop(0x4DFFFFFF, 0x4DFFFFFF)
-            .setStrokeColorBottom(0x1AFFFFFF, 0x1AFFFFFF)
-            .setShadowColor(0x14000000, 0x14000000)
-            .setShadowLayer(dpf2(6), 0, dpf2(1))
-            .setStrokeWidth(dpf2(1), dpf2(2 / 3f))
-            .build(), true).setRadius(dp(BUTTON_SIZE / 2));
+        return new QrGlassButton(glassFactory.create(view, provider.build(), true).setRadius(dp(BUTTON_SIZE / 2)));
+    }
+
+    /** The blurred background with the QR glass's sheen and rim over it (the rim reaches ~2dp past the bounds). */
+    private static class QrGlassButton extends Drawable implements Drawable.Callback {
+        private final Drawable blur;
+        private final RectF bounds = new RectF();
+        private int alpha = 255;
+
+        QrGlassButton(Drawable blur) {
+            this.blur = blur;
+            blur.setCallback(this);
+        }
+
+        @Override
+        protected void onBoundsChange(@NonNull Rect b) {
+            blur.setBounds(b);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            blur.draw(canvas);
+            bounds.set(getBounds());
+            final float radius = Math.min(bounds.width(), bounds.height()) / 2f;
+            final float a = alpha / 255f;
+            QrGlass.drawSheenRound(canvas, bounds, radius, false, a);
+            QrGlass.drawRim(canvas, bounds, radius, QrGlass.RIM_BIG, a);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            this.alpha = alpha;
+            blur.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+            blur.setColorFilter(colorFilter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+
+        @Override
+        public void invalidateDrawable(@NonNull Drawable who) {
+            invalidateSelf();
+        }
+
+        @Override
+        public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
+            scheduleSelf(what, when);
+        }
+
+        @Override
+        public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
+            unscheduleSelf(what);
+        }
     }
 
     private void setNextFocus(View view, @IdRes int nextId) {

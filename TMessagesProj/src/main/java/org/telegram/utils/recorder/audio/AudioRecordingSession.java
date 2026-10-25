@@ -19,6 +19,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -43,7 +44,7 @@ public final class AudioRecordingSession {
         PAUSING,
         /** The finalized recording is available for playback and trimming. */
         PREVIEWING,
-        /** The retained prefix is being prepared before capture continues. */
+        /** Capture is restarting after the retained range was selected. */
         RESUMING,
         /** The final Ogg file or trimmed replacement is being completed. */
         FINISHING,
@@ -169,6 +170,7 @@ public final class AudioRecordingSession {
         private long minimumDurationMs = DEFAULT_MINIMUM_DURATION_MS;
         private long maximumDurationMs;
         private NoiseSuppression noiseSuppression = NoiseSuppression.DISABLED;
+        private boolean previewPlaybackEnabled = true;
         private Listener listener;
         private OutputListener outputListener;
         private Logger logger = NO_OP_LOGGER;
@@ -202,6 +204,15 @@ public final class AudioRecordingSession {
                 throw new IllegalArgumentException("Noise suppression mode is required");
             }
             noiseSuppression = value;
+            return this;
+        }
+
+        /**
+         * Enables the built-in preview player. Hosts that play the preview file with their own
+         * player disable it to avoid preparing an unused decoder on every pause.
+         */
+        public @NonNull Builder setPreviewPlaybackEnabled(boolean enabled) {
+            previewPlaybackEnabled = enabled;
             return this;
         }
 
@@ -404,6 +415,7 @@ public final class AudioRecordingSession {
     private final long minimumDurationMs;
     private final long maximumDurationMs;
     private final NoiseSuppression noiseSuppression;
+    private final boolean previewPlaybackEnabled;
     private final Listener listener;
     private final OutputListener outputListener;
     private final AudioRecorderDiagnostics diagnostics;
@@ -468,6 +480,7 @@ public final class AudioRecordingSession {
         minimumDurationMs = builder.minimumDurationMs;
         maximumDurationMs = builder.maximumDurationMs;
         noiseSuppression = builder.noiseSuppression;
+        previewPlaybackEnabled = builder.previewPlaybackEnabled;
         listener = builder.listener;
         outputListener = builder.outputListener;
         diagnostics = new AudioRecorderDiagnostics(builder.logger);
@@ -490,7 +503,7 @@ public final class AudioRecordingSession {
         diagnostics.log("start requested");
         createOutputGeneration();
         setState(State.STARTING);
-        startCapture(null);
+        startCapture(null, 0L, -1L);
         return true;
     }
 
@@ -647,7 +660,7 @@ public final class AudioRecordingSession {
         requireMainThread();
         if (state == State.RELEASED || state == State.COMPLETED) return false;
         diagnostics.log("cancel requested: state=" + state);
-        mainHandler.removeCallbacksAndMessages(null);
+        removeScheduledCallbacks();
         releasePlayer();
         invalidateCurrentOutput(OutputInvalidationReason.CANCELLED);
         setState(State.RELEASED);
@@ -704,7 +717,7 @@ public final class AudioRecordingSession {
         return samplesToMs(retainedSamples + activeSegmentSamples);
     }
 
-    private void startCapture(@Nullable File prefixFile) {
+    private void startCapture(@Nullable File prefixFile, long prefixStartMs, long prefixEndMs) {
         final long token = ++captureToken;
         final OutputGeneration generation = outputGeneration;
         if (generation == null) {
@@ -714,23 +727,24 @@ public final class AudioRecordingSession {
         AudioCapture nextCapture = new AudioCapture(
                 generation.file,
                 prefixFile,
+                prefixStartMs,
+                prefixEndMs,
                 noiseSuppression,
                 diagnostics,
                 new AudioCapture.Callback() {
                     @Override
-                    public void onStarted(long initialFileSize) {
-                        announceBytes(generation, initialFileSize);
+                    public void onStarted() {
                         mainHandler.post(() -> onCaptureStarted(token));
                     }
 
                     @Override
-                    public void onProgress(
-                            long capturedSamples,
-                            double amplitude,
-                            long committedFileSize
-                    ) {
-                        if (committedFileSize >= 0L) announceBytes(generation, committedFileSize);
+                    public void onProgress(long capturedSamples, double amplitude) {
                         mainHandler.post(() -> onCaptureProgress(token, capturedSamples, amplitude));
+                    }
+
+                    @Override
+                    public void onOutputCommitted(long committedFileSize) {
+                        announceBytes(generation, committedFileSize);
                     }
 
                     @Override
@@ -799,6 +813,13 @@ public final class AudioRecordingSession {
     private void onCaptureError(long token, @NonNull Exception error) {
         if (token != captureToken) return;
         capture = null;
+        if (state == State.RELEASED || state == State.ERROR) {
+            // The session already ended; the capture only reports how it shut down.
+            diagnostics.error("capture error after session end", error);
+            cleanupUnfinishedFiles();
+            shutdownExecutors();
+            return;
+        }
         fail(error);
     }
 
@@ -828,10 +849,12 @@ public final class AudioRecordingSession {
         previewWaveform = waveform;
         try {
             releasePlayer();
-            player = new ExoPlayer.Builder(context).build();
-            player.addListener(playerListener);
-            player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)));
-            player.prepare();
+            if (previewPlaybackEnabled) {
+                player = new ExoPlayer.Builder(context).build();
+                player.addListener(playerListener);
+                player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)));
+                player.prepare();
+            }
             setState(State.PREVIEWING);
             listener.onPreviewReady(
                     getRecordedDurationMs(),
@@ -850,44 +873,18 @@ public final class AudioRecordingSession {
             fail(new IllegalStateException("Output generation is missing"));
             return;
         }
-        final long selectedStartMs = trimStartMs;
-        final long selectedEndMs = trimEndMs;
-        final long selectedSamples = msToSamples(selectedEndMs - selectedStartMs);
+        long selectedStartMs = trimStartMs;
+        long selectedEndMs = trimEndMs;
+        boolean wholeSource = selectedEndMs >= samplesToMs(retainedSamples);
         invalidateCurrentOutput(OutputInvalidationReason.REBUILT);
-
-        fileExecutor.execute(() -> {
-            long rebuildStartedAtMs = SystemClock.elapsedRealtime();
-            File prefix = previous.file;
-            try {
-                if (selectedStartMs > 0L || selectedEndMs < samplesToMs(retainedSamples)) {
-                    prefix = createTemporaryFile("trim", ".ogg");
-                    File trimmedFile = prefix;
-                    boolean success = AudioRecorderNative.cropOpusFile(
-                            previous.file.getAbsolutePath(),
-                            trimmedFile.getAbsolutePath(),
-                            selectedStartMs,
-                            selectedEndMs
-                    );
-                    if (!success) throw new IllegalStateException("Unable to trim Opus prefix");
-                }
-                diagnostics.log("resume prefix prepared: source=" + previous.file.getName()
-                        + ", prefix=" + prefix.getName()
-                        + ", trim=" + selectedStartMs + ".." + selectedEndMs
-                        + ", bytes=" + prefix.length()
-                        + ", elapsedMs=" + (SystemClock.elapsedRealtime() - rebuildStartedAtMs));
-                File readyPrefix = prefix;
-                mainHandler.post(() -> {
-                    if (state != State.RESUMING) return;
-                    retainedSamples = selectedSamples;
-                    trimStartMs = 0L;
-                    trimEndMs = samplesToMs(retainedSamples);
-                    createOutputGeneration();
-                    startCapture(readyPrefix);
-                });
-            } catch (Throwable error) {
-                mainHandler.post(() -> fail(asException(error)));
-            }
-        });
+        retainedSamples = msToSamples(selectedEndMs - selectedStartMs);
+        trimStartMs = 0L;
+        trimEndMs = samplesToMs(retainedSamples);
+        createOutputGeneration();
+        diagnostics.log("resume prefix selected: source=" + previous.file.getName()
+                + ", trim=" + selectedStartMs + ".." + selectedEndMs);
+        // The encoder re-encodes the selected range itself while the microphone already records.
+        startCapture(previous.file, selectedStartMs, wholeSource ? -1L : selectedEndMs);
     }
 
     private void finishFromPreview() {
@@ -1108,6 +1105,16 @@ public final class AudioRecordingSession {
         if (cleanupStarted) return;
         cleanupStarted = true;
         File retainedResult = result == null ? null : result.file;
+        // Runs after any file task in flight, so files that task creates are removed as well.
+        Runnable deletion = () -> deleteTemporaryFiles(retainedResult);
+        try {
+            fileExecutor.execute(deletion);
+        } catch (RejectedExecutionException ignore) {
+            deletion.run();
+        }
+    }
+
+    private void deleteTemporaryFiles(@Nullable File retainedResult) {
         synchronized (temporaryFiles) {
             for (int index = 0; index < temporaryFiles.size(); index++) {
                 File file = temporaryFiles.get(index);
@@ -1121,10 +1128,16 @@ public final class AudioRecordingSession {
         }
     }
 
+    private void removeScheduledCallbacks() {
+        // Capture callbacks stay queued: they are filtered by token and finish the cleanup.
+        mainHandler.removeCallbacks(maximumDurationRunnable);
+        mainHandler.removeCallbacks(previewProgressRunnable);
+    }
+
     private void fail(@NonNull Exception error) {
         if (state == State.ERROR || state == State.RELEASED || state == State.COMPLETED) return;
         diagnostics.error("fatal error in state=" + state, error);
-        mainHandler.removeCallbacksAndMessages(null);
+        removeScheduledCallbacks();
         releasePlayer();
         invalidateCurrentOutput(OutputInvalidationReason.ERROR);
         setState(State.ERROR);
