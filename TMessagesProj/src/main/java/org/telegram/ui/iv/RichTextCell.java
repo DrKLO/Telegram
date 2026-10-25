@@ -1711,6 +1711,16 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
             checkBox.setChecked(checked, animated);
         }
 
+        // a box with no name and no state: it is a checkbox that says whether it is checked
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName("android.widget.CheckBox");
+            info.setContentDescription(getString(R.string.ArticleListChecklist));
+            info.setCheckable(true);
+            info.setChecked(checkBox.isChecked());
+        }
+
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
