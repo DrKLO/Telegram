@@ -5119,6 +5119,8 @@
     <string name="AccDescrMsgSending">Sending</string>
     <string name="AccDescrMsgSendingError">Sending error</string>
     <string name="AccDescrMsgPlayed">Played</string>
+    <string name="AccDescrMediaDownloaded">Downloaded</string>
+    <string name="AccDescrMediaNotDownloaded">Not downloaded</string>
     <string name="AccDescrMsgNotPlayed">Not played</string>
     <string name="AccDescrSearchNext">Next search result</string>
     <string name="AccDescrSearchPrev">Previous search result</string>
@@ -5154,6 +5156,7 @@
     <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
     <string name="AccDescrQuizIncorrectAnswer">Incorrect answer</string>
     <string name="AccDescrQuizExplanation">Explanation</string>
+    <string name="AccDescrDownloadPaused">Paused</string>
     <string name="AccDescrPipMode">Picture-in-Picture mode</string>
     <string name="AccDescrVoipMicOn">Microphone is on</string>
     <string name="AccDescrVoipMicOff">Microphone is off</string>

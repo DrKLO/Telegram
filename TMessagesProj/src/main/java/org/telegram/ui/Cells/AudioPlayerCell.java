@@ -42,6 +42,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.DotDividerSpan;
@@ -54,6 +55,10 @@ import org.telegram.ui.GradientClip;
 import java.io.File;
 
 public class AudioPlayerCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
+
+    // where a download stands is drawn as a button and a ring or a bar, and is given to a screen
+    // reader as the state of the row
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
 
     private boolean buttonPressed;
     private boolean miniButtonPressed;
@@ -320,8 +325,40 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
         }
     }
 
+    // where the file stands, as the button beside it draws it: a track that plays while it comes
+    // has a small button of its own for fetching it, and that is the one that tells
+    private void updateAccessibilityState() {
+        if (currentMessageObject == null || !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        final boolean downloaded, downloading;
+        if (hasMiniProgress != 0) {
+            downloaded = hasMiniProgress == 1;
+            downloading = miniButtonState == 1;
+        } else {
+            downloaded = buttonState == 0 || buttonState == 1;
+            downloading = buttonState == 4;
+        }
+        final String fileName = currentMessageObject.getFileName();
+        final Float progress = downloading && !TextUtils.isEmpty(fileName) ? ImageLoader.getInstance().getFileProgress(fileName) : null;
+        transferAnnouncer.setState(currentMessageObject.getDialogId() + ":" + currentMessageObject.getId(),
+            downloading ? AccessibilityTransferAnnouncer.STATE_DOWNLOADING : downloaded ? AccessibilityTransferAnnouncer.STATE_DOWNLOADED : AccessibilityTransferAnnouncer.STATE_NOT_DOWNLOADED,
+            progress == null ? 0 : progress, 0, false);
+    }
+
+    @Override
+    public boolean dispatchPopulateAccessibilityEvent(android.view.accessibility.AccessibilityEvent event) {
+        // a press would otherwise be reported with the whole row, read out again over what the
+        // press changed, which is said by itself
+        if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            return true;
+        }
+        return super.dispatchPopulateAccessibilityEvent(event);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
+        updateAccessibilityState();
         if (titleLayout != null) {
             canvas.save();
             canvas.translate(dp(LocaleController.isRTL ? 16 : AndroidUtilities.leftBaseline) + (LocaleController.isRTL && optionsButton.getVisibility() == View.VISIBLE ? dp(32) : 0), titleY);
@@ -507,6 +544,7 @@ public class AudioPlayerCell extends FrameLayout implements DownloadController.F
         } else { // voice message
             info.setText(titleLayout.getText() + ", " + descriptionLayout.getText());
         }
+        transferAnnouncer.appendState(info);
     }
 
     private int getThemedColor(int key) {

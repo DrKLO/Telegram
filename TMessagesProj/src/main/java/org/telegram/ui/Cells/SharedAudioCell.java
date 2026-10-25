@@ -37,6 +37,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AccessibilityTransferAnnouncer;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CheckBox2;
@@ -54,6 +55,10 @@ import org.telegram.ui.FilteredSearchView;
 import java.io.File;
 
 public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
+
+    // where a download stands is drawn as a button and a ring or a bar, and is given to a screen
+    // reader as the state of the row
+    private final AccessibilityTransferAnnouncer transferAnnouncer = new AccessibilityTransferAnnouncer(this);
 
     private SpannableStringBuilder dotSpan;
     private CheckBox2 checkBox;
@@ -618,6 +623,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             info.setCheckable(true);
             info.setChecked(true);
         }
+        transferAnnouncer.appendState(info);
         CharSequence actionLabel;
         switch (getIconForCurrentState()) {
             case MediaActionDrawable.ICON_PAUSE:
@@ -660,8 +666,40 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         this.globalGradientView = globalGradientView;
     }
 
+    // where the file stands, as the button beside it draws it: a track that plays while it comes
+    // has a small button of its own for fetching it, and that is the one that tells
+    private void updateAccessibilityState() {
+        if (currentMessageObject == null || !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        final boolean downloaded, downloading;
+        if (hasMiniProgress != 0) {
+            downloaded = hasMiniProgress == 1;
+            downloading = miniButtonState == 1;
+        } else {
+            downloaded = buttonState == 0 || buttonState == 1;
+            downloading = buttonState == 4;
+        }
+        final String fileName = currentMessageObject.getFileName();
+        final Float progress = downloading && !TextUtils.isEmpty(fileName) ? ImageLoader.getInstance().getFileProgress(fileName) : null;
+        transferAnnouncer.setState(currentMessageObject.getDialogId() + ":" + currentMessageObject.getId(),
+            downloading ? AccessibilityTransferAnnouncer.STATE_DOWNLOADING : downloaded ? AccessibilityTransferAnnouncer.STATE_DOWNLOADED : AccessibilityTransferAnnouncer.STATE_NOT_DOWNLOADED,
+            progress == null ? 0 : progress, 0, false);
+    }
+
+    @Override
+    public boolean dispatchPopulateAccessibilityEvent(android.view.accessibility.AccessibilityEvent event) {
+        // a press would otherwise be reported with the whole row, read out again over what the
+        // press changed, which is said by itself
+        if (event.getEventType() == android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            return true;
+        }
+        return super.dispatchPopulateAccessibilityEvent(event);
+    }
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        updateAccessibilityState();
         if (showName && showNameProgress != 1f) {
             showNameProgress += 16 / 150f;
             invalidate();
