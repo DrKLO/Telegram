@@ -94,7 +94,7 @@ without changing repository or global Git configuration.
 
 The instrumentation suite is
 `org.telegram.ui.Components.PersianFontApplierTest` in TMessagesProj_AppTests.
-It contains 30 tests covering bundled fonts, script boundaries, formatting,
+It contains 33 tests covering bundled fonts, script boundaries, formatting,
 links, code, replacement spans, repeat application, disabling, selection, IME
 composition, native text-view variants, rich input without a page delegate,
 folder-title refresh, Canvas cache/rendering behavior, weight consistency,
@@ -108,10 +108,11 @@ Attachment-progress coverage checks localized and Latin digits across document,
 voice, music, video and GIF types, cached reuse, measured widths and font toggles
 at unchanged byte counts.
 
-The Android rendering changes have passed Java syntax, diff whitespace and
-Debug Java compilation checks; the standalone detector tests also passed.
-Earlier Debug/Release APKs predate the story/pull-up/call follow-ups. See
-[persian-font-review.md](persian-font-review.md) for outstanding release evidence.
+Debug and isolated Release APKs were built and signature-verified after the
+font-processing optimization. The contributor also reports satisfactory Debug
+scrolling and broad UI coverage on a physical device. See
+[persian-font-validation.md](persian-font-validation.md) for recorded results
+and the limits of Release login and upstream compatibility validation.
 
 
 The standalone range detector suite needs only a JDK and does not build or run
@@ -124,10 +125,12 @@ javac -encoding UTF-8 -d build/font-check/punctuation-tests TMessagesProj/src/ma
 java -cp build/font-check/punctuation-tests PersianTextUtilsTest
 ```
 
-These standalone checks passed. All 30 Android instrumentation tests also
+These standalone checks passed. All 33 Android instrumentation tests also
 passed on the dedicated API 36 emulator at font scales 1.0 and 1.5. See
-[persian-font-validation.md](persian-font-validation.md) for build identity,
-fixture corrections, performance measurements and remaining device checks.
+[persian-font-performance.md](persian-font-performance.md) for the latest
+optimization measurements and regressions, and
+[persian-font-validation.md](persian-font-validation.md) for build evidence,
+fixture corrections and remaining compatibility limits.
 
 On Windows PowerShell, quote the entire Gradle project-property argument:
 
