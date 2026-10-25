@@ -118,6 +118,9 @@ public class ReplyThreadDrawer {
     private long lastChainRefresh;
 
     private boolean active;
+    private boolean reverse;      // thread goes back: from the original down to the quote
+    private int lastSourceId;     // the last forward thread, to be able to run it backwards
+    private int lastTargetId;
     private int sourceId;
     private int targetId;
     private boolean targetAbove;
@@ -169,8 +172,11 @@ public class ReplyThreadDrawer {
         if (object == null || cell.replyNameLayout == null && cell.replyTextLayout == null) {
             return;
         }
+        this.reverse = false;
         this.sourceId = object.getId();
         this.targetId = targetId;
+        this.lastSourceId = sourceId;
+        this.lastTargetId = targetId;
         this.targetAbove = targetAbove;
         final long now = SystemClock.uptimeMillis();
         this.startTime = now;
@@ -199,6 +205,54 @@ public class ReplyThreadDrawer {
         list.invalidate();
     }
 
+    /**
+     * The way back: the "down" button returns to the message the user came from. The thread runs
+     * backwards, from the original message to the quote that was tapped.
+     *
+     * @return true if a thread was started
+     */
+    public boolean startReverse(int returnToId) {
+        if (lastSourceId == 0 || lastTargetId == 0 || returnToId != lastSourceId) {
+            return false;
+        }
+        this.reverse = true;
+        this.sourceId = lastTargetId;
+        this.targetId = lastSourceId;
+        this.targetAbove = targetId < sourceId;
+        final long now = SystemClock.uptimeMillis();
+        this.startTime = now;
+        this.lastScrollTime = now;
+        this.lastFrameTime = 0;
+        this.connectedTime = 0;
+        this.hasPrev = false;
+        this.accumulator = 0;
+        this.knot = 0;
+        this.knotVelocity = 0;
+        for (int i = 0; i < PARTICLES; i++) {
+            slife[i] = 0;
+        }
+        for (int i = 0; i < N; i++) {
+            final float t = i / (float) (N - 1);
+            ox[i] = 0;
+            oy[i] = 0;
+            vx[i] = dp(260) * (float) Math.sin(Math.PI * t);
+            vy[i] = 0;
+        }
+        final ChatMessageCell from = findCell(sourceId);
+        if (from != null) {
+            updateSource(from);
+        } else {
+            // the original is already off screen: the thread starts beyond the edge it left through
+            srcX = dp(12);
+            srcY = sourceId < targetId ? -dp(40) : list.getMeasuredHeight() + dp(40);
+        }
+        buildChain();
+        this.active = true;
+        list.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        list.invalidate();
+        return true;
+    }
+
     public void onScrolled(int dy) {
         if (!active) {
             return;
@@ -208,8 +262,14 @@ public class ReplyThreadDrawer {
     }
 
     private void updateSource(ChatMessageCell cell) {
-        srcX = cell.getX() + cell.replyStartX;
-        srcY = cell.getY() + cell.replyStartY + cell.replyHeight / 2f;
+        if (reverse) {
+            // the thread leaves the original message from the edge of its bubble
+            srcX = cell.getX() + cell.getBackgroundDrawableLeft();
+            srcY = cell.getY() + Math.min(cell.getHeight() / 2f, dp(28));
+        } else {
+            srcX = cell.getX() + cell.replyStartX;
+            srcY = cell.getY() + cell.replyStartY + cell.replyHeight / 2f;
+        }
     }
 
     private ChatMessageCell findCell(int messageId) {
@@ -236,7 +296,7 @@ public class ReplyThreadDrawer {
         }
         chainIds[chainCount++] = sourceId;
         chainIds[chainCount++] = targetId;
-        while (chainCount < MAX_CHAIN) {
+        while (!reverse && chainCount < MAX_CHAIN) {
             final int next = chainProvider.getReplyTarget(chainIds[chainCount - 1]);
             if (next == 0) {
                 break;
@@ -462,8 +522,14 @@ public class ReplyThreadDrawer {
         float tx;
         float ty;
         if (found) {
-            tx = targetCell.getX() + targetCell.getBackgroundDrawableLeft();
-            ty = targetCell.getY() + Math.min(targetCell.getHeight() / 2f, dp(28));
+            if (reverse && (targetCell.replyNameLayout != null || targetCell.replyTextLayout != null)) {
+                // on the way back the thread ties itself into the tapped quote
+                tx = targetCell.getX() + targetCell.replyStartX;
+                ty = targetCell.getY() + targetCell.replyStartY + targetCell.replyHeight / 2f;
+            } else {
+                tx = targetCell.getX() + targetCell.getBackgroundDrawableLeft();
+                ty = targetCell.getY() + Math.min(targetCell.getHeight() / 2f, dp(28));
+            }
         } else {
             tx = gutter;
             ty = targetAbove ? -dp(40) : height + dp(40);

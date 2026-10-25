@@ -10708,6 +10708,9 @@ public class ChatActivity extends BaseFragment implements
         if (createUnreadMessageAfterId != 0) {
             scrollToMessageId(createUnreadMessageAfterId, 0, false, returnToLoadIndex, true, 0, null, inCaseLoading);
         } else if (returnToMessageId > 0) {
+            if (replyThreadDrawer != null) {
+                replyThreadDrawer.startReverse(returnToMessageId);
+            }
             scrollToMessageId(returnToMessageId, 0, true, returnToLoadIndex, true, 0, null, inCaseLoading);
         } else {
             scrollToLastMessage(true, !forceScrollToMessageBottom, inCaseLoading);
