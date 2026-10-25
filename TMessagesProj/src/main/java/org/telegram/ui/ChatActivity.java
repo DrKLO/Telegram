@@ -33904,10 +33904,10 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_REPLY: {
-                if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards) {
-                    return;
-                }
                 if (selectedObject != null && currentChat != null && (ChatObject.isNotInChat(currentChat) && !ChatObject.isMonoForum(currentChat) && !isThreadChat() || ChatObject.isChannel(currentChat) && !ChatObject.canPost(currentChat) && !currentChat.megagroup || !ChatObject.canSendMessages(currentChat))) {
+                    if (selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards) {
+                        return;
+                    }
                     MessageObject messageObject = selectedObject;
                     if (messageObject.getGroupId() != 0) {
                         MessageObject.GroupedMessages group = getGroup(messageObject.getGroupId());
