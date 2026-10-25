@@ -55,7 +55,6 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextSettingsCell;
@@ -86,7 +85,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private TextView titleTextView, subtitleTextView;
     private TextView bottomTextView;
     private TextView resetWaitView;
-    private SimpleTextView bottomButton;
+    private TextView bottomButton;
     private TextView cancelResetButton;
     private EditTextBoldCursor passwordEditText;
     private OutlineTextContainerView passwordOutlineView;
@@ -325,22 +324,27 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         linearLayout2.setClipChildren(false);
         linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
-        bottomButton = new SimpleTextView(context);
-        bottomButton.setTextSize(15);
-        bottomButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        bottomButton = new PersianTextView(context);
+        bottomButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        bottomButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        bottomButton.setSingleLine(true);
+        bottomButton.setEllipsize(TextUtils.TruncateAt.END);
         bottomButton.setPadding(dp(32), 0, dp(32), 0);
-        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+        // Reserve the floating button's 48 dp width, 20 dp inset and a 12 dp gap.
+        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
         bottomButton.setOnClickListener(v -> onPasswordForgot());
         VerticalPositionAutoAnimator.attach(bottomButton);
 
         cancelResetButton = new PersianTextView(context);
         cancelResetButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        cancelResetButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        cancelResetButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        cancelResetButton.setSingleLine(true);
+        cancelResetButton.setEllipsize(TextUtils.TruncateAt.END);
         cancelResetButton.setPadding(dp(32), 0, dp(32), 0);
         cancelResetButton.setText(getString(R.string.CancelReset));
         cancelResetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         cancelResetButton.setVisibility(View.GONE);
-        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
         cancelResetButton.setOnClickListener(v -> cancelPasswordReset());
         VerticalPositionAutoAnimator.attach(cancelResetButton);
 

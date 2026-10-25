@@ -309,7 +309,9 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         bottomSkipButton = new PersianTextView(context);
         bottomSkipButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
         bottomSkipButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        bottomSkipButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        bottomSkipButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        bottomSkipButton.setSingleLine(true);
+        bottomSkipButton.setEllipsize(TextUtils.TruncateAt.END);
         bottomSkipButton.setVisibility(View.GONE);
         VerticalPositionAutoAnimator.attach(bottomSkipButton);
         bottomSkipButton.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
@@ -685,7 +687,8 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 };
                 scrollView.setVerticalScrollBarEnabled(false);
                 frameLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-                frameLayout.addView(bottomSkipButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+                // Keep the secondary action and its touch area outside the floating button.
+                frameLayout.addView(bottomSkipButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
                 frameLayout.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
                 container.addView(keyboardFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -1091,7 +1094,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
                 bottomSkipButton.setVisibility(View.VISIBLE);
                 bottomSkipButton.setGravity(Gravity.CENTER);
-                ((ViewGroup.MarginLayoutParams) bottomSkipButton.getLayoutParams()).bottomMargin = 0;
+                ViewGroup.MarginLayoutParams resendLayoutParams = (ViewGroup.MarginLayoutParams) bottomSkipButton.getLayoutParams();
+                resendLayoutParams.leftMargin = 0;
+                resendLayoutParams.rightMargin = 0;
+                resendLayoutParams.bottomMargin = 0;
                 bottomSkipButton.setText(LocaleController.getString(R.string.ResendCode));
                 bottomSkipButton.setOnClickListener(v -> {
                     TL_account.resendPasswordEmail req = new TL_account.resendPasswordEmail();
