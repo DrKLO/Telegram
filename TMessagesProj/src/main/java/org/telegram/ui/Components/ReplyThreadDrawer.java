@@ -47,13 +47,17 @@ public class ReplyThreadDrawer {
 
     private static final int N = 36;              // string nodes
     private static final int MAX_CHAIN = 8;
-    private static final int PARTICLES = 14;
+    private static final int BURST = 14;          // sparks of the snap
+    private static final int PARTICLES = 48;      // burst + friction sparks
+    private static final int SAMPLES = 72;        // samples of the smoothed rope for the tapered body
 
     // string physics (units: px, seconds)
     private static final float STEP = 1f / 120f;
     private static final float WAVE = 2400f;      // neighbour coupling: wave speed^2
     private static final float RESTORE = 34f;     // pull back to the guide
     private static final float DAMPING = 4.0f;
+    private static final float BEND = 420f;       // bending stiffness (beam term): ripples disperse like on a cable
+    private static final float VISCOSITY = 30f;   // neighbours share velocity: smooth, not jittery
     private static final float INERTIA = 0.45f;   // how much the string lags behind a moving anchor
 
     private static final long DRAW_IN = 520;
@@ -100,6 +104,11 @@ public class ReplyThreadDrawer {
     private final float[] svx = new float[PARTICLES];
     private final float[] svy = new float[PARTICLES];
     private final float[] slife = new float[PARTICLES];
+    private float sparkCooldown;
+
+    // samples of the smoothed rope
+    private final float[] spx = new float[SAMPLES];
+    private final float[] spy = new float[SAMPLES];
 
     // chain of replies for the mini-map
     private final int[] chainIds = new int[MAX_CHAIN];
@@ -186,6 +195,7 @@ public class ReplyThreadDrawer {
         updateSource(cell);
         buildChain();
         this.active = true;
+        list.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
         list.invalidate();
     }
 
@@ -350,11 +360,20 @@ public class ReplyThreadDrawer {
         for (int i = 1; i < N - 1; i++) {
             final float lapX = ox[i - 1] + ox[i + 1] - 2f * ox[i];
             final float lapY = oy[i - 1] + oy[i + 1] - 2f * oy[i];
-            vx[i] += (WAVE * lapX - RESTORE * ox[i]) * dt;
-            vy[i] += (WAVE * lapY - RESTORE * oy[i]) * dt;
+            // fourth difference: the bending stiffness of a real cable (the ends stay pinned at zero)
+            final float farLx = i >= 2 ? ox[i - 2] : 0f;
+            final float farRx = i <= N - 3 ? ox[i + 2] : 0f;
+            final float farLy = i >= 2 ? oy[i - 2] : 0f;
+            final float farRy = i <= N - 3 ? oy[i + 2] : 0f;
+            final float bendX = farLx - 4f * ox[i - 1] + 6f * ox[i] - 4f * ox[i + 1] + farRx;
+            final float bendY = farLy - 4f * oy[i - 1] + 6f * oy[i] - 4f * oy[i + 1] + farRy;
+            vx[i] += (WAVE * lapX - BEND * bendX - RESTORE * ox[i]) * dt;
+            vy[i] += (WAVE * lapY - BEND * bendY - RESTORE * oy[i]) * dt;
+        }
+        for (int i = 1; i < N - 1; i++) {
             final float damp = 1f - DAMPING * dt;
-            vx[i] *= damp;
-            vy[i] *= damp;
+            vx[i] = vx[i] * damp + VISCOSITY * (vx[i - 1] + vx[i + 1] - 2f * vx[i]) * dt;
+            vy[i] = vy[i] * damp + VISCOSITY * (vy[i - 1] + vy[i + 1] - 2f * vy[i]) * dt;
         }
         final float maxOffset = dp(72);
         for (int i = 1; i < N - 1; i++) {
@@ -376,9 +395,22 @@ public class ReplyThreadDrawer {
         }
     }
 
+    private void spawnOne(float x, float y, float velX, float velY, float life) {
+        for (int i = BURST; i < PARTICLES; i++) {
+            if (slife[i] <= 0f) {
+                sx[i] = x;
+                sy[i] = y;
+                svx[i] = velX;
+                svy[i] = velY;
+                slife[i] = life;
+                return;
+            }
+        }
+    }
+
     private void spawnSparks(float x, float y) {
-        for (int i = 0; i < PARTICLES; i++) {
-            final double angle = (i + Math.random() * 0.7) / PARTICLES * Math.PI * 2;
+        for (int i = 0; i < BURST; i++) {
+            final double angle = (i + Math.random() * 0.7) / BURST * Math.PI * 2;
             final float speed = dp(80) + (float) Math.random() * dp(150);
             sx[i] = x;
             sy[i] = y;
@@ -542,8 +574,57 @@ public class ReplyThreadDrawer {
         glowPaint.setStrokeWidth(dp(7));
         glowPaint.setColor(ColorUtils.setAlphaComponent(accent, (int) (58 * alpha)));
         canvas.drawPath(path, glowPaint);
-        canvas.drawPath(path, bodyPaint);
-        canvas.drawPath(path, lightPaint);
+
+        measure.setPath(path, false);
+        final float ropeLength = measure.getLength();
+        if (ropeLength > 1f) {
+            // body: thick in the middle, thin at both ends, drawn along the smoothed curve
+            for (int k = 0; k < SAMPLES; k++) {
+                measure.getPosTan(ropeLength * k / (SAMPLES - 1), pos, null);
+                spx[k] = pos[0];
+                spy[k] = pos[1];
+            }
+            for (int k = 0; k < SAMPLES - 1; k++) {
+                final float u = (k + 0.5f) / (SAMPLES - 1);
+                final float taper = 0.5f + 0.5f * (float) Math.pow(Math.sin(Math.PI * u), 0.6);
+                bodyPaint.setStrokeWidth(dp(3.8f) * taper);
+                canvas.drawLine(spx[k], spy[k], spx[k + 1], spy[k + 1], bodyPaint);
+            }
+            for (int k = 0; k < SAMPLES - 1; k++) {
+                final float u = (k + 0.5f) / (SAMPLES - 1);
+                final float taper = 0.5f + 0.5f * (float) Math.pow(Math.sin(Math.PI * u), 0.6);
+                lightPaint.setStrokeWidth(dp(1.5f) * taper);
+                canvas.drawLine(spx[k], spy[k], spx[k + 1], spy[k + 1], lightPaint);
+            }
+            // energy keeps flowing from the quote to the original
+            final float flow = (now % 1500L) / 1500f;
+            for (int k = 0; k < 3; k++) {
+                final float u = (flow + k / 3f) % 1f;
+                final float centre = ropeLength * u;
+                glint.reset();
+                measure.getSegment(Math.max(0f, centre - ropeLength * 0.045f), Math.min(ropeLength, centre + ropeLength * 0.045f), glint, true);
+                glint.rLineTo(0, 0);
+                lightPaint.setStrokeWidth(dp(2.4f));
+                lightPaint.setColor(ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) (190 * alpha * Math.sin(Math.PI * u))));
+                canvas.drawPath(glint, lightPaint);
+            }
+            lightPaint.setColor(ColorUtils.setAlphaComponent(light, (int) (220 * alpha)));
+        }
+
+        // friction sparks fly off the fast parts of the string
+        sparkCooldown -= dtFrame;
+        if (sparkCooldown <= 0f) {
+            final float fast = dp(600);
+            for (int i = 3; i < N - 3; i += 3) {
+                if (vx[i] * vx[i] + vy[i] * vy[i] > fast * fast) {
+                    spawnOne(px[i], py[i],
+                        vx[i] * 0.25f + (float) (Math.random() - 0.5) * dp(90),
+                        vy[i] * 0.25f + (float) (Math.random() - 0.5) * dp(90), 0.7f);
+                    sparkCooldown = 0.03f;
+                    break;
+                }
+            }
+        }
 
         // a glint runs through the tied thread, from the quote to the original
         if (connectedTime != 0 && age < GLINT) {
