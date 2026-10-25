@@ -42,6 +42,7 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
     public val quote_offset: Int?,
     public val todo_item_id: Int?,
     public val poll_option: List<Byte>?,
+    public val quote_rich: List<TlGen_RichText>?,
   ) : TlGen_MessageReplyHeader() {
     internal val flags: UInt
       get() {
@@ -60,6 +61,7 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
         if (todo_item_id != null) result = result or 2048U
         if (poll_option != null) result = result or 4096U
         if (reply_to_ephemeral) result = result or 8192U
+        if (quote_rich != null) result = result or 16384U
         return result
       }
 
@@ -76,10 +78,11 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
       quote_offset?.let { stream.writeInt32(it) }
       todo_item_id?.let { stream.writeInt32(it) }
       poll_option?.let { stream.writeByteArray(it.toByteArray()) }
+      quote_rich?.let { TlGen_Vector.serialize(stream, it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x1B97DD66U
+      public const val MAGIC: UInt = 0xDDB5AB75U
     }
   }
 
@@ -269,6 +272,62 @@ public sealed class TlGen_MessageReplyHeader : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x6917560BU
+    }
+  }
+
+  public data class TL_messageReplyHeader_layer231(
+    public val reply_to_scheduled: Boolean,
+    public val forum_topic: Boolean,
+    public val quote: Boolean,
+    public val reply_to_ephemeral: Boolean,
+    public val reply_to_msg_id: Int?,
+    public val reply_to_peer_id: TlGen_Peer?,
+    public val reply_from: TlGen_MessageFwdHeader?,
+    public val reply_media: TlGen_MessageMedia?,
+    public val reply_to_top_id: Int?,
+    public val quote_text: String?,
+    public val quote_entities: List<TlGen_MessageEntity>?,
+    public val quote_offset: Int?,
+    public val todo_item_id: Int?,
+    public val poll_option: List<Byte>?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (reply_to_peer_id != null) result = result or 1U
+        if (reply_to_top_id != null) result = result or 2U
+        if (reply_to_scheduled) result = result or 4U
+        if (forum_topic) result = result or 8U
+        if (reply_to_msg_id != null) result = result or 16U
+        if (reply_from != null) result = result or 32U
+        if (quote_text != null) result = result or 64U
+        if (quote_entities != null) result = result or 128U
+        if (reply_media != null) result = result or 256U
+        if (quote) result = result or 512U
+        if (quote_offset != null) result = result or 1024U
+        if (todo_item_id != null) result = result or 2048U
+        if (poll_option != null) result = result or 4096U
+        if (reply_to_ephemeral) result = result or 8192U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      reply_to_msg_id?.let { stream.writeInt32(it) }
+      reply_to_peer_id?.serializeToStream(stream)
+      reply_from?.serializeToStream(stream)
+      reply_media?.serializeToStream(stream)
+      reply_to_top_id?.let { stream.writeInt32(it) }
+      quote_text?.let { stream.writeString(it) }
+      quote_entities?.let { TlGen_Vector.serialize(stream, it) }
+      quote_offset?.let { stream.writeInt32(it) }
+      todo_item_id?.let { stream.writeInt32(it) }
+      poll_option?.let { stream.writeByteArray(it.toByteArray()) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x1B97DD66U
     }
   }
 }

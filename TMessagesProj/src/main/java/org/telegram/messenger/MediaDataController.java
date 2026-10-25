@@ -91,6 +91,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.Stories.StoriesStorage;
+import org.telegram.ui.Wallet.WalletEngine2;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 
 import java.io.File;
@@ -7652,6 +7653,7 @@ public class MediaDataController extends BaseController {
 
         CharSequence cs = message[0];
         if (entities == null) entities = new ArrayList<>();
+        addTonAddressEntities(cs, entities);
         if (parseMarkdown) {
             cs = parsePattern(cs, BOLD_PATTERN, entities, obj -> new TLRPC.TL_messageEntityBold());
             cs = parsePattern(cs, ITALIC_PATTERN, entities, obj -> new TLRPC.TL_messageEntityItalic());
@@ -7744,9 +7746,11 @@ public class MediaDataController extends BaseController {
     private CharSequence parsePattern(CharSequence cs, Pattern pattern, ArrayList<TLRPC.MessageEntity> entities, GenericProvider<Void, TLRPC.MessageEntity> entityProvider) {
         Matcher m = pattern.matcher(cs);
         int offset = 0;
-        while (m.find()) {
+        int from = 0;
+        while (from <= m.regionEnd() && m.find(from)) {
             String gr = m.group(1);
             boolean allowEntity = true;
+            TLRPC.MessageEntity trimUrl = null;
             if (cs instanceof Spannable) {
                 // check if it is inside a link: do not convert __ ** to styles inside links
                 URLSpan[] spansUrl = ((Spannable) cs).getSpans(m.start() - offset, m.end() - offset, URLSpan.class);
@@ -7755,13 +7759,29 @@ public class MediaDataController extends BaseController {
                 }
             }
             if (allowEntity) {
-                // check if it is inside a code block: do not convert __ ** || to styles inside code
+                // check if it is inside a code block, link or ton address: do not convert __ ** || to styles inside them
                 for (int i = 0; i < entities.size(); ++i) {
                     final TLRPC.MessageEntity entity = entities.get(i);
                     if (entity instanceof TLRPC.TL_messageEntityPre || entity instanceof TLRPC.TL_messageEntityCode) {
                         if (AndroidUtilities.intersect1d(m.start() - offset, m.end() - offset, entity.offset, entity.offset + entity.length)) {
                             allowEntity = false;
                             break;
+                        }
+                    } else if (entity instanceof TLRPC.TL_messageEntityUrl || entity instanceof TLRPC.TL_messageEntityTonAddress) {
+                        // styling around a link is fine, but its markers must not be a part of it
+                        final int end = entity.offset + entity.length;
+                        if (AndroidUtilities.intersect1d(m.start() - offset, m.start(1) - offset, entity.offset, end)) {
+                            allowEntity = false;
+                            break;
+                        }
+                        if (AndroidUtilities.intersect1d(m.end(1) - offset, m.end() - offset, entity.offset, end)) {
+                            // url linkifier may swallow a trailing closing marker (e.g. "__https://a.com/b__"), cut it off the link
+                            if (entity instanceof TLRPC.TL_messageEntityUrl && end == m.end() - offset && m.end(1) - offset > entity.offset) {
+                                trimUrl = entity;
+                            } else {
+                                allowEntity = false;
+                                break;
+                            }
                         }
                     }
                 }
@@ -7775,12 +7795,63 @@ public class MediaDataController extends BaseController {
                 entity.length = gr.length();
 
                 removeOffset4After(entity.offset, entity.offset + entity.length, entities);
+                if (trimUrl != null) {
+                    trimUrl.length -= m.end() - m.end(1);
+                    final String marker = m.group().substring(m.end(1) - m.start());
+                    if (trimUrl.url != null && trimUrl.url.endsWith(marker)) {
+                        trimUrl.url = trimUrl.url.substring(0, trimUrl.url.length() - marker.length());
+                    }
+                }
                 entities.add(entity);
-            }
 
-            offset += m.end() - m.start() - gr.length();
+                offset += m.end() - m.start() - gr.length();
+                from = m.end();
+            } else {
+                // markers are kept as is, retry right after the opening one so a valid pair after a link still matches
+                from = m.start() + 1;
+            }
         }
         return cs;
+    }
+
+    private static boolean isMarkdownProtectedEntity(TLRPC.MessageEntity entity) {
+        return (
+            entity instanceof TLRPC.TL_messageEntityPre ||
+            entity instanceof TLRPC.TL_messageEntityCode ||
+            entity instanceof TLRPC.TL_messageEntityUrl ||
+            entity instanceof TLRPC.TL_messageEntityTonAddress
+        );
+    }
+
+    private static final Pattern TON_ADDRESS_PATTERN = Pattern.compile("(?<![A-Za-z0-9_+/=:-])(?:-?[0-9]{1,10}:[0-9a-fA-F]{64}|[A-Za-z0-9_+/-]{48})(?![A-Za-z0-9_+/=:-])");
+
+    private static void addTonAddressEntities(CharSequence cs, ArrayList<TLRPC.MessageEntity> entities) {
+        if (cs == null || cs.length() < 48) return;
+        final Matcher m = TON_ADDRESS_PATTERN.matcher(cs);
+        while (m.find()) {
+            final int start = m.start(), end = m.end();
+            boolean intersects = false;
+            for (int i = 0; i < entities.size(); ++i) {
+                final TLRPC.MessageEntity e = entities.get(i);
+                if (AndroidUtilities.intersect1d(start, end, e.offset, e.offset + e.length) && (isMarkdownProtectedEntity(e) || e instanceof TLRPC.TL_messageEntityTextUrl)) {
+                    intersects = true;
+                    break;
+                }
+            }
+            if (intersects) continue;
+            boolean valid;
+            try {
+                valid = WalletEngine2.isValidAddress(m.group());
+            } catch (Throwable t) {
+                FileLog.e(t);
+                valid = false;
+            }
+            if (!valid) continue;
+            final TLRPC.TL_messageEntityTonAddress entity = new TLRPC.TL_messageEntityTonAddress();
+            entity.offset = start;
+            entity.length = end - start;
+            entities.add(entity);
+        }
     }
 
     private static void removeOffset4After(int start, int end, ArrayList<TLRPC.MessageEntity> entities) {
@@ -7895,16 +7966,24 @@ public class MediaDataController extends BaseController {
             draftMessage.flags |= 16;
             draftMessage.reply_to.reply_to_msg_id = replyToMessage.id;
             if (quote != null) {
-                draftMessage.reply_to.quote_text = quote.getText();
-                if (draftMessage.reply_to.quote_text != null) {
-                    draftMessage.reply_to.flags |= 4;
-                    draftMessage.reply_to.flags |= 16;
-                    draftMessage.reply_to.quote_offset = quote.start;
-                }
-                draftMessage.reply_to.quote_entities = quote.getEntities();
-                if (draftMessage.reply_to.quote_entities != null && !draftMessage.reply_to.quote_entities.isEmpty()) {
-                    draftMessage.reply_to.quote_entities = new ArrayList<>(draftMessage.reply_to.quote_entities);
-                    draftMessage.reply_to.flags |= 8;
+                if (quote.isRich) {
+                    if (quote.rich != null && !quote.rich.isEmpty()) {
+                        draftMessage.reply_to.quote_rich = new ArrayList<>(quote.rich);
+                        draftMessage.reply_to.flags |= 16;
+                        draftMessage.reply_to.quote_offset = quote.getQuoteOffset();
+                    }
+                } else {
+                    draftMessage.reply_to.quote_text = quote.getText();
+                    if (draftMessage.reply_to.quote_text != null) {
+                        draftMessage.reply_to.flags |= 4;
+                        draftMessage.reply_to.flags |= 16;
+                        draftMessage.reply_to.quote_offset = quote.start;
+                    }
+                    draftMessage.reply_to.quote_entities = quote.getEntities();
+                    if (draftMessage.reply_to.quote_entities != null && !draftMessage.reply_to.quote_entities.isEmpty()) {
+                        draftMessage.reply_to.quote_entities = new ArrayList<>(draftMessage.reply_to.quote_entities);
+                        draftMessage.reply_to.flags |= 8;
+                    }
                 }
                 if (quote.message != null && quote.message.messageOwner != null) {
                     TLRPC.Peer peer2 = getMessagesController().getPeer(dialogId);
@@ -8075,6 +8154,9 @@ public class MediaDataController extends BaseController {
             if (!TextUtils.equals(a.quote_text, b.quote_text)) {
                 return false;
             }
+            if ((a.quote_rich != null || b.quote_rich != null) && !RichQuote.equals(a.quote_rich, b.quote_rich)) {
+                return false;
+            }
             return a.reply_to_msg_id == b.reply_to_msg_id;
         }
         if (a instanceof TLRPC.TL_inputReplyToStory) {
@@ -8102,13 +8184,21 @@ public class MediaDataController extends BaseController {
                 inputReplyTo.flags |= 1;
                 inputReplyTo.top_msg_id = reply_to.reply_to_top_id;
             }
-            if ((reply_to.flags & 64) != 0) {
-                inputReplyTo.flags |= 4;
-                inputReplyTo.quote_text = reply_to.quote_text;
-            }
-            if ((reply_to.flags & 128) != 0) {
-                inputReplyTo.flags |= 8;
-                inputReplyTo.quote_entities = reply_to.quote_entities;
+            if (reply_to.quote_rich != null) {
+                inputReplyTo.quote_rich = reply_to.quote_rich;
+                if ((reply_to.flags & 1024) != 0) {
+                    inputReplyTo.flags |= 16;
+                    inputReplyTo.quote_offset = reply_to.quote_offset;
+                }
+            } else {
+                if ((reply_to.flags & 64) != 0) {
+                    inputReplyTo.flags |= 4;
+                    inputReplyTo.quote_text = reply_to.quote_text;
+                }
+                if ((reply_to.flags & 128) != 0) {
+                    inputReplyTo.flags |= 8;
+                    inputReplyTo.quote_entities = reply_to.quote_entities;
+                }
             }
             return inputReplyTo;
         }

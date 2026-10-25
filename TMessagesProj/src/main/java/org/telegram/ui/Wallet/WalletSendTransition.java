@@ -77,7 +77,9 @@ public final class WalletSendTransition {
         overlay.setClipChildren(false);
         overlay.setClipToPadding(false);
         overlay.setClickable(true);
-        diamond = new WalletDiamondView(root.getContext(), 60);
+        // The flight is short-lived: use the texture renderer whose GL cleanup
+        // runs asynchronously instead of joining a GLSurfaceView thread on removal.
+        diamond = new WalletDiamondView(root.getContext(), 60, true);
         diamond.setContinuousRotation(540f);
         diamond.copyRotationFrom(source);
         diamond.setAlpha(0f);

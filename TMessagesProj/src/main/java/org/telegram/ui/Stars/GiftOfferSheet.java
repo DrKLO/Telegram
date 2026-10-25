@@ -538,11 +538,11 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
 
     private void checkButtonOfferText(boolean animated) {
         final boolean isTon = inputAmount.currency == AmountUtils.Currency.TON;
-        buttonView.setText(StarsIntroActivity.replaceStars(isTon,
+        buttonView.setText(StarsIntroActivity.whiteGram(isTon, StarsIntroActivity.replaceStars(isTon,
             LocaleController.formatString(R.string.GiftOfferButtonStars, isTon ? inputAmount.asDecimalString() :
                 LocaleController.formatNumber(inputAmount.asDecimal(), ',')),
             isTon ? spanRefTon: spanRefStars
-        ), animated);
+        )), animated);
     }
 
     private void checkButtonEnabled(boolean animated) {

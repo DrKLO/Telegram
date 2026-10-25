@@ -21,6 +21,7 @@ public sealed class TlGen_wallet_NftItem : TlGen_Object {
     public val lottie: TlGen_WebDocument?,
     public val attributes: List<TlGen_wallet_NftAttribute>?,
     public val extra: TlGen_DataJSON?,
+    public val gift: TlGen_StarGift?,
   ) : TlGen_wallet_NftItem() {
     internal val flags: UInt
       get() {
@@ -34,6 +35,7 @@ public sealed class TlGen_wallet_NftItem : TlGen_Object {
         if (lottie != null) result = result or 64U
         if (attributes != null) result = result or 128U
         if (extra != null) result = result or 256U
+        if (gift != null) result = result or 512U
         return result
       }
 
@@ -52,10 +54,11 @@ public sealed class TlGen_wallet_NftItem : TlGen_Object {
       lottie?.serializeToStream(stream)
       attributes?.let { TlGen_Vector.serialize(stream, it) }
       extra?.serializeToStream(stream)
+      gift?.serializeToStream(stream)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x3441FD1CU
+      public const val MAGIC: UInt = 0x173DFAF3U
     }
   }
 }

@@ -654,6 +654,28 @@ public class ActionBarMenu extends LinearLayout {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
+    // Width the search field still occupies while it fades out after closing.
+    public int getClosingSearchFieldWidth() {
+        int width = 0;
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View view = getChildAt(a);
+            if (!(view instanceof ActionBarMenuItem)) continue;
+            final ActionBarMenuItem item = (ActionBarMenuItem) view;
+            if (!item.isSearchField() || !item.isSearchFieldVisible() || item.isSearchFieldVisible2()) continue;
+            View child = item.getSearchContainer();
+            while (child != null && child.getParent() != this) {
+                child = child.getParent() instanceof View ? (View) child.getParent() : null;
+            }
+            if (child == null || child.getVisibility() == GONE) continue;
+            width += child.getMeasuredWidth();
+            if (child.getLayoutParams() instanceof MarginLayoutParams) {
+                final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+                width += lp.leftMargin + lp.rightMargin;
+            }
+        }
+        return width;
+    }
+
     public int getItemsWidth() {
         float mLeft = Float.POSITIVE_INFINITY;
         float mRight = Float.NEGATIVE_INFINITY;
