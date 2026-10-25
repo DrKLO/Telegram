@@ -468,6 +468,7 @@ public class ChatActivity extends BaseFragment implements
     private ThanosEffect chatListThanosEffect;
     private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
     private ChatListRecyclerView chatListView;
+    private ReplyThreadDrawer replyThreadDrawer;
     private ChatListItemAnimator chatListItemAnimator;
     private GridLayoutManagerFixed chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
@@ -5601,6 +5602,9 @@ public class ChatActivity extends BaseFragment implements
                     drawChatBackgroundElements(canvas);
                     super.dispatchDraw(canvas);
                     drawChatForegroundElements(canvas);
+                    if (replyThreadDrawer != null) {
+                        replyThreadDrawer.draw(canvas);
+                    }
                 }
                 canvas.restore();
             }
@@ -6879,6 +6883,9 @@ public class ChatActivity extends BaseFragment implements
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 final ChatActivity chatToUpdate = parentChatActivity != null ? parentChatActivity : ChatActivity.this;
 
+                if (replyThreadDrawer != null) {
+                    replyThreadDrawer.onScrolled(dy);
+                }
                 chatListView.invalidate();
                 if (contentView != null) {
                     contentView.updateBlurContent();
@@ -16908,6 +16915,20 @@ public class ChatActivity extends BaseFragment implements
     public static final boolean SCROLL_DEBUG_DELAY = false;
     private boolean pinnedProgressIsShowing;
     Runnable updatePinnedProgressRunnable;
+
+    private void startReplyThread(ChatMessageCell cell, int targetId) {
+        if (chatListView == null || cell == null || cell.getMessageObject() == null || targetId == 0) {
+            return;
+        }
+        if (replyThreadDrawer == null) {
+            replyThreadDrawer = new ReplyThreadDrawer(chatListView, themeDelegate);
+        }
+        boolean above = targetId < cell.getMessageObject().getId();
+        if (isSecretChat()) {
+            above = !above;
+        }
+        replyThreadDrawer.start(cell, targetId, above);
+    }
 
     public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll, int forcePinnedMessageId) {
         scrollToMessageId(id, fromMessageId, select, loadIndex, forceScroll, forcePinnedMessageId, null, null);
@@ -41165,6 +41186,7 @@ public class ChatActivity extends BaseFragment implements
                     final Integer finalTaskId = task_id;
                     final byte[] finalPollOptionId = option_id;
                     Runnable scroll = () -> {
+                        startReplyThread(cell, id);
                         scrollToMessageId(id, messageObject.getId(), true, messageObject.getDialogId() == mergeDialogId ? 1 : 0, true, 0, finalTaskId, finalPollOptionId, () -> {
                             progressDialogAtMessageId = messageObject.getId();
                             progressDialogAtMessageType = PROGRESS_REPLY;
