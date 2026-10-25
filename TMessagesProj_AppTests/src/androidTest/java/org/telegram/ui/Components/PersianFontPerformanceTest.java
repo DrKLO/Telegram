@@ -1,12 +1,16 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.style.StyleSpan;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -53,6 +57,17 @@ public class PersianFontPerformanceTest {
             SharedConfig.useVazirmatnFont = true;
             CharSequence alreadyStyled = PersianFontApplier.applyForPaint(text, paint);
             compare(cases, "apply_already_styled", 30, () -> consumedObject = PersianFontApplier.applyForPaint(alreadyStyled, paint));
+            SpannableStringBuilder editable = new SpannableStringBuilder(text);
+            compare(cases, "apply_editable_unchanged", 30, () -> PersianFontApplier.applyToEditable(editable, paint));
+            SpannableStringBuilder formatted = new SpannableStringBuilder(text);
+            for (int start = 0; start < formatted.length(); start += 30) {
+                formatted.setSpan(new StyleSpan(Typeface.BOLD), start, Math.min(start + 8, formatted.length()),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            compare(cases, "apply_formatted_mixed", 30, () -> consumedObject = PersianFontApplier.applyForPaint(formatted, paint));
+            SharedConfig.useVazirmatnFont = true;
+            CharSequence styledFormatted = PersianFontApplier.applyForPaint(formatted, paint);
+            compare(cases, "reapply_formatted_mixed", 30, () -> consumedObject = PersianFontApplier.applyForPaint(styledFormatted, paint));
 
             JSONObject report = new JSONObject();
             report.put("sdk", Build.VERSION.SDK_INT);

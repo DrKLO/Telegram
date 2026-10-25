@@ -23,7 +23,11 @@ public final class PersianFontSpan extends MetricAffectingSpan {
     }
 
     boolean matches(PersianFontSpan other) {
-        return typeface == other.typeface && italic == other.italic;
+        return matches(other.typeface, other.italic);
+    }
+
+    boolean matches(Typeface expectedTypeface, boolean expectedItalic) {
+        return typeface == expectedTypeface && italic == expectedItalic;
     }
 
     @Override

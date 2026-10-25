@@ -10,6 +10,7 @@ import android.text.Editable;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.SpanWatcher;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -155,6 +156,85 @@ public class PersianFontApplierTest {
         assertEquals(source.toString(), cleaned.toString());
         assertEquals(0, cleaned.getSpans(0, cleaned.length(), PersianFontSpan.class).length);
         assertSame(bold, cleaned.getSpans(0, cleaned.length(), StyleSpan.class)[0]);
+    }
+
+    @Test
+    public void unchangedEditableDoesNotNotifySpanWatchers() {
+        SpannableStringBuilder text = new SpannableStringBuilder("\u0633\u0644\u0627\u0645 English \u06f1\u06f2");
+        TextPaint paint = new TextPaint();
+        PersianFontApplier.applyToEditable(text, paint);
+        PersianFontSpan[] original = text.getSpans(0, text.length(), PersianFontSpan.class);
+        int[] notifications = {0};
+        text.setSpan(new SpanWatcher() {
+            @Override public void onSpanAdded(android.text.Spannable text, Object span, int start, int end) { notifications[0]++; }
+            @Override public void onSpanRemoved(android.text.Spannable text, Object span, int start, int end) { notifications[0]++; }
+            @Override public void onSpanChanged(android.text.Spannable text, Object span, int oldStart, int oldEnd, int newStart, int newEnd) { notifications[0]++; }
+        }, 0, text.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        notifications[0] = 0;
+        for (int i = 0; i < 10; i++) {
+            assertSame(text, PersianFontApplier.applyForPaint(text, paint));
+            PersianFontApplier.applyToEditable(text, paint);
+        }
+        assertEquals(0, notifications[0]);
+        assertArrayEquals(original, text.getSpans(0, text.length(), PersianFontSpan.class));
+    }
+
+    @Test
+    public void mutableLinkFormattingIsRecheckedWithoutReplacingTheLink() {
+        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+        URLSpanNoUnderline link = new URLSpanNoUnderline("https://example.org", run);
+        SpannableStringBuilder source = new SpannableStringBuilder("\u0633\u0644\u0627\u0645");
+        source.setSpan(link, 0, source.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        CharSequence styled = PersianFontApplier.applyRegular(source);
+        assertTypeface(styled, PersianFontManager.regular());
+        run.flags = TextStyleSpan.FLAG_STYLE_BOLD | TextStyleSpan.FLAG_STYLE_ITALIC;
+        styled = PersianFontApplier.applyRegular(styled);
+        assertTypeface(styled, PersianFontManager.medium());
+        TextPaint paint = new TextPaint();
+        ((Spanned) styled).getSpans(0, styled.length(), PersianFontSpan.class)[0].updateMeasureState(paint);
+        assertEquals(-0.25f, paint.getTextSkewX(), 0f);
+        assertSame(link, ((Spanned) styled).getSpans(0, styled.length(), URLSpanNoUnderline.class)[0]);
+        run.flags = TextStyleSpan.FLAG_STYLE_MONO;
+        styled = PersianFontApplier.applyRegular(styled);
+        assertEquals(0, ((Spanned) styled).getSpans(0, styled.length(), PersianFontSpan.class).length);
+        run.flags = 0;
+        styled = PersianFontApplier.applyRegular(styled);
+        assertTypeface(styled, PersianFontManager.regular());
+        assertSame(styled, PersianFontApplier.applyRegular(styled));
+    }
+
+    @Test
+    public void editedScriptAndMovedFormattingInvalidateExistingFontRanges() {
+        SpannableStringBuilder text = new SpannableStringBuilder("\u0633\u0644\u0627\u0645 \u062f\u0646\u06cc\u0627");
+        StyleSpan bold = new StyleSpan(Typeface.BOLD);
+        text.setSpan(bold, 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        TextPaint paint = new TextPaint();
+        PersianFontApplier.applyToEditable(text, paint);
+        text.replace(0, 4, "Test");
+        text.setSpan(bold, 5, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Selection.setSelection(text, 2);
+        PersianFontApplier.applyToEditable(text, paint);
+        PersianFontSpan[] fonts = text.getSpans(0, text.length(), PersianFontSpan.class);
+        assertEquals(1, fonts.length);
+        assertEquals(5, text.getSpanStart(fonts[0]));
+        assertEquals(text.length(), text.getSpanEnd(fonts[0]));
+        fonts[0].updateMeasureState(paint);
+        assertSame(PersianFontManager.bold(), paint.getTypeface());
+        assertEquals(2, Selection.getSelectionStart(text));
+        assertEquals("Test \u062f\u0646\u06cc\u0627", text.toString());
+        text.replace(0, text.length(), "English");
+        text.setSpan(bold, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new PersianFontSpan(PersianFontManager.regular()),
+                0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Selection.setSelection(text, 2);
+        PersianFontApplier.applyToEditable(text, new TextPaint());
+        assertEquals(0, text.getSpans(0, text.length(), PersianFontSpan.class).length);
+        assertEquals(2, Selection.getSelectionStart(text));
+        assertSame(bold, text.getSpans(0, text.length(), StyleSpan.class)[0]);
+        SharedConfig.useVazirmatnFont = false;
+        PersianFontApplier.applyToEditable(text, paint);
+        assertEquals(0, text.getSpans(0, text.length(), PersianFontSpan.class).length);
+        assertSame(bold, text.getSpans(0, text.length(), StyleSpan.class)[0]);
     }
 
     @Test

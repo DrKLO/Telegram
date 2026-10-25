@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Editable;
+import android.text.NoCopySpan;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -17,9 +18,12 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public final class PersianFontApplier {
+
+    private static final int STYLE_ITALIC = 4;
 
     private PersianFontApplier() {
     }
@@ -52,33 +56,49 @@ public final class PersianFontApplier {
         if (editable == null) {
             return;
         }
-        CharSequence styledText = applyForPaint(editable, paint);
-        if (styledText == editable) {
+        Typeface original = paint.getTypeface();
+        if (!SharedConfig.useVazirmatnFont || isMonospace(original)) {
+            // Disabling does not need a temporary copy of the entire input.
+            for (PersianFontSpan span : editable.getSpans(0, editable.length(), PersianFontSpan.class)) {
+                editable.removeSpan(span);
+            }
+            return;
+        }
+        int weight = paint.isFakeBoldText() ? 700 : getWeight(original);
+        ArrayList<int[]> ranges = PersianTextUtils.findPersianOrArabicRanges(editable);
+        if (ranges.isEmpty()) {
+            for (PersianFontSpan span : editable.getSpans(0, editable.length(), PersianFontSpan.class)) {
+                editable.removeSpan(span);
+            }
+            return;
+        }
+        FontPlan plan = createPlan(editable, ranges, weight, paint.getTextSkewX() != 0 || isItalic(original));
+        if (plan.matches()) {
             return;
         }
         // Keep unchanged spans to avoid invalidating the entire input on every keystroke.
         HashMap<Long, PersianFontSpan> previous = new HashMap<>();
-        for (PersianFontSpan span : editable.getSpans(0, editable.length(), PersianFontSpan.class)) {
+        for (int i = 0; i < plan.existing.size(); i++) {
+            PersianFontSpan span = plan.existing.get(i);
             long key = rangeKey(editable.getSpanStart(span), editable.getSpanEnd(span));
             PersianFontSpan duplicate = previous.put(key, span);
             if (duplicate != null) {
                 editable.removeSpan(duplicate);
             }
         }
-        if (styledText instanceof Spanned) {
-            Spanned styled = (Spanned) styledText;
-            for (PersianFontSpan span : styled.getSpans(0, styled.length(), PersianFontSpan.class)) {
-                int start = styled.getSpanStart(span);
-                int end = styled.getSpanEnd(span);
-                long key = rangeKey(start, end);
-                PersianFontSpan existing = previous.get(key);
-                if (existing != null && existing.matches(span)
-                        && editable.getSpanFlags(existing) == styled.getSpanFlags(span)
-                        && isLastStyleSpan(editable, existing)) {
-                    previous.remove(key);
-                } else {
-                    editable.setSpan(span, start, end, styled.getSpanFlags(span));
-                }
+        for (int offset = 0; offset < plan.runCount * 3; offset += 3) {
+            int start = plan.runs[offset];
+            int end = plan.runs[offset + 1];
+            int style = plan.runs[offset + 2];
+            long key = rangeKey(start, end);
+            PersianFontSpan existing = previous.get(key);
+            if (existing != null && existing.matches(plan.typefaceForStyle(style), isItalicStyle(style))
+                    && editable.getSpanFlags(existing) == Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    && isLastStyleSpan(editable, existing)) {
+                previous.remove(key);
+            } else {
+                editable.setSpan(new PersianFontSpan(plan.typefaceForStyle(style), isItalicStyle(style)),
+                        start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
         for (PersianFontSpan span : previous.values()) {
@@ -113,41 +133,142 @@ public final class PersianFontApplier {
         if (ranges.isEmpty()) {
             return removeFontSpans(text);
         }
-        SpannableStringBuilder result = new SpannableStringBuilder(text);
-        for (PersianFontSpan span : result.getSpans(0, result.length(), PersianFontSpan.class)) {
-            result.removeSpan(span);
-        }
-        for (int[] range : ranges) {
-            int start = range[0];
-            while (start < range[1]) {
-                int end = result.nextSpanTransition(start, range[1], CharacterStyle.class);
-                applyStyledRange(result, start, end, weight, italic);
-                start = end;
+        if (!(text instanceof Spanned)) {
+            // Plain text has no formatting or previous font spans to reconcile.
+            SpannableStringBuilder result = new SpannableStringBuilder(text);
+            Typeface typeface = weight >= 600 ? PersianFontManager.bold()
+                    : weight >= 500 ? PersianFontManager.medium() : PersianFontManager.regular();
+            for (int[] range : ranges) {
+                result.setSpan(new PersianFontSpan(typeface, italic), range[0], range[1],
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
+            return result;
         }
-        // A second layout pass must not replace equivalent spans.
-        if (text instanceof Spanned && sameFontSpans((Spanned) text, result)) {
+        FontPlan plan = createPlan(text, ranges, weight, italic);
+        // Compare the desired ranges before copying text or allocating font spans.
+        if (plan.matches()) {
             return text;
+        }
+        SpannableStringBuilder result = new SpannableStringBuilder(text);
+        for (int i = 0; i < plan.existing.size(); i++) {
+            result.removeSpan(plan.existing.get(i));
+        }
+        for (int offset = 0; offset < plan.runCount * 3; offset += 3) {
+            int style = plan.runs[offset + 2];
+            result.setSpan(new PersianFontSpan(plan.typefaceForStyle(style), isItalicStyle(style)),
+                    plan.runs[offset], plan.runs[offset + 1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return result;
     }
 
-    private static boolean sameFontSpans(Spanned original, Spanned styled) {
-        PersianFontSpan[] oldSpans = original.getSpans(0, original.length(), PersianFontSpan.class);
-        PersianFontSpan[] newSpans = styled.getSpans(0, styled.length(), PersianFontSpan.class);
-        if (oldSpans.length != newSpans.length) {
-            return false;
-        }
-        for (int i = 0; i < oldSpans.length; i++) {
-            if (!oldSpans[i].matches(newSpans[i])
-                    || original.getSpanStart(oldSpans[i]) != styled.getSpanStart(newSpans[i])
-                    || original.getSpanEnd(oldSpans[i]) != styled.getSpanEnd(newSpans[i])
-                    || original.getSpanFlags(oldSpans[i]) != styled.getSpanFlags(newSpans[i])
-                    || !isLastStyleSpan(original, oldSpans[i])) {
-                return false;
+    private static FontPlan createPlan(CharSequence text, ArrayList<int[]> ranges, int weight, boolean italic) {
+        FontPlan plan = new FontPlan(text, ranges.size());
+        for (int[] range : ranges) {
+            int start = range[0];
+            while (start < range[1]) {
+                int end = range[1];
+                for (int i = 0; i < plan.formatting.size(); i++) {
+                    FormattingSpan span = plan.formatting.get(i);
+                    if (span.span instanceof NoCopySpan) {
+                        continue;
+                    }
+                    if (span.start > start && span.start < end) end = span.start;
+                    if (span.end > start && span.end < end) end = span.end;
+                }
+                int style = resolveStyle(plan.formatting, start, end, weight, italic);
+                if (style != 0) {
+                    plan.addRun(start, end, style);
+                }
+                start = end;
             }
         }
-        return true;
+        return plan;
+    }
+
+    private static final class FormattingSpan {
+        final CharacterStyle span;
+        final int start, end, fontsBefore;
+
+        FormattingSpan(CharacterStyle span, Spanned text, int fontsBefore) {
+            this.span = span;
+            start = text.getSpanStart(span);
+            end = text.getSpanEnd(span);
+            this.fontsBefore = fontsBefore;
+        }
+
+        boolean overlaps(int runStart, int runEnd) {
+            return start < runEnd && end > runStart && start != end;
+        }
+    }
+
+    private static final class FontPlan {
+        final Spanned source;
+        // Compact triples avoid one object per word on every measurement pass.
+        int[] runs;
+        int runCount;
+        final ArrayList<PersianFontSpan> existing = new ArrayList<>();
+        final ArrayList<FormattingSpan> formatting = new ArrayList<>();
+        private final Typeface[] typefaces = new Typeface[4];
+
+        FontPlan(CharSequence text, int rangeCount) {
+            runs = new int[Math.max(3, rangeCount * 3)];
+            source = text instanceof Spanned ? (Spanned) text : null;
+            if (source != null) {
+                // One ordered snapshot also records which styles follow each font.
+                for (CharacterStyle span : source.getSpans(0, source.length(), CharacterStyle.class)) {
+                    if (span instanceof PersianFontSpan) {
+                        existing.add((PersianFontSpan) span);
+                    } else {
+                        formatting.add(new FormattingSpan(span, source, existing.size()));
+                    }
+                }
+            }
+        }
+
+        boolean matches() {
+            if (existing.size() != runCount) {
+                return false;
+            }
+            for (int i = 0; i < runCount; i++) {
+                int offset = i * 3;
+                int start = runs[offset];
+                int end = runs[offset + 1];
+                int style = runs[offset + 2];
+                PersianFontSpan span = existing.get(i);
+                if (source.getSpanStart(span) != start || source.getSpanEnd(span) != end
+                        || source.getSpanFlags(span) != Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        || !span.matches(typefaceForStyle(style), isItalicStyle(style))) {
+                    return false;
+                }
+                for (int j = 0; j < formatting.size(); j++) {
+                    FormattingSpan formattingSpan = formatting.get(j);
+                    if (formattingSpan.fontsBefore > i && formattingSpan.overlaps(start, end)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        void addRun(int start, int end, int style) {
+            int offset = runCount * 3;
+            if (offset + 3 > runs.length) {
+                runs = Arrays.copyOf(runs, Math.max(offset + 3, runs.length * 2));
+            }
+            runs[offset] = start;
+            runs[offset + 1] = end;
+            runs[offset + 2] = style;
+            runCount++;
+        }
+
+        Typeface typefaceForStyle(int style) {
+            int weight = style & ~STYLE_ITALIC;
+            if (typefaces[weight] == null) {
+                typefaces[weight] = weight == 3 ? PersianFontManager.bold()
+                        : weight == 2 ? PersianFontManager.medium() : PersianFontManager.regular();
+            }
+            return typefaces[weight];
+        }
     }
 
     private static boolean isLastStyleSpan(Spanned text, PersianFontSpan fontSpan) {
@@ -164,14 +285,15 @@ public final class PersianFontApplier {
         return found;
     }
 
-    private static void applyStyledRange(SpannableStringBuilder text, int start, int end,
-                                        int weight, boolean italic) {
+    private static int resolveStyle(ArrayList<FormattingSpan> formatting, int start, int end,
+                                    int weight, boolean italic) {
         boolean keepOriginalFont = false;
-        for (CharacterStyle span : text.getSpans(start, end, CharacterStyle.class)) {
-            if (text.getSpanStart(span) == text.getSpanEnd(span)) {
+        for (int i = 0; i < formatting.size(); i++) {
+            FormattingSpan span = formatting.get(i);
+            if (!span.overlaps(start, end) || span.span instanceof NoCopySpan) {
                 continue;
             }
-            CharacterStyle underlying = span.getUnderlying();
+            CharacterStyle underlying = span.span.getUnderlying();
             if (underlying instanceof URLSpanMono || underlying instanceof CodeHighlighting.Span
                     || underlying instanceof ReplacementSpan && !(underlying instanceof EmptyStubSpan)) {
                 keepOriginalFont = true;
@@ -218,12 +340,12 @@ public final class PersianFontApplier {
                 italic |= (style & Typeface.ITALIC) != 0;
             }
         }
-        if (!keepOriginalFont) {
-            Typeface typeface = weight >= 600 ? PersianFontManager.bold()
-                    : weight >= 500 ? PersianFontManager.medium() : PersianFontManager.regular();
-            text.setSpan(new PersianFontSpan(typeface, italic), start, end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
+        return keepOriginalFont ? 0 : (weight >= 600 ? 3 : weight >= 500 ? 2 : 1)
+                | (italic ? STYLE_ITALIC : 0);
+    }
+
+    private static boolean isItalicStyle(int style) {
+        return (style & STYLE_ITALIC) != 0;
     }
 
     private static boolean isMonospace(Typeface typeface) {
