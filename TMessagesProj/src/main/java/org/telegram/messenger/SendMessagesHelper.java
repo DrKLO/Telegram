@@ -10123,10 +10123,17 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     mediaCount++;
                     long prevGroupId = groupId[0];
-                    error = prepareSendingDocumentInternal(accountInstance, paths.get(a), originalPaths.get(a), null, mime, dialogId, replyToMsg, replyToTopMsg, storyItem, quote, a == 0 ? captionEntities : null, editingMessageObject, groupId, !forcedPollDoNotSendFinal && (pollSendParams == null && mediaCount == 10 || a == count - 1), captionFinal, notify, scheduleDate, scheduleRepeatPeriod, docType, inputContent == null, sendMessageChatArguments, first ? effectId : 0, invertMedia, payStars, monoForumPeerId, suggestionParams, pollSendParams, pollSendIndexes!= null ? pollSendIndexes.get(a) : -1);
+                    final boolean isGroupFinal = !forcedPollDoNotSendFinal && (pollSendParams == null && mediaCount == 10 || a == count - 1);
+                    error = prepareSendingDocumentInternal(accountInstance, paths.get(a), originalPaths.get(a), null, mime, dialogId, replyToMsg, replyToTopMsg, storyItem, quote, a == 0 ? captionEntities : null, editingMessageObject, groupId, isGroupFinal, captionFinal, notify, scheduleDate, scheduleRepeatPeriod, docType, inputContent == null, sendMessageChatArguments, first ? effectId : 0, invertMedia, payStars, monoForumPeerId, suggestionParams, pollSendParams, pollSendIndexes!= null ? pollSendIndexes.get(a) : -1);
                     first = false;
                     if (prevGroupId != groupId[0] || groupId[0] == -1) {
                         mediaCount = 1;
+                    }
+                    if (error != 0 && isGroupFinal && pollSendParams == null && groupId[0] != 0) {
+                        // the file that should have closed the group was not sent, close it with the files already queued
+                        finishGroup(accountInstance, groupId[0], scheduleDate);
+                        groupId[0] = 0;
+                        mediaCount = 0;
                     }
                 }
             }
@@ -10146,10 +10153,17 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     mediaCount++;
                     long prevGroupId = groupId[0];
-                    error = prepareSendingDocumentInternal(accountInstance, null, null, uris.get(a), mime, dialogId, replyToMsg, replyToTopMsg, storyItem, quote, captionEntitiesFinal, editingMessageObject, groupId, !forcedPollDoNotSendFinal && (pollSendParams == null && mediaCount == 10 || a == count - 1), captionFinal, notify, scheduleDate, scheduleRepeatPeriod, docType, inputContent == null, sendMessageChatArguments, first ? effectId : 0, invertMedia, payStars, monoForumPeerId, suggestionParams, pollSendParams, pollSendUriIndexes != null ? pollSendUriIndexes.get(a) : -1);
+                    final boolean isGroupFinal = !forcedPollDoNotSendFinal && (pollSendParams == null && mediaCount == 10 || a == count - 1);
+                    error = prepareSendingDocumentInternal(accountInstance, null, null, uris.get(a), mime, dialogId, replyToMsg, replyToTopMsg, storyItem, quote, captionEntitiesFinal, editingMessageObject, groupId, isGroupFinal, captionFinal, notify, scheduleDate, scheduleRepeatPeriod, docType, inputContent == null, sendMessageChatArguments, first ? effectId : 0, invertMedia, payStars, monoForumPeerId, suggestionParams, pollSendParams, pollSendUriIndexes != null ? pollSendUriIndexes.get(a) : -1);
                     first = false;
                     if (prevGroupId != groupId[0] || groupId[0] == -1) {
                         mediaCount = 1;
+                    }
+                    if (error != 0 && isGroupFinal && pollSendParams == null && groupId[0] != 0) {
+                        // the file that should have closed the group was not sent, close it with the files already queued
+                        finishGroup(accountInstance, groupId[0], scheduleDate);
+                        groupId[0] = 0;
+                        mediaCount = 0;
                     }
                 }
             }

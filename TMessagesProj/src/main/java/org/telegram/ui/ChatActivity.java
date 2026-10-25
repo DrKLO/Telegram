@@ -20509,40 +20509,84 @@ public class ChatActivity extends BaseFragment implements
         if (uri == null) {
             return;
         }
-        String extractUriFrom = uri.toString();
-        if (extractUriFrom.contains("com.google.android.apps.photos.contentprovider")) {
-            try {
-                String firstExtraction = extractUriFrom.split("/1/")[1];
-                int index = firstExtraction.indexOf("/ACTUAL");
-                if (index != -1) {
-                    firstExtraction = firstExtraction.substring(0, index);
-                    String secondExtraction = URLDecoder.decode(firstExtraction, "UTF-8");
-                    uri = Uri.parse(secondExtraction);
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+        ArrayList<Uri> uris = new ArrayList<>();
+        uris.add(uri);
+        sendUrisAsDocuments(uris, notify, schedule_date);
+    }
+
+    private void sendClipDataAsDocuments(ClipData clipData) {
+        sendClipDataAsDocuments(clipData, true, 0);
+    }
+
+    private void sendClipDataAsDocuments(ClipData clipData, boolean notify, int schedule_date) {
+        if (editingMessageObject != null) {
+            // the first file replaces the edited media, the rest are sent as new messages
+            for (int i = 0; i < clipData.getItemCount(); i++) {
+                sendUriAsDocument(clipData.getItemAt(i).getUri(), notify, schedule_date);
+            }
+            return;
+        }
+        ArrayList<Uri> uris = new ArrayList<>();
+        for (int i = 0; i < clipData.getItemCount(); i++) {
+            Uri uri = clipData.getItemAt(i).getUri();
+            if (uri != null) {
+                uris.add(uri);
             }
         }
-        String tempPath = AndroidUtilities.getPath(uri);
-        String originalPath = tempPath;
-        boolean sendAsUri = false;
-        if (!BuildVars.NO_SCOPED_STORAGE) {
-            sendAsUri = true;
-        } else if (tempPath == null) {
-            originalPath = uri.toString();
-            tempPath = MediaController.copyFileToCache(uri, "file");
+        sendUrisAsDocuments(uris, notify, schedule_date);
+    }
 
-            if (tempPath == null) {
-                showAttachmentError();
-                return;
+    private void sendUrisAsDocuments(ArrayList<Uri> uris, boolean notify, int schedule_date) {
+        ArrayList<String> paths = null;
+        ArrayList<String> originalPaths = null;
+        ArrayList<Uri> sendUris = null;
+        for (int a = 0; a < uris.size(); a++) {
+            Uri uri = uris.get(a);
+            String extractUriFrom = uri.toString();
+            if (extractUriFrom.contains("com.google.android.apps.photos.contentprovider")) {
+                try {
+                    String firstExtraction = extractUriFrom.split("/1/")[1];
+                    int index = firstExtraction.indexOf("/ACTUAL");
+                    if (index != -1) {
+                        firstExtraction = firstExtraction.substring(0, index);
+                        String secondExtraction = URLDecoder.decode(firstExtraction, "UTF-8");
+                        uri = Uri.parse(secondExtraction);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
             }
+            if (!BuildVars.NO_SCOPED_STORAGE) {
+                if (sendUris == null) {
+                    sendUris = new ArrayList<>();
+                }
+                sendUris.add(uri);
+                continue;
+            }
+            String tempPath = AndroidUtilities.getPath(uri);
+            String originalPath = tempPath;
+            if (tempPath == null) {
+                originalPath = uri.toString();
+                tempPath = MediaController.copyFileToCache(uri, "file");
+
+                if (tempPath == null) {
+                    showAttachmentError();
+                    continue;
+                }
+            }
+            if (paths == null) {
+                paths = new ArrayList<>();
+                originalPaths = new ArrayList<>();
+            }
+            paths.add(tempPath);
+            originalPaths.add(originalPath);
+        }
+        if (paths == null && sendUris == null) {
+            return;
         }
         fillEditingMediaWithCaption(null, null);
-        if (sendAsUri) {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), null, null, uri, null, null, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, editingMessageObject, notify, schedule_date, null, getMessageChatSendParams(), false);
-        } else {
-            SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, editingMessageObject, notify, schedule_date, null, getMessageChatSendParams(), false);
-        }
+        // send all picked files in one call, so that they are grouped into a single album
+        SendMessagesHelper.prepareSendingDocuments(getAccountInstance(), paths, originalPaths, sendUris, null, null, dialog_id, replyingMessageObject, getThreadMessage(), null, replyingQuote, editingMessageObject, notify, schedule_date, null, getMessageChatSendParams(), 0, false, 0);
         hideFieldPanel(false);
     }
 
@@ -20617,10 +20661,7 @@ public class ChatActivity extends BaseFragment implements
                         }
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate, scheduleRepeatPeriod) -> {
                             fillEditingMediaWithCaption(null, null);
-                            ClipData clipData = data.getClipData();
-                            for (int i = 0; i < clipData.getItemCount(); i++) {
-                                sendUriAsDocument(clipData.getItemAt(i).getUri(), notify, scheduleDate);
-                            }
+                            sendClipDataAsDocuments(data.getClipData(), notify, scheduleDate);
                             afterMessageSend();
                         }, themeDelegate);
                         return;
@@ -20632,10 +20673,7 @@ public class ChatActivity extends BaseFragment implements
                     if (data.getData() != null) {
                         sendUriAsDocument(data.getData());
                     } else if (data.getClipData() != null) {
-                        ClipData clipData = data.getClipData();
-                        for (int i = 0; i < clipData.getItemCount(); i++) {
-                            sendUriAsDocument(clipData.getItemAt(i).getUri());
-                        }
+                        sendClipDataAsDocuments(data.getClipData());
                     } else {
                         showAttachmentError();
                     }
