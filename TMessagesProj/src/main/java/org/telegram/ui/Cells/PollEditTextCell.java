@@ -21,6 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -30,12 +31,14 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -86,6 +89,119 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
     private AnimatorSet checkBoxAnimation;
     private boolean alwaysShowText2;
     private ChatActivityEnterViewAnimatedIconView emojiButton;
+    private ReorderDelegate reorderDelegate;
+
+    /**
+     * Rows are put in order by holding a press and dragging, which leaves a screen reader with no
+     * way to do it at all. The two actions offered on the field do the same thing a drag does. Each
+     * screen says where its rows are and how two of them change places; which row can go where is
+     * worked out here, once for all of them.
+     */
+    public static abstract class ReorderDelegate {
+        /** The place in the list of the first row that can be put in order, or -1. */
+        protected abstract int getFirstRow();
+
+        /** How many rows there are to put in order. */
+        protected abstract int getCount();
+
+        /** Rows before this one stay where they are. */
+        protected int getFirstMovable() {
+            return 0;
+        }
+
+        /** Swaps two rows, given by their places in the list, the way a drag does. */
+        protected abstract void swap(int fromPosition, int toPosition);
+
+        private int indexOf(PollEditTextCell cell) {
+            if (!(cell.getParent() instanceof RecyclerView) || getFirstRow() < 0) {
+                return -1;
+            }
+            final int position = ((RecyclerView) cell.getParent()).getChildAdapterPosition(cell);
+            return position == RecyclerView.NO_POSITION ? -1 : position - getFirstRow();
+        }
+
+        private boolean isMovable(int index) {
+            return index >= getFirstMovable() && index >= 0 && index < getCount();
+        }
+
+        public boolean canMoveUp(PollEditTextCell cell) {
+            final int index = indexOf(cell);
+            return isMovable(index) && isMovable(index - 1);
+        }
+
+        public boolean canMoveDown(PollEditTextCell cell) {
+            final int index = indexOf(cell);
+            return isMovable(index) && isMovable(index + 1);
+        }
+
+        public void moveUp(PollEditTextCell cell) {
+            move(cell, -1);
+        }
+
+        public void moveDown(PollEditTextCell cell) {
+            move(cell, 1);
+        }
+
+        private void move(PollEditTextCell cell, int by) {
+            final int index = indexOf(cell);
+            if (!isMovable(index) || !isMovable(index + by)) {
+                return;
+            }
+            final View list = (View) cell.getParent();
+            swap(getFirstRow() + index, getFirstRow() + index + by);
+            list.announceForAccessibility(LocaleController.formatString(R.string.AccDescrPollOptionMoved, index + 1 + by, getCount()));
+        }
+    }
+
+    // the actions go on the field rather than on the handle beside it, because the field is what
+    // a screen reader stops at
+    public void setReorderDelegate(ReorderDelegate delegate) {
+        reorderDelegate = delegate;
+        if (delegate != null) {
+            installFieldAccessibilityDelegate();
+        }
+    }
+
+    private boolean fieldAccessibilityDelegateInstalled;
+
+    // everything a screen reader is told about the field goes through the one delegate, so that
+    // nothing added to it later wipes out what is already there
+    private void installFieldAccessibilityDelegate() {
+        if (fieldAccessibilityDelegateInstalled) {
+            return;
+        }
+        fieldAccessibilityDelegateInstalled = true;
+        textView.setAccessibilityDelegate(new AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                if (reorderDelegate == null) {
+                    return;
+                }
+                if (reorderDelegate.canMoveUp(PollEditTextCell.this)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_up, LocaleController.getString(R.string.AccActionMoveUp)));
+                }
+                if (reorderDelegate.canMoveDown(PollEditTextCell.this)) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_move_down, LocaleController.getString(R.string.AccActionMoveDown)));
+                }
+            }
+
+            @Override
+            public boolean performAccessibilityAction(View host, int action, Bundle args) {
+                if (reorderDelegate != null) {
+                    if (action == R.id.acc_action_move_up && reorderDelegate.canMoveUp(PollEditTextCell.this)) {
+                        reorderDelegate.moveUp(PollEditTextCell.this);
+                        return true;
+                    }
+                    if (action == R.id.acc_action_move_down && reorderDelegate.canMoveDown(PollEditTextCell.this)) {
+                        reorderDelegate.moveDown(PollEditTextCell.this);
+                        return true;
+                    }
+                }
+                return super.performAccessibilityAction(host, action, args);
+            }
+        });
+    }
 
     public PollEditTextCell(Context context, OnClickListener onDelete) {
         this(context, false, TYPE_DEFAULT, onDelete);
