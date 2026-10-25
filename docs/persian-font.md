@@ -73,21 +73,44 @@ TextPaint's typeface globally, as that would affect Latin text too.
 
 ## Validation
 
+From the repository root, run the repeatable source checks with a JDK 17 or
+newer and PowerShell:
+
+```powershell
+powershell -NoProfile -File Tools/check-persian-font.ps1
+```
+
+The script parses changed application/instrumentation Java files, compiles and
+runs the standalone range suite, checks changed resource XML, reports asset
+hashes/size and checks diff whitespace against the pinned upstream base. It
+includes untracked source files. It does not invoke Gradle, adb or the app.
+Pass `-BaseRef <revision>` when deliberately reviewing against another base.
+Generated check files stay under `build/font-check/review`.
+The script also writes `result.json` with the base/HEAD revisions, per-input
+SHA-256 hashes and source-check results. Keep that snapshot with device logs
+when testing uncommitted changes; a HEAD revision alone does not identify a
+dirty working tree. Git line-ending warnings are suppressed per invocation,
+without changing repository or global Git configuration.
+
 The instrumentation suite is
 `org.telegram.ui.Components.PersianFontApplierTest` in TMessagesProj_AppTests.
-It contains 27 tests covering bundled fonts, script boundaries, formatting,
+It contains 30 tests covering bundled fonts, script boundaries, formatting,
 links, code, replacement spans, repeat application, disabling, selection, IME
 composition, native text-view variants, rich input without a page delegate,
 folder-title refresh, Canvas cache/rendering behavior, weight consistency,
 Persian-digit counter refresh and placeholders, bot-ad text surfaces, optical
 sizing, animated proxy subtitles, and bot-menu rendering with both scripts and
 both font settings, dedicated/contextual punctuation, formatting exclusions,
-and animated punctuation fragments.
+animated punctuation fragments, and archive pull/release labels refreshed at
+the same width after font toggles, and mixed-script avatar initials refreshed
+after font toggles and text-size changes without styling Latin initials.
+Attachment-progress coverage checks localized and Latin digits across document,
+voice, music, video and GIF types, cached reuse, measured widths and font toggles
+at unchanged byte counts.
 
-The latest punctuation/animation changes have only been parsed for Java syntax and
-checked for diff whitespace. The updated instrumentation suite has not been
-executed against this source state. A passing build or an older test run does
-not validate these latest changes. See
+The Android rendering changes have passed Java syntax, diff whitespace and
+Debug Java compilation checks; the standalone detector tests also passed.
+Earlier Debug/Release APKs predate the story/pull-up/call follow-ups. See
 [persian-font-review.md](persian-font-review.md) for outstanding release evidence.
 
 
@@ -101,8 +124,10 @@ javac -encoding UTF-8 -d build/font-check/punctuation-tests TMessagesProj/src/ma
 java -cp build/font-check/punctuation-tests PersianTextUtilsTest
 ```
 
-These standalone checks passed. The updated Android instrumentation tests have
-not been executed.
+These standalone checks passed. All 30 Android instrumentation tests also
+passed on the dedicated API 36 emulator at font scales 1.0 and 1.5. See
+[persian-font-validation.md](persian-font-validation.md) for build identity,
+fixture corrections, performance measurements and remaining device checks.
 
 On Windows PowerShell, quote the entire Gradle project-property argument:
 
@@ -137,3 +162,13 @@ adb shell am instrument -w -r -e class org.telegram.ui.Components.PersianFontApp
 This uses the separate `.web` test host. Check the instrumentation output for
 the actual test count and failures; the command's shell exit code alone does
 not establish success.
+
+`PersianFontPerformanceTest` is a separate comparative microbenchmark for
+applying fonts, wrapped layouts, repeated styling and warm Canvas measurements.
+It alternates the off/on order and reports median elapsed time over nine
+rounds. The optional ART allocation counter is process-wide and includes
+background activity. These results are not scroll/typing frame timings or
+performance acceptance thresholds. Run it in the dedicated test host after
+the correctness suite, never on a device being used for manual testing.
+The test host requires API 26; application behavior on API 23-25 therefore
+still needs separate device validation.
