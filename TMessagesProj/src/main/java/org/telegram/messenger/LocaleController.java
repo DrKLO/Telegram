@@ -1456,7 +1456,7 @@ public class LocaleController {
         if (value == null) {
             value = getInstance().getLocalizedString(key);
         }
-        return value;
+        return KiteBranding.apply(value);
     }
 
     public static String getString(@StringRes int res) {
@@ -1576,6 +1576,7 @@ public class LocaleController {
             if (value == null) {
                 value = getInstance().getLocalizedString(key + "_other");
             }
+            value = KiteBranding.apply(value);
             value = value.replace("%d", "%1$s");
             value = value.replace("%1$d", "%1$s");
 
@@ -4442,8 +4443,21 @@ public class LocaleController {
 
     @Nullable
     private String getStringV2(String key, @StringRes int stringRes, String fallback) {
+        return KiteBranding.apply(getStringV2Raw(key, stringRes, fallback));
+    }
+
+    @Nullable
+    private String getStringV2Raw(String key, @StringRes int stringRes, String fallback) {
         final Context context = ApplicationLoader.applicationContext;
         String value;
+
+        // The app name comes from our resources, not from cloud language packs.
+        if (stringRes == R.string.AppName || "AppName".equals(key)) {
+            return context.getString(R.string.AppName);
+        }
+        if (stringRes == R.string.AppNameBeta || "AppNameBeta".equals(key)) {
+            return context.getString(R.string.AppNameBeta);
+        }
 
         if (BuildVars.USE_CLOUD_STRINGS) {
             value = localizationExternal.getByResNameOrResId(context, key, stringRes);

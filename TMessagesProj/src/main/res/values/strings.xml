@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Kite</string>
+    <string name="AppNameBeta">Kite</string>
+    <string name="KiteCheckUpdate">Check for Kite updates</string>
+    <string name="KiteBuildNumber">Build %1$d</string>
+    <string name="KiteUpdateLatest">You have the latest version of Kite.</string>
+    <string name="KiteUpdateCheckFailed">Could not check for updates. Check your internet connection.</string>
+    <string name="KiteKeepDeleted">Keep deleted messages</string>
+    <string name="KiteKeepDeletedInfo">Messages, photos, videos and files that others delete stay in the chat with a “deleted” mark. Media is kept if it was loaded before deletion.</string>
+    <string name="KiteDeletedMark">deleted</string>
+    <string name="KiteChannelPromptTitle">Kite news</string>
+    <string name="KiteChannelPromptText">Subscribe to the Kite channel to get news, updates and tips about the app.</string>
+    <string name="KiteChannelPromptSubscribe">Subscribe</string>
+    <string name="KiteChannelPromptNotNow">Not now</string>
+    <string name="KiteChannelPromptDone">You joined the Kite channel</string>
+    <string name="KiteChannelPromptFailed">Could not open the Kite channel</string>
+    <string name="KiteUpdateTitle">Kite update</string>
+    <string name="KiteUpdateText">A new version of Kite is available (build %1$d). Install it now?</string>
+    <string name="KiteUpdateInstall">Update</string>
+    <string name="KiteUpdateLater">Later</string>
+    <string name="KiteUpdateDownloading">Downloading the update…</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>

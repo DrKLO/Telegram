@@ -1,0 +1,84 @@
+name: Build APK
+
+# Builds the Kite release APK (arm64) and publishes it as a GitHub Release,
+# so the latest build is always at
+# https://github.com/Garricho/kite-android/releases/latest/download/Kite.apk
+#
+# Needs repository secrets TG_API_ID and TG_API_HASH
+# (Settings → Secrets and variables → Actions).
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Write local.properties
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if [ -z "$TG_API_ID" ] || [ -z "$TG_API_HASH" ]; then
+            echo "::error::Add TG_API_ID and TG_API_HASH in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "TG_API_ID=$TG_API_ID"
+            echo "TG_API_HASH=$TG_API_HASH"
+            echo "KITE_ABIS=arm64-v8a"
+          } > local.properties
+
+      - name: Build
+        env:
+          # Only master builds are published, so only they enable the in-app updater.
+          KITE_BUILD: ${{ github.event_name == 'pull_request' && '0' || github.run_number }}
+        run: ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
+
+      - name: Collect APK
+        run: |
+          apk=$(find TMessagesProj_App/build/outputs/apk/afat/release -name '*.apk' | head -n 1)
+          test -n "$apk"
+          cp "$apk" Kite.apk
+          ls -lh Kite.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kite-apk
+          path: Kite.apk
+
+      - name: Publish release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Kite build ${{ github.run_number }}
+          body: Built from ${{ github.sha }}.
+          files: Kite.apk
+          make_latest: true

@@ -15,6 +15,16 @@ configurations.all {
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
 }
 
+def kiteAbis() {
+    def all = ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+    def propsFile = rootProject.file('local.properties')
+    if (!propsFile.exists()) return all
+    def props = new Properties()
+    propsFile.withInputStream { props.load(it) }
+    def value = props.getProperty("KITE_ABIS", "").trim()
+    return value ? value.split(",")*.trim() : all
+}
+
 dependencies {
     implementation project(':TMessagesProj')
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
@@ -131,7 +141,9 @@ android {
         }
         afat {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                // Building native code for all ABIs is slow. For a quick
+                // local build set e.g. KITE_ABIS=arm64-v8a in local.properties.
+                abiFilters(*kiteAbis())
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'

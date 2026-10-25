@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Kite</string>
+    <string name="AppNameBeta">Kite</string>
+    <string name="KiteCheckUpdate">Проверить обновление Kite</string>
+    <string name="KiteBuildNumber">Сборка %1$d</string>
+    <string name="KiteUpdateLatest">У вас последняя версия Kite.</string>
+    <string name="KiteUpdateCheckFailed">Не удалось проверить обновление. Проверьте интернет.</string>
+    <string name="KiteKeepDeleted">Сохранять удалённые сообщения</string>
+    <string name="KiteKeepDeletedInfo">Сообщения, фото, видео и файлы, которые удалили другие, останутся в чате с пометкой «удалено». Медиа сохраняется, если успело загрузиться до удаления.</string>
+    <string name="KiteDeletedMark">удалено</string>
+    <string name="KiteChannelPromptTitle">Новости Kite</string>
+    <string name="KiteChannelPromptText">Подпишитесь на канал Kite, чтобы узнавать о новостях, обновлениях и полезных функциях приложения.</string>
+    <string name="KiteChannelPromptSubscribe">Подписаться</string>
+    <string name="KiteChannelPromptNotNow">Не сейчас</string>
+    <string name="KiteChannelPromptDone">Вы подписались на канал Kite</string>
+    <string name="KiteChannelPromptFailed">Не удалось открыть канал Kite</string>
+    <string name="KiteUpdateTitle">Обновление Kite</string>
+    <string name="KiteUpdateText">Доступна новая версия Kite (сборка %1$d). Установить сейчас?</string>
+    <string name="KiteUpdateInstall">Обновить</string>
+    <string name="KiteUpdateLater">Позже</string>
+    <string name="KiteUpdateDownloading">Загружаем обновление…</string>
     <string name="LanguageName">Русский</string>
     <string name="English">Английский</string>
     <string name="LanguageNameInEnglish">Russian</string>
