@@ -2,6 +2,10 @@
 <resources>
     <string name="AppName">Kite</string>
     <string name="AppNameBeta">Kite</string>
+    <string name="KiteCheckUpdate">Проверить обновление Kite</string>
+    <string name="KiteBuildNumber">Сборка %1$d</string>
+    <string name="KiteUpdateLatest">У вас последняя версия Kite.</string>
+    <string name="KiteUpdateCheckFailed">Не удалось проверить обновление. Проверьте интернет.</string>
     <string name="KiteKeepDeleted">Сохранять удалённые сообщения</string>
     <string name="KiteKeepDeletedInfo">Сообщения, фото, видео и файлы, которые удалили другие, останутся в чате с пометкой «удалено». Медиа сохраняется, если успело загрузиться до удаления.</string>
     <string name="KiteDeletedMark">удалено</string>
