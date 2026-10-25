@@ -3,7 +3,7 @@
 Usage: BOT_TOKEN=123:abc CHAT_ID=-100123456 python3 fill_chat.py [BOT_TOKEN_2]
 Optional 2nd token (env BOT_TOKEN2): a second bot speaks as a second person so it looks like two people.
 Needs: python3 + matplotlib (pip install matplotlib). No other deps."""
-import os, sys, json, time, uuid, urllib.request
+import os, sys, json, time, uuid, urllib.request, urllib.error
 
 T1 = os.environ["BOT_TOKEN"]; T2 = os.environ.get("BOT_TOKEN2", T1); CHAT = os.environ["CHAT_ID"]
 
@@ -19,7 +19,11 @@ def api(tok, method, data=None, files=None):
         req = urllib.request.Request(url, body, {"Content-Type": f"multipart/form-data; boundary={b}"})
     else:
         req = urllib.request.Request(url, json.dumps(data).encode(), {"Content-Type": "application/json"})
-    r = json.load(urllib.request.urlopen(req)); time.sleep(1.1)
+    try:
+        r = json.load(urllib.request.urlopen(req))
+    except urllib.error.HTTPError as e:
+        sys.exit(f"Telegram error {e.code}: {e.read().decode()}")
+    time.sleep(1.1)
     return r["result"]
 
 def chart(kind):
