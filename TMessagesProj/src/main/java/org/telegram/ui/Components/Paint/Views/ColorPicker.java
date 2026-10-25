@@ -94,6 +94,7 @@ public class ColorPicker extends FrameLayout {
         settingsButton.setContentDescription(LocaleController.getString(R.string.AccDescrBrushType));
         settingsButton.setScaleType(ImageView.ScaleType.CENTER);
         settingsButton.setImageResource(R.drawable.photo_paint_brush);
+        setContentDescription(LocaleController.getString(R.string.AccDescrPaintColors));
         addView(settingsButton, LayoutHelper.createFrame(46, 52));
         settingsButton.setOnClickListener(v -> {
             if (delegate != null) {
