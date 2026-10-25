@@ -16921,7 +16921,48 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         if (replyThreadDrawer == null) {
-            replyThreadDrawer = new ReplyThreadDrawer(chatListView, themeDelegate);
+            replyThreadDrawer = new ReplyThreadDrawer(chatListView, themeDelegate, new ReplyThreadDrawer.ChainProvider() {
+                @Override
+                public int getReplyTarget(int messageId) {
+                    MessageObject object = messagesDict[0].get(messageId);
+                    return object != null ? object.getReplyMsgId() : 0;
+                }
+
+                private float fractionOfIndex(int index, int count) {
+                    return count <= 1 ? 0.5f : 1f - index / (float) (count - 1);
+                }
+
+                @Override
+                public float getMessageFraction(int messageId) {
+                    MessageObject object = messagesDict[0].get(messageId);
+                    if (object == null || chatAdapter == null) {
+                        return -1f;
+                    }
+                    ArrayList<MessageObject> messages = chatAdapter.getMessages();
+                    int index = messages.indexOf(object);
+                    return index < 0 ? -1f : fractionOfIndex(index, messages.size());
+                }
+
+                @Override
+                public void getViewport(float[] out) {
+                    out[0] = 0f;
+                    out[1] = 1f;
+                    if (chatAdapter == null || chatLayoutManager == null) {
+                        return;
+                    }
+                    int count = chatAdapter.getMessages().size();
+                    if (count <= 0) {
+                        return;
+                    }
+                    int first = chatLayoutManager.findFirstVisibleItemPosition() - chatAdapter.messagesStartRow;
+                    int last = chatLayoutManager.findLastVisibleItemPosition() - chatAdapter.messagesStartRow;
+                    first = Math.max(0, Math.min(count - 1, first));
+                    last = Math.max(0, Math.min(count - 1, last));
+                    // the list is reversed: the highest index is the oldest message at the top
+                    out[0] = fractionOfIndex(last, count);
+                    out[1] = fractionOfIndex(first, count);
+                }
+            });
         }
         boolean above = targetId < cell.getMessageObject().getId();
         if (isSecretChat()) {
