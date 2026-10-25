@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fills a Telegram group with a scripted science discussion (long reply chains + charts).
 Usage: BOT_TOKEN=123:abc CHAT_ID=-100123456 python3 fill_chat.py [BOT_TOKEN_2]
-Optional 2nd token (env BOT_TOKEN2): a second bot speaks as "reviewer" so it looks like two people.
+Optional 2nd token (env BOT_TOKEN2): a second bot speaks as a second person so it looks like two people.
 Needs: python3 + matplotlib (pip install matplotlib). No other deps."""
 import os, sys, json, time, uuid, urllib.request
 
@@ -29,42 +29,42 @@ def chart(kind):
     x = np.linspace(0, 10, 200)
     if kind == "qubit":
         for i, c in enumerate(["#4c8bf5", "#f5a14c", "#5cc98a"]):
-            ax.plot(x, np.exp(-x / (2 + 2 * i)) * np.cos(3 * x), c, label=f"T2 = {2+2*i} мкс")
-        ax.set_title("Когерентность кубита"); ax.set_xlabel("время, мкс"); ax.legend()
+            ax.plot(x, np.exp(-x / (2 + 2 * i)) * np.cos(3 * x), c, label=f"T2 = {2+2*i} µs")
+        ax.set_title("Qubit coherence"); ax.set_xlabel("time, µs"); ax.legend()
     elif kind == "crispr":
         ax.bar(["Cas9", "Cas12", "base", "prime"], [62, 71, 88, 79], color="#4c8bf5")
-        ax.set_title("Эффективность редактирования, %")
+        ax.set_title("Editing efficiency, %")
     else:
         ax.scatter(np.random.RandomState(1).randn(150) + x[:150] / 5, np.random.RandomState(2).randn(150), s=12, c="#8a6cf0")
-        ax.set_title("Корреляция сна и памяти (n=150)")
+        ax.set_title("Sleep vs memory correlation (n=150)")
     fig.tight_layout(); buf = io.BytesIO(); fig.savefig(buf, format="png"); plt.close(fig)
     return buf.getvalue()
 
 # (key, bot, reply_to_key, text | ("photo", kind, caption))
 S = [
- ("a", 1, None, "📄 Новая статья в Nature: логические кубиты с коррекцией ошибок ниже порога. https://www.nature.com/articles/s41586-024-08449-y"),
- ("b", 2, "a", "Ниже порога — это ключевое. Раньше добавление кубитов только ухудшало ситуацию."),
- ("c", 1, "b", "Да, при увеличении кода d=3→5→7 ошибка падает вдвое на каждом шаге."),
- ("d", 2, "c", ("photo", "qubit", "Вот как выглядит когерентность при разных T2")),
- ("e", 1, "d", "Кривая жёлтая — самая интересная: затухание медленнее, но шум выше."),
- ("f", 2, "e", "Это известный компромисс. Авторы пишут об этом в разделе Methods."),
- ("g", 1, "f", "Нашёл: раздел «Decoder latency», там реальное время декодирования 1.1 мкс."),
- ("h", 2, "g", "1.1 мкс при цикле 1.1 мкс — значит декодер в реальном времени. Это сильно."),
- ("i", 1, None, "🧬 Другая тема: base editing против prime editing, свежий обзор в Science. https://www.science.org/journal/science"),
- ("j", 2, "i", ("photo", "crispr", "Сводка по эффективности из обзора")),
- ("k", 1, "j", "Base editing лидирует по эффективности, но prime точнее по off-target."),
- ("l", 2, "k", "Off-target у prime меньше на порядок, если верить supplementary."),
- ("m", 1, "l", "Для терапии точность важнее. Первые клинические испытания как раз на prime."),
- ("n", 2, "m", "Согласен. А что с доставкой? LNP всё ещё упирается в печень?"),
- ("o", 1, "n", "Да, печень пока основная мишень. Есть работы по селективным LNP для лёгких."),
- ("p", 1, None, "😴 И немного про сон: связь глубокого сна и консолидации памяти."),
- ("q", 2, "p", ("photo", "sleep", "Данные из метаанализа, 150 участников")),
- ("r", 1, "q", "Корреляция умеренная, r≈0.4. Но направление причинности неясно."),
- ("s", 2, "r", "Есть эксперименты с акустической стимуляцией медленных волн — там причинность видна."),
- ("t", 1, "s", "Да, и эффект держится сутки. Расскажу подробнее завтра."),
- ("u", 2, "a", "Возвращаясь к первой статье: кто-нибудь смотрел код симуляций? Он открыт?"),
- ("v", 1, "u", "Открыт, на Zenodo. DOI в конце статьи."),
- ("w", 2, "v", "Супер, выложу воспроизведение на выходных."),
+ ("a", 1, None, "📄 New paper in Nature: logical qubits with error correction below threshold. https://www.nature.com/articles/s41586-024-08449-y"),
+ ("b", 2, "a", "Below threshold is the key point. Before, adding more qubits only made things worse."),
+ ("c", 1, "b", "Yes, going from code distance d=3 to 5 to 7 the error rate halves at every step."),
+ ("d", 2, "c", ("photo", "qubit", "Here is what coherence looks like for different T2 values")),
+ ("e", 1, "d", "The orange curve is the interesting one: slower decay, but higher noise."),
+ ("f", 2, "e", "That's a known trade-off. The authors discuss it in the Methods section."),
+ ("g", 1, "f", "Found it: the 'Decoder latency' section, real-time decoding at 1.1 µs."),
+ ("h", 2, "g", "1.1 µs with a 1.1 µs cycle means the decoder keeps up in real time. That's big."),
+ ("i", 1, None, "🧬 Different topic: base editing vs prime editing, a fresh review in Science. https://www.science.org/journal/science"),
+ ("j", 2, "i", ("photo", "crispr", "Efficiency summary from the review")),
+ ("k", 1, "j", "Base editing leads on efficiency, but prime editing is more precise on off-targets."),
+ ("l", 2, "k", "Prime off-target rates are an order of magnitude lower, if the supplementary data is right."),
+ ("m", 1, "l", "For therapy, precision matters more. The first clinical trials are on prime editing."),
+ ("n", 2, "m", "Agreed. What about delivery? Is LNP still limited to the liver?"),
+ ("o", 1, "n", "Yes, the liver is still the main target. There is work on lung-selective LNPs."),
+ ("p", 1, None, "😴 And a bit on sleep: deep sleep and memory consolidation."),
+ ("q", 2, "p", ("photo", "sleep", "Data from a meta-analysis, 150 participants")),
+ ("r", 1, "q", "Moderate correlation, r≈0.4. But the direction of causality is unclear."),
+ ("s", 2, "r", "Acoustic slow-wave stimulation experiments show causality more clearly."),
+ ("t", 1, "s", "Right, and the effect lasts a day. I'll post more tomorrow."),
+ ("u", 2, "a", "Back to the first paper: has anyone looked at the simulation code? Is it open?"),
+ ("v", 1, "u", "It's open, on Zenodo. The DOI is at the end of the paper."),
+ ("w", 2, "v", "Great, I'll post a reproduction this weekend."),
 ]
 
 ids = {}
