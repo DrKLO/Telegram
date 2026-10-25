@@ -109,16 +109,30 @@ public final class KiteUpdater {
                 if (fragment.getParentActivity() == null) {
                     return;
                 }
+                // The settings tab is embedded in MainTabsActivity, where fragment bulletins are not
+                // visible, so the result is shown as a plain dialog.
                 if (result == null) {
-                    BulletinFactory.of(fragment).createErrorBulletin(getString(R.string.KiteUpdateCheckFailed)).show();
+                    showResult(fragment, getString(R.string.KiteUpdateCheckFailed));
                 } else if (result.build > BuildConfig.KITE_BUILD) {
                     MessagesController.getGlobalMainSettings().edit().remove(PREF_SKIPPED).apply();
                     download(fragment, result);
                 } else {
-                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.contact_check, getString(R.string.KiteUpdateLatest)).show();
+                    showResult(fragment, getString(R.string.KiteUpdateLatest));
                 }
             });
         });
+    }
+
+    private static void showResult(BaseFragment fragment, String text) {
+        try {
+            new AlertDialog.Builder(fragment.getParentActivity())
+                .setTitle(getString(R.string.KiteUpdateTitle))
+                .setMessage(text)
+                .setPositiveButton(getString(R.string.OK), null)
+                .show();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private static final class Release {
@@ -195,9 +209,7 @@ public final class KiteUpdater {
                 .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "Kite-" + release.build + ".apk");
             registerInstallReceiver(context);
             downloadId = manager.enqueue(request);
-            if (fragment.getParentActivity() != null) {
-                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.download_arrow, getString(R.string.KiteUpdateDownloading)).show();
-            }
+            BulletinFactory.global().createSimpleBulletin(R.raw.download_arrow, getString(R.string.KiteUpdateDownloading)).show();
         } catch (Exception e) {
             FileLog.e(e);
         }
