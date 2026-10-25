@@ -49,6 +49,8 @@ public class DownloadController extends BaseController implements NotificationCe
     public static final int AUTODOWNLOAD_TYPE_AUDIO = 2;
     public static final int AUTODOWNLOAD_TYPE_VIDEO = 4;
     public static final int AUTODOWNLOAD_TYPE_DOCUMENT = 8;
+    public static final int AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO = 16;
+    public static final int AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO = 32;
 
     public static final int PRESET_NUM_CONTACT = 0;
     public static final int PRESET_NUM_PM = 1;
@@ -59,6 +61,8 @@ public class DownloadController extends BaseController implements NotificationCe
     public static final int PRESET_SIZE_NUM_VIDEO = 1;
     public static final int PRESET_SIZE_NUM_DOCUMENT = 2;
     public static final int PRESET_SIZE_NUM_AUDIO = 3;
+    public static final int PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO = 4;
+    public static final int PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO = 5;
 
     private int lastCheckMask = 0;
     private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<>();
@@ -86,7 +90,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
     public static class Preset {
         public int[] mask = new int[4];
-        public long[] sizes = new long[4];
+        public long[] sizes = new long[6];
         public boolean preloadVideo;
         public boolean preloadMusic;
         public boolean preloadStories;
@@ -100,6 +104,8 @@ public class DownloadController extends BaseController implements NotificationCe
             sizes[PRESET_SIZE_NUM_VIDEO] = v;
             sizes[PRESET_SIZE_NUM_DOCUMENT] = f;
             sizes[PRESET_SIZE_NUM_AUDIO] = 512 * 1024;
+            sizes[PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO] = f;
+            sizes[PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO] = v;
             preloadVideo = pv;
             preloadMusic = pm;
             lessCallData = l;
@@ -146,6 +152,14 @@ public class DownloadController extends BaseController implements NotificationCe
                         defaultArgs = deafultValue.split("_");
                     }
                     preloadStories = Utilities.parseInt(defaultArgs[13]) == 1;
+                }
+
+                if (args.length >= 16) {
+                    sizes[PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO] = Utilities.parseInt(args[14]);
+                    sizes[PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO] = Utilities.parseInt(args[15]);
+                } else {
+                    sizes[PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO] = sizes[PRESET_SIZE_NUM_DOCUMENT];
+                    sizes[PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO] = sizes[PRESET_SIZE_NUM_VIDEO];
                 }
             }
         }
@@ -202,7 +216,9 @@ public class DownloadController extends BaseController implements NotificationCe
                     "_" + (enabled ? 1 : 0) +
                     "_" + (lessCallData ? 1 : 0) +
                     "_" + maxVideoBitrate +
-                    "_" + (preloadStories ? 1 : 0);
+                    "_" + (preloadStories ? 1 : 0) +
+                    "_" + sizes[PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO] +
+                    "_" + sizes[PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO];
         }
 
         public boolean equals(Preset obj) {
@@ -214,6 +230,8 @@ public class DownloadController extends BaseController implements NotificationCe
                     sizes[1] == obj.sizes[1] &&
                     sizes[2] == obj.sizes[2] &&
                     sizes[3] == obj.sizes[3] &&
+                    sizes[4] == obj.sizes[4] &&
+                    sizes[5] == obj.sizes[5] &&
                     preloadVideo == obj.preloadVideo &&
                     preloadMusic == obj.preloadMusic &&
                     maxVideoBitrate == obj.maxVideoBitrate &&
@@ -444,8 +462,25 @@ public class DownloadController extends BaseController implements NotificationCe
             return PRESET_SIZE_NUM_VIDEO;
         } else if (type == AUTODOWNLOAD_TYPE_DOCUMENT) {
             return PRESET_SIZE_NUM_DOCUMENT;
+        } else if (type == AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) {
+            return PRESET_SIZE_NUM_UNCOMPRESSED_PHOTO;
+        } else if (type == AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) {
+            return PRESET_SIZE_NUM_UNCOMPRESSED_VIDEO;
         }
         return PRESET_SIZE_NUM_PHOTO;
+    }
+
+    public static int getDocumentAutoDownloadType(TLRPC.Document document) {
+        if (document == null) {
+            return AUTODOWNLOAD_TYPE_DOCUMENT;
+        }
+        if (document.isUncompressedAutoDownloadPhoto()) {
+            return AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO;
+        }
+        if (document.isUncompressedAutoDownloadVideo()) {
+            return AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO;
+        }
+        return AUTODOWNLOAD_TYPE_DOCUMENT;
     }
 
     public void cleanup() {
@@ -503,6 +538,12 @@ public class DownloadController extends BaseController implements NotificationCe
             if ((masksArray[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
                 mask |= AUTODOWNLOAD_TYPE_DOCUMENT;
             }
+            if ((masksArray[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO;
+            }
             result |= mask << (a * 8);
         }
         return result;
@@ -525,6 +566,12 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
                 mask |= AUTODOWNLOAD_TYPE_DOCUMENT;
+            }
+            if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO;
+            }
+            if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO;
             }
         }
         return mask;
@@ -564,9 +611,10 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             audioDownloadQueue.clear();
         }
-        if ((currentMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+        int documentTypes = AUTODOWNLOAD_TYPE_DOCUMENT | AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO | AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO;
+        if ((currentMask & documentTypes) != 0) {
             if (documentDownloadQueue.isEmpty()) {
-                newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_DOCUMENT);
+                newDownloadObjectsAvailable(currentMask & documentTypes);
             }
         } else {
             for (int a = 0; a < documentDownloadQueue.size(); a++) {
@@ -602,6 +650,12 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) == 0) {
                 getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) == 0) {
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) == 0) {
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO);
             }
         }
     }
@@ -700,7 +754,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(msg) || MessageObject.isStickerMessage(msg) || MessageObject.isAnimatedStickerMessage(msg)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(msg) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(msg));
         } else {
             return 0;
         }
@@ -790,7 +844,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(msg) || MessageObject.isStickerMessage(msg) || MessageObject.isAnimatedStickerMessage(msg)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(msg) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(msg));
         } else {
             return 0;
         }
@@ -871,7 +925,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message) || MessageObject.isAnimatedStickerMessage(message)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(message) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(message));
         } else {
             return 0;
         }
@@ -953,7 +1007,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (media instanceof TLRPC.TL_messageMediaPhoto) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (media.document != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(media.document);
         } else {
             return 0;
         }
@@ -1197,8 +1251,16 @@ public class DownloadController extends BaseController implements NotificationCe
         if ((mask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && videoDownloadQueue.isEmpty()) {
             getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
         }
-        if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && documentDownloadQueue.isEmpty()) {
-            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+        if (documentDownloadQueue.isEmpty()) {
+            if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO);
+            }
         }
     }
 
@@ -1225,10 +1287,12 @@ public class DownloadController extends BaseController implements NotificationCe
                 if (videoDownloadQueue.isEmpty()) {
                     newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_VIDEO);
                 }
-            } else if (downloadObject.type == AUTODOWNLOAD_TYPE_DOCUMENT) {
+            } else if (downloadObject.type == AUTODOWNLOAD_TYPE_DOCUMENT
+                    || downloadObject.type == AUTODOWNLOAD_TYPE_UNCOMPRESSED_PHOTO
+                    || downloadObject.type == AUTODOWNLOAD_TYPE_UNCOMPRESSED_VIDEO) {
                 documentDownloadQueue.remove(downloadObject);
                 if (documentDownloadQueue.isEmpty()) {
-                    newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_DOCUMENT);
+                    newDownloadObjectsAvailable(downloadObject.type);
                 }
             }
         }
