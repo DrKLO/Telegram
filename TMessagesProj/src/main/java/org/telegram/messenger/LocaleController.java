@@ -771,7 +771,7 @@ public class LocaleController {
         if (countryCode.length() != 2 || countryCode.equals("YL")) return null;
 
         if (countryCode.equals("FT")) {
-            return "\uD83C\uDFF4\u200D\u2620\uFE0F";
+            return "\uD83D\uDC8E";
         } else if (countryCode.equals("XG")) {
             return "\uD83D\uDEF0";
         } else if (countryCode.equals("XV")){

@@ -45,6 +45,7 @@ public class CollectibleCell extends FrameLayout implements Theme.Colorable {
     private final TextView subtitleView;
 
     private boolean needDivider;
+    private boolean grid;
 
     public CollectibleCell(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -89,6 +90,17 @@ public class CollectibleCell extends FrameLayout implements Theme.Colorable {
         updateColors();
     }
 
+    private void setGrid(boolean grid) {
+        if (this.grid == grid) return;
+        this.grid = grid;
+        // Grid: the image fills the tile, matching GiftCell's card inset, radius and height.
+        thumbView.setLayoutParams(grid
+                ? LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 3.33f, 4, 3.33f, 4)
+                : LayoutHelper.createFrame(46, 46, Gravity.LEFT | Gravity.CENTER_VERTICAL, 15, 0, 0, 0));
+        thumbView.setRoundRadius(dp(grid ? 11 : 8));
+        ((View) titleView.getParent()).setVisibility(grid ? GONE : VISIBLE);
+    }
+
     public void set(TL_wallet.nftItem item, boolean divider) {
         if (TextUtils.isEmpty(item.name)) {
             titleView.setText(LocaleController.getString(R.string.WalletCollectible));
@@ -112,23 +124,26 @@ public class CollectibleCell extends FrameLayout implements Theme.Colorable {
         } else {
             subtitleView.setText(item.description);
         }
-        final ImageLocation image = getImage(item, true);
+        final ImageLocation image = getImage(item, !grid);
 
         final int thumbColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         final Drawable thumbIcon = getContext().getResources().getDrawable(R.drawable.wallet_nft_placeholder).mutate();
         thumbIcon.setColorFilter(new PorterDuffColorFilter(thumbColor, PorterDuff.Mode.SRC_IN));
         final CombinedDrawable thumb = new CombinedDrawable(
-            Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(thumbColor, 0.10f)),
+            Theme.createRoundRectDrawable(dp(grid ? 11 : 8), Theme.multAlpha(thumbColor, 0.10f)),
             thumbIcon
         );
 
-        if (image != null) {
+        if (image != null && grid) {
+            final ImageLocation small = item.image_small != null && item.image != null ? getImage(item, true) : null;
+            thumbView.setImage(image, "160_160", small, "100_100", thumb, null, 0, 0, item);
+        } else if (image != null) {
             thumbView.setImage(image, "46_46", thumb, item);
         } else {
             thumbView.setImageDrawable(thumb);
         }
 
-        needDivider = divider;
+        needDivider = divider && !grid;
         updateColors();
         invalidate();
     }
@@ -157,7 +172,7 @@ public class CollectibleCell extends FrameLayout implements Theme.Colorable {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(58), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(grid ? 112 : 58), MeasureSpec.EXACTLY)
         );
     }
 
@@ -199,6 +214,7 @@ public class CollectibleCell extends FrameLayout implements Theme.Colorable {
                 UniversalAdapter adapter,
                 UniversalRecyclerView listView
         ) {
+            ((CollectibleCell) view).setGrid(item.spanCount == 1);
             ((CollectibleCell) view).set((TL_wallet.nftItem) item.object, divider);
         }
 

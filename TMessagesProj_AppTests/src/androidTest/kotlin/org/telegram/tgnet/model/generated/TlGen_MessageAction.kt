@@ -1442,6 +1442,14 @@ public sealed class TlGen_MessageAction : TlGen_Object {
     }
   }
 
+  public data object TL_messageActionNoPaidMessagesTokenUsed : TlGen_MessageAction() {
+    public const val MAGIC: UInt = 0xC1D2F1C6U
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+    }
+  }
+
   public data class TL_messageActionChatCreate_layer132(
     public val title: String,
     public val users: List<Int>,

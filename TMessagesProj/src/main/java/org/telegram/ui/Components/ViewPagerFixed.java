@@ -900,7 +900,7 @@ public class ViewPagerFixed extends FrameLayout {
             onItemSelected(viewPages[0], oldView, currentPosition, oldPosition);
             setTranslationX(viewPages[0], 0);
             if (tabsView != null) {
-                tabsView.selectTab(currentPosition, nextPosition, currentProgress);
+                tabsView.selectTab(nextPosition, currentPosition, currentProgress);
             }
             onTabAnimationUpdate(true);
         }

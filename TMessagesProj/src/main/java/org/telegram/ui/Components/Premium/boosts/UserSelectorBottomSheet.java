@@ -10,13 +10,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ReplacementSpan;
 import android.util.TypedValue;
@@ -76,6 +82,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Wallet.GramWallet;
 import org.telegram.ui.PrivacyControlActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stars.StarsController;
@@ -427,8 +434,15 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 TLRPC.User user = ((SelectorUserCell) view).getUser();
                 TLRPC.Chat chat = ((SelectorUserCell) view).getChat();
                 if (user == null && chat == null && type == TYPE_TRANSFER) {
-                    if (onUserSelectedListener != null) {
-                        onUserSelectedListener.run(-99L);
+                    final Item item = position - 1 >= 0 && position - 1 < items.size() ? items.get(position - 1) : null;
+                    if (onUserSelectedListener != null && item != null) {
+                        if (item.id == 4) {
+                            onUserSelectedListener.run(OPTION_MY_WALLET);
+                        } else if (item.id == 5) {
+                            onUserSelectedListener.run(OPTION_MY_GIFTS);
+                        } else {
+                            onUserSelectedListener.run(OPTION_FRAGMENT);
+                        }
                     }
                     return;
                 }
@@ -904,16 +918,44 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 }
             }
         } else {
-            if (includeTonOption && type == TYPE_TRANSFER) {
+            if (includeMyGiftsOption && type == TYPE_TRANSFER) {
+                if (myGiftsIcon == null) {
+                    final Drawable drawable = getContext().getResources().getDrawable(R.drawable.filled_gift_send).mutate();
+                    drawable.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+                    final CombinedDrawable icon = new CombinedDrawable(Theme.createCircleDrawable(dp(40), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), drawable);
+                    icon.setIconSize(dp(24), dp(24));
+                    myGiftsIcon = icon;
+                }
+                items.add(Item.asCustomUser(5, myGiftsIcon, getString(R.string.Gift2MoveToMyGifts), ""));
+            }
+            if (includeTonOption && type == TYPE_TRANSFER && MessagesController.getInstance(currentAccount).config.walletAvailable.get()) {
+                if (myWalletIcon == null) {
+                    final Drawable drawable = getContext().getResources().getDrawable(R.drawable.filled_wallet_move).mutate();
+                    drawable.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+                    final CombinedDrawable icon = new CombinedDrawable(Theme.createCircleDrawable(dp(40), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), drawable);
+                    icon.setIconSize(dp(24), dp(24));
+                    myWalletIcon = icon;
+                }
+                final String walletAddress = GramWallet.getInstance(currentAccount).getAddress();
+                final CharSequence walletSubtitle;
+                if (tonDays > 0) {
+                    walletSubtitle = formatPluralString("Gift2ExportTONUnlocksIn", tonDays);
+                } else if (walletAddress != null && walletAddress.length() >= 20) {
+                    walletSubtitle = formatAddressChips(walletAddress, Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+                } else {
+                    walletSubtitle = "";
+                }
+                items.add(Item.asCustomUser(4, myWalletIcon, getString(R.string.Gift2MoveToMyWallet), walletSubtitle));
+            }
+            if (includeTonOption && type == TYPE_TRANSFER && !MessagesController.getInstance(currentAccount).config.walletAvailable.get()) {
                 if (tonIcon == null) {
-                    final CombinedDrawable icon = new CombinedDrawable(
-                        Theme.createCircleDrawable(dp(46), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
-                        getContext().getResources().getDrawable(R.drawable.mini_gram_72).mutate()
-                    );
+                    final Drawable drawable = getContext().getResources().getDrawable(R.drawable.fragment).mutate();
+                    drawable.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+                    final CombinedDrawable icon = new CombinedDrawable(Theme.createCircleDrawable(dp(40), 0xFF000000), drawable);
                     icon.setIconSize(dp(24), dp(24));
                     tonIcon = icon;
                 }
-                items.add(Item.asCustomUser(2, tonIcon, getString(R.string.Gift2ExportTONTitle), tonDays > 0 ? formatPluralString("Gift2ExportTONUnlocksIn", tonDays) : ""));
+                items.add(Item.asCustomUser(2, tonIcon, getString(R.string.Gift2SendViaFragment), tonDays > 0 ? formatPluralString("Gift2ExportTONUnlocksIn", tonDays) : ""));
             }
             final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
             if (userFull == null) {
@@ -1114,6 +1156,76 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     public UserSelectorBottomSheet setOnUsersSelector(Utilities.Callback2<Boolean, HashSet<Long>> listener) {
         onUsersSelectedListener = listener;
         return this;
+    }
+
+    public static final long OPTION_FRAGMENT = -99L;
+    public static final long OPTION_MY_WALLET = -98L;
+    public static final long OPTION_MY_GIFTS = -97L;
+
+    private Drawable myWalletIcon;
+    private Drawable myGiftsIcon;
+    // "UQAl 1dVi v8··2d YKpL Jo3A": address chunks as chips, the middle one fading out in its center
+    public static CharSequence formatAddressChips(String address, int textColor) {
+        final int n = address.length();
+        final String[] chunks = {
+            address.substring(0, 4),
+            address.substring(4, 8),
+            address.substring(8, 10) + address.substring(n - 10, n - 8),
+            address.substring(n - 8, n - 4),
+            address.substring(n - 4, n)
+        };
+        final SpannableStringBuilder sb = new SpannableStringBuilder();
+        for (int i = 0; i < chunks.length; ++i) {
+            final int start = sb.length();
+            sb.append(chunks[i]);
+            sb.setSpan(new AddressChipSpan(textColor, i == 2), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return sb;
+    }
+
+    private static class AddressChipSpan extends ReplacementSpan {
+        private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rect = new RectF();
+        private final boolean fade;
+
+        AddressChipSpan(int textColor, boolean fade) {
+            this.fade = fade;
+            textPaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO));
+            textPaint.setTextSize(dp(13));
+            textPaint.setColor(textColor);
+            backgroundPaint.setColor(Theme.multAlpha(textColor, 0.08f));
+        }
+
+        @Override
+        public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+            if (fm != null) {
+                paint.getFontMetricsInt(fm);
+            }
+            return (int) Math.ceil(textPaint.measureText(text, start, end)) + dp(8 + 3);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+            final float textWidth = textPaint.measureText(text, start, end);
+            final float cy = (top + bottom) / 2f;
+            rect.set(x, cy - dp(9.5f), x + textWidth + dp(8), cy + dp(9.5f));
+            canvas.drawRoundRect(rect, dp(6), dp(6), backgroundPaint);
+            if (fade) {
+                final int color = textPaint.getColor(), clear = Theme.multAlpha(color, 0);
+                final float l = x + dp(4);
+                textPaint.setShader(new LinearGradient(l, 0, l + textWidth, 0, new int[] { color, clear, clear, color }, new float[] { .17f, .41f, .59f, .87f }, Shader.TileMode.CLAMP));
+            }
+            final Paint.FontMetrics fm = textPaint.getFontMetrics();
+            canvas.drawText(text, start, end, x + dp(4), cy - (fm.ascent + fm.descent) / 2f, textPaint);
+            textPaint.setShader(null);
+        }
+    }
+
+    private boolean includeMyGiftsOption;
+    public void addMyGiftsOption() {
+        includeMyGiftsOption = true;
+        updateItems(false, true);
     }
 
     private boolean includeTonOption;

@@ -430,6 +430,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 subtitleTextView.setText(getString(R.string.PleaseEnterCurrentPasswordWithdraw));
             } else if (delegateType == 2) {
                 subtitleTextView.setText(AndroidUtilities.replaceTags(formatString(R.string.PleaseEnterCurrentPasswordGiftTransfer, delegateTypeString)));
+            } else if (delegateType == 3) {
+                subtitleTextView.setText(AndroidUtilities.replaceTags(formatString(R.string.PleaseEnterCurrentPasswordGiftWallet, delegateTypeString)));
             } else {
                 subtitleTextView.setText(getString(R.string.PleaseEnterCurrentPasswordTransfer));
             }

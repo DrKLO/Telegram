@@ -1936,6 +1936,23 @@ public class TL_stars {
         }
     }
 
+    public static class deleteStarGift extends TLObject {
+        public static final int constructor = 0x3cdaf8aa;
+
+        public InputSavedStarGift stargift;
+
+        @Override
+        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stargift.serializeToStream(stream);
+        }
+    }
+
     public static class upgradeStarGift extends TLObject {
         public static final int constructor = 0xaed6e4f5;
 
@@ -5499,10 +5516,11 @@ public class TL_stars {
     }
 
     public static final class getStarGiftWithdrawalUrl extends TLObject {
-        public static final int constructor = 0xd06e93a8;
+        public static final int constructor = 0xc8ca817b;
 
+        public int flags;
         public InputSavedStarGift stargift;
-        public TLRPC.InputCheckPasswordSRP password;
+        public byte[] tmp_password;
 
         @Override
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
@@ -5512,8 +5530,107 @@ public class TL_stars {
         @Override
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            stream.writeInt32(flags);
             stargift.serializeToStream(stream);
-            password.serializeToStream(stream);
+            stream.writeByteArray(tmp_password);
+        }
+    }
+
+    public static final class withdrawStarGift extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0xec2030ae;
+
+        public int flags;
+        public boolean keep_on_profile;
+        public InputSavedStarGift stargift;
+        public byte[] tmp_password;
+
+        @Override
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, keep_on_profile);
+            stream.writeInt32(flags);
+            stargift.serializeToStream(stream);
+            stream.writeByteArray(tmp_password);
+        }
+    }
+
+    public static final class starGiftDepositPayload extends TLObject {
+        public static final int constructor = 0x725bb4eb;
+
+        public String nft_address;
+        public byte[] payload;
+        public long amount;
+
+        public static starGiftDepositPayload TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final starGiftDepositPayload result = starGiftDepositPayload.constructor != constructor ? null : new starGiftDepositPayload();
+            return TLdeserialize(starGiftDepositPayload.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            nft_address = stream.readString(exception);
+            payload = stream.readByteArray(exception);
+            amount = stream.readInt64(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(nft_address);
+            stream.writeByteArray(payload);
+            stream.writeInt64(amount);
+        }
+    }
+
+    public static final class depositStarGift extends TLMethod<starGiftDepositPayload> {
+        public static final int constructor = 0xc0a2ea9f;
+
+        public int flags;
+        public boolean hide_sender;
+        public TLRPC.InputPeer peer;
+        public String slug;
+
+        @Override
+        public starGiftDepositPayload deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return starGiftDepositPayload.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, hide_sender);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeString(slug);
+        }
+    }
+
+    public static final class displayStarGift extends TLMethod<TLRPC.Bool> {
+        public static final int constructor = 0x4aa5f0fe;
+
+        public int flags;
+        public TLRPC.InputPeer peer;
+        public String slug;
+
+        @Override
+        public TLRPC.Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TLRPC.Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, peer != null);
+            stream.writeInt32(flags);
+            if (peer != null) {
+                peer.serializeToStream(stream);
+            }
+            stream.writeString(slug);
         }
     }
 

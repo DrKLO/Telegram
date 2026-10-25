@@ -152,6 +152,10 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
         super.onAttachedToWindow();
         NotificationCenter.getInstance(collections.currentAccount)
             .addObserver(this, NotificationCenter.storyAlbumsCollectionsUpdate);
+        // collections might have been updated while we were detached and missed the notification
+        if (visibilityValue == collections.collections.isEmpty() || adapter.canCreateNewAlbum != collections.canCreateNewAlbum()) {
+            onCollectionsUpdate();
+        }
     }
 
     @Override
@@ -165,28 +169,30 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.storyAlbumsCollectionsUpdate) {
             if ((Long) args[0] != collections.dialogId) return;
-
-            final int tabId = tabsView != null ? tabsView.getCurrentTabId() : 0;
-
-            adapter.canCreateNewAlbum = collections.canCreateNewAlbum();
-            viewPager.fillTabs(true);
-            setVisibility(!collections.collections.isEmpty(), true, false);
-
-            if (initialAlbumId > 0) {
-                final int position = adapter.getItemPosition(initialAlbumId);
-                if (position != -1) {
-                    final int finalAlbumId = initialAlbumId;
-                    AndroidUtilities.runOnUIThread(() -> scrollToAlbumId(finalAlbumId), 500);
-                    initialAlbumId = 0;
-                }
-            } else {
-                if (tabsView != null && tabId > 0 && collections.findById(tabId) == null) {
-                    tabsView.scrollToTab(0, 0);
-                }
-            }
+            onCollectionsUpdate();
         }
     }
 
+    private void onCollectionsUpdate() {
+        final int tabId = tabsView != null ? tabsView.getCurrentTabId() : 0;
+
+        adapter.canCreateNewAlbum = collections.canCreateNewAlbum();
+        viewPager.fillTabs(true);
+        setVisibility(!collections.collections.isEmpty(), true, false);
+
+        if (initialAlbumId > 0) {
+            final int position = adapter.getItemPosition(initialAlbumId);
+            if (position != -1) {
+                final int finalAlbumId = initialAlbumId;
+                AndroidUtilities.runOnUIThread(() -> scrollToAlbumId(finalAlbumId), 500);
+                initialAlbumId = 0;
+            }
+        } else {
+            if (tabsView != null && tabId > 0 && collections.findById(tabId) == null) {
+                tabsView.scrollToTab(0, 0);
+            }
+        }
+    }
 
     public void selectTabWithId(int albumId, float progress) {
         tabsView.selectTabWithId(albumId, progress);

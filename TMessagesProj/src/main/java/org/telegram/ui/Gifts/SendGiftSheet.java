@@ -14,6 +14,7 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.InsetDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -392,7 +393,8 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
 
         buttonContainer = new LinearLayout(context);
         buttonContainer.setOrientation(LinearLayout.VERTICAL);
-        buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        // only under the sheet, not over its side shadow paddings (visible in landscape)
+        buttonContainer.setBackground(new InsetDrawable(new ColorDrawable(Theme.getColor(Theme.key_dialogBackground, resourcesProvider)), backgroundPaddingLeft, 0, backgroundPaddingLeft, 0));
         buttonContainer.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
         containerView.addView(buttonContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
@@ -525,10 +527,11 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
             public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
                 float top = parent.getHeight();
                 float bottom = 0;
-                float left = 0;
+                float left = 0, right = parent.getWidth();
 
                 if (ViewPositionWatcher.computeCoordinatesInParent(chatView, recyclerListView, p)) {
                     left = p.x;
+                    right = p.x + chatView.getMeasuredWidth();
                     top = Math.min(top, p.y);
                     bottom = Math.max(bottom, p.y + chatView.getMeasuredHeight());
                 }
@@ -540,7 +543,8 @@ public class SendGiftSheet extends BottomSheetWithRecyclerListView implements No
                 if (top < bottom && chatView.backgroundView != null) {
                     final float s = (float) (bottom - top) / chatView.backgroundView.getHeight();
                     c.save();
-                    c.clipRect(0, top, parent.getWidth(), bottom);
+                    // only within the chat preview: in landscape the scaled background is wider than the sheet
+                    c.clipRect(left, top, right, bottom);
                     c.translate(left, top);
                     c.scale(s, s);
                     chatView.backgroundView.draw(c);
