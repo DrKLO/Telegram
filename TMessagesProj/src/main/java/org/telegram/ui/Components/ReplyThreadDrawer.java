@@ -52,9 +52,9 @@ public class ReplyThreadDrawer {
     // string physics (units: px, seconds)
     private static final float STEP = 1f / 120f;
     private static final float WAVE = 2400f;      // neighbour coupling: wave speed^2
-    private static final float RESTORE = 16f;     // pull back to the guide
-    private static final float DAMPING = 3.4f;
-    private static final float INERTIA = 0.55f;   // how much the string lags behind a moving anchor
+    private static final float RESTORE = 34f;     // pull back to the guide
+    private static final float DAMPING = 4.0f;
+    private static final float INERTIA = 0.45f;   // how much the string lags behind a moving anchor
 
     private static final long DRAW_IN = 520;
     private static final long HOLD = 1300;
@@ -180,7 +180,7 @@ public class ReplyThreadDrawer {
             final float t = i / (float) (N - 1);
             ox[i] = 0;
             oy[i] = 0;
-            vx[i] = dp(320) * (float) Math.sin(Math.PI * t);
+            vx[i] = dp(260) * (float) Math.sin(Math.PI * t);
             vy[i] = 0;
         }
         updateSource(cell);
@@ -267,21 +267,21 @@ public class ReplyThreadDrawer {
         refreshChain(now, false);
         final float top = list.getPaddingTop() + dp(14);
         final float bottom = list.getMeasuredHeight() - list.getPaddingBottom() - dp(14);
-        final float x = list.getMeasuredWidth() - dp(7);
+        final float x = list.getMeasuredWidth() - dp(12);
         if (bottom - top < dp(60)) {
             return;
         }
 
         // track
-        railPaint.setStrokeWidth(dp(2));
-        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (46 * alpha)));
+        railPaint.setStrokeWidth(dp(2.5f));
+        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (84 * alpha)));
         canvas.drawLine(x, top, x, bottom, railPaint);
 
         // visible window
         final float vTop = top + Math.max(0f, Math.min(1f, viewport[0])) * (bottom - top);
         final float vBottom = top + Math.max(0f, Math.min(1f, viewport[1])) * (bottom - top);
-        railPaint.setStrokeWidth(dp(4));
-        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (110 * alpha)));
+        railPaint.setStrokeWidth(dp(5));
+        railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (150 * alpha)));
         canvas.drawLine(x, vTop, x, Math.max(vBottom, vTop + dp(2)), railPaint);
 
         // links between the neighbours of the chain, they appear one after another
@@ -307,8 +307,8 @@ public class ReplyThreadDrawer {
             glint.reset();
             measure.getSegment(0, length * local, glint, true);
             glint.rLineTo(0, 0);
-            railPaint.setStrokeWidth(dp(1.75f));
-            railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (210 * alpha)));
+            railPaint.setStrokeWidth(dp(2.4f));
+            railPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (235 * alpha)));
             canvas.drawPath(glint, railPaint);
         }
 
@@ -319,7 +319,7 @@ public class ReplyThreadDrawer {
             }
             final float local = Math.max(0f, Math.min(1f, reveal * (chainCount - 1) - (i - 1)));
             final float y = top + chainFrac[i] * (bottom - top);
-            final float r = (i == 1 ? dp(4.6f) : dp(3.2f)) * (i == 0 ? 1f : local);
+            final float r = (i == 1 ? dp(6f) : dp(4.4f)) * (i == 0 ? 1f : local);
             if (r <= 0f) {
                 continue;
             }
@@ -342,9 +342,18 @@ public class ReplyThreadDrawer {
             vx[i] *= damp;
             vy[i] *= damp;
         }
+        final float maxOffset = dp(72);
         for (int i = 1; i < N - 1; i++) {
             ox[i] += vx[i] * dt;
             oy[i] += vy[i] * dt;
+            final float len2 = ox[i] * ox[i] + oy[i] * oy[i];
+            if (len2 > maxOffset * maxOffset) {
+                final float k = maxOffset / (float) Math.sqrt(len2);
+                ox[i] *= k;
+                oy[i] *= k;
+                vx[i] *= 0.85f;
+                vy[i] *= 0.85f;
+            }
         }
         // the knot on the original message pops on a spring
         if (connectedTime != 0) {
