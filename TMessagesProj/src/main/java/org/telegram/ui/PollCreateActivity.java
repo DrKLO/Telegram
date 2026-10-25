@@ -89,6 +89,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class PollCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate {
 
     private ActionBarMenuItem doneItem;
+    private CharSequence doneItemText;
     private ListAdapter listAdapter;
     private RecyclerListView listView;
     private RecyclerView.LayoutManager layoutManager;
@@ -516,7 +517,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneItem = menu.addItem(done_button, todo ? getString(onlyAdding ? R.string.TodoAddTasksButton : R.string.TodoEditTasksButton) : getString(R.string.Create).toUpperCase());
+        doneItemText = todo ? getString(onlyAdding ? R.string.TodoAddTasksButton : R.string.TodoEditTasksButton) : getString(R.string.Create).toUpperCase();
+        doneItem = menu.addItem(done_button, doneItemText);
 
         listAdapter = new ListAdapter(context);
 
@@ -901,6 +903,9 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
 
     private void checkDoneButton() {
         boolean enabled = true;
+        // the first thing standing in the way of sending, said to a screen reader with the button:
+        // what is missing is only ever shown, a count turning red or an answer left unmarked
+        CharSequence disabledReason = null;
         int checksCount = 0;
         if (quizPoll) {
             for (int a = 0; a < answersChecks.length; a++) {
@@ -913,13 +918,20 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         final int maxAnswerLength = todo ? getMessagesController().todoItemLengthMax : ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
         if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
             enabled = false;
+            disabledReason = getString(R.string.AccDescrPollExplanationTooLong);
         } else if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString)) || questionString.length() > maxQuestionLength) {
             enabled = false;
+            if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString))) {
+                disabledReason = getString(todo ? R.string.AccDescrTodoNoTitle : R.string.AccDescrPollNoQuestion);
+            } else {
+                disabledReason = getString(todo ? R.string.AccDescrTodoTitleTooLong : R.string.AccDescrPollQuestionTooLong);
+            }
         } else {
             int count = 0;
             for (int a = 0; a < answers.length; a++) {
                 if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
                     if (answers[a].length() > maxAnswerLength) {
+                        disabledReason = getString(todo ? R.string.AccDescrTodoTaskTooLong : R.string.AccDescrPollOptionTooLong);
                         count = 0;
                         break;
                     }
@@ -928,10 +940,14 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             }
             if (count < (todo ? 1 : 2) || quizPoll && checksCount < 1) {
                 enabled = false;
+                if (disabledReason == null) {
+                    disabledReason = count < (todo ? 1 : 2) ? getString(todo ? R.string.AccDescrTodoNoTasks : R.string.AccDescrPollNoOptions) : getString(R.string.PollTapToSelect);
+                }
             }
         }
         doneItem.setEnabled(quizPoll && checksCount == 0 || enabled);
         doneItem.setAlpha(enabled ? 1.0f : 0.5f);
+        doneItem.setContentDescription(enabled || TextUtils.isEmpty(disabledReason) ? null : TextUtils.concat(doneItemText, ", ", disabledReason));
     }
 
     private void updateRows() {
