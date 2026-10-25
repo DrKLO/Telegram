@@ -78,6 +78,8 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.KiteDeletedMessages;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -744,6 +746,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
         items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
 
+        items.add(UItem.asShadow(null));
+        items.add(UItem.asHeader("Kite"));
+        items.add(SettingCell.Factory.of(40, 0xFFFF7A59, 0xFFE8436E, R.drawable.settings_data, getString(R.string.KiteCheckUpdate), null, BuildConfig.KITE_BUILD > 0 ? formatString(R.string.KiteBuildNumber, BuildConfig.KITE_BUILD) : null));
+        items.add(UItem.asCheck(41, getString(R.string.KiteKeepDeleted)).setChecked(KiteDeletedMessages.isEnabled()));
+
         if (SharedSettings.experimentalSettingsAllowed.get()) {
             items.add(UItem.asShadow(null));
             items.add(UItem.asHeader("Experimental"));
@@ -873,6 +880,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 19:
                 Browser.openUrl(getParentActivity(), LocaleController.getString(R.string.PrivacyPolicyUrl));
+                break;
+            case 40:
+                KiteUpdater.checkManually(this);
+                break;
+            case 41:
+                KiteDeletedMessages.setEnabled(!KiteDeletedMessages.isEnabled());
+                listView.adapter.update(true);
                 break;
 
             case 20:

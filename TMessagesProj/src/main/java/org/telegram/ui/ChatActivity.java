@@ -2972,6 +2972,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.didLoadSendAsPeers)
             .add(NotificationCenter.closeChatActivity)
             .add(NotificationCenter.messagesDeleted)
+            .add(NotificationCenter.kiteMessagesMarkedDeleted)
             .add(NotificationCenter.historyCleared)
             .add(NotificationCenter.messageReceivedByServer)
             .add(NotificationCenter.messageReceivedByAck)
@@ -22377,6 +22378,17 @@ public class ChatActivity extends BaseFragment implements
             removeUnreadPlane(true);
             if (updated && chatAdapter != null) {
                 chatAdapter.notifyDataSetChanged(false);
+            }
+        } else if (id == NotificationCenter.kiteMessagesMarkedDeleted) {
+            LongSparseArray<ArrayList<Integer>> marked = (LongSparseArray<ArrayList<Integer>>) args[0];
+            ArrayList<Integer> ids = marked.get(ChatObject.isChannel(currentChat) ? -currentChat.id : 0);
+            if (ids != null && chatAdapter != null) {
+                for (int msgId : ids) {
+                    MessageObject obj = messagesDict[0].get(msgId);
+                    if (obj != null) {
+                        chatAdapter.updateRowWithMessageObject(obj, false, false);
+                    }
+                }
             }
         } else if (id == NotificationCenter.messagesDeleted) {
             boolean scheduled = (Boolean) args[2];

@@ -83,6 +83,44 @@ public final class KiteUpdater {
         });
     }
 
+    /** Settings button: check right away and start the download if a newer build exists. */
+    public static void checkManually(BaseFragment fragment) {
+        if (checking || fragment.getParentActivity() == null) {
+            return;
+        }
+        checking = true;
+        final AlertDialog progress = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
+        progress.setCanCancel(false);
+        progress.show();
+        Utilities.globalQueue.postRunnable(() -> {
+            Release release = null;
+            try {
+                release = fetchLatestRelease();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            final Release result = release;
+            AndroidUtilities.runOnUIThread(() -> {
+                checking = false;
+                try {
+                    progress.dismiss();
+                } catch (Exception ignore) {
+                }
+                if (fragment.getParentActivity() == null) {
+                    return;
+                }
+                if (result == null) {
+                    BulletinFactory.of(fragment).createErrorBulletin(getString(R.string.KiteUpdateCheckFailed)).show();
+                } else if (result.build > BuildConfig.KITE_BUILD) {
+                    MessagesController.getGlobalMainSettings().edit().remove(PREF_SKIPPED).apply();
+                    download(fragment, result);
+                } else {
+                    BulletinFactory.of(fragment).createSimpleBulletin(R.raw.contact_check, getString(R.string.KiteUpdateLatest)).show();
+                }
+            });
+        });
+    }
+
     private static final class Release {
         int build;
         String apkUrl;
