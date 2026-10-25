@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 
 import androidx.collection.LongSparseArray;
 
+import org.telegram.tgnet.TLRPC;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
