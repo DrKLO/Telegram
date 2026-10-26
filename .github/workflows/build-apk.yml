@@ -52,7 +52,7 @@ jobs:
             echo "sdk.dir=$ANDROID_HOME"
             echo "TG_API_ID=$TG_API_ID"
             echo "TG_API_HASH=$TG_API_HASH"
-            echo "KITE_ABIS=arm64-v8a"
+            echo "KITE_ABIS=armeabi-v7a,arm64-v8a"
           } > local.properties
 
       - name: Build

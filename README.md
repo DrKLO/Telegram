@@ -14,7 +14,7 @@ Kite сделан на основе [официального исходного
 
 Каждый коммит в `master` собирается GitHub Actions. Последняя сборка всегда лежит здесь:
 <https://github.com/Garricho/kite-android/releases/latest/download/Kite.apk>
-(release-сборка `io.github.garricho.kite`, только arm64).
+(release-сборка `io.github.garricho.kite`, 32- и 64-битные ARM-телефоны).
 
 Сборки из CI сами проверяют новый релиз (не чаще раза в 3 часа) и предлагают обновиться: APK скачивается, затем Android просит подтвердить установку.
 
