@@ -115,3 +115,24 @@ You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android 
 ### Localization
 
 We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+
+## Админ-панель (счётчик пользователей)
+
+Код панели лежит в `server/stats` (Cloudflare Workers + D1, бесплатный тариф).
+Приложение отправляет только анонимные счётчики: случайный номер установки,
+событие (`open` / `login` / `logout`), число аккаунтов на устройстве и номер сборки.
+
+Настройка один раз:
+
+1. Зарегистрируйтесь на <https://dash.cloudflare.com> (бесплатно).
+2. Создайте API-токен: My Profile → API Tokens → Create Token → шаблон
+   «Edit Cloudflare Workers», добавьте право Account → D1 → Edit.
+3. В GitHub: Settings → Secrets and variables → Actions → **Secrets** добавьте
+   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (Account ID с главной страницы
+   Cloudflare) и `KITE_ADMIN_PASSWORD` (пароль для входа в панель).
+4. Actions → «Deploy admin panel» → Run workflow. В логе шага Deploy будет адрес
+   вида `https://kite-stats.<имя>.workers.dev`.
+5. Там же во вкладке **Variables** добавьте `KITE_STATS_URL` с этим адресом.
+   Следующая сборка APK начнёт отправлять счётчики.
+
+Панель открывается по этому адресу в браузере, логин любой, пароль из `KITE_ADMIN_PASSWORD`.

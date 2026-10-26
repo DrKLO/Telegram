@@ -150,6 +150,10 @@ android {
         def kiteBuild = (System.getenv("KITE_BUILD") ?: getProps("KITE_BUILD") ?: "0").toString().trim()
         buildConfigField "int", "KITE_BUILD", kiteBuild.isInteger() ? kiteBuild : "0"
 
+        // Admin panel endpoint (server/stats). Empty means the app sends no usage counters.
+        def kiteStatsUrl = (System.getenv("KITE_STATS_URL") ?: getProps("KITE_STATS_URL") ?: "").toString().trim()
+        buildConfigField "String", "KITE_STATS_URL", "\"" + kiteStatsUrl + "\""
+
         // Optional: limit native ABIs for faster local builds (KITE_ABIS=arm64-v8a).
         def kiteAbis = (getProps("KITE_ABIS") ?: "").toString().trim()
         if (kiteAbis) {

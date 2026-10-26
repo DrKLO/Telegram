@@ -1,0 +1,60 @@
+name: Deploy admin panel
+
+# Deploys server/stats (Kite admin panel) to Cloudflare Workers.
+# Needs repository secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and KITE_ADMIN_PASSWORD.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'server/stats/**'
+      - '.github/workflows/deploy-stats.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server/stats
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KITE_ADMIN_PASSWORD: ${{ secrets.KITE_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$KITE_ADMIN_PASSWORD" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and KITE_ADMIN_PASSWORD in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - name: Create the database once
+        run: |
+          npx --yes wrangler@4 d1 list --json > d1.json
+          id=$(jq -r '.[] | select(.name == "kite-stats") | .uuid' d1.json)
+          if [ -z "$id" ]; then
+            npx --yes wrangler@4 d1 create kite-stats
+            npx --yes wrangler@4 d1 list --json > d1.json
+            id=$(jq -r '.[] | select(.name == "kite-stats") | .uuid' d1.json)
+          fi
+          test -n "$id"
+          sed -i "s/DATABASE_ID/$id/" wrangler.toml
+
+      - name: Apply schema
+        run: npx --yes wrangler@4 d1 execute kite-stats --remote --file schema.sql
+
+      - name: Deploy
+        run: |
+          npx --yes wrangler@4 deploy
+          printf '%s' "$KITE_ADMIN_PASSWORD" | npx --yes wrangler@4 secret put ADMIN_PASSWORD

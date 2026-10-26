@@ -59,6 +59,8 @@ jobs:
         env:
           # Only master builds are published, so only they enable the in-app updater.
           KITE_BUILD: ${{ github.event_name == 'pull_request' && '0' || github.run_number }}
+          # URL of the Kite admin panel (Actions variable), empty disables usage counters.
+          KITE_STATS_URL: ${{ vars.KITE_STATS_URL }}
         run: ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
 
       - name: Collect APK

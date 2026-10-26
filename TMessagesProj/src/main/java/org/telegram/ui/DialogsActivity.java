@@ -119,6 +119,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.KiteStats;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -7149,6 +7150,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (tosAccepted && !onlySelect && folderId == 0 && communityId == 0) {
             KiteChannelPrompt.maybeShow(this);
             KiteUpdater.checkForUpdate(this);
+            KiteStats.reportOpen();
         }
         showFiltersHint();
         if (viewPages != null) {
