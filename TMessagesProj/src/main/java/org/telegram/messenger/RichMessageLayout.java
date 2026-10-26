@@ -281,13 +281,14 @@ public class RichMessageLayout {
     }
 
     public void checkQuoteLine(TLRPC.User currentUser, TLRPC.Chat currentChat) {
-        quoteLine.check(messageObject, currentUser, currentChat, resourcesProvider, ReplyMessageLine.TYPE_QUOTE);
+        final Theme.ResourcesProvider provider = effectiveResourcesProvider();
+        quoteLine.check(messageObject, currentUser, currentChat, provider, ReplyMessageLine.TYPE_QUOTE);
         if (messageObject == null || messageObject.isOutOwner() || messageObject.shouldDrawWithoutBackground()
                 || hasCustomIncomingQuoteColor(currentUser, currentChat)) {
             return;
         }
-        final boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
-        quoteLine.setSimpleColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), dark);
+        final boolean dark = provider != null ? provider.isDark() : Theme.isCurrentThemeDark();
+        quoteLine.setSimpleColor(Theme.getColor(Theme.key_featuredStickers_addButton, provider), dark);
     }
 
     private boolean hasCustomIncomingQuoteColor(TLRPC.User currentUser, TLRPC.Chat currentChat) {
@@ -1642,8 +1643,14 @@ public class RichMessageLayout {
         if (bubbleFadePaint == null) {
             bubbleFadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         }
-        bubbleFadePaint.setShader(new LinearGradient(0, contentBottom - dp(32), 0, contentBottom, new int[]{Theme.multAlpha(color, 0), color}, null, Shader.TileMode.CLAMP));
-        canvas.drawRect(-padLeft, contentBottom - dp(32), getMinWidth() + padRight, contentBottom, bubbleFadePaint);
+        bubbleFadePaint.setShader(null);
+        final int fadeH = dp(32);
+        final int steps = 16;
+        final float left = -padLeft, right = getMinWidth() + padRight;
+        for (int i = 0; i < steps; ++i) {
+            bubbleFadePaint.setColor(Theme.multAlpha(color, (i + 1f) / steps));
+            canvas.drawRect(left, contentBottom - fadeH + fadeH * i / (float) steps, right, contentBottom - fadeH + fadeH * (i + 1) / (float) steps + 1, bubbleFadePaint);
+        }
     }
 
     private void drawShowMoreButton(Canvas canvas, int contentBottom) {
@@ -2203,7 +2210,7 @@ public class RichMessageLayout {
             out.append(" ");
             final int end = out.length();
 
-            out.setSpan(new TextPaintImageReceiverSpan(null, textLatex.bitmap, textLatex.w, textLatex.h, Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), textLatex.depth), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            out.setSpan(new TextPaintImageReceiverSpan(null, textLatex.bitmap, textLatex.w, textLatex.h, Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, effectiveResourcesProvider()), textLatex.depth), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             if (textLatex.source != null && !textLatex.source.isEmpty()) {
                 out.setSpan(new TextSelectionHelper.ReplaceCopyTextSpannable(textLatex.source), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
@@ -9865,12 +9872,28 @@ public class RichMessageLayout {
         }
     }
 
+    private Theme.ResourcesProvider effectiveResourcesProvider() {
+        if (resourcesProvider != null) {
+            return resourcesProvider;
+        }
+        if (isRepost()) {
+            if (cell != null) {
+                return cell.getResourcesProvider();
+            }
+            if (view instanceof ChatMessageCell) {
+                return ((ChatMessageCell) view).getResourcesProvider();
+            }
+        }
+        return null;
+    }
+
     private int getThemedColor(int key) {
-        return Theme.getColor(key, resourcesProvider);
+        return Theme.getColor(key, effectiveResourcesProvider());
     }
 
     private Drawable getThemedDrawable(String key) {
-        final Drawable drawable = resourcesProvider != null ? resourcesProvider.getDrawable(key) : null;
+        final Theme.ResourcesProvider provider = effectiveResourcesProvider();
+        final Drawable drawable = provider != null ? provider.getDrawable(key) : null;
         return drawable != null ? drawable : Theme.getThemeDrawable(key);
     }
 
