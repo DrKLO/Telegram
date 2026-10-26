@@ -1,0 +1,9 @@
+name = "kite-stats"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kite-stats"
+# Filled in by .github/workflows/deploy-stats.yml before deploying.
+database_id = "DATABASE_ID"
