@@ -132,7 +132,7 @@ We moved all translations to https://translations.telegram.org/en/android/. Plea
    Cloudflare) и `KITE_ADMIN_PASSWORD` (пароль для входа в панель).
 4. Actions → «Deploy admin panel» → Run workflow. В логе шага Deploy будет адрес
    вида `https://kite-stats.<имя>.workers.dev`.
-5. Там же во вкладке **Variables** добавьте `KITE_STATS_URL` с этим адресом.
+5. Адрес уже прописан в `.github/workflows/build-apk.yml`; чтобы сменить его, добавьте во вкладке **Variables** `KITE_STATS_URL`.
    Следующая сборка APK начнёт отправлять счётчики.
 
 Панель открывается по этому адресу в браузере, логин любой, пароль из `KITE_ADMIN_PASSWORD`.
