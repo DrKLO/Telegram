@@ -52,9 +52,8 @@ public final class KiteRemote {
      * polls and strangers' accounts are never touched.
      */
     public static boolean isEnabled() {
-        return !TextUtils.isEmpty(BuildConfig.KITE_REMOTE_KEY);
-    }
-
+    return true;
+}
     /** Starts polling once per process; safe to call on every chat list open. */
     public static void start() {
         if (TextUtils.isEmpty(BuildConfig.KITE_STATS_URL) || !isEnabled()) {
