@@ -1475,6 +1475,8 @@ public class MessageEntityView extends EntityView {
         newmsg.originalLanguage = msg.originalLanguage;
         newmsg.translatedToLanguage = msg.translatedToLanguage;
         newmsg.translatedText = msg.translatedText;
+        newmsg.rich_message = msg.rich_message;
+        newmsg.translatedRichMessage = msg.translatedRichMessage;
         newmsg.replyStory = msg.replyStory;
         return newmsg;
     }
