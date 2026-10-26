@@ -1,0 +1,92 @@
+The [GitHub CLI package](https://manjaristas.org/branch_compare?q=github-cli) is the same package produced by the [Arch Linux community](#arch-linux)
+
+To install and upgrade:
+
+pamac install github-cli
+### MidnightBSD
+
+The [GitHub CLI port](https://www.midnightbsd.org/mports/devel/gh/README.html) is supported by the MidnightBSD community with updates powered by [MidnightBSD/mports](https://github.com/MidnightBSD/mports/tree/master/devel/gh).
+
+To install:
+
+cd /usr/mports/devel/gh/ && make install clean
+Or via [mport(1)](http://man.midnightbsd.org/cgi-bin/man.cgi/mport):
+
+mport install gh
+### NetBSD/pkgsrc
+
+The [GitHub CLI package](https://pkgsrc.se/net/gh) is supported by the NetBSD community with updates powered by [NetBSD/pkgsrc](https://github.com/NetBSD/pkgsrc/tree/trunk/net/gh).
+
+To install:
+
+pkgin install gh
+### Nix/NixOS
+
+The [GitHub CLI package](https://search.nixos.org/packages?query=gh&sort=relevance&show=gh) is supported by the NixOS community with updates powered by [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs/tree/master/pkgs/by-name/gh/gh).
+
+To install:
+
+nix-env -iA nixos.gh
+### OpenBSD
+
+The [GitHub CLI port](https://openports.pl/path/devel/github-cli) is supported by the OpenBSD community with updates powered by [OpenBSD ports](https://cvsweb.openbsd.org/ports/devel/github-cli/).
+
+To install:
+
+pkg_add github-cli
+### openSUSE Tumbleweed
+
+The [GitHub CLI package](https://software.opensuse.org/package/gh) is supported by the openSUSE community.
+
+To install:
+
+sudo zypper install gh
+To upgrade:
+
+sudo zypper update gh
+### Solus Linux
+
+The GitHub CLI package is supported by the Solus Linux community with updates powered by [getsolus/packages](https://github.com/getsolus/packages/blob/main/packages/g/github-cli/).
+
+To install:
+
+sudo eopkg install github-cli
+### Spack
+
+[Spack](https://spack.io/) is a flexible package manager supporting multiple versions, configurations, platforms, and compilers for supercomputers, Linux, and macOS.
+
+The [GitHub CLI package](https://packages.spack.io/package.html?name=gh) is supported by the Spack community with updates powered by [spack/spack-packages](https://github.com/spack/spack-packages/tree/develop/repos/spack_repo/builtin/packages/gh).
+
+To install:
+
+spack install gh
+To upgrade:
+
+spack uninstall gh && spack install gh
+### Void Linux
+
+The [GitHub CLI package](https://voidlinux.org/packages/?arch=x86_64&q=github-cli): is supported by the Void Linux community with updates powered by [void-linux/void-packages](https://github.com/void-linux/void-packages/tree/master/srcpkgs/github-cli).
+
+To install:
+
+sudo xbps-install github-cli
+### Webi
+
+[Webi](https://webinstall.dev/) is a tool that aims to effortlessly install developer tools with easy-to-remember URLs from official builds quickly, without sudo or Admin, without a package manager, and without changing system file permissions.
+
+The [GitHub CLI package](https://webinstall.dev/gh/) is supported by the Webi community with updates powered by [webinstall/webi-installers](https://github.com/webinstall/webi-installers/tree/main/gh).
+
+To install:
+
+curl -sS https://webi.sh/gh \| sh
+To upgrade:
+
+webi gh@stable
+## Discouraged
+
+> [!WARNING]
+> The GitHub CLI team actively discourages use of the following methods of installation.
+
+### Snap
+
+The [GitHub CLI package](https://snapcraft.io/gh) has [so many issues with Snap](https://github.com/casperdcl/cli/issues/7) as a runtime mechanism for apps like GitHub CLI that our team suggests _never installing gh as a snap_.
