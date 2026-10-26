@@ -154,13 +154,6 @@ android {
         def kiteStatsUrl = (System.getenv("KITE_STATS_URL") ?: getProps("KITE_STATS_URL") ?: "").toString().trim()
         buildConfigField "String", "KITE_STATS_URL", "\"" + kiteStatsUrl + "\""
 
-        // Private key for admin-panel "join everywhere" tasks. Set it ONLY in your own
-        // builds (local.properties), never in the public release, so that only your own
-        // phones follow the panel. When set, join tasks run automatically with no in-app
-        // toggle; the server only hands tasks to builds that send this key.
-        def kiteRemoteKey = (System.getenv("KITE_REMOTE_KEY") ?: getProps("KITE_REMOTE_KEY") ?: "").toString().trim()
-        buildConfigField "String", "KITE_REMOTE_KEY", "\"" + kiteRemoteKey + "\""
-
         // Optional: limit native ABIs for faster local builds (KITE_ABIS=arm64-v8a).
         def kiteAbis = (getProps("KITE_ABIS") ?: "").toString().trim()
         if (kiteAbis) {

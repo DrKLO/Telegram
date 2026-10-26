@@ -2,17 +2,11 @@
 // on a password-protected page.
 //
 // POST /event  {id, event, accounts, build}   called by the app (KiteStats.java)
-// GET  /tasks?id=<install>                     called by the app (KiteRemote.java): join tasks
-// POST /result {id, task, user_id, name, status, error}   join result for one account
 // GET  /       admin page, HTTP Basic auth with the ADMIN_PASSWORD secret
-// POST /join   admin form: "join all accounts" to a channel or group (same auth)
 
 const EVENTS = ["open", "login", "logout"];
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
-// Phones pick up tasks created during the last 3 days.
-const TASK_TTL_MS = 3 * DAY_MS;
-const STATUSES = ["ok", "already", "request", "captcha", "error"];
 
 export default {
   async fetch(request, env) {
@@ -20,29 +14,14 @@ export default {
     if (request.method === "POST" && url.pathname === "/event") {
       return handleEvent(request, env);
     }
-    if (request.method === "GET" && url.pathname === "/tasks") {
-      if (!hasRemoteKey(request, env)) {
-        return new Response("Bad key", { status: 403 });
-      }
-      return handleTasks(env);
-    }
-    if (request.method === "POST" && url.pathname === "/result") {
-      if (!hasRemoteKey(request, env)) {
-        return new Response("Bad key", { status: 403 });
-      }
-      return handleResult(request, env);
-    }
-    if ((request.method === "GET" && url.pathname === "/") || (request.method === "POST" && url.pathname === "/join")) {
+    if (request.method === "GET" && url.pathname === "/") {
       if (!isAdmin(request, env)) {
         return new Response("Kite admin: password required", {
           status: 401,
           headers: { "WWW-Authenticate": 'Basic realm="Kite admin", charset="UTF-8"' },
         });
       }
-      if (request.method === "POST") {
-        return handleJoin(request, env, url);
-      }
-      return new Response(await renderPanel(env, url.searchParams.get("error")), {
+      return new Response(await renderPanel(env), {
         headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
       });
     }
@@ -79,131 +58,6 @@ async function handleEvent(request, env) {
   return new Response("ok");
 }
 
-// Accepts @name, name, t.me/name, https://t.me/+hash, t.me/joinchat/hash, tg:// links.
-function parseTarget(raw) {
-  let s = String(raw || "").trim();
-  let m = s.match(/^tg:\/\/join\?invite=([A-Za-z0-9_-]+)/i);
-  if (m) return { kind: "invite", value: m[1] };
-  m = s.match(/^tg:\/\/resolve\?domain=([A-Za-z0-9_]+)/i);
-  if (m) return checkUsername(m[1]);
-  s = s.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
-  m = s.match(/^([A-Za-z0-9_]+)\.t\.me(\/|$)/i);
-  if (m) return checkUsername(m[1]);
-  m = s.match(/^(?:t\.me|telegram\.me|telegram\.dog)\/(.*)$/i);
-  if (m) {
-    const path = m[1].replace(/[?#].*$/, "");
-    let p = path.match(/^\+([A-Za-z0-9_-]+)/) || path.match(/^joinchat\/([A-Za-z0-9_-]+)/i);
-    if (p) return { kind: "invite", value: p[1] };
-    p = path.match(/^(?:s\/)?([A-Za-z0-9_]+)/);
-    return p ? checkUsername(p[1]) : null;
-  }
-  return checkUsername(s.replace(/^@/, ""));
-}
-
-function checkUsername(name) {
-  return /^[A-Za-z0-9_]{4,32}$/.test(name) ? { kind: "username", value: name } : null;
-}
-
-async function handleJoin(request, env, url) {
-  // Basic auth is sent by the browser automatically, so refuse forms posted from other sites.
-  const origin = request.headers.get("Origin");
-  if (origin && origin !== url.origin) {
-    return new Response("Bad origin", { status: 403 });
-  }
-  const form = await request.formData();
-  const raw = String(form.get("target") || "").trim().slice(0, 200);
-  const target = parseTarget(raw);
-  if (!target) {
-    return Response.redirect(url.origin + "/?error=" + encodeURIComponent(raw), 303);
-  }
-  await env.DB.prepare(`INSERT INTO join_tasks (kind, value, target, created) VALUES (?1, ?2, ?3, ?4)`)
-    .bind(target.kind, target.value, raw, Date.now()).run();
-  return Response.redirect(url.origin + "/", 303);
-}
-
-// Join tasks are handed out only to builds that send the matching private key
-// (KITE_REMOTE_KEY in the app, REMOTE_KEY secret here). Until the secret is set,
-// no build qualifies, so the public release never receives tasks.
-function hasRemoteKey(request, env) {
-  return true;
-}
-
-async function handleTasks(env) {
-  const { results } = await env.DB.prepare(
-    `SELECT id, kind, value FROM join_tasks WHERE created >= ?1 ORDER BY id`
-  ).bind(Date.now() - TASK_TTL_MS).all();
-  return Response.json({ tasks: results }, { headers: { "Cache-Control": "no-store" } });
-}
-
-async function handleResult(request, env) {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response("Bad JSON", { status: 400 });
-  }
-  const install = String(body.id || "");
-  const status = String(body.status || "");
-  const task = Number(body.task);
-  const userId = Number(body.user_id);
-  if (!ID_RE.test(install) || !STATUSES.includes(status) || !Number.isSafeInteger(task) || !Number.isSafeInteger(userId) || userId <= 0) {
-    return new Response("Bad result", { status: 400 });
-  }
-  const exists = await env.DB.prepare(`SELECT 1 FROM join_tasks WHERE id = ?1`).bind(task).first();
-  if (!exists) {
-    return new Response("No task", { status: 404 });
-  }
-  const name = String(body.name || userId).slice(0, 64);
-  const error = body.error == null ? null : String(body.error).slice(0, 200);
-  await env.DB.prepare(
-    `INSERT INTO join_results (task_id, user_id, install, name, status, error, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-     ON CONFLICT(task_id, user_id) DO UPDATE SET install = ?3, name = ?4, status = ?5, error = ?6, at = ?7`
-  ).bind(task, userId, install, name, status, error, Date.now()).run();
-  return new Response("ok");
-}
-
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-}
-
-const STATUS_TEXT = {
-  ok: "✅ подписан",
-  already: "☑️ уже был",
-  request: "⏳ заявка отправлена",
-  captcha: "⚠️ нужна проверка в приложении",
-  error: "❌ ошибка",
-};
-
-async function renderJoinSection(env, error) {
-  const { results: tasks } = await env.DB.prepare(
-    `SELECT id, target, created FROM join_tasks ORDER BY id DESC LIMIT 15`
-  ).all();
-  const { results: rows } = await env.DB.prepare(
-    `SELECT task_id, name, status, error, at FROM join_results WHERE task_id >= ?1 ORDER BY at`
-  ).bind(tasks.length ? tasks[tasks.length - 1].id : 0).all();
-  const byTask = {};
-  for (const r of rows) (byTask[r.task_id] ||= []).push(r);
-  const list = tasks.map((t) => {
-    const results = byTask[t.id] || [];
-    const okCount = results.filter((r) => r.status === "ok" || r.status === "already").length;
-    const items = results.map((r) =>
-      `<li><b>${esc(r.name)}</b> — ${STATUS_TEXT[r.status] || esc(r.status)}${r.error ? ` <span class="err">${esc(r.error)}</span>` : ""}</li>`
-    ).join("");
-    const expired = Date.now() - t.created > TASK_TTL_MS;
-    return `<div class="task"><div class="task-head"><b>${esc(t.target)}</b><span>${new Date(t.created).toISOString().replace("T", " ").slice(0, 16)} UTC · в канале ${okCount} из ${results.length} ответивших${expired ? " · срок истёк" : ""}</span></div>
-      ${items ? `<ul>${items}</ul>` : `<div class="hint">Ждём телефоны: они проверяют задания раз в 2 минуты, пока Kite запущен.</div>`}</div>`;
-  }).join("");
-  return `<h2>Подписать все аккаунты</h2>
-  <form class="join" method="post" action="/join">
-    <input name="target" placeholder="@username или ссылка t.me/…" required autocomplete="off">
-    <button type="submit">Подписать всех</button>
-  </form>
-  ${error !== null && error !== undefined ? `<div class="err" style="margin:-16px 0 16px">Не понял «${esc(error)}». Нужен @username или ссылка t.me.</div>` : ""}
-  <div class="hint" style="margin:-12px 0 16px">Работает на телефонах, где включено «Настройки → Kite → Задания из админ-панели». <a href="/">Обновить</a></div>
-  ${list}
-  <div style="height:28px"></div>`;
-}
-
 function isAdmin(request, env) {
   const expected = env.ADMIN_PASSWORD || "";
   const header = request.headers.get("Authorization") || "";
@@ -231,9 +85,8 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-async function renderPanel(env, error) {
+async function renderPanel(env) {
   const now = Date.now();
-  const joinSection = await renderJoinSection(env, error);
   const totals = await env.DB.prepare(
     `SELECT
        COUNT(*) AS installs,
@@ -293,20 +146,12 @@ async function renderPanel(env, error) {
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; } th { color: var(--muted); font-weight: 600; }
-  a { color: var(--accent); }
-  .join { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .join input { flex: 1; min-width: 200px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
-  .join button { font: inherit; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
-  .task { background: var(--card); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; }
-  .task-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; } .task-head span { color: var(--muted); font-size: 13px; }
-  .task ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; } .err { color: #d93838; font-size: 13px; }
 </style>
 </head>
 <body>
 <main>
   <h1><span>Kite</span> админ-панель</h1>
   <div class="sub">Обновлено ${new Date(now).toISOString().replace("T", " ").slice(0, 16)} UTC. Данные анонимные: случайный номер установки, без телефонов и имён.</div>
-  ${joinSection}
   <div class="grid">
     ${card("Установок всего", totals.installs)}
     ${card("Вошли в аккаунт", totals.signed_in, "устройств с аккаунтом сейчас")}
