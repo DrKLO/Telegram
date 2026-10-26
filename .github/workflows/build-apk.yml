@@ -61,7 +61,13 @@ jobs:
           KITE_BUILD: ${{ github.event_name == 'pull_request' && '0' || github.run_number }}
           # URL of the Kite admin panel (Actions variable), empty disables usage counters.
           KITE_STATS_URL: ${{ vars.KITE_STATS_URL || 'https://kite-stats.tomandhalk.workers.dev' }}
-        run: ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
+        run: |
+          set -o pipefail
+          if ! ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease 2>&1 | tee build.log; then
+            # Surface compiler errors as annotations, visible on the PR without opening the log.
+            grep -E '(\.java|\.kt):[0-9]+(:[0-9]+)?: error|^e: |What went wrong' -A2 build.log | head -60 | sed 's/^/::error::/' || true
+            exit 1
+          fi
 
       - name: Collect APK
         run: |
