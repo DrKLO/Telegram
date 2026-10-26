@@ -901,7 +901,7 @@ public class LocationController extends BaseController implements NotificationCe
         });
     }
 
-    public void markLiveLoactionsAsRead(long dialogId) {
+    public void markLiveLocationsAsRead(long dialogId) {
         if (DialogObject.isEncryptedDialog(dialogId)) {
             return;
         }
