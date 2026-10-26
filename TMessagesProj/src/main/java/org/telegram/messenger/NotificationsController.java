@@ -118,6 +118,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final LongSparseArray<Integer> lastWearNotifiedMessageId = new LongSparseArray<>();
     private final LongSparseArray<Integer> pushDialogsOverrideMention = new LongSparseArray<>();
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
+    private final LongSparseArray<String> dialogNotificationChannels = new LongSparseArray<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
@@ -3449,7 +3450,9 @@ public class NotificationsController extends BaseController implements Notificat
         notificationsQueue.postRunnable(() -> {
             int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             if (hour >= 11 && hour <= 22) {
-                notificationManager.cancel(notificationId);
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                    notificationManager.cancel(notificationId);
+                }
                 showOrUpdateNotification(true);
             } else {
                 scheduleNotificationRepeat();
@@ -4813,7 +4816,7 @@ public class NotificationsController extends BaseController implements Notificat
                     mBuilder.addAction(R.drawable.ic_ab_reply, LocaleController.getString(R.string.Reply), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
                 }
             }
-            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
+            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, story, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -4879,10 +4882,15 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, boolean lastIsStory, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
         FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
+        // on P+ every chat notification alerts by itself, the summary only groups them
+        final boolean alertByChildren = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
         if (Build.VERSION.SDK_INT >= 26) {
             notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
+        }
+        if (alertByChildren) {
+            notificationBuilder.setSilent(true);
         }
         Notification mainNotification = notificationBuilder.build();
         if (Build.VERSION.SDK_INT <= 19) {
@@ -4962,8 +4970,8 @@ public class NotificationsController extends BaseController implements Notificat
 
         ArrayList<NotificationHolder> holders = new ArrayList<>();
 
-        boolean useSummaryNotification = Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1 || sortedDialogs.size() > (storyPushMessages.isEmpty() ? 1 : 2);
-        if (useSummaryNotification && Build.VERSION.SDK_INT >= 26) {
+        boolean useSummaryNotification = alertByChildren || Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1 || sortedDialogs.size() > (storyPushMessages.isEmpty() ? 1 : 2);
+        if (useSummaryNotification && !alertByChildren && Build.VERSION.SDK_INT >= 26) {
             checkOtherNotificationsChannel();
         }
 
@@ -5671,9 +5679,18 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.e(e);
             }
 
+            final boolean alert = alertByChildren && !isSilent && (dialogKey.story ? lastIsStory : !lastIsStory && dialogId == lastDialogId);
+            final long channelKey = dialogKey.story ? 0 : dialogId;
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
-                builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                if (!alertByChildren) {
+                    builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                } else if (alert) {
+                    builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN);
+                } else {
+                    builder.setSilent(true);
+                    builder.setOnlyAlertOnce(true);
+                }
             }
 
             TL_keyboard.KeyboardInlineButton copybutton = null;
@@ -5747,7 +5764,14 @@ public class NotificationsController extends BaseController implements Notificat
                 builder.addPerson("tel:+" + user.phone);
             }
 
-            if (Build.VERSION.SDK_INT >= 26) {
+            if (alertByChildren) {
+                String channelId = alert ? null : dialogNotificationChannels.get(channelKey);
+                if (channelId == null || systemNotificationManager.getNotificationChannel(channelId) == null) {
+                    channelId = mainNotification.getChannelId();
+                }
+                builder.setChannelId(channelId);
+                dialogNotificationChannels.put(channelKey, channelId);
+            } else if (Build.VERSION.SDK_INT >= 26) {
                 setNotificationChannel(mainNotification, builder, useSummaryNotification);
             }
             FileLog.d("showExtraNotifications: holders.add " + dialogId);
@@ -5755,7 +5779,7 @@ public class NotificationsController extends BaseController implements Notificat
             wearNotificationsIds.put(dialogId, internalId);
         }
 
-        if (useSummaryNotification) {
+        if (useSummaryNotification && !(alertByChildren && holders.isEmpty())) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("show summary with id " + notificationId);
             }
