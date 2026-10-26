@@ -20,6 +20,7 @@ def remove_prefix(text, prefix):
 
 def compareApkFromBundle(bundle, apk):
     FILES_TO_IGNORE = ["resources.arsc", "stamp-cert-sha256"]
+    PREFIX_TO_REMOVE = ["base/root/", "base/dex/", "base/manifest/", "base/"]
 
     apkZip = ZipFile(apk, 'r')
     bundleZip = ZipFile(bundle, 'r')
@@ -38,10 +39,10 @@ def compareApkFromBundle(bundle, apk):
         found = False
         for bundleInfo in secondList:
             fileName = bundleInfo.filename
-            fileName = remove_prefix(fileName, "base/root/")
-            fileName = remove_prefix(fileName, "base/dex/")
-            fileName = remove_prefix(fileName, "base/manifest/")
-            fileName = remove_prefix(fileName, "base/")
+
+            for prefix in PREFIX_TO_REMOVE:
+                fileName = remove_prefix(fileName, prefix)
+            
             if (fileName.startswith("BUNDLE-METADATA")):
                 fileName = "META-INF" + remove_prefix(fileName, "BUNDLE-METADATA/")
             if fileName == apkInfo.filename:
