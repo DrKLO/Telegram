@@ -1814,6 +1814,8 @@
     <string name="NotificationHiddenChatName">Telegram</string>
     <string name="NotificationHiddenChatUserName">User</string>
     <string name="NotificationHiddenMessage">New message</string>
+    <string name="NotificationReplySending">Sending...</string>
+    <string name="NotificationReplyNotSent">Message not sent</string>
     <string name="Reply">Reply</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
