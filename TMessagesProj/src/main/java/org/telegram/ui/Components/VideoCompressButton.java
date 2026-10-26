@@ -31,6 +31,22 @@ public class VideoCompressButton extends View {
     private boolean disabled;
     private final AnimatedFloat disabledT = new AnimatedFloat(this, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
 
+    // the quality is written on the button alone, and the button was called Video quality whatever it
+    // was set to
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final StringBuilder sb = new StringBuilder(org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AccDescrVideoQuality));
+        if (!TextUtils.isEmpty(textDrawable.getText())) {
+            sb.append(", ").append(textDrawable.getText());
+        }
+        if (!TextUtils.isEmpty(sizeTextDrawable.getText())) {
+            sb.append(" ").append(sizeTextDrawable.getText());
+        }
+        info.setContentDescription(sb);
+        info.setEnabled(!disabled);
+    }
+
     public VideoCompressButton(Context context) {
         super(context);
 
