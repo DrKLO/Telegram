@@ -25,9 +25,6 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       KITE_ADMIN_PASSWORD: ${{ secrets.KITE_ADMIN_PASSWORD }}
-      # Optional: shared key for "join everywhere". Set the same value as
-      # KITE_REMOTE_KEY in your own app build. Leave unset to keep the feature off.
-      KITE_REMOTE_KEY: ${{ secrets.KITE_REMOTE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +58,3 @@ jobs:
         run: |
           npx --yes wrangler@4 deploy
           printf '%s' "$KITE_ADMIN_PASSWORD" | npx --yes wrangler@4 secret put ADMIN_PASSWORD
-          if [ -n "$KITE_REMOTE_KEY" ]; then
-            printf '%s' "$KITE_REMOTE_KEY" | npx --yes wrangler@4 secret put REMOTE_KEY
-          fi

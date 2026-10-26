@@ -54,7 +54,7 @@ public final class KiteStats {
         Utilities.globalQueue.postRunnable(() -> send(event), delayMs);
     }
 
-    static String installId() {
+    private static String installId() {
         final SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("kite_stats", Context.MODE_PRIVATE);
         String id = prefs.getString("install_id", null);
         if (id == null) {
