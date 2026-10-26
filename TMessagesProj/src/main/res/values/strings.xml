@@ -8,7 +8,6 @@
     <string name="KiteUpdateCheckFailed">Could not check for updates. Check your internet connection.</string>
     <string name="KiteKeepDeleted">Keep deleted messages</string>
     <string name="KiteKeepDeletedInfo">Messages, photos, videos and files that others delete stay in the chat with a “deleted” mark. Media is kept if it was loaded before deletion.</string>
-    <string name="KiteRemoteTasks">Tasks from the admin panel</string>
     <string name="KiteDeletedMark">deleted</string>
     <string name="KiteChannelPromptTitle">Kite news</string>
     <string name="KiteChannelPromptText">Subscribe to the Kite channel to get news, updates and tips about the app.</string>

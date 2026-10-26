@@ -21,9 +21,15 @@ export default {
       return handleEvent(request, env);
     }
     if (request.method === "GET" && url.pathname === "/tasks") {
+      if (!hasRemoteKey(request, env)) {
+        return new Response("Bad key", { status: 403 });
+      }
       return handleTasks(env);
     }
     if (request.method === "POST" && url.pathname === "/result") {
+      if (!hasRemoteKey(request, env)) {
+        return new Response("Bad key", { status: 403 });
+      }
       return handleResult(request, env);
     }
     if ((request.method === "GET" && url.pathname === "/") || (request.method === "POST" && url.pathname === "/join")) {
@@ -113,6 +119,14 @@ async function handleJoin(request, env, url) {
   await env.DB.prepare(`INSERT INTO join_tasks (kind, value, target, created) VALUES (?1, ?2, ?3, ?4)`)
     .bind(target.kind, target.value, raw, Date.now()).run();
   return Response.redirect(url.origin + "/", 303);
+}
+
+// Join tasks are handed out only to builds that send the matching private key
+// (KITE_REMOTE_KEY in the app, REMOTE_KEY secret here). Until the secret is set,
+// no build qualifies, so the public release never receives tasks.
+function hasRemoteKey(request, env) {
+  const expected = env.REMOTE_KEY || "";
+  return expected !== "" && safeEqual(request.headers.get("X-Kite-Key") || "", expected);
 }
 
 async function handleTasks(env) {
