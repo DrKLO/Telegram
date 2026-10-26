@@ -1,0 +1,168 @@
+name: Build debug APK (arm64)
+
+on:
+  push:
+    branches: [reply-thread, sticker-peel, voice-blob, time-map, demo-all]
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /usr/share/swift
+          df -h /
+
+      - name: Submodules
+        run: |
+          git submodule update --init --recursive --depth 1 --jobs 8 || git submodule update --init --recursive --jobs 8
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Android SDK / NDK
+        run: |
+          SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SM" --sdk_root="$ANDROID_HOME" --licenses > /dev/null || true
+          sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SM" --sdk_root="$ANDROID_HOME" \
+            "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          sudo chmod -R a+rwX "$ANDROID_HOME" || true
+
+      - name: Gradle init script (arm64 only, unique package, no Google Services)
+        run: |
+          mkdir -p ~/.gradle/init.d
+          printf 'org.gradle.jvmargs=-Xmx5g -Dfile.encoding=UTF-8\norg.gradle.parallel=true\n' > ~/.gradle/gradle.properties
+          cat > ~/.gradle/init.d/ci.gradle <<'GRADLE'
+          allprojects {
+              afterEvaluate { p ->
+                  if (p.plugins.hasPlugin('com.android.application')) {
+                      p.android.buildTypes.debug.applicationIdSuffix = '.dxrk'
+                      p.android.productFlavors.configureEach { f ->
+                          f.ndk.abiFilters.clear()
+                          f.ndk.abiFilters.add('arm64-v8a')
+                      }
+                      p.tasks.matching { it.name.endsWith('GoogleServices') }.configureEach { it.enabled = false }
+                  }
+                  if (p.plugins.hasPlugin('com.android.library') && p.hasProperty('android')) {
+                      p.android.defaultConfig.ndk.abiFilters.clear()
+                      p.android.defaultConfig.ndk.abiFilters.add('arm64-v8a')
+                  }
+              }
+          }
+          GRADLE
+
+      - name: Compile Java (fast check)
+        run: |
+          set -o pipefail
+          ./gradlew :TMessagesProj:compileDebugJavaWithJavac --stacktrace 2>&1 | tee build.log
+
+      - name: Report compile errors
+        if: failure()
+        run: |
+          MSG=$(grep -nE "error:|What went wrong|Execution failed" -A3 build.log | head -45 | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=compile-errors::$MSG"
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/.ghcup /usr/share/swift
+          df -h /
+
+      - name: Submodules
+        run: |
+          git submodule update --init --recursive --depth 1 --jobs 8 || git submodule update --init --recursive --jobs 8
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Android SDK / NDK
+        run: |
+          SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SM" --sdk_root="$ANDROID_HOME" --licenses > /dev/null || true
+          sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SM" --sdk_root="$ANDROID_HOME" \
+            "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          sudo chmod -R a+rwX "$ANDROID_HOME" || true
+
+      - name: Gradle init script (arm64 only, unique package, no Google Services)
+        run: |
+          mkdir -p ~/.gradle/init.d
+          printf 'org.gradle.jvmargs=-Xmx5g -Dfile.encoding=UTF-8\norg.gradle.parallel=true\n' > ~/.gradle/gradle.properties
+          cat > ~/.gradle/init.d/ci.gradle <<'GRADLE'
+          allprojects {
+              afterEvaluate { p ->
+                  if (p.plugins.hasPlugin('com.android.application')) {
+                      p.android.buildTypes.debug.applicationIdSuffix = '.dxrk'
+                      p.android.productFlavors.configureEach { f ->
+                          f.ndk.abiFilters.clear()
+                          f.ndk.abiFilters.add('arm64-v8a')
+                      }
+                      p.tasks.matching { it.name.endsWith('GoogleServices') }.configureEach { it.enabled = false }
+                  }
+                  if (p.plugins.hasPlugin('com.android.library') && p.hasProperty('android')) {
+                      p.android.defaultConfig.ndk.abiFilters.clear()
+                      p.android.defaultConfig.ndk.abiFilters.add('arm64-v8a')
+                  }
+              }
+          }
+          GRADLE
+
+      - name: Build
+        run: |
+          set -o pipefail
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --stacktrace 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          MSG=$(grep -nE "error:|What went wrong|Execution failed|FAILED" -A3 build.log | head -45 | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=build-errors::$MSG"
+
+      - name: Collect APK
+        run: |
+          APK=$(find TMessagesProj_App/build -name app.apk -path '*afat/debug*' | head -1)
+          echo "APK: $APK"; ls -l "$APK"
+          unzip -l "$APK" | grep -o 'lib/[^/]*/' | sort | uniq -c
+          mkdir -p dist && cp "$APK" "dist/telegram-${GITHUB_REF_NAME}-arm64-debug.apk"
+
+      - name: Symbolize crash addresses
+        if: always()
+        run: |
+          set +e
+          BIN="$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          LIB=$(find TMessagesProj/build -name 'libtmessages.49.so' -path '*arm64-v8a*' -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          echo "LIB=$LIB"
+          ID=$("$BIN/llvm-readelf" -n "$LIB" | grep -i 'Build ID' | awk '{print $3}')
+          OUT="buildid=$ID"
+          if [ -f .github/ci/crash-addrs.txt ]; then
+            OUT="$OUT"$'\n'"$("$BIN/llvm-addr2line" -f -C -i -e "$LIB" $(cat .github/ci/crash-addrs.txt) 2>&1)"
+          fi
+          echo "$OUT"
+          MSG=$(printf '%s' "$OUT" | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::notice title=symbolized::$MSG"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ github.ref_name }}
+          path: dist/*.apk
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
