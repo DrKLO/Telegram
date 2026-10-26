@@ -8,7 +8,6 @@
     <string name="KiteUpdateCheckFailed">Не удалось проверить обновление. Проверьте интернет.</string>
     <string name="KiteKeepDeleted">Сохранять удалённые сообщения</string>
     <string name="KiteKeepDeletedInfo">Сообщения, фото, видео и файлы, которые удалили другие, останутся в чате с пометкой «удалено». Медиа сохраняется, если успело загрузиться до удаления.</string>
-    <string name="KiteRemoteTasks">Задания из админ-панели</string>
     <string name="KiteDeletedMark">удалено</string>
     <string name="KiteChannelPromptTitle">Новости Kite</string>
     <string name="KiteChannelPromptText">Подпишитесь на канал Kite, чтобы узнавать о новостях, обновлениях и полезных функциях приложения.</string>

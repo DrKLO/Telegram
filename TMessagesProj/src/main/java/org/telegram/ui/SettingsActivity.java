@@ -80,7 +80,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.KiteDeletedMessages;
-import org.telegram.messenger.KiteRemote;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
@@ -751,7 +750,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(UItem.asHeader("Kite"));
         items.add(SettingCell.Factory.of(40, 0xFFFF7A59, 0xFFE8436E, R.drawable.settings_data, getString(R.string.KiteCheckUpdate), null, BuildConfig.KITE_BUILD > 0 ? formatString(R.string.KiteBuildNumber, BuildConfig.KITE_BUILD) : null));
         items.add(UItem.asCheck(41, getString(R.string.KiteKeepDeleted)).setChecked(KiteDeletedMessages.isEnabled()));
-        items.add(UItem.asCheck(42, getString(R.string.KiteRemoteTasks)).setChecked(KiteRemote.isEnabled()));
 
         if (SharedSettings.experimentalSettingsAllowed.get()) {
             items.add(UItem.asShadow(null));
@@ -888,10 +886,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 41:
                 KiteDeletedMessages.setEnabled(!KiteDeletedMessages.isEnabled());
-                listView.adapter.update(true);
-                break;
-            case 42:
-                KiteRemote.setEnabled(!KiteRemote.isEnabled());
                 listView.adapter.update(true);
                 break;
 
