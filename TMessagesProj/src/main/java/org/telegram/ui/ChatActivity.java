@@ -12318,6 +12318,98 @@ public class ChatActivity extends BaseFragment implements
         updateSelectedMessageReactions();
     }
 
+    public void openShareAlert(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages) {
+        if (getParentActivity() == null || messageObject == null) {
+            return;
+        }
+        ArrayList<MessageObject> arrayList = null;
+        if (groupedMessages != null) {
+            arrayList = groupedMessages.messages;
+        } else if (messageObject.getGroupId() != 0) {
+            MessageObject.GroupedMessages g = groupedMessagesMap.get(messageObject.getGroupId());
+            if (g != null) {
+                arrayList = g.messages;
+            }
+        }
+        if (arrayList == null) {
+            arrayList = new ArrayList<>();
+            arrayList.add(messageObject);
+        }
+        final boolean includeStory = getMessagesController().storiesEnabled() && StoryEntry.canRepostMessage(messageObject);
+        showDialog(new ShareAlert(getContext(), ChatActivity.this, arrayList, null, null, ChatObject.isChannel(currentChat), null, null, false, false, includeStory, null, themeDelegate) {
+            { includeStoryFromMessage = includeStory; }
+            @Override
+            public void dismissInternal() {
+                AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+                super.dismissInternal();
+                if (chatActivityEnterView.getVisibility() == View.VISIBLE) {
+                    fragmentView.requestLayout();
+                }
+            }
+
+            @Override
+            protected void onShareStory(View cell) {
+                StoryRecorder.SourceView sourceView = null;
+                if (cell instanceof ShareDialogCell) {
+                    sourceView = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
+                }
+                final ArrayList<MessageObject> messageObjects = new ArrayList<>();
+                MessageObject.GroupedMessages g = messageObject.getGroupId() != 0 ? groupedMessagesMap.get(messageObject.getGroupId()) : null;
+                if (g != null) {
+                    messageObjects.addAll(g.messages);
+                } else {
+                    messageObjects.add(messageObject);
+                }
+                StoryRecorder editor = StoryRecorder.getInstance(getParentActivity(), currentAccount);
+                editor.setOnPrepareCloseListener((t, close, sent, did) -> {
+                    if (sent) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            String chatTitle = "";
+                            if (did < 0) {
+                                TLRPC.Chat chat = getMessagesController().getChat(-did);
+                                if (chat != null) {
+                                    chatTitle = chat.title;
+                                }
+                            }
+                            BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.raw.contact_check, AndroidUtilities.replaceTags(
+                                TextUtils.isEmpty(chatTitle) ?
+                                    LocaleController.getString(R.string.RepostedToProfile) :
+                                    LocaleController.formatString(R.string.RepostedToChannelProfile, chatTitle)
+                            )).show();
+                        });
+                        dismiss();
+                        editor.replaceSourceView(null);
+                    } else {
+                        StoryRecorder.SourceView sourceView2 = null;
+                        if (cell instanceof ShareDialogCell && cell.isAttachedToWindow()) {
+                            sourceView2 = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
+                        }
+                        editor.replaceSourceView(sourceView2);
+                    }
+                    AndroidUtilities.runOnUIThread(close);
+                });
+                editor.openRepost(sourceView, StoryEntry.repostMessage(messageObjects));
+            }
+
+            @Override
+            protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
+                createUndoView();
+                if (undoView == null || !showToast) {
+                    return;
+                }
+                if (dids.size() == 1) {
+                    if (dids.valueAt(0).id != getUserConfig().getClientUserId() || !BulletinFactory.of(ChatActivity.this).showForwardedBulletinWithTag(dids.valueAt(0).id, count)) {
+                        undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count, topic, null, null);
+                    }
+                } else {
+                    undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
+                }
+            }
+        });
+        AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
+        fragmentView.requestLayout();
+    }
+
     private void openForward(boolean fromActionBar) {
         if (isPeerNoForwards() || hasSelectedNoforwardsMessage()) {
             // We should update text if user changed locale without re-opening chat activity
@@ -33650,6 +33742,13 @@ public class ChatActivity extends BaseFragment implements
                     selectedObjectGroup = null;
                     return;
                 }
+                if (selectedObject != null && selectedObject.type == MessageObject.TYPE_ARTICLE) {
+                    openShareAlert(selectedObject, selectedObjectGroup);
+                    selectedObject = null;
+                    selectedObjectToEditCaption = null;
+                    selectedObjectGroup = null;
+                    break;
+                }
                 forwardingMessage = selectedObject;
                 forwardingMessageGroup = selectedObjectGroup;
                 Bundle args = new Bundle();
@@ -39627,90 +39726,7 @@ public class ChatActivity extends BaseFragment implements
                     openOriginalReplyChat(messageObject);
                 }
             } else {
-                ArrayList<MessageObject> arrayList = null;
-                if (messageObject.getGroupId() != 0) {
-                    MessageObject.GroupedMessages groupedMessages = groupedMessagesMap.get(messageObject.getGroupId());
-                    if (groupedMessages != null) {
-                        arrayList = groupedMessages.messages;
-                    }
-                }
-                if (arrayList == null) {
-                    arrayList = new ArrayList<>();
-                    arrayList.add(messageObject);
-                }
-                final boolean includeStory = getMessagesController().storiesEnabled() && StoryEntry.canRepostMessage(messageObject);
-                showDialog(new ShareAlert(getContext(), ChatActivity.this, arrayList, null, null, ChatObject.isChannel(currentChat), null, null, false, false, includeStory, null, themeDelegate) {
-                    { includeStoryFromMessage = includeStory; }
-                    @Override
-                    public void dismissInternal() {
-                        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-                        super.dismissInternal();
-                        if (chatActivityEnterView.getVisibility() == View.VISIBLE) {
-                            fragmentView.requestLayout();
-                        }
-                    }
-
-                    @Override
-                    protected void onShareStory(View cell) {
-                        StoryRecorder.SourceView sourceView = null;
-                        if (cell instanceof ShareDialogCell) {
-                            sourceView = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
-                        }
-                        final ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                        MessageObject.GroupedMessages groupedMessages = messageObject.getGroupId() != 0 ? groupedMessagesMap.get(messageObject.getGroupId()) : null;
-                        if (groupedMessages != null) {
-                            messageObjects.addAll(groupedMessages.messages);
-                        } else {
-                            messageObjects.add(messageObject);
-                        }
-                        StoryRecorder editor = StoryRecorder.getInstance(getParentActivity(), currentAccount);
-                        editor.setOnPrepareCloseListener((t, close, sent, did) -> {
-                            if (sent) {
-                                AndroidUtilities.runOnUIThread(() -> {
-                                    String chatTitle = "";
-                                    if (did < 0) {
-                                        TLRPC.Chat chat = getMessagesController().getChat(-did);
-                                        if (chat != null) {
-                                            chatTitle = chat.title;
-                                        }
-                                    }
-                                    BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.raw.contact_check, AndroidUtilities.replaceTags(
-                                        TextUtils.isEmpty(chatTitle) ?
-                                            LocaleController.getString(R.string.RepostedToProfile) :
-                                            LocaleController.formatString(R.string.RepostedToChannelProfile, chatTitle)
-                                    )).show();
-                                });
-                                dismiss();
-                                editor.replaceSourceView(null);
-                            } else {
-                                StoryRecorder.SourceView sourceView2 = null;
-                                if (cell instanceof ShareDialogCell && cell.isAttachedToWindow()) {
-                                    sourceView2 = StoryRecorder.SourceView.fromShareCell((ShareDialogCell) cell);
-                                }
-                                editor.replaceSourceView(sourceView2);
-                            }
-                            AndroidUtilities.runOnUIThread(close);
-                        });
-                        editor.openRepost(sourceView, StoryEntry.repostMessage(messageObjects));
-                    }
-
-                    @Override
-                    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {
-                        createUndoView();
-                        if (undoView == null || !showToast) {
-                            return;
-                        }
-                        if (dids.size() == 1) {
-                            if (dids.valueAt(0).id != getUserConfig().getClientUserId() || !BulletinFactory.of(ChatActivity.this).showForwardedBulletinWithTag(dids.valueAt(0).id, count)) {
-                                undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count, topic, null, null);
-                            }
-                        } else {
-                            undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
-                        }
-                    }
-                });
-                AndroidUtilities.setAdjustResizeToNothing(getParentActivity(), classGuid);
-                fragmentView.requestLayout();
+                openShareAlert(messageObject, null);
             }
         }
 
@@ -46568,9 +46584,14 @@ public class ChatActivity extends BaseFragment implements
                     && message.type != MessageObject.TYPE_STORY_MENTION
                     && message.type != MessageObject.TYPE_GIFT_STARS;
                 if (canForward) {
-                    items.add(LocaleController.getString(R.string.Forward));
+                    if (selectedObject.type == MessageObject.TYPE_ARTICLE) {
+                        items.add(LocaleController.getString(R.string.ShareSendTo));
+                        icons.add(R.drawable.msg_shareout);
+                    } else {
+                        items.add(LocaleController.getString(R.string.Forward));
+                        icons.add(R.drawable.msg_forward);
+                    }
                     options.add(OPTION_FORWARD);
-                    icons.add(R.drawable.msg_forward);
                 }
                 if (allowUnpin) {
                     items.add(LocaleController.getString(R.string.UnpinMessage));
