@@ -30,6 +30,11 @@ public class URLSpanReplacement extends URLSpan {
         style = run;
     }
 
+    public URLSpanReplacement(URLSpanReplacement span) {
+        this(span.getURL(), span.style != null ? new TextStyleSpan.TextStyleRun(span.style) : null);
+        navigateToPremiumBot = span.navigateToPremiumBot;
+    }
+
     public void setNavigateToPremiumBot(boolean navigateToPremiumBot) {
         this.navigateToPremiumBot = navigateToPremiumBot;
     }
