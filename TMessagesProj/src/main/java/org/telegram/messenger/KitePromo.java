@@ -14,7 +14,13 @@ public final class KitePromo {
 
     public static final String CHANNEL_USERNAME = "usekite";
 
-    private static volatile long channelDialogId;
+    private static final String PREF_CHANNEL_DIALOG_ID = "kite_channel_dialog_id";
+
+    // Remembered across restarts: the promo dialog is restored from the cache before
+    // the channel is resolved again, and it must still be recognised as the Kite channel.
+    private static volatile long channelDialogId = MessagesController.getGlobalMainSettings().getLong(PREF_CHANNEL_DIALOG_ID, 0);
+
+    private static final boolean[] refreshed = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
 
     /** Promo data built locally for the Kite channel, not received from the server. */
     static final class Data extends TLRPC.TL_help_promoData {
@@ -25,6 +31,18 @@ public final class KitePromo {
 
     public static boolean isKiteDialog(long dialogId) {
         return dialogId != 0 && dialogId == channelDialogId;
+    }
+
+    /**
+     * Re-checks the promo dialog once per app start, so the Kite channel comes back to the
+     * first row even when an earlier check is still cached as "nothing to show".
+     */
+    public static void refreshOnce(int account) {
+        if (refreshed[account]) {
+            return;
+        }
+        refreshed[account] = true;
+        MessagesController.getInstance(account).checkPromoInfo(true);
     }
 
     /**
@@ -45,6 +63,7 @@ public final class KitePromo {
                 return;
             }
             channelDialogId = -resolved.peer.channel_id;
+            MessagesController.getGlobalMainSettings().edit().putLong(PREF_CHANNEL_DIALOG_ID, channelDialogId).apply();
             final Data promo = new Data();
             promo.peer = resolved.peer;
             promo.chats = resolved.chats;
