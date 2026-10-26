@@ -65,4 +65,6 @@
 
     <item name="tag_view_on_post_draw_state" type="id" />
     <item name="tag_view_on_post_draw_root_state" type="id" />
+    <item name="acc_action_photo_next" type="id" />
+    <item name="acc_action_photo_previous" type="id" />
 </resources>
