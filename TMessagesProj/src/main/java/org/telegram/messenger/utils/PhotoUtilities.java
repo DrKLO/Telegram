@@ -54,8 +54,15 @@ public class PhotoUtilities {
         imageUpdater.setDelegate((photo, video, videoStartTimestamp, videoPath, bigSize, smallSize, isVideo, emojiMarkup) -> AndroidUtilities.runOnUIThread(() -> {
             TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
             if (photo != null) {
-                req.file = photo;
-                req.flags |= 1;
+                TLRPC.Document tmpDoc = new TLRPC.TL_document();
+                tmpDoc.mime_type = photo.mime_type;
+                if (MessageObject.isGifDocument(tmpDoc)) {
+                    req.video = photo;
+                    req.flags |= 2;
+                } else {
+                    req.file = photo;
+                    req.flags |= 1;
+                }
             }
             if (video != null) {
                 req.video = video;
@@ -162,8 +169,15 @@ public class PhotoUtilities {
             if (photo != null || video != null || emojiMarkup1 != null) {
                 TLRPC.TL_photos_uploadProfilePhoto req = new TLRPC.TL_photos_uploadProfilePhoto();
                 if (photo != null) {
-                    req.file = photo;
-                    req.flags |= 1;
+                    TLRPC.Document tmpDoc = new TLRPC.TL_document();
+                    tmpDoc.mime_type = photo.mime_type;
+                    if (MessageObject.isGifDocument(tmpDoc)) {
+                        req.video = photo;
+                        req.flags |= 2;
+                    } else {
+                        req.file = photo;
+                        req.flags |= 1;
+                    }
                 }
                 if (video != null) {
                     req.video = video;
