@@ -11408,6 +11408,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    // a live photo is edited on top of its still image, which is also sent as the photo
+    private static int editBaseSize(MediaController.MediaEditState entry) {
+        return entry.isLivePhoto() ? AndroidUtilities.getPhotoSize() : thumbSize;
+    }
+
     private void applyCurrentEditMode() {
         if (currentIndex < 0 || currentIndex >= imagesArrLocals.size()) {
             return;
@@ -11431,9 +11436,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (isCurrentVideo) {
                 if (!TextUtils.isEmpty(entry.filterPath)) {
-                    bitmap = ImageLoader.loadBitmap(entry.filterPath, null, thumbSize, thumbSize, true);
+                    bitmap = ImageLoader.loadBitmap(entry.filterPath, null, editBaseSize(entry), editBaseSize(entry), true);
                 } else if (entry.isLivePhoto() && !TextUtils.isEmpty(entry.getPath())) {
-                    bitmap = ImageLoader.loadBitmap(entry.getPath(), null, thumbSize, thumbSize, true);
+                    bitmap = ImageLoader.loadBitmap(entry.getPath(), null, editBaseSize(entry), editBaseSize(entry), true);
                 } else {
                     if (sendPhotoType == SELECT_TYPE_AVATAR) {
                         orientation = new int[1];
@@ -11656,12 +11661,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 Bitmap originalBitmap;
                 if (entry.filterPath == null) {
                     if (entry.isLivePhoto() && !TextUtils.isEmpty(entry.getPath())) {
-                        originalBitmap = ImageLoader.loadBitmap(entry.getPath(), null, thumbSize, thumbSize, true);
+                        originalBitmap = ImageLoader.loadBitmap(entry.getPath(), null, editBaseSize(entry), editBaseSize(entry), true);
                     } else {
                         originalBitmap = SendMessagesHelper.createVideoThumbnailAtTime(entry.getPath(), (long) (videoTimelineView.getLeftProgress() * videoPlayer.getDuration() * 1000L));
                     }
                 } else {
-                    originalBitmap = ImageLoader.loadBitmap(entry.filterPath, null, thumbSize, thumbSize, true);
+                    originalBitmap = ImageLoader.loadBitmap(entry.filterPath, null, editBaseSize(entry), editBaseSize(entry), true);
                 }
                 croppedBitmap = entry.cropState != null ? createCroppedBitmap(originalBitmap, entry.cropState, null, true) : originalBitmap;
                 if (entry.cropState != null) {
@@ -19975,7 +19980,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     width *= scale;
                     height *= scale;
                     centerImage.setImageCoords(-width / 2, -height / 2, width, height);
-                    if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto())) {
+                    if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto() && sendPhotoType == SELECT_TYPE_AVATAR)) {
                         centerImage.draw(canvas);
                         centerImageTransformLocked = true;
                     } else {
