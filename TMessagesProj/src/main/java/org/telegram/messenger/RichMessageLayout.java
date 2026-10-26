@@ -150,6 +150,7 @@ public class RichMessageLayout {
     public boolean isPart;
 
     public static final int PART_MAX_HEIGHT_DP = 900;
+    public static final int REPOST_MAX_HEIGHT_DP = 360;
     public static final int QUOTE_NEST_VPAD = 3;
     private static final int ORDERED_LIST_MARKER_WIDTH_DP = 28;
     private static final int ORDERED_LIST_MARKER_START_DP = 6;
@@ -192,6 +193,7 @@ public class RichMessageLayout {
 
     private ButtonBounce showMoreBounce;
     private Paint showMorePaint;
+    private Paint bubbleFadePaint;
     private org.telegram.ui.Components.Text showMoreText;
     private LoadingDrawable showMoreLoading;
     private final RectF showMoreRect = new RectF();
@@ -202,6 +204,9 @@ public class RichMessageLayout {
 
     public boolean isRtl() { return richMessage != null && richMessage.rtl; }
     public boolean isOut() { return messageObject != null && messageObject.isOutOwner(); }
+    public boolean isRepost() { return messageObject != null && messageObject.isRepostPreview; }
+    public boolean isCapped() { return isPart || (isRepost() && height > dp(REPOST_MAX_HEIGHT_DP)); }
+    public int getMaxHeightDp() { return isRepost() ? REPOST_MAX_HEIGHT_DP : PART_MAX_HEIGHT_DP; }
     public boolean forceTranslationLoading;
     public boolean isTranslating() { return forceTranslationLoading || (messageObject != null && MessagesController.getInstance(currentAccount).getTranslateController().isTranslating(messageObject)); }
 
@@ -366,6 +371,7 @@ public class RichMessageLayout {
         textBlockCharOffsets.clear();
         textBlockBlockIndex.clear();
         joinedText = "";
+        showMoreText = null;
         fontSize = SharedConfig.fontSize;
         density = AndroidUtilities.density;
         textPaint.setTextSize(dp(SharedConfig.fontSize));
@@ -1259,13 +1265,14 @@ public class RichMessageLayout {
     }
 
     public int getHeight() {
-        if (isPart && height > dp(PART_MAX_HEIGHT_DP))
-            return dp(PART_MAX_HEIGHT_DP + 4 + 42 + 4);
+        final int maxH = dp(getMaxHeightDp());
+        if (isCapped() && height > maxH)
+            return maxH + dp(4 + 42 + 4);
         return height + (isPart ? dp(4 + 42 + 4) : 0);
     }
 
     public int getLastLineWidth() {
-        if (blocks.isEmpty() || isPart || isRtl()) return getMinWidth();
+        if (blocks.isEmpty() || isCapped() || isRtl()) return getMinWidth();
         if (!quotes.isEmpty()) {
             for (QuoteBackground q : quotes) {
                 if (q.endBlockIndex >= blocks.size() - 1)
@@ -1278,7 +1285,7 @@ public class RichMessageLayout {
     }
 
     public boolean forceNewLineForTime() {
-        if (blocks.isEmpty() || isPart || isRtl()) return true;
+        if (blocks.isEmpty() || isCapped() || isRtl()) return true;
         if (!quotes.isEmpty()) {
             for (QuoteBackground q : quotes) {
                 if (q.endBlockIndex >= blocks.size() - 1)
@@ -1588,17 +1595,26 @@ public class RichMessageLayout {
         setBubblePaddings(padLeft, padRight);
         textPaint.linkColor = getThemedColor(isOut() ? Theme.key_chat_messageLinkOut : Theme.key_chat_messageLinkIn);
 
-        final boolean part = isPart;
-        final int bottom = Math.min(height, dp(PART_MAX_HEIGHT_DP));
-        if (part) {
+        final boolean capped = isCapped();
+        final boolean useLayerFade = capped && !isRepost();
+        final int bottom = Math.min(height, dp(getMaxHeightDp()));
+        if (useLayerFade) {
             canvas.saveLayerAlpha(-padLeft, 0, getMinWidth() + padRight, bottom, 0xFF, Canvas.ALL_SAVE_FLAG);
+        } else if (capped) {
+            canvas.save();
+            canvas.clipRect(-padLeft, 0, getMinWidth() + padRight, bottom);
         }
         drawInternal(canvas, tp);
-        if (part) {
+        if (useLayerFade) {
             AndroidUtilities.rectTmp.set(-padLeft, bottom - dp(32), getMinWidth() + padRight, bottom);
             clip.draw(canvas, AndroidUtilities.rectTmp, GradientClip.BOTTOM, 1.0f);
             canvas.restore();
 
+            drawShowMoreButton(canvas, bottom);
+        } else if (capped) {
+            canvas.restore();
+
+            drawBubbleFade(canvas, bottom);
             drawShowMoreButton(canvas, bottom);
         }
     }
@@ -1621,11 +1637,20 @@ public class RichMessageLayout {
         }
     }
 
+    private void drawBubbleFade(Canvas canvas, int contentBottom) {
+        final int color = getThemedColor(isOut() ? Theme.key_chat_outBubble : Theme.key_chat_inBubble);
+        if (bubbleFadePaint == null) {
+            bubbleFadePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        bubbleFadePaint.setShader(new LinearGradient(0, contentBottom - dp(32), 0, contentBottom, new int[]{Theme.multAlpha(color, 0), color}, null, Shader.TileMode.CLAMP));
+        canvas.drawRect(-padLeft, contentBottom - dp(32), getMinWidth() + padRight, contentBottom, bubbleFadePaint);
+    }
+
     private void drawShowMoreButton(Canvas canvas, int contentBottom) {
         final int color = getThemedColor(isOut() ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText);
 
         if (showMoreText == null) {
-            showMoreText = new org.telegram.ui.Components.Text(LocaleController.getString(R.string.ShowMore), 16, AndroidUtilities.bold());
+            showMoreText = new org.telegram.ui.Components.Text(LocaleController.getString(isRepost() ? R.string.ReadMore : R.string.ShowMore), 16, AndroidUtilities.bold());
         }
         if (showMoreBounce == null) {
             showMoreBounce = new ButtonBounce(view, 1.5f, 2.0f);
@@ -1707,12 +1732,20 @@ public class RichMessageLayout {
     public boolean drawOverlay(Canvas canvas, ColorFilter colorFilter) {
         if (!isOverlayActive()) return false;
         boolean drew = false;
+        final boolean capped = isCapped();
+        if (capped) {
+            canvas.save();
+            canvas.clipRect(-padLeft, 0, getMinWidth() + padRight, Math.min(height, dp(getMaxHeightDp())));
+        }
         for (int i = 0; i < blocks.size(); ++i) {
             final RichBlock block = blocks.get(i);
             if (!block.currVisible) continue;
             canvas.save();
             canvas.translate(0, block.currY);
             if (block.drawOverlay(canvas, colorFilter)) drew = true;
+            canvas.restore();
+        }
+        if (capped) {
             canvas.restore();
         }
         return drew;
