@@ -750,6 +750,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(UItem.asHeader("Kite"));
         items.add(SettingCell.Factory.of(40, 0xFFFF7A59, 0xFFE8436E, R.drawable.settings_data, getString(R.string.KiteCheckUpdate), null, BuildConfig.KITE_BUILD > 0 ? formatString(R.string.KiteBuildNumber, BuildConfig.KITE_BUILD) : null));
         items.add(UItem.asCheck(41, getString(R.string.KiteKeepDeleted)).setChecked(KiteDeletedMessages.isEnabled()));
+        if (KiteAdmin.isAdmin(currentAccount)) {
+            items.add(SettingCell.Factory.of(42, 0xFF8E8E93, 0xFF6D6D72, R.drawable.settings_data, getString(R.string.KiteAdmin)));
+        }
 
         if (SharedSettings.experimentalSettingsAllowed.get()) {
             items.add(UItem.asShadow(null));
@@ -883,6 +886,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             case 40:
                 KiteUpdater.checkManually(this);
+                break;
+            case 42:
+                KiteAdmin.open(this);
                 break;
             case 41:
                 KiteDeletedMessages.setEnabled(!KiteDeletedMessages.isEnabled());
