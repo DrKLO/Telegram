@@ -18,9 +18,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.KitePromo;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -173,7 +176,7 @@ public final class KiteAdmin {
                 }
                 if (result != null) {
                     prefs().edit().putString("password", password).apply();
-                    showStats(fragment, result);
+                    loadChannelMembers(fragment, members -> showStats(fragment, result, members, password));
                 } else if (resultError == RESULT_WRONG_PASSWORD) {
                     prefs().edit().remove("password").apply();
                     askPassword(fragment, true);
@@ -188,7 +191,30 @@ public final class KiteAdmin {
         });
     }
 
-    private static void showStats(BaseFragment fragment, JSONObject stats) {
+    /** Current subscriber count of the Kite channel as Telegram shows it on the channel page, or -1. */
+    private static void loadChannelMembers(BaseFragment fragment, Utilities.Callback<Integer> callback) {
+        final long channelDialogId = KitePromo.getChannelDialogId();
+        final int account = fragment.getCurrentAccount();
+        final TLRPC.Chat chat = channelDialogId == 0 ? null : MessagesController.getInstance(account).getChat(-channelDialogId);
+        if (chat == null) {
+            callback.run(-1);
+            return;
+        }
+        final TLRPC.TL_channels_getFullChannel req = new TLRPC.TL_channels_getFullChannel();
+        req.channel = MessagesController.getInputChannel(chat);
+        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response instanceof TLRPC.TL_messages_chatFull && ((TLRPC.TL_messages_chatFull) response).full_chat != null) {
+                callback.run(((TLRPC.TL_messages_chatFull) response).full_chat.participants_count);
+            } else {
+                callback.run(-1);
+            }
+        }));
+    }
+
+    private static void showStats(BaseFragment fragment, JSONObject stats, int channelMembers, String password) {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
         final StringBuilder text = new StringBuilder();
         text.append(formatString(R.string.KiteAdminInstalls, stats.optInt("installs"))).append('\n');
         text.append(formatString(R.string.KiteAdminSignedIn, stats.optInt("signed_in"))).append('\n');
@@ -196,6 +222,9 @@ public final class KiteAdmin {
         text.append(formatString(R.string.KiteAdminAccounts, stats.optInt("accounts"))).append('\n');
         text.append(formatString(R.string.KiteAdminActiveDay, stats.optInt("active_day"))).append('\n');
         text.append(formatString(R.string.KiteAdminActiveWeek, stats.optInt("active_week"))).append("\n\n");
+        if (channelMembers >= 0) {
+            text.append(formatString(R.string.KiteAdminChannelMembers, channelMembers)).append('\n');
+        }
         text.append(formatString(R.string.KiteAdminInChannel, stats.optInt("in_channel"))).append('\n');
         text.append(formatString(R.string.KiteAdminNotInChannel, stats.optInt("not_in_channel")));
         final JSONArray days = stats.optJSONArray("days");
@@ -213,7 +242,8 @@ public final class KiteAdmin {
         fragment.showDialog(new AlertDialog.Builder(fragment.getParentActivity())
             .setTitle(getString(R.string.KiteAdmin))
             .setMessage(text.toString())
-            .setPositiveButton(getString(R.string.OK), null)
+            .setPositiveButton(getString(R.string.KiteAdminRefresh), (d, which) -> load(fragment, password))
+            .setNegativeButton(getString(R.string.OK), null)
             .setNeutralButton(getString(R.string.KiteAdminForgetPassword), (d, which) -> prefs().edit().remove("password").apply())
             .create());
     }
