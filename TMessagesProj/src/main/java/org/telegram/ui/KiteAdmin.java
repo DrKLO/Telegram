@@ -195,7 +195,9 @@ public final class KiteAdmin {
         text.append(formatString(R.string.KiteAdminSignedOut, stats.optInt("signed_out"))).append('\n');
         text.append(formatString(R.string.KiteAdminAccounts, stats.optInt("accounts"))).append('\n');
         text.append(formatString(R.string.KiteAdminActiveDay, stats.optInt("active_day"))).append('\n');
-        text.append(formatString(R.string.KiteAdminActiveWeek, stats.optInt("active_week")));
+        text.append(formatString(R.string.KiteAdminActiveWeek, stats.optInt("active_week"))).append("\n\n");
+        text.append(formatString(R.string.KiteAdminInChannel, stats.optInt("in_channel"))).append('\n');
+        text.append(formatString(R.string.KiteAdminNotInChannel, stats.optInt("not_in_channel")));
         final JSONArray days = stats.optJSONArray("days");
         if (days != null && days.length() > 0) {
             text.append("\n\n").append(getString(R.string.KiteAdminDays));
@@ -205,7 +207,7 @@ public final class KiteAdmin {
                     continue;
                 }
                 text.append('\n').append(formatString(R.string.KiteAdminDay,
-                    day.optString("day"), day.optInt("installs"), day.optInt("open"), day.optInt("login"), day.optInt("logout")));
+                    day.optString("day"), day.optInt("installs"), day.optInt("open"), day.optInt("login"), day.optInt("logout"), day.optInt("join")));
             }
         }
         fragment.showDialog(new AlertDialog.Builder(fragment.getParentActivity())

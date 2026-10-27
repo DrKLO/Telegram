@@ -18,8 +18,10 @@
     <string name="KiteAdminAccounts">Accounts: %1$d</string>
     <string name="KiteAdminActiveDay">Active in 24 hours: %1$d</string>
     <string name="KiteAdminActiveWeek">Active in 7 days: %1$d</string>
-    <string name="KiteAdminDays">Last 7 days (UTC): new installs · opens · sign-ins · sign-outs</string>
-    <string name="KiteAdminDay">%1$s: +%2$d · %3$d · %4$d · %5$d</string>
+    <string name="KiteAdminNotInChannel">Accounts not in the channel: %1$d</string>
+    <string name="KiteAdminInChannel">Accounts in the Kite channel: %1$d</string>
+    <string name="KiteAdminDays">Last 7 days (UTC): new installs · opens · sign-ins · sign-outs · channel joins</string>
+    <string name="KiteAdminDay">%1$s: +%2$d · %3$d · %4$d · %5$d · %6$d</string>
     <string name="KiteKeepDeleted">Keep deleted messages</string>
     <string name="KiteKeepDeletedInfo">Messages, photos, videos and files that others delete stay in the chat with a “deleted” mark. Media is kept if it was loaded before deletion.</string>
     <string name="KiteDeletedMark">deleted</string>
