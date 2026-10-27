@@ -29,6 +29,11 @@ public final class KitePromo {
     private KitePromo() {
     }
 
+    /** The Kite channel's dialog id, 0 until it has been resolved once. */
+    public static long getChannelDialogId() {
+        return channelDialogId;
+    }
+
     public static boolean isKiteDialog(long dialogId) {
         return dialogId != 0 && dialogId == channelDialogId;
     }

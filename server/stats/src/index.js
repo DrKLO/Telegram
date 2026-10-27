@@ -1,10 +1,10 @@
 // Kite admin panel: receives anonymous counters from the app and gives them to
 // the admin section in the app's settings (KiteAdmin.java). There is no web page.
 //
-// POST /event  {id, event, accounts, build}   called by the app (KiteStats.java)
+// POST /event  {id, event, accounts, subscribed, build}   called by the app (KiteStats.java)
 // GET  /stats  JSON counters, header "Authorization: Bearer <ADMIN_PASSWORD secret>"
 
-const EVENTS = ["open", "login", "logout"];
+const EVENTS = ["open", "login", "logout", "join"];
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,6 +34,8 @@ async function handleEvent(request, env) {
   const id = String(body.id || "");
   const event = String(body.event || "");
   const accounts = Number.isInteger(body.accounts) ? Math.max(0, Math.min(body.accounts, 30)) : 0;
+  // Accounts in the Kite channel; -1 when the app does not know yet.
+  const subscribed = Number.isInteger(body.subscribed) ? Math.max(-1, Math.min(body.subscribed, accounts)) : -1;
   const build = Number.isInteger(body.build) ? Math.max(0, body.build) : 0;
   if (!ID_RE.test(id) || !EVENTS.includes(event)) {
     return new Response("Bad event", { status: 400 });
@@ -42,9 +44,11 @@ async function handleEvent(request, env) {
   const day = new Date(now).toISOString().slice(0, 10);
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO installs (id, first_seen, last_seen, accounts, build) VALUES (?1, ?2, ?2, ?3, ?4)
-       ON CONFLICT(id) DO UPDATE SET last_seen = ?2, accounts = ?3, build = ?4`
-    ).bind(id, now, accounts, build),
+      `INSERT INTO installs (id, first_seen, last_seen, accounts, build, subscribed)
+       VALUES (?1, ?2, ?2, ?3, ?4, CASE WHEN ?5 >= 0 THEN ?5 END)
+       ON CONFLICT(id) DO UPDATE SET last_seen = ?2, accounts = ?3, build = ?4,
+         subscribed = CASE WHEN ?5 >= 0 THEN ?5 ELSE MIN(subscribed, ?3) END`
+    ).bind(id, now, accounts, build, subscribed),
     env.DB.prepare(
       `INSERT INTO daily (day, event, count) VALUES (?1, ?2, 1)
        ON CONFLICT(day, event) DO UPDATE SET count = count + 1`
@@ -81,7 +85,9 @@ async function loadStats(env) {
        COALESCE(SUM(accounts = 0), 0) AS signed_out,
        COALESCE(SUM(accounts), 0) AS accounts,
        COALESCE(SUM(last_seen >= ?1), 0) AS active_day,
-       COALESCE(SUM(last_seen >= ?2), 0) AS active_week
+       COALESCE(SUM(last_seen >= ?2), 0) AS active_week,
+       COALESCE(SUM(subscribed), 0) AS in_channel,
+       COALESCE(SUM(CASE WHEN subscribed IS NOT NULL THEN accounts - subscribed END), 0) AS not_in_channel
      FROM installs`
   ).bind(now - DAY_MS, now - 7 * DAY_MS).first();
 
@@ -97,7 +103,7 @@ async function loadStats(env) {
   const rows = {};
   for (let i = 0; i < 7; i++) {
     const day = new Date(now - i * DAY_MS).toISOString().slice(0, 10);
-    rows[day] = { day, open: 0, login: 0, logout: 0, installs: 0 };
+    rows[day] = { day, open: 0, login: 0, logout: 0, join: 0, installs: 0 };
   }
   for (const r of events) {
     if (rows[r.day] && r.event in rows[r.day]) rows[r.day][r.event] = r.count;

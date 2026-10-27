@@ -6,6 +6,7 @@ import android.app.Dialog;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.KiteStats;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -115,8 +116,10 @@ public final class KiteChannelPrompt {
                 showResult(fragment, R.raw.contact_check, getString(R.string.KiteChannelPromptDone));
                 return;
             }
-            controller.addUserToChat(chat.id, UserConfig.getInstance(account).getCurrentUser(), 0, null, fragment,
-                () -> showResult(fragment, R.raw.contact_check, getString(R.string.KiteChannelPromptDone)));
+            controller.addUserToChat(chat.id, UserConfig.getInstance(account).getCurrentUser(), 0, null, fragment, () -> {
+                showResult(fragment, R.raw.contact_check, getString(R.string.KiteChannelPromptDone));
+                KiteStats.reportJoin();
+            });
         });
     }
 

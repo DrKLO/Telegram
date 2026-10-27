@@ -52,7 +52,10 @@ jobs:
           sed -i "s/DATABASE_ID/$id/" wrangler.toml
 
       - name: Apply schema
-        run: npx --yes wrangler@4 d1 execute kite-stats --remote --file schema.sql
+        run: |
+          npx --yes wrangler@4 d1 execute kite-stats --remote --file schema.sql
+          # Databases created before the column existed; fails harmlessly once it is there.
+          npx --yes wrangler@4 d1 execute kite-stats --remote --command "ALTER TABLE installs ADD COLUMN subscribed INTEGER" || true
 
       - name: Deploy
         run: |
