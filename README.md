@@ -129,10 +129,12 @@ We moved all translations to https://translations.telegram.org/en/android/. Plea
    «Edit Cloudflare Workers», добавьте право Account → D1 → Edit.
 3. В GitHub: Settings → Secrets and variables → Actions → **Secrets** добавьте
    `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (Account ID с главной страницы
-   Cloudflare) и `KITE_ADMIN_PASSWORD` (пароль для входа в панель).
+   Cloudflare) и `KITE_ADMIN_PASSWORD` (пароль админ-панели).
 4. Actions → «Deploy admin panel» → Run workflow. В логе шага Deploy будет адрес
    вида `https://kite-stats.<имя>.workers.dev`.
 5. Адрес уже прописан в `.github/workflows/build-apk.yml`; чтобы сменить его, добавьте во вкладке **Variables** `KITE_STATS_URL`.
    Следующая сборка APK начнёт отправлять счётчики.
 
-Панель открывается по этому адресу в браузере, логин любой, пароль из `KITE_ADMIN_PASSWORD`.
+Сайта с панелью нет. Статистика открывается в приложении: Настройки → Kite → «Админ-панель».
+Этот пункт виден только аккаунту @a0059 (`KiteAdmin.ADMIN_USERNAME`) и спрашивает пароль
+из `KITE_ADMIN_PASSWORD`; пароль проверяет сервер.
