@@ -53,7 +53,7 @@ public final class KiteStats {
         report(EVENT_JOIN, ACCOUNT_CHANGE_DELAY_MS);
     }
 
-    /** Signed-in accounts that are members of the Kite channel, or -1 while that is unknown. */
+    /** Signed-in accounts that are members of the Kite channel, or -1 while the channel is not resolved yet. */
     private static int subscribedAccounts() {
         final long channelDialogId = KitePromo.getChannelDialogId();
         if (channelDialogId == 0) {
@@ -64,11 +64,13 @@ public final class KiteStats {
             if (!UserConfig.getInstance(a).isClientActivated()) {
                 continue;
             }
-            final TLRPC.Chat chat = MessagesController.getInstance(a).getChat(-channelDialogId);
+            // Accounts other than the open one have no chats in memory, so fall back to their
+            // local database. A member always has the channel there; no entry means not a member.
+            TLRPC.Chat chat = MessagesController.getInstance(a).getChat(-channelDialogId);
             if (chat == null) {
-                return -1;
+                chat = MessagesStorage.getInstance(a).getChatSync(-channelDialogId);
             }
-            if (!ChatObject.isNotInChat(chat)) {
+            if (chat != null && !ChatObject.isNotInChat(chat)) {
                 count++;
             }
         }
