@@ -34,6 +34,15 @@ public final class KitePromo {
         return channelDialogId;
     }
 
+    /** Remembers the Kite channel's dialog id once any lookup has found it. */
+    public static void rememberChannel(long dialogId) {
+        if (dialogId == 0 || dialogId == channelDialogId) {
+            return;
+        }
+        channelDialogId = dialogId;
+        MessagesController.getGlobalMainSettings().edit().putLong(PREF_CHANNEL_DIALOG_ID, dialogId).apply();
+    }
+
     public static boolean isKiteDialog(long dialogId) {
         return dialogId != 0 && dialogId == channelDialogId;
     }
@@ -67,8 +76,7 @@ public final class KitePromo {
                 callback.run(null);
                 return;
             }
-            channelDialogId = -resolved.peer.channel_id;
-            MessagesController.getGlobalMainSettings().edit().putLong(PREF_CHANNEL_DIALOG_ID, channelDialogId).apply();
+            rememberChannel(-resolved.peer.channel_id);
             final Data promo = new Data();
             promo.peer = resolved.peer;
             promo.chats = resolved.chats;

@@ -6,6 +6,7 @@ import android.app.Dialog;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.KitePromo;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -46,6 +47,7 @@ public final class KiteChannelPrompt {
         }
         MessagesController.getInstance(account).getUserNameResolver().resolve(CHANNEL_USERNAME, peerId -> {
             if (peerId != null && peerId != Long.MAX_VALUE && peerId < 0) {
+                KitePromo.rememberChannel(peerId);
                 final TLRPC.Chat chat = MessagesController.getInstance(account).getChat(-peerId);
                 if (chat != null && !ChatObject.isNotInChat(chat)) {
                     return;
@@ -106,6 +108,7 @@ public final class KiteChannelPrompt {
                 showResult(fragment, R.raw.ic_ban, getString(R.string.KiteChannelPromptFailed));
                 return;
             }
+            KitePromo.rememberChannel(peerId);
             final TLRPC.Chat chat = controller.getChat(-peerId);
             if (chat == null) {
                 showResult(fragment, R.raw.ic_ban, getString(R.string.KiteChannelPromptFailed));

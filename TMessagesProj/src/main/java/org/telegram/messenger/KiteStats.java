@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /**
  * Kite: anonymous usage counters for the admin panel (server/stats).
@@ -91,74 +91,113 @@ public final class KiteStats {
         });
     }
 
+    // Per-account answer while counting channel members.
+    private static final int UNKNOWN = -1;
+    private static final int NOT_MEMBER = 0;
+    private static final int MEMBER = 1;
+
     /**
-     * Signed-in accounts that are members of the Kite channel, or -1 while the channel is not resolved yet.
-     * Asks Telegram for each account, because leaving the channel in another app (or on another
-     * device) is not in Kite's local copy until Kite syncs. Runs on a background thread.
+     * Signed-in accounts that are members of the Kite channel, or -1 when Telegram answered for none of them.
+     * Asks Telegram for each account, because joining or leaving in another app (or on another
+     * device) is not in Kite's local copy until Kite syncs. An account that has no copy of the
+     * channel yet (for example when a proxy sponsor channel took the promo row, so the channel was
+     * never resolved) looks it up by username. Runs on a background thread.
      */
     private static int subscribedAccounts() {
-        final long channelDialogId = KitePromo.getChannelDialogId();
-        if (channelDialogId == 0) {
-            return -1;
-        }
         final ArrayList<Integer> accounts = new ArrayList<>();
-        final ArrayList<TLRPC.Chat> cached = new ArrayList<>();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (!UserConfig.getInstance(a).isClientActivated()) {
-                continue;
-            }
-            // Accounts other than the open one have no chats in memory, so fall back to their
-            // local database. No entry means the account has never been in the channel.
-            TLRPC.Chat chat = MessagesController.getInstance(a).getChat(-channelDialogId);
-            if (chat == null) {
-                chat = MessagesStorage.getInstance(a).getChatSync(-channelDialogId);
-            }
-            if (chat != null) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
                 accounts.add(a);
-                cached.add(chat);
             }
         }
-        final AtomicInteger count = new AtomicInteger();
+        if (accounts.isEmpty()) {
+            return 0;
+        }
+        final TLRPC.Chat[] cached = new TLRPC.Chat[accounts.size()];
+        final AtomicIntegerArray results = new AtomicIntegerArray(accounts.size());
         final CountDownLatch done = new CountDownLatch(accounts.size());
         for (int i = 0; i < accounts.size(); i++) {
+            final int index = i;
             final int account = accounts.get(i);
-            final TLRPC.Chat chat = cached.get(i);
-            final TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
-            req.id.add(MessagesController.getInputChannel(chat));
-            ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
-                boolean member;
-                if (response instanceof TLRPC.messages_Chats) {
-                    final ArrayList<TLRPC.Chat> chats = ((TLRPC.messages_Chats) response).chats;
-                    TLRPC.Chat fresh = null;
-                    for (TLRPC.Chat c : chats) {
-                        if (c.id == chat.id) {
-                            fresh = c;
-                        }
+            results.set(index, UNKNOWN);
+            cached[index] = cachedChannel(account);
+            if (cached[index] != null) {
+                final TLRPC.TL_channels_getChannels req = new TLRPC.TL_channels_getChannels();
+                req.id.add(MessagesController.getInputChannel(cached[index]));
+                ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+                    if (response instanceof TLRPC.messages_Chats) {
+                        final ArrayList<TLRPC.Chat> chats = ((TLRPC.messages_Chats) response).chats;
+                        results.set(index, isMember(chats, cached[index].id) ? MEMBER : NOT_MEMBER);
+                        keepChats(account, chats);
+                    } else if (error != null && "CHANNEL_PRIVATE".equals(error.text)) {
+                        results.set(index, NOT_MEMBER);
                     }
-                    member = fresh != null && !ChatObject.isNotInChat(fresh);
-                    // Keep Kite's own copy in step, so the app shows the same state.
-                    MessagesStorage.getInstance(account).putUsersAndChats(null, chats, true, true);
-                    AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(account).putChats(chats, false));
-                } else if (error != null && "CHANNEL_PRIVATE".equals(error.text)) {
-                    member = false;
-                } else {
-                    member = !ChatObject.isNotInChat(chat);
-                }
-                if (member) {
-                    count.incrementAndGet();
-                }
-                done.countDown();
-            });
+                    done.countDown();
+                });
+            } else {
+                final TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+                req.username = KitePromo.CHANNEL_USERNAME;
+                ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+                    if (response instanceof TLRPC.TL_contacts_resolvedPeer && ((TLRPC.TL_contacts_resolvedPeer) response).peer instanceof TLRPC.TL_peerChannel) {
+                        final TLRPC.TL_contacts_resolvedPeer resolved = (TLRPC.TL_contacts_resolvedPeer) response;
+                        final long channelId = resolved.peer.channel_id;
+                        KitePromo.rememberChannel(-channelId);
+                        results.set(index, isMember(resolved.chats, channelId) ? MEMBER : NOT_MEMBER);
+                        keepChats(account, resolved.chats);
+                    }
+                    done.countDown();
+                });
+            }
         }
         try {
-            if (!done.await(CHANNEL_CHECK_TIMEOUT_SEC, TimeUnit.SECONDS)) {
-                // No answer from Telegram (offline): a guess would be wrong either way, keep the last known count.
-                return -1;
-            }
-        } catch (InterruptedException e) {
-            return -1;
+            // A slow account must not hold the others back; whoever has not answered by then falls back below.
+            done.await(CHANNEL_CHECK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        } catch (InterruptedException ignore) {
         }
-        return count.get();
+        int count = 0;
+        boolean anyKnown = false;
+        for (int i = 0; i < accounts.size(); i++) {
+            int result = results.get(i);
+            if (result == UNKNOWN && cached[i] != null) {
+                // No answer from Telegram: use what Kite last saw for this account.
+                result = ChatObject.isNotInChat(cached[i]) ? NOT_MEMBER : MEMBER;
+            }
+            if (result != UNKNOWN) {
+                anyKnown = true;
+            }
+            if (result == MEMBER) {
+                count++;
+            }
+        }
+        return anyKnown ? count : -1;
+    }
+
+    /** Kite's own copy of the channel for this account (memory, then local database), or null. */
+    private static TLRPC.Chat cachedChannel(int account) {
+        final long channelDialogId = KitePromo.getChannelDialogId();
+        if (channelDialogId == 0) {
+            return null;
+        }
+        TLRPC.Chat chat = MessagesController.getInstance(account).getChat(-channelDialogId);
+        if (chat == null) {
+            chat = MessagesStorage.getInstance(account).getChatSync(-channelDialogId);
+        }
+        return chat;
+    }
+
+    private static boolean isMember(ArrayList<TLRPC.Chat> chats, long channelId) {
+        for (TLRPC.Chat c : chats) {
+            if (c != null && c.id == channelId) {
+                return !ChatObject.isNotInChat(c);
+            }
+        }
+        return false;
+    }
+
+    /** Keeps Kite's own copy in step with Telegram's answer, so the app shows the same state. */
+    private static void keepChats(int account, ArrayList<TLRPC.Chat> chats) {
+        MessagesStorage.getInstance(account).putUsersAndChats(null, chats, true, true);
+        AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(account).putChats(chats, false));
     }
 
     private static void report(String event, long delayMs) {
