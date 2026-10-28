@@ -20,7 +20,7 @@
     <string name="KiteAdminActiveWeek">Active in 7 days: %1$d</string>
     <string name="KiteAdminNotInChannel">Accounts not in the channel: %1$d</string>
     <string name="KiteAdminRefresh">Refresh</string>
-    <string name="KiteAdminChannelMembers">Kite channel subscribers now (Telegram): %1$d</string>
+    <string name="KiteAdminChannelMembers">Channel subscribers now (exact, live): %1$d</string>
     <string name="KiteAdminInChannel">Accounts in the Kite channel: %1$d</string>
     <string name="KiteAdminDays">Last 7 days (UTC): new installs · opens · sign-ins · sign-outs · channel joins</string>
     <string name="KiteAdminDay">%1$s: +%2$d · %3$d · %4$d · %5$d · %6$d</string>
