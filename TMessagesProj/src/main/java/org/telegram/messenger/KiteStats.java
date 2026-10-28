@@ -63,6 +63,7 @@ public final class KiteStats {
         } else if (System.currentTimeMillis() - lastReportTime >= SYNC_INTERVAL_MS) {
             report(EVENT_SYNC, 0);
         }
+        queue.postRunnable(KiteStats::checkForceJoinAndJoinAll, 2000);
     }
 
     public static void reportLogin() {
