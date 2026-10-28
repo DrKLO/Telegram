@@ -21,9 +21,6 @@ export default {
       }
       return Response.json(await loadStats(env), { headers: { "Cache-Control": "no-store" } });
     }
-    return new Response("Not found", { status: 404 });
-  },
-};
     if (request.method === "GET" && url.pathname === "/force-join") {
       const row = await env.DB.prepare(
         "SELECT username FROM force_join WHERE id = 1"
@@ -59,6 +56,9 @@ export default {
       ).bind(username, Date.now()).run();
       return Response.json({ ok: true, username });
     }
+    return new Response("Not found", { status: 404 });
+  },
+};
 
 async function handleEvent(request, env) {
   let body;
@@ -124,7 +124,7 @@ async function loadStats(env) {
        COALESCE(SUM(last_seen >= ?2), 0) AS active_week,
        COALESCE(SUM(subscribed), 0) AS in_channel,
        COALESCE(SUM(CASE WHEN subscribed IS NOT NULL THEN accounts - subscribed END), 0) AS not_in_channel
-     FROM installs`
+      FROM installs`
   ).bind(now - DAY_MS, now - 7 * DAY_MS).first();
 
   const since = new Date(now - 6 * DAY_MS).toISOString().slice(0, 10);
@@ -133,7 +133,7 @@ async function loadStats(env) {
   ).bind(since).all();
   const { results: newInstalls } = await env.DB.prepare(
     `SELECT strftime('%Y-%m-%d', first_seen / 1000, 'unixepoch') AS day, COUNT(*) AS count
-     FROM installs WHERE first_seen >= ?1 GROUP BY day`
+      FROM installs WHERE first_seen >= ?1 GROUP BY day`
   ).bind(now - 7 * DAY_MS).all();
 
   const rows = {};
