@@ -19,6 +19,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.KitePromo;
+import org.telegram.messenger.KiteStats;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -132,6 +133,12 @@ public final class KiteAdmin {
         final AlertDialog progress = new AlertDialog(fragment.getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
         progress.setCanCancel(false);
         progress.show();
+        // First ask Telegram for this phone's current channel membership and push it to the server,
+        // so the panel reflects a subscribe/leave made in another app without reopening Kite.
+        KiteStats.reportNow(() -> fetchStats(fragment, password, progress));
+    }
+
+    private static void fetchStats(BaseFragment fragment, String password, AlertDialog progress) {
         Utilities.globalQueue.postRunnable(() -> {
             int error = RESULT_ERROR;
             JSONObject stats = null;

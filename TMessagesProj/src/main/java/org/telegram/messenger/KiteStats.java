@@ -71,6 +71,27 @@ public final class KiteStats {
     }
 
     /**
+     * Sends the counts right now, waiting for Telegram's channel answers first, then runs onDone
+     * on the UI thread. Used by the admin "Refresh" button so the panel shows the real current
+     * state (incl. a subscribe/leave made in another app) without reopening Kite.
+     */
+    public static void reportNow(Runnable onDone) {
+        if (TextUtils.isEmpty(BuildConfig.KITE_STATS_URL)) {
+            if (onDone != null) {
+                AndroidUtilities.runOnUIThread(onDone);
+            }
+            return;
+        }
+        lastReportTime = System.currentTimeMillis();
+        queue.postRunnable(() -> {
+            send(EVENT_SYNC);
+            if (onDone != null) {
+                AndroidUtilities.runOnUIThread(onDone);
+            }
+        });
+    }
+
+    /**
      * Signed-in accounts that are members of the Kite channel, or -1 while the channel is not resolved yet.
      * Asks Telegram for each account, because leaving the channel in another app (or on another
      * device) is not in Kite's local copy until Kite syncs. Runs on a background thread.
