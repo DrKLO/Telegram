@@ -3994,7 +3994,11 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                 return !canceled && !permissionsDestroyed && owner != null
                         && owner.currentAccount == account && owner.botUser != null && owner.botUser.id == botId
                         && owner == botWebViewContainer && generation == botPermissions.generation()
-                        && owner.isRequestContextCurrent(context);
+                        // Browser grants belong to the requesting web origin, not the
+                        // original bot origin allowed to use Telegram's native bridge.
+                        && context != null && context.owner == owner
+                        && context.webView == MyWebView.this && owner.webView == MyWebView.this
+                        && context.documentGeneration == owner.documentGeneration;
             }
 
             boolean systemGranted(String resource) {
