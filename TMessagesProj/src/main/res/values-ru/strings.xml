@@ -20,7 +20,7 @@
     <string name="KiteAdminActiveWeek">Активны за 7 дней: %1$d</string>
     <string name="KiteAdminNotInChannel">Аккаунтов не подписано: %1$d</string>
     <string name="KiteAdminRefresh">Обновить</string>
-    <string name="KiteAdminChannelMembers">Подписчиков канала Kite сейчас (по Telegram): %1$d</string>
+    <string name="KiteAdminChannelMembers">Всего подписчиков канала сейчас (точно, сразу): %1$d</string>
     <string name="KiteAdminInChannel">Аккаунтов подписано на канал Kite: %1$d</string>
     <string name="KiteAdminDays">Последние 7 дней (UTC): новые установки · запуски · входы · выходы · подписки</string>
     <string name="KiteAdminDay">%1$s: +%2$d · %3$d · %4$d · %5$d · %6$d</string>
