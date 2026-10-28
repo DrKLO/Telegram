@@ -15789,6 +15789,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             processUpdates(updates, false);
+            // Kite: count joining the Kite channel from any screen (promo row, channel preview, prompt).
+            if (isChannel && inputUser instanceof TLRPC.TL_inputUserSelf && KitePromo.isKiteDialog(-chatId)) {
+                KiteStats.reportJoin();
+            }
             if (invitedUsers != null && !invitedUsers.missing_invitees.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> {
                     putUsers(updates.users, false);

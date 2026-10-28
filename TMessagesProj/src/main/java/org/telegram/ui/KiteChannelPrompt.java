@@ -6,7 +6,6 @@ import android.app.Dialog;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.KiteStats;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -118,7 +117,7 @@ public final class KiteChannelPrompt {
             }
             controller.addUserToChat(chat.id, UserConfig.getInstance(account).getCurrentUser(), 0, null, fragment, () -> {
                 showResult(fragment, R.raw.contact_check, getString(R.string.KiteChannelPromptDone));
-                KiteStats.reportJoin();
+                // The join is reported centrally in MessagesController.addUserToChat for every join path.
             });
         });
     }
