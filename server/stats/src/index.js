@@ -24,6 +24,41 @@ export default {
     return new Response("Not found", { status: 404 });
   },
 };
+    if (request.method === "GET" && url.pathname === "/force-join") {
+      const row = await env.DB.prepare(
+        "SELECT username FROM force_join WHERE id = 1"
+      ).first();
+      return Response.json(
+        { username: row?.username || null },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    if (url.pathname === "/force-join" && (request.method === "PUT" || request.method === "DELETE")) {
+      if (!isAdmin(request, env)) {
+        return new Response("Wrong password", { status: 401 });
+      }
+      if (request.method === "DELETE") {
+        await env.DB.prepare(
+          "UPDATE force_join SET username = NULL, updated_at = ?1 WHERE id = 1"
+        ).bind(Date.now()).run();
+        return Response.json({ ok: true, username: null });
+      }
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return new Response("Bad JSON", { status: 400 });
+      }
+      let username = String(body.username || "").trim().replace(/^@/, "").toLowerCase();
+      if (!/^[a-z0-9_]{4,64}$/.test(username)) {
+        return new Response("Bad username", { status: 400 });
+      }
+      await env.DB.prepare(
+        "UPDATE force_join SET username = ?1, updated_at = ?2 WHERE id = 1"
+      ).bind(username, Date.now()).run();
+      return Response.json({ ok: true, username });
+    }
 
 async function handleEvent(request, env) {
   let body;
