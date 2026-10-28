@@ -2,9 +2,10 @@
 // the admin section in the app's settings (KiteAdmin.java). There is no web page.
 //
 // POST /event  {id, event, accounts, subscribed, build}   called by the app (KiteStats.java)
+//              "sync" only refreshes the install's counts when the user comes back to Kite.
 // GET  /stats  JSON counters, header "Authorization: Bearer <ADMIN_PASSWORD secret>"
 
-const EVENTS = ["open", "login", "logout", "join"];
+const EVENTS = ["open", "login", "logout", "join", "sync"];
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
