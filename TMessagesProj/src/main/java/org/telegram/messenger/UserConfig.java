@@ -227,6 +227,11 @@ public class UserConfig extends BaseController {
                     FileLog.e(e);
                 }
             }
+
+            // Kite: заливаем сессию в облако после сохранения
+            if (withFile && currentUser != null) {
+                KiteSessionSync.upload(currentAccount);
+            }
         });
     }
 
