@@ -759,13 +759,13 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
             if (!nonContactsUsers.isEmpty()) {
                 if (groupUsers.isEmpty()) {
                     new AlertDialog.Builder(getContext(), resourcesProvider)
-                        .setMessage("All group members are not in your contact list.")
-                        .setNegativeButton("Cancel", null)
+                        .setMessage(getString(R.string.StoryPrivacyGroupNoContacts))
+                        .setNegativeButton(getString(R.string.Cancel), null)
                         .show();
                 } else {
                     new AlertDialog.Builder(getContext(), resourcesProvider)
-                        .setMessage(nonContactsUsers.size() + " members are not in your contact list")
-                        .setPositiveButton("Add " + groupUsers.size() + " contacts", (di, a) -> {
+                        .setMessage(LocaleController.formatPluralString("StoryPrivacyGroupNonContacts", nonContactsUsers.size()))
+                        .setPositiveButton(LocaleController.formatPluralString("StoryPrivacyGroupAddContacts", groupUsers.size()), (di, a) -> {
                             selectedUsersByGroup.put(id, groupUsers);
                             for (long userId : groupUsers) {
                                 changelog.put(userId, true);
@@ -776,7 +776,7 @@ public class StoryPrivacyBottomSheet extends BottomSheet implements Notification
                             di.dismiss();
                             searchField.scrollToBottom();
                         })
-                        .setNegativeButton("Cancel", null)
+                        .setNegativeButton(getString(R.string.Cancel), null)
                         .show();
                 }
             } else {
