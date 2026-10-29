@@ -5,5 +5,4 @@ compatibility_date = "2025-06-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "kite-stats"
-# Filled in by .github/workflows/deploy-stats.yml before deploying.
-database_id = "DATABASE_ID"
+database_id = "d367c5e1-b26c-45f0-af32-bf8ea17989f7"
