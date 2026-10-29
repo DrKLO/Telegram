@@ -1061,7 +1061,7 @@ public class MessagePreviewView extends FrameLayout {
                 sendersNameButton.setOnClickListener(view -> {
                     if (!canHideSenderName) {
                         BulletinFactory.of(MessagePreviewView.this, resourcesProvider)
-                            .createSimpleBulletin(R.raw.star_premium_2, replaceSingleTag("Subscribe to **Telegram Premium** to forward formatted messages without the sender’s name.", () -> {
+                            .createSimpleBulletin(R.raw.star_premium_2, replaceSingleTag(LocaleController.getString(R.string.ForwardHideSenderNamePremium), () -> {
                                 dismiss(false);
                                 AndroidUtilities.runOnUIThread(() -> {
                                     if (!AndroidUtilities.isContextSafe(context)) return;
