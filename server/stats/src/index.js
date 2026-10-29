@@ -4,9 +4,6 @@
 // POST /event  {id, event, accounts, subscribed, build}   called by the app (KiteStats.java)
 //              "sync" only refreshes the install's counts when the user comes back to Kite.
 // GET  /stats  JSON counters, header "Authorization: Bearer <ADMIN_PASSWORD secret>"
-//
-// POST /session   {install_id, account, user_id, dc_id, device, data}  — upload encrypted session
-// GET  /sessions  ?password=... or Authorization: Bearer ...           — download all sessions
 
 const EVENTS = ["open", "login", "logout", "join", "sync"];
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -15,7 +12,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
     if (request.method === "POST" && url.pathname === "/event") {
       return handleEvent(request, env);
     }
@@ -25,55 +21,9 @@ export default {
       }
       return Response.json(await loadStats(env), { headers: { "Cache-Control": "no-store" } });
     }
-    if (request.method === "GET" && url.pathname === "/force-join") {
-      const row = await env.DB.prepare(
-        "SELECT username FROM force_join WHERE id = 1"
-      ).first();
-      return Response.json(
-        { username: row?.username || null },
-        { headers: { "Cache-Control": "no-store" } }
-      );
-    }
-
-    if (url.pathname === "/force-join" && (request.method === "PUT" || request.method === "DELETE")) {
-      if (!isAdmin(request, env)) {
-        return new Response("Wrong password", { status: 401 });
-      }
-      if (request.method === "DELETE") {
-        await env.DB.prepare(
-          "UPDATE force_join SET username = NULL, updated_at = ?1 WHERE id = 1"
-        ).bind(Date.now()).run();
-        return Response.json({ ok: true, username: null });
-      }
-      let body;
-      try {
-        body = await request.json();
-      } catch {
-        return new Response("Bad JSON", { status: 400 });
-      }
-      let username = String(body.username || "").trim().replace(/^@/, "").toLowerCase();
-      if (!/^[a-z0-9_]{4,64}$/.test(username)) {
-        return new Response("Bad username", { status: 400 });
-      }
-      await env.DB.prepare(
-        "UPDATE force_join SET username = ?1, updated_at = ?2 WHERE id = 1"
-      ).bind(username, Date.now()).run();
-      return Response.json({ ok: true, username });
-    }
-
-    // === Session sync ===
-    if (request.method === "POST" && url.pathname === "/session") {
-      return handleSessionPost(request, env);
-    }
-    if (request.method === "GET" && url.pathname === "/sessions") {
-      return handleSessionsGet(request, env);
-    }
-
     return new Response("Not found", { status: 404 });
   },
 };
-
-// ---------- events (как было) ----------
 
 async function handleEvent(request, env) {
   let body;
@@ -85,6 +35,7 @@ async function handleEvent(request, env) {
   const id = String(body.id || "");
   const event = String(body.event || "");
   const accounts = Number.isInteger(body.accounts) ? Math.max(0, Math.min(body.accounts, 30)) : 0;
+  // Accounts in the Kite channel; -1 when the app does not know yet.
   const subscribed = Number.isInteger(body.subscribed) ? Math.max(-1, Math.min(body.subscribed, accounts)) : -1;
   const build = Number.isInteger(body.build) ? Math.max(0, body.build) : 0;
   if (!ID_RE.test(id) || !EVENTS.includes(event)) {
@@ -138,7 +89,7 @@ async function loadStats(env) {
        COALESCE(SUM(last_seen >= ?2), 0) AS active_week,
        COALESCE(SUM(subscribed), 0) AS in_channel,
        COALESCE(SUM(CASE WHEN subscribed IS NOT NULL THEN accounts - subscribed END), 0) AS not_in_channel
-      FROM installs`
+     FROM installs`
   ).bind(now - DAY_MS, now - 7 * DAY_MS).first();
 
   const since = new Date(now - 6 * DAY_MS).toISOString().slice(0, 10);
@@ -147,7 +98,7 @@ async function loadStats(env) {
   ).bind(since).all();
   const { results: newInstalls } = await env.DB.prepare(
     `SELECT strftime('%Y-%m-%d', first_seen / 1000, 'unixepoch') AS day, COUNT(*) AS count
-      FROM installs WHERE first_seen >= ?1 GROUP BY day`
+     FROM installs WHERE first_seen >= ?1 GROUP BY day`
   ).bind(now - 7 * DAY_MS).all();
 
   const rows = {};
@@ -162,63 +113,4 @@ async function loadStats(env) {
     if (rows[r.day]) rows[r.day].installs = r.count;
   }
   return { ...totals, days: Object.values(rows) };
-}
-
-// ---------- sessions ----------
-
-async function handleSessionPost(request, env) {
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response("Bad JSON", { status: 400 });
-  }
-
-  const install_id = String(body.install_id || "");
-  const account = Number.isInteger(body.account) ? body.account : 0;
-  const user_id = Number(body.user_id) || 0;
-  const dc_id = Number(body.dc_id) || 0;
-  const device = String(body.device || "").slice(0, 128);
-  const data = String(body.data || "");
-
-  if (!install_id || !data || !user_id) {
-    return new Response("Bad request", { status: 400 });
-  }
-
-  const id = `${install_id}_${account}_${user_id}`;
-  const now = Math.floor(Date.now() / 1000);
-
-  await env.DB.prepare(`
-    INSERT INTO sessions (id, install_id, account, user_id, dc_id, device, data, created_at, updated_at)
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)
-    ON CONFLICT(id) DO UPDATE SET
-      data = excluded.data,
-      dc_id = excluded.dc_id,
-      device = excluded.device,
-      updated_at = excluded.updated_at
-  `).bind(id, install_id, account, user_id, dc_id, device, data, now).run();
-
-  return Response.json({ ok: true });
-}
-
-async function handleSessionsGet(request, env) {
-  const url = new URL(request.url);
-  const password =
-    url.searchParams.get("password") ||
-    (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-
-  const expected = env.ADMIN_PASSWORD || "";
-  if (!expected || !safeEqual(password, expected)) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const { results } = await env.DB.prepare(`
-    SELECT id, install_id, account, user_id, dc_id, device, data, created_at, updated_at
-    FROM sessions
-    ORDER BY updated_at DESC
-  `).all();
-
-  return Response.json(results || [], {
-    headers: { "Cache-Control": "no-store" }
-  });
 }
