@@ -702,6 +702,12 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     public void setBotUser(TLRPC.User botUser) {
+        // Restoring a tab attaches the live WebView to a new container whose bot is
+        // initially null. Its session already owns the consent; ensureBotPermissionOwner
+        // checks the actual account/bot identity before any permission can be reused.
+        if (webView != null && this.botUser != null && this.botUser.id != (botUser == null ? 0 : botUser.id)) {
+            webView.resetBotPermissionSession();
+        }
         this.botUser = botUser;
     }
 
@@ -3914,6 +3920,344 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     }
 
     public static class MyWebView extends WebView {
+        private final WebViewPermissionSession botPermissions = new WebViewPermissionSession();
+        private final java.util.ArrayDeque<BotPermission> botPermissionQueue = new java.util.ArrayDeque<>();
+        private BotPermission activeBotPermission;
+        private Dialog botPermissionDialog;
+        private int permissionAccount = -1;
+        private long permissionBotId;
+        private boolean permissionsDestroyed;
+
+        private boolean usesBotPermissionSession() {
+            return bot && (botWebViewContainer == null || !botWebViewContainer.isVerifyingAge());
+        }
+
+        private final class BotPermission {
+            final BotWebViewContainer owner = botWebViewContainer;
+            final WebRequestContext context = owner == null ? null : owner.createRequestContext();
+            final int account = owner == null ? -1 : owner.currentAccount;
+            final long botId = owner == null || owner.botUser == null ? 0 : owner.botUser.id;
+            final long generation = botPermissions.generation();
+            final String origin;
+            final String[] resources;
+            final String[] androidPermissions;
+            final PermissionRequest media;
+            final GeolocationPermissions.Callback location;
+            final String callbackOrigin;
+            String[] promptedResources;
+            boolean answered;
+            boolean canceled;
+            boolean waitingForSystem;
+
+            BotPermission(PermissionRequest request) {
+                media = request;
+                location = null;
+                callbackOrigin = null;
+                origin = WebViewPermissionSession.originKey(request.getOrigin() == null ? null : request.getOrigin().toString());
+                resources = request.getResources().clone();
+                ArrayList<String> permissions = new ArrayList<>();
+                for (String resource : resources) {
+                    if (WebViewPermissionSession.AUDIO.equals(resource)) {
+                        permissions.add(Manifest.permission.RECORD_AUDIO);
+                    } else if (WebViewPermissionSession.VIDEO.equals(resource)) {
+                        permissions.add(Manifest.permission.CAMERA);
+                    }
+                }
+                androidPermissions = permissions.toArray(new String[0]);
+            }
+
+            BotPermission(String origin, GeolocationPermissions.Callback callback) {
+                media = null;
+                location = callback;
+                callbackOrigin = origin;
+                this.origin = WebViewPermissionSession.originKey(origin);
+                resources = new String[]{WebViewPermissionSession.LOCATION};
+                androidPermissions = new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+            }
+
+            boolean valid() {
+                if (owner == null || owner.parentActivity == null || owner.botUser == null
+                        || TextUtils.isEmpty(origin) || !WebViewPermissionSession.supported(resources)) {
+                    return false;
+                }
+                if (media != null) {
+                    for (String resource : resources) {
+                        if (!WebViewPermissionSession.AUDIO.equals(resource) && !WebViewPermissionSession.VIDEO.equals(resource)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            boolean current() {
+                return !canceled && !permissionsDestroyed && owner != null
+                        && owner.currentAccount == account && owner.botUser != null && owner.botUser.id == botId
+                        && owner == botWebViewContainer && generation == botPermissions.generation()
+                        // Browser grants belong to the requesting web origin, not the
+                        // original bot origin allowed to use Telegram's native bridge.
+                        && context != null && context.owner == owner
+                        && context.webView == MyWebView.this && owner.webView == MyWebView.this
+                        && context.documentGeneration == owner.documentGeneration;
+            }
+
+            boolean systemGranted(String resource) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    return true;
+                }
+                if (WebViewPermissionSession.LOCATION.equals(resource)) {
+                    // An approximate Android location grant is sufficient for browser location.
+                    return owner.getContext().checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            || owner.getContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                }
+                String androidPermission = WebViewPermissionSession.AUDIO.equals(resource)
+                        ? Manifest.permission.RECORD_AUDIO : Manifest.permission.CAMERA;
+                return owner.getContext().checkSelfPermission(androidPermission) == PackageManager.PERMISSION_GRANTED;
+            }
+
+            boolean systemGranted() {
+                for (String resource : resources) {
+                    if (!systemGranted(resource)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            String[] systemResources() {
+                ArrayList<String> granted = new ArrayList<>();
+                for (String resource : new String[]{WebViewPermissionSession.AUDIO,
+                        WebViewPermissionSession.VIDEO, WebViewPermissionSession.LOCATION}) {
+                    if (systemGranted(resource)) {
+                        granted.add(resource);
+                    }
+                }
+                return granted.toArray(new String[0]);
+            }
+
+            boolean respond(boolean allow) {
+                if (answered) {
+                    return false;
+                }
+                answered = true;
+                try {
+                    if (media != null) {
+                        if (allow) {
+                            // Only the validated, explicitly approved resource array is granted.
+                            media.grant(resources);
+                        } else {
+                            media.deny();
+                        }
+                    } else {
+                        location.invoke(callbackOrigin, allow, false);
+                    }
+                    return allow;
+                } catch (IllegalStateException e) {
+                    // WebView may invalidate its native request before delivering cancellation.
+                    if (allow && promptedResources != null) {
+                        // Roll back only this request's new approval, never an
+                        // independently approved resource on a canceled delivery.
+                        botPermissions.deny(origin, promptedResources);
+                    }
+                    FileLog.e(e);
+                    return false;
+                }
+            }
+        }
+
+        private void ensureBotPermissionOwner() {
+            BotWebViewContainer owner = botWebViewContainer;
+            if (owner != null && owner.botUser != null
+                    && (permissionAccount != owner.currentAccount || permissionBotId != owner.botUser.id)) {
+                resetBotPermissionSession();
+                permissionAccount = owner.currentAccount;
+                permissionBotId = owner.botUser.id;
+            }
+        }
+
+        private void enqueueBotPermission(PermissionRequest request) {
+            ensureBotPermissionOwner();
+            enqueueBotPermission(new BotPermission(request));
+        }
+
+        private void enqueueBotLocation(String origin, GeolocationPermissions.Callback callback) {
+            ensureBotPermissionOwner();
+            enqueueBotPermission(new BotPermission(origin, callback));
+        }
+
+        private void enqueueBotPermission(BotPermission permission) {
+            if (!permission.valid() || !permission.current()) {
+                permission.respond(false);
+                return;
+            }
+            botPermissionQueue.add(permission);
+            processBotPermissions();
+        }
+
+        private void processBotPermissions() {
+            if (activeBotPermission != null || permissionsDestroyed || botPermissionQueue.isEmpty()) {
+                return;
+            }
+            final BotPermission permission = activeBotPermission = botPermissionQueue.removeFirst();
+            if (!permission.current() || !permission.valid()) {
+                finishBotPermission(permission, false);
+                return;
+            }
+            botPermissions.retainSystemResources(permission.systemResources());
+            final boolean systemGranted = permission.systemGranted();
+            if (systemGranted && botPermissions.hasAll(permission.origin, permission.resources)) {
+                finishBotPermission(permission, true);
+                return;
+            }
+            permission.promptedResources = botPermissions.missing(permission.origin, permission.resources);
+            boolean audio = false, video = false;
+            for (String resource : permission.promptedResources) {
+                audio |= WebViewPermissionSession.AUDIO.equals(resource);
+                video |= WebViewPermissionSession.VIDEO.equals(resource);
+            }
+            final int title, hint, animation;
+            if (permission.location != null) {
+                title = R.string.BotWebViewRequestGeolocationPermission;
+                hint = R.string.BotWebViewRequestGeolocationPermissionWithHint;
+                animation = R.raw.permission_request_location;
+            } else if (audio && video) {
+                title = R.string.BotWebViewRequestCameraMicPermission;
+                hint = R.string.BotWebViewRequestCameraMicPermissionWithHint;
+                animation = R.raw.permission_request_camera;
+            } else if (video) {
+                title = R.string.BotWebViewRequestCameraPermission;
+                hint = R.string.BotWebViewRequestCameraPermissionWithHint;
+                animation = R.raw.permission_request_camera;
+            } else {
+                title = R.string.BotWebViewRequestMicrophonePermission;
+                hint = R.string.BotWebViewRequestMicrophonePermissionWithHint;
+                animation = R.raw.permission_request_microphone;
+            }
+            // An embedded requesting origin must not be disguised as the bot's own page.
+            String name = UserObject.getUserName(permission.owner.botUser);
+            if (!TextUtils.equals(permission.origin, WebViewPermissionSession.originKey(getUrl()))) {
+                name += " (" + AndroidUtilities.getHostAuthority(permission.origin) + ")";
+            }
+            botPermissionDialog = AlertsCreator.createWebViewPermissionsRequestDialog(
+                    permission.owner.parentActivity, permission.owner.resourcesProvider,
+                    // Approximate location already satisfies this request. Optional fine
+                    // permission must not turn a usable grant into a Settings-only dialog.
+                    systemGranted ? null : permission.androidPermissions, animation,
+                    formatString(title, name), formatString(hint, name), allow -> {
+                        if (activeBotPermission != permission || permission.canceled || permission.answered) {
+                            return;
+                        }
+                        botPermissionDialog = null;
+                        if (!allow || !permission.current()) {
+                            finishBotPermission(permission, false);
+                            return;
+                        }
+                        if (permission.systemGranted()) {
+                            finishBotPermission(permission, true);
+                        } else {
+                            permission.waitingForSystem = true;
+                            // The existing helper owns a distinct request code and observer. Its
+                            // reply survives container detach and cannot overwrite another request.
+                            org.telegram.ui.Components.PermissionRequest.requestPermissions(permission.androidPermissions, result -> {
+                                permission.waitingForSystem = false;
+                                finishBotPermission(permission, true);
+                            });
+                        }
+                    });
+            botPermissionDialog.show();
+        }
+
+        private void finishBotPermission(BotPermission permission, boolean allowSystem) {
+            boolean allow = allowSystem && permission.current() && permission.valid()
+                    && permission.systemGranted();
+            if (!permission.answered && permission.current()) {
+                if (allow) {
+                    allow = botPermissions.allow(permission.generation, permission.origin, permission.resources);
+                } else {
+                    botPermissions.deny(permission.origin,
+                            permission.promptedResources == null ? permission.resources : permission.promptedResources);
+                }
+            }
+            if (permission.respond(allow)) {
+                permission.owner.hasUserPermissions = true;
+            }
+            if (activeBotPermission == permission && !permission.waitingForSystem) {
+                activeBotPermission = null;
+            }
+            // Continue after the completed callback unwinds.
+            AndroidUtilities.runOnUIThread(this::processBotPermissions, 0);
+        }
+
+        private void cancelBotPermission(BotPermission permission, boolean canceledByWebView) {
+            permission.canceled = true;
+            if (canceledByWebView && permission.media == null) {
+                permission.answered = true;
+            } else {
+                // Fragment navigation can cancel native media permission while
+                // its JS promise remains alive. A synchronous deny settles it
+                // before WebView destroys the native request. Geolocation's
+                // origin-only callback must not answer a newer canceled prompt.
+                permission.respond(false);
+            }
+            if (activeBotPermission == permission) {
+                Dialog dialog = botPermissionDialog;
+                botPermissionDialog = null;
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+                // The web request is settled, but serialize the next OS request until this
+                // one's distinct observer replies, even if the container is reattached.
+                if (!permission.waitingForSystem) {
+                    activeBotPermission = null;
+                }
+            }
+        }
+
+        private void cancelBotMedia(PermissionRequest request) {
+            if (activeBotPermission != null && activeBotPermission.media == request) {
+                cancelBotPermission(activeBotPermission, true);
+            }
+            java.util.Iterator<BotPermission> iterator = botPermissionQueue.iterator();
+            while (iterator.hasNext()) {
+                BotPermission permission = iterator.next();
+                if (permission.media == request) {
+                    iterator.remove();
+                    cancelBotPermission(permission, true);
+                }
+            }
+            processBotPermissions();
+        }
+
+        private void cancelBotLocations() {
+            if (activeBotPermission != null && activeBotPermission.location != null) {
+                cancelBotPermission(activeBotPermission, true);
+            }
+            java.util.Iterator<BotPermission> iterator = botPermissionQueue.iterator();
+            while (iterator.hasNext()) {
+                BotPermission permission = iterator.next();
+                if (permission.location != null) {
+                    iterator.remove();
+                    cancelBotPermission(permission, true);
+                }
+            }
+            processBotPermissions();
+        }
+
+        private void cancelBotPermissions() {
+            for (BotPermission permission : botPermissionQueue) {
+                cancelBotPermission(permission, false);
+            }
+            botPermissionQueue.clear();
+            if (activeBotPermission != null) {
+                cancelBotPermission(activeBotPermission, false);
+            }
+        }
+
+        private void resetBotPermissionSession() {
+            botPermissions.clear();
+            cancelBotPermissions();
+        }
+
         private final int tag = tags++;
         private boolean isPageLoaded;
         private Runnable whenPageLoaded;
@@ -4343,6 +4687,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     if (bot && botWebViewContainer != null) {
                         botWebViewContainer.documentGeneration++;
                     }
+                    if (bot) {
+                        resetBotPermissionSession();
+                    }
                     if (botWebViewContainer == null || !botWebViewContainer.isVerifyingAge()) {
                         getSettings().setMediaPlaybackRequiresUserGesture(true);
                     }
@@ -4762,6 +5109,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                 @Override
                 public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                    if (usesBotPermissionSession()) {
+                        enqueueBotLocation(origin, callback);
+                        return;
+                    }
                     if (botWebViewContainer == null || botWebViewContainer.parentActivity == null) {
                         d("onGeolocationPermissionsShowPrompt: no container");
                         callback.invoke(origin, false, false);
@@ -4798,6 +5149,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                 @Override
                 public void onGeolocationPermissionsHidePrompt() {
+                    if (usesBotPermissionSession()) {
+                        cancelBotLocations();
+                        return;
+                    }
                     if (lastPermissionsDialog != null) {
                         d("onGeolocationPermissionsHidePrompt: dialog.dismiss");
                         lastPermissionsDialog.dismiss();
@@ -4809,6 +5164,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                 @Override
                 public void onPermissionRequest(PermissionRequest request) {
+                    if (usesBotPermissionSession()) {
+                        enqueueBotPermission(request);
+                        return;
+                    }
                     if (lastPermissionsDialog != null){
                         lastPermissionsDialog.dismiss();
                         lastPermissionsDialog = null;
@@ -4934,6 +5293,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
                 @Override
                 public void onPermissionRequestCanceled(PermissionRequest request) {
+                    if (usesBotPermissionSession()) {
+                        cancelBotMedia(request);
+                        return;
+                    }
                     if (lastPermissionsDialog != null) {
                         d("onPermissionRequestCanceled: dialog.dismiss");
                         lastPermissionsDialog.dismiss();
@@ -5114,6 +5477,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         public void setContainers(BotWebViewContainer botWebViewContainer, WebViewScrollListener webViewScrollListener) {
             d("setContainers(" + botWebViewContainer + ", " + webViewScrollListener + ")");
             final boolean attachedAgain = this.botWebViewContainer == null && botWebViewContainer != null;
+            if (bot && this.botWebViewContainer != botWebViewContainer) {
+                cancelBotPermissions();
+            }
             this.botWebViewContainer = botWebViewContainer;
             this.webViewScrollListener = webViewScrollListener;
             if (attachedAgain) {
@@ -5212,11 +5578,16 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
         @Override
         public void destroy() {
             d("destroy");
+            permissionsDestroyed = true;
+            resetBotPermissionSession();
             super.destroy();
         }
 
         @Override
         public void loadUrl(@NonNull String url) {
+            if (bot) {
+                resetBotPermissionSession();
+            }
             if (currentSheet != null) {
                 currentSheet.dismiss();
                 currentSheet = null;
@@ -5316,6 +5687,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
         @Override
         public void reload() {
+            if (bot) {
+                resetBotPermissionSession();
+            }
             CookieManager.getInstance().flush();
             d("reload");
             super.reload();
