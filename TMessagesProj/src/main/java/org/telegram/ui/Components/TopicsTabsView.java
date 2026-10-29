@@ -871,9 +871,9 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
                     options.add(R.drawable.msg_remove, getString(R.string.BanUserMonoforum), null);
                     ActionBarMenuSubItem subitem = options.getLast();
                     subitem.setVisibility(View.GONE);
-                    MessagesController.getInstance(currentAccount).checkIsInChat(true, channel, user, (isInChat, currentAdminRights, rank) -> {
+                    MessagesController.getInstance(currentAccount).getChannelParticipant(channel, user, participant -> {
                         AndroidUtilities.runOnUIThread(() -> {
-                            final boolean banned = !isInChat;
+                            final boolean banned = participant instanceof TLRPC.TL_channelParticipantBanned && participant.banned_rights != null && participant.banned_rights.view_messages;
                             subitem.setVisibility(View.VISIBLE);
                             subitem.setText(getString(banned ? R.string.UnbanUserMonoforum : R.string.BanUserMonoforum));
                             subitem.setOnClickListener(v -> {
