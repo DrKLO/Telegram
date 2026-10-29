@@ -263,6 +263,10 @@ public class CheckBoxCell extends FrameLayout {
                 click1Container.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
                 addView(click1Container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
             }
+            // it lies over the whole row and opens or closes the rest of the sections. A plain
+            // view has no words of its own, so a reader found a button here that said nothing
+            click1Container.setContentDescription(LocaleController.getString(
+                collapsedState != null && collapsedState ? R.string.PollExpand : R.string.PollCollapse));
             click1Container.setOnClickListener(onTextClick);
         }
 
@@ -276,11 +280,18 @@ public class CheckBoxCell extends FrameLayout {
                 click2Container = new View(getContext());
                 addView(click2Container, LayoutHelper.createFrame(56, LayoutHelper.MATCH_PARENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             }
+            // and this one lies over the box at the near edge and ticks the row. Same again
+            click2Container.setContentDescription(LocaleController.getString(R.string.Select));
             click2Container.setOnClickListener(onCheckboxClick);
         }
     }
 
+    // whether the rest of the sections are hidden, kept so the view lying over the row can say
+    // which way pressing it would go
+    private Boolean collapsedState;
+
     public void setCollapsed(Boolean collapsed) {
+        collapsedState = collapsed;
         if (collapsed == null) {
             if (collapsedArrow != null) {
                 removeView(collapsedArrow);

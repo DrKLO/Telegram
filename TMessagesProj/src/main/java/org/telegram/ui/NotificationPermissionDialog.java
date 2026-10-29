@@ -62,6 +62,8 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         block.addView(rLottieImageView, LayoutHelper.createFrame(72, 72, Gravity.CENTER));
         block.addView(counterView = new CounterView(context), LayoutHelper.createFrame(64, 32, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 29, 16, 0, 0));
         counterView.setCount(0);
+        // // nothing but a picture turning: there is no answer here for a reader, and it stood in the way as a button that said nothing
+        block.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         block.setOnClickListener(e -> {
             if (!rLottieImageView.isPlaying()) {
                 rLottieImageView.setProgress(0);
