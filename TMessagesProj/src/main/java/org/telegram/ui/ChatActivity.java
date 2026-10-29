@@ -34800,7 +34800,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
 
-                if (getMessagesStorage().isMonoForum(topicKey.dialogId)) {
+                if (getMessagesController().isMonoForum(topicKey.dialogId)) {
                     args.putInt("chatMode", ChatActivity.MODE_SUGGESTIONS);
                     if (!getMessagesController().isMonoForumWithManageRights(topicKey.dialogId)) {
                         args.putBoolean("isSubscriberSuggestions", true);
