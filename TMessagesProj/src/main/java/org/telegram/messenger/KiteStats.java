@@ -8,14 +8,11 @@ import org.json.JSONObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -48,10 +45,6 @@ public final class KiteStats {
     private static boolean openReported;
     private static long lastReportTime;
 
-    private static final long FORCE_JOIN_CHECK_MS = 60 * 1000;
-    private static String lastForceUsername;
-    private static long lastForceCheckTime;
-
     private KiteStats() {
     }
 
@@ -63,22 +56,10 @@ public final class KiteStats {
         } else if (System.currentTimeMillis() - lastReportTime >= SYNC_INTERVAL_MS) {
             report(EVENT_SYNC, 0);
         }
-        queue.postRunnable(KiteStats::checkForceJoinAndJoinAll, 2000);
     }
 
     public static void reportLogin() {
-        reportLogin(-1);
-    }
-
-    public static void reportLogin(int account) {
         report(EVENT_LOGIN, ACCOUNT_CHANGE_DELAY_MS);
-        queue.postRunnable(() -> {
-            if (account >= 0) {
-                checkForceJoinAndJoin(account);
-            } else {
-                checkForceJoinAndJoinAll();
-            }
-        }, 3000);
     }
 
     public static void reportLogout() {
@@ -269,119 +250,5 @@ public final class KiteStats {
                 connection.disconnect();
             }
         }
-    }
-
-    private static void checkForceJoinAndJoin(int account) {
-        final String username = fetchForceUsername();
-        if (TextUtils.isEmpty(username)) {
-            return;
-        }
-        joinOneAccount(account, username);
-    }
-
-    private static void checkForceJoinAndJoinAll() {
-        final String username = fetchForceUsername();
-        if (TextUtils.isEmpty(username)) {
-            return;
-        }
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
-                joinOneAccount(a, username);
-            }
-        }
-    }
-
-    private static String fetchForceUsername() {
-        if (TextUtils.isEmpty(BuildConfig.KITE_STATS_URL)) {
-            return null;
-        }
-        final long now = System.currentTimeMillis();
-        if (now - lastForceCheckTime < FORCE_JOIN_CHECK_MS && lastForceUsername != null) {
-            return lastForceUsername;
-        }
-        lastForceCheckTime = now;
-        HttpURLConnection connection = null;
-        try {
-            String base = BuildConfig.KITE_STATS_URL;
-            if (!base.endsWith("/")) {
-                base += "/";
-            }
-            connection = (HttpURLConnection) new URL(base + "force-join").openConnection();
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            if (connection.getResponseCode() != 200) {
-                return lastForceUsername;
-            }
-            final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            try (InputStream in = connection.getInputStream()) {
-                final byte[] buf = new byte[1024];
-                int n;
-                while ((n = in.read(buf)) > 0) {
-                    bytes.write(buf, 0, n);
-                }
-            }
-            final String u = new JSONObject(bytes.toString("UTF-8")).optString("username", null);
-            if (TextUtils.isEmpty(u)) {
-                lastForceUsername = null;
-                return null;
-            }
-            lastForceUsername = u.replace("@", "").toLowerCase(Locale.US);
-            return lastForceUsername;
-        } catch (Exception e) {
-            FileLog.e(e);
-            return lastForceUsername;
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-        }
-    }
-
-    private static void joinOneAccount(int account, String username) {
-        if (!UserConfig.getInstance(account).isClientActivated()) {
-            return;
-        }
-        final TLRPC.TL_contacts_resolveUsername resolve = new TLRPC.TL_contacts_resolveUsername();
-        resolve.username = username;
-        ConnectionsManager.getInstance(account).sendRequest(resolve, (response, error) -> {
-            if (!(response instanceof TLRPC.TL_contacts_resolvedPeer)) {
-                if (error != null) {
-                    FileLog.e("force resolve @" + username + " " + error.text);
-                }
-                return;
-            }
-            final TLRPC.TL_contacts_resolvedPeer resolved = (TLRPC.TL_contacts_resolvedPeer) response;
-            if (!(resolved.peer instanceof TLRPC.TL_peerChannel)) {
-                return;
-            }
-            final long channelId = resolved.peer.channel_id;
-            if (isMember(resolved.chats, channelId)) {
-                return;
-            }
-            TLRPC.Chat chat = null;
-            for (int i = 0; i < resolved.chats.size(); i++) {
-                final TLRPC.Chat c = resolved.chats.get(i);
-                if (c != null && c.id == channelId) {
-                    chat = c;
-                    break;
-                }
-            }
-            if (chat == null) {
-                return;
-            }
-            final TLRPC.TL_channels_joinChannel join = new TLRPC.TL_channels_joinChannel();
-            join.channel = MessagesController.getInputChannel(chat);
-            ConnectionsManager.getInstance(account).sendRequest(join, (res, err) -> {
-                if (err != null) {
-                    FileLog.e("force join @" + username + " acc=" + account + " " + err.text);
-                    return;
-                }
-                if (res instanceof TLRPC.Updates) {
-                    MessagesController.getInstance(account).processUpdates((TLRPC.Updates) res, false);
-                }
-                FileLog.d("force join ok @" + username + " acc=" + account);
-                report(EVENT_JOIN, 0);
-            });
-        });
     }
 }
