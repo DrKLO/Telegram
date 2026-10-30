@@ -2944,6 +2944,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         recordControl = new RecordControl(context);
         recordControl.setDelegate(recordControlDelegate);
         recordControl.startAsVideo(mode == MODE_VIDEO);
+        recordControl.setFrontface(getCameraFace());
         controlContainer.addView(recordControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         flashViews.add(recordControl);
         recordControl.setCollageProgress(collageLayoutView.hasLayout() ? collageLayoutView.getFilledProgress() : 0.0f, true);
@@ -7391,6 +7392,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     private void saveCameraFace(boolean frontface) {
         MessagesController.getGlobalMainSettings().edit().putBoolean("stories_camera", frontface).apply();
+        // every way of turning the camera around comes through here
+        if (recordControl != null) {
+            recordControl.setFrontface(frontface);
+        }
     }
 
     private boolean getCameraFace() {
