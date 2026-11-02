@@ -437,6 +437,8 @@ public class HintView2 extends View {
         float leftWidth = 0, rightWidth = 0;
         float prevLeftWidth = 0;
         float prevRightWidth = Float.MAX_VALUE;
+        int bestMid = -1;
+        float bestWidth = Float.MAX_VALUE;
 
         int dir = -1;
         for (int i = 0; i < 10; ++i) {
@@ -447,6 +449,10 @@ public class HintView2 extends View {
             leftWidth = measureCorrectly(text.subSequence(0, mid), paint);
             rightWidth = measureCorrectly(AndroidUtilities.getTrimmedString(text.subSequence(mid, text.length())), paint);
             lastMid = mid;
+            if (mid > 0 && mid < text.length() && Math.max(leftWidth, rightWidth) < bestWidth) {
+                bestWidth = Math.max(leftWidth, rightWidth);
+                bestMid = mid;
+            }
 
             if (leftWidth == prevLeftWidth && rightWidth == prevRightWidth) {
                 break;
@@ -464,9 +470,13 @@ public class HintView2 extends View {
             }
 
             if (mid <= 0 || mid >= text.length()) {
-                return text;
+                break;
             }
         }
+        if (bestMid < 0) {
+            return text;
+        }
+        lastMid = bestMid;
         return TextUtils.concat(
             AndroidUtilities.getTrimmedString(text.subSequence(0, lastMid)),
             "\n",

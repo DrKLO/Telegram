@@ -526,11 +526,11 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         if (mode == MODE_INPUT) {
             if (!inputAmount.isZero()) {
                 final boolean isTon = inputAmount.currency == AmountUtils.Currency.TON;
-                buttonView.setText(StarsIntroActivity.replaceStars(isTon,
+                buttonView.setText(StarsIntroActivity.whiteGram(isTon, StarsIntroActivity.replaceStars(isTon,
                     LocaleController.formatString(R.string.PostSuggestionsOfferStars, isTon ? inputAmount.asDecimalString() :
                         LocaleController.formatNumber(inputAmount.asDecimal(), ',')),
                     isTon ? spanRefTon: spanRefStars
-                ), animated);
+                )), animated);
             } else {
                 buttonView.setText(LocaleController.getString(R.string.PostSuggestionsOfferForFree), animated);
             }

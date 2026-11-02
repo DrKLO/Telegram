@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -20,6 +21,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -70,6 +72,12 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.support.fingerprint.FingerprintManagerCompat;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProviderBuilder;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.ui.QrShare.QrGlass;
+import org.telegram.ui.QrShare.QrRender;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
@@ -78,6 +86,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
+
+import me.vkryl.core.reference.ReferenceList;
 
 public class PasscodeView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
     private final static float BACKGROUND_SPRING_STIFFNESS = 300f;
@@ -466,6 +476,15 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
     private View border;
     private int keyboardHeight = 0;
 
+    // glass of the number buttons, as on the QR screen: the background keeps a low-res copy of itself
+    // that is used directly as the blur source
+    private static final int GLASS_WIDTH = 54;
+    private final BlurredBackgroundSourceBitmap glassSource = new BlurredBackgroundSourceBitmap();
+    private final BlurredBackgroundDrawableViewFactory glassFactory = new BlurredBackgroundDrawableViewFactory(glassSource);
+    private final ReferenceList<View> glassViews = new ReferenceList<>();
+    private @Nullable Bitmap glassBitmap;
+    private @Nullable Canvas glassCanvas;
+
     private boolean selfCancelled;
 
     private int imageY;
@@ -529,7 +548,31 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             private Paint paint = new Paint();
 
             @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+                if (w > 0 && h > 0) {
+                    glassBitmap = Bitmap.createBitmap(GLASS_WIDTH, Math.max(1, Math.round(GLASS_WIDTH * h / (float) w)), Bitmap.Config.ARGB_8888);
+                    glassCanvas = new Canvas(glassBitmap);
+                    glassSource.setBitmap(glassBitmap);
+                    glassSource.setParentSize(w, h, 0);
+                }
+            }
+
+            @Override
             protected void onDraw(Canvas canvas) {
+                drawBackground(canvas);
+                // the copy follows every frame of the background, e.g. the gradient animation
+                if (glassBitmap != null && glassCanvas != null && getMeasuredWidth() > 0 && getMeasuredHeight() > 0) {
+                    glassBitmap.eraseColor(0);
+                    glassCanvas.save();
+                    glassCanvas.scale(glassBitmap.getWidth() / (float) getMeasuredWidth(), glassBitmap.getHeight() / (float) getMeasuredHeight());
+                    drawBackground(glassCanvas);
+                    glassCanvas.restore();
+                    glassFactory.invalidateAllLinkedViews();
+                }
+            }
+
+            private void drawBackground(Canvas canvas) {
                 if (backgroundDrawable != null) {
                     if (backgroundDrawable instanceof MotionBackgroundDrawable || backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
                         backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
@@ -558,6 +601,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         };
         backgroundFrameLayout.setWillNotDraw(false);
         addView(backgroundFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        glassFactory.setSourceRootView(new ViewPositionWatcher(backgroundFrameLayout), backgroundFrameLayout);
+        glassFactory.setLinkedViewsRef(glassViews);
 
         imageView = new RLottieImageView(context);
         imageView.setAnimation(R.raw.passcode_lock, 58, 58);
@@ -715,6 +760,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         passwordFrameLayout.addView(border, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
         numbersContainer = new FrameLayout(context);
+        numbersContainer.setClipChildren(false); // the outer keys' rims reach past the keypad's own bounds
         backgroundFrameLayout.addView(numbersContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         numbersFrameLayout = new FrameLayout(context) {
@@ -734,6 +780,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             }
         };
+        // the rim of the glass goes beyond the buttons
+        numbersFrameLayout.setClipChildren(false);
         numbersContainer.addView(numbersFrameLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         numbersTitleContainer = new FrameLayout(context);
@@ -758,7 +806,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             ScaleStateListAnimator.apply(frameLayout, .15f, 1.5f);
             frameLayout.setTag(a);
             if (a == 11) {
-                frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
+                frameLayout.setBackground(createGlass(frameLayout));
+                frameLayout.setForeground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
                 frameLayout.setImage(R.drawable.filled_clear);
                 frameLayout.setOnLongClickListener(v -> {
                     passwordEditText.setText("");
@@ -772,12 +821,14 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 setNextFocus(frameLayout, R.id.passcode_btn_0);
             } else if (a == 10) {
                 fingerprintView = frameLayout;
-                frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
+                frameLayout.setBackground(createGlass(frameLayout));
+                frameLayout.setForeground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
                 frameLayout.setContentDescription(LocaleController.getString(R.string.AccDescrFingerprint));
                 frameLayout.setImage(R.drawable.fingerprint);
                 setNextFocus(frameLayout, R.id.passcode_btn_1);
             } else {
-                frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0x26ffffff, 0x4cffffff));
+                frameLayout.setBackground(createGlass(frameLayout));
+                frameLayout.setForeground(Theme.createSimpleSelectorRoundRectDrawable(dp(30), 0, 0x26ffffff));
                 frameLayout.setContentDescription(a + "");
                 frameLayout.setNum(a);
                 if (a == 0) {
@@ -836,9 +887,6 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                         erased = passwordEditText2.eraseLastCharacter();
                         break;
                 }
-                if (passwordEditText2.length() == 4) {
-                    processDone(false);
-                }
                 if (tag == 11) {
 
                 } else {
@@ -896,6 +944,10 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                         }
                     }
                 }
+                // after the background step of the last digit, so a wrong code can turn the background back smoothly
+                if (passwordEditText2.length() == 4) {
+                    processDone(false);
+                }
             });
             numberFrameLayouts.add(frameLayout);
         }
@@ -931,6 +983,97 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         });
         backgroundAnimationSpring.addUpdateListener((animation, value, velocity) -> motionBackgroundDrawable.updateAnimation());
         backgroundAnimationSpring.start();
+    }
+
+    /**
+     * Turns the background back after a wrong code. A running step is not cut short: jumping to its end made
+     * the whole screen jerk. The steps waiting behind it are dropped, they belong to the erased digits.
+     */
+    private void rotateBackgroundBack(MotionBackgroundDrawable drawable) {
+        backgroundSpringQueue.clear();
+        backgroundSpringNextQueue.clear();
+        if (backgroundAnimationSpring != null && backgroundAnimationSpring.isRunning()) {
+            backgroundSpringQueue.offer(() -> drawable.rotatePreview(true));
+            backgroundSpringNextQueue.offer(false);
+        } else {
+            drawable.rotatePreview(true);
+        }
+    }
+
+    /**
+     * The glass of the QR screen controls (Big group): the blurred background, the white fill, the top sheen and the baked
+     * rim, no shadow. The buttons are measured with {@link #BUTTON_SIZE}, so it is a circle.
+     */
+    private Drawable createGlass(View view) {
+        final BlurredBackgroundProviderBuilder provider = new BlurredBackgroundProviderBuilder(null)
+            .setBackgroundColor((r, isDark) -> QrGlass.controlFill());
+        if (!QrRender.hasNodes()) {
+            // the rim is baked only from Android 10 (its crescents need Plus): the plain strokes before
+            provider.setStrokeColorTop(0x4DFFFFFF, 0x4DFFFFFF)
+                .setStrokeColorBottom(0x1AFFFFFF, 0x1AFFFFFF)
+                .setStrokeWidth(dpf2(1), dpf2(2 / 3f));
+        }
+        // the position is taken on screen: the keypad is scaled down on short screens
+        return new QrGlassButton(glassFactory.create(view, provider.build(), true).setRadius(dp(BUTTON_SIZE / 2)));
+    }
+
+    /** The blurred background with the QR glass's sheen and rim over it (the rim reaches ~2dp past the bounds). */
+    private static class QrGlassButton extends Drawable implements Drawable.Callback {
+        private final Drawable blur;
+        private final RectF bounds = new RectF();
+        private int alpha = 255;
+
+        QrGlassButton(Drawable blur) {
+            this.blur = blur;
+            blur.setCallback(this);
+        }
+
+        @Override
+        protected void onBoundsChange(@NonNull Rect b) {
+            blur.setBounds(b);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            blur.draw(canvas);
+            bounds.set(getBounds());
+            final float radius = Math.min(bounds.width(), bounds.height()) / 2f;
+            final float a = alpha / 255f;
+            QrGlass.drawSheenRound(canvas, bounds, radius, false, a);
+            QrGlass.drawRim(canvas, bounds, radius, QrGlass.RIM_BIG, a);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            this.alpha = alpha;
+            blur.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+            blur.setColorFilter(colorFilter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+
+        @Override
+        public void invalidateDrawable(@NonNull Drawable who) {
+            invalidateSelf();
+        }
+
+        @Override
+        public void scheduleDrawable(@NonNull Drawable who, @NonNull Runnable what, long when) {
+            scheduleSelf(what, when);
+        }
+
+        @Override
+        public void unscheduleDrawable(@NonNull Drawable who, @NonNull Runnable what) {
+            unscheduleSelf(what);
+        }
     }
 
     private void setNextFocus(View view, @IdRes int nextId) {
@@ -973,14 +1116,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 passwordEditText2.eraseAllCharacters(true);
                 onPasscodeError();
                 if (backgroundDrawable instanceof MotionBackgroundDrawable) {
-                    MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) backgroundDrawable;
-                    if (backgroundAnimationSpring != null) {
-                        backgroundAnimationSpring.cancel();
-                        motionBackgroundDrawable.setPosAnimationProgress(1f);
-                    }
-                    if (motionBackgroundDrawable.getPosAnimationProgress() >= 1f) {
-                        motionBackgroundDrawable.rotatePreview(true);
-                    }
+                    rotateBackgroundBack((MotionBackgroundDrawable) backgroundDrawable);
                 }
                 return;
             }
