@@ -129,6 +129,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
+import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
@@ -12975,6 +12976,27 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (!quote) {
             quoteHighlight = null;
         }
+        if (quote && messageObject.richLayout != null) {
+            if (byClick) {
+                messageObject.richLayout.openDetails(RichQuote.findCollapsedDetails(messageObject, text, quote_offset));
+            }
+            final int[] range = RichQuote.findQuote(messageObject, text, quote_offset);
+            if (range == null) {
+                if (quoteHighlight != null) {
+                    quoteHighlight = null;
+                    invalidate();
+                }
+                return false;
+            }
+            highlightedQuote = true;
+            if (quoteHighlight == null || quoteHighlight.todo || quoteHighlight.poll || quoteHighlight.id != messageObject.getId() || quoteHighlight.start != range[0] || quoteHighlight.end != range[1]) {
+                final QuoteHighlight prev = quoteHighlight;
+                quoteHighlight = new QuoteHighlight(this, getParent(), messageObject.getId(), messageObject.richLayout, range[0], range[1]);
+                quoteHighlight.continueFrom(prev);
+            }
+            invalidate();
+            return true;
+        }
         String message;
         if (currentCaption != null) {
             message = currentCaption.toString();
@@ -14379,10 +14401,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     canvas.save();
                 }
                 canvas.translate(textX, textY);
+                layout.draw(canvas, padLeft, padRight, transitionParams);
+                // drawn on top, so block backgrounds (table headers, code) don't cover them
                 if (delegate != null && delegate.getTextSelectionHelper() != null) {
                     delegate.getTextSelectionHelper().drawRich(currentMessageObject, layout, canvas);
                 }
-                layout.draw(canvas, padLeft, padRight, transitionParams);
+                canvas.translate(-textX, -textY);
+                if (quoteHighlight != null && !quoteHighlight.todo && !quoteHighlight.poll && currentBackgroundDrawable != null) {
+                    canvas.save();
+                    canvas.clipPath(currentBackgroundDrawable.makePath());
+                    quoteHighlight.paint.setColor(Theme.multAlpha(getThemedColor(currentMessageObject.isOutOwner() && !currentMessageObject.preview ? Theme.key_chat_outReplyLine : Theme.key_chat_inReplyLine), .2f));
+                    quoteHighlight.draw(canvas, textX, textY, currentBackgroundDrawable.getBounds(), getHighlightAlpha(true));
+                    canvas.restore();
+                }
                 canvas.restore();
 
                 if (botDraftTypingAnimator != null && botDraftTypingAnimator.isRunning()) {

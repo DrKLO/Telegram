@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.DialogInterface;
 import android.graphics.BitmapShader;
 import android.graphics.Camera;
 import android.graphics.Canvas;
@@ -62,6 +63,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -85,6 +87,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.BirthdayController;
@@ -93,6 +96,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.GiftAuctionController;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
@@ -104,6 +108,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.messenger.utils.CountdownTimer;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.tgnet.ConnectionsManager;
@@ -131,6 +136,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetLayouted;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ButtonSpan;
@@ -168,6 +174,8 @@ import org.telegram.ui.Gifts.ProfileGiftsContainer;
 import org.telegram.ui.Gifts.ResaleGiftsFragment;
 import org.telegram.ui.GradientClip;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Wallet.GramWallet;
+import org.telegram.ui.Wallet.WalletActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.StatisticActivity;
@@ -179,6 +187,7 @@ import org.telegram.ui.Stories.recorder.StoryRecorder;
 import org.telegram.ui.TON.TONIntroActivity;
 import org.telegram.ui.TwoStepVerificationActivity;
 import org.telegram.ui.TwoStepVerificationSetupActivity;
+import org.telegram.ui.ViewPagerActivity;
 import org.telegram.ui.bots.AffiliateProgramFragment;
 import org.telegram.ui.bots.BotWebViewSheet;
 
@@ -189,6 +198,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class StarGiftSheet extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
@@ -224,6 +234,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     private final LinearLayout checkboxLayout;
     private final CheckBox2 checkbox;
     private final TextView checkboxTextView;
+    private final LinearLayout walletDisplayLayout;
+    private final CheckBox2 walletDisplayCheckbox;
 
     private boolean onlyWearInfo;
     private final LinearLayout wearLayout;
@@ -342,6 +354,21 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
 
             @Override
+            protected float getAvailableTranslationX() {
+                // setTranslationX() pulls the pages together by the side paddings: this is how far they really go
+                return Math.max(1, getMeasuredWidth() - 2 * backgroundPaddingLeft);
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                // the neighbours never show past the sheet's sides (in landscape the screen is wider than the sheet)
+                canvas.save();
+                canvas.clipRect(backgroundPaddingLeft, -getHeight(), getWidth() - backgroundPaddingLeft, getHeight() * 2);
+                super.dispatchDraw(canvas);
+                canvas.restore();
+            }
+
+            @Override
             protected boolean canScroll(MotionEvent e) {
                 return currentPage == null || currentPage.is(PAGE_INFO);
             }
@@ -399,7 +426,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         updateViewPager();
         bottomView = new View(context);
         bottomView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        containerView.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.BOTTOM));
+        final FrameLayout.LayoutParams bottomViewLayoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.BOTTOM);
+        // only under the sheet: in landscape it is narrower than the screen
+        bottomViewLayoutParams.leftMargin = bottomViewLayoutParams.rightMargin = backgroundPaddingLeft;
+        containerView.addView(bottomView, bottomViewLayoutParams);
         containerView.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         fixNavigationBar(getThemedColor(Theme.key_dialogBackground));
@@ -442,6 +472,26 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         afterTableTextView.setPadding(dp(5), 0, dp(5), 0);
         infoLayout.addView(afterTableTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 4, 2, 4, 8));
         afterTableTextView.setVisibility(View.GONE);
+
+        walletDisplayLayout = new LinearLayout(context);
+        walletDisplayLayout.setPadding(dp(12), dp(8), dp(12), dp(8));
+        walletDisplayLayout.setOrientation(LinearLayout.HORIZONTAL);
+        walletDisplayLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 21, 21));
+        walletDisplayCheckbox = new CheckBox2(context, 24, resourcesProvider);
+        walletDisplayCheckbox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
+        walletDisplayCheckbox.setDrawUnchecked(true);
+        walletDisplayCheckbox.setChecked(false, false);
+        walletDisplayCheckbox.setDrawBackgroundAsArc(10);
+        walletDisplayLayout.addView(walletDisplayCheckbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+        final TextView walletDisplayTextView = new TextView(context);
+        walletDisplayTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        walletDisplayTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        walletDisplayTextView.setText(getString(R.string.Gift2AlsoShowInMyGifts));
+        walletDisplayLayout.addView(walletDisplayTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
+        infoLayout.addView(walletDisplayLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, -4, 0, 4));
+        ScaleStateListAnimator.apply(walletDisplayLayout, 0.025f, 1.5f);
+        walletDisplayLayout.setOnClickListener(v -> toggleWalletDisplay());
+        walletDisplayLayout.setVisibility(View.GONE);
 
         upgradeLayout = new LinearLayout(context) {
             @Override
@@ -624,6 +674,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         container.addView(actionView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         actionView.prepareBlur(parentDecorView);
+    }
+
+    @Override
+    public void setOverlayNavBarColor(int color) {
+        super.setOverlayNavBarColor(color);
+        // the sheet draws this background itself (bottomView), so it is only as wide as the sheet in landscape
+        AndroidUtilities.setNavigationBarColor(this, Color.TRANSPARENT, false);
     }
 
     private final int[] heights = new int[2];
@@ -1017,6 +1074,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     private void onMenuPressed(View btn) {
         final String link = getLink();
         final TL_stars.TL_starGiftUnique giftUnique = getUniqueGift();
+        // in landscape the sheet is centered: popup is positioned in window coordinates
+        final int[] containerLocation = new int[2];
+        container.getLocationInWindow(containerLocation);
         ItemOptions.makeOptions(container, resourcesProvider, btn)
             .addIf(getUniqueGift() != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(getUniqueGift().owner_id)) && giftsList instanceof StarsController.GiftsList && savedStarGift != null && getInputStarGift() != null, (savedStarGift != null && savedStarGift.pinned_to_top) ? R.drawable.msg_unpin : R.drawable.msg_pin, getString((savedStarGift != null && savedStarGift.pinned_to_top) ? R.string.Gift2Unpin : R.string.Gift2Pin), () -> {
                 if (savedStarGift.unsaved) {
@@ -1063,12 +1123,15 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             })
             .addIf(giftUnique != null && giftUnique.offer_min_stars > 0, R.drawable.input_suggest_paid_24, getString(R.string.GiftOfferToBuyMenu), this::showGiftOfferSheet)
             .addIf(canSetAsTheme(), R.drawable.msg_colors, getString(R.string.GiftThemesSetIn), this::openSetAsTheme)
-            .addIf(canTransfer(), R.drawable.menu_feature_transfer, getString(R.string.Gift2TransferOption), this::openTransfer)
+            .addIf(walletCollectible == null && myProfile && savedStarGift != null && isMine(currentAccount, dialogId), savedStarGift != null && !savedStarGift.unsaved ? R.drawable.menu_hide_from_profile : R.drawable.menu_show_on_profile, getString(savedStarGift != null && !savedStarGift.unsaved ? R.string.Gift2HideFromProfile : R.string.Gift2ShowOnProfile), this::toggleShow)
+            .addIf(walletCollectible == null && canTransfer(), R.drawable.menu_transfer, getString(R.string.Gift2TransferOption), this::openTransfer)
+            .addIf(walletCollectible != null, R.drawable.menu_transfer, getString(R.string.Gift2TransferOption), this::openWalletTransfer)
             .addIf(savedStarGift == null && getDialogId() != 0, R.drawable.msg_view_file, getString(R.string.Gift2ViewInProfile), this::openInProfile)
+            .addIf(canDelete(), R.drawable.msg_delete, getString(R.string.Gift2DeleteOption), true, this::deleteGift)
             .setDrawScrim(false)
             .setOnTopOfScrim()
             .setDimAlpha(0)
-            .translate(0, -dp(2))
+            .translate(containerLocation[0] + backgroundPaddingLeft, -dp(2))
             .show();
     }
 
@@ -1642,6 +1705,11 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             canvas.drawPath(path, backgroundPaint);
 
             super.dispatchDraw(canvas);
+            if (getPaddingBottom() > 0 && buttonContainer.getVisibility() == View.VISIBLE && buttonContainer.getAlpha() > 0) {
+                backgroundPaint.setAlpha((int) (0xFF * buttonContainer.getAlpha()));
+                canvas.drawRect(backgroundPaddingLeft, getHeight() - getPaddingBottom(), getWidth() - backgroundPaddingLeft, getHeight(), backgroundPaint);
+                backgroundPaint.setAlpha(0xFF);
+            }
             if (dimAlpha != 0) {
                 canvas.drawColor(Theme.multAlpha(0xFF000000, dimAlpha));
             }
@@ -2001,6 +2069,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private TextPaint messageTextPaint;
         private final LinearLayout buttonsLayout;
         public final Button[] buttons;
+        public final Button colorButton;
 
         private FrameLayout userLayout;
         private BackupImageView avatarView;
@@ -2012,6 +2081,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         private final ImageView closeView;
         private final ImageView craftView;
         public final ImageView optionsView;
+        private boolean showOptions;
+        private Boolean optionsViewLight;
+
+        public void setShowOptions(boolean show) {
+            showOptions = show;
+            onSwitchPage(currentPage);
+        }
 
         public static class Button extends FrameLayout {
 
@@ -2041,6 +2117,49 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     imageView.setImageResource(iconResId);
                 }
                 textView.setText(text);
+                requestLayout();
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                fitText(MeasureSpec.getSize(widthMeasureSpec) - dp(8));
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
+
+            // One line at 12sp, else two tighter lines at 11sp, else one line scaled down.
+            private void fitText(int available) {
+                final CharSequence text = textView.getText();
+                if (available <= 0 || TextUtils.isEmpty(text)) return;
+                final LayoutParams lp = (LayoutParams) textView.getLayoutParams();
+                final TextPaint paint = new TextPaint(textView.getPaint());
+                paint.setTextSize(dp(12));
+                final float width = paint.measureText(text, 0, text.length());
+                float size = 12;
+                int lines = 1;
+                if (width > available) {
+                    paint.setTextSize(dp(11));
+                    boolean wordsFit = true;
+                    for (String word : text.toString().split("\\s+")) {
+                        if (paint.measureText(word) > available) {
+                            wordsFit = false;
+                            break;
+                        }
+                    }
+                    final StaticLayout layout = wordsFit ? new StaticLayout(text, paint, available, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false) : null;
+                    if (layout != null && layout.getLineCount() <= 2) {
+                        size = 11;
+                        lines = 2;
+                    } else {
+                        size = Math.max(8, 12f * available / width);
+                    }
+                }
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+                textView.setMaxLines(lines);
+                textView.setSingleLine(lines == 1);
+                textView.setLineSpacing(0, lines == 2 ? 0.85f : 1f);
+                textView.setIncludeFontPadding(lines != 2);
+                lp.topMargin = dp(lines == 2 ? 29 : 35);
+                ((LayoutParams) imageView.getLayoutParams()).topMargin = dp(lines == 2 ? 4 : 8);
             }
         }
 
@@ -2120,7 +2239,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 buttons[i] = new Button(context);
                 switch (i) {
                     case 0:
-                        buttons[i].set(R.drawable.filled_gift_transfer, getString(R.string.Gift2ActionTransfer), false);
+                        buttons[i].set(R.drawable.filled_gift_send, getString(R.string.Gift2ActionTransfer), false);
                         buttons[i].setOnClickListener(onTransferClick);
                         break;
                     case 1:
@@ -2136,6 +2255,12 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 ScaleStateListAnimator.apply(buttons[i], .075f, 1.5f);
                 buttonsLayout.addView(buttons[i], LayoutHelper.createLinear(0, 56, 1, Gravity.FILL, 0, 0, i != buttons.length - 1 ? 11 : 0, 0));
             }
+            colorButton = new Button(context);
+            colorButton.set(R.drawable.filled_card_color, getString(R.string.WalletGiftApplyColor), false);
+            colorButton.setBackground(Theme.createRadSelectorDrawable(0, 0x10FFFFFF, 16, 16));
+            ScaleStateListAnimator.apply(colorButton, .075f, 1.5f);
+            colorButton.setVisibility(View.GONE);
+            buttonsLayout.addView(colorButton, 1, LayoutHelper.createLinear(0, 56, 1, Gravity.FILL, 0, 0, 11, 0));
 
             subtitleContainer = new FrameLayout(context);
             for (int i = 0; i < layout.length; ++i) {
@@ -2323,8 +2448,20 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
             closeView.setAlpha(Math.max(backdrop[0] != null ? p.at(PAGE_WEAR) : 0.0f, backdrop[1] != null ? p.at(PAGE_UPGRADE) : 0.0f));
             closeView.setVisibility(backdrop[0] != null && p.to == PAGE_WEAR || backdrop[1] != null && p.to == PAGE_UPGRADE ? View.VISIBLE : View.GONE);
-            optionsView.setAlpha(lerp(false, backdrop[0] != null, p.at(PAGE_INFO)));
-            optionsView.setVisibility(backdrop[0] != null && p.to == PAGE_INFO ? View.VISIBLE : View.GONE);
+            final boolean hasOptions = backdrop[0] != null || showOptions;
+            optionsView.setAlpha(lerp(false, hasOptions, p.at(PAGE_INFO)));
+            optionsView.setVisibility(hasOptions && p.to == PAGE_INFO ? View.VISIBLE : View.GONE);
+            final boolean optionsLight = backdrop[0] != null;
+            if (optionsViewLight == null || optionsViewLight != optionsLight) {
+                optionsViewLight = optionsLight;
+                if (optionsLight) {
+                    optionsView.clearColorFilter();
+                    optionsView.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_CIRCLE_20DP));
+                } else {
+                    optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                    optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP));
+                }
+            }
             if (!resellPriceViewInProgress) {
                 resellPriceView.setAlpha(lerp(false, hasResellPrice, p.at(PAGE_INFO)));
                 resellPriceView.setScaleX(lerp(0.4f, hasResellPrice ? 1.0f : 0.4f, p.at(PAGE_INFO)));
@@ -2409,6 +2546,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 setPattern(page, findAttribute(gift.attributes, TL_stars.starGiftAttributePattern.class), false);
                 subtitleView[page].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                 buttonsLayout.setVisibility(withButtons ? View.VISIBLE : View.GONE);
+                buttons[2].setVisibility(View.VISIBLE);
                 if (withButtons) {
                     buttons[1].set(worn ? R.drawable.filled_crown_off : R.drawable.filled_crown_on, getString(worn ? R.string.Gift2ActionWearOff : R.string.Gift2ActionWear), false);
                 }
@@ -2440,13 +2578,13 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
 
                 if (isOwner) {
                     buttons[0].setAlpha(1.0f);
-                    buttons[0].set(R.drawable.filled_gift_transfer, getString(R.string.Gift2ActionTransfer), false);
+                    buttons[0].set(R.drawable.filled_gift_send, getString(R.string.Gift2ActionTransfer), false);
                 } else {
                     buttons[0].setAlpha(0.5f);
                     SpannableStringBuilder sb = new SpannableStringBuilder("L ");
                     sb.setSpan(new ColoredImageSpan(R.drawable.msg_mini_lock2), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     sb.append(getString(R.string.Gift2ActionTransfer));
-                    buttons[0].set(R.drawable.filled_gift_transfer, sb, false);
+                    buttons[0].set(R.drawable.filled_gift_send, sb, false);
                 }
                 buttons[1].setAlpha(isOwner || isHost ? 1.0f : 0.5f);
                 if (isOwner) {
@@ -2483,6 +2621,34 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 imageViewAttributes[page] = findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class);
 //            }
             onSwitchPage(currentPage);
+        }
+
+        public void setWalletButtons(OnClickListener onTransferClick, OnClickListener onColorClick, OnClickListener onWearClick, boolean displayed) {
+            buttonsLayout.setVisibility(View.VISIBLE);
+            buttons[0].setAlpha(1.0f);
+            buttons[0].set(R.drawable.filled_gift_send, getString(R.string.Gift2ActionTransfer), false);
+            buttons[0].setOnClickListener(onTransferClick);
+            colorButton.setVisibility(onColorClick != null ? View.VISIBLE : View.GONE);
+            colorButton.setOnClickListener(onColorClick);
+            buttons[1].set(R.drawable.filled_crown_on, getString(R.string.Gift2ActionWear), false);
+            buttons[1].setOnClickListener(onWearClick);
+            ((LinearLayout.LayoutParams) buttons[1].getLayoutParams()).rightMargin = 0;
+            setWalletDisplayed(displayed);
+            buttons[2].setVisibility(View.GONE);
+            buttonsLayout.requestLayout();
+        }
+
+        public void setWalletColor(boolean allowed, boolean applied) {
+            colorButton.set(R.drawable.filled_card_color, getString(applied ? R.string.WalletGiftRemoveColor : R.string.WalletGiftApplyColor), false);
+            colorButton.setAlpha(allowed || applied ? 1.0f : 0.5f);
+        }
+
+        public void setWalletCard(boolean onCard) {
+            buttons[1].set(onCard ? R.drawable.filled_card_remove : R.drawable.filled_card_add, getString(onCard ? R.string.WalletGiftRemoveFromCard : R.string.WalletGiftAddToCard), false);
+        }
+
+        public void setWalletDisplayed(boolean displayed) {
+            buttons[1].setAlpha(displayed ? 1.0f : 0.5f);
         }
 
         public BackupImageView getUpgradeImageView() {
@@ -2913,7 +3079,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     canvas.restore();
                 }
 
-                for (Button btn : buttons) {
+                for (int i = 0; i <= buttons.length; ++i) {
+                    final Button btn = i < buttons.length ? buttons[i] : colorButton;
                     final float bcx = btn.getX() + btn.getWidth() / 2.0f;
                     final int color = backgroundColors[Utilities.clamp(Math.round(bcx / getWidth() * (backgroundColors.length - 1)), backgroundColors.length - 1, 0)];
                     if (Theme.setSelectorDrawableColor(btn.getBackground(), color, false)) {
@@ -4018,6 +4185,161 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     private ColoredImageSpan upgradeIconSpan;
     private boolean firstSet = true;
 
+    private TL_wallet.nftItem walletCollectible;
+    public StarGiftSheet setWalletCollectible(TL_wallet.nftItem collectible) {
+        this.walletCollectible = collectible;
+        return this;
+    }
+
+
+    public interface WalletColorDelegate {
+        boolean isAllowed();
+        boolean isApplied();
+        void toggle();
+    }
+
+    private WalletColorDelegate walletColorDelegate;
+    public StarGiftSheet setWalletColorDelegate(WalletColorDelegate delegate) {
+        this.walletColorDelegate = delegate;
+        return this;
+    }
+
+    public interface WalletCardDelegate {
+        boolean isOnCard();
+        void toggle();
+    }
+
+    private WalletCardDelegate walletCardDelegate;
+    public StarGiftSheet setWalletCardDelegate(WalletCardDelegate delegate) {
+        this.walletCardDelegate = delegate;
+        return this;
+    }
+
+    private void onWalletCardPressed() {
+        if (walletCardDelegate == null) return;
+        final WalletCardDelegate delegate = walletCardDelegate;
+        dismiss();
+        AndroidUtilities.runOnUIThread(delegate::toggle, 250);
+    }
+
+    private void onWalletColorPressed() {
+        if (walletColorDelegate == null) return;
+        if (!walletColorDelegate.isAllowed() && !walletColorDelegate.isApplied()) {
+            showWalletColorHint();
+            return;
+        }
+        final WalletColorDelegate delegate = walletColorDelegate;
+        dismiss();
+        AndroidUtilities.runOnUIThread(delegate::toggle, 250);
+    }
+
+    private void showWalletColorHint() {
+        showWalletColorHint(getContext(), currentAccount, getBulletinFactory(), resourcesProvider, getUniqueGift());
+    }
+
+    public static void showWalletColorHint(Context context, int currentAccount, BulletinFactory bulletinFactory, Theme.ResourcesProvider resourcesProvider, TL_stars.TL_starGiftUnique current) {
+        final ArrayList<String> collections = new ArrayList<>(AppGlobalConfig.getInstance(currentAccount).walletCardBgGifts.get());
+        if (collections.isEmpty()) return;
+        final ArrayList<CharSequence> names = new ArrayList<>();
+        for (String collection : collections) {
+            names.add(walletColorCollectionLink(context, currentAccount, resourcesProvider, current, collection));
+        }
+        final CharSequence text;
+        if (names.size() == 1) {
+            text = formatSpannable(R.string.WalletGiftColorOnlyOne, names.get(0));
+        } else {
+            final SpannableStringBuilder first = new SpannableStringBuilder();
+            for (int i = 0; i < names.size() - 1; ++i) {
+                if (i > 0) first.append(", ");
+                first.append(names.get(i));
+            }
+            text = formatSpannable(R.string.WalletGiftColorOnly, first, names.get(names.size() - 1));
+        }
+        final Bulletin bulletin = bulletinFactory.createSimpleBulletin(context.getResources().getDrawable(R.drawable.filled_card_color_28).mutate(), text);
+        if (bulletin.getLayout() instanceof Bulletin.LottieLayout) {
+            final TextView textView = ((Bulletin.LottieLayout) bulletin.getLayout()).textView;
+            textView.setMaxLines(Integer.MAX_VALUE);
+            textView.setEllipsize(null);
+        }
+        bulletin.show();
+    }
+
+    private static CharSequence walletColorCollectionLink(Context context, int currentAccount, Theme.ResourcesProvider resourcesProvider, TL_stars.TL_starGiftUnique current, String collection) {
+        final String key = normalizeCollectionName(collection);
+        String title = null;
+        long giftId = 0;
+        if (current != null && current.title != null && key.equals(normalizeCollectionName(current.title))) {
+            title = current.title;
+            giftId = current.gift_id;
+        } else {
+            final StarsController stars = StarsController.getInstance(currentAccount);
+            stars.loadStarGifts();
+            for (TL_stars.StarGift g : stars.gifts) {
+                if (g != null && g.title != null && key.equals(normalizeCollectionName(g.title))) {
+                    title = g.title;
+                    giftId = g.id;
+                    break;
+                }
+            }
+        }
+        if (title == null) {
+            title = collection.replaceAll("(?<=[a-z0-9])(?=[A-Z])", " ");
+        }
+        final SpannableString link = new SpannableString(title);
+        final long knownGiftId = giftId;
+        final String knownTitle = title;
+        final boolean[] loading = new boolean[1];
+        link.setSpan(new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                if (loading[0]) return;
+                loading[0] = true;
+                final Utilities.Callback2<Long, String> open = (id, giftTitle) -> {
+                    if (id == null || id == 0) {
+                        loading[0] = false;
+                        return;
+                    }
+                    GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(id, attrs -> {
+                        loading[0] = false;
+                        if (attrs != null) {
+                            new StarGiftPreviewSheet(context, resourcesProvider, currentAccount, giftTitle, attrs, false).show();
+                        }
+                    });
+                };
+                if (knownGiftId != 0) {
+                    open.run(knownGiftId, knownTitle);
+                    return;
+                }
+                final TL_stars.getUniqueStarGift req = new TL_stars.getUniqueStarGift();
+                req.slug = collection + "-1";
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (res instanceof TL_stars.TL_payments_uniqueStarGift && ((TL_stars.TL_payments_uniqueStarGift) res).gift instanceof TL_stars.TL_starGiftUnique) {
+                        final TL_stars.TL_starGiftUnique unique = (TL_stars.TL_starGiftUnique) ((TL_stars.TL_payments_uniqueStarGift) res).gift;
+                        open.run(unique.gift_id, unique.title != null ? unique.title : knownTitle);
+                    } else {
+                        open.run(0L, knownTitle);
+                    }
+                }));
+            }
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                ds.setColor(ds.linkColor);
+                ds.setUnderlineText(false);
+            }
+        }, 0, link.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return link;
+    }
+
+    private static String normalizeCollectionName(String name) {
+        return name.replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase(Locale.ROOT);
+    }
+
+    private TL_wallet.walletTransaction walletTransaction;
+    public StarGiftSheet setWalletTransaction(TL_wallet.walletTransaction transaction) {
+        this.walletTransaction = transaction;
+        return this;
+    }
+
     public StarGiftSheet set(String slug, TL_stars.TL_starGiftUnique gift, StarsController.IGiftsList list) {
         this.slug = slug;
         this.slugStarGift = gift;
@@ -4037,7 +4359,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final String owner_address = gift == null ? null : gift.owner_address;
         final String gift_address = gift == null ? null : gift.gift_address;
         final boolean hosting = gift != null && gift.host_id != null;
-        if (hosting && !TextUtils.isEmpty(owner_address) && !TextUtils.isEmpty(gift_address)) {
+        if (walletTransaction == null && hosting && !TextUtils.isEmpty(owner_address) && !TextUtils.isEmpty(gift_address)) {
             beforeTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2InBlockchain), () -> {
                 Browser.openUrlInSystemBrowser(getContext(), MessagesController.getInstance(currentAccount).tonBlockchainExplorerUrl + gift_address);
             }), true, dp(8f / 3f), dp(.66f)));
@@ -4047,7 +4369,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             beforeTableTextView.setVisibility(View.GONE);
         }
 
-        if (!hosting && !TextUtils.isEmpty(owner_address) && !TextUtils.isEmpty(gift_address)) {
+        if (walletTransaction == null && !hosting && !TextUtils.isEmpty(owner_address) && !TextUtils.isEmpty(gift_address)) {
             afterTableTextView.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2InBlockchain), () -> {
                 Browser.openUrlInSystemBrowser(getContext(), MessagesController.getInstance(currentAccount).tonBlockchainExplorerUrl + gift_address);
             }), true, dp(8f / 3f), dp(.66f)));
@@ -4055,6 +4377,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         } else {
             afterTableTextView.setVisibility(View.GONE);
         }
+
+        updateWalletFooter();
 
         if (resale) {
             setButtonTextResale(gift);
@@ -4069,6 +4393,38 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         updateViewPager();
 
         return this;
+    }
+
+    private void fillWalletTransactionTable() {
+        ownerTextView = null;
+        tableView.clear();
+        final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+        tableView.addRowUser(getString(walletTransaction.incoming ? R.string.WalletSender : R.string.WalletRecipient), currentAccount, selfId, () -> openProfile(selfId));
+        final long fee = Math.abs(walletTransaction.fee);
+        if (fee > 0) {
+            final TextView feeView = new TextView(getContext());
+            feeView.setGravity(Gravity.CENTER_VERTICAL);
+            feeView.setIncludeFontPadding(false);
+            feeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            feeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            feeView.setText(WalletActivity.formatTransactionFee(currentAccount, fee, resourcesProvider));
+            tableView.addRow(getString(R.string.WalletFee), feeView);
+        }
+        if (walletTransaction.date != 0) {
+            tableView.addRow(getString(R.string.WalletDate), LocaleController.formatShortDateTime(walletTransaction.date));
+        }
+    }
+
+    private void updateWalletFooter() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (walletCollectible == null || gift == null) {
+            walletDisplayLayout.setVisibility(View.GONE);
+            return;
+        }
+        beforeTableTextView.setVisibility(View.GONE);
+        afterTableTextView.setVisibility(View.GONE);
+        walletDisplayLayout.setVisibility(View.VISIBLE);
+        walletDisplayCheckbox.setChecked(gift.host_id != null, walletDisplayLayout.isAttachedToWindow());
     }
 
     private CharSequence releasedByText(TL_stars.StarGift gift) {
@@ -4153,7 +4509,26 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         } else if (rolling && roller == null) {
             roller = new Roller(topView);
         }
-        topView.setGift(gift, isMineWithActions(currentAccount, owner_id), isMineWithActions(currentAccount, host_id), isWorn(currentAccount, getUniqueGift()), getLink() != null, rolling);
+        final boolean withActions = walletTransaction == null;
+        topView.setGift(gift, withActions && isMineWithActions(currentAccount, owner_id), withActions && isMineWithActions(currentAccount, host_id), isWorn(currentAccount, getUniqueGift()), getLink() != null, rolling);
+        topView.setShowOptions(false);
+        if (walletCollectible != null) {
+            if (walletCardDelegate != null) {
+                topView.setWalletButtons(v -> openWalletTransfer(), walletColorDelegate == null ? null : v -> onWalletColorPressed(), v -> onWalletCardPressed(), true);
+                topView.setWalletCard(walletCardDelegate.isOnCard());
+            } else {
+                topView.setWalletButtons(v -> openWalletTransfer(), walletColorDelegate == null ? null : v -> onWalletColorPressed(), v -> {
+                    if (getUniqueGift() != null && getUniqueGift().host_id != null) {
+                        onWearPressed(v);
+                    } else {
+                        getBulletinFactory().createSimpleBulletin(R.raw.info, getString(R.string.Gift2WearWalletHidden)).show();
+                    }
+                }, gift.host_id != null);
+            }
+            if (walletColorDelegate != null) {
+                topView.setWalletColor(walletColorDelegate.isAllowed(), walletColorDelegate.isApplied());
+            }
+        }
 
         final TL_stars.starGiftAttributeModel modelAttribute = findAttribute(gift.attributes, TL_stars.starGiftAttributeModel.class);
 
@@ -4166,7 +4541,9 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         title.setSpan(new EllipsizeSpanAnimator.TextAlphaSpan(0xBE), fromIndex, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         final CharSequence subtitle;
-        if (fromObject != null) {
+        if (walletTransaction != null) {
+            subtitle = getString(walletTransaction.incoming ? R.string.WalletMovedFromProfile : R.string.WalletMovedToProfile);
+        } else if (fromObject != null) {
             subtitle = AndroidUtilities.replaceTags(formatString(R.string.UniqueGiftFrom, DialogObject.getShortName(fromObject)));
         } else if (gift.released_by == null && modelAttribute != null) {
             subtitle = modelAttribute.name;
@@ -4354,8 +4731,17 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             }
         }
 
+        if (walletTransaction != null) {
+            fillWalletTransactionTable();
+        }
+
         if (!(roller != null && roller.isRolling())) {
-            if (!isMine(currentAccount, DialogObject.getPeerDialogId(gift.owner_id)) && gift.resell_amount != null) {
+            if (walletTransaction != null) {
+                button.setFilled(true);
+                button.setText(getString(R.string.OK), !firstSet);
+                button.setSubText(null, !firstSet);
+                button.setOnClickListener(v -> onBackPressed());
+            } else if (!isMine(currentAccount, DialogObject.getPeerDialogId(gift.owner_id)) && gift.resell_amount != null) {
                 button.setFilled(true);
                 setButtonTextResale(gift);
                 button.setOnClickListener(v -> onBuyPressed());
@@ -4558,7 +4944,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final AmountUtils.Amount stars = gift.getResellAmount(AmountUtils.Currency.STARS);
         if (gift.resale_ton_only) {
             final AmountUtils.Amount ton = gift.getResellAmount(AmountUtils.Currency.TON);
-            button.setText(StarsIntroActivity.replaceStars(true, LocaleController.formatString(R.string.ResellGiftBuyTON, ton.asFormatString())), !firstSet);
+            button.setText(StarsIntroActivity.whiteGram(true, StarsIntroActivity.replaceStars(true, LocaleController.formatString(R.string.ResellGiftBuyTON, ton.asFormatString()))), !firstSet);
             button.setSubText(StarsIntroActivity.replaceStars(formatPluralStringComma("ResellGiftBuyEq", (int) stars.asDecimal())), !firstSet);
         } else {
             button.setText(StarsIntroActivity.replaceStars(formatPluralStringComma("ResellGiftBuy", (int) stars.asDecimal())), !firstSet);
@@ -4634,6 +5020,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             hosted = false;
 
                     topView.setGift(savedStarGift.gift, false, false, isWorn(currentAccount, getUniqueGift()), getLink() != null, false);
+            topView.setShowOptions(canDelete());
             tableView.clear();
             if (self) {
                 title = savedStarGift.gift_num != 0 && savedStarGift.gift != null && savedStarGift.gift.title != null ?
@@ -4976,6 +5363,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             final boolean isForChannel = peer != null && DialogObject.getPeerDialogId(peer) < 0;
 
             topView.setGift(stargift, false, false, isWorn(currentAccount, getUniqueGift()), getLink() != null, false);
+            topView.setShowOptions(canDelete());
             if (self) {
                 title = giftNum != 0 && stargift != null && stargift.title != null ?
                     stargift.title + " #" + formatNumber(giftNum, ',') : getString(R.string.Gift2TitleSaved);
@@ -5522,6 +5910,105 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 }));
             })
             .setNegativeButton(getString(R.string.Cancel), null)
+            .show();
+    }
+
+    private static boolean isDeletableGift(TL_stars.StarGift gift) {
+        return gift instanceof TL_stars.TL_starGift && !gift.limited && gift.availability_total <= 0 && !gift.auction;
+    }
+
+    private boolean canDelete() {
+        if (walletCollectible != null || getInputStarGift() == null) return false;
+        if (messageObject != null) {
+            if (messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
+                final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
+                if (!isDeletableGift(action.gift) || action.converted || action.upgraded || action.refunded || action.convert_stars <= 0) {
+                    return false;
+                }
+                final boolean out = messageObject.isOutOwner();
+                final boolean self = messageObject.getDialogId() == UserConfig.getInstance(currentAccount).getClientUserId();
+                return action.peer == null ? (!out || self) : isMineWithActions(currentAccount, DialogObject.getPeerDialogId(action.peer));
+            }
+        } else if (savedStarGift != null) {
+            return isDeletableGift(savedStarGift.gift) && !savedStarGift.refunded && isMineWithActions(currentAccount, dialogId);
+        }
+        return false;
+    }
+
+    private void deleteGift() {
+        final TL_stars.InputSavedStarGift inputStarGift = getInputStarGift();
+        if (inputStarGift == null) return;
+        final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+        final long giftDialogId;
+        if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift) {
+            final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
+            giftDialogId = action.peer != null ? DialogObject.getPeerDialogId(action.peer) : selfId;
+        } else if (savedStarGift != null) {
+            giftDialogId = dialogId;
+        } else {
+            return;
+        }
+        new AlertDialog.Builder(getContext(), resourcesProvider)
+            .setTitle(getString(R.string.Gift2DeleteOption))
+            .setMessage(getString(R.string.Gift2DeleteText))
+            .setPositiveButton(getString(R.string.Delete), (d, w) -> {
+                final Browser.Progress progress = d.makeButtonLoading(AlertDialog.BUTTON_POSITIVE);
+                progress.init();
+                final TL_stars.deleteStarGift req = new TL_stars.deleteStarGift();
+                req.stargift = inputStarGift;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                    progress.end();
+                    if (res instanceof TLRPC.TL_boolTrue) {
+                        // counters first: the list update below makes the profile re-check them (gifts tab hides at 0)
+                        if (giftDialogId >= 0) {
+                            final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(giftDialogId);
+                            if (userFull != null) {
+                                userFull.stargifts_count = Math.max(0, userFull.stargifts_count - 1);
+                                if (userFull.stargifts_count <= 0) {
+                                    userFull.flags2 &= ~256;
+                                }
+                            }
+                        } else {
+                            final TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(-giftDialogId);
+                            if (chatFull != null) {
+                                chatFull.stargifts_count = Math.max(0, chatFull.stargifts_count - 1);
+                                if (chatFull.stargifts_count <= 0) {
+                                    chatFull.flags2 &= ~262144;
+                                }
+                            }
+                        }
+                        if (savedStarGift != null) {
+                            // opened from the profile gifts: remove it in place, reloading would scroll the list back to the top
+                            StarsController.getInstance(currentAccount).removeProfileGiftLocally(giftDialogId, savedStarGift);
+                        } else {
+                            // opened from a chat message: the profile list isn't on screen, reload it (collections included)
+                            StarsController.getInstance(currentAccount).invalidateProfileGifts(giftDialogId);
+                        }
+                        dismiss();
+                        // attached to the fragment itself (not this sheet being dismissed), after the sheet closes
+                        AndroidUtilities.runOnUIThread(() -> {
+                            BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                            // profile inside main tabs: use its own bulletin delegate, which lifts above the gifts button
+                            if (fragment instanceof ViewPagerActivity) {
+                                final BaseFragment visibleFragment = ((ViewPagerActivity) fragment).getCurrentVisibleFragment();
+                                if (visibleFragment != null) {
+                                    fragment = visibleFragment;
+                                }
+                            }
+                            (fragment != null ? BulletinFactory.of(fragment) : BulletinFactory.global())
+                                .createSimpleBulletin(R.raw.ic_delete, getString(R.string.Gift2Deleted))
+                                .ignoreDetach()
+                                .show();
+                        });
+                    } else if (err != null) {
+                        getBulletinFactory().showForError(err);
+                    } else {
+                        getBulletinFactory().createErrorBulletin(getString(R.string.UnknownError)).show(false);
+                    }
+                }));
+            })
+            .setNegativeButton(getString(R.string.Cancel), null)
+            .makeRed(AlertDialog.BUTTON_POSITIVE)
             .show();
     }
 
@@ -6422,12 +6909,23 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final int days = now > can_export_at ? 0 : (int) Math.max(1, Math.round((float) Math.max(0, can_export_at - now) / (60 * 60 * 24f)));
         sheet[0].addTONOption(days);
         sheet[0].setOnUserSelector(dialogId -> {
-            if (dialogId == -99) {
+            if (dialogId == UserSelectorBottomSheet.OPTION_FRAGMENT || dialogId == UserSelectorBottomSheet.OPTION_MY_WALLET) {
                 if (now < can_export_at) {
                     new AlertDialog.Builder(getContext(), resourcesProvider)
                         .setTitle(getString(R.string.Gift2ExportTONUnlocksAlertTitle))
                         .setMessage(formatPluralString("Gift2ExportTONUnlocksAlertText", Math.max(1, days)))
                         .setPositiveButton(getString(R.string.OK), null)
+                        .show();
+                } else if (dialogId == UserSelectorBottomSheet.OPTION_MY_WALLET) {
+                    new AlertDialog.Builder(getContext(), resourcesProvider)
+                        .setTitle(getString(R.string.Gift2MoveToMyWallet))
+                        .setMessage(getString(R.string.Gift2MoveToMyWalletText))
+                        .setView(createMoveToWalletView(GramWallet.getInstance(currentAccount).getAddress()))
+                        .setCustomViewOffset(20)
+                        .setPositiveButton(getString(R.string.Gift2Move), (di, w) -> {
+                            startTONTransfer(true, di, di.makeButtonLoading(w), sheet[0]::dismiss);
+                        })
+                        .setNegativeButton(getString(R.string.Cancel), null)
                         .show();
                 } else {
                     final LinearLayout topView = new LinearLayout(getContext());
@@ -6447,16 +6945,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                     new AlertDialog.Builder(getContext(), resourcesProvider)
                         .setView(topView)
                         .setPositiveButton(getString(R.string.Gift2ExportTONFragmentOpen), (di, w) -> {
-                            final Browser.Progress progress = di.makeButtonLoading(w);
-                            final TwoStepVerificationActivity passwordFragment = new TwoStepVerificationActivity();
-                            passwordFragment.setDelegate(2, password -> initTONTransfer(password, passwordFragment));
-                            passwordFragment.setDelegateString(getGiftName());
-                            progress.init();
-                            passwordFragment.preload(() -> {
-                                sheet[0].dismiss();
-                                progress.end();
-                                presentFragment(passwordFragment);
-                            });
+                            startTONTransfer(false, di, di.makeButtonLoading(w), sheet[0]::dismiss);
                         })
                         .setNegativeButton(getString(R.string.Cancel), null)
                         .show();
@@ -6548,6 +7037,365 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         sheet[0].show();
     }
 
+    private int walletDisplayRequestId;
+    private Boolean walletDisplayConfirmed;
+    private void toggleWalletDisplay() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (gift == null || TextUtils.isEmpty(gift.slug)) return;
+        final boolean display = gift.host_id == null;
+        if (walletDisplayConfirmed == null) {
+            walletDisplayConfirmed = !display;
+        }
+        setWalletDisplayed(gift, display);
+        final int requestId = ++walletDisplayRequestId;
+        final TL_stars.displayStarGift req = new TL_stars.displayStarGift();
+        req.peer = display ? MessagesController.getInstance(currentAccount).getInputPeer(UserConfig.getInstance(currentAccount).getClientUserId()) : null;
+        req.slug = gift.slug;
+        ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            if (res instanceof TLRPC.TL_boolTrue) {
+                walletDisplayConfirmed = display;
+                return;
+            }
+            if (requestId != walletDisplayRequestId) return;
+            setWalletDisplayed(gift, walletDisplayConfirmed);
+            getBulletinFactory().showForError(err != null ? err.text : "NULL_ERROR");
+        });
+    }
+
+    private void setWalletDisplayed(TL_stars.TL_starGiftUnique gift, boolean display) {
+        if (display) {
+            final TLRPC.TL_peerUser peer = new TLRPC.TL_peerUser();
+            peer.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            gift.host_id = peer;
+            gift.flags |= 4096;
+        } else {
+            gift.host_id = null;
+            gift.flags &= ~4096;
+        }
+        topView.setWalletDisplayed(display);
+        updateWalletFooter();
+    }
+
+    private void openWalletTransfer() {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (walletCollectible == null || gift == null || TextUtils.isEmpty(gift.slug)) return;
+
+        final UserSelectorBottomSheet[] sheet = new UserSelectorBottomSheet[1];
+        sheet[0] = new UserSelectorBottomSheet(getContext(), currentAccount, 0, BirthdayController.getInstance(currentAccount).getState(), UserSelectorBottomSheet.TYPE_TRANSFER, true, resourcesProvider);
+        sheet[0].setTitle(getString(R.string.Gift2TransferShort));
+        sheet[0].addMyGiftsOption();
+        sheet[0].setOnUserSelector(selectedId -> {
+            if (selectedId == UserSelectorBottomSheet.OPTION_MY_GIFTS) {
+                openMoveToMyGiftsAlert(sheet[0]);
+                return;
+            }
+            if (selectedId == UserSelectorBottomSheet.OPTION_FRAGMENT || selectedId == UserSelectorBottomSheet.OPTION_MY_WALLET) {
+                return;
+            }
+            openTransferAlert(selectedId, 0, null, false, progress -> depositWalletGift(selectedId, null, progress, sheet[0]));
+        });
+        sheet[0].show();
+    }
+
+    private void openMoveToMyGiftsAlert(UserSelectorBottomSheet sheet) {
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (walletCollectible == null || gift == null || TextUtils.isEmpty(gift.slug)) return;
+        final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+
+        final TextView feeView = new TextView(getContext());
+        feeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        feeView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+        feeView.setGravity(Gravity.CENTER);
+        final SpannableStringBuilder loadingFee = new SpannableStringBuilder(" ");
+        loadingFee.setSpan(new LoadingSpan(feeView, dp(160)), 0, loadingFee.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        feeView.setText(loadingFee);
+
+        final TL_stars.starGiftDepositPayload[] deposit = new TL_stars.starGiftDepositPayload[1];
+        final Runnable[] cancelEmulation = new Runnable[1];
+        final boolean[] dismissed = new boolean[1];
+        final TL_stars.depositStarGift req = new TL_stars.depositStarGift();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(selfId);
+        req.slug = gift.slug;
+        ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            if (dismissed[0]) return;
+            if (res == null) {
+                feeView.setVisibility(View.GONE);
+                return;
+            }
+            deposit[0] = res;
+            if (GramWallet.getInstance(currentAccount).getBalance() < res.amount) {
+                feeView.setVisibility(View.GONE);
+                return;
+            }
+            cancelEmulation[0] = GramWallet.getInstance(currentAccount).emulateDepositNFT(res, (transaction, error) -> {
+                if (transaction == null || transaction.fee <= 0) {
+                    feeView.setVisibility(View.GONE);
+                    return;
+                }
+                feeView.setText(LocaleController.formatSpannable(R.string.WalletNetworkFeeAmount, GramWallet.formatGramsWithUnit(transaction.fee)));
+            });
+        });
+
+        final AlertDialog dialog = new AlertDialog.Builder(getContext(), resourcesProvider)
+            .setTitle(getString(R.string.Gift2MoveToMyGifts))
+            .setMessage(getString(R.string.Gift2MoveToMyGiftsText))
+            .setView(createMoveToMyGiftsView(feeView))
+            .setCustomViewOffset(20)
+            .setPositiveButton(getString(R.string.Gift2Move), (di, w) -> depositWalletGift(selfId, deposit[0], di.makeButtonLoading(w), sheet))
+            .setNegativeButton(getString(R.string.Cancel), null)
+            .create();
+        dialog.setOnDismissListener(d -> {
+            dismissed[0] = true;
+            if (cancelEmulation[0] != null) {
+                cancelEmulation[0].run();
+            }
+        });
+        dialog.show();
+    }
+
+    private void depositWalletGift(long dialogId, TL_stars.starGiftDepositPayload preparedDeposit, Browser.Progress progress, UserSelectorBottomSheet sheet) {
+        final TL_wallet.nftItem collectible = walletCollectible;
+        final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+        if (collectible == null || gift == null || TextUtils.isEmpty(gift.slug)) return;
+        progress.init();
+        final Utilities.Callback<TL_stars.starGiftDepositPayload> send = deposit -> {
+            if (GramWallet.getInstance(currentAccount).getBalance() < deposit.amount) {
+                progress.end();
+                new AlertDialog.Builder(getContext(), resourcesProvider)
+                    .setTitle(getString(R.string.WalletNotEnoughGram))
+                    .setMessage(LocaleController.formatSpannable(R.string.WalletNotEnoughGramToTransferGift, GramWallet.formatGramCapital(deposit.amount)))
+                    .setNegativeButton(getString(R.string.WalletNotNow), null)
+                    .setPositiveButton(getString(R.string.WalletTopUp), (di2, w2) -> {
+                        final Browser.Progress progress2 = di2.makeButtonLoading(w2);
+                        progress2.init();
+                        WalletActivity.openOnramp(currentAccount, 0, error2 -> {
+                            progress2.end();
+                            if (!TextUtils.isEmpty(error2)) {
+                                (sheet != null ? BulletinFactory.of(sheet.container, resourcesProvider) : getBulletinFactory()).showForError(error2);
+                            }
+                        });
+                    })
+                    .show();
+                return;
+            }
+            final TLRPC.User user = dialogId > 0 ? MessagesController.getInstance(currentAccount).getUser(dialogId) : null;
+            final long selfId = UserConfig.getInstance(currentAccount).getClientUserId();
+            final TLRPC.Document document = gift.getDocument();
+            final int account = currentAccount;
+            GramWallet.getInstance(currentAccount).depositNFT(user, collectible, deposit, sendError -> {
+                progress.end();
+                if (sendError != null) {
+                    (sheet != null ? BulletinFactory.of(sheet.container, resourcesProvider) : getBulletinFactory()).showForError(sendError);
+                    return;
+                }
+                if (sheet != null) {
+                    sheet.dismiss();
+                }
+                dismiss();
+                final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+                if (fragment instanceof WalletActivity) {
+                    ((WalletActivity) fragment).showTransactions();
+                }
+            }, dialogId != selfId ? null : success -> {
+                if (!success) return;
+                StarsController.getInstance(account).invalidateProfileGifts(selfId);
+                showGiftMovedBulletin(document, getString(R.string.Gift2MovedToProfile), () -> {
+                    final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+                    if (lastFragment == null) return;
+                    final Bundle args = new Bundle();
+                    args.putLong("user_id", selfId);
+                    args.putBoolean("my_profile", true);
+                    args.putBoolean("open_gifts", true);
+                    lastFragment.presentFragment(new ProfileActivity(args));
+                });
+            });
+        };
+        if (preparedDeposit != null) {
+            send.run(preparedDeposit);
+            return;
+        }
+        final TL_stars.depositStarGift req = new TL_stars.depositStarGift();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+        req.slug = gift.slug;
+        ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (deposit, error) -> {
+            if (deposit == null) {
+                progress.end();
+                (sheet != null ? BulletinFactory.of(sheet.container, resourcesProvider) : getBulletinFactory()).showForError(error);
+                return;
+            }
+            send.run(deposit);
+        });
+    }
+
+    // Attached to the fragment itself (not a sheet that is being dismissed), after the sheets close
+    private static void showGiftMovedBulletin(TLRPC.Document document, CharSequence text, Runnable onView) {
+        AndroidUtilities.runOnUIThread(() -> {
+            final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+            final BulletinFactory factory = fragment != null ? BulletinFactory.of(fragment) : BulletinFactory.global();
+            final Bulletin bulletin;
+            if (onView == null) {
+                bulletin = document != null ?
+                    factory.createEmojiBulletin(document, text) :
+                    factory.createSimpleBulletin(R.raw.contact_check, text);
+            } else {
+                bulletin = document != null ?
+                    factory.createEmojiBulletin(document, text, getString(R.string.Gift2UniqueView), onView) :
+                    factory.createSimpleBulletin(R.raw.contact_check, text, getString(R.string.Gift2UniqueView), onView);
+            }
+            bulletin.ignoreDetach().show();
+        });
+    }
+
+    private boolean keepOnProfile = true;
+    private View createMoveToWalletView(String address) {
+        final LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        if (!TextUtils.isEmpty(address)) {
+            final TextView addressView = new TextView(getContext());
+            addressView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO));
+            addressView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16.5f);
+            addressView.setLetterSpacing(0.3f / 16.5f);
+            addressView.setLineSpacing(dp(23) - addressView.getPaint().getFontMetricsInt(null), 1f);
+            addressView.setIncludeFontPadding(false);
+            addressView.setGravity(Gravity.CENTER);
+            addressView.setPadding(0, dp(14), 0, dp(14));
+            final int textColor = Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider);
+            addressView.setBackground(Theme.createRoundRectDrawable(dp(20), Theme.multAlpha(textColor, 0.045f)));
+            addressView.setText(formatAddressGrid(address, textColor, Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider)));
+            layout.addView(addressView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 20, 0, 20, 14));
+        }
+
+        final TextView appearView = new TextView(getContext());
+        appearView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        appearView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        appearView.setGravity(Gravity.CENTER);
+        appearView.setText(getString(R.string.Gift2MoveAppearIn));
+        layout.addView(appearView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 0));
+
+        final LinearLayout pathView = new LinearLayout(getContext());
+        pathView.setOrientation(LinearLayout.HORIZONTAL);
+        pathView.setGravity(Gravity.CENTER_VERTICAL);
+        final int grayColor = Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider);
+        addPathCrumb(pathView, R.drawable.msg_settings, 14, grayColor, getString(R.string.Settings), true);
+        addPathCrumb(pathView, R.drawable.mini_gram_14, 15, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), getString(R.string.WalletAttachMoney), true);
+        addPathCrumb(pathView, R.drawable.menu_gift, 14, grayColor, getString(R.string.WalletCollectibles), false);
+        layout.addView(pathView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 7, 0, 3));
+
+        keepOnProfile = true;
+        final CheckBoxCell keepCell = new CheckBoxCell(getContext(), CheckBoxCell.TYPE_CHECK_BOX_DEFAULT, resourcesProvider);
+        keepCell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ROUNDRECT_6DP, dp(12)));
+        keepCell.setMultiline(true);
+        final FrameLayout.LayoutParams checkLayoutParams = (FrameLayout.LayoutParams) keepCell.getCheckBoxView().getLayoutParams();
+        checkLayoutParams.topMargin = 0;
+        checkLayoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+        keepCell.getCheckBoxView().setLayoutParams(checkLayoutParams);
+        keepCell.setText(getString(R.string.Gift2KeepOnProfile), "", true, false);
+        keepCell.setPadding(LocaleController.isRTL ? dp(4) : 0, dp(12), LocaleController.isRTL ? 0 : dp(4), dp(12));
+        keepCell.setOnClickListener(v -> {
+            keepOnProfile = !keepOnProfile;
+            keepCell.setChecked(keepOnProfile, true);
+        });
+        layout.addView(keepCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 8, 4, 8, 0));
+
+        return layout;
+    }
+
+    private void addPathCrumb(LinearLayout pathView, int iconResId, int iconSize, int iconColor, CharSequence text, boolean separator) {
+        final int grayColor = Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider);
+        final ImageView iconView = new ImageView(getContext());
+        iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        iconView.setImageResource(iconResId);
+        iconView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
+        pathView.addView(iconView, LayoutHelper.createLinear(iconSize, iconSize, Gravity.CENTER_VERTICAL, iconSize < 15 ? 1 : 0, 0, iconSize < 15 ? 1 : 0, 0));
+
+        final TextView textView = new TextView(getContext());
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTextColor(grayColor);
+        textView.setText(text);
+        pathView.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
+
+        if (separator) {
+            final ImageView arrowView = new ImageView(getContext());
+            arrowView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            arrowView.setImageResource(R.drawable.msg_mini_topicarrow);
+            arrowView.setColorFilter(new PorterDuffColorFilter(grayColor, PorterDuff.Mode.SRC_IN));
+            pathView.addView(arrowView, LayoutHelper.createLinear(11, 11, Gravity.CENTER_VERTICAL, 5, 0, 2, 0));
+        }
+    }
+
+    // 3 lines of 4 chunks, chunks colored in a checkerboard pattern
+    private static CharSequence formatAddressGrid(String address, int accentColor, int grayColor) {
+        final SpannableStringBuilder sb = new SpannableStringBuilder();
+        final int chunks = (address.length() + 3) / 4;
+        for (int i = 0; i < chunks; ++i) {
+            if (i > 0) {
+                sb.append(i % 4 == 0 ? "\n" : " ");
+            }
+            final int start = sb.length();
+            sb.append(address, i * 4, Math.min(address.length(), i * 4 + 4));
+            final boolean accent = (i % 4 + i / 4) % 2 == 0;
+            sb.setSpan(new ForegroundColorSpan(accent ? accentColor : grayColor), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return sb;
+    }
+
+    private View createMoveToMyGiftsView(View feeView) {
+        final TLRPC.User self = UserConfig.getInstance(currentAccount).getCurrentUser();
+        final LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final FrameLayout userView = new FrameLayout(getContext());
+        userView.setBackground(Theme.createRoundRectDrawable(dp(20), Theme.multAlpha(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider), 0.045f)));
+        final BackupImageView avatarView = new BackupImageView(getContext());
+        avatarView.setRoundRadius(dp(21));
+        final AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setInfo(self);
+        avatarView.setForUserOrChat(self, avatarDrawable);
+        userView.addView(avatarView, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+
+        final TextView nameView = new TextView(getContext());
+        nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        nameView.setTypeface(AndroidUtilities.bold());
+        nameView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        nameView.setSingleLine();
+        nameView.setEllipsize(TextUtils.TruncateAt.END);
+        nameView.setText(Emoji.replaceEmoji(UserObject.getUserName(self), nameView.getPaint().getFontMetricsInt(), false));
+        userView.addView(nameView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 66, 11, 12, 0));
+
+        final TextView phoneView = new TextView(getContext());
+        phoneView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        phoneView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+        phoneView.setSingleLine();
+        phoneView.setEllipsize(TextUtils.TruncateAt.END);
+        if (self != null && !TextUtils.isEmpty(self.phone)) {
+            phoneView.setText(PhoneFormat.getInstance().format("+" + self.phone));
+        } else if (self != null && UserObject.getPublicUsername(self) != null) {
+            phoneView.setText("@" + UserObject.getPublicUsername(self));
+        }
+        userView.addView(phoneView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 66, 33, 12, 0));
+        layout.addView(userView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 62, 20, 0, 20, 16));
+
+        final TextView appearView = new TextView(getContext());
+        appearView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        appearView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        appearView.setGravity(Gravity.CENTER);
+        appearView.setText(getString(R.string.Gift2MoveAppearIn));
+        layout.addView(appearView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 0));
+
+        final LinearLayout pathView = new LinearLayout(getContext());
+        pathView.setOrientation(LinearLayout.HORIZONTAL);
+        pathView.setGravity(Gravity.CENTER_VERTICAL);
+        final int grayColor = Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider);
+        addPathCrumb(pathView, R.drawable.msg_openprofile, 14, grayColor, getString(R.string.MyProfile), true);
+        addPathCrumb(pathView, R.drawable.menu_gift, 14, grayColor, getString(R.string.ProfileGifts), false);
+        layout.addView(pathView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 7, 0, 3));
+
+        layout.addView(feeView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 4, 24, 4));
+
+        return layout;
+    }
+
     public void openTransferAlert(long dialogId, Utilities.Callback<Browser.Progress> confirmed) {
         final long transfer_stars;
         if (savedStarGift != null && savedStarGift.gift instanceof TL_stars.TL_starGiftUnique) {
@@ -6565,6 +7413,10 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
     }
 
     private void openTransferAlert(long dialogId, long stars, Utilities.Callback<Browser.Progress> confirmed) {
+        openTransferAlert(dialogId, stars, null, true, confirmed);
+    }
+
+    private void openTransferAlert(long dialogId, long stars, CharSequence text, boolean showBalance, Utilities.Callback<Browser.Progress> confirmed) {
         final TL_stars.TL_starGiftUnique gift = getUniqueGift();
         if (gift == null) return;
 
@@ -6585,7 +7437,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         final TextView textView = new TextView(getContext());
         textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setText(AndroidUtilities.replaceTags(stars > 0 ?
+        textView.setText(text != null ? text : AndroidUtilities.replaceTags(stars > 0 ?
             formatPluralStringComma("Gift2TransferPriceText", (int) stars, getGiftName(), DialogObject.getShortName(dialogId)) :
             formatString(R.string.Gift2TransferText, getGiftName(), name)
         ));
@@ -6606,126 +7458,229 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             })
             .setNegativeButton(getString(R.string.Cancel), null)
             .create()
-            .setShowStarsBalance(true)
+            .setShowStarsBalance(showBalance)
             .show();
     }
 
-    private void initTONTransfer(TLRPC.InputCheckPasswordSRP password, TwoStepVerificationActivity passwordFragment) {
-        TL_stars.getStarGiftWithdrawalUrl req = new TL_stars.getStarGiftWithdrawalUrl();
-        req.stargift = getInputStarGift();
-        if (req.stargift == null) {
+    private TL_account.tmpPassword getValidTmpPassword() {
+        final UserConfig userConfig = UserConfig.getInstance(currentAccount);
+        if (userConfig.tmpPassword != null && userConfig.tmpPassword.valid_until < ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 60) {
+            userConfig.tmpPassword = null;
+            userConfig.saveConfig(false);
+        }
+        return userConfig.tmpPassword;
+    }
+
+    private void startTONTransfer(boolean toWallet, DialogInterface dialog, Browser.Progress progress, Runnable dismiss) {
+        progress.init();
+        final TL_account.tmpPassword tmpPassword = getValidTmpPassword();
+        if (tmpPassword == null) {
+            openTONTransferPassword(toWallet, progress, dismiss);
             return;
         }
+        initTONTransfer(tmpPassword.tmp_password, null, toWallet, tmpInvalid -> {
+            if (tmpInvalid) {
+                final UserConfig userConfig = UserConfig.getInstance(currentAccount);
+                userConfig.tmpPassword = null;
+                userConfig.saveConfig(false);
+                openTONTransferPassword(toWallet, progress, dismiss);
+            } else {
+                progress.end();
+                dialog.dismiss();
+                dismiss.run();
+            }
+        });
+    }
+
+    private void openTONTransferPassword(boolean toWallet, Browser.Progress progress, Runnable dismiss) {
+        final TwoStepVerificationActivity passwordFragment = new TwoStepVerificationActivity();
+        passwordFragment.setDelegate(toWallet ? 3 : 2, password -> requestTmpPasswordAndTransfer(password, passwordFragment, toWallet));
+        passwordFragment.setDelegateString(getGiftName());
+        passwordFragment.preload(() -> {
+            dismiss.run();
+            progress.end();
+            presentFragment(passwordFragment);
+        });
+    }
+
+    private void requestTmpPasswordAndTransfer(TLRPC.InputCheckPasswordSRP password, TwoStepVerificationActivity passwordFragment, boolean toWallet) {
+        final TL_account.getTmpPassword req = new TL_account.getTmpPassword();
         req.password = password;
+        req.period = 60 * 10;
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response instanceof TL_account.tmpPassword) {
+                final TL_account.tmpPassword tmpPassword = (TL_account.tmpPassword) response;
+                UserConfig.getInstance(currentAccount).tmpPassword = tmpPassword;
+                UserConfig.getInstance(currentAccount).saveConfig(false);
+                initTONTransfer(tmpPassword.tmp_password, passwordFragment, toWallet, null);
+            } else {
+                onTONTransferError(error, passwordFragment, toWallet);
+            }
+        }));
+    }
+
+    // onTmpPasswordResult is used when there is no passwordFragment: true — tmp password is no longer valid, false — done
+    private void initTONTransfer(byte[] tmpPassword, TwoStepVerificationActivity passwordFragment, boolean toWallet, Utilities.Callback<Boolean> onTmpPasswordResult) {
+        final TL_stars.InputSavedStarGift stargift = getInputStarGift();
+        if (stargift == null) {
+            if (onTmpPasswordResult != null) {
+                onTmpPasswordResult.run(false);
+            }
+            return;
+        }
+        final TLObject req;
+        if (toWallet) {
+            final TL_stars.withdrawStarGift r = new TL_stars.withdrawStarGift();
+            r.keep_on_profile = keepOnProfile;
+            r.stargift = stargift;
+            r.tmp_password = tmpPassword;
+            req = r;
+        } else {
+            final TL_stars.getStarGiftWithdrawalUrl r = new TL_stars.getStarGiftWithdrawalUrl();
+            r.stargift = stargift;
+            r.tmp_password = tmpPassword;
+            req = r;
+        }
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (getContext() == null) return;
+            if (error != null && onTmpPasswordResult != null && error.text.startsWith("TMP_PASSWORD")) {
+                onTmpPasswordResult.run(true);
+                return;
+            }
+            if (onTmpPasswordResult != null) {
+                onTmpPasswordResult.run(false);
+            }
             if (error != null) {
-                if ("PASSWORD_MISSING".equals(error.text) || error.text.startsWith("PASSWORD_TOO_FRESH_") || error.text.startsWith("SESSION_TOO_FRESH_")) {
-                    if (passwordFragment != null) {
-                        passwordFragment.needHideProgress();
-                    }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                    builder.setTitle(LocaleController.getString(R.string.Gift2TransferToTONAlertTitle));
-
-                    LinearLayout linearLayout = new LinearLayout(getContext());
-                    linearLayout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(2), AndroidUtilities.dp(24), 0);
-                    linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    builder.setView(linearLayout);
-
-                    TextView messageTextView = new TextView(getContext());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText)));
-                    linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-                    LinearLayout linearLayout2 = new LinearLayout(getContext());
-                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
-                    linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
-
-                    ImageView dotImageView = new ImageView(getContext());
-                    dotImageView.setImageResource(R.drawable.list_circle);
-                    dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
-
-                    messageTextView = new TextView(getContext());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText1)));
-                    if (LocaleController.isRTL) {
-                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
-                    } else {
-                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                    }
-
-                    linearLayout2 = new LinearLayout(getContext());
-                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
-                    linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
-
-                    dotImageView = new ImageView(getContext());
-                    dotImageView.setImageResource(R.drawable.list_circle);
-                    dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
-
-                    messageTextView = new TextView(getContext());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                    messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                    messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText2)));
-                    if (LocaleController.isRTL) {
-                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
-                    } else {
-                        linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-                        linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                    }
-
-                    if ("PASSWORD_MISSING".equals(error.text)) {
-                        builder.setPositiveButton(LocaleController.getString(R.string.Gift2TransferToTONSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
-                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-                    } else {
-                        messageTextView = new TextView(getContext());
-                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-                        messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-                        messageTextView.setText(LocaleController.getString(R.string.Gift2TransferToTONAlertText3));
-                        linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
-
-                        builder.setNegativeButton(LocaleController.getString(R.string.OK), null);
-                    }
-                    if (passwordFragment != null) {
-                        passwordFragment.showDialog(builder.create());
-                    } else {
-                        builder.show();
-                    }
-                } else if ("SRP_ID_INVALID".equals(error.text)) {
-                    TL_account.getPassword getPasswordReq = new TL_account.getPassword();
-                    ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
-                        if (error2 == null) {
-                            TL_account.Password currentPassword = (TL_account.Password) response2;
-                            passwordFragment.setCurrentPasswordInfo(null, currentPassword);
-                            TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
-                            initTONTransfer(passwordFragment.getNewSrpPassword(), passwordFragment);
-                        }
-                    }), ConnectionsManager.RequestFlagWithoutLogin);
-                } else {
-                    if (passwordFragment != null) {
-                        passwordFragment.needHideProgress();
-                        passwordFragment.finishFragment();
-                    }
-                    BulletinFactory.showError(error);
-                }
+                onTONTransferError(error, passwordFragment, toWallet);
             } else {
-                passwordFragment.needHideProgress();
-                passwordFragment.finishFragment();
+                if (passwordFragment != null) {
+                    passwordFragment.needHideProgress();
+                    passwordFragment.finishFragment();
+                }
                 if (response instanceof TL_stars.starGiftWithdrawalUrl) {
                     Browser.openUrlInSystemBrowser(getContext(), ((TL_stars.starGiftWithdrawalUrl) response).url);
+                } else if (response instanceof TLRPC.TL_boolTrue) {
+                    final TL_stars.TL_starGiftUnique gift = getUniqueGift();
+                    GramWallet.getInstance(currentAccount).onCollectibleReceived(gift != null ? gift.gift_address : null);
+                    if (gift != null && !TextUtils.isEmpty(gift.slug)) {
+                        final TLRPC.Document document = gift.getDocument();
+                        showGiftMovedBulletin(document, getString(R.string.Gift2MovedToWallet), null);
+                    }
+                    dismiss();
+                } else if (response instanceof TLRPC.TL_boolFalse) {
+                    BulletinFactory.showError("NULL_ERROR");
                 }
             }
         }));
+    }
+
+    private void onTONTransferError(TLRPC.TL_error error, TwoStepVerificationActivity passwordFragment, boolean toWallet) {
+        if (getContext() == null) return;
+        if (error == null) {
+            if (passwordFragment != null) {
+                passwordFragment.needHideProgress();
+            }
+            BulletinFactory.showError("NULL_ERROR");
+            return;
+        }
+        if ("PASSWORD_MISSING".equals(error.text) || error.text.startsWith("PASSWORD_TOO_FRESH_") || error.text.startsWith("SESSION_TOO_FRESH_")) {
+            if (passwordFragment != null) {
+                passwordFragment.needHideProgress();
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle(LocaleController.getString(R.string.Gift2TransferToTONAlertTitle));
+
+            LinearLayout linearLayout = new LinearLayout(getContext());
+            linearLayout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(2), AndroidUtilities.dp(24), 0);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+            builder.setView(linearLayout);
+
+            TextView messageTextView = new TextView(getContext());
+            messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText)));
+            linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            LinearLayout linearLayout2 = new LinearLayout(getContext());
+            linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+            linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+            ImageView dotImageView = new ImageView(getContext());
+            dotImageView.setImageResource(R.drawable.list_circle);
+            dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
+            dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+
+            messageTextView = new TextView(getContext());
+            messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText1)));
+            if (LocaleController.isRTL) {
+                linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
+            } else {
+                linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
+
+            linearLayout2 = new LinearLayout(getContext());
+            linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+            linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+            dotImageView = new ImageView(getContext());
+            dotImageView.setImageResource(R.drawable.list_circle);
+            dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
+            dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+
+            messageTextView = new TextView(getContext());
+            messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.Gift2TransferToTONAlertText2)));
+            if (LocaleController.isRTL) {
+                linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
+            } else {
+                linearLayout2.addView(dotImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                linearLayout2.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
+
+            if ("PASSWORD_MISSING".equals(error.text)) {
+                builder.setPositiveButton(LocaleController.getString(R.string.Gift2TransferToTONSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            } else {
+                messageTextView = new TextView(getContext());
+                messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+                messageTextView.setText(LocaleController.getString(R.string.Gift2TransferToTONAlertText3));
+                linearLayout.addView(messageTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 0));
+
+                builder.setNegativeButton(LocaleController.getString(R.string.OK), null);
+            }
+            if (passwordFragment != null) {
+                passwordFragment.showDialog(builder.create());
+            } else {
+                builder.show();
+            }
+        } else if ("SRP_ID_INVALID".equals(error.text)) {
+            TL_account.getPassword getPasswordReq = new TL_account.getPassword();
+            ConnectionsManager.getInstance(currentAccount).sendRequest(getPasswordReq, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
+                if (error2 == null && passwordFragment != null) {
+                    TL_account.Password currentPassword = (TL_account.Password) response2;
+                    passwordFragment.setCurrentPasswordInfo(null, currentPassword);
+                    TwoStepVerificationActivity.initPasswordNewAlgo(currentPassword);
+                    requestTmpPasswordAndTransfer(passwordFragment.getNewSrpPassword(), passwordFragment, toWallet);
+                }
+            }), ConnectionsManager.RequestFlagWithoutLogin);
+        } else {
+            if (passwordFragment != null) {
+                passwordFragment.needHideProgress();
+                passwordFragment.finishFragment();
+            }
+            BulletinFactory.showError(error);
+        }
     }
 
     private void presentFragment(BaseFragment fragment) {
@@ -6779,16 +7734,16 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
                 return inputSavedStarGiftSlug;
             }
             return stargift;
-        } else if (messageObject != null && messageObject.getDialogId() < 0 && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift && (messageObject.messageOwner.action.flags & 4096) != 0) {
+        } else if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGift && (messageObject.messageOwner.action.flags & 4096) != 0) {
             final TLRPC.TL_messageActionStarGift action = (TLRPC.TL_messageActionStarGift) messageObject.messageOwner.action;
             final TL_stars.TL_inputSavedStarGiftChat stargift = new TL_stars.TL_inputSavedStarGiftChat();
-            stargift.peer = MessagesController.getInstance(currentAccount).getInputPeer(messageObject.getDialogId());
+            stargift.peer = MessagesController.getInstance(currentAccount).getInputPeer(action.peer != null ? DialogObject.getPeerDialogId(action.peer) : messageObject.getDialogId());
             stargift.saved_id = action.saved_id;
             return stargift;
-        } else if (messageObject != null && messageObject.getDialogId() < 0 && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && (messageObject.messageOwner.action.flags & 128) != 0) {
+        } else if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionStarGiftUnique && (messageObject.messageOwner.action.flags & 128) != 0) {
             final TLRPC.TL_messageActionStarGiftUnique action = (TLRPC.TL_messageActionStarGiftUnique) messageObject.messageOwner.action;
             final TL_stars.TL_inputSavedStarGiftChat stargift = new TL_stars.TL_inputSavedStarGiftChat();
-            stargift.peer = MessagesController.getInstance(currentAccount).getInputPeer(messageObject.getDialogId());
+            stargift.peer = MessagesController.getInstance(currentAccount).getInputPeer(action.peer != null ? DialogObject.getPeerDialogId(action.peer) : messageObject.getDialogId());
             stargift.saved_id = action.saved_id;
             return stargift;
         } else {

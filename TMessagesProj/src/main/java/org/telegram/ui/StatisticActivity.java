@@ -1005,7 +1005,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         statisticLayout.addView(recyclerListView);
 
         avatarContainer = new ChatAvatarContainer(context, null, false);
-        avatarContainer.setOccupyStatusBar(!AndroidUtilities.isTablet());
+        avatarContainer.setOccupyStatusBar(!AndroidUtilities.isTablet() || parentLayout != null && parentLayout.isSheet());
         avatarContainer.getAvatarImageView().setScaleX(0.9f);
         avatarContainer.getAvatarImageView().setScaleY(0.9f);
         avatarContainer.setRightAvatarPadding(-dp(3));
