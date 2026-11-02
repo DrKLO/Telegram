@@ -1272,7 +1272,7 @@ public class ChatAttachAlertGramLayout extends ChatAttachAlert.AttachAlertLayout
 
     private void updateBalance() {
         final GramWallet wallet = GramWallet.getInstance(currentAccount);
-        balanceView.setText(LocaleController.formatSpannable(R.string.WalletBalanceAmount, GramWallet.formatGramsWithUnit(wallet.getBalance(), true)));
+        balanceView.setText(LocaleController.formatSpannable(R.string.WalletBalanceAmount, GramWallet.formatGramsBalanceWithUnit(wallet.getBalance(), true)));
         final long minAmount = MessagesController.getInstance(currentAccount).config.walletTransferMinNanos.get();
         feeEmulationAvailable = !wallet.isGaslessAvailable() && wallet.getBalance() >= minAmount;
         hasEnteredAmount |= !TextUtils.isEmpty(amountEdit.getText());
