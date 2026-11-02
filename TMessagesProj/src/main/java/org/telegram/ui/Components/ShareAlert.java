@@ -146,6 +146,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private ChatActivityEnterView.SendButton writeButton;
     private FrameLayout writeButtonContainer;
     private FrameLayout pickerBottom;
+    private float sheetBackgroundTop; // inner top of the sheet background, in containerView coordinates
     private View bottomFadeView;
     private FrameLayout pickerBottomLayout;
     private LinearLayout linkContainer;
@@ -927,6 +928,11 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
                 shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
                 shadowDrawable.draw(canvas);
+                final float newSheetBackgroundTop = top + backgroundPaddingTop + currentPanTranslationY;
+                if (sheetBackgroundTop != newSheetBackgroundTop) {
+                    sheetBackgroundTop = newSheetBackgroundTop;
+                    frameLayout.invalidate();
+                }
 
                 if (bulletinContainer2 != null) {
                     if (top <= systemInsets.top && bulletinContainer2.getChildCount() > 0) {
@@ -1016,7 +1022,32 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, systemInsets.bottom);
 
         frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        frameLayout.setBackground(new Drawable() {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Path path = new Path();
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                // the sheet's rounded top starts above the header: cut the header's corners along the same curve
+                final android.graphics.Rect b = getBounds();
+                final float r = dp(25);
+                final float sheetTop = Math.min(b.top, sheetBackgroundTop - frameLayout.getY());
+                paint.setColor(getThemedColor(Theme.key_dialogBackground));
+                path.rewind();
+                path.addRoundRect(b.left, sheetTop, b.right, b.bottom + r, r, r, Path.Direction.CW);
+                canvas.save();
+                canvas.clipRect(b);
+                canvas.drawPath(path, paint);
+                canvas.restore();
+            }
+            @Override
+            public void setAlpha(int alpha) {}
+            @Override
+            public void setColorFilter(@Nullable android.graphics.ColorFilter colorFilter) {}
+            @Override
+            public int getOpacity() {
+                return android.graphics.PixelFormat.TRANSLUCENT;
+            }
+        });
 
         if (darkTheme && linkToCopy[1] != null) {
             switchView = new SwitchView(context) {
@@ -1463,7 +1494,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 pickerBottom.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, -2, 0, -2, 0));
 
                 TextView pickerTextView = new TextView(context);
-                pickerTextView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2, dp(22)));
+                // ripple within the rounded glass pill of pickerBottomLayout (40dp high inside its 9dp padding)
+                pickerTextView.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 20, 20));
                 pickerTextView.setTextColor(getThemedColor(darkTheme ? Theme.key_voipgroup_listeningText : Theme.key_dialogTextBlue2));
                 pickerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 pickerTextView.setPadding(dp(18), 0, dp(18), 0);
@@ -1496,8 +1528,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         sharesCountLayout = new LinearLayout(context);
                         sharesCountLayout.setOrientation(LinearLayout.HORIZONTAL);
                         sharesCountLayout.setGravity(Gravity.CENTER_VERTICAL);
-                        sharesCountLayout.setBackground(Theme.createSelectorDrawable(getThemedColor(darkTheme ? Theme.key_voipgroup_listSelector : Theme.key_listSelector), 2, dp(22)));
-                        pickerBottomLayout.addView(sharesCountLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.RIGHT | Gravity.BOTTOM, 6, 0, -6, 0));
+                        sharesCountLayout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(darkTheme ? Theme.key_voipgroup_listSelector : Theme.key_listSelector), 20, 20));
+                        pickerBottomLayout.addView(sharesCountLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
                         sharesCountLayout.setOnClickListener(v -> {
                             BaseFragment fragment2 = parentFragment;
                             if (fragment2 == null) fragment2 = LaunchActivity.getSafeLastFragment();
@@ -3883,10 +3915,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             bottomMargin += dp(48);
         }
         if (pickerBottom != null) {
-            pickerBottom.setTranslationY(-bottomMargin);
-            if (sharesCountLayout != null) {
-                sharesCountLayout.setTranslationY(-bottomMargin);
-            }
+            pickerBottom.setTranslationY(-bottomMargin); // sharesCountLayout is inside it
         }
         frameLayout2.setTranslationY(-bottomMargin);
         writeButtonContainer.setTranslationY(-bottomMargin);

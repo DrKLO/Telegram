@@ -22,6 +22,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.StaticLayout;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
@@ -53,6 +54,8 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.RichMessageLayout;
+import org.telegram.messenger.RichQuote;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -325,7 +328,7 @@ public class MessagePreviewView extends FrameLayout {
 
                 @Override
                 protected boolean canShowQuote() {
-                    return currentTab == TAB_REPLY && !messagePreviewParams.isSecret && !isReplyToRichMessage();
+                    return currentTab == TAB_REPLY && !messagePreviewParams.isSecret && (!isReplyToRichMessage() || RichQuote.canQuote(getReplyMessage()));
                 }
 
                 @Override
@@ -337,7 +340,7 @@ public class MessagePreviewView extends FrameLayout {
                     messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                     messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
                     MessageObject toSelectMessage = getReplyMessage(messageObject);
-                    if (toSelectMessage != null && (messagePreviewParams.quote == null || messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != toSelectMessage.getId())) {
+                    if (toSelectMessage != null && (messagePreviewParams.quote == null || messagePreviewParams.quote.isRich || messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != toSelectMessage.getId())) {
                         messagePreviewParams.quote = ChatActivity.ReplyQuote.from(toSelectMessage, start, end);
                     }
                     onQuoteSelectedPart();
@@ -937,7 +940,7 @@ public class MessagePreviewView extends FrameLayout {
                                     return;
                                 } else {
                                     messagePreviewParams.quoteStart = 0;
-                                    messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, replyMessage.messageOwner.message.length());
+                                    messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, ChatActivity.ReplyQuote.getFullLength(replyMessage));
                                     messagePreviewParams.quote = ChatActivity.ReplyQuote.from(replyMessage, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                                     final View cell = getReplyMessageCell();
                                     if (cell instanceof ChatMessageCell) {
@@ -1450,7 +1453,7 @@ public class MessagePreviewView extends FrameLayout {
                 if (messagePreviewParams.quote != null && textSelectionHelper.isInSelectionMode()) {
                     messagePreviewParams.quoteStart = textSelectionHelper.selectionStart;
                     messagePreviewParams.quoteEnd = textSelectionHelper.selectionEnd;
-                    if (msg != null && (messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != msg.getId())) {
+                    if (msg != null && (messagePreviewParams.quote.isRich || messagePreviewParams.quote.message == null || messagePreviewParams.quote.message.getId() != msg.getId())) {
                         messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                         onQuoteSelectedPart();
                     }
@@ -1696,7 +1699,10 @@ public class MessagePreviewView extends FrameLayout {
                         messageCell.setDrawSelectionBackground(groupedMessages == null);
                         messageCell.setChecked(true, groupedMessages == null, false);
 
-                        if (!messagePreviewParams.isSecret && messagePreviewParams.quote != null && isReplyMessageCell(messageCell) && !textSelectionHelper.isInSelectionMode()) {
+                        if (!messagePreviewParams.isSecret && messagePreviewParams.quote != null && isReplyMessageCell(messageCell)) {
+                            resolveRichQuoteRange(messageCell.getMessageObject());
+                        }
+                        if (!messagePreviewParams.isSecret && messagePreviewParams.quote != null && messagePreviewParams.quoteStart >= 0 && isReplyMessageCell(messageCell) && !textSelectionHelper.isInSelectionMode()) {
                             textSelectionHelper.select(messageCell, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                             if (firstAttach) {
                                 scrollToQuoteStartY = offset(messageCell, messagePreviewParams.quoteStart, false);
@@ -1715,12 +1721,41 @@ public class MessagePreviewView extends FrameLayout {
                 return offset(cell, index, false);
             }
 
+            /** a rich quote restored from quote_rich (or outdated) has no selection range, find it in the message */
+            private void resolveRichQuoteRange(MessageObject msg) {
+                final ChatActivity.ReplyQuote quote = messagePreviewParams.quote;
+                if (!quote.isRich || msg == null || msg.richLayout == null || messagePreviewParams.quoteStart >= 0 && messagePreviewParams.quoteEnd > messagePreviewParams.quoteStart) {
+                    return;
+                }
+                final int[] range = quote.getText() == null ? null : RichQuote.findQuote(msg, quote.getText(), quote.richOffset);
+                if (range != null) {
+                    messagePreviewParams.quoteStart = range[0];
+                    messagePreviewParams.quoteEnd = range[1];
+                } else {
+                    messagePreviewParams.quoteStart = 0;
+                    messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, ChatActivity.ReplyQuote.getFullLength(msg));
+                }
+            }
+
             private int offset(ChatMessageCell cell, int index, boolean lineBottom) {
                 if (cell == null) {
                     return 0;
                 }
                 MessageObject object = cell.getMessageObject();
                 if (object == null) {
+                    return 0;
+                }
+                if (object.richLayout != null) {
+                    cell.layoutTextXY(true);
+                    final RichMessageLayout rich = object.richLayout;
+                    for (int i = rich.textBlocks.size() - 1; i >= 0; --i) {
+                        final int charOffset = rich.textBlockCharOffsets.get(i);
+                        if (index < charOffset) continue;
+                        final Layout layout = rich.textBlocks.get(i).getLayout();
+                        if (layout == null) return 0;
+                        final int line = layout.getLineForOffset(Math.min(index - charOffset, layout.getText().length()));
+                        return cell.textY + rich.textBlocks.get(i).getY() + (lineBottom ? layout.getLineBottom(line) : layout.getLineTop(line));
+                    }
                     return 0;
                 }
                 int offsetY;
@@ -2308,7 +2343,7 @@ public class MessagePreviewView extends FrameLayout {
                         msg = page.getReplyMessage(msg);
                         if (msg != null) {
                             messagePreviewParams.quoteStart = 0;
-                            messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, msg.messageOwner.message.length());
+                            messagePreviewParams.quoteEnd = Math.min(MessagesController.getInstance(currentAccount).quoteLengthMax, ChatActivity.ReplyQuote.getFullLength(msg));
                             messagePreviewParams.quote = ChatActivity.ReplyQuote.from(msg, messagePreviewParams.quoteStart, messagePreviewParams.quoteEnd);
                             final View cell = page.getReplyMessageCell();
                             if (cell instanceof ChatMessageCell) {
