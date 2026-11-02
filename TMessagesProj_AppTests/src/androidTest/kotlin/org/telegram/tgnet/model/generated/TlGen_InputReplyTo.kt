@@ -38,6 +38,19 @@ public sealed class TlGen_InputReplyTo : TlGen_Object {
     }
   }
 
+  public data class TL_inputReplyToEphemeralMessage(
+    public val id: Int,
+  ) : TlGen_InputReplyTo() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x4119B95EU
+    }
+  }
+
   public data class TL_inputReplyToMessage(
     public val reply_to_msg_id: Int,
     public val top_msg_id: Int?,
@@ -48,6 +61,7 @@ public sealed class TlGen_InputReplyTo : TlGen_Object {
     public val monoforum_peer_id: TlGen_InputPeer?,
     public val todo_item_id: Int?,
     public val poll_option: List<Byte>?,
+    public val quote_rich: List<TlGen_RichText>?,
   ) : TlGen_InputReplyTo() {
     internal val flags: UInt
       get() {
@@ -60,6 +74,7 @@ public sealed class TlGen_InputReplyTo : TlGen_Object {
         if (monoforum_peer_id != null) result = result or 32U
         if (todo_item_id != null) result = result or 64U
         if (poll_option != null) result = result or 128U
+        if (quote_rich != null) result = result or 256U
         return result
       }
 
@@ -75,23 +90,11 @@ public sealed class TlGen_InputReplyTo : TlGen_Object {
       monoforum_peer_id?.serializeToStream(stream)
       todo_item_id?.let { stream.writeInt32(it) }
       poll_option?.let { stream.writeByteArray(it.toByteArray()) }
+      quote_rich?.let { TlGen_Vector.serialize(stream, it) }
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x3BD4B7C2U
-    }
-  }
-
-  public data class TL_inputReplyToEphemeralMessage(
-    public val id: Int,
-  ) : TlGen_InputReplyTo() {
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(id)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0x4119B95EU
+      public const val MAGIC: UInt = 0x75C1AD70U
     }
   }
 
@@ -253,6 +256,50 @@ public sealed class TlGen_InputReplyTo : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x869FBE10U
+    }
+  }
+
+  public data class TL_inputReplyToMessage_layer231(
+    public val reply_to_msg_id: Int,
+    public val top_msg_id: Int?,
+    public val reply_to_peer_id: TlGen_InputPeer?,
+    public val quote_text: String?,
+    public val quote_entities: List<TlGen_MessageEntity>?,
+    public val quote_offset: Int?,
+    public val monoforum_peer_id: TlGen_InputPeer?,
+    public val todo_item_id: Int?,
+    public val poll_option: List<Byte>?,
+  ) : TlGen_Object {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (top_msg_id != null) result = result or 1U
+        if (reply_to_peer_id != null) result = result or 2U
+        if (quote_text != null) result = result or 4U
+        if (quote_entities != null) result = result or 8U
+        if (quote_offset != null) result = result or 16U
+        if (monoforum_peer_id != null) result = result or 32U
+        if (todo_item_id != null) result = result or 64U
+        if (poll_option != null) result = result or 128U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(reply_to_msg_id)
+      top_msg_id?.let { stream.writeInt32(it) }
+      reply_to_peer_id?.serializeToStream(stream)
+      quote_text?.let { stream.writeString(it) }
+      quote_entities?.let { TlGen_Vector.serialize(stream, it) }
+      quote_offset?.let { stream.writeInt32(it) }
+      monoforum_peer_id?.serializeToStream(stream)
+      todo_item_id?.let { stream.writeInt32(it) }
+      poll_option?.let { stream.writeByteArray(it.toByteArray()) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x3BD4B7C2U
     }
   }
 }
