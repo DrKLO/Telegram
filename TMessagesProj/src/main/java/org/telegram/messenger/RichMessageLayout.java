@@ -135,6 +135,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
@@ -633,6 +634,25 @@ public class RichMessageLayout {
     public void snapshotForDetailsAnimation() {
         for (int i = 0; i < blocks.size(); ++i) {
             blocks.get(i).snapshot();
+        }
+    }
+
+    /** Opens collapsed details blocks (e.g. to show a highlighted quote inside them) */
+    public void openDetails(List<RichDetailsBlock> details) {
+        if (details == null || details.isEmpty()) return;
+        snapshotForDetailsAnimation();
+        for (RichDetailsBlock d : details) {
+            if (d.block.open) continue;
+            d.block.open = true;
+            d.arrow.setAnimationProgressAnimated(0f);
+        }
+        detailsAnimating = true;
+        reposition();
+        if (view != null) {
+            view.invalidate();
+        }
+        if (cell != null && delegate != null) {
+            delegate.forceUpdate(cell, true, true);
         }
     }
 
@@ -1960,13 +1980,41 @@ public class RichMessageLayout {
     }
 
     public CharSequence formatText(TL_iv.RichText text) {
-        return formatText(text, new SpannableStringBuilder(), 0);
+        return formatText(text, 0);
     }
     public CharSequence formatText(TL_iv.RichText text, int flags) {
+        final SpannableStringBuilder out = new SpannableStringBuilder();
         if (flags == 0)
-            return formatText(text, new SpannableStringBuilder(), 0);
+            formatText(text, out, 0);
         else
-            return formatTextAndSetSpan(text, new SpannableStringBuilder(), flags, new StyleSpan(this, flags));
+            formatTextAndSetSpan(text, out, flags, new StyleSpan(this, flags));
+        if (text != null && out.length() > 0) {
+            out.setSpan(new QuoteRootSpan(text, flags), 0, out.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return out;
+    }
+
+    /** Marks the text produced from a root RichText node, so a selection can be mapped back to it for quoting. */
+    public static class QuoteRootSpan {
+        public final TL_iv.RichText text;
+        public final int flags;
+        public QuoteRootSpan(TL_iv.RichText text, int flags) {
+            this.text = text;
+            this.flags = flags;
+        }
+    }
+
+    private IdentityHashMap<TL_iv.RichText, int[]> quoteRecorder;
+
+    /** Formats text the same way formatText(text, flags) does, recording the [start, end) range produced by every node. */
+    public CharSequence formatTextRecording(TL_iv.RichText text, int flags, IdentityHashMap<TL_iv.RichText, int[]> recorder) {
+        final IdentityHashMap<TL_iv.RichText, int[]> prev = quoteRecorder;
+        quoteRecorder = recorder;
+        try {
+            return formatText(text, new SpannableStringBuilder(), flags);
+        } finally {
+            quoteRecorder = prev;
+        }
     }
     private void setSpansWithoutClash(Object span, SpannableStringBuilder out, int start, int end) {
         if (span instanceof StyleSpan) {
@@ -2025,6 +2073,14 @@ public class RichMessageLayout {
         return run;
     }
     public CharSequence formatText(TL_iv.RichText text, SpannableStringBuilder out, int flags) {
+        final int start = out.length();
+        formatTextNode(text, out, flags);
+        if (quoteRecorder != null && text != null) {
+            quoteRecorder.put(text, new int[] { start, out.length() });
+        }
+        return out;
+    }
+    private CharSequence formatTextNode(TL_iv.RichText text, SpannableStringBuilder out, int flags) {
         if (text instanceof TL_iv.textEmpty) {
 
         } else if (text instanceof TL_iv.textPlain) {
@@ -5883,6 +5939,7 @@ public class RichMessageLayout {
             content = new SpannableString(plain);
             if (content.length() > 0) {
                 content.setSpan(new StyleSpan(root, TEXT_FLAG_BLOCK_CODE), 0, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                content.setSpan(new QuoteRootSpan(block.text, 0), 0, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 if (prevBlock != null) {
                     final SpannableString oldContent = prevBlock.content;
                     final boolean prevIsLocked = oldContent instanceof CodeHighlighting.LockedWithFallbackSpannableString;
