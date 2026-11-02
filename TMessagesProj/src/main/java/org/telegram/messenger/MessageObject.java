@@ -5775,6 +5775,19 @@ public class MessageObject {
                     } else {
                         messageText = replaceWithLink(formatPluralStringComma("PaidMessagesPriceUpdated", (int) action.stars), "un1", fromObject);
                     }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionNoPaidMessagesTokenUsed) {
+                    // sent by the one who used a free messaging link (QR code) of the other
+                    if (isOutOwner()) {
+                        final TLRPC.User user;
+                        if (messageOwner.saved_peer_id != null) {
+                            user = getUser(users, sUsers, DialogObject.getPeerDialogId(messageOwner.saved_peer_id));
+                        } else {
+                            user = getUser(users, sUsers, DialogObject.getPeerDialogId(messageOwner.peer_id));
+                        }
+                        messageText = replaceWithLink(getString(R.string.NoPaidMessagesTokenUsedOut), "un1", user);
+                    } else {
+                        messageText = replaceWithLink(getString(R.string.NoPaidMessagesTokenUsed), "un1", fromObject);
+                    }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded) {
                     final TLRPC.TL_messageActionPaidMessagesRefunded action = (TLRPC.TL_messageActionPaidMessagesRefunded) messageOwner.action;
                     if (isOutOwner()) {

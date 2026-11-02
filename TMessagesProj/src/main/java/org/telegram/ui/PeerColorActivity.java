@@ -1264,7 +1264,7 @@ public class PeerColorActivity extends BaseFragment implements NotificationCente
                 final AmountUtils.Amount stars = gift.getResellAmount(AmountUtils.Currency.STARS);
                 if (gift.resale_ton_only) {
                     final AmountUtils.Amount ton = gift.getResellAmount(AmountUtils.Currency.TON);
-                    buttonState.text = StarsIntroActivity.replaceStars(true, LocaleController.formatString(R.string.ResellGiftBuyTON, ton.asFormatString()));
+                    buttonState.text = StarsIntroActivity.whiteGram(true, StarsIntroActivity.replaceStars(true, LocaleController.formatString(R.string.ResellGiftBuyTON, ton.asFormatString())));
                     buttonState.subText = StarsIntroActivity.replaceStars(formatPluralStringComma("ResellGiftBuyEq", (int) stars.asDecimal()));
                 } else {
                     buttonState.text = StarsIntroActivity.replaceStars(formatPluralStringComma("ResellGiftBuy", (int) stars.asDecimal()));
