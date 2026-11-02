@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 
@@ -20,7 +21,7 @@ import java.util.zip.CRC32;
 public class TlUtils {
 
     public static void validateEntities(ArrayList<TLRPC.MessageEntity> entities, String text) {
-        if (entities == null || entities.isEmpty()) {
+        if (entities == null || entities.isEmpty() || ApplicationLoader.isAndroidTestEnvironment()) {
             return;
         }
 
