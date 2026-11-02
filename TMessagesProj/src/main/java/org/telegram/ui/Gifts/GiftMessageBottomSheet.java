@@ -434,6 +434,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
         publicCheckboxView.setDrawUnchecked(true);
         publicCheckboxView.setChecked(!hideMyName, false);
         starGiftUniqueActionView.getLayout().setOnButtonClickListener(() -> writeButton.performClick());
+        starGiftUniqueActionView.getLayout().setOnMessageClickListener(() -> commentView.openKeyboardInternal());
 
         // starGiftUniqueActionView.getLayout().getMessageDrawable().setAvatarVisible(!hideMyName, false);
         publicCheckboxView.setDrawBackgroundAsArc(10);

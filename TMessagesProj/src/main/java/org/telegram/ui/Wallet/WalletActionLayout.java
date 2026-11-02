@@ -5,7 +5,10 @@ import org.telegram.messenger.LocaleController;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.app.ActivityManager;
 import android.view.ViewGroup;
 import android.animation.ValueAnimator;
@@ -21,6 +24,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.SweepGradient;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -28,7 +32,8 @@ import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
+import android.text.TextPaint;
+import android.text.style.CharacterStyle;
 import android.text.style.RelativeSizeSpan;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,9 +43,13 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.ButtonBounce;
@@ -131,6 +140,31 @@ public class WalletActionLayout {
     private boolean touchCaptured;
     private Runnable onClick;
 
+    private static final int CARD_NUMBER_COLOR = 0xFF0145D0;
+    private static final int NAME_COLOR = 0xFF5DE3FF;
+    private static final int BACKDROP_BITMAP_SIZE = 96;
+    private final Matrix backdropShaderMatrix = new Matrix();
+    private int textColor = NAME_COLOR;
+    private final CharacterStyle unitColorSpan = new CharacterStyle() {
+        @Override
+        public void updateDrawState(TextPaint tp) {
+            tp.setColor(textColor);
+        }
+    };
+    private int cardAccount = -1;
+    private long cardUserId;
+    private int observingAccount = -1;
+    private TL_stars.starGiftAttributeBackdrop cardBackdrop, cardBackdropFrom;
+    private final Paint cardBackdropPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cardBackdropFromPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final AnimatedFloat cardBackdropAnimation;
+    private final NotificationCenter.NotificationCenterDelegate userInfoObserver = (id, account, args) -> {
+        if (id == NotificationCenter.userInfoDidLoad && account == cardAccount && cardUserId != 0
+                && args.length > 1 && args[0] instanceof Long && (Long) args[0] == cardUserId) {
+            setCardBackdrop(getCardBackdrop((TLRPC.UserFull) args[1]), true);
+        }
+    };
+
     public WalletActionLayout(View parentView) {
         this(parentView, null);
     }
@@ -147,6 +181,7 @@ public class WalletActionLayout {
             @Override
             public void onViewAttachedToWindow(View v) {
                 if (diamondSurface != null) diamondSurface.setPaused(!surfaceEnabled);
+                updateUserInfoObserver();
             }
 
             @Override
@@ -157,6 +192,7 @@ public class WalletActionLayout {
                 resetSentBounce();
                 resetLanding();
                 cardMotion.detach(parentView);
+                updateUserInfoObserver();
                 if (diamondSurface != null) diamondSurface.setPaused(true);
                 gramDrawable.stop();
                 gramAnimationStarted = false;
@@ -192,6 +228,117 @@ public class WalletActionLayout {
             new float[]{ 0f, .5f, 1f }, Shader.TileMode.CLAMP));
         bounce = new ButtonBounce(parentView);
         bounce.setAdditionalInvalidate(this::invalidateCardBackground);
+        cardBackdropAnimation = new AnimatedFloat(1f, parentView::invalidate, 0, 400, CubicBezierInterpolator.EASE_OUT_QUINT);
+    }
+
+    /**
+     * Colors the card with the wallet card backdrop of the given user, or keeps it stock blue for 0.
+     * Waits for the user full to load if it isn't cached yet.
+     */
+    public void setCardUser(int account, long userId, boolean animated) {
+        cardAccount = account;
+        cardUserId = userId;
+        updateUserInfoObserver();
+        TLRPC.UserFull userFull = null;
+        if (userId != 0) {
+            final MessagesController controller = MessagesController.getInstance(account);
+            userFull = controller.getUserFull(userId);
+            if (userFull == null) {
+                controller.loadFullUser(controller.getUser(userId), 0, false);
+            }
+        }
+        setCardBackdrop(getCardBackdrop(userFull), animated);
+    }
+
+    private void updateUserInfoObserver() {
+        final int account = parentView.isAttachedToWindow() && cardUserId != 0 ? cardAccount : -1;
+        if (account == observingAccount) return;
+        if (observingAccount >= 0) {
+            NotificationCenter.getInstance(observingAccount).removeObserver(userInfoObserver, NotificationCenter.userInfoDidLoad);
+        }
+        observingAccount = account;
+        if (account >= 0) {
+            NotificationCenter.getInstance(account).addObserver(userInfoObserver, NotificationCenter.userInfoDidLoad);
+        }
+    }
+
+    private static TL_stars.starGiftAttributeBackdrop getCardBackdrop(TLRPC.UserFull userFull) {
+        if (userFull == null || userFull.wallet_card == null || userFull.wallet_card.bg_nft_item == null
+                || userFull.wallet_card.bg_nft_item.gift == null || userFull.wallet_card.bg_nft_item.gift.attributes == null) {
+            return null;
+        }
+        for (TL_stars.StarGiftAttribute attribute : userFull.wallet_card.bg_nft_item.gift.attributes) {
+            if (attribute instanceof TL_stars.starGiftAttributeBackdrop) {
+                return (TL_stars.starGiftAttributeBackdrop) attribute;
+            }
+        }
+        return null;
+    }
+
+    private static boolean sameBackdrop(TL_stars.starGiftAttributeBackdrop a, TL_stars.starGiftAttributeBackdrop b) {
+        if (a == null || b == null) return a == b;
+        return a.center_color == b.center_color && a.edge_color == b.edge_color
+            && a.pattern_color == b.pattern_color && a.text_color == b.text_color;
+    }
+
+    private void setCardBackdrop(TL_stars.starGiftAttributeBackdrop backdrop, boolean animated) {
+        if (sameBackdrop(cardBackdrop, backdrop)) {
+            if (!animated && cardBackdropAnimation.get() < 1f) {
+                cardBackdropFrom = null;
+                cardBackdropFromPaint.setShader(null);
+                cardBackdropAnimation.force(1f);
+            }
+            return;
+        }
+        if (animated) {
+            cardBackdropFrom = cardBackdrop;
+            cardBackdropFromPaint.setShader(cardBackdropPaint.getShader());
+            cardBackdropAnimation.force(0f);
+        } else {
+            cardBackdropFrom = null;
+            cardBackdropFromPaint.setShader(null);
+            cardBackdropAnimation.force(1f);
+        }
+        cardBackdrop = backdrop;
+        cardBackdropPaint.setShader(backdrop == null ? null : createBackdropShader(backdrop));
+        invalidateCard();
+    }
+
+    private static Shader createBackdropShader(TL_stars.starGiftAttributeBackdrop backdrop) {
+        // The 2D wallet card's backdrop surface, centered on the card.
+        final int dark = WalletGiftPalette.surface(0xFF088FEE, backdrop.center_color, backdrop.edge_color);
+        final int light = WalletGiftPalette.surface(0xFF16ABF9, backdrop.center_color, backdrop.edge_color);
+        final Shader sweep = new SweepGradient(0, 0, new int[]{ dark, light, dark, light, dark }, new float[]{ 0f, .25f, .5f, .75f, 1f });
+        if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
+            return sweep;
+        }
+        // Softens the sweep's hard center; the bitmap spans the drawn square, see drawBackdrop().
+        final Bitmap bitmap = Bitmap.createBitmap(BACKDROP_BITMAP_SIZE, BACKDROP_BITMAP_SIZE, Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(bitmap);
+        final Paint paint = new Paint();
+        paint.setShader(sweep);
+        canvas.translate(BACKDROP_BITMAP_SIZE / 2f, BACKDROP_BITMAP_SIZE / 2f);
+        canvas.drawPaint(paint);
+        Utilities.stackBlurBitmap(bitmap, BACKDROP_BITMAP_SIZE / 6);
+        return new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+    }
+
+    private void drawBackdrop(Canvas canvas, float half, Paint paint) {
+        final Shader shader = paint.getShader();
+        if (shader instanceof BitmapShader) {
+            backdropShaderMatrix.setTranslate(-BACKDROP_BITMAP_SIZE / 2f, -BACKDROP_BITMAP_SIZE / 2f);
+            backdropShaderMatrix.postScale(2 * half / BACKDROP_BITMAP_SIZE, 2 * half / BACKDROP_BITMAP_SIZE);
+            shader.setLocalMatrix(backdropShaderMatrix);
+        }
+        canvas.drawRect(-half, -half, half, half, paint);
+    }
+
+    private static int getNameColor(TL_stars.starGiftAttributeBackdrop backdrop) {
+        return backdrop == null ? NAME_COLOR : 0xFF000000 | backdrop.text_color;
+    }
+
+    private static int getCardNumberColor(TL_stars.starGiftAttributeBackdrop backdrop) {
+        return backdrop == null ? CARD_NUMBER_COLOR : WalletGiftPalette.cardNumberColor(backdrop.pattern_color, backdrop.edge_color);
     }
 
     public void set(boolean out, TLRPC.TL_messageActionGramTransfer action) {
@@ -310,10 +457,10 @@ public class WalletActionLayout {
         final int numberEnd = localizedAmount.getSpanEnd(numberSpan);
         localizedAmount.removeSpan(numberSpan);
         if (numberStart > 0) {
-            localizedAmount.setSpan(new ForegroundColorSpan(0xFF5DE3FF), 0, numberStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            localizedAmount.setSpan(CharacterStyle.wrap(unitColorSpan), 0, numberStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         if (numberEnd >= 0 && numberEnd < localizedAmount.length()) {
-            localizedAmount.setSpan(new ForegroundColorSpan(0xFF5DE3FF), numberEnd, localizedAmount.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            localizedAmount.setSpan(CharacterStyle.wrap(unitColorSpan), numberEnd, localizedAmount.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         amountText = new Text(localizedAmount, 16, AndroidUtilities.bold());
 
@@ -435,8 +582,24 @@ public class WalletActionLayout {
         final float gradientScale = gradientHalf / Math.min(gradientWidth, gradientHeight);
         final int gradientHalfWidth = (int) Math.ceil(gradientWidth * gradientScale);
         final int gradientHalfHeight = (int) Math.ceil(gradientHeight * gradientScale);
-        cardDrawable.setBounds(-gradientHalfWidth, -gradientHalfHeight, gradientHalfWidth, gradientHalfHeight);
-        cardDrawable.draw(canvas);
+        final float backdropProgress = cardBackdropAnimation.set(1f);
+        final boolean fromVisible = cardBackdropFrom != null && backdropProgress < 1f;
+        // The stock gradient would bleed through the antialiased clip edge under an opaque backdrop.
+        final boolean stockCovered = cardBackdrop != null && (backdropProgress >= 1f || fromVisible);
+        if (!stockCovered) {
+            cardDrawable.setBounds(-gradientHalfWidth, -gradientHalfHeight, gradientHalfWidth, gradientHalfHeight);
+            cardDrawable.draw(canvas);
+        }
+        if (fromVisible) {
+            cardBackdropFromPaint.setAlpha(cardBackdrop == null ? Math.round(255 * (1f - backdropProgress)) : 255);
+            drawBackdrop(canvas, gradientHalf, cardBackdropFromPaint);
+        }
+        if (cardBackdrop != null) {
+            cardBackdropPaint.setAlpha(Math.round(255 * backdropProgress));
+            drawBackdrop(canvas, gradientHalf, cardBackdropPaint);
+        }
+        textColor = backdropProgress >= 1f ? getNameColor(cardBackdrop)
+            : ColorUtils.blendARGB(getNameColor(cardBackdropFrom), getNameColor(cardBackdrop), backdropProgress);
         canvas.restore();
 
         final int iconSize = dp(42);
@@ -505,12 +668,14 @@ public class WalletActionLayout {
                     canvas,
                     (getWidth() - peerLinkText.getWidth()) / 2.0f,
                     addressTop - dp(4) - peerLinkText.getHeight() / 2.0f,
-                    0xFF5DE3FF,
+                    textColor,
                     1.0f
                 );
             }
             addressText.draw(canvas, addressX, addressTop + dp(1), 0x0FFFFFFF, 1.0f);
-            addressText.draw(canvas, addressX, addressTop, 0xFF0145D0, 1.0f);
+            final int addressColor = backdropProgress >= 1f ? getCardNumberColor(cardBackdrop)
+                : ColorUtils.blendARGB(getCardNumberColor(cardBackdropFrom), getCardNumberColor(cardBackdrop), backdropProgress);
+            addressText.draw(canvas, addressX, addressTop, addressColor, 1.0f);
         }
 
         if (loadingDrawable != null && !loadingDrawable.isDisappeared()) {

@@ -562,7 +562,7 @@ public class ProfileGalleryBlurView extends View {
         if (listeners[1] != null) listeners[1].listenInvalidate(null);
 
         float scale = getRenderNodeScale();
-        blurNode.setPosition(0, 0, (int) (width / scale), (int) ((size + actionSize) / scale));
+        blurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) Math.ceil((size + actionSize) / scale));
         RecordingCanvas recordingCanvas = blurNode.beginRecording();
         recordingCanvas.scale(1f / scale, 1f / scale);
 
@@ -626,7 +626,7 @@ public class ProfileGalleryBlurView extends View {
         float scale = getRenderNodeScale() * openingScale;
         initRenderNode();
 
-        blurNode.setPosition(0, 0, (int) (width / scale), (int) ((croppedSize + actionSize) / scale));
+        blurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) Math.ceil((croppedSize + actionSize) / scale));
         final RecordingCanvas recordingCanvas = blurNode.beginRecording();
         recordingCanvas.scale(1f / scale, 1f / scale);
 
@@ -668,7 +668,7 @@ public class ProfileGalleryBlurView extends View {
 
         float outScale = 8f;
         float scale = getRenderNodeScale() * openingScale * outScale;
-        actionsBlurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) ((size + actionSize) / scale));
+        actionsBlurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) Math.ceil((size + actionSize) / scale));
         RecordingCanvas recordingCanvas = actionsBlurNode.beginRecording();
         recordingCanvas.scale(1f / outScale, 1f / outScale);
         recordingCanvas.drawRenderNode(blurNode);
