@@ -3053,7 +3053,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}, ConnectionsManager.RequestFlagFailOnServerErrorsExceptFloodWait, ConnectionsManager.ConnectionTypeDownload, groupCall.call.stream_dc_id);
 				} else {
 					if (tgVoip[type] != null) {
-						tgVoip[type].onRequestTimeComplete(taskPtr, ConnectionsManager.getInstance(currentAccount).getCurrentTimeMillis());
+						// the part for the current second is still being recorded, start from the last complete one
+						tgVoip[type].onRequestTimeComplete(taskPtr, ConnectionsManager.getInstance(currentAccount).getCurrentTimeMillis() - 1000);
 					}
 				}
 			}, conference != null);
