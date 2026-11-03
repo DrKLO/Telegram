@@ -4563,11 +4563,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         @Override
         public int getItemCount() {
+            hasCamera = false;
+            hasCameraSpaceRow = false;
             if (!mediaEnabled) {
                 return 1;
             }
-            hasCamera = false;
-            hasCameraSpaceRow = false;
 
             if (noGalleryPermissions && this == adapter) {
                 return 2;

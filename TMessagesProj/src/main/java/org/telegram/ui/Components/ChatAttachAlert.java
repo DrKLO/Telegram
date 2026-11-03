@@ -6116,6 +6116,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
         }
 
+        if (isStickerMode) {
+            // the picked photo is only the source of a new sticker and is never sent to the chat
+            photosEnabled = true;
+            videosEnabled = true;
+        }
+
         if (restrictEphemeralMessageTypes) {
             pollsEnabled = false;
             todoEnabled = false;

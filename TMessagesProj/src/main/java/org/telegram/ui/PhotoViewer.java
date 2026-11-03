@@ -8097,7 +8097,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     ((MediaController.MediaEditState) entry).editedInfo = videoEditedInfo;
                 }
             }
-            if (parentChatActivity != null && parentChatActivity.getCurrentChat() != null) {
+            if (parentChatActivity != null && parentChatActivity.getCurrentChat() != null && sendPhotoType != SELECT_TYPE_STICKER) {
                 boolean isVideo = (isCurrentVideo || videoEditedInfo != null);
                 if (isVideo && !ChatObject.canSendVideo(parentChatActivity.getCurrentChat())) {
                     BulletinFactory.of(containerView, resourcesProvider).createErrorBulletin(getString(R.string.GlobalAttachVideoRestricted)).show();
@@ -8259,6 +8259,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         ContentPreviewViewer.getInstance().showCustomStickerActions(fullStickerPath, videoEditedInfo1, stickerMakerView, selectedEmojis, new ContentPreviewViewer.ContentPreviewViewerDelegate() {
                             @Override
                             public boolean canSendSticker() {
+                                if (parentChatActivity != null && parentChatActivity.getCurrentChat() != null && !ChatObject.canSendStickers(parentChatActivity.getCurrentChat())) {
+                                    return false;
+                                }
                                 return placeProvider != null && (!placeProvider.isEditingSticker() || parentChatActivity != null);
                             }
 
