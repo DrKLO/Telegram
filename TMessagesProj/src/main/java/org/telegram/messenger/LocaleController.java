@@ -1211,12 +1211,12 @@ public class LocaleController {
     }
 
     private HashMap<String, String> getLocaleFileStrings(File file) {
-        return getLocaleFileStrings(file, false, false);
+        return getLocaleFileStrings(file, false, false, true);
     }
 
-    // on a parse error returns the strings read so far and sets reloadLastFile,
-    // or returns null with nullOnError, so a partial file is never merged or saved over a good one
-    private HashMap<String, String> getLocaleFileStrings(File file, boolean preserveEscapes, boolean nullOnError) {
+    // on a parse error returns the strings read so far, or null with nullOnError, so a partial file
+    // is never merged or saved over a good one; setReloadFlag is false off the UI thread
+    private HashMap<String, String> getLocaleFileStrings(File file, boolean preserveEscapes, boolean nullOnError, boolean setReloadFlag) {
         FileInputStream stream = null;
         HashMap<String, String> stringMap = null;
         try {
@@ -1251,7 +1251,7 @@ public class LocaleController {
                                 value = value.replace("\\", "");
                                 String old = value;
                                 value = value.replace("&lt;", "<");
-                                if (!reloadLastFile && !value.equals(old)) {
+                                if (setReloadFlag && !reloadLastFile && !value.equals(old)) {
                                     reloadLastFile = true;
                                     FileLog.d("getLocaleFileStrings: value != old, reloadLastFile = true;");
                                 }
@@ -1280,8 +1280,10 @@ public class LocaleController {
                 AndroidUtilities.copyFile(file, new File(filesDir, file.getName()));
             } catch (Exception e2) {}
             FileLog.e(e);
-            FileLog.d("getLocaleFileStrings: error, reloadLastFile = true;");
-            reloadLastFile = true;
+            if (setReloadFlag) {
+                FileLog.d("getLocaleFileStrings: error, reloadLastFile = true;");
+                reloadLastFile = true;
+            }
             if (nullOnError) {
                 return null;
             }
@@ -3124,12 +3126,7 @@ public class LocaleController {
         }
         final String langCode = type == 0 ? localeInfo.shortName : localeInfo.baseLangCode;
         final int localVersion = type == 0 ? localeInfo.version : localeInfo.baseVersion;
-        File finalFile;
-        if (type == 0) {
-            finalFile = localeInfo.getPathToFile();
-        } else {
-            finalFile = localeInfo.getPathToBaseFile();
-        }
+        final File finalFile = type == 0 ? localeInfo.getPathToFile() : localeInfo.getPathToBaseFile();
         if (finalFile == null) {
             FileLog.d("saveRemoteLocaleStrings: no file for " + difference.lang_code);
             if (onDone != null) {
@@ -3137,119 +3134,26 @@ public class LocaleController {
             }
             return;
         }
-        File tempFile = null;
-        try {
-            final HashMap<String, String> values;
-            if (difference.from_version == 0) {
-                FileLog.d("saveRemoteLocaleStrings: difference is straight from the beginning, version " + difference.version + " ours " + localVersion);
-                if (difference.version < localVersion && !hasMalformedCopy(finalFile) && finalFile.exists() && getLocaleFileStrings(finalFile, true, true) != null) {
-                    // a slow full langpack arrived after a newer difference, don't go back
-                    FileLog.d("saveRemoteLocaleStrings: whole langpack is older than ours, skip");
-                    if (onDone != null) {
-                        onDone.run();
-                    }
-                    return;
-                }
-                values = new HashMap<>();
-            } else {
-                FileLog.d("saveRemoteLocaleStrings: difference is from version " + difference.from_version + " to " + difference.version + " ours " + localVersion + " (base version " + localeInfo.baseLangCode + ")");
-                if (difference.version <= localVersion) {
-                    FileLog.d("saveRemoteLocaleStrings: difference is not newer than ours, skip");
-                    if (onDone != null) {
-                        onDone.run();
-                    }
-                    return;
-                }
-                if (difference.from_version > localVersion) {
-                    // applying it would skip the changes in between: ask for the difference from our version,
-                    // or for the whole langpack if that was what we asked for, so this can't repeat
-                    FileLog.d("saveRemoteLocaleStrings: difference starts after ours, request the " + (requested ? "whole langpack" : "missing part"));
-                    applyRemoteLanguage(localeInfo, langCode, requested, currentAccount, onDone);
-                    return;
-                }
-                values = finalFile.exists() ? getLocaleFileStrings(finalFile, true, true) : null;
-                if (values == null) {
-                    // merging onto a missing or unreadable file would drop all other strings
-                    FileLog.d("saveRemoteLocaleStrings: can't read " + finalFile + ", reload the whole langpack");
-                    applyRemoteLanguage(localeInfo, langCode, true, currentAccount, onDone);
-                    return;
-                }
-            }
-            for (int a = 0; a < difference.strings.size(); a++) {
-                TLRPC.LangPackString string = difference.strings.get(a);
-                if (string instanceof TLRPC.TL_langPackString) {
-                    values.put(string.key, escapeString(string.value));
-                } else if (string instanceof TLRPC.TL_langPackStringPluralized) {
-                    values.put(string.key + "_zero", string.zero_value != null ? escapeString(string.zero_value) : "");
-                    values.put(string.key + "_one", string.one_value != null ? escapeString(string.one_value) : "");
-                    values.put(string.key + "_two", string.two_value != null ? escapeString(string.two_value) : "");
-                    values.put(string.key + "_few", string.few_value != null ? escapeString(string.few_value) : "");
-                    values.put(string.key + "_many", string.many_value != null ? escapeString(string.many_value) : "");
-                    values.put(string.key + "_other", string.other_value != null ? escapeString(string.other_value) : "");
-                } else if (string instanceof TLRPC.TL_langPackStringDeleted) {
-                    values.remove(string.key);
-                    values.remove(string.key + "_zero");
-                    values.remove(string.key + "_one");
-                    values.remove(string.key + "_two");
-                    values.remove(string.key + "_few");
-                    values.remove(string.key + "_many");
-                    values.remove(string.key + "_other");
-                }
-            }
-            // write next to the old file and replace it only once the new one reads back fine,
-            // so a crash or a bad string never leaves a broken or half written langpack
-            tempFile = new File(finalFile.getPath() + ".tmp");
-            FileLog.d("save locale file to " + tempFile);
-            FileOutputStream stream = new FileOutputStream(tempFile);
-            try {
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
-                writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-                writer.write("<resources>\n");
-                for (HashMap.Entry<String, String> entry : values.entrySet()) {
-                    writer.write(String.format("<string name=\"%1$s\">%2$s</string>\n", entry.getKey(), entry.getValue()));
-                }
-                writer.write("</resources>");
-                writer.flush();
-                stream.getFD().sync();
-            } finally {
-                stream.close();
-            }
-            boolean hasBase = localeInfo.hasBaseLang();
-            File baseFile = type == 1 ? tempFile : localeInfo.getPathToBaseFile();
-            File mainFile = type == 0 ? tempFile : localeInfo.getPathToFile();
-            final HashMap<String, String> valuesToSet = getLocaleFileStrings(hasBase ? baseFile : mainFile, false, hasBase ? type == 1 : type == 0);
-            final HashMap<String, String> mainValues = hasBase ? getLocaleFileStrings(mainFile, false, type == 0) : null;
-            if (valuesToSet == null || hasBase && mainValues == null) {
-                FileLog.e("saveRemoteLocaleStrings: written locale file is unreadable, keep the old one");
-                deleteMalformedCopy(tempFile);
-                tempFile.delete();
-                if (onDone != null) {
-                    onDone.run();
-                }
-                return;
-            }
-            if (hasBase) {
-                valuesToSet.putAll(mainValues);
-            }
-            if (!tempFile.renameTo(finalFile)) {
-                FileLog.e("saveRemoteLocaleStrings: can't replace " + finalFile);
-                tempFile.delete();
-                if (onDone != null) {
-                    onDone.run();
-                }
-                return;
-            }
-            tempFile = null;
-            if (difference.from_version == 0) {
-                deleteMalformedCopy(finalFile);
-            }
-            if (type == 0) {
-                localeInfo.version = difference.version;
-            } else {
-                localeInfo.baseVersion = difference.version;
-            }
-            FileLog.d("saved locale file to " + finalFile);
+        final boolean hasBase = localeInfo.hasBaseLang();
+        final File otherFile = !hasBase ? null : type == 0 ? localeInfo.getPathToBaseFile() : localeInfo.getPathToFile();
+        getLangpackQueue().postRunnable(() -> {
+            final int[] savedVersion = new int[1];
+            final HashMap<String, String> valuesToSet = writeLocaleFile(finalFile, otherFile, type == 1, difference, localVersion, savedVersion);
             AndroidUtilities.runOnUIThread(() -> {
+                if (valuesToSet == null) {
+                    final int result = savedVersion[0];
+                    if (result == SAVE_REQUEST_DIFFERENCE || result == SAVE_REQUEST_LANGPACK) {
+                        applyRemoteLanguage(localeInfo, langCode, result == SAVE_REQUEST_LANGPACK || requested, currentAccount, onDone);
+                    } else if (onDone != null) {
+                        onDone.run();
+                    }
+                    return;
+                }
+                if (type == 0) {
+                    localeInfo.version = difference.from_version == 0 ? difference.version : Math.max(localeInfo.version, difference.version);
+                } else {
+                    localeInfo.baseVersion = difference.from_version == 0 ? difference.version : Math.max(localeInfo.baseVersion, difference.version);
+                }
                 saveOtherLanguages();
                 try {
                     if (currentLocaleInfo == localeInfo) {
@@ -3313,14 +3217,137 @@ public class LocaleController {
                     onDone.run();
                 }
             });
+        });
+    }
+
+    private static final int SAVE_SKIPPED = 0;
+    private static final int SAVE_REQUEST_DIFFERENCE = 1;
+    private static final int SAVE_REQUEST_LANGPACK = 2;
+
+    private DispatchQueue langpackQueue;
+    // version of each saved langpack file; owned by langpackQueue, which can be ahead of LocaleInfo
+    private final HashMap<String, Integer> savedLangpackVersions = new HashMap<>();
+
+    private DispatchQueue getLangpackQueue() {
+        if (langpackQueue == null) {
+            langpackQueue = new DispatchQueue("langpackQueue");
+        }
+        return langpackQueue;
+    }
+
+    // runs on langpackQueue; returns the strings to show, or null with SAVE_* in result[0] when nothing was saved
+    private HashMap<String, String> writeLocaleFile(File finalFile, File otherFile, boolean isBase, TLRPC.TL_langPackDifference difference, int localVersion, int[] result) {
+        final Integer savedVersion = savedLangpackVersions.get(finalFile.getPath());
+        if (savedVersion != null && savedVersion > localVersion) {
+            localVersion = savedVersion;
+        }
+        result[0] = SAVE_SKIPPED;
+        File tempFile = null;
+        try {
+            final HashMap<String, String> values;
+            if (difference.from_version == 0) {
+                FileLog.d("saveRemoteLocaleStrings: difference is straight from the beginning, version " + difference.version + " ours " + localVersion);
+                if (difference.version < localVersion && !hasMalformedCopy(finalFile) && finalFile.exists() && getLocaleFileStrings(finalFile, true, true, false) != null) {
+                    // a slow full langpack arrived after a newer difference, don't go back
+                    FileLog.d("saveRemoteLocaleStrings: whole langpack is older than ours, skip");
+                    return null;
+                }
+                values = new HashMap<>();
+            } else {
+                FileLog.d("saveRemoteLocaleStrings: difference is from version " + difference.from_version + " to " + difference.version + " ours " + localVersion);
+                if (difference.version <= localVersion) {
+                    FileLog.d("saveRemoteLocaleStrings: difference is not newer than ours, skip");
+                    return null;
+                }
+                if (difference.from_version > localVersion) {
+                    // applying it would skip the changes in between: ask for the difference from our version,
+                    // or for the whole langpack if that was what we asked for, so this can't repeat
+                    FileLog.d("saveRemoteLocaleStrings: difference starts after ours, request the missing part");
+                    result[0] = SAVE_REQUEST_DIFFERENCE;
+                    return null;
+                }
+                values = finalFile.exists() ? getLocaleFileStrings(finalFile, true, true, false) : null;
+                if (values == null) {
+                    // merging onto a missing or unreadable file would drop all other strings
+                    FileLog.d("saveRemoteLocaleStrings: can't read " + finalFile + ", reload the whole langpack");
+                    result[0] = SAVE_REQUEST_LANGPACK;
+                    return null;
+                }
+            }
+            for (int a = 0; a < difference.strings.size(); a++) {
+                TLRPC.LangPackString string = difference.strings.get(a);
+                if (string instanceof TLRPC.TL_langPackString) {
+                    values.put(string.key, escapeString(string.value));
+                } else if (string instanceof TLRPC.TL_langPackStringPluralized) {
+                    values.put(string.key + "_zero", string.zero_value != null ? escapeString(string.zero_value) : "");
+                    values.put(string.key + "_one", string.one_value != null ? escapeString(string.one_value) : "");
+                    values.put(string.key + "_two", string.two_value != null ? escapeString(string.two_value) : "");
+                    values.put(string.key + "_few", string.few_value != null ? escapeString(string.few_value) : "");
+                    values.put(string.key + "_many", string.many_value != null ? escapeString(string.many_value) : "");
+                    values.put(string.key + "_other", string.other_value != null ? escapeString(string.other_value) : "");
+                } else if (string instanceof TLRPC.TL_langPackStringDeleted) {
+                    values.remove(string.key);
+                    values.remove(string.key + "_zero");
+                    values.remove(string.key + "_one");
+                    values.remove(string.key + "_two");
+                    values.remove(string.key + "_few");
+                    values.remove(string.key + "_many");
+                    values.remove(string.key + "_other");
+                }
+            }
+            // write next to the old file and replace it only once the new one reads back fine,
+            // so a crash or a bad string never leaves a broken or half written langpack
+            tempFile = new File(finalFile.getPath() + ".tmp");
+            FileLog.d("save locale file to " + tempFile);
+            FileOutputStream stream = new FileOutputStream(tempFile);
+            try {
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
+                writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+                writer.write("<resources>\n");
+                for (HashMap.Entry<String, String> entry : values.entrySet()) {
+                    writer.write(String.format("<string name=\"%1$s\">%2$s</string>\n", entry.getKey(), entry.getValue()));
+                }
+                writer.write("</resources>");
+                writer.flush();
+                stream.getFD().sync();
+            } finally {
+                stream.close();
+            }
+            final HashMap<String, String> valuesToSet;
+            final HashMap<String, String> written = getLocaleFileStrings(tempFile, false, true, false);
+            if (written == null) {
+                FileLog.e("saveRemoteLocaleStrings: written locale file is unreadable, keep the old one");
+                deleteMalformedCopy(tempFile);
+                tempFile.delete();
+                return null;
+            }
+            if (otherFile == null) {
+                valuesToSet = written;
+            } else if (isBase) {
+                valuesToSet = written;
+                valuesToSet.putAll(getLocaleFileStrings(otherFile, false, false, false));
+            } else {
+                valuesToSet = getLocaleFileStrings(otherFile, false, false, false);
+                valuesToSet.putAll(written);
+            }
+            if (!tempFile.renameTo(finalFile)) {
+                FileLog.e("saveRemoteLocaleStrings: can't replace " + finalFile);
+                tempFile.delete();
+                return null;
+            }
+            tempFile = null;
+            savedLangpackVersions.put(finalFile.getPath(), difference.version);
+            if (difference.from_version == 0) {
+                deleteMalformedCopy(finalFile);
+            }
+            FileLog.d("saved locale file to " + finalFile);
+            return valuesToSet;
         } catch (Exception e) {
             FileLog.e(e);
             if (tempFile != null) {
                 tempFile.delete();
             }
-            if (onDone != null) {
-                onDone.run();
-            }
+            return null;
         }
     }
 
@@ -3415,23 +3442,49 @@ public class LocaleController {
 
     // one langpack request per file at a time: every account checks for updates on its own,
     // and without this each of them downloads the same difference or the whole langpack
-    // key -> { full, start time, request token, account }
-    private final HashMap<String, long[]> langpackRequestsInFlight = new HashMap<>();
+    private static class LangpackRequest {
+        boolean full;
+        long startTime;
+        int token;
+        int account;
+        // callers that wanted the same langpack while this was loading
+        ArrayList<Runnable> waiters = new ArrayList<>();
 
-    private long[] startLangpackRequest(String key, boolean full, int account) {
-        final long[] inFlight = langpackRequestsInFlight.get(key);
+        void runWaiters() {
+            final ArrayList<Runnable> list = waiters;
+            waiters = new ArrayList<>();
+            for (int a = 0; a < list.size(); a++) {
+                list.get(a).run();
+            }
+        }
+    }
+
+    private final HashMap<String, LangpackRequest> langpackRequestsInFlight = new HashMap<>();
+
+    // returns the new request, or null when onDone was added to the one already loading this langpack
+    private LangpackRequest startLangpackRequest(String key, boolean full, int account, Runnable onDone) {
+        final LangpackRequest inFlight = langpackRequestsInFlight.get(key);
         final long now = SystemClock.elapsedRealtime();
         // requests wait for the network, so only give up on one that never called back for long
-        if (inFlight != null && now - inFlight[1] < 5 * 60_000 && (inFlight[0] == 1 || !full)) {
-            FileLog.d("applyRemoteLanguage " + key + " is already loading" + (inFlight[0] == 1 ? " the whole langpack" : ""));
+        final boolean stale = inFlight != null && now - inFlight.startTime >= 5 * 60_000;
+        if (inFlight != null && !stale && (inFlight.full || !full)) {
+            FileLog.d("applyRemoteLanguage " + key + " is already loading" + (inFlight.full ? " the whole langpack" : "") + ", wait for it");
+            inFlight.waiters.add(onDone);
             return null;
         }
-        final long[] request = new long[] { full ? 1 : 0, now, 0, account };
+        final LangpackRequest request = new LangpackRequest();
+        request.full = full;
+        request.startTime = now;
+        request.account = account;
+        if (stale) {
+            request.waiters.addAll(inFlight.waiters);
+            inFlight.waiters.clear();
+        }
         langpackRequestsInFlight.put(key, request);
         return request;
     }
 
-    private void finishLangpackRequest(String key, long[] request) {
+    private void finishLangpackRequest(String key, LangpackRequest request) {
         if (langpackRequestsInFlight.get(key) == request) {
             langpackRequestsInFlight.remove(key);
         }
@@ -3441,11 +3494,12 @@ public class LocaleController {
         if (requestId == 0) {
             return;
         }
-        for (Iterator<HashMap.Entry<String, long[]>> iterator = langpackRequestsInFlight.entrySet().iterator(); iterator.hasNext(); ) {
-            final long[] request = iterator.next().getValue();
-            if (request[2] == requestId) {
-                ConnectionsManager.getInstance((int) request[3]).cancelRequest(requestId, true);
+        for (Iterator<HashMap.Entry<String, LangpackRequest>> iterator = langpackRequestsInFlight.entrySet().iterator(); iterator.hasNext(); ) {
+            final LangpackRequest request = iterator.next().getValue();
+            if (request.token == requestId) {
+                ConnectionsManager.getInstance(request.account).cancelRequest(requestId, true);
                 iterator.remove();
+                request.runWaiters();
                 return;
             }
         }
@@ -3473,9 +3527,13 @@ public class LocaleController {
         if (localeInfo.hasBaseLang() && (langCode == null || langCode.equals(localeInfo.baseLangCode))) {
             final String key = localeInfo.getKey() + "_base";
             final boolean full = localeInfo.baseVersion == 0 || force;
-            final long[] request = startLangpackRequest(key, full, requestAccount);
+            requested[0]++;
+            final LangpackRequest request = startLangpackRequest(key, full, requestAccount, onPartlyDone);
             if (request != null) {
-                requested[0]++;
+                final Runnable onRequestDone = () -> {
+                    onPartlyDone.run();
+                    request.runWaiters();
+                };
                 if (!full) {
                     FileLog.d("applyRemoteLanguage getDifference of base");
                     TLRPC.TL_langpack_getDifference req = new TLRPC.TL_langpack_getDifference();
@@ -3485,12 +3543,12 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onRequestDone);
                         } else {
-                            onPartlyDone.run();
+                            onRequestDone.run();
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
-                    request[2] = requestId;
+                    request.token = requestId;
                 } else {
                     FileLog.d("applyRemoteLanguage getLangPack of base");
                     TLRPC.TL_langpack_getLangPack req = new TLRPC.TL_langpack_getLangPack();
@@ -3498,21 +3556,25 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onRequestDone);
                         } else {
-                            onPartlyDone.run();
+                            onRequestDone.run();
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
-                    request[2] = requestId;
+                    request.token = requestId;
                 }
             }
         }
         if (langCode == null || langCode.equals(localeInfo.shortName)) {
             final String key = localeInfo.getKey();
             final boolean full = localeInfo.version == 0 || force;
-            final long[] request = startLangpackRequest(key, full, requestAccount);
+            requested[0]++;
+            final LangpackRequest request = startLangpackRequest(key, full, requestAccount, onPartlyDone);
             if (request != null) {
-                requested[0]++;
+                final Runnable onRequestDone = () -> {
+                    onPartlyDone.run();
+                    request.runWaiters();
+                };
                 if (!full) {
                     FileLog.d("applyRemoteLanguage getDifference");
                     TLRPC.TL_langpack_getDifference req = new TLRPC.TL_langpack_getDifference();
@@ -3522,12 +3584,12 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onRequestDone);
                         } else {
-                            onPartlyDone.run();
+                            onRequestDone.run();
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
-                    request[2] = requestId;
+                    request.token = requestId;
                 } else {
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                         ConnectionsManager.setLangCode(localeInfo.getLangCode());
@@ -3538,12 +3600,12 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onRequestDone);
                         } else {
-                            onPartlyDone.run();
+                            onRequestDone.run();
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
-                    request[2] = requestId;
+                    request.token = requestId;
                 }
             }
         }
