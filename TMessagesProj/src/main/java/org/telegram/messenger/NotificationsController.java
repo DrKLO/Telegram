@@ -46,6 +46,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.Pair;
@@ -4645,6 +4646,9 @@ public class NotificationsController extends BaseController implements Notificat
                     .setContentIntent(contentIntent)
                     .setGroup(notificationGroup)
                     .setGroupSummary(true)
+                    // The child of the new message alerts, not the summary (otherwise the sound plays twice).
+                    // Before Android 8 sound and vibration are set only on the summary, so behaviour is unchanged there
+                    .setGroupAlertBehavior(Build.VERSION.SDK_INT >= 26 ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_ALL)
                     .setShowWhen(true)
                     .setWhen(((long) lastMessageObject.messageOwner.date) * 1000)
                     .setColor(0xff11acfa);
@@ -4813,7 +4817,7 @@ public class NotificationsController extends BaseController implements Notificat
                     mBuilder.addAction(R.drawable.ic_ab_reply, LocaleController.getString(R.string.Reply), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
                 }
             }
-            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
+            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType, notifyAboutLast);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -4822,15 +4826,6 @@ public class NotificationsController extends BaseController implements Notificat
 
     private boolean isSilentMessage(MessageObject messageObject) {
         return messageObject.messageOwner.silent || messageObject.isReactionPush;
-    }
-
-    @SuppressLint("NewApi")
-    private void setNotificationChannel(Notification mainNotification, NotificationCompat.Builder builder, boolean useSummaryNotification) {
-        if (useSummaryNotification) {
-            builder.setChannelId(OTHER_NOTIFICATIONS_CHANNEL);
-        } else {
-            builder.setChannelId(mainNotification.getChannelId());
-        }
     }
 
     private void resetNotificationSound(NotificationCompat.Builder notificationBuilder, long dialogId, long topicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
@@ -4879,12 +4874,30 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType, boolean notifyAboutLast) {
         FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
+        String mainChannelId = null;
         if (Build.VERSION.SDK_INT >= 26) {
-            notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
+            mainChannelId = validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType);
+            notificationBuilder.setChannelId(mainChannelId);
         }
         Notification mainNotification = notificationBuilder.build();
+        // Channel of the loudest child, used for the summary (see below)
+        String summaryChannelId = null;
+        int summaryChannelImportance = -1;
+        // Children not currently shown: after the loop they get the summary's channel, not the last message's
+        ArrayList<Integer> fallbackChannelHolders = new ArrayList<>();
+        // Channels of the notifications currently shown, so reposted children keep the channel they are in
+        SparseArray<String> activeChannels = new SparseArray<>();
+        if (Build.VERSION.SDK_INT >= 26) {
+            try {
+                for (StatusBarNotification active : systemNotificationManager.getActiveNotifications()) {
+                    activeChannels.put(active.getId(), active.getNotification().getChannelId());
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
         if (Build.VERSION.SDK_INT <= 19) {
             notificationManager.notify(notificationId, mainNotification);
             if (BuildVars.LOGS_ENABLED) {
@@ -5671,9 +5684,19 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.e(e);
             }
 
+            // Only the dialog of a newly notified message may alert; updates without a new message must not
+            final boolean isNewMessageDialog = notifyAboutLast && dialogId == lastDialogId && topicId == lastTopicId;
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
-                builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                if (Build.VERSION.SDK_INT >= 26) {
+                    // The child of the new message alerts, not the summary. ColorOS ignores GROUP_ALERT_SUMMARY
+                    // on reposted children, so they also need setOnlyAlertOnce
+                    builder.setGroupAlertBehavior(isNewMessageDialog ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_SUMMARY);
+                    builder.setOnlyAlertOnce(!isNewMessageDialog);
+                } else {
+                    // Before Android 8 sound is set only on the summary
+                    builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                }
             }
 
             TL_keyboard.KeyboardInlineButton copybutton = null;
@@ -5747,15 +5770,47 @@ public class NotificationsController extends BaseController implements Notificat
                 builder.addPerson("tel:+" + user.phone);
             }
 
+            String childChannelId = null;
             if (Build.VERSION.SDK_INT >= 26) {
-                setNotificationChannel(mainNotification, builder, useSummaryNotification);
+                // Children do not go to "Internal notifications" (importance 3): ColorOS shows no heads-up for a
+                // group summary or for low-importance children. The child of the new message uses the main channel
+                // (its own chat's channel). Other children stay in their current channel, otherwise one silent
+                // message would move all notifications to the importance 2 channel
+                childChannelId = mainChannelId;
+                if (useSummaryNotification && !isNewMessageDialog) {
+                    String activeChannelId = activeChannels.get(internalId);
+                    if (activeChannelId != null && !activeChannelId.equals(OTHER_NOTIFICATIONS_CHANNEL) && systemNotificationManager.getNotificationChannel(activeChannelId) != null) {
+                        childChannelId = activeChannelId;
+                    } else {
+                        fallbackChannelHolders.add(holders.size());
+                    }
+                }
+                builder.setChannelId(childChannelId);
+                NotificationChannel childChannel = childChannelId != null ? systemNotificationManager.getNotificationChannel(childChannelId) : null;
+                int childImportance = childChannel != null ? childChannel.getImportance() : 0;
+                if (childImportance > summaryChannelImportance) {
+                    summaryChannelImportance = childImportance;
+                    summaryChannelId = childChannelId;
+                }
             }
-            FileLog.d("showExtraNotifications: holders.add " + dialogId);
+            FileLog.d("showExtraNotifications: child dialogId=" + dialogId + " topicId=" + topicId
+                    + " channel=" + childChannelId
+                    + " alerts=" + isNewMessageDialog
+                    + " summary=" + useSummaryNotification);
             holders.add(new NotificationHolder(internalId, dialogId, dialogKey.story, topicId, name, user, chat, builder));
             wearNotificationsIds.put(dialogId, internalId);
         }
 
         if (useSummaryNotification) {
+            if (Build.VERSION.SDK_INT >= 26 && summaryChannelId != null && !summaryChannelId.equals(mainChannelId)) {
+                // Put the summary in the loudest child's channel: the channel of a silent last message (importance 2)
+                // would move the whole group, including loud chats, to ColorOS's silent section of the shade
+                notificationBuilder.setChannelId(summaryChannelId);
+                mainNotification = notificationBuilder.build();
+                for (int i = 0; i < fallbackChannelHolders.size(); i++) {
+                    holders.get(fallbackChannelHolders.get(i)).notification.setChannelId(summaryChannelId);
+                }
+            }
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("show summary with id " + notificationId);
             }
