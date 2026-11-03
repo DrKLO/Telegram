@@ -3087,6 +3087,11 @@ public class LocaleController {
     }
 
     public void saveRemoteLocaleStrings(LocaleInfo localeInfo, final TLRPC.TL_langPackDifference difference, int currentAccount, Runnable onDone) {
+        saveRemoteLocaleStrings(localeInfo, difference, currentAccount, false, onDone);
+    }
+
+    // requested is true for the answer to our own getDifference / getLangPack
+    private void saveRemoteLocaleStrings(LocaleInfo localeInfo, final TLRPC.TL_langPackDifference difference, int currentAccount, boolean requested, Runnable onDone) {
         if (difference == null || difference.strings.isEmpty() || localeInfo == null || localeInfo.isLocal()) {
             FileLog.d("saveRemoteLocaleStrings: empty difference=" + (difference == null || difference.strings.isEmpty()) + "; locale is local or null=" + (localeInfo == null || localeInfo.isLocal()));
             if (difference != null && localeInfo != null && !localeInfo.isLocal() && difference.from_version != 0) {
@@ -3156,9 +3161,10 @@ public class LocaleController {
                     return;
                 }
                 if (difference.from_version > localVersion) {
-                    // applying it would skip the changes in between, ask for the difference from our version
-                    FileLog.d("saveRemoteLocaleStrings: difference starts after ours, request the missing part");
-                    applyRemoteLanguage(localeInfo, langCode, false, currentAccount, onDone);
+                    // applying it would skip the changes in between: ask for the difference from our version,
+                    // or for the whole langpack if that was what we asked for, so this can't repeat
+                    FileLog.d("saveRemoteLocaleStrings: difference starts after ours, request the " + (requested ? "whole langpack" : "missing part"));
+                    applyRemoteLanguage(localeInfo, langCode, requested, currentAccount, onDone);
                     return;
                 }
                 values = finalFile.exists() ? getLocaleFileStrings(finalFile, true, true) : null;
@@ -3479,7 +3485,7 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
                         } else {
                             onPartlyDone.run();
                         }
@@ -3492,7 +3498,7 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
                         } else {
                             onPartlyDone.run();
                         }
@@ -3516,7 +3522,7 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
                         } else {
                             onPartlyDone.run();
                         }
@@ -3532,7 +3538,7 @@ public class LocaleController {
                     requestId = ConnectionsManager.getInstance(requestAccount).sendRequest(req, (TLObject response, TLRPC.TL_error error) -> AndroidUtilities.runOnUIThread(() -> {
                         finishLangpackRequest(key, request);
                         if (response != null) {
-                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, onPartlyDone);
+                            saveRemoteLocaleStrings(localeInfo, (TLRPC.TL_langPackDifference) response, currentAccount, true, onPartlyDone);
                         } else {
                             onPartlyDone.run();
                         }

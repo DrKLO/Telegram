@@ -19568,7 +19568,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 AndroidUtilities.runOnUIThread(() -> LocaleController.getInstance().saveRemoteLocaleStringsForCurrentLocale(update.difference, currentAccount));
             } else if (baseUpdate instanceof TL_update.TL_updateLangPackTooLong) {
                 TL_update.TL_updateLangPackTooLong update = (TL_update.TL_updateLangPackTooLong) baseUpdate;
-                LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false, null);
+                AndroidUtilities.runOnUIThread(() -> LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false, null));
             } else if (baseUpdate instanceof TL_update.TL_updateChannelAvailableMessages) {
                 TL_update.TL_updateChannelAvailableMessages update = (TL_update.TL_updateChannelAvailableMessages) baseUpdate;
                 if (clearHistoryMessages == null) {
