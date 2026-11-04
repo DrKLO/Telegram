@@ -148,8 +148,81 @@ final class EmojiPickOverlay extends View {
         return 1f + c3 * u * u * u + c1 * u * u;
     }
 
+    private int a11yCount = -1;
+
+    // what is in the row over the keyboard, without those on their way out
+    private ArrayList<Item> a11yItems() {
+        final ArrayList<Item> shown = new ArrayList<>();
+        if (islandShow < 0.5f) return shown;
+        for (int i = 0; i < items.size(); i++) {
+            if (!items.get(i).leaving && !Float.isNaN(items.get(i).x)) shown.add(items.get(i));
+        }
+        return shown;
+    }
+
+    private final androidx.customview.widget.ExploreByTouchHelper a11y = new androidx.customview.widget.ExploreByTouchHelper(this) {
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (!islandRect.contains(x, y)) return INVALID_ID;
+            final ArrayList<Item> shown = a11yItems();
+            for (int i = 0; i < shown.size(); i++) {
+                if (Math.abs(x - shown.get(i).x) < dp(CELL) / 2f) return i;
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> ids) {
+            final int count = a11yItems().size();
+            for (int i = 0; i < count; i++) ids.add(i);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @androidx.annotation.NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat node) {
+            final ArrayList<Item> shown = a11yItems();
+            final android.graphics.Rect bounds = new android.graphics.Rect(0, 0, 1, 1);
+            String name = "";
+            if (id < shown.size()) {
+                final Item item = shown.get(id);
+                bounds.set((int) (item.x - dp(CELL) / 2f), (int) islandRect.top, (int) (item.x + dp(CELL) / 2f), (int) islandRect.bottom);
+                final Drawable d = host.emojiFor(item.key);
+                final String fallback = org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.AccDescrCustomEmoji);
+                name = d instanceof org.telegram.ui.Components.AnimatedEmojiDrawable
+                    ? org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(((org.telegram.ui.Components.AnimatedEmojiDrawable) d).getDocument(), fallback)
+                    : fallback;
+            }
+            node.setContentDescription(name);
+            node.setBoundsInParent(bounds);
+            node.setClassName("android.widget.Button");
+            node.setClickable(true);
+            node.addAction(new androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, org.telegram.messenger.LocaleController.getString(org.telegram.messenger.R.string.Remove)));
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, android.os.Bundle arguments) {
+            if (action != android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK || id >= a11yItems().size()) return false;
+            host.removePickAt(id);
+            invalidate();
+            return true;
+        }
+    };
+
+    {
+        androidx.core.view.ViewCompat.setAccessibilityDelegate(this, a11y);
+    }
+
+    @Override
+    public boolean dispatchHoverEvent(android.view.MotionEvent event) {
+        return a11y.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
     @Override
     protected void onDraw(Canvas c) {
+        final int a11yNow = a11yItems().size();
+        if (a11yNow != a11yCount) {
+            a11yCount = a11yNow;
+            post(a11y::invalidateRoot);
+        }
         final List<String> picked = host.pickedKeys();
         final long now = nowMs();
         boolean animating = false;

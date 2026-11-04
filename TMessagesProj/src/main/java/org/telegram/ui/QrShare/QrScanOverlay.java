@@ -907,6 +907,73 @@ public final class QrScanOverlay extends FrameLayout {
         return true;
     }
 
+    private final androidx.customview.widget.ExploreByTouchHelper a11y = new androidx.customview.widget.ExploreByTouchHelper(this) {
+        private static final int ID_CLOSE = 1, ID_FLASH = 2, ID_GALLERY = 3;
+
+        private RectF rectOf(int id) {
+            return id == ID_CLOSE ? closeRect : id == ID_FLASH ? flashRect : galleryRect;
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (progress < 1f || closing) return INVALID_ID;
+            if (hit(closeRect, x, y)) return ID_CLOSE;
+            if (hit(flashRect, x, y)) return ID_FLASH;
+            if (onGallery != null && hit(galleryRect, x, y)) return ID_GALLERY;
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> ids) {
+            ids.add(ID_CLOSE);
+            ids.add(ID_FLASH);
+            if (onGallery != null) ids.add(ID_GALLERY);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat node) {
+            node.setContentDescription(LocaleController.getString(id == ID_CLOSE ? R.string.Close : id == ID_GALLERY ? R.string.ChatGallery : torch ? R.string.AccDescrCameraFlashOn : R.string.AccDescrCameraFlashOff));
+            final android.graphics.Rect bounds = new android.graphics.Rect();
+            rectOf(id).roundOut(bounds);
+            if (bounds.isEmpty()) bounds.set(0, 0, 1, 1);
+            node.setBoundsInParent(bounds);
+            node.setClassName("android.widget.Button");
+            node.setClickable(true);
+            node.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, android.os.Bundle arguments) {
+            if (action != android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK || progress < 1f || closing) return false;
+            if (id == ID_CLOSE) {
+                close();
+            } else if (id == ID_FLASH) {
+                toggleTorch();
+                invalidateVirtualView(id);
+            } else if (id == ID_GALLERY && onGallery != null) {
+                onGallery.run();
+            } else {
+                return false;
+            }
+            return true;
+        }
+    };
+
+    {
+        androidx.core.view.ViewCompat.setAccessibilityDelegate(this, a11y);
+    }
+
+    @Override
+    public boolean dispatchHoverEvent(MotionEvent event) {
+        return a11y.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        announceForAccessibility(LocaleController.getString(R.string.ScanQrCode));
+    }
+
     private static boolean hit(RectF rect, float x, float y) {
         return x >= rect.left - dp(8) && x <= rect.right + dp(8) && y >= rect.top - dp(8) && y <= rect.bottom + dp(8);
     }

@@ -492,6 +492,9 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
     /** The emoji grid; the screen draws under its cells and masks them (fades) through the two hooks. */
     public static class Grid extends RecyclerListView {
 
+        /** Whether the emoji of a cell's key is among those picked, for a screen reader. */
+        public @Nullable org.telegram.messenger.Utilities.CallbackReturn<String, Boolean> pickedCheck;
+
         public @Nullable Consumer<Canvas> beforeChildrenDraw;
         /** When set, the grid draws into its own layer and this masks it, e.g. DST_IN gradients. */
         public @Nullable Consumer<Canvas> afterChildrenDraw;
@@ -536,6 +539,15 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
             placeholder.setColor(PLACEHOLDER_COLOR);
         }
 
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            final Grid grid = getParent() instanceof Grid ? (Grid) getParent() : null;
+            if (grid != null && grid.pickedCheck != null && key != null) {
+                info.setSelected(Boolean.TRUE.equals(grid.pickedCheck.run(key)));
+            }
+        }
+
         /** The key the screen uses for a picked emoji: "c:" + document id. */
         @Nullable
         public String getKey() {
@@ -566,7 +578,7 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
             if (isAttachedToWindow()) {
                 drawable.addView(this);
             }
-            setContentDescription(document.id + "");
+            setContentDescription(org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(document, org.telegram.messenger.LocaleController.getString(R.string.AccDescrCustomEmoji)));
             invalidate();
         }
 
@@ -769,6 +781,9 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
                 return;
             }
             selected = index;
+            for (int i = 0; i < content.getChildCount(); i++) {
+                content.getChildAt(i).setSelected(i == index);
+            }
             if (!animated) {
                 circleX = Float.NaN;
             }

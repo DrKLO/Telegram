@@ -345,6 +345,8 @@ public class QrShareActivity extends BaseFragment {
             });
         });
         frame.addView(scanOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        // the scanner covers the screen, and what is under it is not to be walked through
+        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     }
 
     private void removeScanner(QrScanOverlay overlay) {
@@ -356,6 +358,7 @@ public class QrShareActivity extends BaseFragment {
         }
         if (view != null) {
             view.setScanHidden(false);
+            view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
         }
     }
 
@@ -728,6 +731,7 @@ public class QrShareActivity extends BaseFragment {
                     super.dispatchDraw(canvas);
                 }
             };
+            emojiView.getGrid().pickedCheck = key -> view != null && view.pickedKeys().contains(key);
             emojiView.setOutlineProvider(new android.view.ViewOutlineProvider() {
                 @Override
                 public void getOutline(View v, android.graphics.Outline outline) {
