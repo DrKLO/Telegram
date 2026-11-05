@@ -42,6 +42,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
@@ -182,6 +183,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
     private boolean birthday;
 
+    // the store opened to browse collectibles (from the QR screen): the Collectibles tab, its own text, gold glitter
+    private boolean browseCollectibles, browseTabApplied;
+    private StarParticlesView particlesView;
+    private @Nullable LinkSpanDrawable.LinksTextView subtitleStarsView2;
+
     public GiftSheet(Context context, int currentAccount, long userId, Utilities.Callback<Boolean> closeParentSheet) {
         this(context, currentAccount, userId, null, closeParentSheet);
     }
@@ -251,7 +257,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         topView.setClipChildren(false);
         topView.setClipToPadding(false);
 
-        final StarParticlesView particlesView = StarsIntroActivity.makeParticlesView(context, 70, 0);
+        particlesView = StarsIntroActivity.makeParticlesView(context, 70, 0);
         topView.addView(particlesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         avatarImageView.setRoundRadius(dp(42));
@@ -358,6 +364,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
             subtitleStarsView.setText(getString(R.string.Gift2StarsSelfInfo1));
             subtitleStarsView2.setText(getString(R.string.Gift2StarsSelfInfo2));
+            this.subtitleStarsView2 = subtitleStarsView2;
         } else if (dialogId < 0) {
             starsHeaderView.addView(subtitleLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 4));
             NotificationCenter.listenEmojiLoading(subtitleStarsView);
@@ -1000,6 +1007,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             }
             TAB_COLLECTIBLES = tabs.size();
             tabs.add(getString(R.string.Gift2TabCollectibles));
+            if (browseCollectibles && !browseTabApplied) {
+                browseTabApplied = true;
+                selectedTab = TAB_COLLECTIBLES;
+            }
 
             items.add(Tabs.Factory.asTabs(1, tabs, selectedTab, this::selectTab));
             setShowCollectiblesInfo(selectedTab == TAB_COLLECTIBLES && !self && dialogId >= 0);
@@ -1045,6 +1056,25 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
         } else if (userSettings != null && !userSettings.disallow_unique_stargifts && gifts.isEmpty()) {
             items.add(UItem.asSpace(dp(300)));
         }
+    }
+
+    /** Opens on the Collectibles tab with gold glitter and a single centred paragraph (the QR screen's "Browse Gifts"). */
+    public void setBrowseCollectibles() {
+        if (browseCollectibles) return;
+        browseCollectibles = true;
+        if (particlesView != null && particlesView.getParent() instanceof ViewGroup) {
+            final ViewGroup parent = (ViewGroup) particlesView.getParent();
+            final int index = parent.indexOfChild(particlesView);
+            parent.removeView(particlesView);
+            particlesView = StarsIntroActivity.makeParticlesView(getContext(), 250, 2);
+            parent.addView(particlesView, index, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        if (subtitleStarsView2 != null) {
+            subtitleStarsView.setText(getString(R.string.Gift2BrowseCollectiblesInfo));
+            if (Build.VERSION.SDK_INT >= 23) subtitleStarsView.setBreakStrategy(android.text.Layout.BREAK_STRATEGY_BALANCED);
+            subtitleStarsView2.setVisibility(View.GONE);
+        }
+        adapter.update(false);
     }
 
     private void selectTab(int tab) {
@@ -1277,6 +1307,46 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 }
                 info.setContentDescription(sb.toString());
             } catch (Exception ignored) {}
+        }
+
+        private boolean walletOnCard;
+        private float walletSilhouette = -1;
+
+        public void setWalletStickerState(float silhouette, boolean onCard) {
+            setWalletStickerState(silhouette, onCard, true);
+        }
+
+        public void setWalletStickerState(float silhouette, boolean onCard, boolean animated) {
+            if (walletSilhouette != silhouette) {
+                walletSilhouette = silhouette;
+                final TL_stars.TL_starGiftUnique gift = getUniqueStarGift();
+                final TL_stars.starGiftAttributeBackdrop backdrop = gift == null ? null
+                        : findAttribute(gift.attributes, TL_stars.starGiftAttributeBackdrop.class);
+                int color = backdrop == null ? 0xFF555555 : backdrop.pattern_color | 0xFF000000;
+                float k = 1 - silhouette;
+                imageView.setColorFilter(silhouette <= 0 ? null : new android.graphics.ColorMatrixColorFilter(new float[]{
+                        k, 0, 0, 0, Color.red(color) * silhouette,
+                        0, k, 0, 0, Color.green(color) * silhouette,
+                        0, 0, k, 0, Color.blue(color) * silhouette,
+                        0, 0, 0, 1 - silhouette * (1 - 110f / 255f), 0
+                }));
+                imageView.getImageReceiver().setAllowStartLottieAnimation(silhouette == 0);
+                if (silhouette > 0) {
+                    imageView.getImageReceiver().stopAnimation();
+                    org.telegram.ui.Components.RLottieDrawable animation = imageView.getImageReceiver().getLottieAnimation();
+                    if (animation != null) animation.setCurrentFrame(0, false);
+                }
+                imageView.invalidate();
+            }
+            if (walletOnCard != onCard) {
+                walletOnCard = onCard;
+                TL_stars.TL_starGiftUnique gift = getUniqueStarGift();
+                if (gift != null) {
+                    final CharSequence text = onCard ? getString(R.string.WalletGiftOnCard) : "#" + LocaleController.formatNumber(gift.num, ',');
+                    if (animated) ribbon.setTextAnimated(text, true);
+                    else ribbon.setText(text, true);
+                }
+            }
         }
 
         public void removeImage() {
@@ -1834,7 +1904,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
                 priceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 ColoredImageSpan[] spans = new ColoredImageSpan[1];
                 if (userGift.gift.resale_ton_only && DialogObject.getPeerDialogId(userGift.gift.owner_id) == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                    priceView.setText(StarsIntroActivity.replaceStars(true, "XTR " + StarsIntroActivity.formatStarsAmount(userGift.gift.getResellAmount(AmountUtils.Currency.TON).toTl(), 1, ','), .95f, spans));
+                    priceView.setText(StarsIntroActivity.whiteGram(true, StarsIntroActivity.replaceStars(true, "XTR " + StarsIntroActivity.formatStarsAmount(userGift.gift.getResellAmount(AmountUtils.Currency.TON).toTl(), 1, ','), .95f, spans)));
                 } else {
                     priceView.setText(StarsIntroActivity.replaceStars("XTR " + LocaleController.formatNumber(userGift.gift.getResellStars(), ','), .95f, spans));
                 }

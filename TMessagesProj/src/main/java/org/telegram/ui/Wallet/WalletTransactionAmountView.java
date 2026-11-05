@@ -52,7 +52,9 @@ class WalletTransactionAmountView extends FrameLayout {
     void setPendingProgress(float value) {
         progress = value;
         if (value > 0 && diamond == null) {
-            diamond = new WalletDiamondView(getContext(), 40);
+            // Settling removes this view during an animation frame. Texture GL
+            // cleanup is asynchronous, so it cannot join a surface thread here.
+            diamond = new WalletDiamondView(getContext(), 40, true);
             diamond.setContinuousRotation(300f);
             addView(diamond, LayoutHelper.createFrame(40, 40));
         }

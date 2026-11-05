@@ -52,7 +52,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.WindowVisibilityManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
@@ -90,7 +89,6 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
     public final Theme.ResourcesProvider resourcesProvider;
     public final int currentAccount = UserConfig.selectedAccount;
 
-    private WindowVisibilityManager.Controller activityVisibilityController;
     private Insets insets = Insets.NONE;
     private Bitmap blurBitmap;
     private BitmapShader blurBitmapShader;
@@ -156,14 +154,9 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
         AndroidUtilities.enableEdgeToEdge(getWindow());
 
-        activityVisibilityController = LaunchActivity.obtainActivityVisibilityController();
         windowView = new FrameLayout(context) {
             @Override
             protected void dispatchDraw(@NonNull Canvas canvas) {
-                if (activityVisibilityController != null) {
-                    activityVisibilityController.setHidden(openProgress == 1 && blurBitmapPaint != null);
-                }
-
                 if (openProgress > 0 && blurBitmapPaint != null) {
                     blurMatrix.reset();
                     final float s = (float) getWidth() / blurBitmap.getWidth();
@@ -1727,10 +1720,6 @@ public class MessageSendPreview extends Dialog implements NotificationCenter.Not
 
     private void afterDismiss() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.availableEffectsUpdate);
-        if (activityVisibilityController != null) {
-            activityVisibilityController.destroy();
-            activityVisibilityController = null;
-        }
     }
 
     private ValueAnimator openAnimator;

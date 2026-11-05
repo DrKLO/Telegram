@@ -1558,7 +1558,6 @@ public class GramWalletTonConnect {
                     LayoutHelper.createLinear(-2, -2, Gravity.CENTER_HORIZONTAL, 36, 6, 36, 12));
         }
         WalletCardComponent card = new WalletCardComponent(context, false, R.drawable.wallet_card_info, 24);
-        card.setEngravingBitmap(null);
         card.getCardHolderView().setMaxLines(2);
         card.getCardHolderView().setSingleLine(false);
         card.setCardHolder(formatAddressTwoLines(request.transaction.messages.get(0).address));

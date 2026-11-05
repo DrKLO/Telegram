@@ -1,6 +1,7 @@
 # Optional Vazirmatn validation
 
-Recorded on 2026-10-25. This summarizes completed checks; it does not claim
+Recorded on 2026-10-25; updated for upstream integration on 2026-10-26.
+This summarizes completed checks; it does not claim
 that every Android version, UI state or accessibility configuration was tested.
 See [persian-font.md](persian-font.md) for implementation and reproduction
 commands and [persian-font-performance.md](persian-font-performance.md) for
@@ -13,10 +14,10 @@ the comparative measurements.
 | Standalone script-range regressions | All 33 passed on the JDK. |
 | Java syntax | 206 application/instrumentation files parsed. |
 | Resource and asset checks | Two resource XML files, three TrueType headers and the SIL OFL notice passed. Bundled fonts total 368,444 bytes before compression. |
-| Android correctness | All 33 instrumentation cases passed on an API 36 emulator at font scales 1.0 and 1.5. |
+| Pre-merge Android correctness | All 33 instrumentation cases passed on an API 36 emulator at font scales 1.0 and 1.5. |
 | Processing comparison | Three before/after benchmark runs per phase; results and tradeoffs are documented separately. |
-| Latest Debug package | :TMessagesProj_App:assembleAfatDebug completed successfully; APK signature v1/v2 and all three font assets verified. Package: org.telegram.messenger.beta, version 13.0.3 (71839). |
-| Isolated Release package | afatRelease built with minification and resource shrinking; signature v1/v2 verified. Its temporary package/manifest configuration stayed outside tracked sources. |
+| Pre-merge Debug package | :TMessagesProj_App:assembleAfatDebug completed successfully; APK signature v1/v2 and all three font assets verified. Package: org.telegram.messenger.beta, version 13.0.3 (71839). |
+| Pre-merge isolated Release package | afatRelease built with minification and resource shrinking; signature v1/v2 verified. Its temporary package/manifest configuration stayed outside tracked sources. |
 | Contributor device feedback | Contributor reports broad UI coverage and satisfactory Debug scrolling on a physical device. This is manual feedback, not a frame-time benchmark. |
 
 The Android tests cover script boundaries, contextual punctuation, weight and
@@ -51,19 +52,27 @@ identify the tested application and instrumentation sources.
   chat performance. Fork builds need their own API and service configuration,
   as described by the repository's compilation guide.
 
-## Upstream compatibility
+## Upstream integration
 
-The feature remains based on 0aae959806c57be8ad457980f2a5c6277ff18635.
-Official DrKLO/Telegram:master, fetched on 2026-10-25, was
-3de37c8cfb039452be7398909461da6288babf15.
-A read-only three-way merge check reports conflicts in ShareAlert.java and
-values/strings.xml, plus deletion of the modified QrActivity.java.
-The replacement QR flow needs its font integration ported when updating the
-base. No upstream merge or history rewrite was performed during packaging.
+The feature originally used base 0aae959806c57be8ad457980f2a5c6277ff18635.
+Official DrKLO/Telegram:master was fetched at
+3de37c8cfb039452be7398909461da6288babf15 and integrated by a normal merge,
+preserving the feature history. The recorded tgcalls submodule revision is
+checked out locally for the new native build.
 
-The contributor approved publishing the current feature snapshot without
-additional tests. The newer upstream port remains a separate step before the
-branch can be merged into current official master. Maintainers also need to
-review the default-off setting, Arabic-script scope, 0.94 optical size factor,
-independent RTL corrections and localization through Telegram's translation
-platform.
+Conflict resolutions retain both sets of string resources and the upstream
+ShareAlert ripple/background behavior while keeping its font-aware copy-link
+controls. Upstream deletion of QrActivity.java is accepted; its replacement
+QrShare implementation receives font-aware label measurement/drawing, native
+emoji-pack headers, and setting-aware caption/scanner/description caches.
+Latin username icons and text metrics retain their existing rendering.
+
+The contributor approved a Debug build and limited QR checks for this port.
+Their results are recorded after completion; the earlier 33-test results and
+performance measurements above describe the pre-merge application. They are
+not a claim that all affected screens were revalidated after the upstream
+update. No physical-device installation or account login is part of this port.
+
+Maintainers still need to review the default-off setting, Arabic-script scope,
+0.94 optical size factor, independent RTL corrections and localization through
+Telegram's translation platform. Mergeability does not establish acceptance.

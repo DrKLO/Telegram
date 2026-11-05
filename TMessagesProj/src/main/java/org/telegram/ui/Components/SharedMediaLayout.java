@@ -2682,12 +2682,21 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (mediaPages != null) {
                         for (MediaPage mp : mediaPages) {
                             if (mp != null && mp.listView != null) {
+                                final int paddingTopOld = mp.listView.getPaddingTop();
                                 mp.listView.setPadding(
                                     mp.listView.getPaddingLeft(),
                                     getPagePaddingTop(mp.selectedType),
                                     mp.listView.getPaddingRight(),
                                     mp.listView.hintPaddingBottom = getPagePaddingBottom(isStoriesView())
                                 );
+                                // already laid out items keep their position on padding change, so shift them along with tabs
+                                final int scroll = paddingTopOld - mp.listView.getPaddingTop();
+                                if (scroll != 0) {
+                                    AndroidUtilities.doOnLayout(mp.listView, () -> mp.listView.scrollBy(0, scroll));
+                                }
+                            }
+                            if (mp != null && mp.progressView != null) {
+                                updateProgressViewLayout(mp);
                             }
                         }
                     }
@@ -7382,8 +7391,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     mediaPages[a].emptyView.setVisibility(View.INVISIBLE);
                 }
             }
-            final boolean photos = mediaPages[a].selectedType == TAB_PHOTOVIDEO || isAnyStoryPageType(mediaPages[a].selectedType);
-            mediaPages[a].progressView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, photos ? 0 : 12, 48 + (photos ? 8 : 12), photos ? 0 : 12, photos ? 0 : 12));
+            updateProgressViewLayout(mediaPages[a]);
             if (sections) {
                 mediaPages[a].listView.setSections(false);
             } else {
@@ -11923,11 +11931,29 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         return pagesPaddingBottom + (hasButtonPadding ? dp(44 + 8) : 0);
     }
 
+    private void updateProgressViewLayout(MediaPage page) {
+        final boolean photos = page.selectedType == TAB_PHOTOVIDEO || isAnyStoryPageType(page.selectedType);
+        final FrameLayout.LayoutParams lp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, photos ? 0 : 12, 48 + (photos ? 8 : 12), photos ? 0 : 12, photos ? 0 : 12);
+        lp.topMargin += getStoriesTabsPadding(page.selectedType);
+        final ViewGroup.LayoutParams oldLp = page.progressView.getLayoutParams();
+        if (oldLp instanceof FrameLayout.LayoutParams) {
+            final FrameLayout.LayoutParams o = (FrameLayout.LayoutParams) oldLp;
+            if (o.leftMargin == lp.leftMargin && o.topMargin == lp.topMargin && o.rightMargin == lp.rightMargin && o.bottomMargin == lp.bottomMargin && o.gravity == lp.gravity) {
+                return;
+            }
+        }
+        page.progressView.setLayoutParams(lp);
+    }
+
+    private int getStoriesTabsPadding(int type) {
+        return (int) (storiesContainer != null && (isStoryAlbumPageType(type) || type == TAB_STORIES) ? storiesContainer.getVisibilityFactor() * dp(40) : 0);
+    }
+
     private int getPagePaddingTop(int type) {
         return (
             dp(48 + 6) +
             topLayoutPadding +
-            (int) (storiesContainer != null && (isStoryAlbumPageType(type) || type == TAB_STORIES) ? storiesContainer.getVisibilityFactor() * dp(40) : 0) +
+            getStoriesTabsPadding(type) +
             (type == TAB_ARCHIVED_STORIES ? dp(64) : 0)
         );
     }

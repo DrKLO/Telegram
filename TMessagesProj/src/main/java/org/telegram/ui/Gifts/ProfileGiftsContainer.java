@@ -312,11 +312,16 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
                     }
                     final int fromPosition = viewHolder.getAdapterPosition();
                     final int toPosition = target.getAdapterPosition();
+                    final int fromIndex = list.gifts.indexOf(getSavedGift(viewHolder));
+                    final int toIndex = list.gifts.indexOf(getSavedGift(target));
+                    if (fromIndex < 0 || toIndex < 0) {
+                        return false;
+                    }
                     if (isCollection) {
-                        list.reorder(fromPosition, toPosition);
+                        list.reorder(fromIndex, toIndex);
                         parent.collections.updateIcon(list.collectionId);
                     } else {
-                        list.reorderPinned(fromPosition, toPosition);
+                        list.reorderPinned(fromIndex, toIndex);
                     }
                     listView.adapter.notifyItemMoved(fromPosition, toPosition);
                     listView.adapter.updateWithoutNotify();
@@ -1572,6 +1577,15 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
         }
     }
 
+    // Distance from the bottom of root to the top of the visible gifts button, for bulletins
+    public int getButtonBulletinOffset(View root) {
+        if (root == null || buttonContainer == null || buttonContainer.getVisibility() != View.VISIBLE || buttonContainer.getAlpha() <= 0) return 0;
+        final int[] rootLocation = new int[2], buttonLocation = new int[2];
+        root.getLocationInWindow(rootLocation);
+        buttonContainer.getLocationInWindow(buttonLocation);
+        return Math.max(0, (int) ((rootLocation[1] + root.getHeight() - buttonLocation[1]) * buttonContainer.getAlpha()));
+    }
+
     public int getBottomOffset() {
         float ty = buttonContainer.getTranslationY();
         ty -= -buttonContainer.getTop() + Math.max(dp(240), visibleHeight) - dp(buttonContainerHeightDp) - 1;
@@ -1748,7 +1762,7 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
             final TL_stars.SavedStarGift gift = list.gifts.get(i);
             final TLRPC.Document doc = gift.gift.getDocument();
             if (doc == null) continue;
-            giftsIds.add(doc.id);
+            if (!giftsIds.add(doc.id)) continue; // same dedup as getLastEmojis(), so the hash follows what's shown
             hash = Objects.hash(hash, doc.id);
             giftsCount++;
         }

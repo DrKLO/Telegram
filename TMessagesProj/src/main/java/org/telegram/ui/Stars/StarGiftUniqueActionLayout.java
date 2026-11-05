@@ -99,6 +99,8 @@ public class StarGiftUniqueActionLayout {
     private final ButtonBounce buttonBounce;
 
     private final ButtonBounce bounce;
+    private final ButtonBounce messageBounce;
+    private final RectF messageRect = new RectF();
 
     private boolean burned;
     private boolean widthExpanded;
@@ -124,6 +126,7 @@ public class StarGiftUniqueActionLayout {
         ribbon = new GiftSheet.RibbonDrawable(view, 1.0f);
         buttonBounce = new ButtonBounce(view);
         bounce = new ButtonBounce(view);
+        messageBounce = new ButtonBounce(view);
         imageReceiver = new ImageReceiver(view);
         emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(view, dp(28));
         messageDrawable.setParentView(view);
@@ -541,7 +544,12 @@ public class StarGiftUniqueActionLayout {
             final int msgH = messageDrawable.getMinimumHeight();
             final int msgLeft = (int) (cx - msgW / 2.0f);
             messageDrawable.setBounds(msgLeft, (int) messageY, msgLeft + msgW, (int) messageY + msgH);
+            messageRect.set(msgLeft, messageY, msgLeft + msgW, messageY + msgH);
+            final float ms = messageBounce.getScale(0.04f);
+            canvas.save();
+            canvas.scale(ms, ms, messageRect.centerX(), messageRect.centerY());
             messageDrawable.draw(canvas);
+            canvas.restore();
         } else {
             final float tableWidth = nameWidth + dp(9) + valueWidth;
             for (Row row : table) {
@@ -619,16 +627,24 @@ public class StarGiftUniqueActionLayout {
 
     public boolean onTouchEvent(float ox, float oy, MotionEvent e) {
         final boolean buttonHit = buttonRect.contains(e.getX() - ox, e.getY() - oy);
+        final boolean messageHit = onMessageClick != null && hasGiftMessage && !buttonHit && messageRect.contains(e.getX() - ox, e.getY() - oy);
         final boolean hit = backgroundRect.contains(e.getX() - ox, e.getY() - oy);
         if (e.getAction() == MotionEvent.ACTION_DOWN) {
-            bounce.setPressed(hit && !buttonHit);
+            bounce.setPressed(hit && !buttonHit && !messageHit);
             buttonBounce.setPressed(buttonHit);
+            messageBounce.setPressed(messageHit);
         } else if (e.getAction() == MotionEvent.ACTION_MOVE) {
             if (buttonBounce.isPressed() && !buttonHit) {
                 buttonBounce.setPressed(false);
+            } else if (messageBounce.isPressed() && !messageHit) {
+                messageBounce.setPressed(false);
             } else if (bounce.isPressed() && !hit) {
                 bounce.setPressed(false);
             }
+        } else if (e.getAction() == MotionEvent.ACTION_UP && messageBounce.isPressed()) {
+            messageBounce.setPressed(false);
+            onMessageClick.run();
+            return true;
         } else if (e.getAction() == MotionEvent.ACTION_UP && (buttonBounce.isPressed() || bounce.isPressed())) {
             if (onButtonClick != null) {
                 if (buttonBounce.isPressed()) {
@@ -649,12 +665,19 @@ public class StarGiftUniqueActionLayout {
             buttonBounce.setPressed(false);
             bounce.setPressed(false);
             return true;
-        } else if (e.getAction() == MotionEvent.ACTION_CANCEL && (buttonBounce.isPressed() || bounce.isPressed())) {
+        } else if (e.getAction() == MotionEvent.ACTION_CANCEL && (buttonBounce.isPressed() || bounce.isPressed() || messageBounce.isPressed())) {
             buttonBounce.setPressed(false);
             bounce.setPressed(false);
+            messageBounce.setPressed(false);
             return true;
         }
-        return buttonBounce.isPressed() || bounce.isPressed();
+        return buttonBounce.isPressed() || bounce.isPressed() || messageBounce.isPressed();
+    }
+
+    private Runnable onMessageClick;
+
+    public void setOnMessageClickListener(Runnable onMessageClick) {
+        this.onMessageClick = onMessageClick;
     }
 
     private Runnable onButtonClick;

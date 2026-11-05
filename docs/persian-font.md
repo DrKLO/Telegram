@@ -109,10 +109,18 @@ voice, music, video and GIF types, cached reuse, measured widths and font toggle
 at unchanged byte counts.
 
 Debug and isolated Release APKs were built and signature-verified after the
-font-processing optimization. The contributor also reports satisfactory Debug
-scrolling and broad UI coverage on a physical device. See
+font-processing optimization, before updating the upstream base. The contributor
+also reports satisfactory Debug scrolling and broad UI coverage on that version
+on a physical device. See
 [persian-font-validation.md](persian-font-validation.md) for recorded results
 and the limits of Release login and upstream compatibility validation.
+
+The updated QR sharing screen uses per-paint bounded Canvas label caches for
+its buttons, fee labels, menus, empty states and toasts. Caption widths are
+measured with the same styled text used for layout, retaining the username
+icon. Caption, scanner-title and empty-description layouts invalidate when
+the font setting changes. Native emoji-pack headers use PersianTextView and
+reserve the styled width of their unlock button.
 
 
 The standalone range detector suite needs only a JDK and does not build or run

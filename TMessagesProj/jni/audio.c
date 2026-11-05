@@ -222,7 +222,8 @@ static int writeOggPage(ogg_page *page, FILE *os) {
     return written;
 }
 
-const opus_int32 bitrate = OPUS_BITRATE_MAX;
+const opus_int32 bitrate = 30 * 1024;
+static const int opus_application = OPUS_APPLICATION_AUDIO;
 const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;
@@ -343,7 +344,7 @@ int initRecorder(const char *path, opus_int32 sampleRate) {
     header.nb_streams = 1;
     
     int result = OPUS_OK;
-    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_VOIP, &result);
+    _encoder = opus_encoder_create(coding_rate, 1, opus_application, &result);
     if (result != OPUS_OK) {
         LOGE("Error cannot create encoder: %s", opus_strerror(result));
         return 0;
@@ -1315,7 +1316,7 @@ static AudioRecorderContext *createAudioRecorderContext(const char *path, opus_i
     recorder->encoder = opus_encoder_create(
             recorder->coding_rate,
             1,
-            OPUS_APPLICATION_VOIP,
+            opus_application,
             &result
     );
     if (result != OPUS_OK) {
@@ -1437,10 +1438,13 @@ static AudioRecorderContext *createAudioRecorderContext(const char *path, opus_i
     return recorder;
 }
 
-static int writeAudioRecorderContextFrame(
+// countedSamples is how many of the encoded samples belong to the stream duration; padding
+// frames that only flush the encoder lookahead count zero.
+static int writeAudioRecorderContextPacket(
         AudioRecorderContext *recorder,
         uint8_t *framePcmBytes,
         uint32_t frameByteCount,
+        opus_int32 countedSamples,
         int end
 ) {
     if (!recorder || !recorder->encoder || !recorder->file) {
@@ -1450,7 +1454,7 @@ static int writeAudioRecorderContextFrame(
     recorder->packet_id++;
 
     opus_int32 nb_samples = frameByteCount / 2;
-    recorder->total_samples += nb_samples;
+    recorder->total_samples += countedSamples;
     recorder->ogg_packet.e_o_s = end;
 
     int nbBytes = 0;
@@ -1549,6 +1553,63 @@ static int writeAudioRecorderContextFrame(
     return 1;
 }
 
+static int writeAudioRecorderContextFrame(
+        AudioRecorderContext *recorder,
+        uint8_t *framePcmBytes,
+        uint32_t frameByteCount,
+        int end
+) {
+    return writeAudioRecorderContextPacket(
+            recorder,
+            framePcmBytes,
+            frameByteCount,
+            (opus_int32) (frameByteCount / 2),
+            end
+    );
+}
+
+// Writes the buffered tail and enough silent frames to push the encoder lookahead out, then
+// marks the last packet as end of stream. Its granule position trims the padding, so the
+// stream ends exactly after the last captured sample.
+static int finishAudioRecorderStream(AudioRecorderContext *recorder) {
+    if (!recorder) {
+        return 0;
+    }
+    if (recorder->pending_samples > 0) {
+        int pendingSamples = recorder->pending_samples;
+        recorder->pending_samples = 0;
+        if (!writeAudioRecorderContextFrame(
+                recorder,
+                (uint8_t *) recorder->pending_frame,
+                pendingSamples * sizeof(int16_t),
+                0
+        )) {
+            return 0;
+        }
+    }
+    ogg_int64_t endGranulePosition =
+            (recorder->total_samples * 48000 + recorder->rate - 1) / recorder->rate
+            + recorder->header.preskip;
+    int16_t silence[960];
+    memset(silence, 0, sizeof(silence));
+    while (1) {
+        int end = recorder->encoded_granule_position
+                + frame_size * 48000 / recorder->coding_rate >= endGranulePosition;
+        if (!writeAudioRecorderContextPacket(
+                recorder,
+                (uint8_t *) silence,
+                sizeof(silence),
+                0,
+                end
+        )) {
+            return 0;
+        }
+        if (end) {
+            return 1;
+        }
+    }
+}
+
 static jlong flushAudioRecorderContext(AudioRecorderContext *recorder) {
     if (!recorder || !recorder->file || fflush(recorder->file) != 0) {
         return -1;
@@ -1631,14 +1692,16 @@ static int cropAudioRecorderOpusAudio(const char *inputPath, const char *outputP
         }
         remaining_samples -= samples_read;
 
-        int end = remaining_samples <= 0;
-
         size_t byte_count = samples_read * sizeof(int16_t);
-        if (!writeAudioRecorderContextFrame(recorder, (uint8_t *)buffer, byte_count, end)) {
+        if (!writeAudioRecorderContextFrame(recorder, (uint8_t *)buffer, byte_count, 0)) {
             LOGE("Failed to write frame");
             success = 0;
             break;
         }
+    }
+    if (success && !finishAudioRecorderStream(recorder)) {
+        LOGE("Failed to finish cropped stream");
+        success = 0;
     }
 
     free(buffer);
@@ -1648,9 +1711,13 @@ static int cropAudioRecorderOpusAudio(const char *inputPath, const char *outputP
     return success;
 }
 
+// Re-encodes [startMs, endMs) of the prefix file into the recorder; a negative endMs keeps the
+// rest of the file.
 static int appendRecorderPrefix(
         AudioRecorderContext *recorder,
-        const char *prefixPath
+        const char *prefixPath,
+        opus_int64 startMs,
+        opus_int64 endMs
 ) {
     if (!recorder || !prefixPath) {
         return 0;
@@ -1673,6 +1740,26 @@ static int appendRecorderPrefix(
         return 0;
     }
 
+    opus_int64 remainingSamples = INT64_MAX;
+    if (startMs > 0 || endMs >= 0) {
+        opus_int64 totalSamples = op_pcm_total(prefixFile, -1);
+        if (totalSamples < 0) {
+            LOGE("Failed to get Opus prefix length: %lld", (long long) totalSamples);
+            op_free(prefixFile);
+            return 0;
+        }
+        opus_int64 startSample = MAX(0, MIN(totalSamples, startMs * 48000 / 1000));
+        opus_int64 endSample = endMs < 0
+                ? totalSamples
+                : MAX(startSample, MIN(totalSamples, endMs * 48000 / 1000));
+        if (startSample > 0 && op_pcm_seek(prefixFile, startSample) != 0) {
+            LOGE("Failed to seek Opus prefix to %lld", (long long) startSample);
+            op_free(prefixFile);
+            return 0;
+        }
+        remainingSamples = endSample - startSample;
+    }
+
     int16_t *buffer = malloc(sizeof(int16_t) * frame_size);
     if (!buffer) {
         LOGE("Out of memory while rebuilding Opus prefix");
@@ -1682,11 +1769,11 @@ static int appendRecorderPrefix(
 
     int success = 1;
     int bufferedSamples = 0;
-    while (1) {
+    while (remainingSamples > 0) {
         int samplesRead = op_read(
                 prefixFile,
                 buffer + bufferedSamples,
-                frame_size - bufferedSamples,
+                (int) MIN(frame_size - bufferedSamples, remainingSamples),
                 NULL
         );
         if (samplesRead < 0) {
@@ -1697,6 +1784,7 @@ static int appendRecorderPrefix(
         if (samplesRead == 0) {
             break;
         }
+        remainingSamples -= samplesRead;
         bufferedSamples += samplesRead;
         if (bufferedSamples == frame_size) {
             if (!writeAudioRecorderContextFrame(
@@ -1728,8 +1816,7 @@ static int appendRecorderPrefix(
 static int writeAudioRecorderFrame(
         AudioRecorderContext *recorder,
         uint8_t *pcmBytes,
-        uint32_t byteCount,
-        int end
+        uint32_t byteCount
 ) {
     if (!recorder || (byteCount > 0 && !pcmBytes)) {
         return 0;
@@ -1742,12 +1829,11 @@ static int writeAudioRecorderFrame(
     while (sampleOffset < sampleCount) {
         if (recorder->pending_samples == 0
                 && sampleCount - sampleOffset >= frame_size) {
-            int frameEnd = end && sampleOffset + frame_size == sampleCount;
             if (!writeAudioRecorderContextFrame(
                     recorder,
                     (uint8_t *) (samples + sampleOffset),
                     frame_size * sizeof(int16_t),
-                    frameEnd
+                    0
             )) {
                 return 0;
             }
@@ -1768,28 +1854,16 @@ static int writeAudioRecorderFrame(
         sampleOffset += copySamples;
 
         if (recorder->pending_samples == frame_size) {
-            int frameEnd = end && sampleOffset == sampleCount;
             if (!writeAudioRecorderContextFrame(
                     recorder,
                     (uint8_t *) recorder->pending_frame,
                     frame_size * sizeof(int16_t),
-                    frameEnd
+                    0
             )) {
                 return 0;
             }
             recorder->pending_samples = 0;
         }
-    }
-
-    if (end && recorder->pending_samples > 0) {
-        int result = writeAudioRecorderContextFrame(
-                recorder,
-                (uint8_t *) recorder->pending_frame,
-                recorder->pending_samples * sizeof(int16_t),
-                1
-        );
-        recorder->pending_samples = 0;
-        return result;
     }
     return 1;
 }
@@ -1799,7 +1873,9 @@ JNIEXPORT jlong Java_org_telegram_utils_recorder_audio_AudioRecorderNative_nCrea
         jclass clazz,
         jstring path,
         jint sampleRate,
-        jstring prefixPath
+        jstring prefixPath,
+        jlong prefixStartMs,
+        jlong prefixEndMs
 ) {
     const char *pathString = (*env)->GetStringUTFChars(env, path, 0);
     if (!pathString) {
@@ -1818,7 +1894,12 @@ JNIEXPORT jlong Java_org_telegram_utils_recorder_audio_AudioRecorderNative_nCrea
             destroyAudioRecorderContext(recorder);
             return 0;
         }
-        int prefixResult = appendRecorderPrefix(recorder, prefixPathString);
+        int prefixResult = appendRecorderPrefix(
+                recorder,
+                prefixPathString,
+                prefixStartMs,
+                prefixEndMs
+        );
         (*env)->ReleaseStringUTFChars(env, prefixPath, prefixPathString);
         if (!prefixResult) {
             destroyAudioRecorderContext(recorder);
@@ -1842,12 +1923,8 @@ JNIEXPORT jint Java_org_telegram_utils_recorder_audio_AudioRecorderNative_nWrite
     if (!recorder || !frameBytes || length < 0 || capacity < length) {
         return 0;
     }
-    return writeAudioRecorderFrame(
-            recorder,
-            (uint8_t *) frameBytes,
-            (uint32_t) length,
-            length / 2 < frame_size
-    );
+    // A short frame is just the tail of the capture; the stream ends only in nFinish.
+    return writeAudioRecorderFrame(recorder, (uint8_t *) frameBytes, (uint32_t) length);
 }
 
 JNIEXPORT jlong Java_org_telegram_utils_recorder_audio_AudioRecorderNative_nFlush(
@@ -1869,10 +1946,7 @@ JNIEXPORT jboolean Java_org_telegram_utils_recorder_audio_AudioRecorderNative_nF
         return JNI_FALSE;
     }
 
-    int result = 1;
-    if (recorder->pending_samples > 0) {
-        result = writeAudioRecorderFrame(recorder, NULL, 0, 1);
-    }
+    int result = finishAudioRecorderStream(recorder);
     if (result && flushAudioRecorderContext(recorder) < 0) {
         result = 0;
     }
