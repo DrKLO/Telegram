@@ -1018,6 +1018,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private boolean voiceMessagesPlaylistUnread;
     private ArrayList<MessageObject> voiceMessagesPlaylist;
     private SparseArray<MessageObject> voiceMessagesPlaylistMap;
+    private boolean isPlaybackReadOnly;
 
     private static Runnable refreshGalleryRunnable;
     public static AlbumEntry allMediaAlbumEntry;
@@ -2582,15 +2583,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         if (voiceMessagesPlaylist.isEmpty()) {
                             voiceMessagesPlaylist = null;
                             voiceMessagesPlaylistMap = null;
+                            isPlaybackReadOnly = false;
                         }
                     } else {
                         voiceMessagesPlaylist = null;
                         voiceMessagesPlaylistMap = null;
+                        isPlaybackReadOnly = false;
                     }
                 }
                 if (voiceMessagesPlaylist != null && index < voiceMessagesPlaylist.size()) {
                     MessageObject nextVoiceMessage = voiceMessagesPlaylist.get(index);
-                    playMessage(nextVoiceMessage);
+                    playMessage(nextVoiceMessage, false, isPlaybackReadOnly);
                     playingNext = true;
                     if (!nextVoiceMessage.isRoundVideo() && pipRoundVideoView != null) {
                         pipRoundVideoView.close(true);
@@ -3639,14 +3642,19 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public boolean playMessage(final MessageObject messageObject) {
-        return playMessage(messageObject, false);
+        return playMessage(messageObject, false, false);
     }
 
     public boolean playMessage(final MessageObject messageObject, boolean silent) {
+        return playMessage(messageObject, silent, false);
+    }
+
+    public boolean playMessage(final MessageObject messageObject, boolean silent, boolean readOnly) {
         if (messageObject == null) {
             return false;
         }
         isSilent = silent;
+        isPlaybackReadOnly = readOnly;
         checkVolumeBarUI();
         if ((audioPlayer != null || videoPlayer != null) && isSamePlayingMessage(messageObject)) {
             if (isPaused) {
@@ -3657,7 +3665,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
             return true;
         }
-        if (!messageObject.isOut() && (messageObject.isContentUnread())) {
+        if (!readOnly && !isPlaybackReadOnly && !messageObject.isOut() && (messageObject.isContentUnread())) {
             MessagesController.getInstance(messageObject.currentAccount).markMessageContentAsRead(messageObject);
         }
         boolean saved = false;

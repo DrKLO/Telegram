@@ -11630,4 +11630,8 @@
     <string name="NoPaidMessagesTokenUsed">un1 used your QR code and can message you for free</string>
     <string name="NoPaidMessagesTokenUsedOut">You used the QR code of un1 and can message them for free</string>
     <string name="NoPaidMessagesTokenImported">You can now message **%1$s** for free.</string>
+    <string name="OpenInReadOnlyMode">Open in Read-Only</string>
+    <string name="ReadOnlyMode">Read-Only Mode</string>
+    <string name="ReadOnlyModeSubtitle">Messages will not be marked as read</string>
+    <string name="OpenNormalChat">Open Normal Chat</string>
 </resources>
