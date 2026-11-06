@@ -590,6 +590,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Nullable
     private ActionBarMenuSubItem readItem;
     @Nullable
+    private ActionBarMenuSubItem readOnlyActionModeItem;
+    @Nullable
     private ActionBarMenuSubItem blockItem;
 
     private float additionalFloatingTranslation;
@@ -712,6 +714,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final static int add_to_folder = 109;
     private final static int remove_from_folder = 110;
     private final static int community_ungroup = 111;
+    private final static int open_read_only = 112;
 
     private final static int ARCHIVE_ITEM_STATE_PINNED = 0;
     private final static int ARCHIVE_ITEM_STATE_SHOWED = 1;
@@ -4008,6 +4011,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         undoView.showWithAction(did, UndoView.ACTION_REMOVED_FROM_FOLDER, neverShow.size(), filter, null, null);
                     }
                     hideActionMode(false);
+                } else if (id == open_read_only) {
+                    if (selectedDialogs.size() == 1) {
+                        long did = selectedDialogs.get(0);
+                        Bundle args = new Bundle();
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            args.putInt("enc_id", (int) (did >> 32));
+                        } else if (DialogObject.isUserDialog(did)) {
+                            args.putLong("user_id", did);
+                        } else {
+                            args.putLong("chat_id", -did);
+                        }
+                        args.putBoolean("read_only", true);
+                        if (getMessagesController().checkCanOpenChat(args, DialogsActivity.this)) {
+                            hideActionMode(false);
+                            presentFragment(new ChatActivity(args));
+                        }
+                    }
                 } else if (id == pin || id == read || id == delete || id == clear || id == mute || id == archive || id == block || id == archive2 || id == pin2) {
                     performSelectedDialogsAction(selectedDialogs, id, true, false);
                 }
@@ -6748,6 +6768,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         addToFolderItem = otherItem.addSubItem(add_to_folder, R.drawable.msg_addfolder, LocaleController.getString(R.string.FilterAddTo));
         removeFromFolderItem = otherItem.addSubItem(remove_from_folder, R.drawable.msg_removefolder, LocaleController.getString(R.string.FilterRemoveFrom));
         readItem = otherItem.addSubItem(read, R.drawable.msg_markread, LocaleController.getString(R.string.MarkAsRead));
+        readOnlyActionModeItem = otherItem.addSubItem(open_read_only, R.drawable.msg_open_book, LocaleController.getString(R.string.OpenInReadOnlyMode));
         clearItem = otherItem.addSubItem(clear, R.drawable.msg_clear, LocaleController.getString(R.string.ClearHistory));
         blockItem = otherItem.addSubItem(block, R.drawable.msg_block, LocaleController.getString(R.string.BlockUser));
 
@@ -8648,6 +8669,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 finishPreviewFragment();
             });
             previewMenu[0].addView(markAsUnreadItem);
+
+            ActionBarMenuSubItem readOnlyItem = new ActionBarMenuSubItem(getParentActivity(), false, false);
+            readOnlyItem.setTextAndIcon(LocaleController.getString(R.string.OpenInReadOnlyMode), R.drawable.msg_open_book);
+            readOnlyItem.setMinimumWidth(160);
+            final Bundle readOnlyArgs = new Bundle(args);
+            readOnlyItem.setOnClickListener(e -> {
+                finishPreviewFragment();
+                readOnlyArgs.putBoolean("read_only", true);
+                AndroidUtilities.runOnUIThread(() -> {
+                    presentFragment(new ChatActivity(readOnlyArgs));
+                }, 200);
+            });
+            previewMenu[0].addView(readOnlyItem);
         }
 
         final boolean[] hasPinAction = new boolean[1];
@@ -9969,6 +10003,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     readItem.setVisibility(View.GONE);
                 }
+            }
+        }
+        if (readOnlyActionModeItem != null) {
+            if (count == 1 && communitiesCount == 0 && forumCount == 0) {
+                readOnlyActionModeItem.setVisibility(View.VISIBLE);
+            } else {
+                readOnlyActionModeItem.setVisibility(View.GONE);
             }
         }
         if (pinItem != null && pin2Item != null) {

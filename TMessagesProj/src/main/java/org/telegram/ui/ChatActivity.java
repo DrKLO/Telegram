@@ -699,6 +699,8 @@ public class ChatActivity extends BaseFragment implements
 
     public String quickReplyShortcut;
     private int chatMode;
+    private boolean readOnly;
+    private View readOnlyBottomBar;
     private int scheduledMessagesCount = -1;
     public boolean isSubscriberSuggestions;
 
@@ -2722,6 +2724,7 @@ public class ChatActivity extends BaseFragment implements
         dialogFolderId = arguments.getInt("dialog_folder_id", 0);
         dialogFilterId = arguments.getInt("dialog_filter_id", 0);
         chatMode = arguments.getInt("chatMode", 0);
+        readOnly = arguments != null && arguments.getBoolean("read_only", false);
         quickReplyShortcut = arguments.getString("quick_reply", null);
         welcomeMessagesChatId = arguments.getLong("welcome_messages_chat_id", 0);
         voiceChatHash = arguments.getString("voicechat", null);
@@ -4312,8 +4315,8 @@ public class ChatActivity extends BaseFragment implements
                 audioCallIconItem.setContentDescription(LocaleController.getString(R.string.Call));
                 userFull = getMessagesController().getUserFull(currentUser.id);
                 if (userFull != null && userFull.phone_calls_available) {
-                    showAudioCallAsIcon = !inPreviewMode;
-                    audioCallIconItem.setVisibility(View.VISIBLE);
+                    showAudioCallAsIcon = !inPreviewMode && !readOnly;
+                    audioCallIconItem.setVisibility(showAudioCallAsIcon ? View.VISIBLE : View.GONE);
                 } else {
                     showAudioCallAsIcon = false;
                     audioCallIconItem.setVisibility(View.GONE);
@@ -8116,6 +8119,9 @@ public class ChatActivity extends BaseFragment implements
         if (inPreviewMode || isInsideContainer) {
             chatActivityEnterView.setVisibility(View.INVISIBLE);
         }
+        if (readOnly) {
+            chatActivityEnterView.setVisibility(View.GONE);
+        }
         if (!ChatObject.isChannel(currentChat) || currentChat.megagroup) {
             chatActivityEnterView.setBotInfo(botInfo, false);
         }
@@ -8125,6 +8131,7 @@ public class ChatActivity extends BaseFragment implements
         checkSendButtonBlockedByTyping(false);
 
         chatInputBubbleContainer.addView(chatActivityEnterView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0));
+        createReadOnlyBottomBar(context);
 
         int chatListIndex = contentView.indexOfChild(chatListView);
         chatListIndex = chatListIndex < 0 ? contentView.getChildCount() : (chatListIndex + 1);
@@ -10976,8 +10983,9 @@ public class ChatActivity extends BaseFragment implements
 
     private void updatePagedownButtonsPosition() {
         if (sideControlsButtonsLayout != null) {
+            float bottomOffset = (readOnly && readOnlyBottomBar != null && readOnlyBottomBar.getVisibility() == View.VISIBLE && bottomViewsVisibilityController.getVisibility(MESSAGE_ACTION_CONTAINER) == 0) ? (readOnlyBottomBar.getMeasuredHeight() > 0 ? readOnlyBottomBar.getMeasuredHeight() : dp(52)) : chatInputViewsContainer.getInputBubbleHeight();
             float baseTranslationY2 = -windowInsetsStateHolder.getAnimatedMaxBottomInset()
-                - chatInputViewsContainer.getInputBubbleHeight()
+                - bottomOffset
                 - getTopicTabsSideSize(TopicsTabsView.Position.BOTTOM)
                 - dp(ChatInputViewsContainer.INPUT_BUBBLE_BOTTOM + 4);
             sideControlsButtonsLayout.setTranslationY(baseTranslationY2);
@@ -13028,6 +13036,9 @@ public class ChatActivity extends BaseFragment implements
     }
 
     public boolean playFirstUnreadVoiceMessage() {
+        if (readOnly) {
+            return false;
+        }
         if (chatActivityEnterView != null && chatActivityEnterView.isRecordingAudioVideo()) {
             return true;
         }
@@ -16737,7 +16748,7 @@ public class ChatActivity extends BaseFragment implements
         }
         updateFloatingTopicView();
         invalidateChatListViewTopPadding();
-        if (!firstLoading && !paused && !inPreviewMode && (chatMode == 0 || chatMode == MODE_SUGGESTIONS) && !getMessagesController().ignoreSetOnline) {
+        if (!firstLoading && !paused && !inPreviewMode && !readOnly && (chatMode == 0 || chatMode == MODE_SUGGESTIONS) && !getMessagesController().ignoreSetOnline) {
             int scheduledRead = 0;
             if ((maxPositiveUnreadId != Integer.MIN_VALUE || maxNegativeUnreadId != Integer.MAX_VALUE)) {
                 int counterDecrement = 0;
@@ -18609,7 +18620,7 @@ public class ChatActivity extends BaseFragment implements
             int childCount = getChildCount();
             measureChildWithMargins(chatActivityEnterView, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
-            if (inPreviewMode || isInsideContainer) {
+            if (inPreviewMode || isInsideContainer || readOnly) {
                 inputFieldHeight = 0;
             } else {
                 inputFieldHeight = chatActivityEnterView.getMeasuredHeight();
@@ -19552,7 +19563,7 @@ public class ChatActivity extends BaseFragment implements
                             }
                         }
                     }
-                    actionsButtonsLayout.showReplyButton(newVisibility == View.VISIBLE, true);
+                    actionsButtonsLayout.showReplyButton(newVisibility == View.VISIBLE && !readOnly, true);
                 }
 
                 if (editItem != null) {
@@ -20908,7 +20919,9 @@ public class ChatActivity extends BaseFragment implements
 
             resumeDelayedFragmentAnimation();
             MessageObject messageObject = messArr.get(0);
-            getMessagesController().markDialogAsRead(dialog_id, messageObject.getId(), messageObject.getId(), messageObject.messageOwner.date, false, 0, 0, true, 0);
+            if (!readOnly) {
+                getMessagesController().markDialogAsRead(dialog_id, messageObject.getId(), messageObject.getId(), messageObject.messageOwner.date, false, 0, 0, true, 0);
+            }
             AndroidUtilities.cancelRunOnUIThread(fragmentTransitionRunnable);
             fragmentTransitionRunnable.run();
             return;
@@ -24228,7 +24241,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
                 if (headerItem != null) {
-                    showAudioCallAsIcon = userInfo.phone_calls_available && !inPreviewMode;
+                    showAudioCallAsIcon = userInfo.phone_calls_available && !inPreviewMode && !readOnly;
                     if (userInfo.phone_calls_available) {
                         if (showAudioCallAsIcon) {
                             if (audioCallIconItem != null) {
@@ -29968,6 +29981,83 @@ public class ChatActivity extends BaseFragment implements
         super.dismissCurrentDialog();
     }
 
+    private void createReadOnlyBottomBar(Context context) {
+        if (readOnlyBottomBar != null) {
+            return;
+        }
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+        layout.setGravity(Gravity.CENTER_VERTICAL);
+        layout.setPadding(dp(16), dp(8), dp(12), dp(8));
+
+        int bgColor = getThemedColor(Theme.key_chat_messagePanelBackground);
+        layout.setBackground(Theme.createRoundRectDrawable(dp(24), bgColor));
+
+        LinearLayout textLayout = new LinearLayout(context);
+        textLayout.setOrientation(LinearLayout.VERTICAL);
+        textLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(getThemedColor(Theme.key_chat_messagePanelText));
+        titleView.setText(LocaleController.getString(R.string.ReadOnlyMode, "Read-Only Mode"));
+        titleView.setSingleLine(true);
+        textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView subtitleView = new TextView(context);
+        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
+        subtitleView.setText(LocaleController.getString(R.string.ReadOnlyModeSubtitle, "Messages will not be marked as read"));
+        subtitleView.setSingleLine(true);
+        subtitleView.setEllipsize(TextUtils.TruncateAt.END);
+        textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 1, 0, 0));
+
+        layout.addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+        TextView actionButton = new TextView(context);
+        actionButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        actionButton.setTypeface(AndroidUtilities.bold());
+        actionButton.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        actionButton.setText(LocaleController.getString(R.string.OpenNormalChat, "Open Normal Chat"));
+        actionButton.setGravity(Gravity.CENTER);
+        actionButton.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 16));
+        actionButton.setPadding(dp(14), dp(8), dp(14), dp(8));
+        actionButton.setOnClickListener(v -> switchToNormalMode());
+
+        layout.addView(actionButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
+        readOnlyBottomBar = layout;
+        chatInputBubbleContainer.addView(readOnlyBottomBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 6));
+        readOnlyBottomBar.setVisibility(readOnly ? View.VISIBLE : View.GONE);
+    }
+
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    public void switchToNormalMode() {
+        if (!readOnly) return;
+        readOnly = false;
+        // Hide read-only bottom banner and show normal compose field with animation
+        if (readOnlyBottomBar != null) {
+            readOnlyBottomBar.setVisibility(View.GONE);
+        }
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.setVisibility(View.VISIBLE);
+        }
+        if (currentUser != null && audioCallIconItem != null) {
+            TLRPC.UserFull userFull = getMessagesController().getUserFull(currentUser.id);
+            if (userFull != null && userFull.phone_calls_available) {
+                showAudioCallAsIcon = true;
+                audioCallIconItem.setVisibility(View.VISIBLE);
+            }
+        }
+        updatePagedownButtonsPosition();
+        // Mark visible messages read now that the user chose to enter normal mode
+        updateMessagesVisiblePart(false);
+    }
+
     @Override
     public void setInPreviewMode(boolean value) {
         super.setInPreviewMode(value);
@@ -30274,8 +30364,10 @@ public class ChatActivity extends BaseFragment implements
             scrimPopupWindow.setPauseNotifications(false);
             closeMenu();
         }
-        long replyId = threadMessageId;
-        getMessagesController().markDialogAsReadNow(dialog_id, replyId);
+        if (!readOnly) {
+            long replyId = threadMessageId;
+            getMessagesController().markDialogAsReadNow(dialog_id, replyId);
+        }
         MediaController.getInstance().stopRaiseToEarSensors(this, true, true);
         paused = true;
         wasPaused = true;
@@ -30826,7 +30918,7 @@ public class ChatActivity extends BaseFragment implements
             }
             hideHints(true);
             if (visibleMessage.isRoundVideo()) {
-                boolean result = MediaController.getInstance().playMessage(visibleMessage);
+                boolean result = MediaController.getInstance().playMessage(visibleMessage, false, readOnly);
                 MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(visibleMessage, false) : null, false);
                 return result;
             } else {
@@ -30837,7 +30929,7 @@ public class ChatActivity extends BaseFragment implements
                 if (PhotoViewer.isPlayingMessageInPip(visibleMessage)) {
                     PhotoViewer.getPipInstance().destroyPhotoViewer();
                 }
-                return MediaController.getInstance().playMessage(visibleMessage);
+                return MediaController.getInstance().playMessage(visibleMessage, false, readOnly);
             }
         }
         return false;
@@ -38496,7 +38588,7 @@ public class ChatActivity extends BaseFragment implements
                 MessageObject message = messages.get(position - messagesStartRow);
                 View view = holder.itemView;
                 if (message != null && message.messageOwner != null && message.messageOwner.media_unread && message.messageOwner.mentioned) {
-                    if (!inPreviewMode && chatMode == 0) {
+                    if (!inPreviewMode && !readOnly && chatMode == 0) {
                         if (!message.isVoice() && !message.isRoundVideo()) {
                             newMentionsCount--;
                             if (newMentionsCount <= 0) {
@@ -39739,7 +39831,7 @@ public class ChatActivity extends BaseFragment implements
                 showDialog(secretVoicePlayer);
                 return false;
             } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
-                boolean result = MediaController.getInstance().playMessage(messageObject, muted);
+                boolean result = MediaController.getInstance().playMessage(messageObject, muted, readOnly);
                 MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(messageObject, false) : null, false);
                 return result;
             } else if (messageObject.isMusic()) {
@@ -46624,7 +46716,7 @@ public class ChatActivity extends BaseFragment implements
                     icons.add(deleteIconRes);
                 }
             } else {
-                if ((allowChatActions || isEphemeralFromBot) && (primaryMessage == null || !primaryMessage.isWelcomeMessage()) && !isInsideContainer && chatMode != MODE_WELCOME_MESSAGES) {
+                if ((allowChatActions || isEphemeralFromBot) && (primaryMessage == null || !primaryMessage.isWelcomeMessage()) && !isInsideContainer && chatMode != MODE_WELCOME_MESSAGES && !readOnly) {
                     items.add(LocaleController.getString(R.string.Reply));
                     options.add(OPTION_REPLY);
                     icons.add(R.drawable.menu_reply);
@@ -47112,6 +47204,11 @@ public class ChatActivity extends BaseFragment implements
         }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.setTranslationY(dp(54) * hideFactor);
+        }
+        if (readOnlyBottomBar != null && readOnly) {
+            readOnlyBottomBar.setTranslationY(dp(54) * hideFactor);
+            readOnlyBottomBar.setAlpha(1f - hideFactor);
+            readOnlyBottomBar.setVisibility(hideFactor >= 1.0f ? View.GONE : View.VISIBLE);
         }
         if (searchContainer != null) {
             searchContainer.setTranslationY(dp(54) * hideFactor);
