@@ -996,7 +996,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             );
         }
         if (isTopic) {
-            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp((useForceThreeLines || SharedConfig.useThreeLinesLayout ? heightThreeLines : heightDefault) + (hasTags() && (!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) ? (isForumCell() ? addForumHeightForTags : addHeightForTags) : 0)) + (useSeparator ? 1 : 0));
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp((useForceThreeLines || SharedConfig.useThreeLinesLayout ? heightThreeLines : heightDefault) + (hasTags() && (!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) ? (isForumCell() ? addForumHeightForTags : addHeightForTags) : 0)) + getTextExtraHeight() + (useSeparator ? 1 : 0));
             checkTwoLinesForName();
         }
 
@@ -1008,7 +1008,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int computeHeight() {
         int height;
         if (isForumCell() && !isTransitionSupport && !collapsed) {
-            height = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 86 : 91);
+            height = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 86 : 91) + getTextExtraHeight();
             if (useSeparator) {
                 height += 1;
             }
@@ -1021,8 +1021,34 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         return height;
     }
 
+    /**
+     * Chat list text follows the system font size (Settings > Display > Font size),
+     * capped so that very large scales do not break the row layout.
+     */
+    private static final float MAX_TEXT_SCALE = 1.3f;
+
+    private static float getTextScale() {
+        float scale = ApplicationLoader.applicationContext.getResources().getConfiguration().fontScale;
+        return Math.max(1f, Math.min(scale, MAX_TEXT_SCALE));
+    }
+
+    /** Extra space taken by the (taller) name line, see dialogs_namePaint[1]. */
+    private static int getNameExtra() {
+        return dp(16 * (getTextScale() - 1f));
+    }
+
+    /** Extra row height needed for the scaled name and message lines. */
+    private int getTextExtraHeight() {
+        float extra = getTextScale() - 1f;
+        if (extra <= 0) {
+            return 0;
+        }
+        // name (16) + message (15), plus the sender name line (14) in the three-line layout
+        return dp((16 + 15 + (useForceThreeLines || SharedConfig.useThreeLinesLayout ? 14 : 0)) * extra);
+    }
+
     private int getCollapsedHeight() {
-        int height = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? heightThreeLines : heightDefault);
+        int height = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? heightThreeLines : heightDefault) + getTextExtraHeight();
         if (useSeparator || true) {
             height += 1;
         }
@@ -1248,25 +1274,27 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         }
 
+        final float textScale = getTextScale();
+        Theme.dialogs_messageNamePaint.setTextSize(dp(14 * textScale));
         if (useForceThreeLines || SharedConfig.useThreeLinesLayout || true) {
-            Theme.dialogs_namePaint[0].setTextSize(dp(17));
-            Theme.dialogs_nameEncryptedPaint[0].setTextSize(dp(17));
-            Theme.dialogs_messagePaint[0].setTextSize(dp(16));
-            Theme.dialogs_messagePrintingPaint[0].setTextSize(dp(16));
+            Theme.dialogs_namePaint[0].setTextSize(dp(17 * textScale));
+            Theme.dialogs_nameEncryptedPaint[0].setTextSize(dp(17 * textScale));
+            Theme.dialogs_messagePaint[0].setTextSize(dp(16 * textScale));
+            Theme.dialogs_messagePrintingPaint[0].setTextSize(dp(16 * textScale));
 
-            Theme.dialogs_namePaint[1].setTextSize(dp(16));
-            Theme.dialogs_nameEncryptedPaint[1].setTextSize(dp(16));
-            Theme.dialogs_messagePaint[1].setTextSize(dp(15));
-            Theme.dialogs_messagePrintingPaint[1].setTextSize(dp(15));
+            Theme.dialogs_namePaint[1].setTextSize(dp(16 * textScale));
+            Theme.dialogs_nameEncryptedPaint[1].setTextSize(dp(16 * textScale));
+            Theme.dialogs_messagePaint[1].setTextSize(dp(15 * textScale));
+            Theme.dialogs_messagePrintingPaint[1].setTextSize(dp(15 * textScale));
 
             Theme.dialogs_messagePaint[1].setColor(Theme.dialogs_messagePaint[1].linkColor = Theme.getColor(Theme.key_chats_message_threeLines, resourcesProvider));
             paintIndex = 1;
             thumbSize = 18;
         } else {
-            Theme.dialogs_namePaint[0].setTextSize(dp(17));
-            Theme.dialogs_nameEncryptedPaint[0].setTextSize(dp(17));
-            Theme.dialogs_messagePaint[0].setTextSize(dp(16));
-            Theme.dialogs_messagePrintingPaint[0].setTextSize(dp(16));
+            Theme.dialogs_namePaint[0].setTextSize(dp(17 * textScale));
+            Theme.dialogs_nameEncryptedPaint[0].setTextSize(dp(17 * textScale));
+            Theme.dialogs_messagePaint[0].setTextSize(dp(16 * textScale));
+            Theme.dialogs_messagePrintingPaint[0].setTextSize(dp(16 * textScale));
 
             Theme.dialogs_messagePaint[0].setColor(Theme.dialogs_messagePaint[0].linkColor = Theme.getColor(Theme.key_chats_message, resourcesProvider));
             paintIndex = 0;
@@ -2429,7 +2457,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         int thumbLeft;
         if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
             avatarTop = dp(11);
-            messageNameTop = dp(32);
+            messageNameTop = dp(32) + getNameExtra();
             timeTop = dp(13);
             errorTop = dp(42.33f);
             pinTop = dp(43);
@@ -2452,7 +2480,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else {
             avatarTop = dp(9);
-            messageNameTop = dp(31);
+            messageNameTop = dp(31) + getNameExtra();
             timeTop = dp(16);
             errorTop = dp(38);
             pinTop = dp(39);
@@ -2684,12 +2712,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         }
         messageWidth = Math.max(dp(12), messageWidth);
-        buttonTop = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 58 : 62);
+        buttonTop = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 58 : 62) + getTextExtraHeight();
         if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
             buttonTop -= dp(isForumCell() ? 10 : 12);
         }
         if (isForumCell()) {
-            messageTop = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 34 : 39);
+            messageTop = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 34 : 39) + getNameExtra();
             for (int i = 0; i < thumbImage.length; ++i) {
                 thumbImage[i].setImageY(buttonTop);
             }
@@ -2705,7 +2733,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            messageTop = dp(32 + 19);
+            messageTop = dp(32 + 19) + getNameExtra() + dp(14 * (getTextScale() - 1f));
             int yoff = nameIsEllipsized && isTopic ? dp(20) : 0;
             for (int i = 0; i < thumbImage.length; ++i) {
                 thumbImage[i].setImageY(avatarTop + yoff + dp(40));
@@ -2713,13 +2741,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         } else {
             messageNameLayout = null;
             if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
-                messageTop = dp(32);
+                messageTop = dp(32) + getNameExtra();
                 int yoff = nameIsEllipsized && isTopic ? dp(20) : 0;
                 for (int i = 0; i < thumbImage.length; ++i) {
                     thumbImage[i].setImageY(avatarTop + yoff + dp(21));
                 }
             } else {
-                messageTop = dp(39);
+                messageTop = dp(39) + getNameExtra();
             }
         }
 
