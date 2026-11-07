@@ -3577,6 +3577,7 @@
     <string name="OutgoingCalls">Outgoing calls</string>
     <string name="IncomingCalls">Incoming calls</string>
     <string name="IncomingCallsSystemSetting">Internal calls notifications</string>
+    <string name="InternalNotificationsSystemSetting">Internal notifications</string>
     <string name="IncomingCallsSystemSettingDescription">You can change ringtone sound in Telegram -> Settings -> Notifications and Sounds.</string>
     <string name="OutgoingCallsCount_one">%1$d outgoing call</string>
     <string name="OutgoingCallsCount_other">%1$d outgoing calls</string>
@@ -11630,4 +11631,17 @@
     <string name="NoPaidMessagesTokenUsed">un1 used your QR code and can message you for free</string>
     <string name="NoPaidMessagesTokenUsedOut">You used the QR code of un1 and can message them for free</string>
     <string name="NoPaidMessagesTokenImported">You can now message **%1$s** for free.</string>
+    <string name="NewContactPhoneNotOnTelegram">This phone number is not on Telegram. **Invite >**</string>
+    <string name="NewContactPhoneInContacts">This phone number is already in your contacts. **View >**</string>
+    <string name="NewContactPhoneOnTelegram">This phone number is on Telegram.</string>
+    <string name="StoryPrivacyGroupNoContacts">All group members are not in your contact list.</string>
+    <string name="StoryPrivacyGroupNonContacts_one">%1$d member is not in your contact list</string>
+    <string name="StoryPrivacyGroupNonContacts_other">%1$d members are not in your contact list</string>
+    <string name="StoryPrivacyGroupAddContacts_one">Add %1$d contact</string>
+    <string name="StoryPrivacyGroupAddContacts_other">Add %1$d contacts</string>
+    <string name="ForwardHideSenderNamePremium">Subscribe to **Telegram Premium** to forward formatted messages without the sender’s name.</string>
+    <string name="StoryEditWaitUpload">Wait until current upload is complete</string>
+    <string name="UnsupportedContent">Unsupported content</string>
+    <string name="LocationPoweredBy">Powered by</string>
+    <string name="SettingsExperimental">Experimental</string>
 </resources>

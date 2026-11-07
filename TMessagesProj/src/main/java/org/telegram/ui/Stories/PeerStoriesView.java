@@ -1577,7 +1577,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                             editStoryItem.setOnClickListener(v -> {
                                 if (v.getAlpha() < 1) {
                                     AndroidUtilities.shakeViewSpring(v, shiftDp = -shiftDp);
-                                    BulletinFactory.of(storyContainer, resourcesProvider).createErrorBulletin("Wait until current upload is complete").show();
+                                    BulletinFactory.of(storyContainer, resourcesProvider).createErrorBulletin(getString(R.string.StoryEditWaitUpload)).show();
                                     return;
                                 }
                                 Activity activity = AndroidUtilities.findActivity(context);
